@@ -14,6 +14,7 @@ import { useState, useCallback } from 'react'
 import {
     useTransactionEncoder,
     useAlgorandClient,
+    type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
     submitAndAutoRefresh,
@@ -29,7 +30,6 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import {

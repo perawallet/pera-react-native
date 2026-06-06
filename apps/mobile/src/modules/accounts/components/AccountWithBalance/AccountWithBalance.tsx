@@ -12,9 +12,9 @@
 
 import {
     useAccountBalancesQuery,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWView, PWViewProps } from '@components/core'
+import { PWView, type PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
 import { AccountDisplay } from '../AccountDisplay'

@@ -14,8 +14,12 @@ import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
 import { Pressable } from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
-import { PWFlatList, PWView } from '@components/core'
-import type { PWFlatListProps, PWFlatListRef } from '@components/core'
+import {
+    PWFlatList,
+    PWView,
+    type PWFlatListProps,
+    type PWFlatListRef,
+} from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import {
     isHeaderSentinel,
@@ -25,7 +29,7 @@ import {
     type AugmentedItem,
 } from './useSearchableList'
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
-import { Maybe } from '@perawallet/wallet-core-shared'
+import { type Maybe } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 const NOOP = () => {}
@@ -203,9 +207,11 @@ const SearchableListInner = <T,>(
                         >
                             <PWView
                                 pointerEvents='none'
-                                style={[
-                                    showOverlay && styles.searchOverlayHidden,
-                                ]}
+                                style={
+                                    showOverlay
+                                        ? styles.searchOverlayHidden
+                                        : undefined
+                                }
                             >
                                 <SearchInputComponent
                                     value={currentValue}

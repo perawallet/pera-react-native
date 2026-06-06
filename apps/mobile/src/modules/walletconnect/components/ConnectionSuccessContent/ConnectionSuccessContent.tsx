@@ -12,7 +12,7 @@
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
+import { type WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 
 export type ConnectionSuccessContentProps = {
     request: WalletConnectSessionRequest

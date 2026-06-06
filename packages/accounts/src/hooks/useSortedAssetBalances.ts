@@ -40,18 +40,22 @@ const buildComparator = (
 
         let primary = 0
         switch (mode) {
-            case 'balanceDesc':
+            case 'balanceDesc': {
                 primary = b.algoValue.cmp(a.algoValue)
                 break
-            case 'balanceAsc':
+            }
+            case 'balanceAsc': {
                 primary = a.algoValue.cmp(b.algoValue)
                 break
-            case 'alphabeticalAsc':
+            }
+            case 'alphabeticalAsc': {
                 primary = getName(a.assetId).localeCompare(getName(b.assetId))
                 break
-            case 'alphabeticalDesc':
+            }
+            case 'alphabeticalDesc': {
                 primary = getName(b.assetId).localeCompare(getName(a.assetId))
                 break
+            }
         }
         if (primary !== 0) return primary
 

@@ -1928,7 +1928,7 @@ vi.mock('@rneui/themed', () => {
             layer1: 10,
             layer2: 20,
             overlay1: 100,
-            max: 10000,
+            max: 10_000,
         },
         borderRadius: {
             none: 0,
@@ -2679,7 +2679,7 @@ class MockAlgodError extends Error {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    MIN_TXN_FEE: 1_000n,
+    MIN_TXN_FEE: 1000n,
     useAlgorandClient: vi.fn(),
     useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
     useTransactionEncoder: vi.fn(() => ({ encodeSignedTransaction: vi.fn() })),

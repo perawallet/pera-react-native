@@ -89,7 +89,7 @@ const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
     name: 'NFT Holder',
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Mint a real algo25 keystore key + register the matching account.
 // Returns the account so callers can wire the send-funds store + spies
@@ -382,7 +382,7 @@ describe('Flow: View NFT collectible detail', () => {
                 () => {
                     expect(screen.getByTestId('PWResultView')).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Algod received the signed asset-transfer for the NFT.

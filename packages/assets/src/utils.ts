@@ -16,7 +16,7 @@ import { formatNumber } from '@perawallet/wallet-core-shared'
 import {
     ALGO_ASSET_ID,
     type MinimalAsset,
-    PeraAsset,
+    type PeraAsset,
     PeraAssetType,
 } from './models'
 

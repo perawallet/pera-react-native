@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery, UseQueryResult } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchNfdSearch } from '../api'
 import { nfdQueryKeys } from './querykeys'

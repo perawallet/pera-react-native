@@ -12,9 +12,9 @@
 
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { ReactElement, useEffect, useMemo, useState } from 'react'
+import { type ReactElement, useEffect, useMemo, useState } from 'react'
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
-import { PromptViewProps } from '@modules/prompts/models'
+import { type PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { UserPreferences } from '@constants/user-preferences'

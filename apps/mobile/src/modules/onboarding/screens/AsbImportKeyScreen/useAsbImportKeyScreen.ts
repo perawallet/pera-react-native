@@ -17,7 +17,7 @@ import {
     AsbImportError,
     decryptBackupPayload,
 } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -27,7 +27,6 @@ import {
     useMnemonicWordEntry,
 } from '@modules/onboarding/hooks'
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWInputRef } from '@components/core'
 
 type UseAsbImportKeyScreenResult = {

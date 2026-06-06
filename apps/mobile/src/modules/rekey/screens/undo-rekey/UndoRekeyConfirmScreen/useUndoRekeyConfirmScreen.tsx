@@ -11,11 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useRoute } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     AccountTypes,
     getAccountDisplayName,
     useFindAccountByAddress,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -30,8 +31,6 @@ import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
 import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
-import type { RouteProp } from '@react-navigation/native'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { UndoRekeyStackParamList } from '../../../routes/undo-rekey/types'
 
 export type UseUndoRekeyConfirmScreenResult = {

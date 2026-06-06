@@ -11,8 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { GestureResponderEvent } from 'react-native'
-import { PWTouchableOpacity, PWTouchableOpacityProps } from '@components/core'
+import { type GestureResponderEvent } from 'react-native'
+import {
+    PWTouchableOpacity,
+    type PWTouchableOpacityProps,
+} from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 
 export type CopyableTextProps = {

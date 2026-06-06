@@ -11,21 +11,21 @@
  */
 
 import {
-    FirebaseCrashlyticsTypes,
+    type FirebaseCrashlyticsTypes,
     getCrashlytics,
     recordError,
     setCrashlyticsCollectionEnabled,
 } from '@react-native-firebase/crashlytics'
 import {
     fetchAndActivate,
-    FirebaseRemoteConfigTypes,
+    type FirebaseRemoteConfigTypes,
     getRemoteConfig,
     setConfigSettings,
     setDefaults,
     getValue,
 } from '@react-native-firebase/remote-config'
 import {
-    FirebaseMessagingTypes,
+    type FirebaseMessagingTypes,
     getMessaging,
     getToken,
     onMessage,
@@ -40,7 +40,7 @@ import notifee, {
     AndroidImportance,
     AuthorizationStatus,
     EventType,
-    NotificationAndroid,
+    type NotificationAndroid,
 } from '@notifee/react-native'
 import {
     type CrashReportingService,
@@ -48,7 +48,7 @@ import {
     type RemoteConfigService,
     type AnalyticsService,
     RemoteConfigDefaults,
-    RemoteConfigKey,
+    type RemoteConfigKey,
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 
@@ -160,11 +160,13 @@ export class RNFirebaseService
             async ({ type }) => {
                 switch (type) {
                     case EventType.ACTION_PRESS:
-                    case EventType.PRESS:
+                    case EventType.PRESS: {
                         // TODO: Handle taps or actions using deeplink parser when we have it
                         break
-                    default:
+                    }
+                    default: {
                         break
+                    }
                 }
             },
         )

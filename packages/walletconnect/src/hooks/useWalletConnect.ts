@@ -17,8 +17,8 @@ import {
 } from '../errors'
 import {
     AlgorandChainId,
-    WalletConnectConnection,
-    WalletConnectSessionRequest,
+    type WalletConnectConnection,
+    type WalletConnectSessionRequest,
 } from '../models'
 import { useWalletConnectStore } from '../store'
 import {
@@ -33,7 +33,7 @@ import { useWalletConnectSessionRequests } from './useWalletConnectSessionReques
 import { useWalletConnectHandlers } from './useWalletConnectHandlers'
 import {
     logger,
-    Network,
+    type Network,
     Networks,
     type Optional,
 } from '@perawallet/wallet-core-shared'

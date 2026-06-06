@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import {
+    createNativeStackNavigator,
+    type NativeStackHeaderProps,
+} from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { RescanRekeyedSelectScreen } from '../../screens/rescan-rekeyed/RescanRekeyedSelectScreen'
 
-import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import type { RescanRekeyedStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<RescanRekeyedStackParamList>()

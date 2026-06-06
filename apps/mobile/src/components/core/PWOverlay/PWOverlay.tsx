@@ -12,7 +12,7 @@
 
 import {
     Overlay as RNEOverlay,
-    OverlayProps as RNEOverlayProps,
+    type OverlayProps as RNEOverlayProps,
 } from '@rneui/themed'
 import { useStyles } from './styles'
 

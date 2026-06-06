@@ -42,7 +42,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useBiometrics, usePinCode } from '@perawallet/wallet-core-security'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The unit-test setup mocks `@perawallet/wallet-extension-platform-driver`
 // with vi.fn() bodies that resolve `false` by default — fine for unit

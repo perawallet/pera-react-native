@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -20,8 +20,8 @@ import {
     useLedgerRekeyedScan,
     type LedgerSelectableAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import {
+    type LedgerAccount,
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'

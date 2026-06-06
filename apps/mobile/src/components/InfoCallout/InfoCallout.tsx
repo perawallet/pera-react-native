@@ -12,8 +12,14 @@
 
 import type { StyleProp, ViewStyle } from 'react-native'
 import type { TypographyVariant } from '@theme/typography'
-import { PWIcon, PWText, PWView } from '@components/core'
-import type { IconName, PWIconSize, PWIconVariant } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWView,
+    type IconName,
+    type PWIconSize,
+    type PWIconVariant,
+} from '@components/core'
 import { useStyles } from './styles'
 
 /**

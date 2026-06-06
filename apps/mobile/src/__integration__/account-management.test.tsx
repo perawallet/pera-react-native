@@ -104,7 +104,7 @@ const tapButtonByLabel = (i18nKey: string) => {
     fireEvent.click(button)
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Notification preferences are persisted via a Zustand store inside
 // `@perawallet/wallet-core-messages`; the store itself isn't re-exported

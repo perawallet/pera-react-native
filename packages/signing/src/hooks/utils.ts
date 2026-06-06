@@ -100,15 +100,17 @@ export const deriveEvent = (
             if (!signerType) return null
             return { type: 'signing_started', signerType }
         }
-        case 'transporting':
+        case 'transporting': {
             return { type: 'transport_started' }
+        }
         case 'completed': {
             const { transportResult } = snapshot.context
             if (!transportResult) return null
             return { type: 'signing_completed', transportResult }
         }
-        case 'rejected':
+        case 'rejected': {
             return { type: 'signing_rejected' }
+        }
         case 'failed': {
             const { error, failedDuringState } = snapshot.context
             return {
@@ -118,7 +120,8 @@ export const deriveEvent = (
                 isRetryable: isRetryableError(error),
             }
         }
-        default:
+        default: {
             return null
+        }
     }
 }

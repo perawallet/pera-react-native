@@ -14,8 +14,8 @@ import { Decimal } from 'decimal.js'
 import { type Optional } from '@perawallet/wallet-core-shared'
 import {
     ALGO_ASSET_ID,
-    PeraAssetType,
-    PeraAssetVerificationTier,
+    type PeraAssetType,
+    type PeraAssetVerificationTier,
     type PeraAsset,
     type PeraCollectible,
     type CollectibleMediaType,

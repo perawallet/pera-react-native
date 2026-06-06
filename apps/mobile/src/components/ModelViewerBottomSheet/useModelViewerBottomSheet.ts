@@ -11,16 +11,16 @@
  */
 
 import {
-    RefObject,
+    type RefObject,
     useCallback,
     useEffect,
     useMemo,
     useRef,
     useState,
 } from 'react'
-import { WebViewMessageEvent } from 'react-native-webview'
+import { type WebViewMessageEvent } from 'react-native-webview'
 import { useTheme } from '@rneui/themed'
-import { BottomSheetModal } from '@gorhom/bottom-sheet'
+import { type BottomSheetModal } from '@gorhom/bottom-sheet'
 import { buildModelViewerHtml } from './modelViewerHtml'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 

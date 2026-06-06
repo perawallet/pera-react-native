@@ -60,7 +60,7 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const seedRekeyAccounts = async (): Promise<{
     source: WalletAccount
@@ -226,7 +226,7 @@ describe('Flow: Rekey to ledger account end-to-end', () => {
                         screen.getByTestId('rekey-to-ledger-success-screen'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             expect(sendSpy).toHaveBeenCalled()
@@ -282,7 +282,7 @@ describe('Flow: Rekey to ledger account end-to-end', () => {
                 () => {
                     expect(Notifier.showNotification).toHaveBeenCalled()
                 },
-                { timeout: 25000 },
+                { timeout: 25_000 },
             )
 
             expect(

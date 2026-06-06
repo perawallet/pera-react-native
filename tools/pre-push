@@ -53,6 +53,22 @@ else
 fi
 rm "$LINT_LOG"
 
+# Run type-aware lint (no-floating-promises / no-misused-promises).
+# These rules require full type information and are much slower than the
+# default lint, so they live in a separate step. They are currently set to
+# "warn" and are informational only — they surface real async-handling risks
+# for incremental, per-case review and do not block the push.
+echo "\n${YELLOW}Running type-aware lint (informational)...${NC}"
+TYPES_LOG=$(mktemp)
+pnpm run lint:types > "$TYPES_LOG" 2>&1
+TYPES_WARNINGS=$(grep -oE "Found [0-9]+ warning" "$TYPES_LOG" | grep -oE "[0-9]+" || echo "0")
+if [ "$TYPES_WARNINGS" = "0" ]; then
+    echo "${GREEN}✓ No type-aware lint warnings${NC}"
+else
+    echo "${YELLOW}⚠ ${TYPES_WARNINGS} type-aware warning(s) (floating/misused promises) — review with 'pnpm lint:types'${NC}"
+fi
+rm "$TYPES_LOG"
+
 # Run formatter
 echo "\n${YELLOW}Running formatter...${NC}"
 FORMAT_LOG=$(mktemp)

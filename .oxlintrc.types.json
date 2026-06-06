@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["./.oxlintrc.json"],
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/lib/**",
+    "**/.turbo/**",
+    "apps/mobile/android/**",
+    "apps/mobile/ios/**",
+    "**/src/test-utils/**",
+    "**/__tests__/**",
+    "**/*.generated.ts"
+  ],
+  "options": {
+    "typeAware": true,
+    "typeCheck": false
+  },
+  "rules": {
+    "typescript/no-floating-promises": "warn",
+    "typescript/no-misused-promises": "warn"
+  }
+}

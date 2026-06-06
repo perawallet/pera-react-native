@@ -14,19 +14,19 @@ import { useTheme } from '@rneui/themed'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     getAccountDisplayName,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     PWIcon,
-    PWIconProps,
+    type PWIconProps,
     PWText,
-    PWTextProps,
+    type PWTextProps,
     PWView,
-    PWViewProps,
+    type PWViewProps,
 } from '@components/core'
 import { useStyles } from './styles'
 
-import { AccountIcon, AccountIconProps } from '../AccountIcon'
+import { AccountIcon, type AccountIconProps } from '../AccountIcon'
 import { useMemo } from 'react'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'

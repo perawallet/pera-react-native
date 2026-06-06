@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
 import {
     AppError,
-    ErrorCategory,
+    type ErrorCategory,
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'

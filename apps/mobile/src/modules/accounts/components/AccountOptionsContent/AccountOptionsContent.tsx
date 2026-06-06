@@ -18,10 +18,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
-import { AccountOption, useAccountOptions } from './useAccountOptions'
+import { type AccountOption, useAccountOptions } from './useAccountOptions'
 import { AccountInfoCard } from '../AccountInfoCard'
 
 export type AccountOptionsContentProps = {

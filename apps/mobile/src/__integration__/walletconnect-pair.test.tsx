@@ -72,7 +72,7 @@ const SIGNING_ACCOUNT_B: WalletAccount = {
     name: 'DeFi',
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // `useWalletConnect` mounts the signing pipeline, which now reads from
 // React-Query via `useMultisigTransportAdapters`. `renderHook` creates a

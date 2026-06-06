@@ -13,8 +13,8 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
 
-import { RouteProp, useRoute } from '@react-navigation/native'
-import { OnboardingStackParamList } from '../../routes/types'
+import { type RouteProp, useRoute } from '@react-navigation/native'
+import { type OnboardingStackParamList } from '../../routes/types'
 import {
     DuplicateAccountError,
     MNEMONIC_WORD_COUNT,

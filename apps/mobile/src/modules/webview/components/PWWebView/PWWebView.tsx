@@ -15,14 +15,14 @@ import { useTheme } from '@rneui/themed'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
     WebView,
-    WebViewMessageEvent,
-    WebViewProps,
+    type WebViewMessageEvent,
+    type WebViewProps,
 } from 'react-native-webview'
 import {
-    WebViewErrorEvent,
-    WebViewHttpErrorEvent,
-    WebViewNativeEvent,
-    WebViewNavigationEvent,
+    type WebViewErrorEvent,
+    type WebViewHttpErrorEvent,
+    type WebViewNativeEvent,
+    type WebViewNavigationEvent,
 } from 'react-native-webview/lib/WebViewTypes'
 import {
     baseJS,
@@ -50,8 +50,7 @@ import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebViewStore } from '../../hooks'
-import type { WebViewFavorite } from '../../hooks'
+import { useWebViewStore, type WebViewFavorite } from '../../hooks'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type PWWebViewProps = {

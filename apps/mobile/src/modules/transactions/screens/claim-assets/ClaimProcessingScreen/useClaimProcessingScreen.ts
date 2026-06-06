@@ -21,7 +21,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { bottomSheetNotifier } from '@components/core'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import {
-    SendClaimParams,
+    type SendClaimParams,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'

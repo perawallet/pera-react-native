@@ -16,7 +16,7 @@ import {
 } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
-import { WalletAccount } from '../models'
+import { type WalletAccount } from '../models'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useUpdateAccount = () => {

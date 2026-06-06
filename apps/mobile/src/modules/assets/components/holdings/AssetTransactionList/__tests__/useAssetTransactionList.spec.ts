@@ -200,8 +200,8 @@ describe('useAssetTransactionList', () => {
     describe('transaction grouping', () => {
         it('returns grouped transactions sections by date', () => {
             const transactions = [
-                { id: '1', roundTime: 1704067200, sender: 'A' }, // 2024-01-01
-                { id: '2', roundTime: 1704153600, sender: 'B' }, // 2024-01-02
+                { id: '1', roundTime: 1_704_067_200, sender: 'A' }, // 2024-01-01
+                { id: '2', roundTime: 1_704_153_600, sender: 'B' }, // 2024-01-02
             ]
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
                 transactions,
@@ -234,9 +234,9 @@ describe('useAssetTransactionList', () => {
 
         it('groups multiple transactions on same date', () => {
             const transactions = [
-                { id: '1', roundTime: 1704067200, sender: 'A' },
-                { id: '2', roundTime: 1704067260, sender: 'B' },
-                { id: '3', roundTime: 1704067320, sender: 'C' },
+                { id: '1', roundTime: 1_704_067_200, sender: 'A' },
+                { id: '2', roundTime: 1_704_067_260, sender: 'B' },
+                { id: '3', roundTime: 1_704_067_320, sender: 'C' },
             ]
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
                 transactions,
@@ -579,7 +579,7 @@ describe('useAssetTransactionList', () => {
                 filename: 'test.csv',
                 csvContent: 'data',
                 accountAddress: mockAccount.address,
-                assetId: 12345,
+                assetId: 12_345,
                 rowCount: 5,
             }
 
@@ -617,7 +617,7 @@ describe('useAssetTransactionList', () => {
             await successCallback({
                 filename: 'f',
                 csvContent: 'c',
-                assetId: 12345,
+                assetId: 12_345,
             })
 
             expect(mockShowToast).toHaveBeenCalledWith(
@@ -674,7 +674,7 @@ describe('useAssetTransactionList', () => {
                 sender: 'sender-address',
                 receiver: 'receiver-address',
                 confirmedRound: 200,
-                roundTime: 1704067200,
+                roundTime: 1_704_067_200,
                 swapGroupDetail: null,
                 interpretedMeaning: null,
                 fee: '1000',
@@ -708,7 +708,7 @@ describe('useAssetTransactionList', () => {
                 sender: 'sender-address',
                 receiver: 'receiver-address',
                 confirmedRound: 250,
-                roundTime: 1704153600,
+                roundTime: 1_704_153_600,
                 swapGroupDetail: null,
                 interpretedMeaning: null,
                 fee: '1000',
@@ -746,7 +746,7 @@ describe('useAssetTransactionList', () => {
                 sender: 'sender-address',
                 receiver: null,
                 confirmedRound: 300,
-                roundTime: 1704240000,
+                roundTime: 1_704_240_000,
                 swapGroupDetail: {
                     amountIn: '1000000',
                     assetInUnitName: 'ALGO',

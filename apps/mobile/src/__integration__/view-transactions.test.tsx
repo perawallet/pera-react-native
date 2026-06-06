@@ -59,7 +59,7 @@ import { useAccountHistory } from '@modules/accounts/components/AccountHistory/u
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const ACCOUNT: WalletAccount = {
     id: 'observer-1',
@@ -105,7 +105,7 @@ const TX_ASSET_TRANSFER: TransactionHistoryItem = {
     amount: new Decimal(2_500_000),
     closeTo: null,
     asset: {
-        assetId: 31566704,
+        assetId: 31_566_704,
         name: 'USD Coin',
         unitName: 'USDC',
         decimals: 6,

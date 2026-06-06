@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { PWNumpad, PWPinCircles, PWView, NumpadKey } from '@components/core'
+import {
+    PWNumpad,
+    PWPinCircles,
+    PWView,
+    type NumpadKey,
+} from '@components/core'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { usePinEntry } from './usePinEntry'
 import { useStyles } from './styles'

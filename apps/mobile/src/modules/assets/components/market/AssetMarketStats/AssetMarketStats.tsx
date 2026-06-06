@@ -16,7 +16,7 @@ import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { Decimal } from 'decimal.js'
 import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { InfoButton } from '@components/InfoButton'
 

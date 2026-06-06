@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import {
     algorandSafeJsonStringify,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
     bottomSheetNotifier,

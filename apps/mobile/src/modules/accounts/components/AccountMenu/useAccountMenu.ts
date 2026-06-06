@@ -16,7 +16,7 @@ import {
     useSelectedAccountAddress,
     useAccountBalancesQuery,
     useSortedAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { AccountMenuProps } from './AccountMenu'
 

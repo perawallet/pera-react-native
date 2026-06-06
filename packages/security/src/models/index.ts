@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { BaseStoreState, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type BaseStoreState,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 export type SecurityState = BaseStoreState & {
     failedAttempts: number

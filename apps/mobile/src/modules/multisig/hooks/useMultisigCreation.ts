@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import { Optional, registerStore } from '@perawallet/wallet-core-shared'
+import { type Optional, registerStore } from '@perawallet/wallet-core-shared'
 
 export type Participant = {
     address: string

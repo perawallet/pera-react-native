@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Network, Networks } from './models/network'
+import { type Network, Networks } from './models/network'
 import { config } from './main'
 
 export type NetworkConfig = {

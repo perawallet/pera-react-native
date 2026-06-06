@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import type { Dispatch, SetStateAction } from 'react'
+import {
+    useCallback,
+    useState,
+    type Dispatch,
+    type SetStateAction,
+} from 'react'
 
 type UseAddressSelectionOptions = {
     /** Addresses selected on first render. */

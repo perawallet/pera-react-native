@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
-    SendTransactionParams,
+    type SendTransactionParams,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import {

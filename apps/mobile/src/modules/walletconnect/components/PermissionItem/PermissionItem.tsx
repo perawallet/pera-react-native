@@ -25,14 +25,18 @@ export const PermissionItem = ({ permission }: PermissionItemProps) => {
 
     const getPermissionTitle = (permission: AlgorandPermission) => {
         switch (permission) {
-            case AlgorandPermission.TX_PERMISSION:
+            case AlgorandPermission.TX_PERMISSION: {
                 return t('walletconnect.request.permissions_sign_transaction')
-            case AlgorandPermission.DATA_PERMISSION:
+            }
+            case AlgorandPermission.DATA_PERMISSION: {
                 return t('walletconnect.request.permissions_sign_data')
-            case AlgorandPermission.ACCOUNT_PERMISSION:
+            }
+            case AlgorandPermission.ACCOUNT_PERMISSION: {
                 return t('walletconnect.request.permissions_request_accounts')
-            default:
+            }
+            default: {
                 return permission
+            }
         }
     }
     return (

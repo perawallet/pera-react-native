@@ -12,7 +12,7 @@
 
 import {
     encodeAlgorandAddress,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'

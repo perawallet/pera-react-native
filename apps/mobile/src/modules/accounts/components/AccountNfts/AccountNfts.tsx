@@ -30,7 +30,7 @@ import {
 import { NftEmptyState } from '../NftEmptyState'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
-import { CollectibleDisplayItem } from '@modules/assets/types/collectible'
+import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
 
 const GRID_COLUMNS = 2
 const SKELETON_COUNT = 6

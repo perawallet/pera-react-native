@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import {
     getAssetTransferType,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'

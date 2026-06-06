@@ -12,7 +12,7 @@
 
 import { useContext } from 'react'
 import { getContainerTestProps } from '@utils/test-id-helper'
-import { ScrollViewProps, StyleSheet } from 'react-native'
+import { type ScrollViewProps, StyleSheet } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'

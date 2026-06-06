@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**

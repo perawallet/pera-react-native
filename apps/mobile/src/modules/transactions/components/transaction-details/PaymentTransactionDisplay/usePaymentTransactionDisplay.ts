@@ -12,7 +12,7 @@
 
 import {
     microAlgosToAlgos,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { useStyles } from './styles'

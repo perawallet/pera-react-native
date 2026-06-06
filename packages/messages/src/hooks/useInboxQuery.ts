@@ -18,7 +18,7 @@ import {
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
-import { useQuery, UseQueryResult } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
 import { getInboxQueryKey } from './querykeys'

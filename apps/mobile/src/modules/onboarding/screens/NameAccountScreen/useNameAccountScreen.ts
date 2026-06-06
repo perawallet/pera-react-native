@@ -14,7 +14,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import {
     useAllAccounts,
     getAccountDisplayName,
-    WalletAccount,
+    type WalletAccount,
     useCreateAccount,
     useSelectedAccountAddress,
     isHDWalletAccount,
@@ -26,13 +26,13 @@ import {
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useRoute, RouteProp } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { OnboardingStackParamList } from '../../routes'
 import {
     useShouldPlayConfetti,
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
-import { Optional } from '@perawallet/wallet-core-shared'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,

@@ -35,13 +35,13 @@ describe('algokit-utils + MSW interception', () => {
         server.use(
             mockAlgodAccountInformation({
                 address: TEST_ADDR,
-                response: { amount: 12345678 },
+                response: { amount: 12_345_678 },
             }),
         )
 
         const client = getAlgorandClient('mainnet')
         const info = await client.client.algod.accountInformation(TEST_ADDR)
-        expect(Number(info.amount)).toBe(12345678)
+        expect(Number(info.amount)).toBe(12_345_678)
     })
 
     it('Given an MSW handler for transactionParams, when algokit fetches suggested params, then it returns the mocked round + fee', async () => {

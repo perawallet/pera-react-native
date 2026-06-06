@@ -15,12 +15,15 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
 import {
-    AccountBalanceHistoryItem,
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import {
+    type AccountBalanceHistoryItem,
     useAccountBalancesHistoryQuery,
     useAllAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
 export type WealthChartProps = {

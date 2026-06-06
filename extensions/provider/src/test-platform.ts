@@ -12,26 +12,26 @@
 
 import { Provider } from '@algorandfoundation/wallet-provider'
 import {
-    AnalyticsService,
-    AppIntegrityService,
-    BiometricsService,
-    CrashReportingService,
+    type AnalyticsService,
+    type AppIntegrityService,
+    type BiometricsService,
+    type CrashReportingService,
     createStubMigrationService,
-    DatabaseService,
-    DeviceInfoService,
+    type DatabaseService,
+    type DeviceInfoService,
     DevicePlatforms,
-    KeyValueStorageService,
+    type KeyValueStorageService,
     MemoryDatabaseService,
     MemoryKeyValueStorage,
-    MigrationService,
-    PlatformServices,
-    PushNotificationService,
-    RemoteConfigService,
+    type MigrationService,
+    type PlatformServices,
+    type PushNotificationService,
+    type RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { initializeProvider, resetProvider } from './singleton'
-import { PeraProvider } from './pera-provider'
+import { type PeraProvider } from './pera-provider'
 
 export type TestPlatformOverrides = Partial<{
     analytics: AnalyticsService

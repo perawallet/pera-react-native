@@ -11,7 +11,7 @@
  */
 
 import {
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'

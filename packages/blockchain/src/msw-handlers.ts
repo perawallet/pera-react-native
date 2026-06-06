@@ -77,7 +77,7 @@ export type AlgodAccountInformationResponse = {
 const DEFAULT_EMPTY_ACCOUNT: Omit<AlgodAccountInformationResponse, 'address'> =
     {
         amount: 0,
-        'min-balance': 100000,
+        'min-balance': 100_000,
         'amount-without-pending-rewards': 0,
         'pending-rewards': 0,
         rewards: 0,
