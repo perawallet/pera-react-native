@@ -52,8 +52,6 @@ export const AssetActionButtons = ({
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
 
-    if (isCollectible) return null
-
     const openReceiveFunds = useCallback(() => {
         void requestBottomSheet({
             contents: <ReceiveFundsContent account={account ?? undefined} />,
@@ -111,6 +109,8 @@ export const AssetActionButtons = ({
             })
         }
     }, [account, copyToClipboard, showToast, t])
+
+    if (isCollectible) return null
 
     if (isReadOnly) {
         return (

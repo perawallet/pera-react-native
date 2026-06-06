@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import type { PWFlatListRef } from '@components/core'
+import {
+    PWButton,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    type PWFlatListRef,
+} from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 

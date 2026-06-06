@@ -11,6 +11,9 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+// PermissionsAndroid is Android-only by design and is always guarded by
+// Platform.OS checks below, so a platform-specific file split is unnecessary.
+// eslint-disable-next-line react-native/split-platform-components
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native'
 
 type UseBlePermissionsResult = {

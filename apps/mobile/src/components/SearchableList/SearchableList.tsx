@@ -14,8 +14,12 @@ import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
 import { Pressable } from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
-import { PWFlatList, PWView } from '@components/core'
-import type { PWFlatListProps, PWFlatListRef } from '@components/core'
+import {
+    PWFlatList,
+    PWView,
+    type PWFlatListProps,
+    type PWFlatListRef,
+} from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import {
     isHeaderSentinel,

@@ -16,14 +16,13 @@ import {
     isRekeyedAccount,
     useCanSignWith,
     useRekeyTransition,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     getRekeyLabelI18n,
     splitAccountTypeLabel,
 } from '@modules/accounts/utils/rekeyLabels'
-
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 export type AccountTypeLabel = {
     /** Full single-line label, e.g. "Rekeyed (Standard to Ledger)". */
