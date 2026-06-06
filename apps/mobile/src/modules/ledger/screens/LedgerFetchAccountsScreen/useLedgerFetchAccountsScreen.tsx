@@ -16,8 +16,8 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { LedgerConnectionStatus } from '@perawallet/wallet-core-ledger'
 import {
+    type LedgerConnectionStatus,
     connectAndDiscoverAccounts,
     LedgerNoAccountsFoundError,
     LedgerProviderNotFoundError,

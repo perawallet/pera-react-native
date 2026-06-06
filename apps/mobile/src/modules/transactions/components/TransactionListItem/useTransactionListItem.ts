@@ -21,14 +21,13 @@ import {
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
-import { formatNumber } from '@perawallet/wallet-core-shared'
+import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
 
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type TFunction = ReturnType<typeof useLanguage>['t']
 

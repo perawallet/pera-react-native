@@ -18,8 +18,8 @@ import {
     PWText,
     PWTouchableOpacity,
     PWView,
+    type PWFlatListRef,
 } from '@components/core'
-import type { PWFlatListRef } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'

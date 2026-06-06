@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import { createElement } from 'react'
+import { createElement, type ReactNode } from 'react'
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import { usePWScreenInsets } from '../usePWScreenInsets'
-
-import type { ReactNode } from 'react'
 
 describe('usePWScreenInsets', () => {
     beforeEach(() => {

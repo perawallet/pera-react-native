@@ -19,8 +19,8 @@ import {
     PWText,
     PWTouchableOpacity,
     PWView,
+    type PWFlatListRef,
 } from '@components/core'
-import type { PWFlatListRef } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'

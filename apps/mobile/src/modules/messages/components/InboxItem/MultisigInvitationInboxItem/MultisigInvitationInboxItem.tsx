@@ -12,8 +12,10 @@
 
 import { Trans } from 'react-i18next'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { formatRelativeTime } from '@perawallet/wallet-core-shared'
+import {
+    truncateAlgorandAddress,
+    formatRelativeTime,
+} from '@perawallet/wallet-core-shared'
 import {
     PWIcon,
     PWText,

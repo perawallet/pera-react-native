@@ -39,6 +39,10 @@ import {
     AccountTypes,
     useAccountsStore,
     type WalletAccount,
+    getAccountHoldings,
+    insertAssetHolding,
+    upsertAccountBalance,
+    type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import {
@@ -48,12 +52,6 @@ import {
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    getAccountHoldings,
-    insertAssetHolding,
-    upsertAccountBalance,
-    type AssetWithAccountBalance,
-} from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
 import {
     mockAlgodAccountInformation,

@@ -50,8 +50,7 @@ import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebViewStore } from '../../hooks'
-import type { WebViewFavorite } from '../../hooks'
+import { useWebViewStore, type WebViewFavorite } from '../../hooks'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type PWWebViewProps = {

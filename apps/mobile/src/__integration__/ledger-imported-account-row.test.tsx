@@ -33,8 +33,8 @@ import {
 import {
     AccountTypes,
     useAccountsStore,
+    type HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,

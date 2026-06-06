@@ -11,19 +11,22 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import {
+    useNavigation,
+    useRoute,
+    type ParamListBase,
+    type RouteProp,
+} from '@react-navigation/native'
 import {
     DuplicateAddressError,
     useContacts,
+    type Contact,
 } from '@perawallet/wallet-core-contacts'
 
 import { useLanguage } from '@hooks/useLanguage'
-import { useContactForm } from './useContactForm'
+import { useContactForm, type UseContactFormResult } from './useContactForm'
 
-import type { ParamListBase, RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { Contact } from '@perawallet/wallet-core-contacts'
-import type { UseContactFormResult } from './useContactForm'
 import type { ContactsStackParamsList } from '@modules/contacts/routes'
 
 export type UseAddContactFormResult = UseContactFormResult & {

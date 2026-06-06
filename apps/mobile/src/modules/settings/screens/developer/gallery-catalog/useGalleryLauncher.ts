@@ -11,13 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, type ParamListBase } from '@react-navigation/native'
 
 import { useBottomSheet } from '@modules/bottom-sheet'
 
 import type { GalleryEntry } from './types'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { ParamListBase } from '@react-navigation/native'
 
 type UseGalleryLauncherResult = {
     launch: (entry: GalleryEntry) => void

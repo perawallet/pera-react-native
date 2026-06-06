@@ -14,11 +14,13 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { AccountPicker } from '@modules/accounts/components/AccountPicker'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
 
 export const AccountSelectionScreen = () => {

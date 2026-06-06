@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { PWBadge, PWButton, PWText, PWView } from '@components/core'
-import type { PWBadgeProps } from '@components/core'
+import {
+    PWBadge,
+    PWButton,
+    PWText,
+    PWView,
+    type PWBadgeProps,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsDeveloperAppIntegrity } from './useSettingsDeveloperAppIntegrity'
 import { useStyles } from './styles'

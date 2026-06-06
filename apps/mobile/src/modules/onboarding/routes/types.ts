@@ -15,8 +15,8 @@ import {
     type HDWalletAccount,
     type ImportAccountType,
     type DerivationType,
+    type LedgerSelectableAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { LedgerSelectableAccount } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import type { Optional } from '@perawallet/wallet-core-shared'

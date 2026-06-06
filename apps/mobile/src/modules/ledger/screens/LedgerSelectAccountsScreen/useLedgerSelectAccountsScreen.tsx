@@ -20,8 +20,8 @@ import {
     useLedgerRekeyedScan,
     type LedgerSelectableAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import {
+    type LedgerAccount,
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'

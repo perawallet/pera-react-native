@@ -14,8 +14,10 @@ import { useCallback, useMemo } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import type { PWResultViewVariant } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAsbImportFlowStore } from '@modules/onboarding/hooks'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import {
+    useAsbImportFlowStore,
+    useExitAccountFlow,
+} from '@modules/onboarding/hooks'
 import type { OnboardingStackParamList } from '../../routes/types'
 
 type UseAsbImportResultScreenResult = {

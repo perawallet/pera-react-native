@@ -11,21 +11,22 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import {
+    useForm,
+    type Control,
+    type FieldErrors,
+    type UseFormHandleSubmit,
+    type UseFormSetError,
+} from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { contactSchema } from '@perawallet/wallet-core-contacts'
+import { contactSchema, type Contact } from '@perawallet/wallet-core-contacts'
 
-import { useImagePicker } from '@hooks/useImagePicker'
+import {
+    useImagePicker,
+    type PermissionDeniedState,
+} from '@hooks/useImagePicker'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 
-import type {
-    Control,
-    FieldErrors,
-    UseFormHandleSubmit,
-    UseFormSetError,
-} from 'react-hook-form'
-import type { Contact } from '@perawallet/wallet-core-contacts'
-import type { PermissionDeniedState } from '@hooks/useImagePicker'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
 export type NfdState = {
