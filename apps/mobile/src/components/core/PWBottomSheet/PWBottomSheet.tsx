@@ -129,7 +129,11 @@ export const PWBottomSheet = ({
 
     const renderBackground = useCallback(
         ({ style, pointerEvents }: BottomSheetBackgroundProps) => (
-            <View accessible={false} pointerEvents={pointerEvents} style={style} />
+            <View
+                accessible={false}
+                pointerEvents={pointerEvents}
+                style={style}
+            />
         ),
         [],
     )
