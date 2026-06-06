@@ -114,7 +114,10 @@ export const AppVersion = ({ enableSecretTaps }: AppVersionProps) => {
     }
 
     return (
-        <Pressable onPress={handlePress}>
+        <Pressable
+            onPress={handlePress}
+            testID='settings_app_version'
+        >
             <Version />
         </Pressable>
     )
