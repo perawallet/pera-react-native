@@ -32,9 +32,15 @@ import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 export type WealthTrendProps = {
     account?: WalletAccount
     period: HistoryPeriod
+    /** Gate the (slow) history fetch on chart visibility. */
+    enabled?: boolean
 }
 
-export const WealthTrend = ({ account, period }: WealthTrendProps) => {
+export const WealthTrend = ({
+    account,
+    period,
+    enabled = true,
+}: WealthTrendProps) => {
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
@@ -50,6 +56,7 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const { data, isPending } = useAccountBalancesHistoryQuery(
         addresses,
         period,
+        enabled,
     )
 
     const dataPoints = useMemo(

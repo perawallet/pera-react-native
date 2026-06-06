@@ -60,3 +60,4 @@ export {
 } from './querykeys'
 export * from './useAccountSummaryQuery'
 export * from './useAccountAssetsInfiniteQuery'
+export * from './useEnsureAccountEnriched'

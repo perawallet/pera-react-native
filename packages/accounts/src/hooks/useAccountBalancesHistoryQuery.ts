@@ -41,6 +41,7 @@ const mapAccountBalanceHistoryItem = (
 export const useAccountBalancesHistoryQuery = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
+    enabled = true,
 ) => {
     const { usdToPreferred } = useCurrency()
     const { network } = useNetwork()
@@ -51,6 +52,9 @@ export const useAccountBalancesHistoryQuery = (
     )
     const query = useQuery({
         queryKey,
+        // Gated by callers on chart visibility — this hits a slow network
+        // endpoint and is only needed to render the wealth chart/trend.
+        enabled: enabled && addresses.length > 0,
         queryFn: () => fetchAccountsBalanceHistory(addresses, period, network),
         select: useCallback(
             (data: AccountBalanceHistoryResponse) =>

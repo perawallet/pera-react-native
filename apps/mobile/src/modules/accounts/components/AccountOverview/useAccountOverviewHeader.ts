@@ -27,6 +27,8 @@ import { useAccountOverviewModal } from './AccountOverviewModalContext'
 export type UseAccountOverviewHeaderResult = {
     portfolioAlgoValue: Decimal
     portfolioPreferredValue: Decimal
+    /** False while held assets are still enriching — the total is still settling. */
+    isBalanceComplete: boolean
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
@@ -45,8 +47,13 @@ export const useAccountOverviewHeader = (
     const { usdToPreferred } = useCurrency()
     const canSign = useCanSignWith(account)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
-    const { portfolioAlgoValue, portfolioUsdValue, holdingsCount, isPending } =
-        useAccountSummaryQuery(account?.address)
+    const {
+        portfolioAlgoValue,
+        portfolioUsdValue,
+        holdingsCount,
+        isComplete,
+        isPending,
+    } = useAccountSummaryQuery(account?.address)
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
         [usdToPreferred, portfolioUsdValue],
@@ -73,6 +80,7 @@ export const useAccountOverviewHeader = (
     return {
         portfolioAlgoValue,
         portfolioPreferredValue,
+        isBalanceComplete: isComplete,
         isPending,
         period,
         setPeriod,

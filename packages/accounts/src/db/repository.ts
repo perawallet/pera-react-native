@@ -325,6 +325,12 @@ export type AccountPortfolioTotals = {
     nonAlgoUsdValue: Decimal
     /** Number of holdings rows (includes the ALGO holding). */
     holdingsCount: number
+    /**
+     * Held non-ALGO assets whose metadata hasn't synced yet. While > 0 the
+     * asset enrichment pass is still in flight, so the total is still settling
+     * — the header shows a spinner next to the balance.
+     */
+    missingMetadataCount: number
 }
 
 /**
@@ -359,6 +365,11 @@ export async function getAccountPortfolioTotals({
                     ELSE 0 END
             ), 0)`,
             count: sql<number>`COUNT(*)`,
+            missingMetadata: sql<number>`COALESCE(SUM(
+                CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> '0'
+                    AND ${AssetsNodeSchema.decimals} IS NULL
+                    THEN 1 ELSE 0 END
+            ), 0)`,
         })
         .from(AccountAssetHoldingsSchema)
         .leftJoin(AssetsNodeSchema, join(AssetsNodeSchema))
@@ -376,6 +387,7 @@ export async function getAccountPortfolioTotals({
         algoAmount: new Decimal(row?.algoAmount ?? 0),
         nonAlgoUsdValue: new Decimal(row?.nonAlgoUsd ?? 0),
         holdingsCount: row?.count ?? 0,
+        missingMetadataCount: row?.missingMetadata ?? 0,
     }
 }
 

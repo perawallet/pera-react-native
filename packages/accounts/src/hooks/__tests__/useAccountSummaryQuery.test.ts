@@ -59,6 +59,7 @@ describe('useAccountSummaryQuery', () => {
             algoAmount: new Decimal(10),
             nonAlgoUsdValue: new Decimal(80),
             holdingsCount: 5,
+            missingMetadataCount: 0,
         })
 
         const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
@@ -71,6 +72,23 @@ describe('useAccountSummaryQuery', () => {
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(100))
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(50))
         expect(result.current.holdingsCount).toBe(5)
+        expect(result.current.isComplete).toBe(true)
+    })
+
+    it('is incomplete while held assets are still missing metadata', async () => {
+        mockGetAccountPortfolioTotals.mockResolvedValue({
+            algoAmount: new Decimal(10),
+            nonAlgoUsdValue: new Decimal(0),
+            holdingsCount: 50,
+            missingMetadataCount: 12,
+        })
+
+        const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
+            wrapper: wrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.isComplete).toBe(false)
     })
 
     it('is disabled (no query) without an address', () => {

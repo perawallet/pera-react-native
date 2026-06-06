@@ -830,6 +830,31 @@ describe('account repository', () => {
             expect(totals.algoAmount.toNumber()).toBeCloseTo(5, 6)
             // Non-ALGO: 100→2*$1=2, 200→1*$3=3, 300→0 ⇒ 5 USD.
             expect(totals.nonAlgoUsdValue.toNumber()).toBeCloseTo(5, 6)
+            // All four assets have metadata.
+            expect(totals.missingMetadataCount).toBe(0)
+        })
+
+        it('counts held assets still missing metadata', async () => {
+            // Add a holding with no asset row (metadata not synced yet).
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '0', amount: new Decimal(5_000_000) },
+                    { assetId: '100', amount: new Decimal(2_000_000) },
+                    { assetId: '200', amount: new Decimal(1_000_000) },
+                    { assetId: '300', amount: new Decimal(0) },
+                    { assetId: '999', amount: new Decimal(10) },
+                ],
+            })
+
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(totals.missingMetadataCount).toBe(1)
         })
 
         const pageIds = async (

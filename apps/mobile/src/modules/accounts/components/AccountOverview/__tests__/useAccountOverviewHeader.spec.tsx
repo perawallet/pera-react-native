@@ -36,6 +36,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             portfolioAlgoValue: new Decimal('100'),
             portfolioUsdValue: new Decimal('200'),
             holdingsCount: 3,
+            isComplete: true,
             isPending: false,
             isError: false,
         })),
@@ -139,6 +140,7 @@ describe('useAccountOverviewHeader', () => {
             portfolioAlgoValue: new Decimal('0'),
             portfolioUsdValue: new Decimal('0'),
             holdingsCount: 0,
+            isComplete: false,
             isPending: false,
             isError: false,
         })
@@ -157,7 +159,8 @@ describe('useAccountOverviewHeader', () => {
         vi.mocked(useAccountSummaryQuery).mockReturnValue({
             portfolioAlgoValue: new Decimal('0'),
             portfolioUsdValue: new Decimal('0'),
-            holdingsCount: 1, // just the ALGO holding, 0 balance
+            holdingsCount: 1,
+            isComplete: false, // just the ALGO holding, 0 balance
             isPending: false,
             isError: false,
         })

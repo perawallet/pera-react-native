@@ -26,6 +26,11 @@ export type UseAccountSummaryResult = {
     portfolioAlgoValue: Decimal
     /** Number of holdings (includes the ALGO holding). */
     holdingsCount: number
+    /**
+     * False while held assets are still being enriched (metadata syncing), so
+     * the displayed total is still settling — drives the header's balance spinner.
+     */
+    isComplete: boolean
     isPending: boolean
     isError: boolean
 }
@@ -80,6 +85,10 @@ export const useAccountSummaryQuery = (
             portfolioUsdValue,
             portfolioAlgoValue,
             holdingsCount: query.data?.holdingsCount ?? 0,
+            // Complete once we have data and no held asset is still missing
+            // its metadata (the enrichment pass has caught up).
+            isComplete:
+                !!query.data && (query.data.missingMetadataCount ?? 0) === 0,
             isPending: query.isPending,
             isError: query.isError,
         }
