@@ -13,6 +13,7 @@
     "**/src/test-utils/**",
     "**/*.generated.ts"
   ],
+  "plugins": ["typescript", "unicorn", "react", "import"],
   "jsPlugins": ["eslint-plugin-unused-imports", "eslint-plugin-react-native"],
   "globals": {
     "__DEV__": "readonly",
@@ -47,7 +48,7 @@
     "no-unused-vars": "off",
     "prefer-const": "error",
     "no-var": "error",
-    "no-duplicate-imports": "error",
+    "import/no-duplicates": ["error", { "prefer-inline": true }],
     "unused-imports/no-unused-imports": "error",
     "max-lines": [
       "warn",

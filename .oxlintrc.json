@@ -110,7 +110,12 @@
     "@typescript-eslint/prefer-as-const": "error",
     "@typescript-eslint/prefer-namespace-keyword": "error",
     "@typescript-eslint/triple-slash-reference": "error",
-    "unused-imports/no-unused-imports": "error"
+    "unused-imports/no-unused-imports": "error",
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "@typescript-eslint/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports" }],
+    "unicorn/no-useless-undefined": "error",
+    "unicorn/switch-case-braces": "error",
+    "unicorn/numeric-separators-style": "error"
   },
   "overrides": [
     {
