@@ -207,7 +207,11 @@ const SearchableListInner = <T,>(
                         >
                             <PWView
                                 pointerEvents='none'
-                                style={showOverlay && styles.searchOverlayHidden}
+                                style={
+                                    showOverlay
+                                        ? styles.searchOverlayHidden
+                                        : undefined
+                                }
                             >
                                 <SearchInputComponent
                                     value={currentValue}
