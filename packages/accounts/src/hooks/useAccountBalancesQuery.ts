@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
     logger,
+    pow10,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -34,19 +35,6 @@ import {
     type AccountHoldingsPageRow,
 } from '../db'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
-
-// 10^decimals is reused per holding when scaling base units to display units;
-// for a large account that's thousands of Decimal.pow() calls per recompute,
-// and decimals repeat heavily (most assets use 6), so cache them.
-const POW10_CACHE = new Map<number, Decimal>()
-const pow10 = (decimals: number): Decimal => {
-    let value = POW10_CACHE.get(decimals)
-    if (!value) {
-        value = new Decimal(10).pow(decimals)
-        POW10_CACHE.set(decimals, value)
-    }
-    return value
-}
 
 type AccountDbSnapshot = {
     holdings: AccountHoldingsPageRow[]

@@ -11,7 +11,6 @@
  */
 
 import React, { useMemo } from 'react'
-import { Decimal } from 'decimal.js'
 import { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PWView } from '@components/core'
@@ -20,6 +19,7 @@ import {
     assetFromHoldingLiteRow,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
+import { pow10 } from '@perawallet/wallet-core-shared'
 import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
 import { CollectibleListItem } from '@modules/assets/components/CollectibleListItem'
 import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
@@ -32,17 +32,6 @@ export type AssetListItemViewProps = {
     convertFiat: AssetFiatConverter
     onPress?: (event: GestureResponderEvent) => void
     style?: StyleProp<ViewStyle>
-}
-
-// 10^decimals reused across the handful of visible rows.
-const POW10_CACHE = new Map<number, Decimal>()
-const pow10 = (decimals: number): Decimal => {
-    let value = POW10_CACHE.get(decimals)
-    if (!value) {
-        value = new Decimal(10).pow(decimals)
-        POW10_CACHE.set(decimals, value)
-    }
-    return value
 }
 
 /**

@@ -64,4 +64,21 @@ export const toDecimal = (
     return new Decimal(value)
 }
 
+const POW10_CACHE = new Map<number, Decimal>()
+
+/**
+ * Returns `10^decimals` as a `Decimal`, memoized. Scaling base units to display
+ * units (`amount.div(pow10(decimals))`) happens for every holding, and decimals
+ * repeat heavily across assets (most use 6), so caching avoids recomputing
+ * `Decimal.pow()` thousands of times when materializing a large account.
+ */
+export const pow10 = (decimals: number): Decimal => {
+    let value = POW10_CACHE.get(decimals)
+    if (!value) {
+        value = new Decimal(10).pow(decimals)
+        POW10_CACHE.set(decimals, value)
+    }
+    return value
+}
+
 export { Decimal }
