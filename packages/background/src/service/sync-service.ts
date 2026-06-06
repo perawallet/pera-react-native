@@ -14,6 +14,7 @@ import {
     useAccountsStore,
     getAllAssetIdsForNetwork,
     invalidateAccountQueries,
+    invalidateAccountQueriesForAddresses,
     fetchAndPersistAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -43,13 +44,56 @@ const POLL_INTERVAL = 3000
 const MAX_BACKOFF_INTERVAL = 30000
 const BACKOFF_MULTIPLIER = 2
 
+// Asset metadata has a long TTL and only new assets need fetching — and new
+// assets only appear when holdings change (handled immediately). This interval
+// is just a safety net to re-run the staleness check periodically; the
+// per-tick whole-portfolio reads are otherwise skipped.
+const ASSET_RESYNC_INTERVAL_MS = 10 * 60 * 1000
+// Prices move, so refresh periodically even when holdings are unchanged. The
+// re-price still walks all held ids (a follow-up will narrow this to assets
+// that already carry a price via a join-based staleness check), so keep the
+// cadence modest rather than per-tick.
+const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
+
 export class SyncService {
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
     private hasCompletedInitialSync = false
     private currentInterval = POLL_INTERVAL
+    // Per-network timestamps of the last asset-metadata / price passes, so the
+    // expensive whole-portfolio reads only run when holdings changed or the
+    // coarse interval elapsed — not on every poll tick.
+    private lastAssetSyncAt = new Map<Network, number>()
+    private lastPriceSyncAt = new Map<Network, number>()
+    // Coalesce query invalidations. invalidateAccountQueries fans out to every
+    // mounted balance/summary/list query (a wide read each), so firing it
+    // repeatedly in quick succession (back-to-back phases, rapid ticks) stacks
+    // up redundant full re-reads on the single DB connection. A short trailing
+    // debounce collapses bursts into one refetch pass.
+    private invalidateTimers = new Map<string, ReturnType<typeof setTimeout>>()
+    // Guards against overlapping syncs. The poll loop self-reschedules (next
+    // tick only after the current completes), but restart()/manual triggers
+    // could otherwise start a second syncAll while a long fresh-import sync is
+    // still running — stacking concurrent work on the DB.
+    private syncInProgress = false
 
     constructor(private readonly deps: SyncServiceDeps) {}
+
+    private debouncedInvalidate(
+        key: string,
+        run: () => void,
+        delayMs = 250,
+    ): void {
+        const existing = this.invalidateTimers.get(key)
+        if (existing) clearTimeout(existing)
+        this.invalidateTimers.set(
+            key,
+            setTimeout(() => {
+                this.invalidateTimers.delete(key)
+                run()
+            }, delayMs),
+        )
+    }
 
     start(): void {
         if (this.running) return
@@ -63,6 +107,8 @@ export class SyncService {
             clearTimeout(this.timer)
             this.timer = null
         }
+        this.invalidateTimers.forEach(t => clearTimeout(t))
+        this.invalidateTimers.clear()
     }
 
     restart(): void {
@@ -77,6 +123,12 @@ export class SyncService {
     }
 
     private async tick(): Promise<void> {
+        // A sync is already running (e.g. a long fresh-import sync that outlived
+        // its tick, or an overlapping restart). Skip — the in-progress tick's
+        // finally reschedules, so the loop is preserved without stacking.
+        if (this.syncInProgress) return
+        this.syncInProgress = true
+
         try {
             const activeNetwork = useNetworkStore.getState().network
             let networksToSync: Network[]
@@ -104,6 +156,7 @@ export class SyncService {
                 MAX_BACKOFF_INTERVAL,
             )
         } finally {
+            this.syncInProgress = false
             this.scheduleNextTick()
         }
     }
@@ -164,35 +217,103 @@ export class SyncService {
             if (this.hasRateLimitFailure(accountResults)) {
                 hasRateLimitError = true
             }
-            // Invalidate immediately so balances and holdings are visible
-            // before asset metadata and transactions finish loading.
-            invalidateAccountQueries(this.deps.queryClient)
 
-            // 2. Collect all unique asset IDs from DB holdings
-            const assetIds = await getAllAssetIdsForNetwork({ network })
-
-            // 3. Sync asset metadata and prices in parallel
-            // Prices are always fetched from mainnet (inside fetchAndPersistPrices)
-            // but stored under the active network so DB JOINs work correctly
-            const assetResults = await Promise.allSettled([
-                fetchAndPersistAssets(assetIds, network),
-                fetchAndPersistPrices(assetIds, network),
-            ])
-            this.logFailures(
-                'asset-metadata-or-prices',
-                assetResults,
-                network,
-                i => (i === 0 ? 'assets' : 'prices'),
+            // Only invalidate the accounts whose balance/holdings actually
+            // changed — invalidation forces a wide DB re-read per account, so
+            // skipping unchanged accounts (the common tick) avoids redundant
+            // reads on the single connection.
+            const changedAddresses = accounts
+                .map((a, i) => {
+                    const r = accountResults[i]
+                    return r.status === 'fulfilled' && r.value?.changed
+                        ? a.address
+                        : null
+                })
+                .filter((address): address is string => address !== null)
+            const anyHoldingsChanged = accountResults.some(
+                r => r.status === 'fulfilled' && r.value?.holdingsChanged,
             )
-            if (this.hasRateLimitFailure(assetResults)) {
-                hasRateLimitError = true
+            if (changedAddresses.length > 0) {
+                this.debouncedInvalidate('accounts', () =>
+                    invalidateAccountQueriesForAddresses(
+                        this.deps.queryClient,
+                        changedAddresses,
+                    ),
+                )
             }
-            // Invalidate so asset rows and prices appear as soon as metadata
-            // is ready, without waiting for transactions. Skip when every
-            // batch was rejected — invalidation forces a re-read from DB
-            // with no new data to surface.
-            if (assetResults.some(r => r.status === 'fulfilled')) {
-                invalidateAssetQueries(this.deps.queryClient)
+
+            // 2. Asset metadata + prices. The whole-portfolio reads are
+            // expensive for large accounts, so only run them when holdings
+            // changed (new assets may need fetching / re-pricing) or the coarse
+            // per-pass interval has elapsed — not on every poll tick.
+            const nowMs = Date.now()
+            const syncAssets =
+                anyHoldingsChanged ||
+                nowMs - (this.lastAssetSyncAt.get(network) ?? 0) >=
+                    ASSET_RESYNC_INTERVAL_MS
+            const syncPrices =
+                anyHoldingsChanged ||
+                nowMs - (this.lastPriceSyncAt.get(network) ?? 0) >=
+                    PRICE_RESYNC_INTERVAL_MS
+
+            if (syncAssets || syncPrices) {
+                // Prices are always fetched from mainnet (inside
+                // fetchAndPersistPrices) but stored under the active network so
+                // DB JOINs line up.
+                const assetIds = await getAllAssetIdsForNetwork({ network })
+                const tasks: Array<{
+                    kind: 'assets' | 'prices'
+                    run: () => Promise<void>
+                }> = []
+                if (syncAssets) {
+                    tasks.push({
+                        kind: 'assets',
+                        run: () => fetchAndPersistAssets(assetIds, network),
+                    })
+                }
+                if (syncPrices) {
+                    tasks.push({
+                        kind: 'prices',
+                        run: () => fetchAndPersistPrices(assetIds, network),
+                    })
+                }
+
+                const assetResults = await Promise.allSettled(
+                    tasks.map(t => t.run()),
+                )
+                this.logFailures(
+                    'asset-metadata-or-prices',
+                    assetResults,
+                    network,
+                    i => tasks[i]?.kind,
+                )
+                if (this.hasRateLimitFailure(assetResults)) {
+                    hasRateLimitError = true
+                }
+                // Record each pass as done only on success, so a failed pass
+                // retries next tick instead of waiting out the interval.
+                assetResults.forEach((r, i) => {
+                    if (r.status !== 'fulfilled') return
+                    if (tasks[i].kind === 'assets') {
+                        this.lastAssetSyncAt.set(network, nowMs)
+                    } else {
+                        this.lastPriceSyncAt.set(network, nowMs)
+                    }
+                })
+                // Invalidate so asset rows and prices appear as soon as metadata
+                // is ready. Skip when every batch was rejected. Account queries
+                // are invalidated too: the balance/holdings read joins in asset
+                // metadata + price, so it must refetch when those change — and
+                // any account may hold the newly-synced assets, so this one is
+                // necessarily broad.
+                if (assetResults.some(r => r.status === 'fulfilled')) {
+                    this.debouncedInvalidate('assets', () =>
+                        invalidateAssetQueries(this.deps.queryClient),
+                    )
+                    this.debouncedInvalidate('accounts-assets', () =>
+                        invalidateAccountQueries(this.deps.queryClient),
+                    )
+                }
             }
 
             // 4. Sync recent transactions for each account
@@ -214,7 +335,9 @@ export class SyncService {
             // Skip when every account's fetch was rejected — invalidation
             // forces a re-read from DB with no new data to surface.
             if (txResults.some(r => r.status === 'fulfilled')) {
-                invalidateTransactionQueries(this.deps.queryClient)
+                this.debouncedInvalidate('transactions', () =>
+                    invalidateTransactionQueries(this.deps.queryClient),
+                )
             }
         }
 

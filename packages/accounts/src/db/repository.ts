@@ -10,12 +10,26 @@
  limitations under the License
  */
 
-import { eq, and, inArray, notInArray, ne, or, isNull } from 'drizzle-orm'
+import { eq, and, inArray, notInArray, ne, or, isNull, like, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
+import {
+    AssetsNodeSchema,
+    AssetsPeraSchema,
+    AssetPricesSchema,
+    PeraAssetType,
+    peraAssetFromColumns,
+    type PeraAsset,
+    type AssetSortMode,
+} from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
+import { partition } from '@perawallet/wallet-core-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+
+// Max rows per multi-row INSERT/DELETE statement. Each statement is one
+// round-trip through the async sqlite-proxy bridge, so batching is far faster
+// than per-row writes. Kept well under SQLite's bound-parameter limit.
+const HOLDINGS_WRITE_CHUNK_SIZE = 200
 
 export type HoldingRow = {
     assetId: string
@@ -34,36 +48,108 @@ type UpsertAccountHoldingsParams = {
     network: string
 }
 
+/**
+ * Diffs incoming holdings against what's persisted and writes only the delta.
+ * Returns `true` if anything was written (added/changed/removed), `false` if
+ * the account's holdings were already up to date — letting the sync service
+ * skip downstream work when nothing changed.
+ *
+ * Replaces the previous delete-all + per-row-insert loop, which for a large
+ * account meant thousands of serialized round-trips through the single SQLite
+ * connection on every sync tick. The diff means an unchanged account does zero
+ * writes, and a changed one only writes the rows that actually changed —
+ * batched into multi-row statements.
+ */
 export async function refreshAccountHoldings({
     db = getDatabase(),
     accountAddress,
     holdings,
     network,
-}: UpsertAccountHoldingsParams): Promise<void> {
+}: UpsertAccountHoldingsParams): Promise<boolean> {
     const now = Date.now()
 
-    await db
-        .delete(AccountAssetHoldingsSchema)
+    const existingRows = await db
+        .select({
+            assetId: AccountAssetHoldingsSchema.assetId,
+            amount: AccountAssetHoldingsSchema.amount,
+        })
+        .from(AccountAssetHoldingsSchema)
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
                 eq(AccountAssetHoldingsSchema.network, network),
             ),
         )
-        .run()
+        .all()
 
-    for (const holding of holdings) {
-        await db
-            .insert(AccountAssetHoldingsSchema)
-            .values({
-                accountAddress,
-                assetId: new Decimal(holding.assetId),
-                network,
-                amount: holding.amount,
-                updatedAt: now,
-            })
-            .run()
+    const existingAmounts = new Map<string, Decimal>(
+        existingRows.map(r => [r.assetId.toString(), r.amount]),
+    )
+    const incomingIds = new Set(holdings.map(h => h.assetId))
+
+    // Compare canonical string forms — robust whether the incoming amount is a
+    // Decimal (production) or another numeric type (some tests), and the DB
+    // value always round-trips through Decimal#toString.
+    const changed = holdings.filter(h => {
+        const prev = existingAmounts.get(h.assetId)
+        return prev === undefined || prev.toString() !== String(h.amount)
+    })
+    const removed = [...existingAmounts.keys()].filter(
+        id => !incomingIds.has(id),
+    )
+
+    if (changed.length === 0 && removed.length === 0) return false
+
+    if (removed.length > 0) {
+        const removedDecimals = removed.map(id => new Decimal(id))
+        for (const chunk of partition(
+            removedDecimals,
+            HOLDINGS_WRITE_CHUNK_SIZE,
+        )) {
+            await db
+                .delete(AccountAssetHoldingsSchema)
+                .where(
+                    and(
+                        eq(
+                            AccountAssetHoldingsSchema.accountAddress,
+                            accountAddress,
+                        ),
+                        eq(AccountAssetHoldingsSchema.network, network),
+                        inArray(AccountAssetHoldingsSchema.assetId, chunk),
+                    ),
+                )
+                .run()
+        }
     }
+
+    if (changed.length > 0) {
+        const rows = changed.map(h => ({
+            accountAddress,
+            assetId: new Decimal(h.assetId),
+            network,
+            amount: h.amount,
+            updatedAt: now,
+        }))
+        for (const chunk of partition(rows, HOLDINGS_WRITE_CHUNK_SIZE)) {
+            await db
+                .insert(AccountAssetHoldingsSchema)
+                .values(chunk)
+                .onConflictDoUpdate({
+                    target: [
+                        AccountAssetHoldingsSchema.accountAddress,
+                        AccountAssetHoldingsSchema.assetId,
+                        AccountAssetHoldingsSchema.network,
+                    ],
+                    set: {
+                        amount: sql`excluded.amount`,
+                        updatedAt: sql`excluded.updated_at`,
+                    },
+                })
+                .run()
+        }
+    }
+
+    return true
 }
 
 type InsertAssetHoldingParams = {
@@ -210,6 +296,238 @@ export async function getAccountHoldings({
     return rows.map(r => ({
         assetId: r.assetId.toString(),
         amount: r.amount,
+    }))
+}
+
+// ---------------------------------------------------------------------------
+// Home-screen reads: a lite portfolio-total aggregate and a sorted/paginated
+// holdings page. Both join on the indexed accountAddress (no `WHERE assetId IN
+// (…)` list) and let SQLite do the summing / sorting / windowing, so the JS
+// thread only ever materializes the rows actually on screen. ALGO participates
+// like any holding (stored in microalgos with 6 decimals), so there's no
+// synthetic-row union or per-row special-casing here.
+// ---------------------------------------------------------------------------
+
+const join = (table: typeof AssetsNodeSchema | typeof AssetsPeraSchema | typeof AssetPricesSchema) =>
+    and(
+        eq(AccountAssetHoldingsSchema.assetId, table.assetId),
+        eq(AccountAssetHoldingsSchema.network, table.network),
+    )
+
+export type AccountPortfolioTotals = {
+    /** Total USD value across all holdings (incl. ALGO); 0 when nothing priced. */
+    totalUsdValue: Decimal
+    /** Number of holdings rows (includes the ALGO holding). */
+    holdingsCount: number
+}
+
+/**
+ * Single-aggregate portfolio total. The per-row value uses a portable
+ * `10^decimals` scale (`CAST('1e' || decimals AS REAL)`) so it doesn't depend
+ * on SQLite math functions (`pow`) being compiled into the runtime. The SUM is
+ * REAL (double) — ample for a displayed total — and wrapped back into Decimal
+ * for the app's money convention. Rows without a price contribute NULL, which
+ * SQL `SUM` ignores.
+ */
+export async function getAccountPortfolioTotals({
+    db = getDatabase(),
+    accountAddress,
+    network,
+}: {
+    db?: Database
+    accountAddress: string
+    network: string
+}): Promise<AccountPortfolioTotals> {
+    const rows = await db
+        .select({
+            totalUsd: sql<Nullable<number>>`SUM(
+                CAST(${AccountAssetHoldingsSchema.amount} AS REAL)
+                / CAST('1e' || COALESCE(${AssetsNodeSchema.decimals}, 0) AS REAL)
+                * CAST(${AssetPricesSchema.usdPrice} AS REAL)
+            )`,
+            count: sql<number>`COUNT(*)`,
+        })
+        .from(AccountAssetHoldingsSchema)
+        .leftJoin(AssetsNodeSchema, join(AssetsNodeSchema))
+        .leftJoin(AssetPricesSchema, join(AssetPricesSchema))
+        .where(
+            and(
+                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                eq(AccountAssetHoldingsSchema.network, network),
+            ),
+        )
+        .all()
+
+    const row = rows[0]
+    return {
+        totalUsdValue:
+            row?.totalUsd != null ? new Decimal(row.totalUsd) : new Decimal(0),
+        holdingsCount: row?.count ?? 0,
+    }
+}
+
+export type AccountHoldingsPageRow = {
+    assetId: string
+    /** Amount in base units (microalgos for ALGO). */
+    amount: Decimal
+    /** Joined asset metadata, or null until the asset metadata syncs. */
+    asset: Nullable<PeraAsset>
+    /** Joined USD price, or null until the price syncs. */
+    usdPrice: Nullable<Decimal>
+    isFavorited: boolean
+}
+
+export type GetAccountHoldingsPageParams = {
+    db?: Database
+    accountAddress: string
+    network: string
+    /** Sort order applied in SQL. Defaults to balanceDesc. */
+    sortMode?: AssetSortMode
+    /** Case-insensitive substring match against name / unit name. */
+    search?: string
+    /** Page size. Omit for an unbounded read (all matching holdings). */
+    limit?: number
+    /** Row offset for pagination. Ignored when `limit` is omitted. */
+    offset?: number
+} & AccountHoldingsFilters
+
+/**
+ * One sorted, filtered, searched, windowed page of an account's holdings —
+ * enriched with asset metadata + price via joins. Favorites sort first (the
+ * denormalized `is_favorited` column), then by value or name with NULLs
+ * (unsynced rows) last. Only the returned page materializes `PeraAsset`s.
+ */
+export async function getAccountHoldingsPage({
+    db = getDatabase(),
+    accountAddress,
+    network,
+    sortMode = 'balanceDesc',
+    search,
+    hideZeroBalance,
+    hideNfts,
+    hideOptedInNfts,
+    excludeAssetTypes,
+    limit,
+    offset,
+}: GetAccountHoldingsPageParams): Promise<AccountHoldingsPageRow[]> {
+    const conditions = [
+        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+        eq(AccountAssetHoldingsSchema.network, network),
+    ]
+
+    if (hideZeroBalance) {
+        conditions.push(ne(AccountAssetHoldingsSchema.amount, new Decimal(0)))
+    }
+    if (hideNfts) {
+        conditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+            )!,
+        )
+    } else if (hideOptedInNfts) {
+        conditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
+            )!,
+        )
+    }
+    if (excludeAssetTypes?.length) {
+        conditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
+            )!,
+        )
+    }
+    const term = search?.trim()
+    if (term) {
+        conditions.push(
+            or(
+                like(AssetsNodeSchema.name, `%${term}%`),
+                like(AssetsNodeSchema.unitName, `%${term}%`),
+            )!,
+        )
+    }
+
+    // Portable 10^decimals scaling (no `pow`): base-unit amount → display units.
+    const valueExpr = sql`CAST(${AccountAssetHoldingsSchema.amount} AS REAL) / CAST('1e' || COALESCE(${AssetsNodeSchema.decimals}, 0) AS REAL) * CAST(${AssetPricesSchema.usdPrice} AS REAL)`
+
+    // Favorites first; then value/name with NULLs (unsynced rows) last; then a
+    // stable assetId tiebreak.
+    const orderBy = [sql`COALESCE(${AssetsPeraSchema.isFavorited}, 0) DESC`]
+    switch (sortMode) {
+        case 'balanceAsc':
+            orderBy.push(sql`(${valueExpr}) IS NULL`, sql`(${valueExpr}) ASC`)
+            break
+        case 'alphabeticalAsc':
+            orderBy.push(
+                sql`${AssetsNodeSchema.name} IS NULL`,
+                sql`${AssetsNodeSchema.name} COLLATE NOCASE ASC`,
+            )
+            break
+        case 'alphabeticalDesc':
+            orderBy.push(
+                sql`${AssetsNodeSchema.name} IS NULL`,
+                sql`${AssetsNodeSchema.name} COLLATE NOCASE DESC`,
+            )
+            break
+        case 'balanceDesc':
+        default:
+            orderBy.push(sql`(${valueExpr}) IS NULL`, sql`(${valueExpr}) DESC`)
+    }
+    orderBy.push(sql`${AccountAssetHoldingsSchema.assetId} ASC`)
+
+    let query = db
+        .select({
+            assetId: AccountAssetHoldingsSchema.assetId,
+            amount: AccountAssetHoldingsSchema.amount,
+            decimals: AssetsNodeSchema.decimals,
+            creatorAddress: AssetsNodeSchema.creatorAddress,
+            totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
+            name: AssetsNodeSchema.name,
+            unitName: AssetsNodeSchema.unitName,
+            url: AssetsNodeSchema.url,
+            metadata: AssetsNodeSchema.metadata,
+            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
+            isFavorited: AssetsPeraSchema.isFavorited,
+            usdPrice: sql<Nullable<string>>`${AssetPricesSchema.usdPrice}`,
+        })
+        .from(AccountAssetHoldingsSchema)
+        .leftJoin(AssetsNodeSchema, join(AssetsNodeSchema))
+        .leftJoin(AssetsPeraSchema, join(AssetsPeraSchema))
+        .leftJoin(AssetPricesSchema, join(AssetPricesSchema))
+        .where(and(...conditions))
+        .orderBy(...orderBy)
+        .$dynamic()
+
+    if (limit !== undefined) {
+        query = query.limit(limit).offset(offset ?? 0)
+    }
+
+    const rows = await query.all()
+
+    return rows.map(r => ({
+        assetId: r.assetId.toString(),
+        amount: r.amount,
+        asset:
+            r.decimals !== null && r.totalSupply !== null
+                ? peraAssetFromColumns({
+                      assetId: r.assetId.toString(),
+                      decimals: r.decimals,
+                      creatorAddress: r.creatorAddress ?? '',
+                      totalSupply: new Decimal(r.totalSupply),
+                      name: r.name,
+                      unitName: r.unitName,
+                      url: r.url,
+                      metadata: r.metadata,
+                      peraMetadataJson: r.peraMetadataJson,
+                  })
+                : null,
+        usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
+        isFavorited: !!r.isFavorited,
     }))
 }
 

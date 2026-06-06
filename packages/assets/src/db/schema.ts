@@ -44,6 +44,12 @@ export const AssetsPeraSchema = sqliteTable(
         isDeleted: integer('is_deleted', { mode: 'boolean' })
             .notNull()
             .default(false),
+        // Denormalized from peraMetadataJson so the holdings page can order
+        // favorites-first in SQL (index-friendly) without parsing JSON per row.
+        // Kept in sync wherever peraMetadataJson is written.
+        isFavorited: integer('is_favorited', { mode: 'boolean' })
+            .notNull()
+            .default(false),
         assetType: text('asset_type'),
         peraMetadataJson: text('pera_metadata_json'),
         updatedAt: integer('updated_at').notNull(),

@@ -15,6 +15,7 @@ export {
     upsertAssets,
     upsertNodeAssets,
     upsertPeraAssets,
+    peraAssetFromColumns,
     getAssetsByIds,
     getAssetById,
     getAssetPeraMetadata,

@@ -34,6 +34,21 @@ export const getAccountBalancesQueryKey = (
     return [MODULE_PREFIX, 'balance', { address, network, filters }]
 }
 
+export const getAccountSummaryQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'summary', { address, network }]
+
+export const getAccountHoldingsPageQueryKey = (
+    address: string,
+    network: Network,
+    params?: {
+        filters?: AccountBalancesQueryKeyFilters
+        sortMode?: string
+        search?: string
+    },
+) => [MODULE_PREFIX, 'holdings-page', { address, network, ...params }]
+
 export const getAccountBalancesHistoryQueryKey = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
@@ -77,5 +92,32 @@ export const getInvalidateAccountBalancesPredicate = (query: Query) =>
 export function invalidateAccountQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
+}
+
+/**
+ * Scoped variant of {@link invalidateAccountQueries}: invalidates only the
+ * account queries whose key payload targets one of the given addresses.
+ *
+ * The per-address query keys all carry `{ address }` as their third element
+ * (balance, summary, holdings-page, …), so the sync service can refresh just
+ * the accounts that actually changed this tick instead of fanning a wide DB
+ * re-read across every mounted account query. Keys without an `address`
+ * payload (e.g. network-scoped owned-asset-ids) are intentionally left alone.
+ */
+export function invalidateAccountQueriesForAddresses(
+    queryClient: QueryClient,
+    addresses: string[],
+): void {
+    if (addresses.length === 0) return
+    const targets = new Set(addresses)
+    void queryClient.invalidateQueries({
+        predicate: query => {
+            if (query.queryKey[0] !== MODULE_PREFIX) return false
+            const payload = query.queryKey[2] as
+                | { address?: string }
+                | undefined
+            return payload?.address !== undefined && targets.has(payload.address)
+        },
     })
 }

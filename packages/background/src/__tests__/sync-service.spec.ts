@@ -27,10 +27,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         getState: () => ({ accounts: mockAccounts }),
     },
     upsertAccountBalance: vi.fn(() => Promise.resolve()),
-    refreshAccountHoldings: vi.fn(() => Promise.resolve()),
+    refreshAccountHoldings: vi.fn(() => Promise.resolve(true)),
     getAllAssetIdsForNetwork: vi.fn(() => Promise.resolve(['123', '456'])),
     invalidateAccountQueries: vi.fn(),
-    fetchAndPersistAccount: vi.fn(() => Promise.resolve()),
+    invalidateAccountQueriesForAddresses: vi.fn(),
+    fetchAndPersistAccount: vi.fn(() =>
+        Promise.resolve({ changed: true, holdingsChanged: true }),
+    ),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -115,11 +118,33 @@ describe('SyncService', () => {
     let queryClient: QueryClient
     let service: SyncService
 
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         queryClient = new QueryClient()
         service = new SyncService({ queryClient })
+
+        // Re-establish default success implementations. clearAllMocks() clears
+        // call history but not implementations set by individual tests, so reset
+        // them here to keep the change-gated sync behavior consistent.
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        const { fetchAndPersistAssets, fetchAndPersistPrices } =
+            await import('@perawallet/wallet-core-assets')
+        const { fetchAndPersistTransactions } =
+            await import('@perawallet/wallet-core-transactions')
+        vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+            Promise.resolve({ changed: true, holdingsChanged: true }),
+        )
+        vi.mocked(fetchAndPersistAssets).mockImplementation(() =>
+            Promise.resolve(),
+        )
+        vi.mocked(fetchAndPersistPrices).mockImplementation(() =>
+            Promise.resolve(),
+        )
+        vi.mocked(fetchAndPersistTransactions).mockImplementation(() =>
+            Promise.resolve(),
+        )
     })
 
     afterEach(() => {
@@ -516,9 +541,12 @@ describe('SyncService', () => {
         )
     })
 
-    it('invalidates account queries even when the sync cycle is rate-limited', async () => {
-        const { fetchAndPersistAccount, invalidateAccountQueries } =
-            await import('@perawallet/wallet-core-accounts')
+    it('does not invalidate account queries when all account fetches are rate-limited', async () => {
+        const {
+            fetchAndPersistAccount,
+            invalidateAccountQueries,
+            invalidateAccountQueriesForAddresses,
+        } = await import('@perawallet/wallet-core-accounts')
 
         vi.mocked(fetchAndPersistAccount).mockRejectedValue(
             new Error('HTTP 429 Too Many Requests'),
@@ -530,13 +558,11 @@ describe('SyncService', () => {
         vi.useFakeTimers()
         service.stop()
 
-        // Per-phase invalidation: account cache is refreshed even when the
-        // sync cycle is rate-limited and syncAll throws at the end.
-        expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
-
-        vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
-            Promise.resolve(),
-        )
+        // No account fetch succeeded, so nothing changed in the DB — eagerly
+        // invalidating would force a wide re-read with no new data, so we skip
+        // it. (stop() also clears any pending debounced invalidation.)
+        expect(invalidateAccountQueriesForAddresses).not.toHaveBeenCalled()
+        expect(invalidateAccountQueries).not.toHaveBeenCalled()
     })
 
     it('does not invalidate asset queries when every asset and price batch fails', async () => {
@@ -567,6 +593,33 @@ describe('SyncService', () => {
         )
         vi.mocked(fetchAndPersistPrices).mockImplementation(() =>
             Promise.resolve(),
+        )
+    })
+
+    it('invalidates only the changed accounts after the debounce window', async () => {
+        vi.useRealTimers()
+        const { fetchAndPersistAccount, invalidateAccountQueriesForAddresses } =
+            await import('@perawallet/wallet-core-accounts')
+
+        vi.mocked(fetchAndPersistAccount).mockImplementation(async address =>
+            address === 'ADDR1'
+                ? { changed: true, holdingsChanged: false }
+                : { changed: false, holdingsChanged: false },
+        )
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+
+        service.start()
+        // Let the async first tick complete, then wait out the 250ms debounce.
+        await new Promise(resolve => setTimeout(resolve, 400))
+        service.stop()
+        vi.useFakeTimers()
+
+        expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
+            queryClient,
+            ['ADDR1'],
         )
     })
 

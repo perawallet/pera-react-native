@@ -17,6 +17,7 @@ import {
     toBigInt,
     type AccountInformation,
 } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { getAccountBalance, getAccountHoldings } from '../db'
 
 const getAccountInformationQueryKey = (address: string, network: string) => [
@@ -50,11 +51,16 @@ export const useAccountInformationQuery = (address: string) => {
                 address: Address.fromString(address),
                 status: balance?.status ?? 'Offline',
                 rewards: 0n,
-                assets: holdings.map(h => ({
-                    assetId: BigInt(h.assetId),
-                    amount: toBigInt(h.amount),
-                    isFrozen: false,
-                })),
+                // ALGO is persisted as a holding row for the home-screen reads,
+                // but AccountInformation.assets is ASAs-only — the algo balance
+                // is carried separately in `amount` above.
+                assets: holdings
+                    .filter(h => h.assetId !== ALGO_ASSET_ID)
+                    .map(h => ({
+                        assetId: BigInt(h.assetId),
+                        amount: toBigInt(h.amount),
+                        isFrozen: false,
+                    })),
             }
         },
         staleTime: Infinity,

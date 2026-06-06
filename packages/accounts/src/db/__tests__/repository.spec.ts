@@ -26,6 +26,8 @@ import {
 import {
     refreshAccountHoldings,
     getAccountHoldings,
+    getAccountPortfolioTotals,
+    getAccountHoldingsPage,
     insertAssetHolding,
     deleteAssetHoldings,
     upsertAccountBalance,
@@ -33,6 +35,7 @@ import {
     getAllAccountBalances,
     getAllAssetIdsForNetwork,
 } from '../repository'
+import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 
 describe('account repository', () => {
     let db: Database
@@ -182,6 +185,120 @@ describe('account repository', () => {
             })
 
             expect(result).toHaveLength(0)
+        })
+    })
+
+    describe('refreshAccountHoldings diff semantics', () => {
+        it('returns true when holdings are first written', async () => {
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: new Decimal(10) }],
+                network: 'mainnet',
+            })
+            expect(changed).toBe(true)
+        })
+
+        it('returns false when nothing changed', async () => {
+            const holdings = [
+                { assetId: '100', amount: new Decimal(10) },
+                { assetId: '200', amount: new Decimal(20) },
+            ]
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings,
+                network: 'mainnet',
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings,
+                network: 'mainnet',
+            })
+            expect(changed).toBe(false)
+        })
+
+        it('returns true and updates only the changed amount', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: new Decimal(10) },
+                    { assetId: '200', amount: new Decimal(20) },
+                ],
+                network: 'mainnet',
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: new Decimal(10) },
+                    { assetId: '200', amount: new Decimal(999) },
+                ],
+                network: 'mainnet',
+            })
+            expect(changed).toBe(true)
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            const byId = new Map(result.map(r => [r.assetId, r.amount]))
+            expect(byId.get('100')).toEqual(new Decimal(10))
+            expect(byId.get('200')).toEqual(new Decimal(999))
+        })
+
+        it('returns true and removes holdings dropped from the incoming set', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: new Decimal(10) },
+                    { assetId: '200', amount: new Decimal(20) },
+                ],
+                network: 'mainnet',
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: new Decimal(10) }],
+                network: 'mainnet',
+            })
+            expect(changed).toBe(true)
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(result.map(r => r.assetId)).toEqual(['100'])
+        })
+
+        it('writes a large holding set across multiple batches', async () => {
+            const holdings = Array.from({ length: 450 }, (_, i) => ({
+                assetId: `${i + 1}`,
+                amount: new Decimal(i + 1),
+            }))
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings,
+                network: 'mainnet',
+            })
+            expect(changed).toBe(true)
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(result).toHaveLength(450)
         })
     })
 
@@ -642,6 +759,152 @@ describe('account repository', () => {
             })
 
             expect(result.sort()).toEqual(['100', '200', '300'])
+        })
+    })
+
+    describe('portfolio totals + holdings page', () => {
+        // ALGO '0' and three ASAs, all 6 decimals. '300' is favorited.
+        // USD values: ALGO 5*0.2=1, '100' 2*1=2, '200' 1*3=3, '300' 0.
+        const richAsset = (
+            assetId: string,
+            name: string,
+            opts: { favorited?: boolean } = {},
+        ): PeraAsset => ({
+            assetId,
+            decimals: 6,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1_000_000_000),
+            name,
+            unitName: name.toUpperCase().slice(0, 4),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'unverified',
+                isFavorited: opts.favorited ?? false,
+                isPriceAlertEnabled: false,
+                type: PeraAssetType.standard_asset,
+            },
+        })
+
+        beforeEach(async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '0', amount: new Decimal(5_000_000) },
+                    { assetId: '100', amount: new Decimal(2_000_000) },
+                    { assetId: '200', amount: new Decimal(1_000_000) },
+                    { assetId: '300', amount: new Decimal(0) },
+                ],
+            })
+            await upsertAssets({
+                db,
+                network: 'mainnet',
+                items: [
+                    richAsset('0', 'Algo'),
+                    richAsset('100', 'Banana'),
+                    richAsset('200', 'Apple'),
+                    richAsset('300', 'Zebra', { favorited: true }),
+                ],
+            })
+            await upsertAssetPrices({
+                db,
+                network: 'mainnet',
+                prices: [
+                    { assetId: '0', usdPrice: new Decimal('0.2') },
+                    { assetId: '100', usdPrice: new Decimal('1') },
+                    { assetId: '200', usdPrice: new Decimal('3') },
+                    { assetId: '300', usdPrice: new Decimal('0') },
+                ],
+            })
+        })
+
+        it('sums the portfolio USD value across all holdings incl. ALGO', async () => {
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(totals.holdingsCount).toBe(4)
+            expect(totals.totalUsdValue.toNumber()).toBeCloseTo(6, 6)
+        })
+
+        const pageIds = async (
+            params: Partial<Parameters<typeof getAccountHoldingsPage>[0]> = {},
+        ) => {
+            const rows = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                limit: 100,
+                offset: 0,
+                ...params,
+            })
+            return rows.map(r => r.assetId)
+        }
+
+        it('orders favorites first, then by value descending', async () => {
+            // '300' favorited → first; then 200(3) > 100(2) > algo(1).
+            expect(await pageIds({ sortMode: 'balanceDesc' })).toEqual([
+                '300',
+                '200',
+                '100',
+                '0',
+            ])
+        })
+
+        it('orders by value ascending (favorites still first)', async () => {
+            expect(await pageIds({ sortMode: 'balanceAsc' })).toEqual([
+                '300',
+                '0',
+                '100',
+                '200',
+            ])
+        })
+
+        it('orders alphabetically with favorites first', async () => {
+            // Favorited 'Zebra'(300) first; then Algo, Apple, Banana.
+            expect(await pageIds({ sortMode: 'alphabeticalAsc' })).toEqual([
+                '300',
+                '0',
+                '200',
+                '100',
+            ])
+        })
+
+        it('paginates with limit/offset preserving order', async () => {
+            expect(
+                await pageIds({ sortMode: 'balanceDesc', limit: 2, offset: 0 }),
+            ).toEqual(['300', '200'])
+            expect(
+                await pageIds({ sortMode: 'balanceDesc', limit: 2, offset: 2 }),
+            ).toEqual(['100', '0'])
+        })
+
+        it('filters out zero balances', async () => {
+            expect(
+                await pageIds({ sortMode: 'balanceDesc', hideZeroBalance: true }),
+            ).toEqual(['200', '100', '0'])
+        })
+
+        it('searches by name (case-insensitive substring)', async () => {
+            expect(await pageIds({ search: 'app' })).toEqual(['200'])
+        })
+
+        it('enriches rows with asset metadata and price', async () => {
+            const rows = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                sortMode: 'balanceDesc',
+                limit: 100,
+                offset: 0,
+            })
+            const apple = rows.find(r => r.assetId === '200')
+            expect(apple?.asset?.name).toBe('Apple')
+            expect(apple?.usdPrice?.toString()).toBe('3')
+            const zebra = rows.find(r => r.assetId === '300')
+            expect(zebra?.isFavorited).toBe(true)
         })
     })
 })

@@ -21,8 +21,13 @@ import {
 import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
 import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 
-function fromDb(row: {
-    assetId: Decimal
+/**
+ * Builds a {@link PeraAsset} from raw `assets_node` + `assets_pera` columns.
+ * Exported so other packages (e.g. the accounts holdings-page read) can enrich
+ * a joined row without going through `getAssetsByIds` and its `IN (…)` list.
+ */
+export function peraAssetFromColumns(row: {
+    assetId: string
     decimals: number
     creatorAddress: string
     totalSupply: Decimal
@@ -37,7 +42,7 @@ function fromDb(row: {
         : undefined
 
     return {
-        assetId: row.assetId.toString(),
+        assetId: row.assetId,
         decimals: row.decimals,
         creator: { address: row.creatorAddress },
         totalSupply: row.totalSupply,
@@ -47,6 +52,20 @@ function fromDb(row: {
         metadata: row.metadata ?? undefined,
         peraMetadata,
     }
+}
+
+function fromDb(row: {
+    assetId: Decimal
+    decimals: number
+    creatorAddress: string
+    totalSupply: Decimal
+    name: Nullable<string>
+    unitName: Nullable<string>
+    url: Nullable<string>
+    metadata: Nullable<string>
+    peraMetadataJson: Nullable<string>
+}): PeraAsset {
+    return peraAssetFromColumns({ ...row, assetId: row.assetId.toString() })
 }
 
 type UpsertNodeAssetsParams = {
@@ -153,6 +172,8 @@ export async function upsertPeraAssets({
 
         const metaJson = mergedMeta ? JSON.stringify(mergedMeta) : null
 
+        const isFavorited = mergedMeta?.isFavorited ?? false
+
         await db
             .insert(AssetsPeraSchema)
             .values({
@@ -160,6 +181,7 @@ export async function upsertPeraAssets({
                 network,
                 verificationTier: meta?.verificationTier ?? 'unverified',
                 isDeleted: meta?.isDeleted ?? false,
+                isFavorited,
                 assetType: meta?.type ?? null,
                 peraMetadataJson: metaJson,
                 updatedAt: now,
@@ -169,6 +191,7 @@ export async function upsertPeraAssets({
                 set: {
                     verificationTier: meta?.verificationTier ?? 'unverified',
                     isDeleted: meta?.isDeleted ?? false,
+                    isFavorited,
                     assetType: meta?.type ?? null,
                     peraMetadataJson: metaJson,
                     updatedAt: now,
@@ -325,12 +348,14 @@ export async function updateAssetPeraMetadata({
             network,
             verificationTier: merged.verificationTier,
             isDeleted: merged.isDeleted,
+            isFavorited: merged.isFavorited,
             peraMetadataJson: metaJson,
             updatedAt: now,
         })
         .onConflictDoUpdate({
             target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
             set: {
+                isFavorited: merged.isFavorited,
                 peraMetadataJson: metaJson,
                 updatedAt: now,
             },
