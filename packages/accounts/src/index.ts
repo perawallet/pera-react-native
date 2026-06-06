@@ -25,6 +25,7 @@ export * from './import-session'
 export { useAccountsStore } from './store'
 export {
     fetchAndPersistAccount,
+    ensureAccountFetched,
     type AccountSyncResult,
 } from './sync/account-syncer'
 

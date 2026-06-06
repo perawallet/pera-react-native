@@ -16,6 +16,7 @@ import { Decimal } from 'decimal.js'
 import { ALGO_ASSET_ID, useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountPortfolioTotals } from '../db'
+import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountSummaryQueryKey } from './querykeys'
 
 export type UseAccountSummaryResult = {
@@ -47,22 +48,33 @@ export const useAccountSummaryQuery = (
         queryKey: getAccountSummaryQueryKey(address ?? '', network),
         enabled: !!address,
         staleTime: Infinity,
-        queryFn: () =>
-            getAccountPortfolioTotals({
+        queryFn: async () => {
+            // Self-heal a freshly imported/selected account the background sync
+            // hasn't populated yet (deduped with the holdings-page fetch).
+            await ensureAccountFetched(address as string, network)
+            return getAccountPortfolioTotals({
                 accountAddress: address as string,
                 network,
-            }),
+            })
+        },
     })
 
     const { data: algoPrices } = useAssetPricesQuery([ALGO_ASSET_ID])
 
     return useMemo(() => {
-        const portfolioUsdValue = query.data?.totalUsdValue ?? new Decimal(0)
+        const algoAmount = query.data?.algoAmount ?? new Decimal(0)
+        const nonAlgoUsdValue = query.data?.nonAlgoUsdValue ?? new Decimal(0)
         const usdAlgoPrice =
             algoPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0)
+
+        // ALGO contributes its raw amount to the ALGO-denominated total (1:1,
+        // price-independent); non-ALGO holdings convert via the ALGO/USD rate.
+        const portfolioUsdValue = nonAlgoUsdValue.plus(
+            algoAmount.times(usdAlgoPrice),
+        )
         const portfolioAlgoValue = usdAlgoPrice.isZero()
-            ? new Decimal(0)
-            : portfolioUsdValue.div(usdAlgoPrice)
+            ? algoAmount
+            : algoAmount.plus(nonAlgoUsdValue.div(usdAlgoPrice))
 
         return {
             portfolioUsdValue,

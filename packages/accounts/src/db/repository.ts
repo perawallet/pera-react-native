@@ -315,19 +315,25 @@ const join = (table: typeof AssetsNodeSchema | typeof AssetsPeraSchema | typeof 
     )
 
 export type AccountPortfolioTotals = {
-    /** Total USD value across all holdings (incl. ALGO); 0 when nothing priced. */
-    totalUsdValue: Decimal
+    /**
+     * ALGO balance in display units (price-independent). Kept separate from the
+     * USD aggregate so the header can show the ALGO balance immediately, before
+     * the ALGO price syncs — ALGO's value in ALGO terms is just its amount.
+     */
+    algoAmount: Decimal
+    /** USD value of all non-ALGO holdings; rows without a price contribute 0. */
+    nonAlgoUsdValue: Decimal
     /** Number of holdings rows (includes the ALGO holding). */
     holdingsCount: number
 }
 
 /**
- * Single-aggregate portfolio total. The per-row value uses a portable
+ * Single-aggregate portfolio totals. Splits ALGO (summed as a raw, price-
+ * independent amount) from the non-ALGO USD value so the header reflects the
+ * native balance even before prices sync. The per-row value uses a portable
  * `10^decimals` scale (`CAST('1e' || decimals AS REAL)`) so it doesn't depend
- * on SQLite math functions (`pow`) being compiled into the runtime. The SUM is
- * REAL (double) — ample for a displayed total — and wrapped back into Decimal
- * for the app's money convention. Rows without a price contribute NULL, which
- * SQL `SUM` ignores.
+ * on SQLite math functions (`pow`). Sums are REAL (double) — ample for a
+ * displayed total — and wrapped back into Decimal for the app's money convention.
  */
 export async function getAccountPortfolioTotals({
     db = getDatabase(),
@@ -340,11 +346,18 @@ export async function getAccountPortfolioTotals({
 }): Promise<AccountPortfolioTotals> {
     const rows = await db
         .select({
-            totalUsd: sql<Nullable<number>>`SUM(
-                CAST(${AccountAssetHoldingsSchema.amount} AS REAL)
-                / CAST('1e' || COALESCE(${AssetsNodeSchema.decimals}, 0) AS REAL)
-                * CAST(${AssetPricesSchema.usdPrice} AS REAL)
-            )`,
+            algoAmount: sql<Nullable<number>>`COALESCE(SUM(
+                CASE WHEN ${AccountAssetHoldingsSchema.assetId} = '0'
+                    THEN CAST(${AccountAssetHoldingsSchema.amount} AS REAL) / 1000000.0
+                    ELSE 0 END
+            ), 0)`,
+            nonAlgoUsd: sql<Nullable<number>>`COALESCE(SUM(
+                CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> '0'
+                    THEN CAST(${AccountAssetHoldingsSchema.amount} AS REAL)
+                        / CAST('1e' || COALESCE(${AssetsNodeSchema.decimals}, 0) AS REAL)
+                        * CAST(${AssetPricesSchema.usdPrice} AS REAL)
+                    ELSE 0 END
+            ), 0)`,
             count: sql<number>`COUNT(*)`,
         })
         .from(AccountAssetHoldingsSchema)
@@ -360,8 +373,8 @@ export async function getAccountPortfolioTotals({
 
     const row = rows[0]
     return {
-        totalUsdValue:
-            row?.totalUsd != null ? new Decimal(row.totalUsd) : new Decimal(0),
+        algoAmount: new Decimal(row?.algoAmount ?? 0),
+        nonAlgoUsdValue: new Decimal(row?.nonAlgoUsd ?? 0),
         holdingsCount: row?.count ?? 0,
     }
 }

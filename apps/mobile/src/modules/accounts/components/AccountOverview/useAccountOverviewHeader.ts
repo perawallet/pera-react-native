@@ -45,7 +45,7 @@ export const useAccountOverviewHeader = (
     const { usdToPreferred } = useCurrency()
     const canSign = useCanSignWith(account)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
-    const { portfolioAlgoValue, portfolioUsdValue, isPending } =
+    const { portfolioAlgoValue, portfolioUsdValue, holdingsCount, isPending } =
         useAccountSummaryQuery(account?.address)
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
@@ -77,7 +77,11 @@ export const useAccountOverviewHeader = (
         period,
         setPeriod,
         selectedPoint,
-        hasBalance: portfolioAlgoValue.gt(0),
+        // Show the balance layout for any account that has holdings (every
+        // synced account has at least the ALGO row), gated on data presence —
+        // not on the value being > 0, so a 0 / not-yet-priced balance still
+        // renders "0" instead of flipping to the empty "get started" state.
+        hasBalance: holdingsCount > 0,
         canSign,
         togglePrivacyMode,
         handleChartSelectionChange,

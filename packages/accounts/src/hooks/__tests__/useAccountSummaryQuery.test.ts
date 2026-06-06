@@ -23,6 +23,11 @@ vi.mock('../../db', () => ({
         mockGetAccountPortfolioTotals(...args),
 }))
 
+// The query self-heals an unsynced account before reading; stub it out.
+vi.mock('../../sync/account-syncer', () => ({
+    ensureAccountFetched: vi.fn(() => Promise.resolve()),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
@@ -47,10 +52,12 @@ describe('useAccountSummaryQuery', () => {
         mockAlgoPrices.clear()
     })
 
-    it('exposes the SQL portfolio total and derives the ALGO-denominated value', async () => {
+    it('derives ALGO + USD totals from the split aggregate', async () => {
         mockAlgoPrices.set('0', { usdPrice: new Decimal(2) })
+        // 10 ALGO + $80 of ASAs, ALGO @ $2.
         mockGetAccountPortfolioTotals.mockResolvedValue({
-            totalUsdValue: new Decimal(100),
+            algoAmount: new Decimal(10),
+            nonAlgoUsdValue: new Decimal(80),
             holdingsCount: 5,
         })
 
@@ -60,8 +67,9 @@ describe('useAccountSummaryQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
+        // USD: 80 + 10*$2 = 100. ALGO: 10 + 80/$2 = 50.
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(100))
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(50)) // 100 / $2
+        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(50))
         expect(result.current.holdingsCount).toBe(5)
     })
 
@@ -73,10 +81,13 @@ describe('useAccountSummaryQuery', () => {
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
     })
 
-    it('reports zero ALGO value when the ALGO price is unknown', async () => {
+    it('still shows the ALGO balance when the ALGO price is unknown', async () => {
+        // No price entry for ALGO. ASAs can't be ALGO-denominated, but ALGO's
+        // own amount is price-independent and must still surface.
         mockGetAccountPortfolioTotals.mockResolvedValue({
-            totalUsdValue: new Decimal(100),
-            holdingsCount: 1,
+            algoAmount: new Decimal(10),
+            nonAlgoUsdValue: new Decimal(80),
+            holdingsCount: 5,
         })
 
         const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
@@ -84,6 +95,6 @@ describe('useAccountSummaryQuery', () => {
         })
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(0))
+        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(10))
     })
 })

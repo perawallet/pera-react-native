@@ -819,14 +819,17 @@ describe('account repository', () => {
             })
         })
 
-        it('sums the portfolio USD value across all holdings incl. ALGO', async () => {
+        it('splits ALGO (price-independent) from non-ALGO USD value', async () => {
             const totals = await getAccountPortfolioTotals({
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
             expect(totals.holdingsCount).toBe(4)
-            expect(totals.totalUsdValue.toNumber()).toBeCloseTo(6, 6)
+            // ALGO: 5_000_000 microalgos → 5 ALGO (no price needed).
+            expect(totals.algoAmount.toNumber()).toBeCloseTo(5, 6)
+            // Non-ALGO: 100→2*$1=2, 200→1*$3=3, 300→0 ⇒ 5 USD.
+            expect(totals.nonAlgoUsdValue.toNumber()).toBeCloseTo(5, 6)
         })
 
         const pageIds = async (

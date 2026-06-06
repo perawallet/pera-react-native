@@ -23,6 +23,11 @@ vi.mock('../../db', () => ({
         mockGetAccountHoldingsPage(...args),
 }))
 
+// The first page self-heals an unsynced account before reading; stub it out.
+vi.mock('../../sync/account-syncer', () => ({
+    ensureAccountFetched: vi.fn(() => Promise.resolve()),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))

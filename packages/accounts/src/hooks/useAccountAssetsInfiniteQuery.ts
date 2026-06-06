@@ -26,6 +26,7 @@ import {
     type AccountHoldingsFilters,
     type AccountHoldingsPageRow,
 } from '../db'
+import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountHoldingsPageQueryKey } from './querykeys'
 
 const PAGE_SIZE = 30
@@ -112,8 +113,14 @@ export const useAccountAssetsInfiniteQuery = (
         enabled: !!address && enabled,
         staleTime: Infinity,
         initialPageParam: 0,
-        queryFn: ({ pageParam }) =>
-            getAccountHoldingsPage({
+        queryFn: async ({ pageParam }) => {
+            // On the first page, self-heal a freshly imported/selected account
+            // the background sync hasn't populated yet (deduped with the
+            // summary query's fetch). Later pages read what's already there.
+            if (pageParam === 0) {
+                await ensureAccountFetched(address as string, network)
+            }
+            return getAccountHoldingsPage({
                 accountAddress: address as string,
                 network,
                 ...filters,
@@ -121,7 +128,8 @@ export const useAccountAssetsInfiniteQuery = (
                 search,
                 limit: PAGE_SIZE,
                 offset: pageParam,
-            }),
+            })
+        },
         getNextPageParam: (lastPage, allPages) =>
             lastPage.length < PAGE_SIZE
                 ? undefined

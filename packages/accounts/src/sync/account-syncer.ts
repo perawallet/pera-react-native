@@ -19,7 +19,7 @@ import {
     getAccountBalance,
 } from '../db'
 import { useAccountsStore } from '../store'
-import type { Network, Optional } from '@perawallet/wallet-core-shared'
+import { logger, type Network, type Optional } from '@perawallet/wallet-core-shared'
 
 // Max holdings per indexer page. The indexer caps results and returns a
 // nextToken for the rest, so we page through rather than pulling the entire
@@ -56,6 +56,37 @@ export function fetchAndPersistAccount(
     })
     inFlight.set(key, promise)
     return promise
+}
+
+/**
+ * Ensure an account has been fetched into the DB at least once before a read.
+ *
+ * The home-screen reads (summary, holdings page) rely on the background sync to
+ * populate holdings, but a freshly imported/selected account may not be picked
+ * up by the next gated poll tick (the sync is already running, and
+ * `checkShouldRefresh` can skip it). So trigger a one-off fetch when there's no
+ * balance row yet — restoring the self-heal the old balances query did on read.
+ * Deduped via `fetchAndPersistAccount`'s in-flight map, so the summary and the
+ * first holdings page collapse to a single fetch.
+ */
+export async function ensureAccountFetched(
+    address: string,
+    network: Network,
+): Promise<void> {
+    const balance = await getAccountBalance({ accountAddress: address, network })
+    if (balance) return
+    try {
+        await fetchAndPersistAccount(address, network)
+    } catch (error) {
+        logger.warn('On-demand account fetch failed', {
+            address,
+            network,
+            error:
+                error instanceof Error
+                    ? { message: error.message, stack: error.stack }
+                    : error,
+        })
+    }
 }
 
 async function fetchAllHoldings(

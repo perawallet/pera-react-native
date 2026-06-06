@@ -132,7 +132,7 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.hasBalance).toBe(true)
     })
 
-    it('determines hasBalance correctly when balance is zero', async () => {
+    it('hasBalance is false only when the account has no holdings', async () => {
         const { useAccountSummaryQuery } =
             await import('@perawallet/wallet-core-accounts')
         vi.mocked(useAccountSummaryQuery).mockReturnValue({
@@ -149,6 +149,25 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.hasBalance).toBe(false)
+    })
+
+    it('hasBalance is true for an account with holdings even at zero value', async () => {
+        const { useAccountSummaryQuery } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountSummaryQuery).mockReturnValue({
+            portfolioAlgoValue: new Decimal('0'),
+            portfolioUsdValue: new Decimal('0'),
+            holdingsCount: 1, // just the ALGO holding, 0 balance
+            isPending: false,
+            isError: false,
+        })
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasBalance).toBe(true)
     })
 
     it('toggles privacy mode when togglePrivacyMode is called', async () => {

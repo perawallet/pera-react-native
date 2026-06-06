@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fetchAndPersistAccount } from '../account-syncer'
+import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
 
 const mockAccountInformation = vi.fn()
 const mockLookupAccountAssets = vi.fn()
@@ -214,5 +214,42 @@ describe('fetchAndPersistAccount', () => {
 
         expect(a).toEqual(b)
         expect(mockAccountInformation).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('ensureAccountFetched', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockUpsertAccountBalance.mockResolvedValue(undefined)
+        mockRefreshAccountHoldings.mockResolvedValue(true)
+        mockLookupAccountAssets.mockResolvedValue({ assets: [] })
+        mockAccountInformation.mockResolvedValue({ amount: 0n, minBalance: 0n })
+    })
+
+    it('skips the fetch when a balance row already exists', async () => {
+        mockGetAccountBalance.mockResolvedValue({ algoBalance: new Decimal(1) })
+
+        await ensureAccountFetched('ADDR1', 'mainnet')
+
+        expect(mockAccountInformation).not.toHaveBeenCalled()
+    })
+
+    it('fetches when there is no balance row yet', async () => {
+        mockGetAccountBalance.mockResolvedValue(undefined)
+
+        await ensureAccountFetched('ADDR1', 'mainnet')
+
+        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1', {
+            exclude: 'all',
+        })
+    })
+
+    it('swallows fetch errors (never throws to the caller)', async () => {
+        mockGetAccountBalance.mockResolvedValue(undefined)
+        mockAccountInformation.mockRejectedValue(new Error('algod down'))
+
+        await expect(
+            ensureAccountFetched('ADDR1', 'mainnet'),
+        ).resolves.toBeUndefined()
     })
 })
