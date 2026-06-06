@@ -50,14 +50,26 @@ describe('usePortfolioTotals', () => {
         balances.set(
             'ADDR1',
             buildBalance([
-                { assetId: '100', amount: new Decimal(3), usdPrice: new Decimal(2) }, // 6
-                { assetId: '200', amount: new Decimal(10), usdPrice: new Decimal(0.5) }, // 5
+                {
+                    assetId: '100',
+                    amount: new Decimal(3),
+                    usdPrice: new Decimal(2),
+                }, // 6
+                {
+                    assetId: '200',
+                    amount: new Decimal(10),
+                    usdPrice: new Decimal(0.5),
+                }, // 5
             ]),
         )
         balances.set(
             'ADDR2',
             buildBalance([
-                { assetId: '100', amount: new Decimal(1), usdPrice: new Decimal(2) }, // 2
+                {
+                    assetId: '100',
+                    amount: new Decimal(1),
+                    usdPrice: new Decimal(2),
+                }, // 2
             ]),
         )
 

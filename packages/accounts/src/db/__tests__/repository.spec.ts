@@ -911,7 +911,10 @@ describe('account repository', () => {
 
         it('filters out zero balances', async () => {
             expect(
-                await pageIds({ sortMode: 'balanceDesc', hideZeroBalance: true }),
+                await pageIds({
+                    sortMode: 'balanceDesc',
+                    hideZeroBalance: true,
+                }),
             ).toEqual(['200', '100', '0'])
         })
 

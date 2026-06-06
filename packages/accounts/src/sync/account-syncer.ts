@@ -19,7 +19,11 @@ import {
     getAccountBalance,
 } from '../db'
 import { useAccountsStore } from '../store'
-import { logger, type Network, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Network,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 // Max holdings per indexer page. The indexer caps results and returns a
 // nextToken for the rest, so we page through rather than pulling the entire
@@ -73,7 +77,10 @@ export async function ensureAccountFetched(
     address: string,
     network: Network,
 ): Promise<void> {
-    const balance = await getAccountBalance({ accountAddress: address, network })
+    const balance = await getAccountBalance({
+        accountAddress: address,
+        network,
+    })
     if (balance) return
     try {
         await fetchAndPersistAccount(address, network)

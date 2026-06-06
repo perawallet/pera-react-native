@@ -91,12 +91,14 @@ export const AccountOverviewHeader = ({
                             {/* The total is still settling while held assets
                                 enrich — show a spinner rather than implying the
                                 shown balance is final. */}
-                            {!isPending && !selectedPoint && !isBalanceComplete && (
-                                <ActivityIndicator
-                                    size='small'
-                                    style={styles.balanceSpinner}
-                                />
-                            )}
+                            {!isPending &&
+                                !selectedPoint &&
+                                !isBalanceComplete && (
+                                    <ActivityIndicator
+                                        size='small'
+                                        style={styles.balanceSpinner}
+                                    />
+                                )}
                         </PWView>
                         <PWView style={styles.secondaryValueBar}>
                             <PreferredCurrencyDisplay

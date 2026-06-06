@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-import { eq, and, inArray, notInArray, ne, or, isNull, like, sql } from 'drizzle-orm'
+import {
+    eq,
+    and,
+    inArray,
+    notInArray,
+    ne,
+    or,
+    isNull,
+    like,
+    sql,
+} from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
@@ -308,7 +318,12 @@ export async function getAccountHoldings({
 // synthetic-row union or per-row special-casing here.
 // ---------------------------------------------------------------------------
 
-const join = (table: typeof AssetsNodeSchema | typeof AssetsPeraSchema | typeof AssetPricesSchema) =>
+const join = (
+    table:
+        | typeof AssetsNodeSchema
+        | typeof AssetsPeraSchema
+        | typeof AssetPricesSchema,
+) =>
     and(
         eq(AccountAssetHoldingsSchema.assetId, table.assetId),
         eq(AccountAssetHoldingsSchema.network, table.network),

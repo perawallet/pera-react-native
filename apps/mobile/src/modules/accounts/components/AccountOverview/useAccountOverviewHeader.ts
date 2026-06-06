@@ -59,8 +59,7 @@ export const useAccountOverviewHeader = (
     // Show the "get started" empty state only for a lone account with no ALGO
     // (a brand-new wallet). Any funded account, or any account in a multi-
     // account wallet, shows its balance (even 0) — gated on data, not value.
-    const isOnlyEmptyAccount =
-        allAccounts.length <= 1 && algoAmount.isZero()
+    const isOnlyEmptyAccount = allAccounts.length <= 1 && algoAmount.isZero()
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
         [usdToPreferred, portfolioUsdValue],

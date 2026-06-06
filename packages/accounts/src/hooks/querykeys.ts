@@ -117,7 +117,9 @@ export function invalidateAccountQueriesForAddresses(
             const payload = query.queryKey[2] as
                 | { address?: string }
                 | undefined
-            return payload?.address !== undefined && targets.has(payload.address)
+            return (
+                payload?.address !== undefined && targets.has(payload.address)
+            )
         },
     })
 }

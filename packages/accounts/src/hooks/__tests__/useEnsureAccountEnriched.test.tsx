@@ -40,7 +40,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
-        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
     }
 })
 
@@ -71,7 +76,10 @@ describe('useEnsureAccountEnriched', () => {
             expect(mockFetchAndPersistAssets).toHaveBeenCalled(),
         )
 
-        expect(mockEnsureAccountFetched).toHaveBeenCalledWith('ADDR1', 'mainnet')
+        expect(mockEnsureAccountFetched).toHaveBeenCalledWith(
+            'ADDR1',
+            'mainnet',
+        )
         expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
             ['0', '100'],
             'mainnet',

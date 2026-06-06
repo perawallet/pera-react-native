@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { AssetRowSkeleton, type AssetRowSkeletonProps } from './AssetRowSkeleton'
+export {
+    AssetRowSkeleton,
+    type AssetRowSkeletonProps,
+} from './AssetRowSkeleton'

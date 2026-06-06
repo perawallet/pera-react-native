@@ -40,7 +40,8 @@ export type AssetFiatConverter = (
  * identical to the shared display component.
  */
 export const useAssetListFiatConverter = (): AssetFiatConverter => {
-    const { preferredCurrency, fallbackCurrency, usdToPreferred } = useCurrency()
+    const { preferredCurrency, fallbackCurrency, usdToPreferred } =
+        useCurrency()
     const isPreferredAlgo = preferredCurrency === ALGO_ASSET.unitName
 
     // ALGO-denominated holdings can't price in ALGO, so they fall back to the

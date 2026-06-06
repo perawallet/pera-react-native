@@ -182,7 +182,9 @@ export const useAccountBalancesQuery = (
                         }
                     }
                     const usdAssetPrice = holding.usdPrice ?? new Decimal(0)
-                    const assetAmount = holding.amount.div(pow10(asset.decimals))
+                    const assetAmount = holding.amount.div(
+                        pow10(asset.decimals),
+                    )
                     // ALGO's value in ALGO terms is just its amount (1:1),
                     // independent of price. ASAs convert via the ALGO/USD rate.
                     const algoAssetValue = isAlgo

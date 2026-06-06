@@ -125,27 +125,27 @@ export const AccountAssetList = ({
                                 {t('account_details.assets.title')}
                             </PWText>
                         </PWView>
-                            <PWView style={styles.titleBarButtonContainer}>
+                        <PWView style={styles.titleBarButtonContainer}>
+                            <PWButton
+                                icon='sliders'
+                                variant='helper'
+                                paddingStyle='none'
+                                onPress={handleOpenManage}
+                                style={styles.manageButton}
+                            />
+                            {!isReadOnly && (
                                 <PWButton
-                                    icon='sliders'
+                                    icon='plus'
+                                    title={t(
+                                        'account_details.assets.add_asset',
+                                    )}
                                     variant='helper'
                                     paddingStyle='none'
-                                    onPress={handleOpenManage}
-                                    style={styles.manageButton}
+                                    onPress={handleOpenAddAsset}
+                                    style={styles.addAssetButton}
                                 />
-                                {!isReadOnly && (
-                                    <PWButton
-                                        icon='plus'
-                                        title={t(
-                                            'account_details.assets.add_asset',
-                                        )}
-                                        variant='helper'
-                                        paddingStyle='none'
-                                        onPress={handleOpenAddAsset}
-                                        style={styles.addAssetButton}
-                                    />
-                                )}
-                            </PWView>
+                            )}
+                        </PWView>
                     </PWView>
                 </>
             )}

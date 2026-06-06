@@ -13,11 +13,7 @@
 import { Decimal } from 'decimal.js'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import {
-    PWIconSize,
-    PWTouchableOpacityProps,
-    PWView,
-} from '@components/core'
+import { PWIconSize, PWTouchableOpacityProps, PWView } from '@components/core'
 import { isCollectible, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
