@@ -56,8 +56,9 @@ export const useEnsureAccountEnriched = (address?: string): void => {
                 if (cancelled) return
                 invalidate()
 
-                // 2. Enrich held assets. Metadata and prices fetch in parallel;
-                // invalidate as each finishes so names appear, then values.
+                // 2. Enrich held assets (metadata + prices in parallel), then
+                // invalidate once. A single trailing invalidation keeps the
+                // list from churning/re-pinning repeatedly mid-load.
                 const holdings = await getAccountHoldings({
                     accountAddress: address,
                     network,
@@ -66,9 +67,10 @@ export const useEnsureAccountEnriched = (address?: string): void => {
                 if (ids.length === 0) return
 
                 await Promise.allSettled([
-                    fetchAndPersistAssets(ids, network).then(invalidate),
-                    fetchAndPersistPrices(ids, network).then(invalidate),
+                    fetchAndPersistAssets(ids, network),
+                    fetchAndPersistPrices(ids, network),
                 ])
+                invalidate()
             } catch (error) {
                 logger.warn('Account enrichment failed', {
                     address,

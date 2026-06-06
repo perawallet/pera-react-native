@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
     ALGO_ASSET,
@@ -29,10 +29,8 @@ import {
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountHoldingsPageQueryKey } from './querykeys'
 
-const PAGE_SIZE = 30
-
-// Repeated 10^decimals values (most assets use 6) — cache to avoid thousands of
-// Decimal.pow() calls as pages accumulate.
+// Repeated 10^decimals values (most assets use 6) — cache to avoid recomputing
+// Decimal.pow() per row on every re-derive.
 const POW10_CACHE = new Map<number, Decimal>()
 const pow10 = (decimals: number): Decimal => {
     let value = POW10_CACHE.get(decimals)
@@ -68,43 +66,41 @@ const toBalance = (
     return { assetId: row.assetId, asset, amount, algoValue, usdPrice }
 }
 
-export type UseAccountAssetsInfiniteQueryParams = {
+export type UseAccountAssetsQueryParams = {
     filters?: AccountHoldingsFilters
     sortMode?: AssetSortMode
     search?: string
     enabled?: boolean
 }
 
-export type UseAccountAssetsInfiniteQueryResult = {
+export type UseAccountAssetsQueryResult = {
     balances: AssetWithAccountBalance[]
     isPending: boolean
-    isFetchingNextPage: boolean
-    hasNextPage: boolean
-    fetchNextPage: () => void
-    isError: boolean
     isRefetching: boolean
+    isError: boolean
 }
 
 /**
- * Paginated, DB-sorted asset list for a single account. Sorting, filtering and
- * searching happen in SQL (favorites first, then value/name), and only the
- * fetched pages are materialized into `AssetWithAccountBalance` on the JS
- * thread — so a multi-thousand-asset account renders the first page in constant
- * time and loads more on scroll.
+ * A single account's asset list: sorted, filtered and searched **in SQL**, read
+ * in one pass. Rendering is virtualized by FlashList, so there's no need to
+ * page the data — and paging it over a value sort that changes as prices/
+ * metadata enrich caused rows to shuffle between offsets (blank pages, scroll
+ * jumps). One stable read avoids that: invalidation refetches in place (data is
+ * retained), and a re-sort updates rows without resetting scroll.
  */
-export const useAccountAssetsInfiniteQuery = (
+export const useAccountAssetsQuery = (
     address: string | undefined,
     {
         filters,
         sortMode = 'balanceDesc',
         search,
         enabled = true,
-    }: UseAccountAssetsInfiniteQueryParams = {},
-): UseAccountAssetsInfiniteQueryResult => {
+    }: UseAccountAssetsQueryParams = {},
+): UseAccountAssetsQueryResult => {
     const { network } = useNetwork()
     const { data: algoPrices } = useAssetPricesQuery([ALGO_ASSET_ID])
 
-    const query = useInfiniteQuery({
+    const query = useQuery({
         queryKey: getAccountHoldingsPageQueryKey(address ?? '', network, {
             filters,
             sortMode,
@@ -112,45 +108,30 @@ export const useAccountAssetsInfiniteQuery = (
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
-        initialPageParam: 0,
-        queryFn: async ({ pageParam }) => {
-            // On the first page, self-heal a freshly imported/selected account
-            // the background sync hasn't populated yet (deduped with the
-            // summary query's fetch). Later pages read what's already there.
-            if (pageParam === 0) {
-                await ensureAccountFetched(address as string, network)
-            }
+        queryFn: async () => {
+            // Self-heal a freshly imported/selected account the background sync
+            // hasn't populated yet (deduped with the summary query's fetch).
+            await ensureAccountFetched(address as string, network)
             return getAccountHoldingsPage({
                 accountAddress: address as string,
                 network,
                 ...filters,
                 sortMode,
                 search,
-                limit: PAGE_SIZE,
-                offset: pageParam,
             })
         },
-        getNextPageParam: (lastPage, allPages) =>
-            lastPage.length < PAGE_SIZE
-                ? undefined
-                : allPages.length * PAGE_SIZE,
     })
 
     const balances = useMemo(() => {
         const usdAlgoPrice =
             algoPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0)
-        return (query.data?.pages ?? [])
-            .flat()
-            .map(row => toBalance(row, usdAlgoPrice))
+        return (query.data ?? []).map(row => toBalance(row, usdAlgoPrice))
     }, [query.data, algoPrices])
 
     return {
         balances,
         isPending: query.isPending,
-        isFetchingNextPage: query.isFetchingNextPage,
-        hasNextPage: query.hasNextPage,
-        fetchNextPage: query.fetchNextPage,
-        isError: query.isError,
         isRefetching: query.isRefetching,
+        isError: query.isError,
     }
 }

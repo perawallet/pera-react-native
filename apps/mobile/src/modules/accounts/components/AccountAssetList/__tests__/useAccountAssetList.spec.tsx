@@ -44,7 +44,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountAssetsInfiniteQuery: vi.fn(() => ({
+        useAccountAssetsQuery: vi.fn(() => ({
             balances: [
                 {
                     assetId: '123',
@@ -55,9 +55,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
                 },
             ],
             isPending: false,
-            isFetchingNextPage: false,
-            hasNextPage: false,
-            fetchNextPage: vi.fn(),
             isError: false,
             isRefetching: false,
         })),

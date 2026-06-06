@@ -59,5 +59,5 @@ export {
     isAccountQuery,
 } from './querykeys'
 export * from './useAccountSummaryQuery'
-export * from './useAccountAssetsInfiniteQuery'
+export * from './useAccountAssetsQuery'
 export * from './useEnsureAccountEnriched'

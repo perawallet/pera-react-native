@@ -20,6 +20,8 @@ import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountSummaryQueryKey } from './querykeys'
 
 export type UseAccountSummaryResult = {
+    /** ALGO balance in display units (price-independent). */
+    algoAmount: Decimal
     /** Total portfolio value in USD (includes ALGO). */
     portfolioUsdValue: Decimal
     /** Total portfolio value expressed in ALGO. */
@@ -82,6 +84,7 @@ export const useAccountSummaryQuery = (
             : algoAmount.plus(nonAlgoUsdValue.div(usdAlgoPrice))
 
         return {
+            algoAmount,
             portfolioUsdValue,
             portfolioAlgoValue,
             holdingsCount: query.data?.holdingsCount ?? 0,

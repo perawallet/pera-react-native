@@ -21,9 +21,16 @@ import { Platform } from 'react-native'
 import { getLocales } from 'expo-localization'
 import { config } from '@perawallet/wallet-core-config'
 
+// `getLocales()` is a native read and `getDeviceLocale()` is called per
+// rendered row (via currency formatting). The device locale doesn't change
+// while the app is running, so resolve it once and cache it.
+let cachedDeviceLocale: string | undefined
 const findDeviceLocale = () => {
-    const locales = getLocales()
-    return locales.map(l => l.languageTag).at(0) ?? 'en-US'
+    if (cachedDeviceLocale === undefined) {
+        const locales = getLocales()
+        cachedDeviceLocale = locales.map(l => l.languageTag).at(0) ?? 'en-US'
+    }
+    return cachedDeviceLocale
 }
 
 const buildUserAgent = () => {

@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
     useAccountSummaryQuery,
+    useAllAccounts,
     useCanSignWith,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -48,12 +49,18 @@ export const useAccountOverviewHeader = (
     const canSign = useCanSignWith(account)
     // Cheap SQL-aggregate total — no full-holdings materialization for the header.
     const {
+        algoAmount,
         portfolioAlgoValue,
         portfolioUsdValue,
-        holdingsCount,
         isComplete,
         isPending,
     } = useAccountSummaryQuery(account?.address)
+    const allAccounts = useAllAccounts()
+    // Show the "get started" empty state only for a lone account with no ALGO
+    // (a brand-new wallet). Any funded account, or any account in a multi-
+    // account wallet, shows its balance (even 0) — gated on data, not value.
+    const isOnlyEmptyAccount =
+        allAccounts.length <= 1 && algoAmount.isZero()
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
         [usdToPreferred, portfolioUsdValue],
@@ -85,11 +92,10 @@ export const useAccountOverviewHeader = (
         period,
         setPeriod,
         selectedPoint,
-        // Show the balance layout for any account that has holdings (every
-        // synced account has at least the ALGO row), gated on data presence —
-        // not on the value being > 0, so a 0 / not-yet-priced balance still
-        // renders "0" instead of flipping to the empty "get started" state.
-        hasBalance: holdingsCount > 0,
+        // Drives the balance-vs-"get started" layout. True for any funded
+        // account and for every account in a multi-account wallet; false only
+        // for a lone, empty (0-ALGO) account.
+        hasBalance: !isOnlyEmptyAccount,
         canSign,
         togglePrivacyMode,
         handleChartSelectionChange,

@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import type { PWFlatListRef } from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
-import { ActivityIndicator } from 'react-native'
 import { useStyles } from './styles'
 
 import {
@@ -50,9 +49,6 @@ export const AccountAssetList = ({
     const {
         balances,
         isPending,
-        isFetchingNextPage,
-        hasNextPage,
-        fetchNextPage,
         isReadOnly,
         assetSortMode,
         headerState,
@@ -110,12 +106,6 @@ export const AccountAssetList = ({
         [renderItemProps],
     )
 
-    const listFooter = isFetchingNextPage ? (
-        <PWView style={styles.footerLoader}>
-            <ActivityIndicator />
-        </PWView>
-    ) : undefined
-
     const listHeader = (
         <PWView style={styles.headerContainer}>
             <BackupReminderBanner
@@ -134,7 +124,6 @@ export const AccountAssetList = ({
                                 {t('account_details.assets.title')}
                             </PWText>
                         </PWView>
-                        {!isReadOnly && (
                             <PWView style={styles.titleBarButtonContainer}>
                                 <PWButton
                                     icon='sliders'
@@ -143,18 +132,19 @@ export const AccountAssetList = ({
                                     onPress={handleOpenManage}
                                     style={styles.manageButton}
                                 />
-                                <PWButton
-                                    icon='plus'
-                                    title={t(
-                                        'account_details.assets.add_asset',
-                                    )}
-                                    variant='helper'
-                                    paddingStyle='none'
-                                    onPress={handleOpenAddAsset}
-                                    style={styles.addAssetButton}
-                                />
+                                {!isReadOnly && (
+                                    <PWButton
+                                        icon='plus'
+                                        title={t(
+                                            'account_details.assets.add_asset',
+                                        )}
+                                        variant='helper'
+                                        paddingStyle='none'
+                                        onPress={handleOpenAddAsset}
+                                        style={styles.addAssetButton}
+                                    />
+                                )}
                             </PWView>
-                        )}
                     </PWView>
                 </>
             )}
@@ -162,23 +152,20 @@ export const AccountAssetList = ({
     )
 
     return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={headerState.open}
-        >
+        <PWView style={styles.container}>
             <SearchableList
                 ref={listRef}
                 data={balances}
                 renderItem={renderItem}
                 scrollEnabled={scrollEnabled}
                 keyExtractor={item => item.assetId}
+                // Render further ahead so fast flings don't outrun the cell
+                // renderer and leave blank gaps on a long asset list.
+                drawDistance={800}
                 ItemSeparatorComponent={ItemSeparator}
                 automaticallyAdjustKeyboardInsets
                 contentContainerStyle={styles.rootContainer}
                 ListHeaderComponent={listHeader}
-                ListFooterComponent={listFooter}
-                onEndReached={hasNextPage ? fetchNextPage : undefined}
-                onEndReachedThreshold={0.5}
                 searchPlaceholder={t(
                     'account_details.assets.search_placeholder',
                 )}
@@ -199,7 +186,7 @@ export const AccountAssetList = ({
                     )
                 }
             />
-        </PWTouchableOpacity>
+        </PWView>
     )
 }
 

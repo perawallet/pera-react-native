@@ -33,6 +33,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAccountSummaryQuery: vi.fn(() => ({
+            algoAmount: new Decimal('100'),
             portfolioAlgoValue: new Decimal('100'),
             portfolioUsdValue: new Decimal('200'),
             holdingsCount: 3,
@@ -40,7 +41,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
             isError: false,
         })),
-        useAllAccounts: vi.fn(() => []),
+        useAllAccounts: vi.fn(() => [{ address: 'a' }]),
         useCanSignWith: vi.fn(() => true),
     }
 })
@@ -133,17 +134,21 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.hasBalance).toBe(true)
     })
 
-    it('hasBalance is false only when the account has no holdings', async () => {
-        const { useAccountSummaryQuery } =
+    it('hasBalance is false for a lone account with 0 ALGO (shows "get started")', async () => {
+        const { useAccountSummaryQuery, useAllAccounts } =
             await import('@perawallet/wallet-core-accounts')
         vi.mocked(useAccountSummaryQuery).mockReturnValue({
+            algoAmount: new Decimal('0'),
             portfolioAlgoValue: new Decimal('0'),
             portfolioUsdValue: new Decimal('0'),
-            holdingsCount: 0,
-            isComplete: false,
+            holdingsCount: 1,
+            isComplete: true,
             isPending: false,
             isError: false,
         })
+        vi.mocked(useAllAccounts).mockReturnValue([
+            { address: 'a' },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),
@@ -153,17 +158,22 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.hasBalance).toBe(false)
     })
 
-    it('hasBalance is true for an account with holdings even at zero value', async () => {
-        const { useAccountSummaryQuery } =
+    it('hasBalance is true for a 0-ALGO account in a multi-account wallet', async () => {
+        const { useAccountSummaryQuery, useAllAccounts } =
             await import('@perawallet/wallet-core-accounts')
         vi.mocked(useAccountSummaryQuery).mockReturnValue({
+            algoAmount: new Decimal('0'),
             portfolioAlgoValue: new Decimal('0'),
             portfolioUsdValue: new Decimal('0'),
             holdingsCount: 1,
-            isComplete: false, // just the ALGO holding, 0 balance
+            isComplete: true,
             isPending: false,
             isError: false,
         })
+        vi.mocked(useAllAccounts).mockReturnValue([
+            { address: 'a' },
+            { address: 'b' },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),

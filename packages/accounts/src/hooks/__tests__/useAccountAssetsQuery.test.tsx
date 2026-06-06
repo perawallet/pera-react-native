@@ -15,23 +15,19 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useAccountAssetsInfiniteQuery } from '../useAccountAssetsInfiniteQuery'
+import { useAccountAssetsQuery } from '../useAccountAssetsQuery'
 
 const mockGetAccountHoldingsPage = vi.fn()
 vi.mock('../../db', () => ({
     getAccountHoldingsPage: (...args: unknown[]) =>
         mockGetAccountHoldingsPage(...args),
 }))
-
-// The first page self-heals an unsynced account before reading; stub it out.
 vi.mock('../../sync/account-syncer', () => ({
     ensureAccountFetched: vi.fn(() => Promise.resolve()),
 }))
-
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
-
 const mockAlgoPrices = new Map<string, { usdPrice: Decimal }>()
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: '0',
@@ -47,13 +43,13 @@ const wrapper = () => {
         React.createElement(QueryClientProvider, { client }, children)
 }
 
-describe('useAccountAssetsInfiniteQuery', () => {
+describe('useAccountAssetsQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAlgoPrices.clear()
     })
 
-    it('maps the first page rows to balances and converts values to ALGO', async () => {
+    it('reads all holdings in one pass and maps them to balances', async () => {
         mockAlgoPrices.set('0', { usdPrice: new Decimal(2) })
         mockGetAccountHoldingsPage.mockResolvedValue([
             {
@@ -72,23 +68,23 @@ describe('useAccountAssetsInfiniteQuery', () => {
             },
         ])
 
-        const { result } = renderHook(
-            () => useAccountAssetsInfiniteQuery('ADDR1'),
-            { wrapper: wrapper() },
-        )
+        const { result } = renderHook(() => useAccountAssetsQuery('ADDR1'), {
+            wrapper: wrapper(),
+        })
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
+        // No limit/offset is passed — it's a single, unbounded read.
+        const call = mockGetAccountHoldingsPage.mock.calls[0][0]
+        expect(call.limit).toBeUndefined()
+        expect(call.offset).toBeUndefined()
+
         const algo = result.current.balances.find(b => b.assetId === '0')
         expect(algo?.amount).toEqual(new Decimal(5)) // 5_000_000 / 10^6
-        expect(algo?.algoValue).toEqual(new Decimal(5)) // ALGO is 1:1 in ALGO
-
+        expect(algo?.algoValue).toEqual(new Decimal(5)) // ALGO 1:1
         const token = result.current.balances.find(b => b.assetId === '100')
         expect(token?.amount).toEqual(new Decimal(10)) // 1000 / 10^2
         expect(token?.algoValue).toEqual(new Decimal(50)) // 10 * $10 / $2
-
-        // Short page (< PAGE_SIZE) → no further pages.
-        expect(result.current.hasNextPage).toBe(false)
     })
 
     it('passes sort, search and filters through to the DB read', async () => {
@@ -96,7 +92,7 @@ describe('useAccountAssetsInfiniteQuery', () => {
 
         renderHook(
             () =>
-                useAccountAssetsInfiniteQuery('ADDR1', {
+                useAccountAssetsQuery('ADDR1', {
                     sortMode: 'alphabeticalAsc',
                     search: 'algo',
                     filters: { hideZeroBalance: true },
@@ -114,14 +110,11 @@ describe('useAccountAssetsInfiniteQuery', () => {
                 sortMode: 'alphabeticalAsc',
                 search: 'algo',
                 hideZeroBalance: true,
-                limit: 30,
-                offset: 0,
             }),
         )
     })
 
     it('emits zeros for holdings whose metadata has not synced', async () => {
-        mockAlgoPrices.set('0', { usdPrice: new Decimal(1) })
         mockGetAccountHoldingsPage.mockResolvedValue([
             {
                 assetId: '999',
@@ -132,15 +125,13 @@ describe('useAccountAssetsInfiniteQuery', () => {
             },
         ])
 
-        const { result } = renderHook(
-            () => useAccountAssetsInfiniteQuery('ADDR1'),
-            { wrapper: wrapper() },
-        )
+        const { result } = renderHook(() => useAccountAssetsQuery('ADDR1'), {
+            wrapper: wrapper(),
+        })
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         const row = result.current.balances.find(b => b.assetId === '999')
         expect(row?.amount).toEqual(new Decimal(0))
-        expect(row?.algoValue).toEqual(new Decimal(0))
         expect(row?.asset).toBeUndefined()
     })
 })

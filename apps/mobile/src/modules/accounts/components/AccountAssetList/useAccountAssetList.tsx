@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    useAccountAssetsInfiniteQuery,
+    useAccountAssetsQuery,
     useCanSignWith,
     WalletAccount,
     AssetWithAccountBalance,
@@ -45,9 +45,6 @@ import { OptOutConfirmationContent } from './OptOutConfirmationContent'
 type UseAccountAssetListResult = {
     balances: AssetWithAccountBalance[]
     isPending: boolean
-    isFetchingNextPage: boolean
-    hasNextPage: boolean
-    fetchNextPage: () => void
     isReadOnly: boolean
     hideZeroBalance: boolean
     assetSortMode: AssetSortMode
@@ -106,14 +103,13 @@ export const useAccountAssetList = ({
         [hideZeroBalance, displayNfts, effectiveDisplayOptedInNfts],
     )
 
-    // DB does the sort + filter + search + pagination; only the loaded pages
-    // are materialized, and each row already carries its asset metadata + price.
-    const { balances, isPending, isFetchingNextPage, hasNextPage, fetchNextPage } =
-        useAccountAssetsInfiniteQuery(account.address, {
-            filters: balanceFilters,
-            sortMode: assetSortMode,
-            search: debouncedSearch,
-        })
+    // DB does the sort + filter + search in one read; FlashList virtualizes
+    // rendering, and each row already carries its asset metadata + price.
+    const { balances, isPending } = useAccountAssetsQuery(account.address, {
+        filters: balanceFilters,
+        sortMode: assetSortMode,
+        search: debouncedSearch,
+    })
 
     // Lookup of the loaded rows' metadata, used by navigation + opt-out.
     const assets = useMemo(() => {
@@ -272,9 +268,6 @@ export const useAccountAssetList = ({
     return {
         balances,
         isPending,
-        isFetchingNextPage,
-        hasNextPage,
-        fetchNextPage,
         isReadOnly,
         hideZeroBalance,
         assetSortMode,
