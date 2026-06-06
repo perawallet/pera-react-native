@@ -12,6 +12,7 @@
 
 import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { getTestProps } from '@utils/test-id-helper'
 import { PinEditView } from '../PinEditView'
 import type { PinEntryMode } from '../PinEditView'
 import type { SavePinHandlerResult } from '../PinEditView/usePinEditView'
@@ -47,7 +48,7 @@ export const PinEditContent = ({
                     <PWIcon
                         name='cross'
                         onPress={dismiss}
-                        testID='close-button'
+                        {...getTestProps('close-button')}
                     />
                 }
                 paddingStyle='normal'
