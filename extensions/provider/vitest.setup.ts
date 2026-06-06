@@ -132,14 +132,14 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 vi.mock('@perawallet/wallet-extension-passkey-autofill', () => ({
     WithPasskeyAutofill: () => ({
         passkeyAutofill: {
-            setMasterKey: vi.fn().mockResolvedValue(undefined),
-            setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
-            setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
-            configureIntentActions: vi.fn().mockResolvedValue(undefined),
-            clearCredentials: vi.fn().mockResolvedValue(undefined),
-            deleteCredential: vi.fn().mockResolvedValue(undefined),
+            setMasterKey: vi.fn().mockResolvedValue(),
+            setHdRootKeyId: vi.fn().mockResolvedValue(),
+            setDerivedMainKey: vi.fn().mockResolvedValue(),
+            configureIntentActions: vi.fn().mockResolvedValue(),
+            clearCredentials: vi.fn().mockResolvedValue(),
+            deleteCredential: vi.fn().mockResolvedValue(),
             getStoredCredentials: vi.fn().mockResolvedValue([]),
-            refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
+            refreshCredentialIdentities: vi.fn().mockResolvedValue(),
             isProviderActive: vi.fn().mockResolvedValue(false),
             openProviderSettings: vi.fn().mockResolvedValue(false),
             onPasskeyAdded: vi.fn().mockReturnValue({ remove: vi.fn() }),
