@@ -24,6 +24,7 @@ export const DeleteAllSuccessContent = () => {
             iconVariant='positive'
             title={t('settings.main.remove_success_title')}
             confirmLabel={t('common.close.label')}
+            testID='settings_delete_all_success_bottom_sheet'
         />
     )
 }

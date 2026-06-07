@@ -76,7 +76,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
     }
 
     return (
-        <PWScreen>
+        <PWScreen testID='manage_cache_screen'>
             <PWView style={styles.content}>
                 <PWButton
                     variant='primary'
@@ -85,18 +85,21 @@ export const SettingsDeveloperManageCacheScreen = () => {
                     onPress={() => void handleRefreshCache()}
                     isLoading={isRefreshing}
                     isDisabled={isRefreshing}
+                    testID='manage_cache_refresh_button'
                 />
                 <PWButton
                     variant='secondary'
                     title={t('settings.developer.reset_banners')}
                     icon='bell'
                     onPress={handleResetBanners}
+                    testID='manage_cache_reset_banners_button'
                 />
                 <PWButton
                     variant='secondary'
                     title={t('settings.developer.clear_one_time_flags')}
                     icon='trash'
                     onPress={handleClearOneTimeFlags}
+                    testID='manage_cache_clear_flags_button'
                 />
             </PWView>
         </PWScreen>
