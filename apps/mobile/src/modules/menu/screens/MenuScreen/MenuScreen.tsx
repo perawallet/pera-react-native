@@ -149,6 +149,7 @@ export const MenuScreen = () => {
                     leftIcon='person-menu'
                     rightIcon='chevron-right'
                     onPress={goToContacts}
+                    testID='menu_contacts_button'
                 />
                 <PanelButton
                     title={t('menu.get_help')}

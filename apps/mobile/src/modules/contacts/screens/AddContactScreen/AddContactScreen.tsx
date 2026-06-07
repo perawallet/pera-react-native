@@ -44,6 +44,7 @@ export const AddContactScreen = () => {
                     variant='primary'
                     isDisabled={!isValid}
                     style={styles.footerButton}
+                    testID='add_contact_button'
                 />
             }
         >
