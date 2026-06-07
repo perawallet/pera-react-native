@@ -13,11 +13,14 @@
 import { forwardRef, useCallback, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 
-import { PWInput, PWTouchableIcon } from '@components/core'
+import {
+    PWInput,
+    PWTouchableIcon,
+    type PWInputProps,
+    type PWInputRef,
+} from '@components/core'
 import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
-
-import type { PWInputProps, PWInputRef } from '@components/core'
 
 export type SearchInputProps = Omit<PWInputProps, 'leftIcon' | 'rightIcon'>
 

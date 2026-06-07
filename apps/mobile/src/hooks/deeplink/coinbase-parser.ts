@@ -11,8 +11,8 @@
  */
 
 import {
-    AddressActionsDeeplink,
-    AssetTransferDeeplink,
+    type AddressActionsDeeplink,
+    type AssetTransferDeeplink,
     DeeplinkType,
 } from './types'
 import { normalizeUrl, parseQueryParams } from './utils'

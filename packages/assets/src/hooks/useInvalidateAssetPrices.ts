@@ -17,7 +17,7 @@ export const useInvalidateAssetPrices = () => {
 
     const invalidateAssetPrices = () => {
         try {
-            queryClient.invalidateQueries({
+            void queryClient.invalidateQueries({
                 predicate: query => {
                     try {
                         // Handle edge cases: null, undefined, or non-array queryKey

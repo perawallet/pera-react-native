@@ -46,23 +46,27 @@ export const SettingsPasskeyScreen = () => {
 
     let content: ReactNode
     switch (screen.state) {
-        case 'loading':
+        case 'loading': {
             content = <PasskeysLoadingState />
             break
-        case 'error':
+        }
+        case 'error': {
             content = <PasskeysErrorState onDismiss={screen.onDismissError} />
             break
-        case 'disabled':
+        }
+        case 'disabled': {
             content = (
                 <PasskeysDisabledState
-                    onOpenSettings={screen.onOpenProviderSettings}
+                    onOpenSettings={() => void screen.onOpenProviderSettings()}
                 />
             )
             break
-        case 'empty':
+        }
+        case 'empty': {
             content = <PasskeysEmptyState />
             break
-        case 'populated':
+        }
+        case 'populated': {
             content = (
                 <PasskeysList
                     passkeys={screen.passkeys}
@@ -70,6 +74,7 @@ export const SettingsPasskeyScreen = () => {
                 />
             )
             break
+        }
     }
 
     // The populated list owns its bottom safe-area inset (so rows scroll under

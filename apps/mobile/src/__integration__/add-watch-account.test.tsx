@@ -44,7 +44,7 @@ const WATCH_TARGET_ADDRESS = ALGO25_TEST_ADDRESS
 
 // Per-test timeout: navigation transitions + a render frame inside
 // NameAccount's handleFinish push the wall-clock past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 describe('Flow: Add Account → Watch address', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))

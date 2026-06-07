@@ -129,7 +129,7 @@ export const useShakeDetection = ({
             })
         }
 
-        ;(async () => {
+        void (async () => {
             try {
                 // isAvailableAsync returns false on simulators and on devices
                 // where the sensor is disabled at the OS level. We still

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { PWButton } from '@components/core/PWButton'
-import { PWIcon, IconName } from '@components/core/PWIcon'
+import { PWIcon, type IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'

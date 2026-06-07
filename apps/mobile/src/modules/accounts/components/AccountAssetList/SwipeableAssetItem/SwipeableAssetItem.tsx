@@ -11,11 +11,16 @@
  */
 
 import React, { useCallback, useRef } from 'react'
-import { GestureResponderEvent } from 'react-native'
-import { PWIcon, PWSwipeable, PWSwipeableRef, PWView } from '@components/core'
+import { type GestureResponderEvent } from 'react-native'
+import {
+    PWIcon,
+    PWSwipeable,
+    type PWSwipeableRef,
+    PWView,
+} from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { Decimal } from 'decimal.js'
+import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { type Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 
 export type SwipeableAssetItemProps = {

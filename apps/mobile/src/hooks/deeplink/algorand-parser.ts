@@ -12,14 +12,14 @@
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
-    AnyParsedDeeplink,
+    type AnyParsedDeeplink,
     DeeplinkType,
-    AddressActionsDeeplink,
-    AlgoTransferDeeplink,
-    AssetTransferDeeplink,
-    AssetOptInDeeplink,
-    KeyregDeeplink,
-    DiscoverBrowserDeeplink,
+    type AddressActionsDeeplink,
+    type AlgoTransferDeeplink,
+    type AssetTransferDeeplink,
+    type AssetOptInDeeplink,
+    type KeyregDeeplink,
+    type DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
 // config and Networks removed because unused

@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     useNotificationPreferences,
     useAccountNotificationEnabledMutation,

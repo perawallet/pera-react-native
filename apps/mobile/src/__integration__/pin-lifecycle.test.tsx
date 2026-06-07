@@ -18,7 +18,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 const TEST_PIN = '123456'
 
 const renderSettingsSecurityScreen = () =>

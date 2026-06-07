@@ -15,8 +15,10 @@ import {
     preventScreenCaptureAsync,
     allowScreenCaptureAsync,
 } from 'expo-screen-capture'
-import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
-import { RemoteConfigKeys } from '@perawallet/wallet-core-remote-config'
+import {
+    useRemoteConfig,
+    RemoteConfigKeys,
+} from '@perawallet/wallet-core-remote-config'
 import { logger } from '@perawallet/wallet-core-shared'
 
 // Blocks screenshots and screen recordings while the mounting component is

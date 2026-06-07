@@ -56,7 +56,7 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
     }, [selectedAccount, buildAccountDeeplink])
 
     const handleCopyAddress = useCallback(() => {
-        copyToClipboard(selectedAccount?.address ?? '')
+        void copyToClipboard(selectedAccount?.address ?? '')
     }, [copyToClipboard, selectedAccount?.address])
 
     const handleShareAddress = useCallback(async () => {

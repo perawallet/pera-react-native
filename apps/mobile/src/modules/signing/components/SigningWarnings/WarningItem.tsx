@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { TransactionWarning } from '@perawallet/wallet-core-signing'
+import { type TransactionWarning } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -29,7 +29,7 @@ const getWarningConfig = (
     isGroup: boolean,
 ) => {
     switch (type) {
-        case 'close':
+        case 'close': {
             return {
                 icon: 'trash' as const,
                 messageKey: isGroup
@@ -37,7 +37,8 @@ const getWarningConfig = (
                     : 'transactions.warning.close_warning',
                 boldKey: null,
             }
-        case 'rekey':
+        }
+        case 'rekey': {
             return {
                 icon: 'rekey' as const,
                 messageKey: isGroup
@@ -45,7 +46,8 @@ const getWarningConfig = (
                     : 'transactions.warning.rekey_warning',
                 boldKey: 'transactions.warning.rekey_warning_bold',
             }
-        case 'asset-freeze':
+        }
+        case 'asset-freeze': {
             return {
                 icon: 'snowflake' as const,
                 messageKey: isGroup
@@ -53,6 +55,7 @@ const getWarningConfig = (
                     : 'transactions.warning.asset_freeze_warning',
                 boldKey: 'transactions.warning.asset_freeze_warning_bold',
             }
+        }
     }
 }
 

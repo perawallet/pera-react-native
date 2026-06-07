@@ -82,7 +82,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
                     variant='primary'
                     title={t('settings.developer.refresh_cache')}
                     icon='reload'
-                    onPress={handleRefreshCache}
+                    onPress={() => void handleRefreshCache()}
                     isLoading={isRefreshing}
                     isDisabled={isRefreshing}
                 />

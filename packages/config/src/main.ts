@@ -198,12 +198,12 @@ const productionConfig = {
 
     arc59: {
         testnet: {
-            appId: 643020148n,
+            appId: 643_020_148n,
             appAddress:
                 'YIIC6GF4DUJYZTYTZ5UEOAXONUUKZRDFOTV4EKSGD5E7BYE6EE3IVPYEDQ',
         },
         mainnet: {
-            appId: 2449590623n,
+            appId: 2_449_590_623n,
             appAddress:
                 'EZRVNZFJGOUZC67FUMEC7ZMVP232TPICFTQCVZ6EQEIRRT3TIHSKZULRNI',
         },

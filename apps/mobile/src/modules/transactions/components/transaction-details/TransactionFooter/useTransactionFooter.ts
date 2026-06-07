@@ -11,7 +11,7 @@
  */
 
 import {
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
@@ -49,7 +49,7 @@ export const useTransactionFooter = (
         }
 
         return url
-    }, [asset])
+    }, [asset, transaction.assetConfigTransaction?.params?.url])
 
     const showAssetUrl = () => {
         if (!assetUrl) {

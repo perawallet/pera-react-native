@@ -58,7 +58,7 @@ import {
 
 // Loading screen runs through fetch → decrypt → keystore commits → store
 // rewrites; mirrors the ASB flow's slow-test timeout.
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 /**
  * Mount the Loading screen as the initial route with the result screen
@@ -153,7 +153,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(1)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             const [account] = useAccountsStore.getState().accounts
@@ -180,7 +180,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(2)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             const got = useAccountsStore
@@ -217,7 +217,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
                         vi.mocked(Notifier.showNotification),
                     ).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             expect(useAccountsStore.getState().accounts).toHaveLength(0)
@@ -249,7 +249,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
             renderLoadingWithFlowStore()
 
             await waitFor(() => screen.getByTestId('pera_web_import_result'), {
-                timeout: 10000,
+                timeout: 10_000,
             })
 
             // Pre-seeded account is still there; no duplicate import.
@@ -284,7 +284,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
                         vi.mocked(Notifier.showNotification),
                     ).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             expect(useAccountsStore.getState().accounts).toHaveLength(0)
@@ -326,7 +326,7 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
                 await waitFor(
                     () => screen.getByTestId('pera_web_import_result'),
                     {
-                        timeout: 10000,
+                        timeout: 10_000,
                     },
                 )
             } finally {
@@ -427,7 +427,7 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(1)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             const [account] = useAccountsStore.getState().accounts

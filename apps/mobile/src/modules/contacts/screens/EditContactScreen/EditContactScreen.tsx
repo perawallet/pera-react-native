@@ -47,7 +47,7 @@ export const EditContactScreen = () => {
             <PWButton
                 variant='linkPositive'
                 title={t('contacts.edit_contact.done')}
-                onPress={handleSubmit(save)}
+                onPress={() => void handleSubmit(save)()}
                 isDisabled={!isValid}
                 paddingStyle='none'
             />
@@ -77,7 +77,7 @@ export const EditContactScreen = () => {
         <PWScreen
             footer={
                 <PWButton
-                    onPress={openDeleteConfirm}
+                    onPress={() => void openDeleteConfirm()}
                     title={t('contacts.edit_contact.delete_this')}
                     variant='destructive'
                 />
@@ -99,7 +99,7 @@ export const EditContactScreen = () => {
                 onAddressInputChange={onAddressInputChange}
                 rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
-                onPickImage={onPickImage}
+                onPickImage={() => void onPickImage()}
             />
             <PhotoPermissionDeniedSheet
                 isVisible={permissionDenied.isVisible}

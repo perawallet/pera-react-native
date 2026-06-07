@@ -11,11 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { useRoute } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-import type { RouteProp } from '@react-navigation/native'
 import type { AppStackParamList } from '@routes/types'
 
 export type RekeyIntroNavConfig = {

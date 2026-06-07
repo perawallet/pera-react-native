@@ -40,7 +40,7 @@ import { LedgerSelectAccountsScreen } from '@modules/ledger/screens/LedgerSelect
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 
@@ -110,7 +110,7 @@ describe('Flow: Ledger account info sheet', () => {
                     expect(
                         screen.getByTestId('ledger_account_info_list'),
                     ).toBeTruthy(),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // The sheet title is the i18n key (integration harness doesn't
@@ -120,7 +120,7 @@ describe('Flow: Ledger account info sheet', () => {
                     expect(
                         screen.getByText('ledger.account_info.default_title'),
                     ).toBeTruthy(),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Section headers should be rendered.
@@ -135,7 +135,7 @@ describe('Flow: Ledger account info sheet', () => {
                         screen.getByText('ledger.account_info.assets'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
         },
         SLOW_TEST_TIMEOUT_MS,

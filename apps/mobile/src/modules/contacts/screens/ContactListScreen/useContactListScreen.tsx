@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Keyboard } from 'react-native'
-import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
+import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 

@@ -33,7 +33,7 @@ import { useToast } from '@hooks/useToast'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 import { getNextSharedAccountName } from '@modules/multisig/utils'
 import type { MessagesStackParamList } from '../../routes/types'
-import { Optional } from '@perawallet/wallet-core-shared'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 type UseMultisigInvitationNameScreenResult = {
     accountName: string

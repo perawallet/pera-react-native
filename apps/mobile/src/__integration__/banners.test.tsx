@@ -55,7 +55,7 @@ import {
 } from '@perawallet/wallet-core-banners'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 const DEVICE_ID = 'integration-test-device'
 const NETWORK = 'mainnet' as const
 

@@ -11,14 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useRoute } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     getAccountDisplayName,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-
-import type { RouteProp } from '@react-navigation/native'
 
 export type UseRekeySuccessScreenResult = {
     sourceName: string

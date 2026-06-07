@@ -14,9 +14,10 @@ import { useCallback } from 'react'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { RekeyError } from '@perawallet/wallet-core-transactions'
-
-import type { RekeyErrorReason } from '@perawallet/wallet-core-transactions'
+import {
+    RekeyError,
+    type RekeyErrorReason,
+} from '@perawallet/wallet-core-transactions'
 
 type UseHandleRekeyErrorResult = (error: unknown) => void
 

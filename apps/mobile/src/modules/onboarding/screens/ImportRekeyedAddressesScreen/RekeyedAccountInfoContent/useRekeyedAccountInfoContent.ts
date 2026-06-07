@@ -13,14 +13,14 @@
 import { useMemo } from 'react'
 import {
     AccountTypes,
-    AssetWithAccountBalance,
+    type AssetWithAccountBalance,
     useAccountBalancesQuery,
-    WalletAccount,
-    WatchAccount,
+    type WalletAccount,
+    type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
-import { Optional } from '@perawallet/wallet-core-shared'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 type UseRekeyedAccountInfoContentParams = {
     account: WalletAccount

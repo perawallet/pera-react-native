@@ -84,6 +84,10 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 )
             }
         },
+        // `pipeline` is returned by useSigningPipeline below (it receives this
+        // callback), so it cannot be listed as a dependency here. handleEvent
+        // reads pipeline.resolved lazily at call time, by which point it is set.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [showError, t],
     )
 

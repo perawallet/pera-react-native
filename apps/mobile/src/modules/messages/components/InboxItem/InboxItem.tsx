@@ -22,26 +22,29 @@ export type InboxItemProps = {
 
 export const InboxItem = ({ item, onPress }: InboxItemProps) => {
     switch (item.type) {
-        case 'asa_inbox':
+        case 'asa_inbox': {
             return (
                 <AsaInboxItem
                     item={item}
                     onPress={onPress}
                 />
             )
-        case 'multisig_sign':
+        }
+        case 'multisig_sign': {
             return (
                 <MultisigSignInboxItem
                     item={item}
                     onPress={onPress}
                 />
             )
-        case 'multisig_import':
+        }
+        case 'multisig_import': {
             return (
                 <MultisigInvitationInboxItem
                     item={item}
                     onPress={onPress}
                 />
             )
+        }
     }
 }

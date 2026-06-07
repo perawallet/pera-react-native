@@ -11,8 +11,8 @@
  */
 
 import React from 'react'
-import { StyleProp, ViewStyle, ImageStyle } from 'react-native'
-import { PWImage, PWView, PWIcon, PWIconSize } from '@components/core'
+import { type StyleProp, type ViewStyle, type ImageStyle } from 'react-native'
+import { PWImage, PWView, PWIcon, type PWIconSize } from '@components/core'
 import { NFT_NOT_OPTED_IN_OPACITY } from '@constants/ui'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 

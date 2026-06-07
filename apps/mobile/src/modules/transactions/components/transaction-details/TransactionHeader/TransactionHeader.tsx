@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import {
     getTransactionType,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionStatusBadge } from '../../TransactionStatusBadge'

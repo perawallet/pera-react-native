@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
-    SendTransactionParams,
+    type SendTransactionParams,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -144,6 +144,9 @@ export const useTransactionProcessingScreen =
                 })
 
             return () => subscription.remove()
+            // Submits the transaction exactly once on mount; re-running on any
+            // param change would re-send. Intentional empty dependency array.
+            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
 
         const isHardwareSender = selectedAccount?.type === AccountTypes.hardware

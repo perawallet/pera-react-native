@@ -43,7 +43,7 @@ const resetTestContacts = () => {
     }
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const SENDER_ACCOUNT: WalletAccount = {
     id: 'sender-1',

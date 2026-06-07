@@ -24,7 +24,7 @@ import type { PermissionDeniedState } from '@hooks/useImagePicker'
 import { useContactForm } from '@modules/contacts/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import type { MultisigStackParamList } from '../../routes/types'
-import { Optional } from '@perawallet/wallet-core-shared'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 type UseEditParticipantScreenResult = {
     address: string
@@ -33,7 +33,7 @@ type UseEditParticipantScreenResult = {
     isDoneDisabled: boolean
     onPickImage: () => Promise<void>
     permissionDenied: PermissionDeniedState
-    handleDone: () => void
+    handleDone: () => Promise<void>
     handleRemove: () => void
 }
 

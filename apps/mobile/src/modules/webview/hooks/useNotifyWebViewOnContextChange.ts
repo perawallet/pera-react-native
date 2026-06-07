@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import WebView from 'react-native-webview'
+import type WebView from 'react-native-webview'
 
 import { sendNotificationToWebview } from './handlers'
 import type { Nullable } from '@perawallet/wallet-core-shared'

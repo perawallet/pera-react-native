@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { Theme } from '@rneui/themed'
+import { type Theme } from '@rneui/themed'
 import {
     getTypography,
     getVariantFontWeight,

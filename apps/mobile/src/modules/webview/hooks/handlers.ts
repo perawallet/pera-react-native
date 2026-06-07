@@ -11,7 +11,7 @@
  */
 
 import { logger, AppError, type Nullable } from '@perawallet/wallet-core-shared'
-import WebView from 'react-native-webview'
+import type WebView from 'react-native-webview'
 
 const MAX_ERROR_LENGTH = 200
 const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
@@ -31,14 +31,14 @@ const sanitizeErrorForWebview = (error: Error): string => {
 }
 
 export const JsonRpcErrorCode = {
-    ParseError: -32700,
-    InvalidRequest: -32600,
-    MethodNotFound: -32601,
-    InvalidParams: -32602,
-    InternalError: -32603,
-    ServerErrorStart: -32000,
-    Unauthorized: -32001,
-    ServerErrorEnd: -32099,
+    ParseError: -32_700,
+    InvalidRequest: -32_600,
+    MethodNotFound: -32_601,
+    InvalidParams: -32_602,
+    InternalError: -32_603,
+    ServerErrorStart: -32_000,
+    Unauthorized: -32_001,
+    ServerErrorEnd: -32_099,
 } as const
 
 export type JsonRpcErrorCode =

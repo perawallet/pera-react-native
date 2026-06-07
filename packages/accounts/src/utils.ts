@@ -16,11 +16,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     AccountTypes,
-    HardwareWalletAccount,
-    HDWalletAccount,
-    Algo25Account,
-    MultiSigAccount,
-    WatchAccount,
+    type HardwareWalletAccount,
+    type HDWalletAccount,
+    type Algo25Account,
+    type MultiSigAccount,
+    type WatchAccount,
     type ImportAccountType,
     type WalletAccount,
 } from './models'

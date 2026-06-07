@@ -29,7 +29,7 @@ import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
 import {
     getAccountDisplayName,
-    HDWalletAccount,
+    type HDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
 export const ImportSelectAddressesScreen = () => {

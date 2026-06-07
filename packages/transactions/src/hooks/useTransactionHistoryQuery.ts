@@ -251,7 +251,7 @@ export const useTransactionHistoryQuery = (
         isError: query.isError,
         error: query.error,
         hasNextPage: query.hasNextPage ?? false,
-        fetchNextPage: query.fetchNextPage,
-        refetch: query.refetch,
+        fetchNextPage: () => void query.fetchNextPage(),
+        refetch: () => void query.refetch(),
     }
 }

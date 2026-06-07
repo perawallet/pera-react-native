@@ -14,7 +14,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import {
     createNativeStackNavigator,
-    NativeStackHeaderProps,
+    type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { BannersCarouselModalScreen } from '@modules/banners'
@@ -38,7 +38,7 @@ import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
 
-import { RootStackParamList } from './types'
+import { type RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'

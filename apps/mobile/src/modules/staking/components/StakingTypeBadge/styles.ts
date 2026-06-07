@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Colors, makeStyles } from '@rneui/themed'
+import { type Colors, makeStyles } from '@rneui/themed'
 import type { StakingType } from '../../models'
 
 const STAKING_TYPE_BADGE_COLORS: Record<StakingType, keyof Colors> = {

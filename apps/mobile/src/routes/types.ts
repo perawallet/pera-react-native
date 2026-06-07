@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { NavigatorScreenParams } from '@react-navigation/native'
+import { type NavigatorScreenParams } from '@react-navigation/native'
 import {
-    OnboardingStackParamList,
-    AddAccountStackParamList,
+    type OnboardingStackParamList,
+    type AddAccountStackParamList,
 } from '@modules/onboarding/routes/types'
-import { TabBarStackParamList } from '@routes/tabbar'
-import { SettingsStackParamsList } from '@modules/settings/routes'
-import { ContactsStackParamsList } from '@modules/contacts/routes'
-import { AccountStackParamsList } from '@modules/accounts/routes/types'
+import { type TabBarStackParamList } from '@routes/tabbar'
+import { type SettingsStackParamsList } from '@modules/settings/routes'
+import { type ContactsStackParamsList } from '@modules/contacts/routes'
+import { type AccountStackParamsList } from '@modules/accounts/routes/types'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { MessagesStackParamList } from '@modules/messages/routes'
-import { MultisigStackParamList } from '@modules/multisig'
-import { PeraCardStackParamList } from '@modules/card'
+import { type MessagesStackParamList } from '@modules/messages/routes'
+import { type MultisigStackParamList } from '@modules/multisig'
+import { type PeraCardStackParamList } from '@modules/card'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
-import { SearchStackParamsList } from '@modules/search'
+import { type SearchStackParamsList } from '@modules/search'
 import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger'
 import type { RekeyToSharedStackParamList } from '@modules/rekey/routes/rekey-to-shared'
 import type { RekeyToStandardStackParamList } from '@modules/rekey/routes/rekey-to-standard'

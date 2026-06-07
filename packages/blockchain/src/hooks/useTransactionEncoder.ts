@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PeraSignedTransaction, PeraTransaction } from '../models'
+import { type PeraSignedTransaction, type PeraTransaction } from '../models'
 
 import {
     encodeTransaction,

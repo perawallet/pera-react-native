@@ -88,7 +88,7 @@ export const useSettingsScreen = () => {
 
         clearAccountsStore()
 
-        deferToNextCycle(() => {
+        void deferToNextCycle(() => {
             navigation.navigate('Onboarding', {
                 screen: 'OnboardingHome',
             })

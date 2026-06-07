@@ -46,7 +46,7 @@ export const useDismissSpotBannerMutation = () => {
             }
         },
         onSettled: () => {
-            queryClient.invalidateQueries({
+            void queryClient.invalidateQueries({
                 queryKey: getSpotBannersQueryKey(network, deviceID ?? ''),
             })
         },

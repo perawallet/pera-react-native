@@ -14,8 +14,8 @@ import { makeStyles } from '@rneui/themed'
 import { useCallback } from 'react'
 import {
     Notifier,
-    NotifierRoot,
-    ShowNotificationParams,
+    type NotifierRoot,
+    type ShowNotificationParams,
 } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {

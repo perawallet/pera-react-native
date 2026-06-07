@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { IconName, PWIcon, PWView } from '@components/core'
+import { type IconName, PWIcon, PWView } from '@components/core'
 
 import { useMemo } from 'react'
 import {
@@ -22,8 +22,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { SvgProps } from 'react-native-svg'
-import { AccountIconSize, useStyles } from './styles'
+import { type SvgProps } from 'react-native-svg'
+import { type AccountIconSize, useStyles } from './styles'
 
 const THEME_TOKEN = '__theme__'
 const FALLBACK_ASSET = `accounts/${THEME_TOKEN}/unknown-account`
@@ -86,17 +86,20 @@ export const AccountIcon = (props: AccountIconProps) => {
 
         let asset: string
         switch (state) {
-            case 'rekeyedSignable':
+            case 'rekeyedSignable': {
                 asset =
                     REKEYED_SIGNABLE_ICON[account.type] ??
                     REKEYED_SIGNABLE_DEFAULT
                 break
-            case 'rekeyedUnsignable':
+            }
+            case 'rekeyedUnsignable': {
                 asset = REKEYED_UNSIGNABLE_ICON
                 break
-            case 'base':
+            }
+            case 'base': {
                 asset = BASE_ICON[account.type] ?? FALLBACK_ASSET
                 break
+            }
         }
 
         const theme = darkmode ? 'dark' : 'light'

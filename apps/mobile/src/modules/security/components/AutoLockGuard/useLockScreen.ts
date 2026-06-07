@@ -65,7 +65,7 @@ export const useLockScreen = ({
             )
             setRemainingSeconds(remaining)
             if (remaining === 0) {
-                setLockoutEndTime(null)
+                void setLockoutEndTime(null)
             }
         }
 
@@ -73,7 +73,7 @@ export const useLockScreen = ({
         const interval = setInterval(updateRemaining, 1000)
 
         return () => clearInterval(interval)
-    }, [lockoutEndTime])
+    }, [lockoutEndTime, isLockedOut, setLockoutEndTime])
 
     // Biometric auth must NOT bypass the PIN lockout. If we're already locked
     // out at mount, skip the prompt; if the user later enters the lockout via
@@ -97,7 +97,7 @@ export const useLockScreen = ({
         hasAttemptedBiometricsRef.current = true
 
         let cancelled = false
-        ;(async () => {
+        void (async () => {
             const enabled = await checkBiometricsEnabled()
             if (cancelled || !enabled) return
             const success = await authenticateWithBiometrics({
@@ -105,7 +105,7 @@ export const useLockScreen = ({
                 cancelLabel: t('security.biometric.cancel_label'),
             })
             if (cancelled || !success) return
-            resetFailedAttempts()
+            void resetFailedAttempts()
             onUnlock()
         })()
 
@@ -119,6 +119,7 @@ export const useLockScreen = ({
         authenticateWithBiometrics,
         resetFailedAttempts,
         onUnlock,
+        t,
     ])
 
     //register shake-to-lock listener; see useShakeToLockHandler for details
@@ -128,7 +129,7 @@ export const useLockScreen = ({
         async (pin: string) => {
             const result = await verifyPin(pin)
             if (result.kind === 'ok') {
-                resetFailedAttempts()
+                void resetFailedAttempts()
                 onUnlock()
                 return
             }
@@ -149,7 +150,7 @@ export const useLockScreen = ({
                 }
                 return
             }
-            handleFailedAttempt()
+            void handleFailedAttempt()
             setHasError(true)
         },
         [
@@ -170,7 +171,7 @@ export const useLockScreen = ({
         isLockedOut,
         remainingSeconds,
         isDuressWipeInProgress,
-        handlePinComplete,
+        handlePinComplete: (pin: string) => void handlePinComplete(pin),
         handleErrorAnimationComplete,
     }
 }

@@ -184,7 +184,7 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.recover_wallet_description',
                     leftIcon: 'fund' as IconName,
-                    onPress: handleOpenImportOptions,
+                    onPress: () => void handleOpenImportOptions(),
                 },
                 {
                     testID: 'import_account_options_recover_qr_button',

@@ -14,14 +14,14 @@ import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
     formatCurrency,
-    HistoryPeriod,
+    type HistoryPeriod,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
-    AssetPriceHistoryItem,
+    type AssetPriceHistoryItem,
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'

@@ -84,7 +84,7 @@ export const buildLedgerAccountPath = (accountIndex: number): string =>
 export const LEDGER_STATUS_CODES = {
     SUCCESS: StatusCodes.OK,
     /** User rejected the operation on the device (v2.0.7+, Algorand app-specific) */
-    USER_REJECTED: 0x6986,
+    USER_REJECTED: 0x69_86,
     USER_REJECTED_LEGACY: StatusCodes.CONDITIONS_OF_USE_NOT_SATISFIED,
     APP_NOT_OPEN: StatusCodes.CLA_NOT_SUPPORTED,
 } as const

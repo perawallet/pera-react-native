@@ -47,7 +47,7 @@ describe('useAssetTransferDisplay', () => {
         id: 'TX_ID',
         assetTransferTransaction: {
             receiver: 'RECEIVER',
-            amount: 1000000n,
+            amount: 1_000_000n,
             assetId: 123n,
         },
     } as unknown as PeraDisplayableTransaction

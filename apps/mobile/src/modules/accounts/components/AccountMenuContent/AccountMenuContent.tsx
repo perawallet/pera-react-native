@@ -13,8 +13,8 @@
 import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ReactNode } from 'react'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type ReactNode } from 'react'
 import { useStyles } from './styles'
 
 export type AccountMenuContentResult =

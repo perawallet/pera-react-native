@@ -28,7 +28,7 @@ export const useActiveAccountBalanceInvalidator =
 
         const invalidateActiveAccount = useCallback(() => {
             if (selectedAccountAddress === null) return
-            queryClient.invalidateQueries({
+            void queryClient.invalidateQueries({
                 queryKey: getAccountBalancesQueryKey(
                     selectedAccountAddress,
                     network,

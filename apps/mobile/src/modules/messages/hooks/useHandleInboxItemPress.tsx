@@ -96,11 +96,12 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                     handleMultisigSignTap(item.data)
                     return
                 }
-                default:
+                default: {
                     errorToast(
                         'common.not_implemented.title',
                         'common.not_implemented.body',
                     )
+                }
             }
         },
         [push, errorToast, handleMultisigSignTap, openInvitationDetail],

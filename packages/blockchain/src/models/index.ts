@@ -15,8 +15,8 @@ import type {
     SignedTransaction,
     Transaction,
 } from '@algorandfoundation/algokit-utils/transact'
-import { BaseStoreState } from '@perawallet/wallet-core-shared'
-import { Address } from '@algorandfoundation/algokit-utils'
+import { type BaseStoreState } from '@perawallet/wallet-core-shared'
+import { type Address } from '@algorandfoundation/algokit-utils'
 
 export const MAX_TX_NOTE_BYTES = 1024
 

@@ -63,9 +63,10 @@ export const AddressSearchView = ({
     const renderItem = useCallback(
         ({ item }: { item: AddressSearchItem }) => {
             switch (item.type) {
-                case 'section_header':
+                case 'section_header': {
                     return <PWText variant='h4'>{t(item.title)}</PWText>
-                case 'contact':
+                }
+                case 'contact': {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.contact.address)}
@@ -77,7 +78,8 @@ export const AddressSearchView = ({
                             />
                         </PWTouchableOpacity>
                     )
-                case 'account':
+                }
+                case 'account': {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.account.address)}
@@ -88,7 +90,8 @@ export const AddressSearchView = ({
                             />
                         </PWTouchableOpacity>
                     )
-                case 'address':
+                }
+                case 'address': {
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.address)}
@@ -118,7 +121,8 @@ export const AddressSearchView = ({
                             )}
                         </PWTouchableOpacity>
                     )
-                case 'nfd':
+                }
+                case 'nfd': {
                     return (
                         <PWTouchableOpacity
                             onPress={() =>
@@ -151,6 +155,7 @@ export const AddressSearchView = ({
                             )}
                         </PWTouchableOpacity>
                     )
+                }
             }
         },
         [onSelected, styles, t, showAccountBalance, showAddIcon],

@@ -15,7 +15,7 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
     logger,
-    Network,
+    type Network,
     Networks,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -39,12 +39,12 @@ import {
     useEnqueueArc0001SignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import WalletConnect from '@walletconnect/client'
+import type WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
 import {
     AlgorandChainId,
-    WalletConnectConnection,
-    WalletConnectTransactionPayload,
+    type WalletConnectConnection,
+    type WalletConnectTransactionPayload,
 } from '../models'
 import { MAX_DATA_SIGN_REQUESTS, WC_DELIVERY_TIMEOUT_MS } from '../constants'
 import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'
@@ -52,7 +52,7 @@ import {
     canSignArbitraryData,
     canSignArc60,
     useAllAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
 // A delivery-connection timeout is owned by the signing machine

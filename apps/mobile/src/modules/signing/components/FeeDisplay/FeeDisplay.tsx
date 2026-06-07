@@ -19,9 +19,9 @@ import { useFeeWarning } from './useFeeWarning'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
-import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import { StackNavigationProp } from '@react-navigation/stack'
+import { type StackNavigationProp } from '@react-navigation/stack'
 
 export type FeeDisplayProps = {
     transaction?: PeraDisplayableTransaction

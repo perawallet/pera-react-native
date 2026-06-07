@@ -116,7 +116,7 @@ const startAlgo25ImportThroughMnemonic = async (words: string[]) => {
 
 // Real algo25 key derivation (tweetnacl + algokit) plus several screen
 // transitions and an indexer round trip — bump above the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))

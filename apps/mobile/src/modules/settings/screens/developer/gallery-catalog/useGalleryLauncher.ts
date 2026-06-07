@@ -11,13 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, type ParamListBase } from '@react-navigation/native'
 
 import { useBottomSheet } from '@modules/bottom-sheet'
 
 import type { GalleryEntry } from './types'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { ParamListBase } from '@react-navigation/native'
 
 type UseGalleryLauncherResult = {
     launch: (entry: GalleryEntry) => void
@@ -31,21 +30,26 @@ export const useGalleryLauncher = (): UseGalleryLauncherResult => {
         (entry: GalleryEntry) => {
             const { launch: l } = entry
             switch (l.kind) {
-                case 'navigate':
+                case 'navigate': {
                     navigation.navigate(l.target.name, l.target.params)
                     break
-                case 'sheet':
+                }
+                case 'sheet': {
                     void request(l.request())
                     break
-                case 'sheetByType':
+                }
+                case 'sheetByType': {
                     void requestByType(l.type, l.props, l.options)
                     break
-                case 'action':
+                }
+                case 'action': {
                     l.run()
                     break
-                case 'preview':
+                }
+                case 'preview': {
                     navigation.navigate('GalleryPreview', { entryId: entry.id })
                     break
+                }
             }
         },
         [navigation, request, requestByType],

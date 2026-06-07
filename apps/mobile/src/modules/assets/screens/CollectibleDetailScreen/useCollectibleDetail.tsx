@@ -67,11 +67,11 @@ type UseCollectibleDetailResult = {
     isOptingOut: boolean
     modelViewerModal: ModalState
     modelViewerUrl: Optional<string>
-    handleOptOutPressed: () => void
+    handleOptOutPressed: () => Promise<void>
     handleSendPressed: () => void
     handleSharePressed: () => void
-    handleCopyImage: () => void
-    handleSaveImage: () => void
+    handleCopyImage: () => Promise<void>
+    handleSaveImage: () => Promise<void>
     handleModelPress: () => void
     handleFullScreenPress: (index: number) => void
     hasExplorerUrl: boolean
@@ -101,7 +101,7 @@ export const useCollectibleDetail = (
 
     const collectible = asset?.peraMetadata?.collectible
     const traits = collectible?.traits ?? []
-    const media = collectible?.media ?? []
+    const media = useMemo(() => collectible?.media ?? [], [collectible?.media])
     const hasImage = useMemo(
         () =>
             media.some(m => m.type === 'image') ||
@@ -224,7 +224,9 @@ export const useCollectibleDetail = (
             const base64 = await file.base64()
 
             await Clipboard.setImageAsync(base64)
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            void Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+            )
             showToast({
                 title: t('asset_details.collectible.image_copied'),
                 body: '',
@@ -267,7 +269,9 @@ export const useCollectibleDetail = (
             })
 
             await MediaLibrary.saveToLibraryAsync(file.uri)
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            void Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+            )
             showToast({
                 title: t('asset_details.collectible.media_saved'),
                 body: '',

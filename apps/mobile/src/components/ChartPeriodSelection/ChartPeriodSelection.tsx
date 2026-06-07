@@ -12,7 +12,7 @@
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { type HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useChartPeriodSelection } from './useChartPeriodSelection'
 
 export type ChartPeriodSelectionProps = {

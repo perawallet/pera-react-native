@@ -82,7 +82,7 @@ export const AsbImportBackupScreen = () => {
                     ) : (
                         <PWTouchableOpacity
                             style={styles.dropZone}
-                            onPress={handlePickFile}
+                            onPress={() => void handlePickFile()}
                             testID='asb_import_backup_pick_file_button'
                         >
                             <PWRoundIcon
@@ -105,7 +105,7 @@ export const AsbImportBackupScreen = () => {
 
                     <PWTouchableOpacity
                         style={styles.pasteRow}
-                        onPress={handlePasteFromClipboard}
+                        onPress={() => void handlePasteFromClipboard()}
                         testID='asb_import_backup_paste_button'
                     >
                         <PWIcon

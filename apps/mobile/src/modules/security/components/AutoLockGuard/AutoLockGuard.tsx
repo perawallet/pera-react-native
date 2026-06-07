@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react'
+import React, { type PropsWithChildren } from 'react'
 import { useAutoLockListener } from './useAutoLockListener'
 import { useStyles } from './AutoLockGuard.style'
 import { PWView, PWLoadingOverlay } from '@components/core'

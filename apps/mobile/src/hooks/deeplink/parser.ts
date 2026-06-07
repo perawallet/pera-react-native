@@ -11,10 +11,10 @@
  */
 
 import {
-    AddressActionsDeeplink,
-    AnyParsedDeeplink,
+    type AddressActionsDeeplink,
+    type AnyParsedDeeplink,
     DeeplinkType,
-    PeraWebImportDeeplink,
+    type PeraWebImportDeeplink,
 } from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'

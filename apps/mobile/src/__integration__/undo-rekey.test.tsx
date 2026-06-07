@@ -71,7 +71,7 @@ import {
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The source is a rekeyed account; the held auth account does the signing.
 // integration tests don't load i18n, so `t()` returns the raw key — the
@@ -205,7 +205,7 @@ describe('Flow: Undo rekey end-to-end', () => {
                         screen.getByTestId('undo-rekey-success-screen'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             expect(sendSpy).toHaveBeenCalled()

@@ -86,7 +86,7 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
 const seedAlgo25Sender = async (): Promise<WalletAccount> => {
@@ -213,7 +213,7 @@ describe('Edge: Network failure paths', () => {
                 () => {
                     expect(failingSendSpy).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // PWResultView is the success screen marker — it must not
@@ -225,7 +225,7 @@ describe('Edge: Network failure paths', () => {
                         vi.mocked(Notifier.showNotification),
                     ).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             expect(screen.queryByTestId('PWResultView')).toBeFalsy()
             // Sender state survives — the failure shouldn't drop the
@@ -266,7 +266,7 @@ describe('Edge: Network failure paths', () => {
                 swapper_address: ALGO25_TEST_ADDRESS,
                 swap_type: 'fixed-input',
                 asset_in_id: 0,
-                asset_out_id: 31566704,
+                asset_out_id: 31_566_704,
                 amount: '10000000',
                 slippage: '0.01',
             })
@@ -316,7 +316,7 @@ describe('Edge: Network failure paths', () => {
                 swapper_address: ALGO25_TEST_ADDRESS,
                 swap_type: 'fixed-input',
                 asset_in_id: 0,
-                asset_out_id: 31566704,
+                asset_out_id: 31_566_704,
                 amount: '10000000',
                 slippage: '0.01',
             })

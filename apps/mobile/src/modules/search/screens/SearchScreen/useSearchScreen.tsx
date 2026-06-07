@@ -11,11 +11,12 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
+import {
+    type WalletAccount,
+    useSelectedAccountAddress,
+} from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import type { Contact } from '@perawallet/wallet-core-contacts'
-import { useContacts } from '@perawallet/wallet-core-contacts'
+import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import {
     SEARCH_SCOPES,
     useGlobalSearch,

@@ -50,7 +50,7 @@ export const useDeclineSignRequestMutation = ({
                 },
             ]),
         onSuccess: () => {
-            rqClient.invalidateQueries({
+            void rqClient.invalidateQueries({
                 queryKey: getSignRequestDetailQueryKey(network, signRequestId),
             })
         },

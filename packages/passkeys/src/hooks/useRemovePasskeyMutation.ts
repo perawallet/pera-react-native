@@ -47,7 +47,7 @@ export const useRemovePasskeyMutation = (): UseRemovePasskeyMutationResult => {
             await service.refreshCredentialIdentities().catch(() => undefined)
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: passkeysQueryKey })
+            void queryClient.invalidateQueries({ queryKey: passkeysQueryKey })
         },
     })
 

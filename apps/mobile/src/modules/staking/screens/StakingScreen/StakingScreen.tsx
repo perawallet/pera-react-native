@@ -64,7 +64,7 @@ export const StakingScreen = () => {
                 <StakingProjectCard
                     project={item}
                     isLast={index === projects.length - 1}
-                    onPress={handleProjectPress}
+                    onPress={project => void handleProjectPress(project)}
                 />
             )
         },

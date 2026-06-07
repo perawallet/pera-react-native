@@ -49,6 +49,6 @@ export const useSpotBannersQuery = (): UseSpotBannersQueryResult => {
         spotBanners: query.data ?? [],
         isLoading: query.isLoading,
         isError: query.isError,
-        refetch: query.refetch,
+        refetch: () => void query.refetch(),
     }
 }

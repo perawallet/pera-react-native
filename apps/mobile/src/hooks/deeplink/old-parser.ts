@@ -12,20 +12,20 @@
 
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
-    AnyParsedDeeplink,
+    type AnyParsedDeeplink,
     DeeplinkType,
-    AddressActionsDeeplink,
-    AlgoTransferDeeplink,
-    AssetTransferDeeplink,
-    KeyregDeeplink,
-    AssetOptInDeeplink,
-    AssetTransactionsDeeplink,
-    AssetInboxDeeplink,
-    DiscoverBrowserDeeplink,
-    DiscoverPathDeeplink,
-    CardsDeeplink,
-    StakingDeeplink,
-    HomeDeeplink,
+    type AddressActionsDeeplink,
+    type AlgoTransferDeeplink,
+    type AssetTransferDeeplink,
+    type KeyregDeeplink,
+    type AssetOptInDeeplink,
+    type AssetTransactionsDeeplink,
+    type AssetInboxDeeplink,
+    type DiscoverBrowserDeeplink,
+    type DiscoverPathDeeplink,
+    type CardsDeeplink,
+    type StakingDeeplink,
+    type HomeDeeplink,
 } from './types'
 import { decodeBase64Param, normalizeUrl, parseQueryParams } from './utils'
 import { PERAWALLET_SCHEME } from './constants'

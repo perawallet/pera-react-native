@@ -129,6 +129,6 @@ export const useLedgerAccountPreview = (
         preview,
         isLoading: onChain.isLoading,
         isError: onChain.isError,
-        refetch: onChain.refetch,
+        refetch: () => void onChain.refetch(),
     }
 }

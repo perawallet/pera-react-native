@@ -151,7 +151,7 @@ export const useInputScreen = () => {
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, params, accountInformation, tokenBalance])
+    }, [selectedAssetId, accountInformation, tokenBalance])
 
     const minBalanceDisplay = useMemo(() => {
         if (selectedAssetId === ALGO_ASSET_ID) {

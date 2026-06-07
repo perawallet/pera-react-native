@@ -48,8 +48,14 @@ export const useSettingsDeveloperMigrationViewerScreen =
         }, [])
 
         useEffect(() => {
-            load()
+            void load()
         }, [load])
 
-        return { data, isLoading, error, isMigrationComplete, refresh: load }
+        return {
+            data,
+            isLoading,
+            error,
+            isMigrationComplete,
+            refresh: () => void load(),
+        }
     }

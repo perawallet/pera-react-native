@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { type NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { AccountStackParamsList } from '@modules/accounts/routes'
 import {
     PWButton,
@@ -175,7 +175,7 @@ export const CollectibleDetailScreen = ({
                                     icon='copy'
                                     variant='secondary'
                                     size='md'
-                                    onPress={handleCopyImage}
+                                    onPress={() => void handleCopyImage()}
                                 />
                             )}
                             {hasSaveableMedia && (
@@ -184,7 +184,7 @@ export const CollectibleDetailScreen = ({
                                     icon='save'
                                     variant='secondary'
                                     size='md'
-                                    onPress={handleSaveImage}
+                                    onPress={() => void handleSaveImage()}
                                 />
                             )}
                         </PWView>
@@ -210,7 +210,7 @@ export const CollectibleDetailScreen = ({
                             <PWButton
                                 title={t('asset_opt_out.opt_out_cta')}
                                 variant='secondary'
-                                onPress={handleOptOutPressed}
+                                onPress={() => void handleOptOutPressed()}
                             />
                         </PWView>
                     )}

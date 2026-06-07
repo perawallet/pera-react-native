@@ -26,7 +26,7 @@ import {
 
 import type { PWFlatListRef } from '@components/core'
 import { type SearchInputRef } from '@components/SearchInput'
-import { Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 
 const SEARCH_KEY = '__searchable_list_search__'
 const HEADER_KEY = '__searchable_list_header__'

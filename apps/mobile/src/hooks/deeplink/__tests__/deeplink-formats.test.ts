@@ -448,7 +448,7 @@ const cases: Case[] = [
                 expect.objectContaining({
                     sender: ADDRESS,
                     voteFirst: 1300n,
-                    voteLast: 11300n,
+                    voteLast: 11_300n,
                     voteKeyDilution: 100n,
                 }),
             )
@@ -764,7 +764,7 @@ const cases: Case[] = [
                 expect.objectContaining({
                     sender: ADDRESS,
                     voteFirst: 1300n,
-                    voteLast: 11300n,
+                    voteLast: 11_300n,
                     voteKeyDilution: 100n,
                 }),
             )
@@ -876,28 +876,33 @@ describe('deeplink format coverage', () => {
         })
 
         switch (channel.kind) {
-            case 'navigate':
+            case 'navigate': {
                 expect(mockNavigate).toHaveBeenCalled()
                 expect(mockNavigate.mock.calls[0][0]).toBe(channel.screen)
                 break
-            case 'requestByType':
+            }
+            case 'requestByType': {
                 expect(mockRequestByType).toHaveBeenCalled()
                 expect(mockRequestByType.mock.calls[0][0]).toBe(channel.type)
                 break
-            case 'pushWebView':
+            }
+            case 'pushWebView': {
                 expect(mockPushWebView).toHaveBeenCalledWith(
                     expect.objectContaining({ url: channel.url }),
                 )
                 break
-            case 'connect':
+            }
+            case 'connect': {
                 expect(mockConnect).toHaveBeenCalledWith({
                     connection: { uri: channel.uri },
                 })
                 break
-            case 'addSignRequest':
+            }
+            case 'addSignRequest': {
                 expect(mockAddSignRequest).toHaveBeenCalled()
                 break
-            case 'sendFunds':
+            }
+            case 'sendFunds': {
                 // Send-funds path: store reset + bottom-sheet open via
                 // requestByType('send-funds', …).
                 expect(mockSendFundsReset).toHaveBeenCalled()
@@ -907,7 +912,8 @@ describe('deeplink format coverage', () => {
                     expect.any(Object),
                 )
                 break
-            case 'peraWebImport':
+            }
+            case 'peraWebImport': {
                 // QR-only path: parsed payload lands in the flow store and
                 // the dispatcher navigates to the loading screen. The
                 // `extra` callback asserts the exact backupId + key bytes.
@@ -919,11 +925,13 @@ describe('deeplink format coverage', () => {
                     }),
                 )
                 break
-            case 'errorToast':
+            }
+            case 'errorToast': {
                 // Catch-all for unimplemented handlers that fall back to
                 // info/error toasts (Cards, etc.).
                 expect(mockInfoToast).toHaveBeenCalled()
                 break
+            }
         }
 
         extra?.()

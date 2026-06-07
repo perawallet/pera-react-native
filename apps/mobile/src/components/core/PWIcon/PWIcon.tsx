@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { SvgProps } from 'react-native-svg'
+import { type SvgProps } from 'react-native-svg'
 import { useTheme } from '@rneui/themed'
 import { useCallback, useMemo } from 'react'
 import { Keyboard, type GestureResponderEvent } from 'react-native'
-import { ICON_LIBRARY, IconName } from './constants'
-import { getIconPixelSize, PWIconSize, PWIconVariant } from './types'
+import { ICON_LIBRARY, type IconName } from './constants'
+import { getIconPixelSize, type PWIconSize, type PWIconVariant } from './types'
 
 export type PWIconProps = {
     name: IconName

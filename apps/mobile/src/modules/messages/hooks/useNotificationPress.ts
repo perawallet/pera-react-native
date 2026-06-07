@@ -106,7 +106,7 @@ export const useNotificationPress = (): UseNotificationPressResult => {
                 return
             }
             if (notification.url && isValidDeepLink(notification.url)) {
-                handleDeepLink(notification.url, true, 'deeplink')
+                void handleDeepLink(notification.url, true, 'deeplink')
             }
         },
         [isValidDeepLink, handleDeepLink, refetchInbox, handleInboxItemPress],

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
     type PeraNotification,
@@ -45,7 +45,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
     const { markAsRead } = useMarkNotificationsAsReadMutation()
     const { handleNotificationPress } = useNotificationPress()
 
-    const notifications = data ?? []
+    const notifications = useMemo(() => data ?? [], [data])
 
     useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
@@ -68,7 +68,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         isRefetching,
         keyExtractor: (item: PeraNotification) => item.id,
         loadMoreItems,
-        refetch,
+        refetch: () => void refetch(),
         handleNotificationPress,
     }
 }

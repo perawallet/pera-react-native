@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAccountsStore,
@@ -152,11 +152,11 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     // dev-only double-invoke (a second call would race the first against a
     // different transport instance). Route params are stable for the screen's
     // lifetime, so an empty dep array is intentional.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (hasStartedRef.current) return
         hasStartedRef.current = true
-        verify()
+        void verify()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const handleAdd = useCallback(() => {
@@ -239,7 +239,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     ])
 
     const handleRetry = useCallback(() => {
-        verify()
+        void verify()
     }, [verify])
 
     const handleTroubleshoot = useCallback(() => {

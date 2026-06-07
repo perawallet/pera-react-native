@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import { type BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { useHDImportSession } from './useHDImportSession'
 import { useAccountsStore } from '../store'
-import { ImportAccountType, WalletAccount } from '../models'
+import { type ImportAccountType, type WalletAccount } from '../models'
 import { DuplicateAccountError } from '../errors'
 
 export type ImportHDPendingResult = {

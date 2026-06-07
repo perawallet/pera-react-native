@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery, UseQueryResult } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { assetBatchQueue } from '../services/assetBatchQueue'

@@ -94,7 +94,7 @@ export const useQRScannerView = ({
                 // `replace` here would discard the screen the user was on,
                 // leaving destinations like Staking / AssetDetails with no
                 // back path.
-                handleDeepLink(
+                void handleDeepLink(
                     url,
                     false,
                     'qr',
@@ -133,7 +133,7 @@ export const useQRScannerView = ({
         }
         if (!isVisible) return
         let active = true
-        requestPermission().then(result => {
+        void requestPermission().then(result => {
             if (!active) return
             setPermissionDenied(!result)
         })

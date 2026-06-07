@@ -13,7 +13,10 @@
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
-import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useClipboard } from '@hooks/useClipboard'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useClaimAssets } from '@modules/transactions/hooks'
@@ -143,14 +146,14 @@ export const useAssetClaimDetailScreen =
             assetIndex,
             request,
             requestBottomSheet,
-            showToast,
             t,
             deviceInfo,
+            errorToast,
         ])
 
         const handleCopyAssetId = useCallback(() => {
             if (request.id) {
-                copyToClipboard(String(request.id))
+                void copyToClipboard(String(request.id))
             }
         }, [request, copyToClipboard])
 
@@ -164,7 +167,7 @@ export const useAssetClaimDetailScreen =
             amount,
             receiverAccount: account ?? null,
             handleClaim,
-            handleRejectPress,
+            handleRejectPress: () => void handleRejectPress(),
             handleCopyAssetId,
         }
     }
