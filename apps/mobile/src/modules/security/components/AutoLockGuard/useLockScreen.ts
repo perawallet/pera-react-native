@@ -171,7 +171,7 @@ export const useLockScreen = ({
         isLockedOut,
         remainingSeconds,
         isDuressWipeInProgress,
-        handlePinComplete: (pin: string) => void handlePinComplete(pin),
+        handlePinComplete,
         handleErrorAnimationComplete,
     }
 }

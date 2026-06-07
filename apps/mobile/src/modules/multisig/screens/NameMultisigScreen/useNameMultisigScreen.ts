@@ -198,6 +198,6 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         isCreating,
         isFinishDisabled,
         handleNameChange,
-        handleFinish: () => void handleFinish(),
+        handleFinish,
     }
 }
