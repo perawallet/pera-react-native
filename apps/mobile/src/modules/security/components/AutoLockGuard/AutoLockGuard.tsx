@@ -65,7 +65,7 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
                     ) : (
                         <PinEntry
                             title={t('security.pin.unlock_title')}
-                            onPinComplete={handlePinComplete}
+                            onPinComplete={pin => void handlePinComplete(pin)}
                             hasError={hasError}
                             onErrorAnimationComplete={
                                 handleErrorAnimationComplete

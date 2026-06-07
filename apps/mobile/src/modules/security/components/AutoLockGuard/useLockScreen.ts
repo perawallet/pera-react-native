@@ -26,7 +26,7 @@ type UseLockScreenResult = {
     isLockedOut: boolean
     remainingSeconds: number
     isDuressWipeInProgress: boolean
-    handlePinComplete: (pin: string) => void
+    handlePinComplete: (pin: string) => Promise<void>
     handleErrorAnimationComplete: () => void
 }
 

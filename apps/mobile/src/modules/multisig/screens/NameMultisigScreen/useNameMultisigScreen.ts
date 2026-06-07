@@ -40,7 +40,7 @@ type UseNameMultisigScreenResult = {
     isCreating: boolean
     isFinishDisabled: boolean
     handleNameChange: (value: string) => void
-    handleFinish: () => void
+    handleFinish: () => Promise<void>
 }
 
 export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
