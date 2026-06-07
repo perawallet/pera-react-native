@@ -21,18 +21,6 @@ import { Platform } from 'react-native'
 import { getLocales } from 'expo-localization'
 import { config } from '@perawallet/wallet-core-config'
 
-// `getLocales()` is a native read and `getDeviceLocale()` is called per
-// rendered row (via currency formatting). The device locale doesn't change
-// while the app is running, so resolve it once and cache it.
-let cachedDeviceLocale: string | undefined
-const findDeviceLocale = () => {
-    if (cachedDeviceLocale === undefined) {
-        const locales = getLocales()
-        cachedDeviceLocale = locales.map(l => l.languageTag).at(0) ?? 'en-US'
-    }
-    return cachedDeviceLocale
-}
-
 const buildUserAgent = () => {
     return `${Application.applicationName}/${Application.nativeApplicationVersion}.${Application.nativeBuildVersion} \
   (${Platform.OS}; ${Device.modelName}; ${Device.osVersion}) \
@@ -40,6 +28,12 @@ const buildUserAgent = () => {
 }
 
 export class RNDeviceInfoStorageService implements DeviceInfoService {
+    // `getLocales()` is a native read and `getDeviceLocale()` is called per
+    // rendered row (via currency formatting). The device locale doesn't change
+    // while the app is running, so resolve it once and cache it on the
+    // (singleton) service instance.
+    private cachedDeviceLocale: string | undefined
+
     async getDeviceID(): Promise<string> {
         if (Platform.OS === 'ios') {
             return (await Application.getIosIdForVendorAsync()) ?? ''
@@ -53,7 +47,12 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
         return Platform.OS as DevicePlatform
     }
     getDeviceLocale(): string {
-        return findDeviceLocale()
+        if (this.cachedDeviceLocale === undefined) {
+            const locales = getLocales()
+            this.cachedDeviceLocale =
+                locales.map(l => l.languageTag).at(0) ?? 'en-US'
+        }
+        return this.cachedDeviceLocale
     }
     getDeviceOSVersion(): string {
         return Device.osVersion ?? ''
