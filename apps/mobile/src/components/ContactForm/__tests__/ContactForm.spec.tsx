@@ -47,7 +47,10 @@ const baseProps = {
 
 // PWInput is mocked as a bare <input>; labels + errorMessage show up as
 // HTML attributes rather than rendered text. Assert on attributes/order.
-const getInputs = () => screen.getAllByTestId('PWInput')
+const getInputs = () => [
+    screen.getByTestId('contact_name_input'),
+    screen.getByTestId('contact_address_input'),
+]
 
 describe('ContactForm', () => {
     it('renders the name input first and the address input second', () => {
