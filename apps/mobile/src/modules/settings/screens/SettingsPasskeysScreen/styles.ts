@@ -16,6 +16,9 @@ export const useStyles = makeStyles(theme => ({
     safeArea: {
         flex: 1,
     },
+    screenContainer: {
+        flex: 1,
+    },
     notice: {
         margin: theme.spacing.xl,
         marginBottom: 0,
