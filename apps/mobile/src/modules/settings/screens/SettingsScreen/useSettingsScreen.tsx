@@ -106,6 +106,8 @@ export const useSettingsScreen = () => {
                     confirmLabel={t('settings.main.remove_confirm')}
                     cancelLabel={t('settings.main.remove_cancel')}
                     testID='settings_delete_all_confirm_bottom_sheet'
+                    confirmTestID='settings_delete_all_confirm_button'
+                    cancelTestID='settings_delete_all_cancel_button'
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
