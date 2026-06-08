@@ -17,6 +17,8 @@ export enum WalletConnectEvent {
     SessionApproved = 'wc_session_approved', // Approved a dapp connection (dapp name/url, address, total accounts)
     SessionDisconnected = 'wc_session_disconnected', // Disconnected a session (dapp name/url)
     SessionRejected = 'wc_session_rejected', // Rejected a connection request (dapp name/url)
+    TransactionConfirmed = 'wc_transaction_confirmed', // Confirmed/signed a dapp-requested transaction (dapp name/url, tx count)
+    TransactionDeclined = 'wc_transaction_declined', // Declined a dapp-requested transaction (dapp name/url, tx count)
 }
 
 /** WalletConnect protocol version ('1' or '2'). */
@@ -46,6 +48,20 @@ export interface WalletConnectRequiredPayloads {
         [Key.DappName]: string
         [Key.DappUrl]: string
         [Key.WcVersion]?: WalletConnectVersion
+        [Key.AccountAddress]?: string
+    }
+    [WalletConnectEvent.TransactionConfirmed]: {
+        [Key.DappName]: string
+        [Key.DappUrl]: string
+        [Key.WcVersion]?: WalletConnectVersion
+        [Key.TransactionCount]?: number
+        [Key.AccountAddress]?: string
+    }
+    [WalletConnectEvent.TransactionDeclined]: {
+        [Key.DappName]: string
+        [Key.DappUrl]: string
+        [Key.WcVersion]?: WalletConnectVersion
+        [Key.TransactionCount]?: number
         [Key.AccountAddress]?: string
     }
 }

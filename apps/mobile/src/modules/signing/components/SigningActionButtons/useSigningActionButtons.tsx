@@ -22,6 +22,11 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    trackEvent,
+    WalletConnectEvent,
+    AnalyticsMetadataKey,
+} from '@perawallet/wallet-core-analytics'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -116,6 +121,21 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         [currentRequest, allAccounts],
     )
 
+    // WalletConnect transaction confirm/decline analytics. Only dapp-originated
+    // (`walletconnect`) requests carry these events; in-app/local signing is
+    // tracked through its own flow. Dapp name/url come from the request's
+    // sourceMetadata (peerMetadata), mirroring the session events.
+    const walletConnectTxPayload = useMemo(() => {
+        if (currentRequest?.sourceType !== 'walletconnect') return null
+        return {
+            [AnalyticsMetadataKey.DappName]:
+                currentRequest.sourceMetadata?.name ?? '',
+            [AnalyticsMetadataKey.DappUrl]:
+                currentRequest.sourceMetadata?.url ?? '',
+            [AnalyticsMetadataKey.TransactionCount]: allTransactions.length,
+        }
+    }, [currentRequest, allTransactions.length])
+
     const handleSignAndSend = useCallback(() => {
         if (isMultisigUnsignable) return
         if (guardedWarningType !== null) {
@@ -133,12 +153,24 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                         },
                     })
                 if (result === 'confirm') {
+                    if (walletConnectTxPayload) {
+                        trackEvent(
+                            WalletConnectEvent.TransactionConfirmed,
+                            walletConnectTxPayload,
+                        )
+                    }
                     pipeline.next()
                 } else if (result === 'go-to-settings') {
                     navigation.navigate('SecuritySettings')
                 }
             })()
             return
+        }
+        if (walletConnectTxPayload) {
+            trackEvent(
+                WalletConnectEvent.TransactionConfirmed,
+                walletConnectTxPayload,
+            )
         }
         pipeline.next()
     }, [
@@ -147,11 +179,18 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         pipeline,
         requestBottomSheet,
         navigation,
+        walletConnectTxPayload,
     ])
 
     const handleReject = useCallback(() => {
+        if (walletConnectTxPayload) {
+            trackEvent(
+                WalletConnectEvent.TransactionDeclined,
+                walletConnectTxPayload,
+            )
+        }
         pipeline.fail()
-    }, [pipeline])
+    }, [pipeline, walletConnectTxPayload])
 
     const cosignKind =
         pipeline.resolved?.kind.type === 'transactions'

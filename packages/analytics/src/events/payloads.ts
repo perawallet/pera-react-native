@@ -22,6 +22,7 @@ import type { WalletConnectRequiredPayloads } from './contexts/wallet-connect'
 import type { SettingsRequiredPayloads } from './contexts/settings'
 import type { TransactionsRequiredPayloads } from './contexts/transactions'
 import type { NotificationsOptionalPayloads } from './contexts/notifications'
+import type { StakingRequiredPayloads } from './contexts/staking'
 
 /**
  * Events that REQUIRE a payload — composed from each context's required-payload
@@ -36,7 +37,8 @@ export interface RequiredEventPayloads
         SwapRequiredPayloads,
         WalletConnectRequiredPayloads,
         SettingsRequiredPayloads,
-        TransactionsRequiredPayloads {}
+        TransactionsRequiredPayloads,
+        StakingRequiredPayloads {}
 
 /** Events that MAY carry a payload (all fields optional). */
 export interface OptionalEventPayloads

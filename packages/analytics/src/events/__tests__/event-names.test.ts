@@ -27,6 +27,8 @@ describe('analytics event catalog', () => {
 
     it('covers the full scoped catalog', () => {
         // Guards against accidental deletions during refactors.
-        expect(rawEventValues.length).toBeGreaterThanOrEqual(80)
+        // 101 events today (88 ported from the native apps + 13 RN net-new);
+        // the floor trails that slightly to leave room for intentional churn.
+        expect(rawEventValues.length).toBeGreaterThanOrEqual(100)
     })
 })

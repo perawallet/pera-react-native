@@ -10,7 +10,18 @@
  limitations under the License
  */
 
+import { AnalyticsMetadataKey as Key } from '../metadata-keys'
+
 /** Staking screen. */
 export enum StakingEvent {
     Open = 'stakingscr_view', // Opened the staking page
+    SelectProject = 'staking_click_dapp', // Opened a staking project (project name + url)
+}
+
+/** Project name/url come from the selected staking project and are always present. */
+export interface StakingRequiredPayloads {
+    [StakingEvent.SelectProject]: {
+        [Key.Name]: string
+        [Key.Url]: string
+    }
 }
