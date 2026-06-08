@@ -10,10 +10,18 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
+import { useQuery } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
+import { fetchCurrentRegion } from '../api/region'
+import { cardQueryKeys } from './querykeys'
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
+export const useCurrentRegionQuery = () => {
+    const { network } = useNetwork()
+
+    return useQuery({
+        queryKey: cardQueryKeys.currentRegion(network),
+        queryFn: ({ signal }) => fetchCurrentRegion({ network, signal }),
+        staleTime: config.reactQueryLongLivedStaleTime,
+    })
 }

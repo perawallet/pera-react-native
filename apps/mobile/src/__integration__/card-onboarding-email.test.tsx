@@ -23,16 +23,18 @@ import {
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
+import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { registerBottomSheet } from '@modules/bottom-sheet'
-import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardOnboardingEmailScreen } from '@modules/card/screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 
+const DEVICE_ID = 'integration-test-device'
+
 // Raw GET /v1/auth/settings shape (already camelCase; see the card package's
-// registrationSettingsResponseSchema). RU is ineligible so it must be hidden.
+// registrationSettingsResponseSchema). RU is ineligible (canSignUp: false) so
+// it stays selectable and routes to the waitlist instead of Continue.
 const SETTINGS_RESPONSE = {
     countries: [
         {
@@ -60,6 +62,13 @@ const SETTINGS_RESPONSE = {
     usStates: [],
 }
 
+// GET /v1/cards/supported-countries/ (Pera backend) — we only consume
+// `current_region` to preselect the country. `alpha_2` (not `alpha_2_code`).
+const supportedCountriesResponse = (alpha2: string, name: string) => ({
+    current_region: { alpha_2: alpha2, name },
+    regions: [],
+})
+
 const renderFlow = () =>
     renderWithNavigation(CardOnboardingEmailScreen, 'CardOnboardingEmail', {
         additionalScreens: [
@@ -70,34 +79,45 @@ const renderFlow = () =>
         ],
     })
 
+// Open the country picker and pick the country with the given ISO code.
+const openPickerAndSelect = async (countryCode: string) => {
+    fireEvent.click(screen.getByTestId('card-onboarding-country-field'))
+    await waitFor(() =>
+        expect(screen.getByTestId(`card-country-${countryCode}`)).toBeTruthy(),
+    )
+    fireEvent.click(screen.getByTestId(`card-country-${countryCode}`))
+    // Selecting resolves + closes the sheet (and sets the form's country).
+    await waitFor(() =>
+        expect(screen.queryByTestId(`card-country-${countryCode}`)).toBeNull(),
+    )
+}
+
 // Enter a valid email, open the country picker, and select the UK.
 const enterEmailAndCountry = async () => {
     fireEvent.change(screen.getByTestId('card-onboarding-email-input'), {
         target: { value: 'john@example.com' },
     })
-
-    fireEvent.click(screen.getByTestId('card-onboarding-country-field'))
-    await waitFor(() =>
-        expect(screen.getByTestId('card-country-GB')).toBeTruthy(),
-    )
-    // Ineligible countries are filtered out.
-    expect(screen.queryByTestId('card-country-RU')).toBeNull()
-
-    fireEvent.click(screen.getByTestId('card-country-GB'))
-    // Selecting resolves + closes the sheet (and sets the form's country).
-    await waitFor(() =>
-        expect(screen.queryByTestId('card-country-GB')).toBeNull(),
-    )
+    await openPickerAndSelect('GB')
 }
 
 describe('Flow: Card onboarding — email + country', () => {
     beforeAll(() => {
         server.listen({ onUnhandledRequest: 'warn' })
-        // registrations.ts runs at app bootstrap (RootComponent), not in the
-        // test harness — register the picker the flow opens by string key.
-        registerBottomSheet('card-country-picker', CardCountryPickerContent)
+        // The waitlist call sends the device id; the harness defaults to mainnet.
+        useDeviceStore.getState().setDeviceID('mainnet', DEVICE_ID)
     })
-    beforeEach(() => vi.mocked(Notifier.showNotification).mockClear())
+    beforeEach(() => {
+        vi.mocked(Notifier.showNotification).mockClear()
+        // Default region is not in SETTINGS_RESPONSE → nothing preselected, so
+        // the manual-selection flows stay deterministic. Tests can override.
+        server.use(
+            http.get('*/v1/cards/supported-countries/', () =>
+                HttpResponse.json(supportedCountriesResponse('ZZ', 'Nowhere'), {
+                    status: 200,
+                }),
+            ),
+        )
+    })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
@@ -142,5 +162,90 @@ describe('Flow: Card onboarding — email + country', () => {
             expect(Notifier.showNotification).toHaveBeenCalled(),
         )
         expect(screen.queryByTestId('card-onboarding-email-verify')).toBeNull()
+    })
+
+    it('Given an unsupported country, when Sign up for waitlist is pressed, then the country + device are submitted and the success sheet opens', async () => {
+        let waitlistBody: unknown
+        const waitlistSpy = vi.fn()
+        server.use(
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
+            http.post(
+                '*/v1/cards/country-availability-request/',
+                async ({ request }) => {
+                    waitlistBody = await request.json()
+                    waitlistSpy()
+                    return HttpResponse.json({}, { status: 200 })
+                },
+            ),
+        )
+
+        renderFlow()
+        // No email entered — the waitlist is reachable from country alone.
+        await openPickerAndSelect('RU')
+
+        // The primary CTA switches to the waitlist button; Confirm is gone.
+        expect(screen.getByTestId('card-onboarding-waitlist-join')).toBeTruthy()
+        expect(screen.queryByTestId('card-onboarding-email-confirm')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('card-onboarding-waitlist-join'))
+
+        await waitFor(() => expect(waitlistSpy).toHaveBeenCalled())
+        expect(waitlistBody).toEqual({
+            alpha_2_country_code: 'RU',
+            device: DEVICE_ID,
+        })
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-waitlist-success-dismiss'),
+            ).toBeTruthy(),
+        )
+    })
+
+    it('shows the email error only after blur, not while typing', async () => {
+        server.use(
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
+        )
+
+        renderFlow()
+        const input = screen.getByTestId('card-onboarding-email-input')
+
+        fireEvent.change(input, { target: { value: 'not-an-email' } })
+        // While typing (field not yet blurred) → no error.
+        expect(input.getAttribute('errormessage')).toBeFalsy()
+
+        fireEvent.blur(input)
+        await waitFor(() =>
+            expect(input.getAttribute('errormessage')).toBe(
+                'peraCard.create_account.email_invalid',
+            ),
+        )
+    })
+
+    it('preselects the geo-detected region without the user opening the picker', async () => {
+        server.use(
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
+            http.get('*/v1/cards/supported-countries/', () =>
+                HttpResponse.json(supportedCountriesResponse('RU', 'Russia'), {
+                    status: 200,
+                }),
+            ),
+        )
+
+        renderFlow()
+
+        // RU is the detected region and is unsupported (canSignUp:false) in the
+        // settings, so it's preselected and the waitlist CTA appears with no
+        // picker interaction — proving the region was fetched + matched.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-waitlist-join'),
+            ).toBeTruthy(),
+        )
     })
 })

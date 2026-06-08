@@ -19,10 +19,21 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xxl,
     },
     fields: {
-        gap: theme.spacing.xl,
+        // Tight gap because the email field reserves a constant error line
+        // below it (see `errorMessage`), which carries most of the spacing.
+        gap: theme.spacing.sm,
     },
     label: {
         ...getTypography(theme, 'footnoteMedium'),
         color: theme.colors.textGrayLighter,
+    },
+    // Always-rendered error line (RNElements collapses it otherwise) with a
+    // constant height so showing/clearing the message never shifts the country
+    // field. minHeight === lineHeight keeps the empty and filled states equal.
+    errorMessage: {
+        marginTop: theme.spacing.xs,
+        marginBottom: 0,
+        minHeight: theme.spacing.lg,
+        lineHeight: theme.spacing.lg,
     },
 }))

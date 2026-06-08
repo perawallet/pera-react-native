@@ -42,6 +42,8 @@ export * from './useSubmitPersonalDetailsMutation'
 export * from './useSubmitAddressMutation'
 export * from './useStartVerificationMutation'
 export * from './useRegistrationSettingsQuery'
+export * from './useCurrentRegionQuery'
+export * from './useRequestCountryAvailabilityMutation'
 
 // Query keys
 export {

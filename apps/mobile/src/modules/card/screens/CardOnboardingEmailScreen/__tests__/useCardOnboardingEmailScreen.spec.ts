@@ -16,7 +16,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SupportedCountry } from '@perawallet/wallet-core-card'
 
 const mockMutateAsync = vi.fn()
+const mockWaitlistMutateAsync = vi.fn()
 const mockSetOnboardingStep = vi.fn()
+let mockSettings: { countries: SupportedCountry[]; usStates: [] } | undefined
+let mockCurrentRegion: { iso3166alpha2: string; name: string } | undefined
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -33,20 +36,51 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
+        useRequestCountryAvailabilityMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mockWaitlistMutateAsync,
+            isPending: false,
+            isError: false,
+            isSuccess: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
+        }),
+        useRegistrationSettingsQuery: () => ({
+            data: mockSettings,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        }),
+        useCurrentRegionQuery: () => ({
+            data: mockCurrentRegion,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        }),
         useCardStore: (
             selector: (state: { setOnboardingStep: unknown }) => unknown,
         ) => selector({ setOnboardingStep: mockSetOnboardingStep }),
     }
 })
 
-const mockRequestByType = vi.fn()
+const mockRequest = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
-        requestByType: mockRequestByType,
-        request: vi.fn(),
+        request: mockRequest,
+        requestByType: vi.fn(),
         dismiss: vi.fn(),
         dismissAll: vi.fn(),
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
+let mockDeviceId: string | null = 'device-1'
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useDeviceID: () => mockDeviceId,
 }))
 
 const mockNavigate = vi.fn()
@@ -78,9 +112,32 @@ const france: SupportedCountry = {
     canSignUp: true,
 }
 
+const russia: SupportedCountry = {
+    id: 'RU',
+    iso3166alpha2: 'RU',
+    name: 'Russia',
+    callingCode: '7',
+    canSignUp: false,
+}
+
+const selectCountry = async (
+    result: { current: ReturnType<typeof useCardOnboardingEmailScreen> },
+    country: SupportedCountry,
+) => {
+    mockRequest.mockResolvedValueOnce(country)
+    act(() => {
+        result.current.handleSelectCountry()
+    })
+    await waitFor(() => expect(result.current.selectedCountry).toEqual(country))
+}
+
 describe('useCardOnboardingEmailScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockDeviceId = 'device-1'
+        mockSettings = { countries: [france, russia], usStates: [] }
+        // Default: no detected region → nothing preselected.
+        mockCurrentRegion = undefined
     })
 
     it('starts with an invalid form and no selected country', () => {
@@ -89,10 +146,11 @@ describe('useCardOnboardingEmailScreen', () => {
         expect(result.current.isValid).toBe(false)
         expect(result.current.selectedCountry).toBeUndefined()
         expect(result.current.isSubmitting).toBe(false)
+        expect(result.current.isWaitlistCountry).toBe(false)
     })
 
     it('stores the country chosen from the picker', async () => {
-        mockRequestByType.mockResolvedValue(france)
+        mockRequest.mockResolvedValue(france)
         const { result } = renderHook(() => useCardOnboardingEmailScreen())
 
         act(() => {
@@ -102,22 +160,20 @@ describe('useCardOnboardingEmailScreen', () => {
         await waitFor(() =>
             expect(result.current.selectedCountry).toEqual(france),
         )
-        expect(mockRequestByType).toHaveBeenCalledWith(
-            'card-country-picker',
-            {},
-            { size: 'full' },
+        expect(mockRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ options: { size: 'full' } }),
         )
     })
 
     it('leaves the country unset when the picker is dismissed', async () => {
-        mockRequestByType.mockResolvedValue(undefined)
+        mockRequest.mockResolvedValue(undefined)
         const { result } = renderHook(() => useCardOnboardingEmailScreen())
 
         act(() => {
             result.current.handleSelectCountry()
         })
 
-        await waitFor(() => expect(mockRequestByType).toHaveBeenCalled())
+        await waitFor(() => expect(mockRequest).toHaveBeenCalled())
         expect(result.current.selectedCountry).toBeUndefined()
     })
 
@@ -130,5 +186,91 @@ describe('useCardOnboardingEmailScreen', () => {
 
         expect(mockMutateAsync).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('flags an unsupported country as a waitlist country', async () => {
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await selectCountry(result, russia)
+
+        expect(result.current.isWaitlistCountry).toBe(true)
+    })
+
+    it('joins the waitlist with the country + device, then opens the success sheet', async () => {
+        mockWaitlistMutateAsync.mockResolvedValue(undefined)
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await selectCountry(result, russia)
+        act(() => {
+            result.current.handleJoinWaitlist()
+        })
+
+        await waitFor(() =>
+            expect(mockWaitlistMutateAsync).toHaveBeenCalledWith({
+                countryCode: 'RU',
+                deviceId: 'device-1',
+            }),
+        )
+        // Second request() call (after the picker) opens the success sheet.
+        await waitFor(() => expect(mockRequest).toHaveBeenCalledTimes(2))
+        expect(mockRequest.mock.calls[1][0].contents.props.countryName).toBe(
+            'Russia',
+        )
+    })
+
+    it('does not call the waitlist endpoint when there is no device id', async () => {
+        mockDeviceId = null
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await selectCountry(result, russia)
+        act(() => {
+            result.current.handleJoinWaitlist()
+        })
+
+        expect(mockWaitlistMutateAsync).not.toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalled()
+    })
+
+    it('shows an error toast and no success sheet when joining fails', async () => {
+        mockWaitlistMutateAsync.mockRejectedValue(new Error('nope'))
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await selectCountry(result, russia)
+        act(() => {
+            result.current.handleJoinWaitlist()
+        })
+
+        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        // Only the picker request fired; the success sheet never opened.
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+    })
+
+    it('preselects the detected region when it is a supported country', async () => {
+        mockCurrentRegion = { iso3166alpha2: 'FR', name: 'France' }
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await waitFor(() =>
+            expect(result.current.selectedCountry).toEqual(france),
+        )
+        expect(result.current.isWaitlistCountry).toBe(false)
+    })
+
+    it('preselects an unsupported detected region and offers the waitlist', async () => {
+        mockCurrentRegion = { iso3166alpha2: 'RU', name: 'Russia' }
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await waitFor(() =>
+            expect(result.current.selectedCountry).toEqual(russia),
+        )
+        expect(result.current.isWaitlistCountry).toBe(true)
+    })
+
+    it('does not preselect when the detected region is not in the supported list', async () => {
+        mockCurrentRegion = { iso3166alpha2: 'ZZ', name: 'Nowhere' }
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        // Give the effect a chance to run before asserting nothing happened.
+        await waitFor(() => expect(result.current).toBeTruthy())
+        expect(result.current.selectedCountry).toBeUndefined()
     })
 })

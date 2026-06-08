@@ -41,6 +41,7 @@ export type PWInputProps = {
     placeholder?: string
     errorMessage?: string
     renderErrorMessage?: boolean
+    errorStyle?: RNEInputProps['errorStyle']
     secureTextEntry?: boolean
     keyboardType?: RNEInputProps['keyboardType']
     returnKeyType?: RNEInputProps['returnKeyType']

@@ -29,9 +29,6 @@ export const useStyles = makeStyles(theme => ({
     countdownText: {
         color: theme.colors.textGrayLighter,
     },
-    resendLink: {
-        color: theme.colors.linkPrimary,
-    },
     // TODO(card): remove alongside the dev-only testing hint in the screen.
     devHint: {
         color: theme.colors.textGrayLighter,

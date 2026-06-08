@@ -49,6 +49,16 @@ export type RegistrationSettings = {
     usStates: SupportedUsState[]
 }
 
+/**
+ * Geo-IP detected region from GET /v1/cards/supported-countries/ (Pera backend,
+ * not Baanx). Used to preselect the user's country in the onboarding form.
+ */
+export type CurrentRegion = {
+    /** ISO 3166-1 alpha-2. */
+    iso3166alpha2: string
+    name: string
+}
+
 /** Veriff KYC session from GET /v1/user/verification. */
 export type VeriffSession = {
     sessionUrl: string

@@ -66,20 +66,23 @@ export const useCardOnboardingEmailVerifyScreen = ({
         setIsWrongCode(false)
     }, [])
 
-    const handleResend = useCallback(async () => {
+    const handleResend = useCallback(() => {
         // Guard against duplicate sends from a double-tap while the request is
         // in flight (the link stays visible until the cooldown restarts).
         if (sendEmailVerification.isPending) return
-        try {
-            await sendEmailVerification.mutateAsync({ email })
-            restart()
-            setIsWrongCode(false)
-        } catch {
-            errorToast(
-                t('peraCard.create_account.error_title'),
-                t('peraCard.create_account.error_body'),
-            )
+        const resend = async () => {
+            try {
+                await sendEmailVerification.mutateAsync({ email })
+                restart()
+                setIsWrongCode(false)
+            } catch {
+                errorToast(
+                    t('peraCard.create_account.error_title'),
+                    t('peraCard.create_account.error_body'),
+                )
+            }
         }
+        void resend()
     }, [sendEmailVerification, email, restart, errorToast, t])
 
     // TODO(card): replace this simulated check with useVerifyEmailMutation once

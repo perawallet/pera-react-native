@@ -22,12 +22,14 @@ export const CardOnboardingEmailScreen = () => {
     const styles = useStyles()
     const {
         control,
-        errors,
         isValid,
         isSubmitting,
         selectedCountry,
+        isWaitlistCountry,
+        isJoiningWaitlist,
         handleSelectCountry,
         handleConfirm,
+        handleJoinWaitlist,
     } = useCardOnboardingEmailScreen()
 
     return (
@@ -37,7 +39,10 @@ export const CardOnboardingEmailScreen = () => {
                     <Controller
                         control={control}
                         name='email'
-                        render={({ field: { onChange, onBlur, value } }) => (
+                        render={({
+                            field: { onChange, onBlur, value },
+                            fieldState: { isTouched, error },
+                        }) => (
                             <PWInput
                                 label={t('peraCard.create_account.email_label')}
                                 labelStyle={styles.label}
@@ -51,8 +56,12 @@ export const CardOnboardingEmailScreen = () => {
                                 autoCapitalize='none'
                                 autoCorrect={false}
                                 returnKeyType='next'
+                                renderErrorMessage
+                                errorStyle={styles.errorMessage}
                                 errorMessage={
-                                    errors.email && value
+                                    // Only after the field is blurred (and not
+                                    // while empty), so we don't error mid-typing.
+                                    isTouched && error && value
                                         ? t(
                                               'peraCard.create_account.email_invalid',
                                           )
@@ -74,14 +83,25 @@ export const CardOnboardingEmailScreen = () => {
                     />
                 </PWView>
 
-                <PWButton
-                    variant='primary'
-                    title={t('peraCard.create_account.confirm_button')}
-                    onPress={handleConfirm}
-                    isDisabled={!isValid || isSubmitting}
-                    isLoading={isSubmitting}
-                    testID='card-onboarding-email-confirm'
-                />
+                {isWaitlistCountry ? (
+                    <PWButton
+                        variant='primary'
+                        title={t('peraCard.waitlist.join_button')}
+                        onPress={handleJoinWaitlist}
+                        isDisabled={isJoiningWaitlist}
+                        isLoading={isJoiningWaitlist}
+                        testID='card-onboarding-waitlist-join'
+                    />
+                ) : (
+                    <PWButton
+                        variant='primary'
+                        title={t('peraCard.create_account.confirm_button')}
+                        onPress={handleConfirm}
+                        isDisabled={!isValid || isSubmitting}
+                        isLoading={isSubmitting}
+                        testID='card-onboarding-email-confirm'
+                    />
+                )}
             </PWView>
         </PWScreen>
     )

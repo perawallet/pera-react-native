@@ -47,7 +47,7 @@ describe('useCardCountryPicker', () => {
         vi.clearAllMocks()
     })
 
-    it('excludes non-eligible countries and sorts by name', () => {
+    it('includes all countries (eligible or not) and sorts by name', () => {
         mockUseRegistrationSettingsQuery.mockReturnValue(
             settingsResult([
                 makeCountry({ iso3166alpha2: 'US', name: 'United States' }),
@@ -62,8 +62,11 @@ describe('useCardCountryPicker', () => {
 
         const { result } = renderHook(() => useCardCountryPicker())
 
+        // Unsupported countries (canSignUp: false) stay selectable so the
+        // caller can offer the waitlist for them.
         expect(result.current.countries.map(country => country.name)).toEqual([
             'Albania',
+            'Russia',
             'United States',
         ])
     })

@@ -12,13 +12,13 @@
 
 import {
     createNativeStackNavigator,
-    NativeStackHeaderProps,
+    type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { CardOnboardingEmailScreen } from '../../screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '../../screens/CardOnboardingEmailVerifyScreen'
-import { CardOnboardingStackParamList } from './types'
+import { type CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
 

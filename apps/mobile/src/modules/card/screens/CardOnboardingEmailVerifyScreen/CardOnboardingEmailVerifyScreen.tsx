@@ -68,8 +68,7 @@ export const CardOnboardingEmailVerifyScreen = ({
 
                         {canResend ? (
                             <PWText
-                                variant='footnoteMedium'
-                                style={styles.resendLink}
+                                variant='linkPositive'
                                 onPress={handleResend}
                                 testID='card-onboarding-verify-resend'
                             >

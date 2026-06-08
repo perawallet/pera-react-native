@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-const REGIONAL_INDICATOR_A = 0x1f1e6
+const REGIONAL_INDICATOR_A = 0x1_f1_e6
 const LETTER_A = 'A'.charCodeAt(0)
 
 /**

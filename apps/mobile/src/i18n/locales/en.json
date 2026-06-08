@@ -716,6 +716,14 @@
             "success_title": "Email confirmed",
             "success_body": "Your email address has been verified.",
             "dev_hint": "Testing only — use code {{code}}"
+        },
+        "waitlist": {
+            "join_button": "Sign up for waitlist",
+            "success_title": "Coming soon",
+            "success_body": "We'll notify you when we launch in {{country}}.",
+            "success_dismiss": "Got it",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't sign you up for the waitlist. Please try again."
         }
     },
     "notifications": {

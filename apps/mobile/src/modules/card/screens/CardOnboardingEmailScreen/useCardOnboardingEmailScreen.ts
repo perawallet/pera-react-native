@@ -10,23 +10,29 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { createElement, useCallback, useEffect, useRef, useState } from 'react'
+import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     emailSendSchema,
     OnboardingStep,
     useCardStore,
+    useCurrentRegionQuery,
+    useRegistrationSettingsQuery,
+    useRequestCountryAvailabilityMutation,
     useSendEmailVerificationMutation,
     type EmailSendFormValues,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
+import { CardWaitlistSuccessContent } from '@modules/card/components/CardWaitlistSuccessContent'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-import type { Control, FieldErrors } from 'react-hook-form'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type UseCardOnboardingEmailScreenResult = {
@@ -35,8 +41,12 @@ export type UseCardOnboardingEmailScreenResult = {
     isValid: boolean
     isSubmitting: boolean
     selectedCountry: Optional<SupportedCountry>
+    /** True when the picked country isn't supported yet (offer the waitlist). */
+    isWaitlistCountry: boolean
+    isJoiningWaitlist: boolean
     handleSelectCountry: () => void
     handleConfirm: () => void
+    handleJoinWaitlist: () => void
 }
 
 export const useCardOnboardingEmailScreen =
@@ -44,12 +54,19 @@ export const useCardOnboardingEmailScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
-        const { requestByType } = useBottomSheet()
+        const { request } = useBottomSheet()
+        const { network } = useNetwork()
+        const deviceId = useDeviceID(network)
         const setOnboardingStep = useCardStore(state => state.setOnboardingStep)
         const sendEmailVerification = useSendEmailVerificationMutation()
+        const requestCountryAvailability =
+            useRequestCountryAvailabilityMutation()
+        const { data: settings } = useRegistrationSettingsQuery()
+        const { data: currentRegion } = useCurrentRegionQuery()
 
         const [selectedCountry, setSelectedCountry] =
             useState<Optional<SupportedCountry>>(undefined)
+        const hasPreselectedRegion = useRef(false)
 
         const {
             control,
@@ -62,12 +79,33 @@ export const useCardOnboardingEmailScreen =
             defaultValues: { email: '', countryIso: '' },
         })
 
+        // Preselect the geo-IP detected region once both queries resolve, unless
+        // the user already picked a country. Only fires once, and only if the
+        // detected country is in the supported list (otherwise leave it blank).
+        useEffect(() => {
+            if (hasPreselectedRegion.current || selectedCountry) return
+            if (!currentRegion || !settings?.countries.length) return
+            const match = settings.countries.find(
+                country =>
+                    country.iso3166alpha2 === currentRegion.iso3166alpha2,
+            )
+            if (!match) return
+            hasPreselectedRegion.current = true
+            setSelectedCountry(match)
+            setValue('countryIso', match.iso3166alpha2, {
+                shouldValidate: true,
+            })
+        }, [currentRegion, settings, selectedCountry, setValue])
+
+        const isWaitlistCountry =
+            !!selectedCountry && !selectedCountry.canSignUp
+
         const handleSelectCountry = useCallback(() => {
             const openPicker = async () => {
-                const country = await requestByType<
-                    'card-country-picker',
-                    SupportedCountry
-                >('card-country-picker', {}, { size: 'full' })
+                const country = await request<SupportedCountry>({
+                    contents: createElement(CardCountryPickerContent),
+                    options: { size: 'full' },
+                })
                 if (country) {
                     setSelectedCountry(country)
                     setValue('countryIso', country.iso3166alpha2, {
@@ -76,9 +114,9 @@ export const useCardOnboardingEmailScreen =
                 }
             }
             void openPicker()
-        }, [requestByType, setValue])
+        }, [request, setValue])
 
-        const handleConfirm = handleSubmit(async ({ email, countryIso }) => {
+        const submitEmail = handleSubmit(async ({ email, countryIso }) => {
             try {
                 await sendEmailVerification.mutateAsync({ email })
                 setOnboardingStep(OnboardingStep.EmailVerify)
@@ -94,13 +132,59 @@ export const useCardOnboardingEmailScreen =
             }
         })
 
+        const handleConfirm = () => {
+            void submitEmail()
+        }
+
+        const handleJoinWaitlist = useCallback(() => {
+            if (!selectedCountry) return
+            // A real device id exists once the device is registered; without it
+            // the backend record would be useless, so surface an error instead.
+            if (!deviceId) {
+                errorToast(
+                    t('peraCard.waitlist.error_title'),
+                    t('peraCard.waitlist.error_body'),
+                )
+                return
+            }
+            const join = async () => {
+                try {
+                    await requestCountryAvailability.mutateAsync({
+                        countryCode: selectedCountry.iso3166alpha2,
+                        deviceId,
+                    })
+                    await request({
+                        contents: createElement(CardWaitlistSuccessContent, {
+                            countryName: selectedCountry.name,
+                        }),
+                    })
+                } catch {
+                    errorToast(
+                        t('peraCard.waitlist.error_title'),
+                        t('peraCard.waitlist.error_body'),
+                    )
+                }
+            }
+            void join()
+        }, [
+            selectedCountry,
+            deviceId,
+            requestCountryAvailability,
+            request,
+            errorToast,
+            t,
+        ])
+
         return {
             control,
             errors,
             isValid,
             isSubmitting: sendEmailVerification.isPending,
             selectedCountry,
+            isWaitlistCountry,
+            isJoiningWaitlist: requestCountryAvailability.isPending,
             handleSelectCountry,
             handleConfirm,
+            handleJoinWaitlist,
         }
     }

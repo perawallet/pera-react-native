@@ -28,8 +28,9 @@ export type UseCardCountryPickerResult = {
 }
 
 /**
- * Drives the country-picker sheet: sign-up-eligible countries, name search,
- * and resolving the chosen country back to the caller.
+ * Drives the country-picker sheet: all countries (eligibility is decided by the
+ * caller via `canSignUp`, so unsupported ones stay selectable for the waitlist),
+ * name search, and resolving the chosen country back to the caller.
  */
 export const useCardCountryPicker = (): UseCardCountryPickerResult => {
     const { data, isLoading, isError, refetch } = useRegistrationSettingsQuery()
@@ -37,9 +38,9 @@ export const useCardCountryPicker = (): UseCardCountryPickerResult => {
     const [search, setSearch] = useState('')
 
     const countries = useMemo(() => {
-        const available = (data?.countries ?? [])
-            .filter(country => country.canSignUp)
-            .sort((first, second) => first.name.localeCompare(second.name))
+        const available = (data?.countries ?? []).sort((first, second) =>
+            first.name.localeCompare(second.name),
+        )
 
         const query = search.trim().toLowerCase()
         return query
