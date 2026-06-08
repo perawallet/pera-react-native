@@ -22,7 +22,10 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import { type HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useAccountOverviewModal } from './AccountOverviewModalContext'
 
 export type UseAccountOverviewHeaderResult = {

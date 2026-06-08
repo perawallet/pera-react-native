@@ -185,6 +185,7 @@ export const AccountOverviewHeader = ({
         selectedPoint,
         portfolioAlgoValue,
         isPending,
+        isBalanceComplete,
         account,
         period,
         chartVisible,

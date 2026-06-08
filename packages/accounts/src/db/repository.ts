@@ -498,24 +498,28 @@ async function queryHoldingRows({
     // stable assetId tiebreak.
     const orderBy = [sql`COALESCE(${AssetsPeraSchema.isFavorited}, 0) DESC`]
     switch (sortMode) {
-        case 'balanceAsc':
+        case 'balanceAsc': {
             orderBy.push(sql`(${valueExpr}) IS NULL`, sql`(${valueExpr}) ASC`)
             break
-        case 'alphabeticalAsc':
+        }
+        case 'alphabeticalAsc': {
             orderBy.push(
                 sql`${AssetsNodeSchema.name} IS NULL`,
                 sql`${AssetsNodeSchema.name} COLLATE NOCASE ASC`,
             )
             break
-        case 'alphabeticalDesc':
+        }
+        case 'alphabeticalDesc': {
             orderBy.push(
                 sql`${AssetsNodeSchema.name} IS NULL`,
                 sql`${AssetsNodeSchema.name} COLLATE NOCASE DESC`,
             )
             break
+        }
         case 'balanceDesc':
-        default:
+        default: {
             orderBy.push(sql`(${valueExpr}) IS NULL`, sql`(${valueExpr}) DESC`)
+        }
     }
     orderBy.push(sql`${AccountAssetHoldingsSchema.assetId} ASC`)
 
