@@ -94,6 +94,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
+    useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
     baseUnitsToDisplayUnits: (amount: Decimal, decimals: number) =>
         amount.div(Decimal.pow(10, decimals)),
     displayUnitsToBaseUnits: (amount: Decimal, decimals: number) =>

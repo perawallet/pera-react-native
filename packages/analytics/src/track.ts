@@ -62,7 +62,15 @@ const logEvent = (
     name: string,
     payload?: Record<string, unknown>,
 ): void => {
-    analytics.logEvent(resolveName(name), payload)
+    try {
+        analytics.logEvent(resolveName(name), payload)
+    } catch (error) {
+        // Analytics is best-effort and must NEVER break app flow — swallow
+        // any failure (provider, network store, logEvent) and only log it.
+        // console.warn is used over the shared logger so this package stays
+        // free of the wallet-core-shared barrel (and its native side effects).
+        console.warn('[analytics] Failed to track event', name, error)
+    }
 }
 
 const createTrackEvent =
@@ -89,15 +97,23 @@ export const trackEvent: TrackEventFn = ((
     name: AnalyticsEventName,
     payload?: EventPayload,
 ) => {
-    createTrackEvent(getProvider().analytics)(
-        name as RequiredPayloadEvent,
-        payload as RequiredEventPayloads[RequiredPayloadEvent],
-    )
+    try {
+        createTrackEvent(getProvider().analytics)(
+            name as RequiredPayloadEvent,
+            payload as RequiredEventPayloads[RequiredPayloadEvent],
+        )
+    } catch (error) {
+        console.warn('[analytics] Failed to track event', name, error)
+    }
 }) as TrackEventFn
 
 /** Tracks a screen-view event from non-React code. */
 export const trackScreen: TrackScreenFn = (name, metadata) => {
-    createTrackScreen(getProvider().analytics)(name, metadata)
+    try {
+        createTrackScreen(getProvider().analytics)(name, metadata)
+    } catch (error) {
+        console.warn('[analytics] Failed to track screen', name, error)
+    }
 }
 
 /** Internal factory used by {@link useAnalytics} to bind to the context provider. */

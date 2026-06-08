@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import * as Haptics from 'expo-haptics'
+import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
 import {
     useNavigation,
     useRoute,
@@ -76,7 +77,12 @@ export const useBackupVerificationScreen =
         const { t } = useLanguage()
         const { showToast } = useToast()
 
+        useEffect(() => {
+            trackEvent(OnboardingEvent.VerifyPassphrase)
+        }, [])
+
         const onSuccess = useCallback(() => {
+            trackEvent(OnboardingEvent.VerifyPassphraseComplete)
             if (account) markBackupComplete(account)
             navigation.replace('BackupSuccess')
         }, [account, markBackupComplete, navigation])

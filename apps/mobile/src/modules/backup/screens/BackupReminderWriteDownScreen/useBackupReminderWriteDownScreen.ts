@@ -17,6 +17,7 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderWriteDownScreenResult = {
@@ -41,6 +42,7 @@ export const useBackupReminderWriteDownScreen =
 
         const onContinue = useCallback(() => {
             if (address) {
+                trackEvent(OnboardingEvent.UnderstandPassphrase)
                 navigation.navigate('BackupMnemonic', { address })
             }
         }, [navigation, address])

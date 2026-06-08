@@ -36,6 +36,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(),
+    useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({

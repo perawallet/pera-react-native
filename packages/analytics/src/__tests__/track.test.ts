@@ -69,6 +69,18 @@ describe('trackEvent', () => {
 
         expect(logEvent).toHaveBeenCalledWith('notification_open', undefined)
     })
+
+    it('never throws when the underlying logEvent fails — analytics must not crash the app', () => {
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        logEvent.mockImplementationOnce(() => {
+            throw new Error('analytics backend exploded')
+        })
+
+        expect(() => trackEvent(HomeEvent.Send)).not.toThrow()
+        expect(warnSpy).toHaveBeenCalled()
+
+        warnSpy.mockRestore()
+    })
 })
 
 describe('trackScreen', () => {
