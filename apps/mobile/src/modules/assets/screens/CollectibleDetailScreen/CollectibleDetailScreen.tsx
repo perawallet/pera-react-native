@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import React from 'react'
 import { type NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { AccountStackParamsList } from '@modules/accounts/routes'
 import {
@@ -26,7 +25,6 @@ import { MediaCarousel } from '@components/MediaCarousel'
 import { ModelViewerBottomSheet } from '@components/ModelViewerBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import { trackScreen, AnalyticsScreenName } from '@analytics'
 import { useCollectibleDetail } from './useCollectibleDetail'
 import { useStyles } from './styles'
 import { CollectibleTraitsGrid } from './CollectibleTraitsGrid'
@@ -47,10 +45,6 @@ export const CollectibleDetailScreen = ({
 }: CollectibleDetailScreenProps) => {
     const assetId = route.params?.assetId ?? ''
     const { t } = useLanguage()
-
-    React.useEffect(() => {
-        trackScreen(AnalyticsScreenName.CollectibleList)
-    }, [])
 
     const {
         asset,

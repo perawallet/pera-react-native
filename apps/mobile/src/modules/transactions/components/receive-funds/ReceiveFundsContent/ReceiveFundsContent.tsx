@@ -31,6 +31,9 @@ export const ReceiveFundsContent = ({ account }: ReceiveFundsContentProps) => {
     const { t } = useLanguage()
     useReceiveFundsContent(account)
 
+    // Tracked in-screen rather than via the navigator's screenListeners: this
+    // is rendered as a bottom sheet (its own NavigationContainer below), not a
+    // route in the app's main navigator.
     useEffect(() => {
         trackScreen(AnalyticsScreenName.ShowQr)
     }, [])
