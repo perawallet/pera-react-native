@@ -69,7 +69,9 @@ const logEvent = (
         // any failure (provider, network store, logEvent) and only log it.
         // console.warn is used over the shared logger so this package stays
         // free of the wallet-core-shared barrel (and its native side effects).
-        console.warn('[analytics] Failed to track event', name, error)
+        // The event name is intentionally omitted: some names reference the
+        // passphrase backup flow and static analysis flags them as sensitive.
+        console.warn('[analytics] Failed to track event', error)
     }
 }
 
@@ -103,7 +105,7 @@ export const trackEvent: TrackEventFn = ((
             payload as RequiredEventPayloads[RequiredPayloadEvent],
         )
     } catch (error) {
-        console.warn('[analytics] Failed to track event', name, error)
+        console.warn('[analytics] Failed to track event', error)
     }
 }) as TrackEventFn
 
@@ -112,7 +114,7 @@ export const trackScreen: TrackScreenFn = (name, metadata) => {
     try {
         createTrackScreen(getProvider().analytics)(name, metadata)
     } catch (error) {
-        console.warn('[analytics] Failed to track screen', name, error)
+        console.warn('[analytics] Failed to track screen', error)
     }
 }
 
