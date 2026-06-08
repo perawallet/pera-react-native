@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import * as Haptics from 'expo-haptics'
-import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import {
     useNavigation,
     useRoute,

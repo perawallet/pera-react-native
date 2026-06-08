@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 

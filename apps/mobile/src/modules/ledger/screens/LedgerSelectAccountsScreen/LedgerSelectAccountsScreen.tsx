@@ -84,7 +84,7 @@ export const LedgerSelectAccountsScreen = () => {
                 </PWText>
             )}
             <FindAnotherWalletRow
-                onPress={handleFindAnother}
+                onPress={() => void handleFindAnother()}
                 isLoading={isFetchingMore}
                 label={t('ledger.select_accounts.find_another_wallet')}
                 testID='ledger_select_accounts_find_another'

@@ -61,7 +61,7 @@ export const SettingsWalletConnectScreen = () => {
 
     const handleDeleteAll = useCallback(() => {
         setIsLoading(true)
-        deleteAllSessions()
+        void deleteAllSessions()
             .then(() => {
                 deleteState.close()
             })

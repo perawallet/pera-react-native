@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { PWIcon, PWIconSize, PWTouchableOpacity } from '@components/core'
-import { ReactNode, PropsWithChildren } from 'react'
+import { PWIcon, type PWIconSize, PWTouchableOpacity } from '@components/core'
+import { type ReactNode, type PropsWithChildren } from 'react'
 import { useStyles } from './styles'
 import { useInfoButton } from './useInfoButton'
 

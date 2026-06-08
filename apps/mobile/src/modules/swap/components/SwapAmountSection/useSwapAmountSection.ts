@@ -19,7 +19,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
-import { trackEvent, SwapEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, SwapEvent } from '@analytics'
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'

@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { logger } from '@perawallet/wallet-core-shared'
-import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import { type IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useModalState } from '@hooks/useModalState'
@@ -190,7 +190,7 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.recover_wallet_description',
                     leftIcon: 'fund' as IconName,
-                    onPress: handleOpenImportOptions,
+                    onPress: () => void handleOpenImportOptions(),
                 },
                 {
                     testID: 'import_account_options_recover_qr_button',

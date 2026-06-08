@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AssetIcon } from '../AssetIcon'
 import { useMemo } from 'react'
-import { TypographyVariant } from '@theme/typography'
+import { type TypographyVariant } from '@theme/typography'
 
 export type AssetTitleProps = {
     asset: PeraAsset

@@ -41,21 +41,23 @@ export const useSortedAccounts = (
         const sorted = [...accounts]
 
         switch (sortMode) {
-            case 'alphabeticalAsc':
+            case 'alphabeticalAsc': {
                 sorted.sort((a, b) =>
                     getAccountDisplayName(a).localeCompare(
                         getAccountDisplayName(b),
                     ),
                 )
                 break
-            case 'alphabeticalDesc':
+            }
+            case 'alphabeticalDesc': {
                 sorted.sort((a, b) =>
                     getAccountDisplayName(b).localeCompare(
                         getAccountDisplayName(a),
                     ),
                 )
                 break
-            case 'balanceAsc':
+            }
+            case 'balanceAsc': {
                 sorted.sort((a, b) => {
                     const aVal =
                         accountBalances.get(a.address)?.algoValue ??
@@ -66,7 +68,8 @@ export const useSortedAccounts = (
                     return aVal.minus(bVal).toNumber()
                 })
                 break
-            case 'balanceDesc':
+            }
+            case 'balanceDesc': {
                 sorted.sort((a, b) => {
                     const aVal =
                         accountBalances.get(a.address)?.algoValue ??
@@ -77,6 +80,7 @@ export const useSortedAccounts = (
                     return bVal.minus(aVal).toNumber()
                 })
                 break
+            }
             case 'manual': {
                 const orderMap = new Map(
                     manualAccountOrder.map((addr, i) => [addr, i]),

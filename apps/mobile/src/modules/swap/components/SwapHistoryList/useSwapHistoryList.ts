@@ -17,11 +17,7 @@ import {
     useSwapHistoryInfiniteQuery,
     type SwapHistoryItem,
 } from '@perawallet/wallet-core-swaps'
-import {
-    trackEvent,
-    SwapEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'

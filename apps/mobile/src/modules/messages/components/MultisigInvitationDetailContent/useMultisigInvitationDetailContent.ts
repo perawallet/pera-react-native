@@ -17,7 +17,7 @@ import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-mes
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { trackEvent, MultisigEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, MultisigEvent } from '@analytics'
 import type { MultisigInvitationParam } from '../../routes/types'
 
 type UseMultisigInvitationDetailContentParams = {

@@ -47,13 +47,13 @@ export const useAccountNotificationEnabledMutation = () => {
                 status,
             ),
         onSuccess: () => {
-            queryClient.resetQueries({
+            void queryClient.resetQueries({
                 queryKey: getNotificationStatusQueryKey(
                     network,
                     deviceID ?? '',
                 ),
             })
-            queryClient.resetQueries({
+            void queryClient.resetQueries({
                 queryKey: getNotificationsListQueryKey(network, deviceID ?? ''),
             })
         },

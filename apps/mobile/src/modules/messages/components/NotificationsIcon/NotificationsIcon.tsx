@@ -12,11 +12,11 @@
 
 import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useSpotBannersQuery } from '@perawallet/wallet-core-banners'
-import { SvgProps } from 'react-native-svg'
+import { type SvgProps } from 'react-native-svg'
 import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useStyles } from './styles'
 
 export type NotificationsIconProps = {} & SvgProps

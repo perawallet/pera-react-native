@@ -72,17 +72,23 @@ const SchemaReplayResultRow = ({
 
 const formatSchemaReplayResult = (result: LegacySchemaReplayResult): string => {
     switch (result.kind) {
-        case 'missing':
+        case 'missing': {
             return 'missing (file not on disk)'
-        case 'notNeeded':
+        }
+        case 'notNeeded': {
             return `notNeeded (already at v${result.currentVersion})`
-        case 'ahead':
+        }
+        case 'ahead': {
             return `ahead (file is v${result.currentVersion}, adapter target is lower)`
-        case 'replayed':
+        }
+        case 'replayed': {
             return `replayed v${result.fromVersion} → v${result.toVersion}`
-        case 'tooOld':
+        }
+        case 'tooOld': {
             return `tooOld (v${result.currentVersion} < oldest supported v${result.oldestSupported})`
-        case 'failed':
+        }
+        case 'failed': {
             return `failed at v${result.partialVersion}`
+        }
     }
 }

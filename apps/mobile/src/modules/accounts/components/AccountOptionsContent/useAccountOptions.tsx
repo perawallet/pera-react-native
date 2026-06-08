@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    WalletAccount,
+    type WalletAccount,
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
@@ -35,17 +35,18 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
-import { SharedAccountDetailsContent } from '../SharedAccountDetailsContent'
-import { IconName } from '@components/core'
+import {
+    SharedAccountDetailsContent,
+    type SharedAccountDetails,
+} from '../SharedAccountDetailsContent'
+import { type IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import {
     trackEvent,
     AccountDetailsEvent,
     AccountOptionsEvent,
-} from '@perawallet/wallet-core-analytics'
+} from '@analytics'
 import { RenameAccountContent } from './RenameAccountContent'
-
-import type { SharedAccountDetails } from '../SharedAccountDetailsContent'
 
 export type AccountOption = {
     id: string
@@ -94,7 +95,6 @@ export const useAccountOptions = ({
     const showPassphrase =
         !isRekeyed && (isAlgo25Account(account) || isHDWalletAccount(account))
     const canUndoRekey = isRekeyed && canSign
-    const showUndoRekey = canUndoRekey
     const isHdWallet = isHDWalletAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
@@ -105,7 +105,7 @@ export const useAccountOptions = ({
 
     const handleCopyAddress = useCallback(() => {
         trackEvent(AccountOptionsEvent.CopyAddress)
-        copyToClipboard(account.address)
+        void copyToClipboard(account.address)
         onClose()
     }, [copyToClipboard, account.address, onClose])
 
@@ -335,7 +335,7 @@ export const useAccountOptions = ({
                 title: t('account_options.shared_account_detail', {
                     count: participantCount,
                 }),
-                onPress: handleOpenSharedAccountDetail,
+                onPress: () => void handleOpenSharedAccountDetail(),
             })
         }
 
@@ -400,7 +400,7 @@ export const useAccountOptions = ({
                 id: 'export-share-account',
                 icon: 'share',
                 title: t('account_options.export_share_account'),
-                onPress: handleExportShareAccount,
+                onPress: () => void handleExportShareAccount(),
             })
         }
 
@@ -408,7 +408,7 @@ export const useAccountOptions = ({
             id: 'rename-account',
             icon: 'edit-pen',
             title: t('account_options.rename_account'),
-            onPress: handleOpenRename,
+            onPress: () => void handleOpenRename(),
         })
 
         items.push({
@@ -424,7 +424,7 @@ export const useAccountOptions = ({
             id: 'remove-account',
             icon: 'unlink',
             title: t('account_options.remove_account'),
-            onPress: handleOpenRemoveConfirm,
+            onPress: () => void handleOpenRemoveConfirm(),
             variant: 'destructive',
         })
 
@@ -434,14 +434,13 @@ export const useAccountOptions = ({
         account.address,
         participantCount,
         showPassphrase,
-        showUndoRekey,
         canSign,
         isSharedAccount,
         notificationsEnabled,
         handleCopyAddress,
         handleShowAddress,
         handleViewPassphrase,
-        handleUndoRekey,
+        isHdWallet,
         handleRekeyToLedger,
         handleRekeyToStandard,
         handleRekeyToShared,

@@ -110,7 +110,11 @@
     "@typescript-eslint/prefer-as-const": "error",
     "@typescript-eslint/prefer-namespace-keyword": "error",
     "@typescript-eslint/triple-slash-reference": "error",
-    "unused-imports/no-unused-imports": "error"
+    "unused-imports/no-unused-imports": "error",
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "@typescript-eslint/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }],
+    "unicorn/switch-case-braces": "error",
+    "unicorn/numeric-separators-style": "error"
   },
   "overrides": [
     {
@@ -135,63 +139,6 @@
         "prefer-rest-params": "error",
         "prefer-spread": "error",
         "@typescript-eslint/no-non-null-assertion": "off"
-      }
-    },
-    {
-      "files": ["apps/mobile/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-      "jsPlugins": ["eslint-plugin-react-native"],
-      "globals": {
-        "__DEV__": "readonly",
-        "__dirname": "readonly",
-        "__filename": "readonly"
-      },
-      "rules": {
-        "react/display-name": "off",
-        "react/jsx-key": "error",
-        "react/jsx-no-comment-textnodes": "error",
-        "react/jsx-no-duplicate-props": "error",
-        "react/jsx-no-target-blank": "error",
-        "react/jsx-no-undef": "error",
-        "react/no-children-prop": "error",
-        "react/no-danger-with-children": "error",
-        "react/no-direct-mutation-state": "error",
-        "react/no-find-dom-node": "error",
-        "react/no-is-mounted": "error",
-        "react/no-render-return-value": "error",
-        "react/no-string-refs": "error",
-        "react/no-unescaped-entities": "error",
-        "react/no-unknown-property": "error",
-        "react/react-in-jsx-scope": "off",
-        "react-native/no-unused-styles": "error",
-        "react-native/split-platform-components": "error",
-        "react-native/no-inline-styles": "warn",
-        "react-native/no-color-literals": "warn",
-        "react-native/no-single-element-style-arrays": "error",
-        "react/rules-of-hooks": "error",
-        "react/exhaustive-deps": "off",
-        "no-console": "warn",
-        "no-unused-vars": "off",
-        "prefer-const": "error",
-        "no-var": "error",
-        "no-duplicate-imports": "error",
-        "unused-imports/no-unused-imports": "error",
-        "max-lines": [
-          "warn",
-          {
-            "max": 300,
-            "skipBlankLines": true
-          }
-        ]
-      }
-    },
-    {
-      "files": [
-        "apps/mobile/**/*.test.{ts,tsx,js,jsx}",
-        "apps/mobile/**/*.spec.{ts,tsx,js,jsx}",
-        "apps/mobile/**/__tests__/**/*.{ts,tsx,js,jsx}"
-      ],
-      "rules": {
-        "max-lines": "off"
       }
     }
   ]

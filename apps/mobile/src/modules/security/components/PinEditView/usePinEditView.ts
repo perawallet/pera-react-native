@@ -68,16 +68,21 @@ export const usePinEditView = ({
 
     const title = useMemo(() => {
         switch (currentMode) {
-            case 'setup':
+            case 'setup': {
                 return t('security.pin.setup_title')
-            case 'confirm':
+            }
+            case 'confirm': {
                 return t('security.pin.confirm_title')
-            case 'verify':
+            }
+            case 'verify': {
                 return t('security.pin.verify_title')
-            case 'change_old':
+            }
+            case 'change_old': {
                 return t('security.pin.change_old_title')
-            default:
+            }
+            default: {
                 return ''
+            }
         }
     }, [currentMode, t])
 
@@ -99,7 +104,7 @@ export const usePinEditView = ({
 
         let cancelled = false
         try {
-            ;(async () => {
+            void (async () => {
                 const enabled = await checkBiometricsEnabled()
                 if (cancelled || !enabled) return
                 const success = await authenticateWithBiometrics({
@@ -107,7 +112,7 @@ export const usePinEditView = ({
                     cancelLabel: t('security.biometric.cancel_label'),
                 })
                 if (cancelled || !success) return
-                resetFailedAttempts()
+                void resetFailedAttempts()
                 setHasError(false)
                 if (currentMode === 'verify') {
                     onSuccess?.()
@@ -127,17 +132,20 @@ export const usePinEditView = ({
         authenticateWithBiometrics,
         resetFailedAttempts,
         onSuccess,
+        t,
+        showError,
     ])
 
     const handlePinComplete = useCallback(
         async (pin: string) => {
             switch (currentMode) {
-                case 'setup':
+                case 'setup': {
                     setStoredPin(pin)
                     setHasError(false)
                     setCurrentMode('confirm')
                     break
-                case 'confirm':
+                }
+                case 'confirm': {
                     if (pin === storedPin) {
                         if (savePinHandler) {
                             const result = await savePinHandler(pin)
@@ -162,11 +170,12 @@ export const usePinEditView = ({
                         setHasError(true)
                     }
                     break
+                }
                 case 'change_old':
                 case 'verify': {
                     const result = await verifyPin(pin)
                     if (result.kind === 'ok') {
-                        resetFailedAttempts()
+                        void resetFailedAttempts()
                         setHasError(false)
                         if (currentMode === 'change_old') {
                             setCurrentMode('setup')
@@ -182,7 +191,7 @@ export const usePinEditView = ({
                         // duress entry should not contribute to lockout.
                         setHasError(true)
                     } else {
-                        handleFailedAttempt()
+                        void handleFailedAttempt()
                         setHasError(true)
                     }
                     break
@@ -209,7 +218,7 @@ export const usePinEditView = ({
         title,
         hasError,
         isDisabled: isLockedOut,
-        handlePinComplete,
+        handlePinComplete: (pin: string) => void handlePinComplete(pin),
         handleErrorAnimationComplete,
     }
 }

@@ -19,11 +19,7 @@ import {
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
-import {
-    trackEvent,
-    SwapEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
 

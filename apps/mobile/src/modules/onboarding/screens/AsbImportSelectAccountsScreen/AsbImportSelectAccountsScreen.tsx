@@ -76,7 +76,7 @@ export const AsbImportSelectAccountsScreen = () => {
                     <PWButton
                         variant='primary'
                         title={t('onboarding.asb_import.select.continue')}
-                        onPress={handleContinue}
+                        onPress={() => void handleContinue()}
                         isDisabled={!canContinue}
                         testID='asb_import_select_continue_button'
                     />

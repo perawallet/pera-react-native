@@ -15,24 +15,30 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { BalanceLineChart } from '@components/BalanceLineChart'
-import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
 import {
-    AccountBalanceHistoryItem,
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import {
+    type AccountBalanceHistoryItem,
     useAccountBalancesHistoryQuery,
     useAllAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
 export type WealthChartProps = {
     account?: WalletAccount
     period: HistoryPeriod
     onSelectionChanged: (item: Nullable<AccountBalanceHistoryItem>) => void
+    /** Gate the (slow) history fetch on chart visibility. */
+    enabled?: boolean
 }
 
 export const WealthChart = ({
     onSelectionChanged,
     account,
     period,
+    enabled = true,
 }: WealthChartProps) => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
@@ -49,6 +55,7 @@ export const WealthChart = ({
     const { data, isPending } = useAccountBalancesHistoryQuery(
         addresses,
         period,
+        enabled,
     )
 
     const dataPoints = useMemo(

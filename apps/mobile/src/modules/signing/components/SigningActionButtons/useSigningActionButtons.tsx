@@ -26,7 +26,7 @@ import {
     trackEvent,
     WalletConnectEvent,
     AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+} from '@analytics'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -89,6 +89,10 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                 )
             }
         },
+        // `pipeline` is returned by useSigningPipeline below (it receives this
+        // callback), so it cannot be listed as a dependency here. handleEvent
+        // reads pipeline.resolved lazily at call time, by which point it is set.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [showError, t],
     )
 

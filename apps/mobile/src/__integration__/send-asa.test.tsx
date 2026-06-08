@@ -63,7 +63,7 @@ import {
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 
 const RECEIVER_ADDRESS = HD_TEST_ADDRESS
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Mint a real algo25 key + register the matching account, mirroring
 // `seedAlgo25Sender` from send-algo.test.tsx. Kept in-file rather than
@@ -220,7 +220,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
                 () => {
                     expect(screen.getByTestId('PWResultView')).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Inspect the submitted body: msgpack-encoded signed group.

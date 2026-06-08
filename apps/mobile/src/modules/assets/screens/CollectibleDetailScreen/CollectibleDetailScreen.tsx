@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { type NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { AccountStackParamsList } from '@modules/accounts/routes'
 import {
     PWButton,
@@ -26,10 +26,7 @@ import { MediaCarousel } from '@components/MediaCarousel'
 import { ModelViewerBottomSheet } from '@components/ModelViewerBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    trackScreen,
-    AnalyticsScreenName,
-} from '@perawallet/wallet-core-analytics'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 import { useCollectibleDetail } from './useCollectibleDetail'
 import { useStyles } from './styles'
 import { CollectibleTraitsGrid } from './CollectibleTraitsGrid'
@@ -183,7 +180,7 @@ export const CollectibleDetailScreen = ({
                                     icon='copy'
                                     variant='secondary'
                                     size='md'
-                                    onPress={handleCopyImage}
+                                    onPress={() => void handleCopyImage()}
                                 />
                             )}
                             {hasSaveableMedia && (
@@ -192,7 +189,7 @@ export const CollectibleDetailScreen = ({
                                     icon='save'
                                     variant='secondary'
                                     size='md'
-                                    onPress={handleSaveImage}
+                                    onPress={() => void handleSaveImage()}
                                 />
                             )}
                         </PWView>
@@ -218,7 +215,7 @@ export const CollectibleDetailScreen = ({
                             <PWButton
                                 title={t('asset_opt_out.opt_out_cta')}
                                 variant='secondary'
-                                onPress={handleOptOutPressed}
+                                onPress={() => void handleOptOutPressed()}
                             />
                         </PWView>
                     )}

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useRoute } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import { config } from '@perawallet/wallet-core-config'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
@@ -18,7 +18,6 @@ import {
     type UseRekeyConfirmScreenResult,
 } from '../../../hooks/useRekeyConfirmScreen'
 
-import type { RouteProp } from '@react-navigation/native'
 import type { RekeyToStandardStackParamList } from '../../../routes/rekey-to-standard/types'
 
 export const useRekeyToStandardConfirmScreen =

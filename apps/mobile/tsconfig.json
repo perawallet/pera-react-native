@@ -18,6 +18,12 @@
       "@hooks/*": [
         "./src/hooks/*"
       ],
+      "@analytics": [
+        "./src/analytics"
+      ],
+      "@analytics/*": [
+        "./src/analytics/*"
+      ],
       "@constants/*": [
         "./src/constants/*"
       ],

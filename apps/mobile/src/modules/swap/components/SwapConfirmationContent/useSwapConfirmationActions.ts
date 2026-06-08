@@ -22,7 +22,7 @@ import {
     SwapEvent,
     AnalyticsMetadataKey,
     type RequiredEventPayloads,
-} from '@perawallet/wallet-core-analytics'
+} from '@analytics'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SwapConfirmationResult } from './SwapConfirmationContent'
 

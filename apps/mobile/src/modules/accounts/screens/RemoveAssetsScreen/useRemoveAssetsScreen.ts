@@ -12,21 +12,21 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    AssetWithAccountBalance,
+    type AssetWithAccountBalance,
     useAccountBalancesQuery,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET_ID,
     useAssetsQuery,
-    PeraAsset,
+    type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { Optional } from '@perawallet/wallet-core-shared'
+import { type Optional } from '@perawallet/wallet-core-shared'
 
 type UseRemoveAssetsScreenProps = {
     onAfterRemove?: () => void
@@ -197,7 +197,7 @@ export const useRemoveAssetsScreen = ({
         isRemoveSelectedVisible,
         handleToggleSelect,
         handleToggleSelectAll,
-        handleRemoveSelected,
+        handleRemoveSelected: () => void handleRemoveSelected(),
         t,
     }
 }

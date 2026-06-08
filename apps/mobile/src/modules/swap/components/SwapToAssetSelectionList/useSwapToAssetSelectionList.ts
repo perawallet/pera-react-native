@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     type PeraAsset,
-    PeraAssetVerificationTier,
+    type PeraAssetVerificationTier,
     getAssetsQueryKey,
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'

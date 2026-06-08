@@ -13,11 +13,8 @@
 import { useState } from 'react'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { useLanguage } from '@hooks/useLanguage'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    trackEvent,
-    AccountDetailsEvent,
-} from '@perawallet/wallet-core-analytics'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { trackEvent, AccountDetailsEvent } from '@analytics'
 import { AccountOverview } from '../AccountOverview'
 import { AccountNfts } from '../AccountNfts'
 import { AccountHistory } from '../AccountHistory'

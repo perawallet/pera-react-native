@@ -16,7 +16,7 @@ import { WebView } from 'react-native-webview'
 import { LinearGradient } from 'expo-linear-gradient'
 import {
     BottomSheetBackdrop,
-    BottomSheetBackdropProps,
+    type BottomSheetBackdropProps,
     BottomSheetModal,
 } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

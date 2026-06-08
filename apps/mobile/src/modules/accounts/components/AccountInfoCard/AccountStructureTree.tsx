@@ -11,14 +11,14 @@
  */
 
 import {
-    IconName,
+    type IconName,
     PWIcon,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'

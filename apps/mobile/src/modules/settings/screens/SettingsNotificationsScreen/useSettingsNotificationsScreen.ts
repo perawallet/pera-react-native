@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     useNotificationPreferences,
     useAccountNotificationEnabledMutation,
@@ -19,11 +22,7 @@ import {
 import { useSystemNotificationPermission } from '../../hooks/useSystemNotificationPermission'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    trackEvent,
-    SettingsEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 
 type UseSettingsNotificationsScreenResult = {
     isSystemNotificationEnabled: boolean

@@ -125,18 +125,24 @@ type LedgerHIDDescriptor = {
  */
 const resolveModel = (productId: Nullable<number>): string => {
     switch (productId) {
-        case 0x0001:
+        case 0x00_01: {
             return 'nanoS'
-        case 0x0004:
+        }
+        case 0x00_04: {
             return 'nanoX'
-        case 0x4011:
+        }
+        case 0x40_11: {
             return 'nanoSPlus'
-        case 0x6011:
+        }
+        case 0x60_11: {
             return 'stax'
-        case 0x7011:
+        }
+        case 0x70_11: {
             return 'flex'
-        default:
+        }
+        default: {
             return 'ledger'
+        }
     }
 }
 

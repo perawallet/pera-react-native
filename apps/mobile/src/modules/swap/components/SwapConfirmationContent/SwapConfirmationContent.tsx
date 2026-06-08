@@ -149,7 +149,7 @@ export const SwapConfirmationContent = ({
 
             <PWSlideToConfirm
                 title={t('swap.quote.slide_to_confirm')}
-                onConfirm={handleSlideConfirm}
+                onConfirm={() => void handleSlideConfirm()}
                 isLoading={isProcessing}
                 isConfirmed={swapStatus === 'success'}
                 style={styles.confirmButton}

@@ -25,11 +25,11 @@ export const PromptContainer = () => {
 
     const handleDismiss = useCallback(
         () => dismissPrompt(nextPrompt?.id || ''),
-        [dismissPrompt],
+        [dismissPrompt, nextPrompt?.id],
     )
     const handleHide = useCallback(
         () => hidePrompt(nextPrompt?.id || ''),
-        [hidePrompt],
+        [hidePrompt, nextPrompt?.id],
     )
 
     if (!nextPrompt) {

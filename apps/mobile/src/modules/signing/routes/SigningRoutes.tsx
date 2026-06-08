@@ -48,14 +48,17 @@ const useInitialRouteConfig = (): InitialRouteConfig | null => {
     const { resolved } = useSigningPipeline()
     if (!resolved) return null
     switch (resolved.kind.type) {
-        case 'arbitrary-data':
+        case 'arbitrary-data': {
             return { initialRoute: 'ArbitraryDataSigning' }
-        case 'arc60':
+        }
+        case 'arc60': {
             return { initialRoute: 'Arc60Signing' }
-        case 'transactions':
+        }
+        case 'transactions': {
             return resolved.kind.hasMultiple
                 ? { initialRoute: 'TransactionList' }
                 : { initialRoute: 'SingleTransaction' }
+        }
     }
 }
 

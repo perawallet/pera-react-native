@@ -12,27 +12,8 @@
 
 export const name = '@perawallet/wallet-core-analytics'
 
-// Per-context event enums (grouped by screen/context, mirroring i18n).
-export * from './events/contexts'
-
-// Shared catalog types.
-export type { AnalyticsEventName } from './events/event-names'
-export { AnalyticsMetadataKey } from './events/metadata-keys'
-export { AnalyticsScreenName } from './events/screen-names'
-export type {
-    RequiredEventPayloads,
-    OptionalEventPayloads,
-    RequiredPayloadEvent,
-    OptionalPayloadEvent,
-    NoPayloadEvent,
-} from './events/payloads'
-
-// Tracking API.
-export {
-    trackEvent,
-    trackScreen,
-    createTrackers,
-    type TrackEventFn,
-    type TrackScreenFn,
-} from './track'
-export { useAnalytics, type UseAnalyticsResult } from './useAnalytics'
+// App-agnostic base logging primitive. Each client app (mobile, future cash
+// app, extension, …) owns its own type-safe event catalog and tracking wrappers
+// and forwards to these base functions, so the shared package stays free of any
+// single app's events.
+export { logEvent, createBaseLogger, type LogEventFn } from './log'

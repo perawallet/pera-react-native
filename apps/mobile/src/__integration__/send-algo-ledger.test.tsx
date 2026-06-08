@@ -61,7 +61,7 @@ import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 const RECEIVER_ADDRESS = ALGO25_TEST_ADDRESS
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 type Deferred<T> = {
     promise: Promise<T>
@@ -266,7 +266,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
                         screen.getByTestId('ledger-signing-overlay-lottie'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Algod must NOT have been hit yet — we're paused at the
@@ -282,7 +282,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
                 () => {
                     expect(screen.getByTestId('PWResultView')).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             expect(sendSpy).toHaveBeenCalled()
 

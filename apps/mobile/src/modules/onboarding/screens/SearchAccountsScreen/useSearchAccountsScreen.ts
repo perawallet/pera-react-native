@@ -15,7 +15,7 @@ import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
     useAccountDiscovery,
     useHDImportSession,
@@ -28,7 +28,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
-import { OnboardingStackParamList } from '../../routes/types'
+import { type OnboardingStackParamList } from '../../routes/types'
 import { useExitAccountFlow, useShouldPlayConfetti } from '../../hooks'
 
 export type UseSearchAccountsScreenResult = {
@@ -260,7 +260,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     ])
 
     useEffect(() => {
-        searchAccounts()
+        void searchAccounts()
     }, [searchAccounts])
 
     return {

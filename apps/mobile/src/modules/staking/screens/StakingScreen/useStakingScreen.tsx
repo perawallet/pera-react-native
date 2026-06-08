@@ -11,11 +11,7 @@
  */
 
 import { useCallback, useEffect } from 'react'
-import {
-    trackEvent,
-    StakingEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, StakingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
@@ -33,7 +29,7 @@ type UseStakingScreenResult = {
     isLoading: boolean
     isError: boolean
     handleRetry: () => void
-    handleProjectPress: (project: StakingProject) => void
+    handleProjectPress: (project: StakingProject) => Promise<void>
     handleHelpOpen: () => void
 }
 

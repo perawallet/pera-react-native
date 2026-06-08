@@ -19,7 +19,7 @@ import {
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCreateMultisigAccountMutation } from '@perawallet/wallet-core-multisig'
-import { trackEvent, MultisigEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, MultisigEvent } from '@analytics'
 import {
     generateMultisigAddress,
     useNetwork,
@@ -41,7 +41,7 @@ type UseNameMultisigScreenResult = {
     isCreating: boolean
     isFinishDisabled: boolean
     handleNameChange: (value: string) => void
-    handleFinish: () => void
+    handleFinish: () => Promise<void>
 }
 
 export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {

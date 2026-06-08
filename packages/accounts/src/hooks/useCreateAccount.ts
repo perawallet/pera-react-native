@@ -16,7 +16,7 @@ import {
 } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
-import { AccountTypes, WalletAccount } from '../models'
+import { AccountTypes, type WalletAccount } from '../models'
 import { logger } from '@perawallet/wallet-core-shared'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'

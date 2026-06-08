@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { trackEvent, MultisigEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     useNetwork,

@@ -12,10 +12,7 @@
 
 import { useEffect } from 'react'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import {
-    trackScreen,
-    AnalyticsScreenName,
-} from '@perawallet/wallet-core-analytics'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 
 import { PWScreen, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -43,7 +40,7 @@ export const ViewContactScreen = () => {
                 <PWTouchableIcon
                     name='share'
                     variant='primary'
-                    onPress={handleShare}
+                    onPress={() => void handleShare()}
                 />
                 <PWTouchableIcon
                     name='edit-pen'

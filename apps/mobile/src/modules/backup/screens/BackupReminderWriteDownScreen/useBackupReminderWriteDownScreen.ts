@@ -17,7 +17,7 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderWriteDownScreenResult = {

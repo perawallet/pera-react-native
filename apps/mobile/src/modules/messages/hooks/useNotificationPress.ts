@@ -27,7 +27,7 @@ import {
     trackEvent,
     NotificationsEvent,
     AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+} from '@analytics'
 
 type MultisigIntentKind = 'sign' | 'import'
 
@@ -114,7 +114,7 @@ export const useNotificationPress = (): UseNotificationPressResult => {
                 return
             }
             if (notification.url && isValidDeepLink(notification.url)) {
-                handleDeepLink(notification.url, true, 'deeplink')
+                void handleDeepLink(notification.url, true, 'deeplink')
             }
         },
         [isValidDeepLink, handleDeepLink, refetchInbox, handleInboxItemPress],

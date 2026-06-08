@@ -76,7 +76,7 @@ const ACCOUNT_DETAIL_RESPONSE = {
 
 // Navigation transitions plus a `requestAnimationFrame` inside `handleFinish`
 // push the wall-clock past the 5s default.
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 describe('Flow: Import shared account by scanning its QR code', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))

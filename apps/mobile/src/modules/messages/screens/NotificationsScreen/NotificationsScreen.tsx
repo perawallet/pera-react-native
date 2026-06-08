@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import { PeraNotification } from '@perawallet/wallet-core-messages'
+import { type PeraNotification } from '@perawallet/wallet-core-messages'
 import { RefreshControl } from 'react-native-gesture-handler'
 
 import { EmptyView } from '@components/EmptyView'
@@ -55,7 +55,7 @@ export const NotificationsScreen = () => {
             <PWFlatList
                 data={notifications}
                 renderItem={renderItem}
-                onEndReached={loadMoreItems}
+                onEndReached={() => void loadMoreItems()}
                 onEndReachedThreshold={0.1}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}

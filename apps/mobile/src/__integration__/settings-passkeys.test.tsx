@@ -75,7 +75,7 @@ vi.mock('@assets/icons/passkey-hero-dark.svg', () => {
     }
 })
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const HD_ACCOUNT: WalletAccount = {
     id: 'hd-1',

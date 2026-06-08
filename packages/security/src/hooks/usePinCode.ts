@@ -134,7 +134,7 @@ export const usePinCode = (): UsePinCodeResult => {
     // MMKV cannot reset the lockout counter.
     useEffect(() => {
         let cancelled = false
-        ;(async () => {
+        void (async () => {
             const record = await loadRecord()
             if (cancelled || !record) return
             setFailedAttemptsInStore(record.failedAttempts)

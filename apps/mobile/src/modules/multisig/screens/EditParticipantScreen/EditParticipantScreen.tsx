@@ -38,7 +38,7 @@ export const EditParticipantScreen = () => {
             <PWButton
                 variant='linkPositive'
                 title={t('multisig.edit_participant.done')}
-                onPress={handleDone}
+                onPress={() => void handleDone()}
                 isDisabled={isDoneDisabled}
                 paddingStyle='none'
             />
@@ -53,7 +53,7 @@ export const EditParticipantScreen = () => {
                 nameLabel={t('multisig.edit_participant.nickname_label')}
                 addressLabel={t('multisig.edit_participant.address_label')}
                 imageUri={imageUri}
-                onPickImage={onPickImage}
+                onPickImage={() => void onPickImage()}
             >
                 <PWButton
                     variant='destructiveLight'

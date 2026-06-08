@@ -17,9 +17,9 @@ import { ExternalTransactionInfoContent } from '@modules/signing/components/Exte
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
     classifyDisplayableTransaction,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { GestureResponderEvent } from 'react-native'
+import { type GestureResponderEvent } from 'react-native'
 import { useStyles } from './styles'
 import { TxTypeDetails } from './TxTypeDetails'
 

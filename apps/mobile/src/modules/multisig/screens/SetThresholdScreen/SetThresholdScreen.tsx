@@ -35,7 +35,7 @@ export const SetThresholdScreen = () => {
                 <PWButton
                     variant='primary'
                     title={t('common.continue.label')}
-                    onPress={handleContinue}
+                    onPress={() => void handleContinue()}
                     testID='set_threshold_continue_button'
                 />
             }

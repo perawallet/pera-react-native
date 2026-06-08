@@ -15,7 +15,7 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview/hooks'
 import { useClipboard } from '@hooks/useClipboard'
@@ -72,7 +72,9 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                         <PWButton
                             title={assetDetails.assetId.toString()}
                             onPress={() =>
-                                copyToClipboard(assetDetails.assetId.toString())
+                                void copyToClipboard(
+                                    assetDetails.assetId.toString(),
+                                )
                             }
                             variant='linkPositive'
                             paddingStyle='none'
@@ -88,7 +90,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     <PWButton
                         title={creatorDisplayName}
                         onPress={() =>
-                            copyToClipboard(assetDetails.creator.address)
+                            void copyToClipboard(assetDetails.creator.address)
                         }
                         variant='linkPositive'
                         paddingStyle='none'

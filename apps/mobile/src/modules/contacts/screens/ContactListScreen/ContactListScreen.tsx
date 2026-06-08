@@ -11,11 +11,8 @@
  */
 
 import { useCallback, useEffect } from 'react'
-import { Contact } from '@perawallet/wallet-core-contacts'
-import {
-    trackScreen,
-    AnalyticsScreenName,
-} from '@perawallet/wallet-core-analytics'
+import { type Contact } from '@perawallet/wallet-core-contacts'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 
 import {
     PWButton,

@@ -18,10 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { DeeplinkType } from '@hooks/deeplink/types'
 import { shareText } from '@utils/shareText'
 import { useErrorToast } from '@hooks/useErrorToast'
-import {
-    trackEvent,
-    AccountDetailsEvent,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, AccountDetailsEvent } from '@analytics'
 
 export type UseExportShareAccountContentParams = {
     accountAddress: string
@@ -52,7 +49,7 @@ export const useExportShareAccountContent = ({
 
     const handleCopyUrl = useCallback(() => {
         trackEvent(AccountDetailsEvent.JointAccountCopyUrl)
-        copyToClipboard(exportUrl)
+        void copyToClipboard(exportUrl)
     }, [copyToClipboard, exportUrl])
 
     const handleShareUrl = useCallback(async () => {

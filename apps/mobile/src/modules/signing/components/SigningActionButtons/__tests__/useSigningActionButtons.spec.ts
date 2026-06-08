@@ -24,9 +24,9 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useNavigation } from '@react-navigation/native'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { trackEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent } from '@analytics'
 
-vi.mock('@perawallet/wallet-core-analytics', () => ({
+vi.mock('@analytics', () => ({
     trackEvent: vi.fn(),
     WalletConnectEvent: {
         TransactionConfirmed: 'wc_transaction_confirmed',

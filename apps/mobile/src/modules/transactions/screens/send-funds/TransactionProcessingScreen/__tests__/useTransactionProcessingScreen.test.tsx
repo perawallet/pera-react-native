@@ -226,9 +226,9 @@ describe('useTransactionProcessingScreen', () => {
     it('should include arc59Summary when sendMode is sendArc59', async () => {
         const arc59Summary = {
             is_arc59_opted_in: true,
-            minimum_balance_requirement: 100000,
+            minimum_balance_requirement: 100_000,
             inner_tx_count: 2,
-            total_protocol_and_mbr_fee: 200000,
+            total_protocol_and_mbr_fee: 200_000,
             inbox_address: 'INBOX_ADDR',
             algo_fund_amount: 0,
             warning_message: null,

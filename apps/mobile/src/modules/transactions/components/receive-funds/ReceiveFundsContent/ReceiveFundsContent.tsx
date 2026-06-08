@@ -18,10 +18,7 @@ import {
 import { useEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    trackScreen,
-    AnalyticsScreenName,
-} from '@perawallet/wallet-core-analytics'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { ReceiveFundsRoutes } from '../../../routes/receive-funds'
 import { useReceiveFundsContent } from './useReceiveFundsContent'

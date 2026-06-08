@@ -11,7 +11,7 @@
     "expo:prebuild": "expo prebuild --no-install && node scripts/fix-development-team.js && npx pod-install ios",
     "expo:prebuild:clean": "expo prebuild --clean --no-install && node scripts/fix-development-team.js && npx pod-install ios",
     "ios:fix-development-team": "node scripts/fix-development-team.js",
-    "lint": "oxlint --config ../../.oxlintrc.json .",
+    "lint": "oxlint --config .oxlintrc.json .",
     "test": "bash ../../tools/rebuild-native.sh && vitest run",
     "test:coverage": "bash ../../tools/rebuild-native.sh && vitest run --coverage",
     "test:integration": "bash ../../tools/rebuild-native.sh && vitest run --project=integration",

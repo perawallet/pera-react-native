@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWInput, PWInputProps, PWView } from '@components/core'
+import { PWIcon, PWInput, type PWInputProps, PWView } from '@components/core'
 
 import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'

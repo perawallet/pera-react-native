@@ -39,7 +39,7 @@ export const AddContactScreen = () => {
         <PWScreen
             footer={
                 <PWButton
-                    onPress={handleSubmit(save)}
+                    onPress={() => void handleSubmit(save)()}
                     title={t('contacts.edit_contact.add_contact')}
                     variant='primary'
                     isDisabled={!isValid}
@@ -59,7 +59,7 @@ export const AddContactScreen = () => {
                 onAddressInputChange={onAddressInputChange}
                 rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
-                onPickImage={onPickImage}
+                onPickImage={() => void onPickImage()}
             />
             <PhotoPermissionDeniedSheet
                 isVisible={permissionDenied.isVisible}

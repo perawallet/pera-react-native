@@ -17,13 +17,13 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { PortfolioView } from '../PortfolioView'
 import { useAccountMenu } from './useAccountMenu'
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void

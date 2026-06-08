@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Linking, AppState, AppStateStatus } from 'react-native'
+import { Linking, AppState, type AppStateStatus } from 'react-native'
 import notifee, { AuthorizationStatus } from '@notifee/react-native'
 
 type UseSystemNotificationPermissionResult = {
@@ -41,13 +41,13 @@ export const useSystemNotificationPermission =
         }, [])
 
         useEffect(() => {
-            checkPermission()
+            void checkPermission()
         }, [checkPermission])
 
         useEffect(() => {
             const handleAppStateChange = (nextState: AppStateStatus) => {
                 if (nextState === 'active') {
-                    checkPermission()
+                    void checkPermission()
                 }
             }
 
@@ -62,7 +62,7 @@ export const useSystemNotificationPermission =
         }, [checkPermission])
 
         const openSettings = useCallback(() => {
-            Linking.openSettings()
+            void Linking.openSettings()
         }, [])
 
         return {

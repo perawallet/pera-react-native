@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Settings screen actions. */
 export enum SettingsEvent {

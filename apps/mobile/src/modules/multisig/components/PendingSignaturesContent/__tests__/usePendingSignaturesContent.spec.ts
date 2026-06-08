@@ -16,9 +16,10 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    MultisigSignRequest,
-    SignRequestStatus,
+import {
+    type MultisigSignRequest,
+    type SignRequestStatus,
+    useDraftSignRequestStore,
 } from '@perawallet/wallet-core-multisig'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
@@ -111,7 +112,6 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxInvalidator: () => ({ invalidate: vi.fn() }),
 }))
 
-import { useDraftSignRequestStore } from '@perawallet/wallet-core-multisig'
 import { usePendingSignaturesContent } from '../usePendingSignaturesContent'
 import { usePendingSignaturesSheetStore } from '../../../stores/usePendingSignaturesSheetStore'
 

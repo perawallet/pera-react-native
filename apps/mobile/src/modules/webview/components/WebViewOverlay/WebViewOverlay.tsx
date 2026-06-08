@@ -12,7 +12,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useWebViewStack, WebViewRequest } from '../../hooks'
+import { useWebViewStack, type WebViewRequest } from '../../hooks'
 import { PWWebView } from '../PWWebView'
 
 /**

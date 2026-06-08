@@ -37,7 +37,7 @@ import {
     trackScreen,
     HomeEvent,
     AnalyticsScreenName,
-} from '@perawallet/wallet-core-analytics'
+} from '@analytics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)

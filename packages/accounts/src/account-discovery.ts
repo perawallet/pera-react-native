@@ -11,7 +11,7 @@
  */
 
 import {
-    BIP32DerivationType,
+    type BIP32DerivationType,
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
@@ -20,13 +20,13 @@ import {
     getAlgorandClient,
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
-import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { Account } from '@algorandfoundation/algokit-utils/indexer-client'
+import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { type Account } from '@algorandfoundation/algokit-utils/indexer-client'
 import {
     AccountTypes,
-    HDWalletAccount,
-    WalletAccount,
-    WatchAccount,
+    type HDWalletAccount,
+    type WalletAccount,
+    type WatchAccount,
 } from './models/accounts'
 import {
     generateOrderedUniqueId,

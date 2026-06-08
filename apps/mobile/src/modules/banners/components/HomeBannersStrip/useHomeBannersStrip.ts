@@ -18,11 +18,7 @@ import {
     useVisibleBanners,
     type Banner,
 } from '@perawallet/wallet-core-banners'
-import {
-    trackEvent,
-    BannersEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, BannersEvent, AnalyticsMetadataKey } from '@analytics'
 import type { RootStackParamList } from '@routes/types'
 
 export type UseHomeBannersStripResult = {

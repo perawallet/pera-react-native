@@ -49,6 +49,6 @@ export const useBannersQuery = (): UseBannersQueryResult => {
         banners: query.data ?? [],
         isLoading: query.isLoading,
         isError: query.isError,
-        refetch: query.refetch,
+        refetch: () => void query.refetch(),
     }
 }

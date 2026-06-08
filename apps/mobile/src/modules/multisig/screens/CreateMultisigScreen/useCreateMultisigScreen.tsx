@@ -17,7 +17,7 @@ import {
     useContacts,
 } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { trackEvent, MultisigEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {

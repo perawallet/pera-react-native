@@ -11,8 +11,8 @@
  */
 
 import {
-    PeraAsset,
-    PeraAssetVerificationTier,
+    type PeraAsset,
+    type PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 import { z } from 'zod'

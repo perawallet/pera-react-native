@@ -17,11 +17,7 @@ import {
     type TopPairItem,
 } from '@perawallet/wallet-core-swaps'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
-import {
-    trackEvent,
-    SwapEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
 const TOP_PAIRS_LIMIT = 5
 

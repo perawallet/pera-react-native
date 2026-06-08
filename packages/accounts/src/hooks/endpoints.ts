@@ -17,7 +17,7 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 
-import { AccountBalanceHistoryResponse } from '../models'
+import { type AccountBalanceHistoryResponse } from '../models'
 
 export type OnChainAccountInformationResponse = Awaited<
     ReturnType<typeof fetchOnChainAccountInformation>

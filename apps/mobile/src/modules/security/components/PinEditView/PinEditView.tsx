@@ -13,7 +13,7 @@
 import { useWindowDimensions } from 'react-native'
 import { PinEntry } from '@modules/security/components/PinEntry'
 import {
-    PinEntryMode,
+    type PinEntryMode,
     type SavePinHandlerResult,
     usePinEditView,
 } from './usePinEditView'

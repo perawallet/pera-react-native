@@ -14,11 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import {
-    trackEvent,
-    SwapEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import {
     formatCurrency,
     type Nullable,

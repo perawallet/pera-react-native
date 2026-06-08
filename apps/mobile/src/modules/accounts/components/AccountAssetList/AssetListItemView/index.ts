@@ -10,20 +10,7 @@
  limitations under the License
  */
 
-import { AnalyticsMetadataKey as Key } from '../metadata-keys'
-
-/** Completed on-chain transactions. */
-export enum TransactionsEvent {
-    Complete = 'transaction', // A transaction completed (account type, asset, max flag, amount, tx id)
-}
-
-export interface TransactionsRequiredPayloads {
-    [TransactionsEvent.Complete]: {
-        [Key.AssetId]: string
-        [Key.Amount]: number
-        [Key.TransactionId]: string
-        // Optional: not always available at the RN send-completion point.
-        [Key.AccountType]?: string
-        [Key.IsMax]?: boolean
-    }
-}
+export {
+    AssetListItemView,
+    type AssetListItemViewProps,
+} from './AssetListItemView'

@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { WalletConnectSessionRequest } from '../models'
+import { type WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
 
 export const useWalletConnectSessionRequests = () => {

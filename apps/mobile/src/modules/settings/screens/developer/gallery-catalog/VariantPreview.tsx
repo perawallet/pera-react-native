@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { type ReactNode } from 'react'
 import { makeStyles } from '@rneui/themed'
 
 import { PWText, PWView } from '@components/core'
-
-import type { ReactNode } from 'react'
 
 export type VariantPreviewItem = {
     label: string

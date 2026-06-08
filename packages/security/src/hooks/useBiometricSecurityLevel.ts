@@ -71,7 +71,7 @@ export const useBiometricSecurityLevel =
         const refresh = useCallback(() => {
             let cancelled = false
             setIsLoading(true)
-            getBiometricSecurityLevel().then(level => {
+            void getBiometricSecurityLevel().then(level => {
                 if (cancelled) return
                 setSecurityLevel(level)
                 setIsLoading(false)

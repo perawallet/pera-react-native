@@ -12,7 +12,7 @@
 
 import {
     createNativeStackNavigator,
-    NativeStackHeaderProps,
+    type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -23,7 +23,7 @@ import { CollectibleDetailScreen } from '@modules/assets/screens/CollectibleDeta
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
 import { fullScreenLayout } from '@layouts/index'
 
-import { AccountStackParamsList } from './types'
+import { type AccountStackParamsList } from './types'
 export type { AccountStackParamsList } from './types'
 
 const AccountStack = createNativeStackNavigator<AccountStackParamsList>()

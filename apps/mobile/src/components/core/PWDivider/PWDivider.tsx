@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { View, StyleSheet } from 'react-native'
-import { defaultTheme } from '@rneui/base'
-import type { ViewStyle } from 'react-native'
+import { View, type ViewStyle } from 'react-native'
+import { useStyles } from './styles'
 
 type PWDividerProps = {
     color?: string
@@ -20,16 +19,6 @@ type PWDividerProps = {
 }
 
 export const PWDivider = ({ color, style }: PWDividerProps) => {
-    return (
-        <View
-            style={[
-                {
-                    height: StyleSheet.hairlineWidth,
-                    width: '100%',
-                    backgroundColor: color ?? defaultTheme.colors.divider,
-                },
-                style,
-            ]}
-        />
-    )
+    const styles = useStyles({ color })
+    return <View style={[styles.divider, style]} />
 }

@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useBiometricSecurityLevel } from '@perawallet/wallet-core-security'
 import { useHasHDWallet } from '@perawallet/wallet-core-accounts'
-import { trackEvent, PasskeysEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, PasskeysEvent } from '@analytics'
 
 export type SettingsPasskeysScreenState =
     | 'loading'
@@ -154,7 +154,8 @@ export const useSettingsPasskeysScreen =
             isScannerVisible: scanner.isOpen,
             onOpenScanner: scanner.open,
             onCloseScanner: scanner.close,
-            onRequestDelete,
+            onRequestDelete: (passkey: Passkey) =>
+                void onRequestDelete(passkey),
             onOpenProviderSettings,
             onDismissError,
         }

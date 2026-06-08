@@ -69,7 +69,7 @@ import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // USDC-like ASA with 6 decimals — same shape as the asset used in
 // existing send-asa / view-transactions fixtures so the math is easy to
@@ -161,6 +161,23 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                 minBalance: new Decimal(100_000),
                 status: 'Offline',
                 authAddress: null,
+            })
+
+            // ALGO holdings — ALGO is a regular holding row now (base units /
+            // microalgos, 6 decimals), written by the sync the same way ASAs
+            // are. The home-screen reads pull it from the holdings table, so it
+            // must be seeded here rather than only on the account_balances row.
+            await insertAssetHolding({
+                accountAddress: ACCOUNT_A.address,
+                assetId: '0',
+                network: NETWORK,
+                amount: '10000000', // 10 ALGO
+            })
+            await insertAssetHolding({
+                accountAddress: ACCOUNT_B.address,
+                assetId: '0',
+                network: NETWORK,
+                amount: '4000000', // 4 ALGO
             })
 
             // ASA holdings — both accounts hold USDC. Amounts are in base

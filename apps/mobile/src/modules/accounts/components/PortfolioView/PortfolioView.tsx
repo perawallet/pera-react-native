@@ -16,7 +16,7 @@ import {
     PWText,
     PWTouchableOpacity,
     PWView,
-    PWViewProps,
+    type PWViewProps,
 } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -25,13 +25,13 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
 import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
-import { trackEvent, HomeEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    AccountBalanceHistoryItem,
+    type AccountBalanceHistoryItem,
     useAccountBalancesQuery,
     useAccountBalancesHistoryQuery,
     usePortfolioTotals,
@@ -88,6 +88,7 @@ export const PortfolioView = ({
     const { data: historyData } = useAccountBalancesHistoryQuery(
         addresses,
         period,
+        isChartShown,
     )
 
     const historyDataPoints = useMemo(

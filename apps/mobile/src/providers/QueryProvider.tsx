@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react'
+import React, { type PropsWithChildren } from 'react'
 import {
     PersistQueryClientProvider,
-    PersistQueryClientRootOptions,
+    type PersistQueryClientRootOptions,
 } from '@tanstack/react-query-persist-client'
-import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
+import { type OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import { isTransientNetworkError, logger } from '@perawallet/wallet-core-shared'
 import { isAccountQuery } from '@perawallet/wallet-core-accounts'

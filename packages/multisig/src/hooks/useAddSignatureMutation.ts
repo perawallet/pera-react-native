@@ -44,7 +44,7 @@ export const useAddSignatureMutation = ({
         mutationFn: ({ responses }: AddSignatureMutationInput) =>
             addSignature(network, signRequestId, responses),
         onSuccess: () => {
-            rqClient.invalidateQueries({
+            void rqClient.invalidateQueries({
                 queryKey: getSignRequestDetailQueryKey(network, signRequestId),
             })
         },

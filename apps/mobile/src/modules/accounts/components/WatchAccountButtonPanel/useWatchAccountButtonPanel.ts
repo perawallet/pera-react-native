@@ -31,7 +31,7 @@ export const useWatchAccountButtonPanel =
         const { t } = useLanguage()
 
         const handleCopyAddress = useCallback(() => {
-            copyToClipboard(account.address)
+            void copyToClipboard(account.address)
             showToast({
                 title: t('account_options.copy_address'),
                 body: '',

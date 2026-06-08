@@ -58,8 +58,10 @@ export const usePolling = (options?: UsePollingOptions) => {
     }, [polling])
 
     const startPolling = useCallback(async () => {
-        stopPolling()
-        const timer = setInterval(doCheck, CACHE_CHECK_INTERVAL)
+        void stopPolling()
+        const timer = setInterval(() => {
+            void doCheck()
+        }, CACHE_CHECK_INTERVAL)
         setPolling(timer)
     }, [doCheck, stopPolling])
 

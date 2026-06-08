@@ -13,10 +13,10 @@
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
@@ -24,16 +24,13 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useSelectedAccount,
     useCanSignWith,
-    AssetWithAccountBalance,
+    type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import {
-    trackEvent,
-    AssetDetailsEvent,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, AssetDetailsEvent } from '@analytics'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -55,8 +52,6 @@ export const AssetActionButtons = ({
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
-
-    if (isCollectible) return null
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -98,7 +93,7 @@ export const AssetActionButtons = ({
             contents: <SendFundsContent assetId={asset.assetId} />,
             options: {
                 size: 'modal',
-                enablePanDownToClose: true,
+                enablePanDownToClose: false,
                 autoCreateContainer: false,
             },
         })
@@ -112,7 +107,7 @@ export const AssetActionButtons = ({
 
     const handleCopyAddress = useCallback(() => {
         if (account) {
-            copyToClipboard(account.address)
+            void copyToClipboard(account.address)
             showToast({
                 title: t('account_options.copy_address'),
                 body: '',
@@ -120,6 +115,8 @@ export const AssetActionButtons = ({
             })
         }
     }, [account, copyToClipboard, showToast, t])
+
+    if (isCollectible) return null
 
     if (isReadOnly) {
         return (

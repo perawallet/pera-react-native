@@ -95,7 +95,7 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
                     ? t('settings.developer.node_settings.enable_testnet')
                     : t('settings.developer.node_settings.enable_mainnet'),
                 icon: 'globe',
-                onPress: handleNetworkSwitch,
+                onPress: () => void handleNetworkSwitch(),
             })
 
             baseItems.push({

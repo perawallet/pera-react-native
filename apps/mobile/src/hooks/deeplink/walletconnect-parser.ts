@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DeeplinkType, WalletConnectDeeplink } from './types'
+import { DeeplinkType, type WalletConnectDeeplink } from './types'
 import { normalizeUrl } from './utils'
 import { PERAWALLET_WC_SCHEME, WC_SCHEME } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'

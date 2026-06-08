@@ -20,8 +20,8 @@ import {
 import { useStyles } from './styles'
 
 import { PanelButton } from '@components/PanelButton'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/useModalState'
 import { useLanguage } from '@hooks/useLanguage'
@@ -31,11 +31,7 @@ import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    trackEvent,
-    MenuEvent,
-    FundEvent,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, MenuEvent, FundEvent } from '@analytics'
 
 export const MenuScreen = () => {
     const styles = useStyles()
@@ -74,7 +70,7 @@ export const MenuScreen = () => {
             url: config.supportBaseUrl,
             id: 'help-center',
         })
-    }, [pushWebView, t])
+    }, [pushWebView])
 
     const goToSettings = () => {
         navigation.push('Settings')

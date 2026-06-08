@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
-    SendTransactionParams,
+    type SendTransactionParams,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -32,11 +32,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { bottomSheetNotifier } from '@components/core'
 import { useSendFunds } from '@modules/transactions/hooks'
-import {
-    trackEvent,
-    TransactionsEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 
@@ -156,6 +152,9 @@ export const useTransactionProcessingScreen =
                 })
 
             return () => subscription.remove()
+            // Submits the transaction exactly once on mount; re-running on any
+            // param change would re-send. Intentional empty dependency array.
+            // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
 
         const isHardwareSender = selectedAccount?.type === AccountTypes.hardware

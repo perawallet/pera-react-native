@@ -18,7 +18,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
-import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -63,7 +63,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         trackEvent(OnboardingEvent.CreateNewWallet)
         setIsOnboarding(true)
         openCreatingAccount()
-        deferToNextCycle(async () => {
+        void deferToNextCycle(async () => {
             try {
                 const newAccount = await buildHdWalletAccount({
                     account: 0,

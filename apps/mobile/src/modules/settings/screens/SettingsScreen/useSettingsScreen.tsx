@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
-import { trackEvent, SettingsEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, SettingsEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -92,7 +92,7 @@ export const useSettingsScreen = () => {
 
         clearAccountsStore()
 
-        deferToNextCycle(() => {
+        void deferToNextCycle(() => {
             navigation.navigate('Onboarding', {
                 screen: 'OnboardingHome',
             })

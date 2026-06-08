@@ -320,20 +320,24 @@ class Logger {
 
         switch (level) {
             case LogLevel.DEBUG:
-            case LogLevel.INFO:
+            case LogLevel.INFO: {
                 console.log(`${prefix} ${message}`, ...args)
                 break
-            case LogLevel.WARN:
+            }
+            case LogLevel.WARN: {
                 console.warn(`${prefix} ${message}`, ...args)
                 break
-            case LogLevel.ERROR:
+            }
+            case LogLevel.ERROR: {
                 this.safeConsoleError(`${prefix} ${message}`, args)
                 this.reportError('error', messageOrError, context)
                 break
-            case LogLevel.CRITICAL:
+            }
+            case LogLevel.CRITICAL: {
                 this.safeConsoleError(`${prefix} ${message}`, args)
                 this.reportError('critical', messageOrError, context)
                 break
+            }
         }
     }
 }

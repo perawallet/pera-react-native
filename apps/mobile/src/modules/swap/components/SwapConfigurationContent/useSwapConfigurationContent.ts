@@ -16,7 +16,7 @@ import {
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { trackEvent, SwapEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, SwapEvent } from '@analytics'
 import {
     MAX_BALANCE_PERCENT,
     MAX_SLIPPAGE,

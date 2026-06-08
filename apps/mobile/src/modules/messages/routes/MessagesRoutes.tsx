@@ -12,7 +12,7 @@
 
 import {
     createNativeStackNavigator,
-    NativeStackHeaderProps,
+    type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -23,7 +23,7 @@ import { AssetTransferRequestsScreen } from '@modules/transactions/screens/claim
 import { AssetClaimDetailScreen } from '@modules/transactions/screens/claim-assets/AssetClaimDetailScreen/AssetClaimDetailScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
 import { ClaimProcessingScreen } from '@modules/transactions/screens/claim-assets/ClaimProcessingScreen/ClaimProcessingScreen'
-import { MessagesStackParamList } from './types'
+import { type MessagesStackParamList } from './types'
 import { MessagesScreen } from '../screens/MessagesScreen'
 import { MultisigInvitationNameScreen } from '../screens/MultisigInvitationNameScreen'
 

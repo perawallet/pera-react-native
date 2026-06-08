@@ -11,7 +11,7 @@
  */
 
 import {
-    IconName,
+    type IconName,
     PWDivider,
     PWIcon,
     PWScrollView,

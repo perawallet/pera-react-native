@@ -67,7 +67,9 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
             const totalLength = allDecoded.length
 
             if (toSign.length === 0) {
-                transport.respondWithResult(new Array(totalLength).fill(null))
+                void transport.respondWithResult(
+                    new Array(totalLength).fill(null),
+                )
                 return
             }
 

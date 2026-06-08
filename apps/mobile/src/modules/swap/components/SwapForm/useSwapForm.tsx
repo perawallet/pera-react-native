@@ -12,18 +12,14 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Keyboard } from 'react-native'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import {
-    trackEvent,
-    SwapEvent,
-    AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import {
     baseUnitsToDisplayUnits,
     displayUnitsToBaseUnits,
@@ -354,7 +350,13 @@ export const useSwapForm = (): UseSwapFormResult => {
         setQuotedAmount(null)
         setSelectedProviderName(null)
         resetQuoteMutation()
-    }, [requestBottomSheet, toAsset, setFromAsset, resetQuoteMutation])
+    }, [
+        requestBottomSheet,
+        toAsset,
+        setFromAsset,
+        fromAsset,
+        resetQuoteMutation,
+    ])
 
     const handleOpenReceiveAssetSelection = useCallback(async () => {
         trackEvent(SwapEvent.SelectToToken, {
@@ -381,7 +383,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         setQuotedAmount(null)
         setSelectedProviderName(null)
         resetQuoteMutation()
-    }, [requestBottomSheet, fromAsset, setToAsset, resetQuoteMutation])
+    }, [requestBottomSheet, fromAsset, setToAsset, toAsset, resetQuoteMutation])
 
     const handleOpenProvider = useCallback(async () => {
         trackEvent(SwapEvent.SelectProviderOpen, {
@@ -504,10 +506,11 @@ export const useSwapForm = (): UseSwapFormResult => {
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
-        handleOpenPayAssetSelection,
-        handleOpenReceiveAssetSelection,
-        handleOpenConfig,
-        handleOpenProvider,
-        handleOpenConfirm,
+        handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
+        handleOpenReceiveAssetSelection: () =>
+            void handleOpenReceiveAssetSelection(),
+        handleOpenConfig: () => void handleOpenConfig(),
+        handleOpenProvider: () => void handleOpenProvider(),
+        handleOpenConfirm: () => void handleOpenConfirm(),
     }
 }

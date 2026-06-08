@@ -12,7 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { AppState } from 'react-native'
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
+import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { onlineManager } from '@tanstack/react-query'
 import { useNetworkStatusListener } from '../useNetworkStatusListener'
 import { useNetworkStatusStore } from '../useNetworkStatusStore'

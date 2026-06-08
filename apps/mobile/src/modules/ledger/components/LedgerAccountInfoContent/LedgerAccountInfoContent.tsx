@@ -50,7 +50,7 @@ export const LedgerAccountInfoContent = ({
     const renderItem = useCallback(
         ({ item }: { item: LedgerInfoListItem }) => {
             switch (item.kind) {
-                case 'sectionHeader':
+                case 'sectionHeader': {
                     return (
                         <PWText
                             variant='h4'
@@ -59,8 +59,9 @@ export const LedgerAccountInfoContent = ({
                             {item.title}
                         </PWText>
                     )
+                }
 
-                case 'account':
+                case 'account': {
                     return (
                         <PWView style={styles.accountRow}>
                             <AccountDisplay
@@ -91,16 +92,18 @@ export const LedgerAccountInfoContent = ({
                             </PWView>
                         </PWView>
                     )
+                }
 
-                case 'asset':
+                case 'asset': {
                     return (
                         <AccountAssetItemView
                             accountBalance={item.accountBalance}
                             usdPrice={item.usdPrice}
                         />
                     )
+                }
 
-                case 'rekeyAddress':
+                case 'rekeyAddress': {
                     return (
                         <AccountDisplay
                             account={item.account}
@@ -112,6 +115,7 @@ export const LedgerAccountInfoContent = ({
                             }}
                         />
                     )
+                }
             }
         },
         [styles],

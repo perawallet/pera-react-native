@@ -135,8 +135,8 @@ describe('useAccountHistory', () => {
     describe('transaction grouping', () => {
         it('returns grouped transactions sections by date', () => {
             const transactions = [
-                { id: '1', roundTime: 1704067200, sender: 'A' }, // 2024-01-01
-                { id: '2', roundTime: 1704153600, sender: 'B' }, // 2024-01-02
+                { id: '1', roundTime: 1_704_067_200, sender: 'A' }, // 2024-01-01
+                { id: '2', roundTime: 1_704_153_600, sender: 'B' }, // 2024-01-02
             ]
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
                 transactions,
@@ -160,9 +160,9 @@ describe('useAccountHistory', () => {
 
         it('groups multiple transactions on same date', () => {
             const transactions = [
-                { id: '1', roundTime: 1704067200, sender: 'A' }, // 2024-01-01 00:00
-                { id: '2', roundTime: 1704067260, sender: 'B' }, // 2024-01-01 00:01
-                { id: '3', roundTime: 1704067320, sender: 'C' }, // 2024-01-01 00:02
+                { id: '1', roundTime: 1_704_067_200, sender: 'A' }, // 2024-01-01 00:00
+                { id: '2', roundTime: 1_704_067_260, sender: 'B' }, // 2024-01-01 00:01
+                { id: '3', roundTime: 1_704_067_320, sender: 'C' }, // 2024-01-01 00:02
             ]
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
                 transactions,
@@ -461,7 +461,7 @@ describe('useAccountHistory', () => {
                 sender: 'sender-address',
                 receiver: 'receiver-address',
                 confirmedRound: 100,
-                roundTime: 1704067200,
+                roundTime: 1_704_067_200,
                 swapGroupDetail: null,
                 interpretedMeaning: null,
                 fee: '1000',
@@ -490,7 +490,7 @@ describe('useAccountHistory', () => {
                 sender: 'sender-address',
                 receiver: 'receiver-address',
                 confirmedRound: 200,
-                roundTime: 1704153600,
+                roundTime: 1_704_153_600,
                 swapGroupDetail: null,
                 interpretedMeaning: null,
                 fee: '1000',
@@ -519,7 +519,7 @@ describe('useAccountHistory', () => {
                 sender: 'sender-address',
                 receiver: null,
                 confirmedRound: 300,
-                roundTime: 1704240000,
+                roundTime: 1_704_240_000,
                 swapGroupDetail: {
                     amountIn: '1000000',
                     assetInUnitName: 'ALGO',
@@ -553,7 +553,7 @@ describe('useAccountHistory', () => {
                 sender: 'sender-address',
                 receiver: null,
                 confirmedRound: 400,
-                roundTime: 1704326400,
+                roundTime: 1_704_326_400,
                 swapGroupDetail: {
                     amountIn: '1000000',
                     assetInUnitName: 'ALGO',

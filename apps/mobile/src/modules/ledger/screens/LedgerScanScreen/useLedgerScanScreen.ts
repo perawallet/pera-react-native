@@ -63,7 +63,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
         if (hasRequestedPermissions) return
         setHasRequestedPermissions(true)
-        requestPermissions()
+        void requestPermissions()
     }, [
         isCheckingPermissions,
         hasPermissions,
@@ -93,10 +93,10 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         // After the OS marks the permission as NEVER_ASK_AGAIN the system
         // dialog won't reopen — hand the user off to Settings instead.
         if (isPermissionBlocked) {
-            openSettings()
+            void openSettings()
             return
         }
-        requestPermissions()
+        void requestPermissions()
     }, [isPermissionBlocked, openSettings, requestPermissions])
 
     const handleTroubleshoot = useCallback(() => {

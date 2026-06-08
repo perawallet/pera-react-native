@@ -23,10 +23,7 @@ import {
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 import { shareCsvFile } from '@utils/shareCsvFile'
-import {
-    trackEvent,
-    AccountDetailsEvent,
-} from '@perawallet/wallet-core-analytics'
+import { trackEvent, AccountDetailsEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     TransactionFilter,
@@ -84,7 +81,7 @@ export type UseAccountHistoryResult = {
     /** Current custom range if active */
     customRange?: CustomDateRange
     /** Function to open the filter bottom sheet */
-    handleOpenFilter: () => void
+    handleOpenFilter: () => Promise<void>
     /** Function to handle pressing a transaction item */
     handleTransactionPress: (transaction: TransactionHistoryItem) => void
 }
@@ -167,17 +164,19 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
         network,
-        onSuccess: async result => {
-            try {
-                await shareCsvFile(result.filename, result.csvContent)
-            } catch (error) {
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: csv share path stringifies the raw error directly into the body; predates useErrorToast
-                showToast({
-                    title: t('errors.general.title'),
-                    body: `${error}`,
-                    type: 'error',
-                })
-            }
+        onSuccess: result => {
+            void (async () => {
+                try {
+                    await shareCsvFile(result.filename, result.csvContent)
+                } catch (error) {
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: csv share path stringifies the raw error directly into the body; predates useErrorToast
+                    showToast({
+                        title: t('errors.general.title'),
+                        body: `${error}`,
+                        type: 'error',
+                    })
+                }
+            })()
         },
         onError: error => {
             showToast({

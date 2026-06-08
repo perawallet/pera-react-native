@@ -10,16 +10,18 @@
  limitations under the License
  */
 
-import { AnalyticsMetadataKey as Key } from '../metadata-keys'
+import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
-/** Push notification interactions. */
-export enum NotificationsEvent {
-    Open = 'notification_open', // Opened a push notification (opt. id, opt. url)
+/** Staking screen. */
+export enum StakingEvent {
+    Open = 'stakingscr_view', // Opened the staking page
+    SelectProject = 'staking_click_dapp', // Opened a staking project (project name + url)
 }
 
-export interface NotificationsOptionalPayloads {
-    [NotificationsEvent.Open]: {
-        [Key.NotificationId]?: number
-        [Key.NotificationUrl]?: string
+/** Project name/url come from the selected staking project and are always present. */
+export interface StakingRequiredPayloads {
+    [StakingEvent.SelectProject]: {
+        [Key.Name]: string
+        [Key.Url]: string
     }
 }

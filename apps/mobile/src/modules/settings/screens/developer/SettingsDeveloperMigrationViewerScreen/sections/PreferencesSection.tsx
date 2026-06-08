@@ -88,43 +88,52 @@ const preferenceComparison = (
     rn: RNMigrationSnapshot,
 ): { legacy: unknown; rn: unknown; matches?: boolean } | null => {
     switch (key) {
-        case 'theme':
+        case 'theme': {
             return matchEq(p.theme, rn.preferences.theme)
-        case 'currency':
+        }
+        case 'currency': {
             return matchEq(p.currency, rn.preferences.currency)
-        case 'privacyMode':
+        }
+        case 'privacyMode': {
             return matchEq(p.privacyMode ?? false, rn.preferences.privacyMode)
-        case 'assetFilterZeroBalance':
+        }
+        case 'assetFilterZeroBalance': {
             return matchEq(
                 p.assetFilterZeroBalance ?? false,
                 rn.preferences.assetFilterZeroBalance,
             )
-        case 'assetFilterDisplayNFT':
+        }
+        case 'assetFilterDisplayNFT': {
             return matchEq(
                 p.assetFilterDisplayNFT ?? false,
                 rn.preferences.assetFilterDisplayNFT,
             )
-        case 'assetFilterDisplayOptedInNFT':
+        }
+        case 'assetFilterDisplayOptedInNFT': {
             return matchEq(
                 p.assetFilterDisplayOptedInNFT ?? false,
                 rn.preferences.assetFilterDisplayOptedInNFT,
             )
-        case 'collectibleFilterNotOwned':
+        }
+        case 'collectibleFilterNotOwned': {
             return matchEq(
                 p.collectibleFilterNotOwned ?? true,
                 rn.preferences.collectibleFilterNotOwned,
             )
-        case 'nftFilterDisplayWatchAccountNFTs':
+        }
+        case 'nftFilterDisplayWatchAccountNFTs': {
             return matchEq(
                 p.nftFilterDisplayWatchAccountNFTs ?? true,
                 rn.preferences.nftFilterDisplayWatchAccountNFTs,
             )
-        case 'nftListingViewType':
+        }
+        case 'nftListingViewType': {
             return matchEq(
                 p.nftListingViewType,
                 rn.preferences.nftListingViewType,
             )
-        case 'swapSlippageTolerance':
+        }
+        case 'swapSlippageTolerance': {
             return {
                 legacy: p.swapSlippageTolerance,
                 rn: rn.preferences.swapSlippageTolerance,
@@ -132,28 +141,34 @@ const preferenceComparison = (
                     p.swapSlippageTolerance ===
                     rn.preferences.swapSlippageTolerance,
             }
-        case 'swapTermsAccepted':
+        }
+        case 'swapTermsAccepted': {
             return matchEq(
                 p.swapTermsAccepted ?? false,
                 rn.preferences.swapTermsAccepted,
             )
-        case 'accountSortPreference':
+        }
+        case 'accountSortPreference': {
             return {
                 legacy: p.accountSortPreference,
                 rn: rn.preferences.accountSortPreference,
             }
-        case 'assetSortPreference':
+        }
+        case 'assetSortPreference': {
             return {
                 legacy: p.assetSortPreference,
                 rn: rn.preferences.assetSortPreference,
             }
-        case 'collectibleSortPreference':
+        }
+        case 'collectibleSortPreference': {
             return {
                 legacy: p.collectibleSortPreference,
                 rn: rn.preferences.collectibleSortPreference,
             }
-        default:
+        }
+        default: {
             return null
+        }
     }
 }
 

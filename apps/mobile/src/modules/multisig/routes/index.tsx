@@ -12,7 +12,7 @@
 
 import {
     createNativeStackNavigator,
-    NativeStackHeaderProps,
+    type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -22,7 +22,7 @@ import { EditParticipantScreen } from '../screens/EditParticipantScreen'
 import { SetThresholdScreen } from '../screens/SetThresholdScreen'
 import { NameMultisigScreen } from '../screens/NameMultisigScreen'
 import { ImportSharedAccountScreen } from '../screens/ImportSharedAccountScreen'
-import { MultisigStackParamList } from './types'
+import { type MultisigStackParamList } from './types'
 
 export type { MultisigStackParamList } from './types'
 

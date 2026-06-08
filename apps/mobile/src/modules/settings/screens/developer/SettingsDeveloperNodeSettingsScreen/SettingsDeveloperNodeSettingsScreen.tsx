@@ -62,14 +62,14 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                 <PWRadioButton
                     testID='node_settings_mainnet_radio'
                     title={t('settings.developer.node_settings.mainnet_label')}
-                    onPress={() => handleNetworkSwitch(Networks.mainnet)}
+                    onPress={() => void handleNetworkSwitch(Networks.mainnet)}
                     isSelected={isMainnet}
                     isDisabled={isSwitching}
                 />
                 <PWRadioButton
                     testID='node_settings_testnet_radio'
                     title={t('settings.developer.node_settings.testnet_label')}
-                    onPress={() => handleNetworkSwitch(Networks.testnet)}
+                    onPress={() => void handleNetworkSwitch(Networks.testnet)}
                     isSelected={isTestnet}
                     isDisabled={isSwitching}
                 />

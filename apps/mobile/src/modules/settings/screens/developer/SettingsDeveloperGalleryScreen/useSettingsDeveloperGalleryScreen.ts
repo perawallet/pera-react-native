@@ -11,13 +11,15 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, type ParamListBase } from '@react-navigation/native'
 
-import { getCategories } from '../gallery-catalog'
+import {
+    getCategories,
+    type GalleryCategory,
+    type GalleryCategoryId,
+} from '../gallery-catalog'
 
-import type { GalleryCategory, GalleryCategoryId } from '../gallery-catalog'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { ParamListBase } from '@react-navigation/native'
 
 type UseSettingsDeveloperGalleryScreenResult = {
     categories: GalleryCategory[]

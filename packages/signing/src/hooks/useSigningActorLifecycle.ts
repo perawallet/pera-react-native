@@ -26,7 +26,7 @@ import { useLocalKeyArc60Signer } from './useLocalKeyArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
 import { useSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
-import { signingMachine } from '../machine/signingMachine'
+import { type signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import { approvalGate } from '../pipeline/approvalGate'
@@ -378,7 +378,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                         type: 'rejected',
                         request: req,
                     })
-                    ;(req as { reject?: () => Promise<void> }).reject?.()
+                    void (req as { reject?: () => Promise<void> }).reject?.()
                 }
 
                 // The lifecycle owns gate cleanup — `approve`/`reject` only

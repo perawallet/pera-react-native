@@ -12,7 +12,7 @@
 
 import { useEffect } from 'react'
 import { AppState } from 'react-native'
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
+import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { onlineManager } from '@tanstack/react-query'
 import { useToast } from '@hooks/useToast'
 import { LONG_NOTIFICATION_DURATION } from '@constants/ui'

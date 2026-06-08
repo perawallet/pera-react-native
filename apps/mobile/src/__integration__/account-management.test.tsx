@@ -104,7 +104,7 @@ const tapButtonByLabel = (i18nKey: string) => {
     fireEvent.click(button)
 }
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Notification preferences are persisted via a Zustand store inside
 // `@perawallet/wallet-core-messages`; the store itself isn't re-exported
@@ -323,11 +323,17 @@ describe('Flow: Account management', () => {
             )
 
             // The hook also fires a toast so the user gets feedback —
-            // assert it ran with the muted-state title.
-            const toastCalls = vi.mocked(Notifier.showNotification).mock.calls
-            expect(toastCalls.length).toBeGreaterThan(0)
-            const lastCall = toastCalls[toastCalls.length - 1][0]
-            expect(lastCall.title).toBe('account_options.notifications_muted')
+            // assert a toast with the muted-state title was shown. We match
+            // by title rather than asserting on the *last* call: toasts
+            // dispatch on real-timer setTimeouts, so a delayed toast from a
+            // prior test can land here and isn't necessarily the most recent
+            // call.
+            await waitFor(() => {
+                const titles = vi
+                    .mocked(Notifier.showNotification)
+                    .mock.calls.map(call => call[0].title)
+                expect(titles).toContain('account_options.notifications_muted')
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )

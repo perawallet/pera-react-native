@@ -142,7 +142,7 @@ export const InputScreen = () => {
                     variant='primary'
                     title={t('send_funds.input.next')}
                     style={styles.nextButton}
-                    onPress={handleNext}
+                    onPress={() => void handleNext()}
                     isDisabled={!cryptoValue}
                 />
             }

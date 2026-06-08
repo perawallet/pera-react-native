@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { trackEvent, MultisigEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { BeforeYouCreateContent } from '../../components/BeforeYouCreateContent'
 import {
     useMultisigCreationStore,

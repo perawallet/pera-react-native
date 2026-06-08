@@ -163,7 +163,7 @@ describe('useSwapToAssetSelectionList', () => {
         })
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31566704,
+            31_566_704,
             'USDC',
             true,
         )
@@ -173,7 +173,7 @@ describe('useSwapToAssetSelectionList', () => {
         renderHook(() => useSwapToAssetSelectionList(defaultParams))
 
         expect(mockUseAvailableAssetsQuery).toHaveBeenCalledWith(
-            31566704,
+            31_566_704,
             undefined,
             true,
         )

@@ -23,7 +23,7 @@ import {
     trackEvent,
     WalletConnectEvent,
     AnalyticsMetadataKey,
-} from '@perawallet/wallet-core-analytics'
+} from '@analytics'
 import { useNavigation } from '@react-navigation/native'
 import { useMemo, useState } from 'react'
 
@@ -65,7 +65,7 @@ export const useSettingsWalletConnectDetailsScreen = (
             [AnalyticsMetadataKey.DappUrl]:
                 session.session?.peerMeta?.url ?? '',
         })
-        disconnect(session.clientId, true)
+        void disconnect(session.clientId, true)
             .then(() => {
                 deleteModalState.close()
             })

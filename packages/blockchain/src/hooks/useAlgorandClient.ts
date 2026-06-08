@@ -15,9 +15,9 @@ import { useMemo } from 'react'
 import { config } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import {
-    PeraEncodedTransactionSigner,
-    PeraTransactionGroup,
-    PeraTransactionSigner,
+    type PeraEncodedTransactionSigner,
+    type PeraTransactionGroup,
+    type PeraTransactionSigner,
 } from '../models'
 import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/transact'
 import { logger } from '@perawallet/wallet-core-shared'

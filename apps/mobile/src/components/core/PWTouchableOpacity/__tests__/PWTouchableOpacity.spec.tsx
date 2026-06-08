@@ -15,6 +15,7 @@ import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { Text } from 'react-native'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
+import { PWInBottomSheetContext } from '../../PWBottomSheet/inSheetContext'
 
 describe('PWTouchableOpacity', () => {
     it('calls onPress when clicked', () => {
@@ -58,6 +59,23 @@ describe('PWTouchableOpacity', () => {
         fireEvent.click(screen.getByText('Tap'))
 
         expect(onPress).toHaveBeenCalledTimes(2)
+    })
+
+    it('fires onPress via the gesture-handler touchable inside a sheet', () => {
+        // Inside a sheet PWTouchableOpacity swaps to the gesture-handler
+        // touchable so it cooperates with the sheet pan gesture; it must still
+        // invoke onPress.
+        const onPress = vi.fn()
+        render(
+            <PWInBottomSheetContext.Provider value={true}>
+                <PWTouchableOpacity onPress={onPress}>
+                    <Text>Sheet Tap</Text>
+                </PWTouchableOpacity>
+            </PWInBottomSheetContext.Provider>,
+        )
+
+        fireEvent.click(screen.getByText('Sheet Tap'))
+        expect(onPress).toHaveBeenCalledTimes(1)
     })
 
     it('renders children correctly', () => {

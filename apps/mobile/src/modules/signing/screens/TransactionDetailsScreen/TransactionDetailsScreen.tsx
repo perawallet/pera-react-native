@@ -17,10 +17,7 @@ import {
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
-import {
-    trackScreen,
-    AnalyticsScreenName,
-} from '@perawallet/wallet-core-analytics'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import { PWScreen } from '@components/core'

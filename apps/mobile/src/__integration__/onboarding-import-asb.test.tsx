@@ -60,7 +60,7 @@ import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
 // setting `isProcessing` so the loading overlay can paint; together with
 // keystore commits, navigations, and the cascading store rewrites this
 // pushes well past Vitest's 5 s default.
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const renderAsbImportFromOnboarding = () =>
     renderWithNavigation(OnboardingScreen, 'Onboarding', {
@@ -179,7 +179,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(1)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             const [account] = useAccountsStore.getState().accounts
@@ -229,7 +229,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(2)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             const addresses = useAccountsStore
@@ -286,7 +286,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(1)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             expect(useAccountsStore.getState().accounts[0].address).toBe(
                 ALGO25_TEST_ADDRESS,
@@ -410,7 +410,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(2)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             const algo25 = useAccountsStore
@@ -513,7 +513,7 @@ describe('Flow: Onboarding → Import from Algorand Secure Backup', () => {
                 () => {
                     expect(useAccountsStore.getState().accounts).toHaveLength(1)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             await waitFor(() => screen.getByTestId('asb_import_result'))

@@ -13,7 +13,7 @@
 import { PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import {
-    KeyRegType,
+    type KeyRegType,
     microAlgosToAlgos,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'

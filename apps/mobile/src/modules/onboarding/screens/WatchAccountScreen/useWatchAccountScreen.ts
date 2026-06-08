@@ -17,13 +17,13 @@ import {
     useAccountsStore,
     useAllAccounts,
     AccountTypes,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { trackEvent, OnboardingEvent } from '@perawallet/wallet-core-analytics'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import {
     generateOrderedUniqueId,
-    Optional,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'

@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
-import { createTrackers, type TrackEventFn, type TrackScreenFn } from './track'
+import {
+    createTrackers,
+    type TrackEventFn,
+    type TrackScreenFn,
+} from '@analytics'
 
 export type UseAnalyticsResult = {
     trackEvent: TrackEventFn

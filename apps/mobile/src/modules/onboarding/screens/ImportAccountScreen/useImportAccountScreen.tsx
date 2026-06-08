@@ -13,8 +13,8 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import { Linking } from 'react-native'
 
-import { RouteProp, useRoute } from '@react-navigation/native'
-import { OnboardingStackParamList } from '../../routes/types'
+import { type RouteProp, useRoute } from '@react-navigation/native'
+import { type OnboardingStackParamList } from '../../routes/types'
 import {
     DuplicateAccountError,
     MNEMONIC_WORD_COUNT,
@@ -96,7 +96,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
-        deferToNextCycle(async () => {
+        void deferToNextCycle(async () => {
             const mnemonic = words.join(' ')
 
             try {
@@ -180,7 +180,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     )
 
     const handleLearnMore = useCallback(() => {
-        Linking.openURL(config.recoveryPassphraseSupportUrl)
+        void Linking.openURL(config.recoveryPassphraseSupportUrl)
     }, [])
 
     const handleOpenSupportOptions = useCallback(async () => {
@@ -215,11 +215,12 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         canImport,
         processing,
         updateWord,
-        handleWordChange,
+        handleWordChange: (word: string, index: number) =>
+            void handleWordChange(word, index),
         handleImportAccount,
         mnemonicLength,
         t,
-        handleOpenSupportOptions,
+        handleOpenSupportOptions: () => void handleOpenSupportOptions(),
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,

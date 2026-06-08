@@ -1824,6 +1824,16 @@ vi.mock('react-native-gesture-handler', () => {
         BaseButton: MockView,
         RectButton: MockView,
         BorderlessButton: MockView,
+        /* Pressable — wire onPress→onClick; drop the style fn / render-prop
+           children that the DOM can't take */
+        Pressable: ({ onPress, children, style: _style, ...props }: any) =>
+            React.createElement(
+                'div',
+                { onClick: onPress, ...props },
+                typeof children === 'function'
+                    ? children({ pressed: false })
+                    : children,
+            ),
         /* Other */
         FlatList: MockView,
         gestureHandlerRootHOC: vi.fn(),
@@ -1928,7 +1938,7 @@ vi.mock('@rneui/themed', () => {
             layer1: 10,
             layer2: 20,
             overlay1: 100,
-            max: 10000,
+            max: 10_000,
         },
         borderRadius: {
             none: 0,
@@ -2660,8 +2670,13 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
     return {
         useCurrency: vi.fn(() => ({
             preferredCurrency: 'USD',
+            fallbackCurrency: 'USD',
             portfolioPreferredValue: '0',
             usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+        })),
+        usePreferredCurrencyPriceQuery: vi.fn(() => ({
+            data: { usdPrice: new Decimal(1) },
+            isPending: false,
         })),
     }
 })
@@ -2679,7 +2694,7 @@ class MockAlgodError extends Error {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    MIN_TXN_FEE: 1_000n,
+    MIN_TXN_FEE: 1000n,
     useAlgorandClient: vi.fn(),
     useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
     useTransactionEncoder: vi.fn(() => ({ encodeSignedTransaction: vi.fn() })),

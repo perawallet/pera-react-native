@@ -570,7 +570,7 @@ describe('useBidaliTransport', () => {
             )
             act(() =>
                 result.current.handleMessage(
-                    bidaliRPC('openUrl', { url: 12345 }),
+                    bidaliRPC('openUrl', { url: 12_345 }),
                 ),
             )
             expect(Linking.openURL).not.toHaveBeenCalled()

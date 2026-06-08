@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { PWSkeleton, PWText, PWTextProps, PWView } from '@components/core'
+import { PWSkeleton, PWText, type PWTextProps, PWView } from '@components/core'
 import { useMemo } from 'react'
 import {
     formatCurrency,
@@ -19,9 +19,9 @@ import {
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
-import { StyleProp, TextStyle } from 'react-native'
+import { type StyleProp, type TextStyle } from 'react-native'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import {
     getVariantFontWeight,
