@@ -163,6 +163,23 @@ describe('Flow: Dashboard portfolio aggregation', () => {
                 authAddress: null,
             })
 
+            // ALGO holdings — ALGO is a regular holding row now (base units /
+            // microalgos, 6 decimals), written by the sync the same way ASAs
+            // are. The home-screen reads pull it from the holdings table, so it
+            // must be seeded here rather than only on the account_balances row.
+            await insertAssetHolding({
+                accountAddress: ACCOUNT_A.address,
+                assetId: '0',
+                network: NETWORK,
+                amount: '10000000', // 10 ALGO
+            })
+            await insertAssetHolding({
+                accountAddress: ACCOUNT_B.address,
+                assetId: '0',
+                network: NETWORK,
+                amount: '4000000', // 4 ALGO
+            })
+
             // ASA holdings — both accounts hold USDC. Amounts are in base
             // units (USDC has 6 decimals → 1 USDC = 1_000_000 base units).
             await insertAssetHolding({

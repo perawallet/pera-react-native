@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { AccountBalances } from '../models'
 
@@ -25,29 +24,18 @@ type PortfolioTotals = {
 export const usePortfolioTotals = (
     accountBalances: AccountBalances,
 ): PortfolioTotals => {
-    const assetIDs = useMemo(() => {
-        const ids: string[] = []
-        accountBalances.forEach(balance => {
-            balance.assetBalances.forEach(ab => {
-                ids.push(ab.assetId)
-            })
-        })
-        return ids
-    }, [accountBalances])
-
-    const { data: usdPrices, isPending } = useAssetPricesQuery(assetIDs)
     const { usdToPreferred } = useCurrency()
 
     return useMemo(() => {
         const accountUsdValues = new Map<string, Decimal>()
         let portfolioUsdValue = new Decimal(0)
 
+        // Each asset balance already carries its joined USD price from the DB
+        // read, so there's no separate `WHERE assetId IN (…)` price query here.
         accountBalances.forEach((balance, address) => {
             let accountUsdTotal = new Decimal(0)
             balance.assetBalances.forEach(assetBalance => {
-                const usdPrice =
-                    usdPrices?.get(assetBalance.assetId)?.usdPrice ??
-                    new Decimal(0)
+                const usdPrice = assetBalance.usdPrice ?? new Decimal(0)
                 accountUsdTotal = accountUsdTotal.plus(
                     assetBalance.amount.times(usdPrice),
                 )
@@ -59,7 +47,7 @@ export const usePortfolioTotals = (
         return {
             portfolioUsdValue,
             accountUsdValues,
-            isPending,
+            isPending: false,
         }
-    }, [accountBalances, usdPrices, usdToPreferred, isPending])
+    }, [accountBalances, usdToPreferred])
 }

@@ -14,6 +14,10 @@ export { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 export {
     refreshAccountHoldings,
     getAccountHoldings,
+    getAccountPortfolioTotals,
+    getAccountHoldingsPage,
+    getAccountHoldingsLite,
+    assetFromHoldingLiteRow,
     insertAssetHolding,
     deleteAssetHoldings,
     upsertAccountBalance,
@@ -23,4 +27,8 @@ export {
     type HoldingRow,
     type AccountBalanceRow,
     type AccountHoldingsFilters,
+    type AccountPortfolioTotals,
+    type AccountHoldingsPageRow,
+    type AccountHoldingsLiteRow,
+    type GetAccountHoldingsPageParams,
 } from './repository'

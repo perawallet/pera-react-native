@@ -87,31 +87,35 @@ export const SettingsPasskeyScreen = () => {
         <SafeAreaView
             edges={bottomEdges}
             style={styles.safeArea}
-            testID='settings_passkeys_screen'
         >
-            {screen.notice === 'hd-wallet' && (
-                <InfoCallout
-                    title={t('settings.passkeys.hd_wallet_warning_title')}
-                    body={t('settings.passkeys.hd_wallet_warning_body')}
-                    style={styles.notice}
-                    testID='settings_passkeys_hd_wallet_notice'
+            <PWView
+                testID='settings_passkeys_screen'
+                style={styles.screenContainer}
+            >
+                {screen.notice === 'hd-wallet' && (
+                    <InfoCallout
+                        title={t('settings.passkeys.hd_wallet_warning_title')}
+                        body={t('settings.passkeys.hd_wallet_warning_body')}
+                        style={styles.notice}
+                        testID='settings_passkeys_hd_wallet_notice'
+                    />
+                )}
+                {screen.notice === 'biometric' && (
+                    <InfoCallout
+                        title={t('settings.passkeys.biometric_warning_title')}
+                        body={t('settings.passkeys.biometric_warning_body')}
+                        style={styles.notice}
+                        testID='settings_passkeys_biometric_notice'
+                    />
+                )}
+                {content}
+                <QRScannerView
+                    isVisible={screen.isScannerVisible}
+                    onSuccess={screen.onCloseScanner}
+                    onClose={screen.onCloseScanner}
+                    animationType='slide'
                 />
-            )}
-            {screen.notice === 'biometric' && (
-                <InfoCallout
-                    title={t('settings.passkeys.biometric_warning_title')}
-                    body={t('settings.passkeys.biometric_warning_body')}
-                    style={styles.notice}
-                    testID='settings_passkeys_biometric_notice'
-                />
-            )}
-            {content}
-            <QRScannerView
-                isVisible={screen.isScannerVisible}
-                onSuccess={screen.onCloseScanner}
-                onClose={screen.onCloseScanner}
-                animationType='slide'
-            />
+            </PWView>
         </SafeAreaView>
     )
 }

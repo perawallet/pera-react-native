@@ -20,6 +20,11 @@ export const useStyles = makeStyles(theme => {
             width: '100%',
             marginBottom: theme.spacing.md,
         },
+        // The container centers its children, so the button must claim the
+        // full width or its flex:1 text column collapses to zero. [PERA-4348]
+        panelButton: {
+            width: '100%',
+        },
         warningSection: {
             marginVertical: theme.spacing.md,
             gap: theme.spacing.xs,

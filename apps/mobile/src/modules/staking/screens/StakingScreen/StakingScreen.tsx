@@ -150,14 +150,18 @@ export const StakingScreen = () => {
                 )}
 
                 {!isLoading && !isError && projects.length > 0 && (
-                    <PWFlatList
-                        data={projects}
-                        renderItem={renderProject}
-                        ItemSeparatorComponent={null}
-                        keyExtractor={keyExtractor}
-                        style={styles.list}
+                    <PWView
                         testID='staking-projects-list'
-                    />
+                        style={styles.list}
+                    >
+                        <PWFlatList
+                            data={projects}
+                            renderItem={renderProject}
+                            ItemSeparatorComponent={null}
+                            keyExtractor={keyExtractor}
+                            style={styles.list}
+                        />
+                    </PWView>
                 )}
             </StakingErrorBoundary>
         </PWScreen>

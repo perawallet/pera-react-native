@@ -87,7 +87,7 @@ export const AssetActionButtons = ({
             contents: <SendFundsContent assetId={asset.assetId} />,
             options: {
                 size: 'modal',
-                enablePanDownToClose: true,
+                enablePanDownToClose: false,
                 autoCreateContainer: false,
             },
         })

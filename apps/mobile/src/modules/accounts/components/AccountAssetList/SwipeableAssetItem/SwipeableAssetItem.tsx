@@ -18,23 +18,23 @@ import {
     type PWSwipeableRef,
     PWView,
 } from '@components/core'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { type Decimal } from 'decimal.js'
+import { type AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
+import { AssetListItemView } from '../AssetListItemView'
+import type { AssetFiatConverter } from '../useAssetListFiat'
 import { useStyles } from './styles'
 
 export type SwipeableAssetItemProps = {
-    item: AssetWithAccountBalance
+    item: AccountHoldingsLiteRow
     isSwipeEnabled: boolean
-    usdPrice?: Decimal
-    onPress: (item: AssetWithAccountBalance) => void
-    onOptOut: (item: AssetWithAccountBalance) => void
+    convertFiat: AssetFiatConverter
+    onPress: (item: AccountHoldingsLiteRow) => void
+    onOptOut: (item: AccountHoldingsLiteRow) => void
 }
 
 const SwipeableAssetItemInner = ({
     item,
     isSwipeEnabled,
-    usdPrice,
+    convertFiat,
     onPress,
     onOptOut,
 }: SwipeableAssetItemProps) => {
@@ -67,12 +67,11 @@ const SwipeableAssetItemInner = ({
 
     if (!isSwipeEnabled) {
         return (
-            <AccountAssetItemView
-                accountBalance={item}
-                usdPrice={usdPrice}
+            <AssetListItemView
+                holding={item}
+                convertFiat={convertFiat}
                 style={styles.itemContainer}
                 onPress={handlePress}
-                skipFetch
             />
         )
     }
@@ -85,12 +84,11 @@ const SwipeableAssetItemInner = ({
             overshootRight={false}
         >
             <PWView style={styles.swipeableContent}>
-                <AccountAssetItemView
-                    accountBalance={item}
-                    usdPrice={usdPrice}
+                <AssetListItemView
+                    holding={item}
+                    convertFiat={convertFiat}
                     style={styles.itemContainer}
                     onPress={handlePress}
-                    skipFetch
                 />
             </PWView>
         </PWSwipeable>

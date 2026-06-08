@@ -19,13 +19,4 @@ export const useStyles = makeStyles(theme => ({
     item: {
         width: '100%',
     },
-    skeletonRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
-    },
-    skeletonData: {
-        flex: 1,
-        gap: theme.spacing.xs,
-    },
 }))

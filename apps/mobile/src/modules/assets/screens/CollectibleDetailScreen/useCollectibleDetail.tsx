@@ -154,7 +154,7 @@ export const useCollectibleDetail = (
             contents: <SendFundsContent assetId={assetId} />,
             options: {
                 size: 'modal',
-                enablePanDownToClose: true,
+                enablePanDownToClose: false,
                 autoCreateContainer: false,
             },
         })
@@ -167,7 +167,7 @@ export const useCollectibleDetail = (
         const result = await requestBottomSheet<'confirm'>({
             contents: (
                 <OptOutConfirmationContent
-                    accountBalance={assetBalance}
+                    assetId={assetBalance.assetId}
                     accountAddress={account.address}
                 />
             ),

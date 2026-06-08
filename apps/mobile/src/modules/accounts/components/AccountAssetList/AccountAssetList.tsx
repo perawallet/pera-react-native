@@ -10,25 +10,19 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    type PWFlatListRef,
-} from '@components/core'
+import { PWButton, PWText, PWView, type PWFlatListRef } from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
 import {
     type WalletAccount,
-    type AssetWithAccountBalance,
+    type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
-import { LoadingView } from '@components/LoadingView'
 import { SearchableList } from '@components/SearchableList'
+import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
@@ -52,7 +46,8 @@ export const AccountAssetList = ({
     const { t } = useLanguage()
 
     const {
-        balances,
+        holdings,
+        convertFiat,
         isPending,
         isReadOnly,
         assetSortMode,
@@ -73,18 +68,18 @@ export const AccountAssetList = ({
         // from DB; the subsequent FlashList re-population (combined with the
         // sticky search bar at index 0) pushes the list past the header.
         if (lastScrolledAccountRef.current === account.address) return
-        if (balances.length === 0) return
+        if (holdings.length === 0) return
 
         lastScrolledAccountRef.current = account.address
         const handle = requestAnimationFrame(() => {
             listRef.current?.scrollToOffset({ offset: 0, animated: false })
         })
         return () => cancelAnimationFrame(handle)
-    }, [account.address, balances.length])
+    }, [account.address, holdings.length])
 
     // Reset scroll when sort changes within the same account.
     useEffect(() => {
-        if (balances.length === 0) return
+        if (holdings.length === 0) return
         const handle = requestAnimationFrame(() => {
             listRef.current?.scrollToOffset({ offset: 0, animated: true })
         })
@@ -96,7 +91,7 @@ export const AccountAssetList = ({
     }, [assetSortMode])
 
     const renderItem = useCallback(
-        ({ item }: { item: AssetWithAccountBalance }) => {
+        ({ item }: { item: AccountHoldingsLiteRow }) => {
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
                 item.assetId !== ALGO_ASSET_ID &&
@@ -106,15 +101,13 @@ export const AccountAssetList = ({
                 <SwipeableAssetItem
                     item={item}
                     isSwipeEnabled={isSwipeable}
-                    usdPrice={
-                        renderItemProps.assetPrices.get(item.assetId)?.usdPrice
-                    }
+                    convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}
                 />
             )
         },
-        [renderItemProps],
+        [renderItemProps, convertFiat],
     )
 
     const listHeader = (
@@ -135,15 +128,15 @@ export const AccountAssetList = ({
                                 {t('account_details.assets.title')}
                             </PWText>
                         </PWView>
-                        {!isReadOnly && (
-                            <PWView style={styles.titleBarButtonContainer}>
-                                <PWButton
-                                    icon='sliders'
-                                    variant='helper'
-                                    paddingStyle='none'
-                                    onPress={handleOpenManage}
-                                    style={styles.manageButton}
-                                />
+                        <PWView style={styles.titleBarButtonContainer}>
+                            <PWButton
+                                icon='sliders'
+                                variant='helper'
+                                paddingStyle='none'
+                                onPress={handleOpenManage}
+                                style={styles.manageButton}
+                            />
+                            {!isReadOnly && (
                                 <PWButton
                                     icon='plus'
                                     title={t(
@@ -154,8 +147,8 @@ export const AccountAssetList = ({
                                     onPress={handleOpenAddAsset}
                                     style={styles.addAssetButton}
                                 />
-                            </PWView>
-                        )}
+                            )}
+                        </PWView>
                     </PWView>
                 </>
             )}
@@ -163,16 +156,16 @@ export const AccountAssetList = ({
     )
 
     return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={headerState.open}
-        >
+        <PWView style={styles.container}>
             <SearchableList
                 ref={listRef}
-                data={balances}
+                data={holdings}
                 renderItem={renderItem}
                 scrollEnabled={scrollEnabled}
                 keyExtractor={item => item.assetId}
+                // Render further ahead so fast flings on a long asset list don't
+                // outrun the cell renderer and leave blank gaps.
+                drawDistance={2000}
                 ItemSeparatorComponent={ItemSeparator}
                 automaticallyAdjustKeyboardInsets
                 contentContainerStyle={styles.rootContainer}
@@ -183,12 +176,7 @@ export const AccountAssetList = ({
                 onSearchChange={setSearchFilter}
                 ListEmptyComponent={
                     isPending ? (
-                        <LoadingView
-                            variant='skeleton'
-                            size='sm'
-                            count={8}
-                            style={styles.loading}
-                        />
+                        <AssetRowSkeleton count={8} />
                     ) : (
                         <EmptyView
                             title={getEmptyTitle()}
@@ -197,7 +185,7 @@ export const AccountAssetList = ({
                     )
                 }
             />
-        </PWTouchableOpacity>
+        </PWView>
     )
 }
 

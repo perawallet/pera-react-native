@@ -29,10 +29,12 @@ import {
     KeyboardStickyView,
     useKeyboardState,
 } from 'react-native-keyboard-controller'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
 import { NavigationContext } from '@react-navigation/native'
 import { PWView } from '../PWView'
+import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { usePWScreenInsets } from './usePWScreenInsets'
 import { useStyles, type HorizontalPaddingMode } from './styles'
 
@@ -76,6 +78,9 @@ export const PWScreen = ({
     const { bottomInset, isInTabNavigator } = usePWScreenInsets()
     const isKeyboardVisible = useKeyboardState(state => state.isVisible)
     const navigation = useContext(NavigationContext)
+    // Inside a sheet a plain/keyboard-aware ScrollView silently fails to scroll
+    // because the sheet's pan gesture owns the touch — swap in gorhom's.
+    const isInSheet = useContext(PWInBottomSheetContext)
     const styles = useStyles({
         horizontalPadding,
         bottomInset,
@@ -112,19 +117,33 @@ export const PWScreen = ({
             // footer sticks to the bottom (no body to push it down otherwise).
             <PWView style={styles.fixedBody} />
         ) : scroll === 'auto' ? (
-            <KeyboardAwareScrollView
-                style={styles.body}
-                contentContainerStyle={styles.scrollContent}
-                bottomOffset={
-                    footer != null ? footerHeight + theme.spacing.md : 0
-                }
-                showsVerticalScrollIndicator={false}
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps='handled'
-                keyboardDismissMode='interactive'
-            >
-                {children}
-            </KeyboardAwareScrollView>
+            isInSheet ? (
+                // gorhom's scrollable cooperates with the sheet pan gesture; the
+                // sheet owns keyboard handling, so no KeyboardAwareScrollView here.
+                <BottomSheetScrollView
+                    style={styles.body}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    showsHorizontalScrollIndicator={false}
+                    keyboardShouldPersistTaps='handled'
+                >
+                    {children}
+                </BottomSheetScrollView>
+            ) : (
+                <KeyboardAwareScrollView
+                    style={styles.body}
+                    contentContainerStyle={styles.scrollContent}
+                    bottomOffset={
+                        footer != null ? footerHeight + theme.spacing.md : 0
+                    }
+                    showsVerticalScrollIndicator={false}
+                    showsHorizontalScrollIndicator={false}
+                    keyboardShouldPersistTaps='handled'
+                    keyboardDismissMode='interactive'
+                >
+                    {children}
+                </KeyboardAwareScrollView>
+            )
         ) : (
             <PWView style={styles.fixedBody}>{children}</PWView>
         )

@@ -15,24 +15,29 @@ import type { Network } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     getAlgorandClient: vi.fn(() => ({
-        account: {
-            getInformation: vi.fn().mockResolvedValue({
-                balance: { microAlgos: 0n },
-                minBalance: { microAlgos: 0n },
-                totalAssetsOptedIn: 0,
-                totalCreatedAssets: 0,
-                totalAppsOptedIn: 0,
-                status: 'Offline',
-                authAddr: { toString: () => 'S' },
-                assets: [],
-            }),
+        client: {
+            algod: {
+                accountInformation: vi.fn().mockResolvedValue({
+                    amount: 0n,
+                    minBalance: 0n,
+                    totalAssetsOptedIn: 0,
+                    totalCreatedAssets: 0,
+                    totalAppsOptedIn: 0,
+                    status: 'Offline',
+                    authAddr: { toString: () => 'S' },
+                }),
+            },
+            indexer: {
+                lookupAccountAssets: vi.fn().mockResolvedValue({ assets: [] }),
+            },
         },
     })),
 }))
 
 vi.mock('../../db', () => ({
     upsertAccountBalance: vi.fn(),
-    refreshAccountHoldings: vi.fn(),
+    refreshAccountHoldings: vi.fn().mockResolvedValue(true),
+    getAccountBalance: vi.fn().mockResolvedValue(undefined),
 }))
 
 describe('fetchAndPersistAccount', () => {

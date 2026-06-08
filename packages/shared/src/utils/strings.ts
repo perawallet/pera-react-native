@@ -73,6 +73,21 @@ const currencySymbols: Record<string, string> = {
     GBP: '£',
 }
 
+// `Intl.NumberFormat` construction is expensive (notably under Hermes), and
+// these formatters are called once per rendered row — for a large, fast-
+// scrolling asset list that's dozens of constructions per frame, enough to
+// block the JS thread and leave FlashList cells blank. The locale and options
+// don't change at runtime, so cache one formatter per locale and reuse it.
+const decimalFormatterCache = new Map<string, Intl.NumberFormat>()
+const getDecimalFormatter = (locale: string): Intl.NumberFormat => {
+    let formatter = decimalFormatterCache.get(locale)
+    if (!formatter) {
+        formatter = Intl.NumberFormat(locale, { style: 'decimal' })
+        decimalFormatterCache.set(locale, formatter)
+    }
+    return formatter
+}
+
 export const formatNumber = (
     amount: Decimal,
     precision: number,
@@ -83,9 +98,7 @@ export const formatNumber = (
 
     const parts = decimal.split('.')
     const integer = parts[0]
-    const formatter = Intl.NumberFormat(locale, {
-        style: 'decimal',
-    })
+    const formatter = getDecimalFormatter(locale)
     let formattedInteger = formatter.format(Number(integer))
     const decimalSeparator = formatter.format(1.1).charAt(1)
 
@@ -154,7 +167,7 @@ export const formatRawNumberInput = (
     rawValue: string,
     locale: string = 'en-US',
 ) => {
-    const formatter = Intl.NumberFormat(locale, { style: 'decimal' })
+    const formatter = getDecimalFormatter(locale)
     const decimalSeparator = formatter.format(1.1).charAt(1)
     const parts = rawValue.split('.')
     const formattedInteger = formatter.format(Number(parts[0] || '0'))

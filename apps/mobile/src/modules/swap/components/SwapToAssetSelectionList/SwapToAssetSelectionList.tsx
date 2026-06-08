@@ -11,11 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { useTheme } from '@rneui/themed'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { PWFlatList, PWSkeleton, PWView } from '@components/core'
+import { PWFlatList, PWView } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
+import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
 import {
     useSwapToAssetSelectionList,
     type AvailableAssetWithBalance,
@@ -57,7 +57,6 @@ export const SwapToAssetSelectionList = ({
     inBottomSheet,
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const {
         items,
         searchFilter,
@@ -78,16 +77,8 @@ export const SwapToAssetSelectionList = ({
         ({ item }: { item: AvailableAssetWithBalance | SkeletonItem }) => {
             if (isSkeletonItem(item)) {
                 return (
-                    <PWView style={[styles.skeletonRow, styles.item]}>
-                        <PWSkeleton
-                            circle
-                            height={theme.spacing.xxl}
-                            width={theme.spacing.xxl}
-                        />
-                        <PWView style={styles.skeletonData}>
-                            <PWSkeleton height={14} />
-                            <PWSkeleton height={12} />
-                        </PWView>
+                    <PWView style={styles.item}>
+                        <AssetRowSkeleton />
                     </PWView>
                 )
             }
@@ -100,7 +91,7 @@ export const SwapToAssetSelectionList = ({
                 />
             )
         },
-        [handleAssetSelected, styles, theme],
+        [handleAssetSelected, styles],
     )
 
     return (
