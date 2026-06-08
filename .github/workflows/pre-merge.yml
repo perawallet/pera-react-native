@@ -119,9 +119,6 @@ jobs:
       - name: ESLint
         run: pnpm run lint
 
-      - name: Type-aware Lint
-        run: pnpm run lint:types
-
       - name: Prettier
         run: pnpm run format --check
 
@@ -233,6 +230,13 @@ jobs:
 
       - name: Build packages
         run: pnpm run build
+
+      # Type-aware lint (no-floating-promises / no-misused-promises) resolves
+      # cross-package types via each package's built dist/*.d.ts, so it must run
+      # after `pnpm run build`. Running it in the Lint job (no build) makes
+      # workspace types degrade to `any` and produces false positives.
+      - name: Type-aware Lint
+        run: pnpm run lint:types
 
       - name: Check no test-only modules leaked into prod bundles
         run: pnpm run lint:bundle
