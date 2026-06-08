@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import QRCode from 'react-native-qrcode-svg'
 import { useWindowDimensions } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
 import { Contact } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -28,7 +29,8 @@ export type ContactQRContentProps = {
 }
 
 export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { theme } = useTheme()
     const { width } = useWindowDimensions()

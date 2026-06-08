@@ -182,9 +182,15 @@ export const useGlobalSearch = (
 
     const isRemoteLoading = shouldRunRemoteAssets && remoteAssetQuery.isLoading
     const hasUserQuery = value.length > 0
+    // Debouncing only counts as loading when a remote fetch will follow.
+    // For purely in-memory (client-side) filtering there is nothing to wait
+    // for, so treating the debounce window as loading would flash the skeleton
+    // on every keystroke.
     const isLoadingTypedQuery =
         hasUserQuery &&
-        (isDebouncing || isOwnedAssetsLoading || isRemoteLoading)
+        ((isDebouncing && shouldRunRemoteAssets) ||
+            isOwnedAssetsLoading ||
+            isRemoteLoading)
     const isLoadingEmptyQuerySuggestions =
         !hasUserQuery && showRemoteOnEmpty && isRemoteLoading
 

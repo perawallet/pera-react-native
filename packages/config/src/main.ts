@@ -59,6 +59,7 @@ export const configSchema = z.object({
     dispenserUrl: z.url(),
 
     sendFundsFaqUrl: z.url(),
+    assetInboxSupportUrl: z.url(),
     swapSupportUrl: z.url(),
     multisigSupportUrl: z.url(),
     algorandDefiUrl: z.url(),
@@ -71,6 +72,7 @@ export const configSchema = z.object({
     rekeyToSharedSupportUrl: z.url(),
     rekeyToLedgerSupportUrl: z.url(),
     undoRekeySupportUrl: z.url(),
+    peraCardLearnMoreUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -80,6 +82,14 @@ export const configSchema = z.object({
     testnetBidaliApiKey: z.string(),
     mainnetBidaliBaseUrl: z.url(),
     testnetBidaliBaseUrl: z.url(),
+
+    // Baanx card integration. Per-environment base URL + PUBLIC client key
+    // (x-client-key). The Baanx x-secret-key is server-only and MUST NEVER be
+    // added here — secret-key calls are proxied through Pera's backend.
+    mainnetBaanxBaseUrl: z.url(),
+    testnetBaanxBaseUrl: z.url(),
+    mainnetBaanxClientKey: z.string(),
+    testnetBaanxClientKey: z.string(),
 
     arc59: z.object({
         testnet: z.object({
@@ -132,6 +142,8 @@ const productionConfig = {
     peraDemoDappUrl: 'https://perawallet.github.io/pera-demo-dapp/',
     sendFundsFaqUrl:
         'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
+    assetInboxSupportUrl:
+        'https://support.perawallet.app/en/article/transacting-with-asset-inbox-1fbh60y/',
     swapSupportUrl:
         'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
     multisigSupportUrl:
@@ -154,6 +166,8 @@ const productionConfig = {
         'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
     undoRekeySupportUrl:
         'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
+    // TODO(card): replace with the final Pera Card learn-more URL
+    peraCardLearnMoreUrl: 'https://perawallet.app/pera-card/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
@@ -176,6 +190,11 @@ const productionConfig = {
     testnetBidaliApiKey: '',
     mainnetBidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     testnetBidaliBaseUrl: 'https://commerce.staging.bidali.com/dapp',
+
+    mainnetBaanxBaseUrl: 'https://api.baanx.com',
+    testnetBaanxBaseUrl: 'https://dev.api.baanx.com',
+    mainnetBaanxClientKey: '',
+    testnetBaanxClientKey: '',
 
     arc59: {
         testnet: {
@@ -221,6 +240,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',
     peraDemoDappUrl: 'PERA_DEMO_DAPP_URL',
     sendFundsFaqUrl: 'SEND_FUNDS_FAQ_URL',
+    assetInboxSupportUrl: 'ASSET_INBOX_SUPPORT_URL',
     swapSupportUrl: 'SWAP_SUPPORT_URL',
     multisigSupportUrl: 'MULTISIG_SUPPORT_URL',
     algorandDefiUrl: 'ALGORAND_DEFI_URL',
@@ -233,6 +253,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     rekeyToSharedSupportUrl: 'REKEY_TO_SHARED_SUPPORT_URL',
     rekeyToLedgerSupportUrl: 'REKEY_TO_LEDGER_SUPPORT_URL',
     undoRekeySupportUrl: 'UNDO_REKEY_SUPPORT_URL',
+    peraCardLearnMoreUrl: 'PERA_CARD_LEARN_MORE_URL',
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',
@@ -243,6 +264,11 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetBidaliApiKey: 'TESTNET_BIDALI_API_KEY',
     mainnetBidaliBaseUrl: 'MAINNET_BIDALI_BASE_URL',
     testnetBidaliBaseUrl: 'BIDALI_BASE_URL',
+
+    mainnetBaanxBaseUrl: 'MAINNET_BAANX_BASE_URL',
+    testnetBaanxBaseUrl: 'TESTNET_BAANX_BASE_URL',
+    mainnetBaanxClientKey: 'MAINNET_BAANX_CLIENT_KEY',
+    testnetBaanxClientKey: 'TESTNET_BAANX_CLIENT_KEY',
 
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',

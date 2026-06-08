@@ -270,10 +270,15 @@ describe('env-loader', () => {
             mainnetBidaliBaseUrl: 'https://commerce.bidali.example.com/dapp',
             testnetBidaliBaseUrl:
                 'https://commerce.staging.bidali.example.com/dapp',
+            mainnetBaanxBaseUrl: 'https://api.baanx.example.com',
+            testnetBaanxBaseUrl: 'https://dev.api.baanx.example.com',
+            mainnetBaanxClientKey: 'test-mainnet-baanx-key',
+            testnetBaanxClientKey: 'test-testnet-baanx-key',
             termsOfServiceUrl: 'https://terms.example.com',
             privacyPolicyUrl: 'https://privacy.example.com',
             peraDemoDappUrl: 'https://demo.example.com',
             sendFundsFaqUrl: 'https://faq.example.com',
+            assetInboxSupportUrl: 'https://asset-inbox-support.example.com',
             swapSupportUrl: 'https://swap-support.example.com',
             multisigSupportUrl: 'https://multisig-support.example.com',
             dispenserUrl: 'https://dispenser.example.com',
@@ -292,6 +297,7 @@ describe('env-loader', () => {
             rekeyToLedgerSupportUrl:
                 'https://rekey-to-ledger-support.example.com',
             undoRekeySupportUrl: 'https://undo-rekey-support.example.com',
+            peraCardLearnMoreUrl: 'https://pera-card-learn-more.example.com',
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,

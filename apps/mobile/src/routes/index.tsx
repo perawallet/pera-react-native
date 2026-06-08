@@ -35,11 +35,14 @@ import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDe
 import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
+import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
 
 import { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
+import { PeraCardStackNavigator } from '@modules/card'
 import { BackupStackNavigator } from '@modules/backup'
 import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
 import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
@@ -57,6 +60,7 @@ export const MainRoutes = () => {
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const hasAccounts = useHasAccounts()
     const { isOnboarding } = useIsOnboarding()
+    const { needsMigration } = useNeedsMigration()
 
     return (
         <NavigationContainer
@@ -72,13 +76,20 @@ export const MainRoutes = () => {
                 }}
                 screenListeners={screenListeners}
             >
-                {showOnboarding && (
+                {needsMigration && (
+                    <RootStack.Screen
+                        name='MigrationSplash'
+                        component={MigrationSplashScreen}
+                        options={{ statusBarStyle: 'dark' }}
+                    />
+                )}
+                {!needsMigration && showOnboarding && (
                     <RootStack.Screen
                         name='Onboarding'
                         component={OnboardingStackNavigator}
                     />
                 )}
-                {hasAccounts && !isOnboarding && (
+                {!needsMigration && hasAccounts && !isOnboarding && (
                     <>
                         <RootStack.Screen
                             name='TabBar'
@@ -111,6 +122,10 @@ export const MainRoutes = () => {
                         <RootStack.Screen
                             name='Multisig'
                             component={MultisigStackNavigator}
+                        />
+                        <RootStack.Screen
+                            name='PeraCard'
+                            component={PeraCardStackNavigator}
                         />
                         <RootStack.Screen
                             name='BackupWallet'

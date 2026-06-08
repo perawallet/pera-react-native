@@ -1,0 +1,38 @@
+/*
+ * Copyright 2022-2025 Pera Wallet, LDA
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License
+ */
+package com.algorand.perarn.migration.fixtures
+
+import com.algorand.perarn.migration.bridge.LegacyMigrationConstants
+import com.algorand.perarn.migration.database.MigrationPlan
+
+internal fun buildSchemaAtVersion(plan: MigrationPlan, targetVersion: Int): List<String> {
+    require(targetVersion in plan.oldestSupported..plan.targetVersion) {
+        "version $targetVersion out of range [${plan.oldestSupported}, ${plan.targetVersion}] for ${plan.dbName}"
+    }
+    val baseline = baselineFor(plan.dbName)
+    val migrationsToApply = plan.migrations
+        .filter { it.from >= plan.oldestSupported && it.to <= targetVersion }
+        .sortedBy { it.from }
+    val out = ArrayList<String>(baseline.size + migrationsToApply.sumOf { it.sql.size })
+    out.addAll(baseline)
+    for (migration in migrationsToApply) {
+        out.addAll(migration.sql)
+    }
+    return out
+}
+
+private fun baselineFor(dbName: String): List<String> = when (dbName) {
+    LegacyMigrationConstants.ADDRESS_DB_NAME -> AddressDbBaselineV1.DDL
+    LegacyMigrationConstants.PERA_DB_NAME -> PeraDbBaselineV1.DDL
+    LegacyMigrationConstants.ALGORAND_DB_NAME -> AlgorandDbBaselineV3.DDL
+    else -> throw IllegalArgumentException("No baseline schema for $dbName")
+}

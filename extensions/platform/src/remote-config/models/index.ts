@@ -11,6 +11,7 @@
  */
 
 export const RemoteConfigKeys = {
+    disable_screen_capture_prevention: 'disable_screen_capture_prevention',
     welcome_message: 'welcome_message',
     fee_warning_standard_fee: 'fee_warning_standard_fee',
     fee_warning_usd_threshold: 'fee_warning_usd_threshold',
@@ -19,6 +20,7 @@ export const RemoteConfigKeys = {
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
     enable_motion_lock: 'enable_motion_lock',
     enable_duress_pin: 'enable_duress_pin',
+    pera_7_migration: 'pera_7_migration',
 } as const
 
 export type RemoteConfigKey =
@@ -28,6 +30,7 @@ export const RemoteConfigDefaults: Record<
     RemoteConfigKey,
     string | boolean | number
 > = {
+    disable_screen_capture_prevention: false,
     welcome_message: 'Hello',
     fee_warning_standard_fee: 0.001,
     fee_warning_usd_threshold: 0.01,
@@ -36,6 +39,7 @@ export const RemoteConfigDefaults: Record<
     swap_price_impact_high_threshold: 5,
     enable_motion_lock: false,
     enable_duress_pin: false,
+    pera_7_migration: false,
 }
 
 export interface RemoteConfigService {

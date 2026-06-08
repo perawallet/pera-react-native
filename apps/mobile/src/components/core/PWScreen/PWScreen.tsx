@@ -21,7 +21,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
 import { NavigationContext } from '@react-navigation/native'
-import { getTestProps } from '@utils/test-id-helper'
 import { PWView } from '../PWView'
 import { usePWScreenInsets } from './usePWScreenInsets'
 import { useStyles, type HorizontalPaddingMode } from './styles'
@@ -147,7 +146,7 @@ export const PWScreen = ({
         return (
             <PWView
                 style={[styles.root, style]}
-                {...getTestProps(testID)}
+                testID={testID}
             >
                 {renderedHeader}
                 {renderedBody}
@@ -162,7 +161,7 @@ export const PWScreen = ({
     return (
         <PWView
             style={[styles.root, style]}
-            {...getTestProps(testID)}
+            testID={testID}
         >
             <KeyboardAvoidingView
                 style={styles.keyboardView}

@@ -36,22 +36,6 @@ export const ExportShareAccountContent = ({
     return (
         <PWSheetLayout
             header={<SheetHeader title={t('multisig.export.title')} />}
-            footer={
-                <PWView style={styles.actions}>
-                    <PWButton
-                        title={t('multisig.export.copy_url')}
-                        variant='primary'
-                        icon='copy'
-                        onPress={handleCopyUrl}
-                    />
-                    <PWButton
-                        title={t('multisig.export.share_url')}
-                        variant='secondary'
-                        icon='share'
-                        onPress={handleShareUrl}
-                    />
-                </PWView>
-            }
         >
             <PWView style={styles.qrSection}>
                 <QRCode
@@ -68,6 +52,21 @@ export const ExportShareAccountContent = ({
                     {t('multisig.export.url_label')}
                 </PWText>
                 <PWText style={styles.url}>{exportUrl}</PWText>
+            </PWView>
+
+            <PWView style={styles.actions}>
+                <PWButton
+                    title={t('multisig.export.copy_url')}
+                    variant='primary'
+                    icon='copy'
+                    onPress={handleCopyUrl}
+                />
+                <PWButton
+                    title={t('multisig.export.share_url')}
+                    variant='secondary'
+                    icon='share'
+                    onPress={handleShareUrl}
+                />
             </PWView>
         </PWSheetLayout>
     )

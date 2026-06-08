@@ -12,9 +12,19 @@
 
 import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
-import { StyleProp, TextStyle, TextProps } from 'react-native'
+import {
+    StyleProp,
+    TextStyle,
+    TextProps,
+    StyleSheet,
+    useWindowDimensions,
+} from 'react-native'
 import { type FontWeight, type TypographyVariant } from '@theme/typography'
-import { DEFAULT_MINIMUM_FONT_SCALE } from '../constants'
+import {
+    DEFAULT_MINIMUM_FONT_SCALE,
+    MAX_FONT_SIZE_MULTIPLIER,
+} from '../constants'
+import { scaleLineHeight } from '@theme/scaling'
 import { getTestProps } from '@utils/test-id-helper'
 
 export type PWTextProps = {
@@ -49,6 +59,15 @@ export const PWText = ({
     ...props
 }: PWTextProps) => {
     const styles = useStyles({ variant, weight })
+    const { fontScale = 1 } = useWindowDimensions()
+
+    const baseStyle = [styles.text, truncate && styles.truncate, style]
+    const { lineHeight } = StyleSheet.flatten<TextStyle>(baseStyle)
+    const scaledLineHeight = scaleLineHeight(
+        lineHeight,
+        fontScale,
+        MAX_FONT_SIZE_MULTIPLIER,
+    )
 
     const resolvedMinimumFontScale =
         minimumFontScale ??
@@ -56,11 +75,17 @@ export const PWText = ({
 
     return (
         <RNEText
-            style={[styles.text, truncate && styles.truncate, style]}
+            style={[
+                baseStyle,
+                scaledLineHeight !== undefined && {
+                    lineHeight: scaledLineHeight,
+                },
+            ]}
             numberOfLines={numberOfLines ?? (truncate ? 1 : undefined)}
             ellipsizeMode={ellipsizeMode ?? (truncate ? 'tail' : undefined)}
             adjustsFontSizeToFit={adjustsFontSizeToFit}
             minimumFontScale={resolvedMinimumFontScale}
+            maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
             selectable={selectable}
             onPress={onPress}
             {...getTestProps(testID)}

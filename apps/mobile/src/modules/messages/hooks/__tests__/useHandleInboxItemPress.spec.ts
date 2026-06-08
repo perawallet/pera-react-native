@@ -110,7 +110,7 @@ describe('useHandleInboxItemPress', () => {
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         const arg = mockRequestBottomSheet.mock.calls[0][0]
         expect(arg.options).toEqual({
-            size: 'auto',
+            size: 'modal',
             enablePanDownToClose: true,
             autoCreateContainer: false,
         })

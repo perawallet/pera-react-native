@@ -32,7 +32,8 @@ describe('SearchableList', () => {
             />,
         )
 
-        expect(screen.getByPlaceholderText('Search items')).toBeTruthy()
+        // The search renders twice (sticky display mirror + focusable overlay).
+        expect(screen.getAllByPlaceholderText('Search items')[0]).toBeTruthy()
         expect(screen.getByText('First item')).toBeTruthy()
     })
 
@@ -64,11 +65,14 @@ describe('SearchableList', () => {
             />,
         )
 
-        const input = screen.getByLabelText('custom-search')
+        // Rendered twice (display mirror + overlay); the overlay (last) is the
+        // interactive one whose changes drive onSearchChange.
+        const inputs = screen.getAllByLabelText('custom-search')
+        const overlayInput = inputs[inputs.length - 1] as HTMLInputElement
 
-        expect((input as HTMLInputElement).value).toBe('first')
+        expect(overlayInput.value).toBe('first')
 
-        fireEvent.change(input, { target: { value: 'second' } })
+        fireEvent.change(overlayInput, { target: { value: 'second' } })
 
         expect(onSearchChange).toHaveBeenCalledWith('second')
     })
@@ -84,7 +88,7 @@ describe('SearchableList', () => {
             />,
         )
 
-        expect(screen.getByPlaceholderText('Search items')).toBeTruthy()
+        expect(screen.getAllByPlaceholderText('Search items')[0]).toBeTruthy()
         expect(screen.getByText('No items')).toBeTruthy()
     })
 })

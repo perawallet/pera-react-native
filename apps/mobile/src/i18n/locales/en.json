@@ -437,9 +437,6 @@
         "go_back": {
             "label": "Go Back"
         },
-        "loading": {
-            "label": "Loading..."
-        },
         "base64": {
             "label": "Base64"
         },
@@ -675,6 +672,19 @@
         "signing": {
             "source_name": "Bidali",
             "source_description": "Gift card purchase via Bidali"
+        }
+    },
+    "peraCard": {
+        "intro": {
+            "navigation_title": "Pera Card",
+            "title": "Your gateway to\nWeb3 payments",
+            "body": "Get your free Pera Card. The card will be immediately available to you.",
+            "powered_by": "Powered by",
+            "learn_more": "Learn more",
+            "create_account": "Create a Baanx Account",
+            "already_have_account": "I already have an account",
+            "coming_soon_title": "Coming soon",
+            "coming_soon_body": "Pera Card onboarding isn't available just yet. Check back soon."
         }
     },
     "notifications": {
@@ -983,6 +993,8 @@
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
             "create_multisig_option_title": "Add Shared Account",
             "create_multisig_option_description": "Create a new shared account with enhanced security that requires multiple signers",
+            "pera_card_option_title": "Add Pera Card Account",
+            "pera_card_option_description": "Spend your crypto in the real world with the Pera Card",
             "see_other_options": "See other options"
         },
         "import_account_options": {
@@ -2174,6 +2186,16 @@
             "cancel": "Cancel",
             "retry": "Retry",
             "footnote": "Verification will continue on Ledger. To cancel verification, cancel from Ledger.",
+            "awaitingApproval": {
+                "title": "Ledger Approval",
+                "body": "Please review and sign the transaction on your Ledger device {{deviceName}}.",
+                "body_noDevice": "Please review and sign the transaction on your Ledger device."
+            },
+            "awaitingApprovalData": {
+                "title": "Approve on your Ledger",
+                "body": "Review and approve the signature request on your Ledger device {{deviceName}}.",
+                "body_noDevice": "Review and approve the signature request on your Ledger device."
+            },
             "progress": {
                 "label": "Signing {{current}} out of {{total}}…"
             }

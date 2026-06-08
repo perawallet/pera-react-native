@@ -11,17 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { TextStyle } from 'react-native'
-import { getFontWeightVariant } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
-    const title: TextStyle = {
-        ...getFontWeightVariant(theme, 'bodyLarge', 500),
-        textTransform: 'none',
-        flexShrink: 1,
-        minWidth: 0,
-    }
-
     return {
         externalContainer: {
             paddingHorizontal: theme.spacing.lg,
@@ -31,7 +22,9 @@ export const useStyles = makeStyles(theme => {
         container: {
             backgroundColor: theme.colors.layerGrayLighter,
             borderRadius: theme.spacing.xxl,
-            height: theme.spacing['3xl'],
+            // minHeight (not height) so the bar grows when labels wrap to a
+            // second line under large accessibility font sizes.
+            minHeight: theme.spacing['3xl'],
             overflow: 'hidden',
             position: 'relative',
             flexDirection: 'row',
@@ -77,7 +70,12 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.xxl,
             ...theme.shadows.md,
         },
-        title,
+        label: {
+            textTransform: 'none',
+            flexShrink: 1,
+            minWidth: 0,
+            textAlign: 'center',
+        },
         activeTitle: {
             color: theme.colors.textMain,
         },
@@ -89,8 +87,9 @@ export const useStyles = makeStyles(theme => {
             minWidth: 0,
             alignItems: 'center',
             justifyContent: 'center',
-            height: '100%',
-            overflow: 'hidden',
+            // Vertical padding gives wrapped (2-line) labels breathing room;
+            // height is left to flex/stretch so the tab grows with its label.
+            paddingVertical: theme.spacing.xs,
         },
     }
 })

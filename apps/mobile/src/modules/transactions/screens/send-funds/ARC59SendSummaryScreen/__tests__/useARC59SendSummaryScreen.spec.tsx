@@ -20,8 +20,9 @@ const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
 const mockSetArc59Summary = vi.fn()
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
+const { mockRequestBottomSheet, mockPushWebView } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
+    mockPushWebView: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -80,12 +81,23 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         (value: number, _precision: number, currency: string) =>
             `${value.toFixed(6)} ${currency}`,
     ),
+    generateOrderedUniqueId: vi.fn(() => 'webview-id'),
     logger: {
         debug: vi.fn(),
         info: vi.fn(),
         warn: vi.fn(),
         error: vi.fn(),
     },
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        assetInboxSupportUrl: 'https://support.example/asset-inbox',
+    },
+}))
+
+vi.mock('@modules/webview/hooks', () => ({
+    useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
 
 vi.mock('@rneui/themed', () => {
@@ -202,14 +214,19 @@ describe('useARC59SendSummaryScreen', () => {
         expect(mockGoBack).toHaveBeenCalled()
     })
 
-    it('requests the warning bottom sheet on handleReadMore', async () => {
+    it('opens the asset inbox support article on handleReadMore', async () => {
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
         await act(async () => {
             result.current.handleReadMore()
         })
 
-        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(mockPushWebView).toHaveBeenCalledTimes(1)
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            id: 'webview-id',
+            url: 'https://support.example/asset-inbox',
+        })
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
     it('computes fee from summary', async () => {

@@ -44,4 +44,7 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.md,
         alignItems: 'center',
     },
+    transactionIcon: {
+        marginTop: theme.spacing.md,
+    },
 }))

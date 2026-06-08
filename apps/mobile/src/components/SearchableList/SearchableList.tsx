@@ -11,6 +11,7 @@
  */
 
 import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
+import { Pressable } from 'react-native'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
 import { PWFlatList, PWView } from '@components/core'
@@ -27,6 +28,11 @@ import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { Maybe } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
+const NOOP = () => {}
+// testID for the real (focusable) overlay input; the sticky bar is a
+// non-interactive display mirror.
+const SEARCH_INPUT_TEST_ID = 'searchable-list-search-input'
+
 type RenderItem<T> = (props: ListRenderItemInfo<T>) => React.ReactNode
 
 export type SearchableListSearchProps = {
@@ -34,6 +40,7 @@ export type SearchableListSearchProps = {
     placeholder?: string
     onChangeText?: (value: string) => void
     onFocus: () => void
+    testID?: string
 }
 
 const renderHeaderNode = (
@@ -92,23 +99,36 @@ const SearchableListInner = <T,>(
         ...listProps
     } = props
 
+    // The search input is mirrored (a focusable overlay + a non-interactive
+    // sticky display) to work around FlashList re-rendering the sticky cell and
+    // dropping focus while typing. All of that state/coordination lives in the
+    // hook; this component just renders it.
     const {
         listRef,
         augmentedData,
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
+        overlayRef,
+        currentValue,
+        showOverlay,
         handleHeaderLayout,
         handleListLayout,
         handleContentSizeChange,
-        handleSearchFocus,
         handleScroll,
         handleScrollEndDrag,
+        handleScrollBeginDrag,
+        handleEnterSearch,
+        handleQueryChange,
+        handleClearQuery,
+        handleOverlayFocus,
     } = useSearchableList<T>({
         forwardedRef: ref,
         data,
         keyExtractor,
         snapThreshold,
+        searchValue,
+        onSearchChange,
         onScroll,
         onScrollEndDrag,
     })
@@ -122,16 +142,32 @@ const SearchableListInner = <T,>(
             ? renderHeaderNode(ListEmptyComponent)
             : null
         const callerFooter = renderHeaderNode(ListFooterComponent)
-        if (
-            emptyComponent == null &&
-            callerFooter == null &&
-            searchFooterHeight <= 0
-        ) {
+
+        // Empty list: host the empty component in a container sized to the
+        // leftover viewport space (searchFooterHeight) and center it (to account for keyboard).
+        if (emptyComponent != null) {
+            return (
+                <>
+                    <PWView
+                        style={[
+                            styles.emptyFill,
+                            searchFooterHeight > 0 && {
+                                height: searchFooterHeight,
+                            },
+                        ]}
+                    >
+                        {emptyComponent}
+                    </PWView>
+                    {callerFooter}
+                </>
+            )
+        }
+
+        if (callerFooter == null && searchFooterHeight <= 0) {
             return null
         }
         return (
             <>
-                {emptyComponent}
                 {callerFooter}
                 {searchFooterHeight > 0 && (
                     <PWView style={{ height: searchFooterHeight }} />
@@ -143,6 +179,7 @@ const SearchableListInner = <T,>(
         ListFooterComponent,
         isListEmpty,
         searchFooterHeight,
+        styles.emptyFill,
     ])
 
     const augmentedRenderItem = useCallback<RenderItem<AugmentedItem<T>>>(
@@ -155,16 +192,39 @@ const SearchableListInner = <T,>(
                 )
             }
             if (isSearchSentinel(info.item)) {
-                const searchProps = {
-                    value: searchValue,
-                    onFocus: handleSearchFocus,
-                    placeholder: searchPlaceholder,
-                    onChangeText: onSearchChange,
-                }
-
+                // Display mirror: the same SearchInput so it looks identical to
+                // the overlay, but non-interactive
                 return (
                     <PWView style={styles.searchSticky}>
-                        <SearchInputComponent {...searchProps} />
+                        <Pressable
+                            onPress={handleEnterSearch}
+                            accessibilityElementsHidden
+                            importantForAccessibility='no-hide-descendants'
+                        >
+                            <PWView
+                                pointerEvents='none'
+                                style={[
+                                    showOverlay && styles.searchOverlayHidden,
+                                ]}
+                            >
+                                <SearchInputComponent
+                                    value={currentValue}
+                                    placeholder={searchPlaceholder}
+                                    onFocus={NOOP}
+                                    onChangeText={NOOP}
+                                />
+                            </PWView>
+                        </Pressable>
+                        {/* Transparent tap target over the visible clear (X):
+                            clears in place without pinning. Rendered last so it
+                            sits above the body Pressable. */}
+                        {currentValue ? (
+                            <Pressable
+                                style={styles.searchClearHitArea}
+                                onPress={handleClearQuery}
+                                accessibilityLabel='Clear search'
+                            />
+                        ) : null}
                     </PWView>
                 )
             }
@@ -178,15 +238,18 @@ const SearchableListInner = <T,>(
         },
         [
             renderItem,
-            searchValue,
+            currentValue,
             searchPlaceholder,
-            onSearchChange,
             SearchInputComponent,
-            handleSearchFocus,
+            showOverlay,
+            handleEnterSearch,
+            handleClearQuery,
             toUserIndex,
             ListHeaderComponent,
             handleHeaderLayout,
             styles.searchSticky,
+            styles.searchClearHitArea,
+            styles.searchOverlayHidden,
         ],
     )
 
@@ -227,12 +290,9 @@ const SearchableListInner = <T,>(
     )
 
     // PWFlatList's generic forwarded-ref signature doesn't unify with the
-    // prop object we build here via JSX, so we go through createElement with a
-    // single `any` to bridge it; everything we *write* (data, renderItem,
-    // keyExtractor, etc.) is properly typed above. FlashList enables
-    // maintainVisibleContentPosition by default, so it isn't set explicitly.
+    // prop object we build here via JSX.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return createElement(PWFlatList as any, {
+    const list = createElement(PWFlatList as any, {
         ...listProps,
         ref: listRef,
         data: augmentedData,
@@ -251,9 +311,33 @@ const SearchableListInner = <T,>(
         onLayout: handleListLayout,
         onContentSizeChange: handleContentSizeChange,
         onScroll: handleScroll,
+        onScrollBeginDrag: handleScrollBeginDrag,
         onScrollEndDrag: handleScrollEndDrag,
         scrollEventThrottle: SCROLL_EVENT_THROTTLE,
     })
+
+    return (
+        <PWView style={styles.root}>
+            {list}
+            <PWView
+                style={[
+                    styles.searchOverlay,
+                    !showOverlay && styles.searchOverlayHidden,
+                ]}
+                pointerEvents={showOverlay ? 'auto' : 'none'}
+            >
+                <SearchInputComponent
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    ref={overlayRef as any}
+                    value={currentValue}
+                    onFocus={handleOverlayFocus}
+                    placeholder={searchPlaceholder}
+                    onChangeText={handleQueryChange}
+                    testID={SEARCH_INPUT_TEST_ID}
+                />
+            </PWView>
+        </PWView>
+    )
 }
 
 export const SearchableList = forwardRef(SearchableListInner) as <T>(

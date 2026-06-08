@@ -49,13 +49,6 @@ export const AsaVerificationInfoContent = (
         <PWSheetLayout
             horizontalPadding='none'
             header={<SheetHeader title='' />}
-            footer={
-                <PWButton
-                    title={t('asa_verification_info.learn_more')}
-                    variant='secondary'
-                    onPress={handleLearnMore}
-                />
-            }
         >
             <PWImage
                 source={heroImage}
@@ -80,6 +73,12 @@ export const AsaVerificationInfoContent = (
                 <PWText style={styles.paragraph}>
                     {t('asa_verification_info.body_3')}
                 </PWText>
+
+                <PWButton
+                    title={t('asa_verification_info.learn_more')}
+                    variant='secondary'
+                    onPress={handleLearnMore}
+                />
             </PWView>
         </PWSheetLayout>
     )
