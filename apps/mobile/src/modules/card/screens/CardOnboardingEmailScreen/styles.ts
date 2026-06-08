@@ -16,7 +16,10 @@ import { getTypography } from '@theme/typography'
 export const useStyles = makeStyles(theme => ({
     content: {
         paddingTop: theme.spacing.xl,
-        gap: theme.spacing.lg,
+        gap: theme.spacing.xxl,
+    },
+    fields: {
+        gap: theme.spacing.xl,
     },
     label: {
         ...getTypography(theme, 'footnoteMedium'),

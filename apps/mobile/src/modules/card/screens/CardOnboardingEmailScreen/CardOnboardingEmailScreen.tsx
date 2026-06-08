@@ -31,8 +31,49 @@ export const CardOnboardingEmailScreen = () => {
     } = useCardOnboardingEmailScreen()
 
     return (
-        <PWScreen
-            footer={
+        <PWScreen>
+            <PWView style={styles.content}>
+                <PWView style={styles.fields}>
+                    <Controller
+                        control={control}
+                        name='email'
+                        render={({ field: { onChange, onBlur, value } }) => (
+                            <PWInput
+                                label={t('peraCard.create_account.email_label')}
+                                labelStyle={styles.label}
+                                value={value}
+                                onChangeText={onChange}
+                                onBlur={onBlur}
+                                placeholder={t(
+                                    'peraCard.create_account.email_placeholder',
+                                )}
+                                keyboardType='email-address'
+                                autoCapitalize='none'
+                                autoCorrect={false}
+                                returnKeyType='next'
+                                errorMessage={
+                                    errors.email && value
+                                        ? t(
+                                              'peraCard.create_account.email_invalid',
+                                          )
+                                        : undefined
+                                }
+                                testID='card-onboarding-email-input'
+                            />
+                        )}
+                    />
+
+                    <CountrySelectorField
+                        label={t('peraCard.create_account.country_label')}
+                        placeholder={t(
+                            'peraCard.create_account.country_placeholder',
+                        )}
+                        country={selectedCountry}
+                        onPress={handleSelectCountry}
+                        testID='card-onboarding-country-field'
+                    />
+                </PWView>
+
                 <PWButton
                     variant='primary'
                     title={t('peraCard.create_account.confirm_button')}
@@ -40,45 +81,6 @@ export const CardOnboardingEmailScreen = () => {
                     isDisabled={!isValid || isSubmitting}
                     isLoading={isSubmitting}
                     testID='card-onboarding-email-confirm'
-                />
-            }
-        >
-            <PWView style={styles.content}>
-                <Controller
-                    control={control}
-                    name='email'
-                    render={({ field: { onChange, onBlur, value } }) => (
-                        <PWInput
-                            label={t('peraCard.create_account.email_label')}
-                            labelStyle={styles.label}
-                            value={value}
-                            onChangeText={onChange}
-                            onBlur={onBlur}
-                            placeholder={t(
-                                'peraCard.create_account.email_placeholder',
-                            )}
-                            keyboardType='email-address'
-                            autoCapitalize='none'
-                            autoCorrect={false}
-                            returnKeyType='next'
-                            errorMessage={
-                                errors.email && value
-                                    ? t('peraCard.create_account.email_invalid')
-                                    : undefined
-                            }
-                            testID='card-onboarding-email-input'
-                        />
-                    )}
-                />
-
-                <CountrySelectorField
-                    label={t('peraCard.create_account.country_label')}
-                    placeholder={t(
-                        'peraCard.create_account.country_placeholder',
-                    )}
-                    country={selectedCountry}
-                    onPress={handleSelectCountry}
-                    testID='card-onboarding-country-field'
                 />
             </PWView>
         </PWScreen>
