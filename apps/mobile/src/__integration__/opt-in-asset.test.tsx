@@ -39,6 +39,10 @@ import {
     AccountTypes,
     useAccountsStore,
     type WalletAccount,
+    getAccountHoldings,
+    insertAssetHolding,
+    upsertAccountBalance,
+    type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import {
@@ -48,12 +52,6 @@ import {
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    getAccountHoldings,
-    insertAssetHolding,
-    upsertAccountBalance,
-    type AssetWithAccountBalance,
-} from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
 import {
     mockAlgodAccountInformation,
@@ -69,7 +67,7 @@ import {
 } from './__fixtures__/onboarding'
 import { USDC_TEST_ASSET, USDC_TEST_ASSET_ID } from './__fixtures__/assets'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Test host that mirrors what AddAssetView does for the "approve
 // opt-in" step: open the confirmation sheet via `requestBottomSheet`
@@ -137,7 +135,7 @@ const OptOutHost = ({
         void request<'confirm'>({
             contents: (
                 <OptOutConfirmationContent
-                    accountBalance={accountBalance}
+                    assetId={accountBalance.assetId}
                     accountAddress={sender.address}
                 />
             ),
@@ -259,7 +257,7 @@ describe('Flow: Opt into an asset', () => {
                 () => {
                     expect(sendSpy).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -458,7 +456,7 @@ describe('Flow: Opt out of an asset', () => {
                 () => {
                     expect(onResolved).toHaveBeenCalled()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             expect(onRejected).not.toHaveBeenCalled()
 

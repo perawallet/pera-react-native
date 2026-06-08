@@ -33,7 +33,7 @@ export const useDeeplinkListener = () => {
                     if (isValidDeepLink(initialUrl)) {
                         // Small delay to ensure navigation is ready
                         setTimeout(() => {
-                            handleDeepLink(initialUrl, false, 'deeplink')
+                            void handleDeepLink(initialUrl, false, 'deeplink')
                         }, 500)
                     }
                 }
@@ -42,13 +42,13 @@ export const useDeeplinkListener = () => {
             }
         }
 
-        handleInitialUrl()
+        void handleInitialUrl()
 
         const subscription = Linking.addEventListener('url', event => {
             logger.debug('Deeplink: URL event (warm start)', { url: event.url })
 
             if (isValidDeepLink(event.url)) {
-                handleDeepLink(event.url, false, 'deeplink')
+                void handleDeepLink(event.url, false, 'deeplink')
             }
         })
 

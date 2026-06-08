@@ -12,8 +12,9 @@
 
 import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { PinEditView } from '../PinEditView'
-import type { PinEntryMode } from '../PinEditView'
+import { getTestProps } from '@utils/test-id-helper'
+import { Pressable } from 'react-native'
+import { PinEditView, type PinEntryMode } from '../PinEditView'
 import type { SavePinHandlerResult } from '../PinEditView/usePinEditView'
 import { useStyles } from './styles'
 
@@ -44,11 +45,12 @@ export const PinEditContent = ({
         >
             <PWToolbar
                 left={
-                    <PWIcon
-                        name='cross'
+                    <Pressable
+                        {...getTestProps('close-button')}
                         onPress={dismiss}
-                        testID='close-button'
-                    />
+                    >
+                        <PWIcon name='cross' />
+                    </Pressable>
                 }
                 paddingStyle='normal'
                 style={styles.toolbar}

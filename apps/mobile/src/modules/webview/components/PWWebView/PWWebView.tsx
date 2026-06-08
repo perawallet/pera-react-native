@@ -15,14 +15,14 @@ import { useTheme } from '@rneui/themed'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
     WebView,
-    WebViewMessageEvent,
-    WebViewProps,
+    type WebViewMessageEvent,
+    type WebViewProps,
 } from 'react-native-webview'
 import {
-    WebViewErrorEvent,
-    WebViewHttpErrorEvent,
-    WebViewNativeEvent,
-    WebViewNavigationEvent,
+    type WebViewErrorEvent,
+    type WebViewHttpErrorEvent,
+    type WebViewNativeEvent,
+    type WebViewNavigationEvent,
 } from 'react-native-webview/lib/WebViewTypes'
 import {
     baseJS,
@@ -50,8 +50,7 @@ import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebViewStore } from '../../hooks'
-import type { WebViewFavorite } from '../../hooks'
+import { useWebViewStore, type WebViewFavorite } from '../../hooks'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type PWWebViewProps = {
@@ -193,6 +192,8 @@ export const PWWebView = (props: PWWebViewProps) => {
             url: event.nativeEvent.url,
             isSecure,
         })
+        // isSecure is only debug-logged here; a stable callback is intentional.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const loadCompleted = useCallback((event: WebViewNavigationEvent) => {
@@ -202,6 +203,8 @@ export const PWWebView = (props: PWWebViewProps) => {
 
     const reload = useCallback(() => {
         webview.current?.reload()
+        // webview is a ref (stable); a ref is not a valid dependency.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const showLoadError = useCallback(
@@ -316,6 +319,13 @@ export const PWWebView = (props: PWWebViewProps) => {
         isDarkMode,
         userAgent,
         jsToLoad,
+        rest,
+        styles.container,
+        styles.webview,
+        webview,
+        styles.absoluteFill,
+        t,
+        url,
     ])
 
     return (

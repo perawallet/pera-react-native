@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, inArray, gte } from 'drizzle-orm'
+import { eq, and, inArray, gte, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
@@ -19,7 +19,74 @@ import {
     type PeraAssetMetadata,
 } from '../models'
 import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
-import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    partition,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+
+// Max rows per multi-row upsert. Each statement is one round-trip through the
+// async sqlite-proxy bridge, so batching is far faster than per-row writes —
+// for a large account this is the difference between ~25 statements and
+// thousands. Kept well under SQLite's bound-parameter limit.
+const ASSET_WRITE_CHUNK_SIZE = 200
+
+// The held-assets list re-reads every row on each holdings/asset/price
+// invalidation, and during a large account's background-sync warm-up that
+// happens several times. Parsing the pera-metadata JSON for thousands of rows
+// on each pass is a synchronous burst that can starve the JS thread (blank
+// rows / unresponsive taps mid-fling). Cache the parsed result by the raw JSON
+// string so repeated reads of unchanged metadata skip the parse. A changed
+// blob is a different string → a new entry, so there's no staleness risk; the
+// returned objects are treated as read-only. Bounded to cap memory.
+const PERA_METADATA_CACHE_MAX = 8000
+const peraMetadataCache = new Map<string, PeraAssetMetadata>()
+
+function parsePeraMetadata(json: string): PeraAssetMetadata {
+    const cached = peraMetadataCache.get(json)
+    if (cached) return cached
+
+    const parsed = JSON.parse(json) as PeraAssetMetadata
+    if (peraMetadataCache.size >= PERA_METADATA_CACHE_MAX) {
+        const oldest = peraMetadataCache.keys().next().value
+        if (oldest !== undefined) peraMetadataCache.delete(oldest)
+    }
+    peraMetadataCache.set(json, parsed)
+    return parsed
+}
+
+/**
+ * Builds a {@link PeraAsset} from raw `assets_node` + `assets_pera` columns.
+ * Exported so other packages (e.g. the accounts holdings-page read) can enrich
+ * a joined row without going through `getAssetsByIds` and its `IN (…)` list.
+ */
+export function peraAssetFromColumns(row: {
+    assetId: string
+    decimals: number
+    creatorAddress: string
+    totalSupply: Decimal
+    name: Nullable<string>
+    unitName: Nullable<string>
+    url: Nullable<string>
+    metadata: Nullable<string>
+    peraMetadataJson: Nullable<string>
+}): PeraAsset {
+    const peraMetadata: Optional<PeraAssetMetadata> = row.peraMetadataJson
+        ? parsePeraMetadata(row.peraMetadataJson)
+        : undefined
+
+    return {
+        assetId: row.assetId,
+        decimals: row.decimals,
+        creator: { address: row.creatorAddress },
+        totalSupply: row.totalSupply,
+        name: row.name ?? undefined,
+        unitName: row.unitName ?? undefined,
+        url: row.url ?? undefined,
+        metadata: row.metadata ?? undefined,
+        peraMetadata,
+    }
+}
 
 function fromDb(row: {
     assetId: Decimal
@@ -32,21 +99,7 @@ function fromDb(row: {
     metadata: Nullable<string>
     peraMetadataJson: Nullable<string>
 }): PeraAsset {
-    const peraMetadata: Optional<PeraAssetMetadata> = row.peraMetadataJson
-        ? (JSON.parse(row.peraMetadataJson) as PeraAssetMetadata)
-        : undefined
-
-    return {
-        assetId: row.assetId.toString(),
-        decimals: row.decimals,
-        creator: { address: row.creatorAddress },
-        totalSupply: row.totalSupply,
-        name: row.name ?? undefined,
-        unitName: row.unitName ?? undefined,
-        url: row.url ?? undefined,
-        metadata: row.metadata ?? undefined,
-        peraMetadata,
-    }
+    return peraAssetFromColumns({ ...row, assetId: row.assetId.toString() })
 }
 
 type UpsertNodeAssetsParams = {
@@ -63,33 +116,34 @@ export async function upsertNodeAssets({
     if (items.length === 0) return
 
     const now = Date.now()
+    const rows = items.map(item => ({
+        assetId: new Decimal(item.assetId),
+        network,
+        decimals: item.decimals,
+        creatorAddress: item.creator.address,
+        totalSupply: item.totalSupply,
+        name: item.name ?? null,
+        unitName: item.unitName ?? null,
+        url: item.url ?? null,
+        metadata: item.metadata ?? null,
+        updatedAt: now,
+    }))
 
-    for (const item of items) {
+    for (const chunk of partition(rows, ASSET_WRITE_CHUNK_SIZE)) {
         await db
             .insert(AssetsNodeSchema)
-            .values({
-                assetId: new Decimal(item.assetId),
-                network,
-                decimals: item.decimals,
-                creatorAddress: item.creator.address,
-                totalSupply: item.totalSupply,
-                name: item.name ?? null,
-                unitName: item.unitName ?? null,
-                url: item.url ?? null,
-                metadata: item.metadata ?? null,
-                updatedAt: now,
-            })
+            .values(chunk)
             .onConflictDoUpdate({
                 target: [AssetsNodeSchema.assetId, AssetsNodeSchema.network],
                 set: {
-                    decimals: item.decimals,
-                    creatorAddress: item.creator.address,
-                    totalSupply: item.totalSupply,
-                    name: item.name ?? null,
-                    unitName: item.unitName ?? null,
-                    url: item.url ?? null,
-                    metadata: item.metadata ?? null,
-                    updatedAt: now,
+                    decimals: sql`excluded.decimals`,
+                    creatorAddress: sql`excluded.creator_address`,
+                    totalSupply: sql`excluded.total_supply`,
+                    name: sql`excluded.name`,
+                    unitName: sql`excluded.unit_name`,
+                    url: sql`excluded.url`,
+                    metadata: sql`excluded.metadata`,
+                    updatedAt: sql`excluded.updated_at`,
                 },
             })
             .run()
@@ -138,7 +192,7 @@ export async function upsertPeraAssets({
         }
     }
 
-    for (const item of items) {
+    const rows = items.map(item => {
         const meta = item.peraMetadata
         const existing = existingMetaMap.get(item.assetId)
 
@@ -151,27 +205,31 @@ export async function upsertPeraAssets({
               }
             : undefined
 
-        const metaJson = mergedMeta ? JSON.stringify(mergedMeta) : null
+        return {
+            assetId: new Decimal(item.assetId),
+            network,
+            verificationTier: meta?.verificationTier ?? 'unverified',
+            isDeleted: meta?.isDeleted ?? false,
+            isFavorited: mergedMeta?.isFavorited ?? false,
+            assetType: meta?.type ?? null,
+            peraMetadataJson: mergedMeta ? JSON.stringify(mergedMeta) : null,
+            updatedAt: now,
+        }
+    })
 
+    for (const chunk of partition(rows, ASSET_WRITE_CHUNK_SIZE)) {
         await db
             .insert(AssetsPeraSchema)
-            .values({
-                assetId: new Decimal(item.assetId),
-                network,
-                verificationTier: meta?.verificationTier ?? 'unverified',
-                isDeleted: meta?.isDeleted ?? false,
-                assetType: meta?.type ?? null,
-                peraMetadataJson: metaJson,
-                updatedAt: now,
-            })
+            .values(chunk)
             .onConflictDoUpdate({
                 target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
                 set: {
-                    verificationTier: meta?.verificationTier ?? 'unverified',
-                    isDeleted: meta?.isDeleted ?? false,
-                    assetType: meta?.type ?? null,
-                    peraMetadataJson: metaJson,
-                    updatedAt: now,
+                    verificationTier: sql`excluded.verification_tier`,
+                    isDeleted: sql`excluded.is_deleted`,
+                    isFavorited: sql`excluded.is_favorited`,
+                    assetType: sql`excluded.asset_type`,
+                    peraMetadataJson: sql`excluded.pera_metadata_json`,
+                    updatedAt: sql`excluded.updated_at`,
                 },
             })
             .run()
@@ -325,12 +383,14 @@ export async function updateAssetPeraMetadata({
             network,
             verificationTier: merged.verificationTier,
             isDeleted: merged.isDeleted,
+            isFavorited: merged.isFavorited,
             peraMetadataJson: metaJson,
             updatedAt: now,
         })
         .onConflictDoUpdate({
             target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
             set: {
+                isFavorited: merged.isFavorited,
                 peraMetadataJson: metaJson,
                 updatedAt: now,
             },
@@ -357,21 +417,22 @@ export async function upsertAssetPrices({
     if (prices.length === 0) return
 
     const now = Date.now()
+    const rows = prices.map(price => ({
+        assetId: new Decimal(price.assetId),
+        network,
+        usdPrice: price.usdPrice,
+        updatedAt: now,
+    }))
 
-    for (const price of prices) {
+    for (const chunk of partition(rows, ASSET_WRITE_CHUNK_SIZE)) {
         await db
             .insert(AssetPricesSchema)
-            .values({
-                assetId: new Decimal(price.assetId),
-                network,
-                usdPrice: price.usdPrice,
-                updatedAt: now,
-            })
+            .values(chunk)
             .onConflictDoUpdate({
                 target: [AssetPricesSchema.assetId, AssetPricesSchema.network],
                 set: {
-                    usdPrice: price.usdPrice,
-                    updatedAt: now,
+                    usdPrice: sql`excluded.usd_price`,
+                    updatedAt: sql`excluded.updated_at`,
                 },
             })
             .run()

@@ -51,7 +51,7 @@ import {
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const SOURCE: WalletAccount = {
     id: 'rescan-source',
@@ -175,7 +175,7 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
                         screen.getByTestId('rescan-rekeyed-error'),
                     ).toBeTruthy()
                 },
-                { timeout: 15000 },
+                { timeout: 15_000 },
             )
             expect(screen.queryByTestId('rescan-rekeyed-empty')).toBeNull()
             expect(useAccountsStore.getState().accounts).toHaveLength(1)

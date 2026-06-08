@@ -84,7 +84,7 @@ export const useAssetSearchQuery = (
         isError: infiniteQuery.isError,
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,
-        fetchNextPage: infiniteQuery.fetchNextPage,
+        fetchNextPage: () => void infiniteQuery.fetchNextPage(),
     }
 }
 

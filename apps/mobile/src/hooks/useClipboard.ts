@@ -29,7 +29,9 @@ export const useClipboard = (): UseClipboardResult => {
     const copyToClipboard = useCallback(
         async (text: string, notifier?: NotifierRoot) => {
             await Clipboard.setStringAsync(text)
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            void Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+            )
             showToast(
                 {
                     title: t('common.copied_to_clipboard.title'),

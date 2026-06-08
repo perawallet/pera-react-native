@@ -60,7 +60,7 @@ export const useBannersCarouselModalScreen =
             if (focusedBannerId === undefined || isForced) return 0
             const idx = banners.findIndex(b => b.id === focusedBannerId)
             return idx >= 0 ? idx : 0
-        }, [banners, focusedBannerId])
+        }, [banners, focusedBannerId, isForced])
 
         const onClose = useCallback(() => {
             if (!isClosable) return

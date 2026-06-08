@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import {
+    createNativeStackNavigator,
+    type NativeStackHeaderProps,
+} from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { UndoRekeyConfirmScreen } from '../../screens/undo-rekey/UndoRekeyConfirmScreen'
 import { UndoRekeySuccessScreen } from '../../screens/undo-rekey/UndoRekeySuccessScreen'
 
-import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import type { UndoRekeyStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<UndoRekeyStackParamList>()

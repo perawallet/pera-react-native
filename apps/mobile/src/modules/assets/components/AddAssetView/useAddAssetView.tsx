@@ -185,7 +185,7 @@ export const useAddAssetView = (
         fetchNextPage,
         optedInAssetIds,
         optingInAssetIds,
-        handleRequestAdd,
+        handleRequestAdd: (assetId: string) => void handleRequestAdd(assetId),
         t,
     }
 }

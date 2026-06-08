@@ -16,7 +16,7 @@ import {
     useWalletConnectForegroundReconnect,
     useWalletConnectSessionRequests,
     useWalletConnectStore,
-    WalletConnectSessionRequest,
+    type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useEffect, useRef, useState } from 'react'
 import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'

@@ -14,7 +14,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAssetConfigDisplay } from '../useAssetConfigDisplay'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const actual =
@@ -49,10 +49,10 @@ describe('useAssetConfigDisplay', () => {
         fee: 1000n,
         id: 'TX_ID',
         assetConfigTransaction: {
-            assetId: 12345n,
+            assetId: 12_345n,
             params: {
                 name: 'Test',
-                total: 1000000n,
+                total: 1_000_000n,
             },
         },
     } as unknown as PeraDisplayableTransaction

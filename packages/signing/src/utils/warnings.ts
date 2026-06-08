@@ -17,6 +17,7 @@ import type { TransactionWarning } from '../models'
 export const aggregateTransactionWarnings = (
     transactions: PeraDisplayableTransaction[],
     userAccountAddresses: Set<string>,
+    signableAddresses: Set<string>,
 ): TransactionWarning[] => {
     const warnings: TransactionWarning[] = []
 
@@ -25,9 +26,7 @@ export const aggregateTransactionWarnings = (
             continue
         }
 
-        const isUserAccount = userAccountAddresses.has(tx.sender)
-
-        if (isUserAccount) {
+        if (userAccountAddresses.has(tx.sender)) {
             const closeAddress =
                 tx.paymentTransaction?.closeRemainderTo ??
                 tx.assetTransferTransaction?.closeTo
@@ -49,7 +48,11 @@ export const aggregateTransactionWarnings = (
             }
         }
 
-        if (tx.rekeyTo?.publicKey) {
+        // Gate rekey on signability, not mere ownership: only flag rekeys of
+        // accounts the wallet can actually sign for (standard, ledger,
+        // multisig-with-local-participant). Watch-only accounts and dApp
+        // escrow/contract accounts (Folks Finance, Tinyman) are excluded. [PERA-4348]
+        if (signableAddresses.has(tx.sender) && tx.rekeyTo?.publicKey) {
             const rekeyAddress = encodeAlgorandAddress(tx.rekeyTo.publicKey)
             warnings.push({
                 type: 'rekey',

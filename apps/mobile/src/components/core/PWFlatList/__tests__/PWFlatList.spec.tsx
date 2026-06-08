@@ -12,8 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
-import { Text } from 'react-native'
-import type { ViewStyle } from 'react-native'
+import { Text, type ViewStyle } from 'react-native'
 import type { FlashListProps } from '@shopify/flash-list'
 import { render } from '@test-utils/render'
 import { PWFlatList } from '../PWFlatList'

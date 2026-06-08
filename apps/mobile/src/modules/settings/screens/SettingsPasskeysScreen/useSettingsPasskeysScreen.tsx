@@ -152,7 +152,8 @@ export const useSettingsPasskeysScreen =
             isScannerVisible: scanner.isOpen,
             onOpenScanner: scanner.open,
             onCloseScanner: scanner.close,
-            onRequestDelete,
+            onRequestDelete: (passkey: Passkey) =>
+                void onRequestDelete(passkey),
             onOpenProviderSettings,
             onDismissError,
         }

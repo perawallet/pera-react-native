@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 
 import { stripUrlScheme } from '@perawallet/wallet-core-shared'
 import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
-import { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { type SignRequestSource } from '@perawallet/wallet-core-signing'
 
 export const useSourceMetadataBadge = (metadata: SignRequestSource) => {
     const { data: project } = useProjectByUrlQuery({

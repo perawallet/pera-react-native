@@ -76,7 +76,7 @@ export const useLedgerAccounts = (): UseLedgerAccountsResult => {
 
     const retry = useCallback(() => {
         if (lastTransport) {
-            discover(lastTransport)
+            void discover(lastTransport)
         }
     }, [lastTransport, discover])
 

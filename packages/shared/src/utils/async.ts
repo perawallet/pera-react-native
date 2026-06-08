@@ -22,7 +22,7 @@ import type { Optional } from './types'
 export function calculateBackoff(
     currentInterval: number,
     multiplier = 2,
-    maxInterval = 30000,
+    maxInterval = 30_000,
 ): number {
     return Math.min(currentInterval * multiplier, maxInterval)
 }

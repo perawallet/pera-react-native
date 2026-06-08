@@ -12,12 +12,19 @@
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWText,
+    PWView,
+    type IconName,
+    type PWButtonProps,
+    type PWIconVariant,
+} from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
-import type { IconName, PWButtonProps, PWIconVariant } from '@components/core'
 
 export type ConfirmActionContentProps<TResult = boolean> = {
     icon?: IconName

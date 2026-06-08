@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
-
-import type {
-    AccountType,
-    RekeyTransition,
+import {
+    AccountTypes,
+    type AccountType,
+    type RekeyTransition,
 } from '@perawallet/wallet-core-accounts'
 
 const PART_KEY: Record<AccountType, string> = {

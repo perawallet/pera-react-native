@@ -61,7 +61,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const handleCreateAccount = useCallback(() => {
         setIsOnboarding(true)
         openCreatingAccount()
-        deferToNextCycle(async () => {
+        void deferToNextCycle(async () => {
             try {
                 const newAccount = await buildHdWalletAccount({
                     account: 0,

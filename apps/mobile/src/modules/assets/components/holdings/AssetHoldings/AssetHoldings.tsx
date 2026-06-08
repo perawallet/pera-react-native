@@ -29,13 +29,13 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { Decimal } from 'decimal.js'
 import {
-    AccountBalanceHistoryItem,
+    type AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    PeraAsset,
+    type PeraAsset,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'

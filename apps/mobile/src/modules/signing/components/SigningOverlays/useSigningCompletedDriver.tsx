@@ -16,7 +16,6 @@ import {
     isInteractiveSource,
     useSigningEvent,
 } from '@perawallet/wallet-core-signing'
-import { SEND_TRANSACTION_SOURCE } from '@perawallet/wallet-core-transactions'
 import { SigningCompletedContent } from '../SigningCompletedContent'
 
 /**
@@ -25,11 +24,12 @@ import { SigningCompletedContent } from '../SigningCompletedContent'
  * transaction request completes with a non-proposed transport result.
  *
  * Surfaced only for externally-triggered transaction requests
- * (WalletConnect, webview, deeplink) and the internal Send-funds flow.
- * Other internal flows (swap, opt-in/out) own their own success UI, and
- * data signing (arbitrary-data / ARC-60) is not a transaction — so neither
- * surfaces this sheet. Multisig cosign and multisig propose completions are
- * surfaced by PendingSignaturesContent.
+ * (WalletConnect, webview, deeplink). Every internal flow owns its own
+ * processing/success UI — send-funds and asset-inbox claim/reject have
+ * dedicated full-screen processing screens, and swap and opt-in/out render
+ * their own success UI — so the generic sheet would be redundant for them.
+ * Data signing (arbitrary-data / ARC-60) is not a transaction, and multisig
+ * cosign / propose completions are surfaced by PendingSignaturesContent.
  */
 export const useSigningCompletedDriver = (): void => {
     const { request: requestBottomSheet } = useBottomSheet()
@@ -50,12 +50,10 @@ export const useSigningCompletedDriver = (): void => {
             if (req.sourceType === 'multisig-cosign') return
             if (event.result.type === 'proposed') return
 
-            // Show for externally-triggered requests (WalletConnect,
-            // webview, deeplink) and the internal Send-funds flow; other
-            // internal flows (swap, opt-in/out) own their own success UI.
-            const isSendFunds =
-                req.sourceMetadata?.name === SEND_TRANSACTION_SOURCE.name
-            if (!isInteractiveSource(req.sourceType) && !isSendFunds) return
+            // Show only for externally-triggered requests (WalletConnect,
+            // webview, deeplink). All internal flows own their own
+            // processing/success UI, so this sheet would be redundant.
+            if (!isInteractiveSource(req.sourceType)) return
 
             if (openIdRef.current === req.id) return
             openIdRef.current = req.id

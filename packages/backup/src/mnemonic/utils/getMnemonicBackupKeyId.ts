@@ -20,11 +20,13 @@ export const getMnemonicBackupKeyId = (
 ): string | null => {
     switch (account.type) {
         case AccountTypes.algo25:
-        case AccountTypes.hdWallet:
+        case AccountTypes.hdWallet: {
             // All accounts derived from the same wallet root share a single
             // backup state, keyed on the root id (keyPairId).
             return account.keyPairId
-        default:
+        }
+        default: {
             return null
+        }
     }
 }

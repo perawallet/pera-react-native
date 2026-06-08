@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Maybe } from '@perawallet/wallet-core-shared'
+import { type Maybe } from '@perawallet/wallet-core-shared'
 
 // BLE advertisement names are fully attacker-controllable. Strip characters
 // that can spoof rendering in trusted chrome (nav header, account list):
@@ -27,15 +27,15 @@ const cc = (start: number, end: number = start): string => {
 // downstream collapses to a single space.
 const UNSAFE_CHARS = new RegExp(
     '[' +
-        cc(0x0000, 0x0008) +
-        cc(0x000b, 0x000c) +
-        cc(0x000e, 0x001f) +
-        cc(0x007f, 0x009f) +
-        cc(0x061c) + // Arabic letter mark
-        cc(0x200b, 0x200f) + // ZWSP, ZWNJ, ZWJ, LRM, RLM
-        cc(0x202a, 0x202e) + // LRE, RLE, PDF, LRO, RLO
-        cc(0x2066, 0x2069) + // LRI, RLI, FSI, PDI
-        cc(0xfeff) + // BOM / zero-width no-break space
+        cc(0x00_00, 0x00_08) +
+        cc(0x00_0b, 0x00_0c) +
+        cc(0x00_0e, 0x00_1f) +
+        cc(0x00_7f, 0x00_9f) +
+        cc(0x06_1c) + // Arabic letter mark
+        cc(0x20_0b, 0x20_0f) + // ZWSP, ZWNJ, ZWJ, LRM, RLM
+        cc(0x20_2a, 0x20_2e) + // LRE, RLE, PDF, LRO, RLO
+        cc(0x20_66, 0x20_69) + // LRI, RLI, FSI, PDI
+        cc(0xfe_ff) + // BOM / zero-width no-break space
         ']',
     'g',
 )

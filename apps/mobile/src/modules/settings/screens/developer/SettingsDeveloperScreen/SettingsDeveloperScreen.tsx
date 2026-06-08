@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { config } from '@perawallet/wallet-core-config'

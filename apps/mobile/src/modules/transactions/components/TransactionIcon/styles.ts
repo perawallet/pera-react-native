@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { makeStyles, Theme } from '@rneui/themed'
+import { makeStyles, type Theme } from '@rneui/themed'
 import type { TransactionIconProps } from './TransactionIcon'
 
 type StyleProps = Pick<TransactionIconProps, 'size'>

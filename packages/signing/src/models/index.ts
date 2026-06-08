@@ -14,7 +14,10 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { BaseStoreState, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type BaseStoreState,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     Arc60Metadata,
     Arc60StdSigData,

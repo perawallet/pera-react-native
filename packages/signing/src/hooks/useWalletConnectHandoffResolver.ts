@@ -28,7 +28,7 @@ import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsSto
 /** Poll cadence while the backend is responding. */
 const BASE_POLL_INTERVAL_MS = 3000
 /** Slower cadence right after a failed poll, so a down backend isn't hammered. */
-const ERROR_POLL_INTERVAL_MS = 30000
+const ERROR_POLL_INTERVAL_MS = 30_000
 
 export type UseWalletConnectHandoffResolverArgs = {
     /**

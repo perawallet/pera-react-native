@@ -16,14 +16,13 @@ import {
     PWScreen,
     PWText,
     PWView,
+    type IconName,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { AppVersion } from '@modules/settings/components/AppVersion'
 import { getTestProps } from '@utils/test-id-helper'
 import { useSettingsScreen } from './useSettingsScreen'
 import { useStyles } from './styles'
-
-import type { IconName } from '@components/core'
 
 export const SettingsScreen = () => {
     const styles = useStyles()
@@ -59,7 +58,7 @@ export const SettingsScreen = () => {
             <PWButton
                 variant='secondary'
                 title={t('settings.main.remove_all_accounts')}
-                onPress={openDeleteConfirm}
+                onPress={() => void openDeleteConfirm()}
                 {...getTestProps('settings_remove_all_accounts_button')}
             />
             <AppVersion enableSecretTaps />

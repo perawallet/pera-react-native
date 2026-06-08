@@ -51,7 +51,7 @@ export const AssetTransferRequestsScreen = () => {
 
     const renderSeparator = useCallback(
         () => <PWDivider style={styles.separator} />,
-        [],
+        [styles.separator],
     )
 
     const keyExtractor = useCallback(

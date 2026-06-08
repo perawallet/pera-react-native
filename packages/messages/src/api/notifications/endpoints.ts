@@ -17,7 +17,7 @@ import {
     type NotificationStatusResponse,
     type NotificationsListResponse,
     messageStatusResponseSchema,
-    MessageStatusResponse,
+    type MessageStatusResponse,
 } from './schema'
 
 const getNotificationStatusEndpoint = (deviceID: string) =>

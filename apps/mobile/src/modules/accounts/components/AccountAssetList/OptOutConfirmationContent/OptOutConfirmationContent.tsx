@@ -19,10 +19,7 @@ import {
 } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
-import {
-    AssetWithAccountBalance,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
     toWholeUnits,
@@ -38,12 +35,12 @@ import { useStyles } from './styles'
 const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
 
 export type OptOutConfirmationContentProps = {
-    accountBalance: AssetWithAccountBalance
+    assetId: string
     accountAddress: string
 }
 
 export const OptOutConfirmationContent = ({
-    accountBalance,
+    assetId,
     accountAddress,
 }: OptOutConfirmationContentProps) => {
     const styles = useStyles()
@@ -56,14 +53,14 @@ export const OptOutConfirmationContent = ({
         return account?.name ?? accountAddress
     })
 
-    const { data: assets } = useAssetsQuery([accountBalance.assetId])
-    const asset = assets?.get(accountBalance.assetId)
+    const { data: assets } = useAssetsQuery([assetId])
+    const asset = assets?.get(assetId)
 
-    const assetDisplayName = asset?.name ?? accountBalance.assetId
+    const assetDisplayName = asset?.name ?? assetId
     const unitName = asset?.unitName
 
     const handleCopyId = () => {
-        copyToClipboard(accountBalance.assetId)
+        void copyToClipboard(assetId)
     }
 
     return (
@@ -97,7 +94,7 @@ export const OptOutConfirmationContent = ({
                         variant='body'
                         style={styles.rowLabel}
                     >
-                        {accountBalance.assetId}
+                        {assetId}
                     </PWText>
                     <PWButton
                         title={t('asset_opt_out.copy_id')}

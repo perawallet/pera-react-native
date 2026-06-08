@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useRoute } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 
 import { PWScreen, PWText } from '@components/core'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
@@ -18,7 +18,6 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { getPreviewEntry } from '../gallery-catalog'
 
-import type { RouteProp } from '@react-navigation/native'
 import type { DeveloperSettingsStackParamsList } from '@modules/settings/routes'
 
 export const GalleryComponentPreviewScreen = () => {

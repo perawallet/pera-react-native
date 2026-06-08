@@ -11,7 +11,7 @@
  */
 
 import {
-    BaseStoreState,
+    type BaseStoreState,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'

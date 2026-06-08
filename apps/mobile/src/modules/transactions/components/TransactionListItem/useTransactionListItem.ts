@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
@@ -21,14 +21,13 @@ import {
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
-import { formatNumber } from '@perawallet/wallet-core-shared'
+import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
 
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type TFunction = ReturnType<typeof useLanguage>['t']
 
@@ -123,9 +122,10 @@ const getTitle = (
         : t('transactions.list_item.receive')
 
     switch (tx.txType) {
-        case 'pay':
+        case 'pay': {
             return sendOrReceive
-        case 'axfer':
+        }
+        case 'axfer': {
             if (tx.closeTo) {
                 return t('transactions.list_item.opt_out')
             }
@@ -137,16 +137,22 @@ const getTitle = (
                 return t('transactions.list_item.opt_in')
             }
             return sendOrReceive
-        case 'acfg':
+        }
+        case 'acfg': {
             return t('transactions.list_item.asset_config')
-        case 'afrz':
+        }
+        case 'afrz': {
             return t('transactions.list_item.asset_freeze')
-        case 'appl':
+        }
+        case 'appl': {
             return t('transactions.list_item.app_call')
-        case 'keyreg':
+        }
+        case 'keyreg': {
             return t('transactions.list_item.key_registration')
-        default:
+        }
+        default: {
             return t('transactions.list_item.default')
+        }
     }
 }
 

@@ -23,7 +23,7 @@ export const usePrefetchProviders = (): UsePrefetchProvidersResult => {
     const { network } = useNetwork()
 
     return useCallback(() => {
-        queryClient.prefetchQuery({
+        void queryClient.prefetchQuery({
             queryKey: swapQueryKeys.providers(network),
             queryFn: () => fetchProviders(network),
         })

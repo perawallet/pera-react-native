@@ -12,8 +12,8 @@
 
 import { PWText, PWView } from '@components/core'
 import {
-    ArbitraryDataSignRequest,
-    PeraArbitraryDataMessage,
+    type ArbitraryDataSignRequest,
+    type PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyValueRow } from '@components/KeyValueRow'

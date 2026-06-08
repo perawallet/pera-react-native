@@ -16,7 +16,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
 import {
     microAlgosToAlgos,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'

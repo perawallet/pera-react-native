@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import {
-    PWIconSize,
-    PWSkeleton,
-    PWTouchableOpacityProps,
+    type PWIconSize,
+    type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
 import { isCollectible, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
 import { AssetItemView } from './AssetItemView'
+import { AssetRowSkeleton } from '../AssetRowSkeleton'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -89,18 +89,7 @@ export const AccountAssetItemView = ({
     }
 
     if (!asset) {
-        return (
-            <PWView style={[styles.container, rest.style]}>
-                <PWSkeleton
-                    height={40}
-                    width={40}
-                    circle
-                />
-                <PWView style={styles.dataContainer}>
-                    <PWSkeleton height={16} />
-                </PWView>
-            </PWView>
-        )
+        return <AssetRowSkeleton />
     }
 
     const balance = (

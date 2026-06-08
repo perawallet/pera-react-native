@@ -11,16 +11,16 @@
  */
 
 import React, { useMemo } from 'react'
-import { ViewStyle } from 'react-native'
+import { type ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
 
 import {
-    IconName,
+    type IconName,
     PWIcon,
-    PWIconSize,
-    PWIconVariant,
+    type PWIconSize,
+    type PWIconVariant,
 } from '@components/core/PWIcon'
-import { PWView, PWViewProps } from '@components/core/PWView'
+import { PWView, type PWViewProps } from '@components/core/PWView'
 import { useStyles } from './styles'
 
 export type PWRoundIconProps = {

@@ -16,10 +16,10 @@ import {
     clearAccountsStore,
     useDeleteAllData,
 } from '@modules/settings/hooks/useDeleteAllData'
-import { AppState, AppStateStatus } from 'react-native'
-import { logger, Nullable } from '@perawallet/wallet-core-shared'
+import { AppState, type AppStateStatus } from 'react-native'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
-    AppStateValue,
+    type AppStateValue,
     getAppStatePlatform,
     getAppStateTransition,
 } from '@utils/app-state'
@@ -165,7 +165,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         seenLockRequestVersionRef.current = lockRequestVersion
 
         let cancelled = false
-        ;(async () => {
+        void (async () => {
             const enabled = await checkPinEnabled()
             if (cancelled || !enabled) return
             setIsLocked(true)
@@ -211,6 +211,6 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         isLocked,
         isChecking: isChecking || !isInitialized,
         unlock,
-        handleResetData,
+        handleResetData: () => void handleResetData(),
     }
 }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
+import { describe, test, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'
 import { useAlgodErrorMessage } from '../useAlgodErrorMessage'
@@ -56,8 +56,8 @@ describe('useAlgodErrorMessage', () => {
     test('converts bigint params to strings for i18n interpolation', () => {
         const err = new AlgodError('overspend', {
             address: ADDR,
-            balance: 199000n,
-            spent: 201000n,
+            balance: 199_000n,
+            spent: 201_000n,
             missing: 2000n,
         })
         const { result } = renderHook(() => useAlgodErrorMessage())

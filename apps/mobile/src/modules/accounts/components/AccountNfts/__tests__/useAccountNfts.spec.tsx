@@ -124,7 +124,7 @@ const makeFungibleAsset = (id: string, name: string): PeraAsset => ({
     assetId: id,
     name,
     decimals: 6,
-    totalSupply: new Decimal(1000000),
+    totalSupply: new Decimal(1_000_000),
     creator: { address: 'CREATOR' },
     peraMetadata: {
         isDeleted: false,
@@ -166,7 +166,7 @@ describe('useAccountNfts', () => {
                             },
                             {
                                 assetId: '300',
-                                amount: new Decimal(1000000),
+                                amount: new Decimal(1_000_000),
                                 algoValue: new Decimal(10),
                             },
                         ],
@@ -322,7 +322,7 @@ describe('useAccountNfts', () => {
                         assetBalances: [
                             {
                                 assetId: '300',
-                                amount: new Decimal(1000000),
+                                amount: new Decimal(1_000_000),
                                 algoValue: new Decimal(10),
                             },
                         ],

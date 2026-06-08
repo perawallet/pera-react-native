@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 
 import { PWScreen } from '../PWScreen'
+import { PWInBottomSheetContext } from '../../PWBottomSheet/inSheetContext'
 
 describe('PWScreen', () => {
     beforeEach(() => {
@@ -74,6 +75,23 @@ describe('PWScreen', () => {
             </BottomTabBarHeightContext.Provider>,
         )
         expect(screen.getByText('Tab Body')).toBeTruthy()
+    })
+
+    it('renders scrollable body + footer inside a bottom sheet (sheet-aware scroll path)', () => {
+        // Inside a sheet PWScreen must swap its scroll container for gorhom's so
+        // the body scrolls instead of being clipped by the pinned footer.
+        render(
+            <PWInBottomSheetContext.Provider value={true}>
+                <PWScreen
+                    testID='screen'
+                    footer={<Text>Slide to confirm</Text>}
+                >
+                    <Text>Sheet body</Text>
+                </PWScreen>
+            </PWInBottomSheetContext.Provider>,
+        )
+        expect(screen.getByText('Sheet body')).toBeTruthy()
+        expect(screen.getByText('Slide to confirm')).toBeTruthy()
     })
 
     it('exposes the testID on the root container', () => {

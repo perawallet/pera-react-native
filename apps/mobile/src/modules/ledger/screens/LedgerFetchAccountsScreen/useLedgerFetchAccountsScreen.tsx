@@ -11,13 +11,13 @@
  */
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { LedgerConnectionStatus } from '@perawallet/wallet-core-ledger'
 import {
+    type LedgerConnectionStatus,
     connectAndDiscoverAccounts,
     LedgerNoAccountsFoundError,
     LedgerProviderNotFoundError,
@@ -132,7 +132,7 @@ export const useLedgerFetchAccountsScreen =
             if (hasStartedRef.current) return
             hasStartedRef.current = true
 
-            run()
+            void run()
 
             return () => {
                 transportRef.current?.disconnect().catch(() => {})
@@ -140,7 +140,7 @@ export const useLedgerFetchAccountsScreen =
         }, [run])
 
         const handleRetry = useCallback(() => {
-            run()
+            void run()
         }, [run])
 
         const handleTroubleshoot = useCallback(() => {

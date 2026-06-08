@@ -19,10 +19,10 @@ import {
     PWText,
     PWTouchableOpacity,
     PWView,
+    type PWFlatListRef,
 } from '@components/core'
-import type { PWFlatListRef } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useRemoveAssetsScreen } from './useRemoveAssetsScreen'

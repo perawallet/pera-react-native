@@ -35,9 +35,9 @@ type UseSettingsSecurityScreenResult = {
     isShakeToLockEnabled: boolean
     isDuressPinFeatureEnabled: boolean
     isDuressPinEnabled: boolean
-    handlePinToggle: (value: boolean) => void
+    handlePinToggle: (value: boolean) => Promise<void>
     handleBiometricToggle: (value: boolean) => Promise<boolean>
-    handleChangePinPress: () => void
+    handleChangePinPress: () => Promise<void>
     handleRekeyToggle: (value: boolean) => void
     handleAssetFreezeToggle: (value: boolean) => void
     handleShakeToLockToggle: (value: boolean) => void
@@ -77,8 +77,8 @@ export const useSettingsSecurityScreen =
         const [isDuressPinEnabled, setIsDuressPinEnabled] = useState(false)
 
         const refreshPinState = useCallback(() => {
-            checkPinEnabled().then(setIsPinEnabled)
-            checkDuressPinEnabled().then(setIsDuressPinEnabled)
+            void checkPinEnabled().then(setIsPinEnabled)
+            void checkDuressPinEnabled().then(setIsDuressPinEnabled)
         }, [checkPinEnabled, checkDuressPinEnabled])
 
         useEffect(() => {

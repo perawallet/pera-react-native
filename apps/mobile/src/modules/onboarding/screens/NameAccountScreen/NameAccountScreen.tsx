@@ -38,7 +38,7 @@ export const NameAccountScreen = () => {
             loadingTitle={t('onboarding.create_account.processing')}
             value={walletDisplay}
             onChangeText={handleNameChange}
-            onFinish={handleFinish}
+            onFinish={() => void handleFinish()}
             isLoading={isCreating}
         >
             <PWView style={styles.walletNameContainer}>

@@ -65,6 +65,7 @@ export const PWSheetLayout = ({
             keyboardShouldPersistTaps='handled'
             onScroll={onScroll}
             {...getTestProps(testID)}
+            accessible={false}
         >
             {header != null ? (
                 <PWView style={styles.header}>{header}</PWView>

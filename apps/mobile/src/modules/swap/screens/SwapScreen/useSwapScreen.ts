@@ -11,7 +11,7 @@
  */
 
 import { useEffect } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useSwaps } from '@perawallet/wallet-core-swaps'
 import {
     useSelectedAccount,
@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { type Optional } from '@perawallet/wallet-core-shared'
-import { SwapScreenParams } from '@modules/swap/routes/types'
+import { type SwapScreenParams } from '@modules/swap/routes/types'
 import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
 import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
 

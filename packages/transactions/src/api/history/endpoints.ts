@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { queryClient, Network } from '@perawallet/wallet-core-shared'
+import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     transactionHistoryResponseSchema,
     type TransactionHistoryApiResponse,

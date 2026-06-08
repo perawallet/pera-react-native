@@ -37,13 +37,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AssetDescription } from '../AssetDescription/AssetDescription'
 import { AssetSocialMedia } from '../AssetSocialMedia/AssetSocialMedia'
 import { PriceTrend } from '../PriceTrend/PriceTrend'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { EmptyView } from '@components/EmptyView'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
-    AssetPriceHistoryItem,
-    PeraAsset,
+    type AssetPriceHistoryItem,
+    type PeraAsset,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'

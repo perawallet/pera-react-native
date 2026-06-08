@@ -11,8 +11,8 @@
  */
 
 import { useContext } from 'react'
-import { getTestProps } from '@utils/test-id-helper'
-import { ScrollViewProps, StyleSheet } from 'react-native'
+import { getContainerTestProps } from '@utils/test-id-helper'
+import { type ScrollViewProps, StyleSheet } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
@@ -65,7 +65,7 @@ export const PWScrollView = ({
                 contentContainerStyle={resolvedContentContainerStyle}
                 showsVerticalScrollIndicator={showsVerticalScrollIndicator}
                 showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
-                {...getTestProps(testID)}
+                {...getContainerTestProps(testID)}
                 {...props}
             >
                 {children}
@@ -81,7 +81,7 @@ export const PWScrollView = ({
             contentContainerStyle={resolvedContentContainerStyle}
             showsVerticalScrollIndicator={showsVerticalScrollIndicator}
             showsHorizontalScrollIndicator={showsHorizontalScrollIndicator}
-            {...getTestProps(testID)}
+            {...getContainerTestProps(testID)}
             {...props}
         >
             {children}

@@ -11,7 +11,7 @@
  */
 
 import {
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
     getTransactionType,
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
@@ -130,7 +130,7 @@ export const TxTypeDetails = ({
             }
             break
         }
-        default:
+        default: {
             secondary = (
                 <PWText
                     variant='caption'
@@ -140,6 +140,7 @@ export const TxTypeDetails = ({
                     {senderDisplayName}
                 </PWText>
             )
+        }
     }
 
     return (

@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import {
-    IconName,
+    type IconName,
     PWIcon,
     PWView,
     PWTouchableOpacity,

@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import {
     algorandSafeJsonStringify,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
     bottomSheetNotifier,
@@ -40,7 +40,7 @@ export const RawTransactionContent = ({
     }, [transaction.rawTransaction])
 
     const copyText = () => {
-        copyToClipboard(rawText, bottomSheetNotifier.current ?? undefined)
+        void copyToClipboard(rawText, bottomSheetNotifier.current ?? undefined)
     }
 
     return (

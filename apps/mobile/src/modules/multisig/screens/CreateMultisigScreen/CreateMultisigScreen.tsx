@@ -70,7 +70,7 @@ export const CreateMultisigScreen = () => {
                     variant='linkPositive'
                     icon='plus'
                     title={t('multisig.create.add_account')}
-                    onPress={handleOpenAddParticipant}
+                    onPress={() => void handleOpenAddParticipant()}
                     testID='add_participant_button'
                     paddingStyle='none'
                     style={styles.addButton}

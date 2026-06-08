@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { Decimal } from 'decimal.js'
+import { type PeraAsset } from '@perawallet/wallet-core-assets'
+import { type Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetWithAccountBalance = {
@@ -21,6 +21,8 @@ export type AssetWithAccountBalance = {
     amount: Decimal
     /** Value of this holding in ALGOs (display units) */
     algoValue: Decimal
+    /** USD price per whole unit of the asset, joined from the DB read. */
+    usdPrice?: Decimal
 }
 
 export type AccountBalancesWithTotals = {

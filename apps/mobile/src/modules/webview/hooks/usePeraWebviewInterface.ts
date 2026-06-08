@@ -12,7 +12,7 @@
 
 /* eslint-disable max-lines */
 
-import WebView from 'react-native-webview'
+import type WebView from 'react-native-webview'
 import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -234,10 +234,12 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
-                    Linking.canOpenURL(message.params!.url as string).then(
+                    void Linking.canOpenURL(message.params!.url as string).then(
                         supported => {
                             if (supported) {
-                                Linking.openURL(message.params?.url as string)
+                                void Linking.openURL(
+                                    message.params?.url as string,
+                                )
                             } else {
                                 sendErrorToWebview(
                                     message.id,
@@ -270,7 +272,7 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['uri'], message)) {
                         return
                     }
-                    Linking.canOpenURL(message.params!.uri as string).then(
+                    void Linking.canOpenURL(message.params!.uri as string).then(
                         supported => {
                             sendMessageToWebview(
                                 message.id,
@@ -302,14 +304,14 @@ export const usePeraWebviewInterface = (
                     const uri = message.params!.uri as string
 
                     if (parseDeeplink(uri)) {
-                        handleDeepLink(uri, false, 'deeplink')
+                        void handleDeepLink(uri, false, 'deeplink')
                         return
                     }
 
-                    Linking.canOpenURL(uri)
+                    void Linking.canOpenURL(uri)
                         .then(supported => {
                             if (supported) {
-                                Linking.openURL(uri)
+                                void Linking.openURL(uri)
                             } else {
                                 sendErrorToWebview(
                                     message.id,
@@ -670,7 +672,7 @@ export const usePeraWebviewInterface = (
                 return
             }
 
-            connect({
+            void connect({
                 connection: {
                     uri: parsed.uri,
                     autoConnect: securedConnection,
@@ -720,49 +722,63 @@ export const usePeraWebviewInterface = (
             logger.debug('Received webview interface call', { message })
             message.forEach(message => {
                 switch (message.method) {
-                    case 'pushWebView':
+                    case 'pushWebView': {
                         pushWebView(message)
                         break
-                    case 'openSystemBrowser':
+                    }
+                    case 'openSystemBrowser': {
                         openSystemBrowser(message)
                         break
-                    case 'canOpenURI':
+                    }
+                    case 'canOpenURI': {
                         canOpenURI(message)
                         break
-                    case 'openNativeURI':
+                    }
+                    case 'openNativeURI': {
                         openNativeURI(message)
                         break
-                    case 'notifyUser':
+                    }
+                    case 'notifyUser': {
                         notifyUser(message)
                         break
-                    case 'getAddresses':
+                    }
+                    case 'getAddresses': {
                         getAddresses(message)
                         break
-                    case 'getSettings':
+                    }
+                    case 'getSettings': {
                         getSettings(message)
                         break
-                    case 'getPublicSettings':
+                    }
+                    case 'getPublicSettings': {
                         getPublicSettings(message)
                         break
-                    case 'onBackPressed':
+                    }
+                    case 'onBackPressed': {
                         onBackPressed()
                         break
-                    case 'logAnalyticsEvent':
+                    }
+                    case 'logAnalyticsEvent': {
                         logAnalyticsEvent(message)
                         break
-                    case 'closeWebView':
+                    }
+                    case 'closeWebView': {
                         closeWebView()
                         break
-                    case 'requestTransactionSigning':
+                    }
+                    case 'requestTransactionSigning': {
                         requestTransactionSigning(message)
                         break
-                    case 'requestDataSigning':
+                    }
+                    case 'requestDataSigning': {
                         requestDataSigning(message)
                         break
-                    case 'walletConnect':
+                    }
+                    case 'walletConnect': {
                         openWalletConnect(message)
                         break
-                    default:
+                    }
+                    default: {
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.MethodNotFound,
@@ -772,6 +788,7 @@ export const usePeraWebviewInterface = (
                             webview,
                         )
                         break
+                    }
                 }
             })
         },

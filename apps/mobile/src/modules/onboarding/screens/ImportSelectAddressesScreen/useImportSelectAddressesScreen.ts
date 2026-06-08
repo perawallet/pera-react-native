@@ -11,12 +11,16 @@
  */
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native'
+import {
+    type RouteProp,
+    useNavigation,
+    useRoute,
+} from '@react-navigation/native'
 import {
     useAllAccounts,
     useSetAccounts,
     useSelectedAccountAddress,
-    HDWalletAccount,
+    type HDWalletAccount,
     useAccountDiscovery,
     useHDImportSession,
     DerivationTypes,
@@ -29,7 +33,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
-import { OnboardingStackParamList } from '../../routes/types'
+import { type OnboardingStackParamList } from '../../routes/types'
 
 type ImportSelectAddressesRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -99,7 +103,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const handleContinue = useCallback(async () => {
         setIsProcessing(true)
 
-        deferToNextCycle(async () => {
+        void deferToNextCycle(async () => {
             const accountsToAdd = accounts.filter(acc =>
                 selectedAddresses.has(acc.address),
             )
@@ -210,6 +214,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         navigation,
         setSelectedAccountAddress,
         setAccounts,
+        seedIdOf,
     ])
 
     useEffect(() => {
@@ -238,7 +243,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         alreadyImportedAddresses,
         toggleSelection,
         toggleSelectAll,
-        handleContinue,
+        handleContinue: () => void handleContinue(),
         t,
     }
 }

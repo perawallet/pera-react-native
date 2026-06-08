@@ -17,13 +17,15 @@ interface WorkerMessage {
     paths: string[]
 }
 
-port.on('message', async (msg: WorkerMessage) => {
-    try {
-        const result = await runChecksAgainstPaths(msg.paths, checks)
-        port.postMessage({ kind: 'ok', result })
-    } catch (err) {
-        const message =
-            err instanceof Error ? (err.stack ?? err.message) : String(err)
-        port.postMessage({ kind: 'err', message })
-    }
+port.on('message', (msg: WorkerMessage) => {
+    void (async () => {
+        try {
+            const result = await runChecksAgainstPaths(msg.paths, checks)
+            port.postMessage({ kind: 'ok', result })
+        } catch (err) {
+            const message =
+                err instanceof Error ? (err.stack ?? err.message) : String(err)
+            port.postMessage({ kind: 'err', message })
+        }
+    })()
 })

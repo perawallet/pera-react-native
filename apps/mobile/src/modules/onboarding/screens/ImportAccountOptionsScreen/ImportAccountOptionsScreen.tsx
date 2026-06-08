@@ -54,7 +54,9 @@ export const ImportAccountOptionsScreen = () => {
             <QRScannerView
                 isVisible={isQRScannerVisible}
                 onClose={handleCloseQRScanner}
-                onSuccess={handleQRScannerSuccess}
+                onSuccess={(url, restartScanning) =>
+                    void handleQRScannerSuccess(url, restartScanning)
+                }
                 animationType='slide'
                 skipDeepLinkHandler
             />

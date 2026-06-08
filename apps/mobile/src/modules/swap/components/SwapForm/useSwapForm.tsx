@@ -12,7 +12,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Keyboard } from 'react-native'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     useAccountBalancesInvalidator,
@@ -488,10 +488,11 @@ export const useSwapForm = (): UseSwapFormResult => {
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
-        handleOpenPayAssetSelection,
-        handleOpenReceiveAssetSelection,
-        handleOpenConfig,
-        handleOpenProvider,
-        handleOpenConfirm,
+        handleOpenPayAssetSelection: () => void handleOpenPayAssetSelection(),
+        handleOpenReceiveAssetSelection: () =>
+            void handleOpenReceiveAssetSelection(),
+        handleOpenConfig: () => void handleOpenConfig(),
+        handleOpenProvider: () => void handleOpenProvider(),
+        handleOpenConfirm: () => void handleOpenConfirm(),
     }
 }

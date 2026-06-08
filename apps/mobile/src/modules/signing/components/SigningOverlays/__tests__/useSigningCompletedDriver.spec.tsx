@@ -82,15 +82,15 @@ describe('useSigningCompletedDriver', () => {
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
     })
 
-    it('opens the completion sheet for the send-funds flow', () => {
+    it('does not open the sheet for the send-funds flow (owns a full-screen processing screen)', () => {
         renderHook(() => useSigningCompletedDriver())
         publishCompleted(
             buildRequest('local', { name: SEND_TRANSACTION_SOURCE.name }),
         )
-        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        expect(requestBottomSheetMock).not.toHaveBeenCalled()
     })
 
-    it('does not open the sheet for other internal flows (swap, opt-in/out)', () => {
+    it('does not open the sheet for other internal flows (swap, opt-in/out, asset-inbox claim/reject)', () => {
         renderHook(() => useSigningCompletedDriver())
         publishCompleted(buildRequest('local', { name: 'asset-opt-in' }))
         expect(requestBottomSheetMock).not.toHaveBeenCalled()

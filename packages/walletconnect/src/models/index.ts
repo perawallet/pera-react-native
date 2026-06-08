@@ -10,22 +10,28 @@
  limitations under the License
  */
 
-import { IClientMeta, IWalletConnectSession } from '@walletconnect/types'
-import { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type IClientMeta,
+    type IWalletConnectSession,
+} from '@walletconnect/types'
+import {
+    type BaseStoreState,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
-export type AlgorandChainId = 416001 | 416002 | 416003 | 4160
+export type AlgorandChainId = 416_001 | 416_002 | 416_003 | 4160
 
 export const AlgorandChainId = {
-    mainnet: 416001,
-    testnet: 416002,
-    betanet: 416003,
+    mainnet: 416_001,
+    testnet: 416_002,
+    betanet: 416_003,
     all: 4160,
 } as const
 
 export const AlgorandChain = {
-    416001: 'mainnet',
-    416002: 'testnet',
-    416003: 'betanet',
+    416_001: 'mainnet',
+    416_002: 'testnet',
+    416_003: 'betanet',
     4160: 'all',
 }
 

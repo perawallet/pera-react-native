@@ -64,15 +64,18 @@ const parseResponse = async <TData>(
 ): Promise<CardTransportResponse<TData>> => {
     let data: TData
     switch (responseType ?? 'json') {
-        case 'text':
+        case 'text': {
             data = (await response.text()) as unknown as TData
             break
-        case 'blob':
+        }
+        case 'blob': {
             data = (await response.blob()) as unknown as TData
             break
-        case 'arraybuffer':
+        }
+        case 'arraybuffer': {
             data = (await response.arrayBuffer()) as unknown as TData
             break
+        }
         default: {
             const text = await response.text()
             data = (text.trim() ? JSON.parse(text) : undefined) as TData

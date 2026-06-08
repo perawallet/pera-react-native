@@ -116,7 +116,7 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
 
     useEffect(() => {
         let cancelled = false
-        ;(async () => {
+        void (async () => {
             const pinData = await withSecret(PIN_RECORD_KEY_ID, bytes => ({
                 version: parsePinRecord(bytes)?.version ?? null,
                 byteLength: bytes.length,

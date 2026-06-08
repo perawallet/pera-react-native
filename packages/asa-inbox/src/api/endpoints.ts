@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Network, queryClient } from '@perawallet/wallet-core-shared'
+import { type Network, queryClient } from '@perawallet/wallet-core-shared'
 import {
     arc59SendSummaryResponseSchema,
     arc59AssetRequestsResponseSchema,

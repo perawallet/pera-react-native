@@ -13,13 +13,14 @@
 import {
     BottomSheetModal,
     BottomSheetBackdrop,
-    BottomSheetBackdropProps,
+    type BottomSheetBackdropProps,
+    type BottomSheetBackgroundProps,
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
 import {
     createRef,
-    PropsWithChildren,
+    type PropsWithChildren,
     useCallback,
     useEffect,
     useRef,
@@ -27,11 +28,12 @@ import {
 import { useStyles } from './styles'
 import {
     Keyboard,
-    StyleProp,
+    type StyleProp,
     useWindowDimensions,
-    ViewStyle,
+    View,
+    type ViewStyle,
 } from 'react-native'
-import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
+import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from './inSheetContext'
@@ -121,9 +123,23 @@ export const PWBottomSheet = ({
     // Gorhom keeps presented modals in the provider stack after unmount — dismiss on cleanup.
     useEffect(() => {
         return () => {
+            // Must read .current at cleanup time (unmount) to dismiss whatever
+            // modal instance is live; capturing at mount would be null/stale.
+            // eslint-disable-next-line react-hooks/exhaustive-deps
             bottomSheetModalRef.current?.dismiss()
         }
     }, [])
+
+    const renderBackground = useCallback(
+        ({ style, pointerEvents }: BottomSheetBackgroundProps) => (
+            <View
+                accessible={false}
+                pointerEvents={pointerEvents}
+                style={style}
+            />
+        ),
+        [],
+    )
 
     const renderBackdrop = useCallback(
         (props: BottomSheetBackdropProps) => (
@@ -179,6 +195,8 @@ export const PWBottomSheet = ({
             stackBehavior='push'
             topInset={size === 'full' ? 0 : insets.top}
             bottomInset={0}
+            accessible={false}
+            backgroundComponent={renderBackground}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             onAnimate={handleAnimate}

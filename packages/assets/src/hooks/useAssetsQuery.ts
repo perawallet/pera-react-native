@@ -40,6 +40,10 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
     const query = useQuery({
         queryKey: getAssetsQueryKey(stableIds, network),
         staleTime: Infinity,
+        // No ids → nothing to fetch. Skip the query entirely so callers that
+        // already supply the asset (e.g. the asset-list rows pass skipFetch and
+        // get an empty id list) don't mount a live observer per row.
+        enabled: stableIds.length > 0,
         queryFn: () => getAssetsByIds({ assetIds: stableIds, network }),
     })
 

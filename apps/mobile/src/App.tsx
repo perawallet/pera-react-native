@@ -35,7 +35,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { getTheme } from '@theme/theme'
 import { QueryProvider, queryClient } from './providers/QueryProvider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
-import { Persister } from '@tanstack/react-query-persist-client'
+import { type Persister } from '@tanstack/react-query-persist-client'
 import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
@@ -73,7 +73,7 @@ import './dev/installCardDevMocks'
 import * as SplashScreen from 'expo-splash-screen'
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync()
+void SplashScreen.preventAutoHideAsync()
 
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -119,7 +119,7 @@ const AppContent = () => {
 
     useEffect(() => {
         if (!bootstrapped) {
-            provider.initialize().then(async ({ token }) => {
+            void provider.initialize().then(async ({ token }) => {
                 setFcmToken(token ?? null)
 
                 // do startup hydration and setup in parallel to speed up time to interactive
@@ -163,7 +163,7 @@ const AppContent = () => {
 
                 //we defer the hiding so the initial layout can happen
                 setTimeout(() => {
-                    SplashScreen.hideAsync()
+                    void SplashScreen.hideAsync()
                 }, 200)
             })
         }

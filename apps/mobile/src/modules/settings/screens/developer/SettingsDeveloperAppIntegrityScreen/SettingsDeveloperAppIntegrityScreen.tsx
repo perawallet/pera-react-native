@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { PWBadge, PWButton, PWText, PWView } from '@components/core'
-import type { PWBadgeProps } from '@components/core'
+import {
+    PWBadge,
+    PWButton,
+    PWText,
+    PWView,
+    type PWBadgeProps,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsDeveloperAppIntegrity } from './useSettingsDeveloperAppIntegrity'
 import { useStyles } from './styles'
@@ -129,13 +134,13 @@ export const SettingsDeveloperAppIntegrityScreen = () => {
                 <PWButton
                     variant='primary'
                     title={t('settings.developer.app_integrity_run')}
-                    onPress={onRunHandshake}
+                    onPress={() => void onRunHandshake()}
                     isDisabled={isBusy}
                 />
                 <PWButton
                     variant='secondary'
                     title={t('settings.developer.app_integrity_verify')}
-                    onPress={onVerifyToken}
+                    onPress={() => void onVerifyToken()}
                     isDisabled={isBusy}
                 />
                 <PWButton

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { AlgodErrorCode, AlgodErrorParamsByCode } from './algodErrorCodes'
+import { AlgodErrorCode, type AlgodErrorParamsByCode } from './algodErrorCodes'
 
 /**
  * Result of attempting to parse a raw algod error message.

@@ -65,7 +65,7 @@ export const usePasskeyAutofillStatus = (): UsePasskeyAutofillStatusResult => {
     return {
         isLoading: query.isLoading,
         isProviderActive: query.data === true,
-        refresh: query.refetch,
+        refresh: () => void query.refetch(),
         openProviderSettings,
     }
 }

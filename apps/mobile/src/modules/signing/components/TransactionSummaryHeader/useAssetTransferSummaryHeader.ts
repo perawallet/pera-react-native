@@ -13,7 +13,7 @@
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import {
     getAssetTransferType,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
@@ -28,14 +28,18 @@ export const useAssetTransferSummaryHeader = (
 
     const label = useMemo(() => {
         switch (transferType) {
-            case 'opt-in':
+            case 'opt-in': {
                 return 'transactions.summary.opt_in'
-            case 'opt-out':
+            }
+            case 'opt-out': {
                 return 'transactions.summary.opt_out'
-            case 'clawback':
+            }
+            case 'clawback': {
                 return 'transactions.summary.clawback'
-            default:
+            }
+            default: {
                 return 'transactions.summary.transfer'
+            }
         }
     }, [transferType])
 
@@ -55,7 +59,7 @@ export const useAssetTransferSummaryHeader = (
 
     const amount = useMemo(() => {
         return new Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))
-    }, [transaction])
+    }, [microAmount, asset?.decimals])
 
     return {
         label,

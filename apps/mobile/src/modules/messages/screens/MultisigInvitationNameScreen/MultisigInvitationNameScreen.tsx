@@ -33,7 +33,7 @@ export const MultisigInvitationNameScreen = () => {
             loadingTitle={t('multisig.invitation.name.saving')}
             value={accountName}
             onChangeText={handleNameChange}
-            onFinish={handleFinish}
+            onFinish={() => void handleFinish()}
             isLoading={isSaving}
             isDisabled={isFinishDisabled}
             errorMessage={nameError}

@@ -22,8 +22,8 @@ import { useStyles } from './styles'
 import {
     AlgorandChain,
     AlgorandChainId,
-    AlgorandPermission,
-    WalletConnectSessionRequest,
+    type AlgorandPermission,
+    type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'

@@ -15,7 +15,7 @@ import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import {
     PWIcon,
-    PWIconSize,
+    type PWIconSize,
     PWImage,
     PWText,
     PWTouchableIcon,

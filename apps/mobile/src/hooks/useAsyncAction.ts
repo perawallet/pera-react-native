@@ -11,9 +11,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { toError } from '@perawallet/wallet-core-shared'
-
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 
 export function useAsyncAction<TArgs extends unknown[], TReturn>(
     action: (...args: TArgs) => Promise<TReturn>,

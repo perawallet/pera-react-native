@@ -57,16 +57,20 @@ export class RNBiometricsService implements BiometricsService {
         try {
             const level = await getEnrolledLevelAsync()
             switch (level) {
-                case SecurityLevel.BIOMETRIC_STRONG:
+                case SecurityLevel.BIOMETRIC_STRONG: {
                     return 'strong'
+                }
                 // BIOMETRIC_WEAK shares its numeric value with the deprecated
                 // `BIOMETRIC` member, so this also covers legacy reports.
-                case SecurityLevel.BIOMETRIC_WEAK:
+                case SecurityLevel.BIOMETRIC_WEAK: {
                     return 'weak'
-                case SecurityLevel.SECRET:
+                }
+                case SecurityLevel.SECRET: {
                     return 'secret'
-                default:
+                }
+                default: {
                     return 'none'
+                }
             }
         } catch (error) {
             // Older OS versions / unsupported hardware can throw rather than

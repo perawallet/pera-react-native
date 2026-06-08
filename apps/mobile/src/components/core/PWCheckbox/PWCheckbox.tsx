@@ -15,7 +15,7 @@ import { TouchableOpacity } from 'react-native'
 import { PWIcon } from '../PWIcon'
 import { PWView } from '../PWView'
 
-import { CheckBox, CheckBoxProps } from '@rneui/themed'
+import { CheckBox, type CheckBoxProps } from '@rneui/themed'
 import {
     getCheckboxAccessibilityProps,
     getCheckboxTestProps,

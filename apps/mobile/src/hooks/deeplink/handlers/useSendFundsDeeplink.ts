@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useSendFundsStore } from '@modules/transactions/hooks'
 
@@ -69,7 +69,7 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
                 { assetId },
                 {
                     size: 'modal',
-                    enablePanDownToClose: true,
+                    enablePanDownToClose: false,
                     autoCreateContainer: false,
                 },
             )

@@ -12,7 +12,7 @@
 
 import { useState } from 'react'
 import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useMigrationGateStore } from '@perawallet/wallet-core-migrate'

@@ -51,8 +51,8 @@ export const useBiometrics = (): UseBiometricsResult => {
     }, [biometricsService])
 
     useEffect(() => {
-        checkBiometricsEnabled().then(setIsEnabled)
-        checkBiometricsAvailable().then(setIsAvailable)
+        void checkBiometricsEnabled().then(setIsEnabled)
+        void checkBiometricsAvailable().then(setIsAvailable)
     }, [checkBiometricsEnabled, checkBiometricsAvailable])
 
     const writeBiometricBlob = useCallback(

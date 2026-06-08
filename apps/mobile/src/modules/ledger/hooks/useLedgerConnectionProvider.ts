@@ -52,7 +52,7 @@ export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
 
     useEffect(() => {
         let cancelled = false
-        ;(async () => {
+        void (async () => {
             const results = await Promise.all(
                 allLedgerProviders.map(async provider => {
                     try {
