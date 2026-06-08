@@ -10,21 +10,101 @@
  limitations under the License
  */
 
-import { PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    MOCK_VALID_VERIFICATION_CODE,
+    useCardOnboardingEmailVerifyScreen,
+} from './useCardOnboardingEmailVerifyScreen'
 import { useStyles } from './styles'
 
-// Placeholder destination for the email step's "send code" success. The real
-// OTP "Confirm your Email" screen lands in the next PR.
-export const CardOnboardingEmailVerifyScreen = () => {
+import type { CardOnboardingScreenProps } from '../../routes/card-onboarding/types'
+
+export const CardOnboardingEmailVerifyScreen = ({
+    route,
+}: CardOnboardingScreenProps<'CardOnboardingEmailVerify'>) => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const {
+        code,
+        onChangeCode,
+        isValid,
+        isWrongCode,
+        secondsRemaining,
+        canResend,
+        handleResend,
+        handleConfirm,
+    } = useCardOnboardingEmailVerifyScreen({ email: route.params.email })
 
     return (
         <PWScreen testID='card-onboarding-email-verify'>
             <PWView style={styles.content}>
-                <PWText variant='body'>
-                    {t('peraCard.intro.coming_soon_body')}
+                <PWText
+                    variant='body'
+                    style={styles.description}
+                >
+                    {t('peraCard.verify_email.body')}
+                </PWText>
+
+                <PWView style={styles.form}>
+                    <PWView style={styles.inputGroup}>
+                        <PWInput
+                            value={code}
+                            onChangeText={onChangeCode}
+                            placeholder={t(
+                                'peraCard.verify_email.code_placeholder',
+                            )}
+                            autoCapitalize='characters'
+                            autoCorrect={false}
+                            returnKeyType='done'
+                            onSubmitEditing={handleConfirm}
+                            errorMessage={
+                                isWrongCode
+                                    ? t('peraCard.verify_email.code_wrong')
+                                    : undefined
+                            }
+                            testID='card-onboarding-verify-input'
+                        />
+
+                        {canResend ? (
+                            <PWText
+                                variant='footnoteMedium'
+                                style={styles.resendLink}
+                                onPress={handleResend}
+                                testID='card-onboarding-verify-resend'
+                            >
+                                {t('peraCard.verify_email.send_again')}
+                            </PWText>
+                        ) : (
+                            <PWText
+                                variant='footnoteMedium'
+                                style={styles.countdownText}
+                            >
+                                {t('peraCard.verify_email.send_again_in', {
+                                    count: secondsRemaining,
+                                })}
+                            </PWText>
+                        )}
+                    </PWView>
+
+                    <PWButton
+                        variant='primary'
+                        title={t('peraCard.verify_email.confirm_button')}
+                        onPress={handleConfirm}
+                        isDisabled={!isValid}
+                        testID='card-onboarding-verify-confirm'
+                    />
+                </PWView>
+
+                {/* TODO(card): remove this testing hint once the real verify
+                    API is wired up. */}
+                <PWText
+                    variant='footnoteMedium'
+                    style={styles.devHint}
+                >
+                    {t('peraCard.verify_email.dev_hint', {
+                        code: MOCK_VALID_VERIFICATION_CODE,
+                    })}
                 </PWText>
             </PWView>
         </PWScreen>

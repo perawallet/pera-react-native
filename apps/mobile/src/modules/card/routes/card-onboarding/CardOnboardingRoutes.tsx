@@ -42,7 +42,7 @@ export const CardOnboardingStackNavigator = () => {
             <Stack.Screen
                 name='CardOnboardingEmailVerify'
                 component={CardOnboardingEmailVerifyScreen}
-                options={{ title: '' }}
+                options={{ title: 'peraCard.verify_email.navigation_title' }}
             />
         </Stack.Navigator>
     )

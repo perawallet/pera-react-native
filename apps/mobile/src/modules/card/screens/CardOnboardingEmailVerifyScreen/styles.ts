@@ -15,6 +15,26 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     content: {
         paddingTop: theme.spacing.xl,
-        alignItems: 'center',
+        gap: theme.spacing.xl,
+    },
+    description: {
+        color: theme.colors.textGray,
+    },
+    form: {
+        gap: theme.spacing.xxl,
+    },
+    inputGroup: {
+        gap: theme.spacing.md,
+    },
+    countdownText: {
+        color: theme.colors.textGrayLighter,
+    },
+    resendLink: {
+        color: theme.colors.linkPrimary,
+    },
+    // TODO(card): remove alongside the dev-only testing hint in the screen.
+    devHint: {
+        color: theme.colors.textGrayLighter,
+        textAlign: 'center',
     },
 }))
