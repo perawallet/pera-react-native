@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
+import type { CurrentRegion } from '../../models'
+import type { CurrentRegionApiResponse } from './schema'
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-}
+export const transformCurrentRegion = (
+    response: CurrentRegionApiResponse,
+): CurrentRegion => ({
+    iso3166alpha2: response.current_region.alpha_2,
+    name: response.current_region.name,
+})

@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
+import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-}
+export const useStyles = makeStyles(theme => ({
+    label: {
+        ...getTypography(theme, 'footnoteMedium'),
+        color: theme.colors.textGrayLighter,
+    },
+}))

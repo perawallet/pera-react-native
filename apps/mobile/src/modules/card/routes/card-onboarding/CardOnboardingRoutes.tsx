@@ -16,19 +16,16 @@ import {
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
-import { screenListeners } from '@routes/listeners'
-import { PeraCardIntroScreen } from '../screens/PeraCardIntroScreen'
-import { CardOnboardingStackNavigator } from './card-onboarding'
-import { type PeraCardStackParamList } from './types'
+import { CardOnboardingEmailScreen } from '../../screens/CardOnboardingEmailScreen'
+import { CardOnboardingEmailVerifyScreen } from '../../screens/CardOnboardingEmailVerifyScreen'
+import { type CardOnboardingStackParamList } from './types'
 
-export type { PeraCardStackParamList } from './types'
+const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
 
-const PeraCardStack = createNativeStackNavigator<PeraCardStackParamList>()
-
-export const PeraCardStackNavigator = () => {
+export const CardOnboardingStackNavigator = () => {
     return (
-        <PeraCardStack.Navigator
-            initialRouteName='PeraCardIntro'
+        <Stack.Navigator
+            initialRouteName='CardOnboardingEmail'
             screenOptions={{
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
@@ -36,18 +33,17 @@ export const PeraCardStackNavigator = () => {
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
-            screenListeners={screenListeners}
         >
-            <PeraCardStack.Screen
-                name='PeraCardIntro'
-                options={{ title: 'peraCard.intro.navigation_title' }}
-                component={PeraCardIntroScreen}
+            <Stack.Screen
+                name='CardOnboardingEmail'
+                component={CardOnboardingEmailScreen}
+                options={{ title: 'peraCard.create_account.navigation_title' }}
             />
-            <PeraCardStack.Screen
-                name='CardOnboarding'
-                options={{ headerShown: false }}
-                component={CardOnboardingStackNavigator}
+            <Stack.Screen
+                name='CardOnboardingEmailVerify'
+                component={CardOnboardingEmailVerifyScreen}
+                options={{ title: 'peraCard.verify_email.navigation_title' }}
             />
-        </PeraCardStack.Navigator>
+        </Stack.Navigator>
     )
 }

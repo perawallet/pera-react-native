@@ -685,6 +685,45 @@
             "already_have_account": "I already have an account",
             "coming_soon_title": "Coming soon",
             "coming_soon_body": "Pera Card onboarding isn't available just yet. Check back soon."
+        },
+        "create_account": {
+            "navigation_title": "Create Baanx Account",
+            "email_label": "Email Address",
+            "email_placeholder": "Enter your email address",
+            "email_invalid": "Enter a valid email address",
+            "country_label": "Country of Residence",
+            "country_placeholder": "Select Country",
+            "confirm_button": "Confirm your Email Address",
+            "country_picker_title": "Country of Residence",
+            "country_search_placeholder": "Search countries",
+            "country_empty_title": "No countries found",
+            "country_empty_body": "Try a different search.",
+            "country_error_title": "Couldn't load countries",
+            "country_error_body": "Please check your connection and try again.",
+            "country_retry": "Try again",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't send your verification email. Please try again."
+        },
+        "verify_email": {
+            "navigation_title": "Confirm your Email",
+            "body": "Use the verification code we just sent you to confirm your email address.",
+            "code_placeholder": "Enter verification code from email",
+            "code_wrong": "The code is wrong",
+            "send_again_in_one": "Send it again in {{count}} second",
+            "send_again_in_other": "Send it again in {{count}} seconds",
+            "send_again": "Send it again",
+            "confirm_button": "Continue",
+            "success_title": "Email confirmed",
+            "success_body": "Your email address has been verified.",
+            "dev_hint": "Testing only — use code {{code}}"
+        },
+        "waitlist": {
+            "join_button": "Sign up for waitlist",
+            "success_title": "Coming soon",
+            "success_body": "We'll notify you when we launch in {{country}}.",
+            "success_action": "Back to home",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't sign you up for the waitlist. Please try again."
         }
     },
     "notifications": {

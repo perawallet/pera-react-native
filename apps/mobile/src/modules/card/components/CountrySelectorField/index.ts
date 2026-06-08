@@ -10,10 +10,5 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
-
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-}
+export { CountrySelectorField } from './CountrySelectorField'
+export type { CountrySelectorFieldProps } from './CountrySelectorField'

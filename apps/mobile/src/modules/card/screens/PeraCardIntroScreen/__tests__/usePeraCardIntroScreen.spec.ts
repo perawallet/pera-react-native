@@ -24,6 +24,11 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
+const mockNavigate = vi.fn()
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({ navigate: mockNavigate }),
+}))
+
 const mockPushWebView = vi.fn()
 vi.mock('@modules/webview', () => ({
     useWebView: () => ({
@@ -62,17 +67,17 @@ describe('usePeraCardIntroScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('handleCreateAccount surfaces the coming-soon info toast', () => {
+    it('handleCreateAccount navigates into the card onboarding flow', () => {
         const { result } = renderHook(() => usePeraCardIntroScreen())
 
         act(() => {
             result.current.handleCreateAccount()
         })
 
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.intro.coming_soon_title',
-            'peraCard.intro.coming_soon_body',
-        )
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'CardOnboarding',
+            params: { screen: 'CardOnboardingEmail' },
+        })
     })
 
     it('handleAlreadyHaveAccount surfaces the coming-soon info toast', () => {

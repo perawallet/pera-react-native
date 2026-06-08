@@ -22,7 +22,10 @@ import { type AccountStackParamsList } from '@modules/accounts/routes/types'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { type MessagesStackParamList } from '@modules/messages/routes'
 import { type MultisigStackParamList } from '@modules/multisig'
-import { type PeraCardStackParamList } from '@modules/card'
+import {
+    type PeraCardStackParamList,
+    type CardOnboardingStackParamList,
+} from '@modules/card'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
 import { type SearchStackParamsList } from '@modules/search'
 import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger'
@@ -69,6 +72,7 @@ export type AppStackParamList = RootStackParamList &
     AccountStackParamsList &
     MultisigStackParamList &
     PeraCardStackParamList &
+    CardOnboardingStackParamList &
     BackupStackParamList &
     RekeyToStandardStackParamList &
     RekeyToLedgerStackParamList &
