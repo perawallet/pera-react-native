@@ -128,12 +128,11 @@ jobs:
       - name: i18n Check
         run: pnpm run lint:i18n
 
-  # Advisory (non-blocking) static analysis: unused code, circular dependencies,
-  # and code duplication via fallow. Report-only during rollout — findings are
-  # surfaced in the job summary but never fail the PR. Flip to blocking later by
-  # removing `continue-on-error` and adding a `--baseline` for the legacy debt.
+  # Blocking static analysis: unused code, circular dependencies, and code
+  # duplication via fallow. Findings are surfaced in the job summary and fail
+  # the PR (the step exits with fallow's status).
   dead-code:
-    name: Dead Code (advisory)
+    name: Dead Code
     runs-on: ubuntu-24.04
     needs: setup
     permissions:
@@ -167,13 +166,16 @@ jobs:
         run: test -d node_modules || pnpm install --frozen-lockfile
 
       - name: fallow (unused code, cycles, duplication)
-        continue-on-error: true
         run: |
-          pnpm exec fallow --skip health --quiet --format compact > fallow-report.txt 2>&1 || true
+          # Disable -e so the report renders even when fallow finds issues; the
+          # step's pass/fail is taken from fallow's own exit code at the end.
+          set +e
+          pnpm exec fallow --skip health --quiet --format compact > fallow-report.txt 2>&1
+          fallow_exit=$?
           {
-            echo "## fallow report (advisory)"
+            echo "## fallow report"
             echo ""
-            echo "Unused code, circular dependencies, and duplication. **Non-blocking** during rollout."
+            echo "Unused code, circular dependencies, and duplication."
             echo ""
             echo "| issue | count |"
             echo "|-------|------:|"
@@ -190,6 +192,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           echo "fallow findings by category:"
           grep -oE '^[a-z][a-z-]+' fallow-report.txt | sort | uniq -c | sort -rn
+          exit $fallow_exit
 
   build:
     name: Build
@@ -227,6 +230,13 @@ jobs:
 
       - name: Build packages
         run: pnpm run build
+
+      # Type-aware lint (no-floating-promises / no-misused-promises) resolves
+      # cross-package types via each package's built dist/*.d.ts, so it must run
+      # after `pnpm run build`. Running it in the Lint job (no build) makes
+      # workspace types degrade to `any` and produces false positives.
+      - name: Type-aware Lint
+        run: pnpm run lint:types
 
       - name: Check no test-only modules leaked into prod bundles
         run: pnpm run lint:bundle

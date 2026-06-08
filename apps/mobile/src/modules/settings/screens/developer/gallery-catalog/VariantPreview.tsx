@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 
 import { PWText, PWView } from '@components/core'
 
-export type VariantPreviewItem = {
+type VariantPreviewItem = {
     label: string
     node: ReactNode
 }

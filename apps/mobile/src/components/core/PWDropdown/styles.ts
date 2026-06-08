@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const DROPDOWN_MIN_WIDTH = 200
 
 // Caps width so long labels truncate instead of pushing the menu edge-to-edge.
-export const DROPDOWN_MAX_WIDTH_RATIO = 0.8
+const DROPDOWN_MAX_WIDTH_RATIO = 0.8
 
 type StyleProps = {
     windowWidth: number
