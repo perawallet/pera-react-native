@@ -28,7 +28,7 @@ const fundingSourceApiSchema = z.object({
     dateTime: z.string().optional().nullable(),
 })
 
-export const cardTransactionApiSchema = z.object({
+const cardTransactionApiSchema = z.object({
     id: z.string(),
     cardId: z.string().optional().nullable(),
     transactionId: z.string().optional().nullable(),
