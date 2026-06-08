@@ -52,7 +52,7 @@ export const useAccountOverview = ({
             contents: <SendFundsContent />,
             options: {
                 size: 'modal',
-                enablePanDownToClose: true,
+                enablePanDownToClose: false,
                 autoCreateContainer: false,
             },
         })

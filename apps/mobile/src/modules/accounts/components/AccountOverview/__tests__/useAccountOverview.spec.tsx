@@ -102,7 +102,7 @@ describe('useAccountOverview', () => {
         const arg = mockRequestBottomSheet.mock.calls[0]?.[0]
         expect(arg?.options).toEqual({
             size: 'modal',
-            enablePanDownToClose: true,
+            enablePanDownToClose: false,
             autoCreateContainer: false,
         })
     })

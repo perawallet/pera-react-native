@@ -29,6 +29,7 @@ export const useStyles = makeStyles(theme => ({
     // transparent space around the pill (visible on iOS top overscroll).
     searchSticky: {
         backgroundColor: theme.colors.background,
+        marginBottom: theme.spacing.lg,
     },
     // Wraps the list and the pinned search overlay floated on top of it.
     root: {

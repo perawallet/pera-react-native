@@ -101,7 +101,7 @@ const STEPS: Step[] = [
                 {},
                 {
                     size: 'modal',
-                    enablePanDownToClose: true,
+                    enablePanDownToClose: false,
                     autoCreateContainer: false,
                 },
             ),

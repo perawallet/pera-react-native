@@ -154,7 +154,7 @@ export const useCollectibleDetail = (
             contents: <SendFundsContent assetId={assetId} />,
             options: {
                 size: 'modal',
-                enablePanDownToClose: true,
+                enablePanDownToClose: false,
                 autoCreateContainer: false,
             },
         })
