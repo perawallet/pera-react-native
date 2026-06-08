@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 import {
     useNavigation,
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import { PWScreen } from '@components/core'
@@ -47,6 +48,14 @@ export const TransactionDetailsScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
+
+    // Tracked in-screen rather than via the navigator's screenListeners: this
+    // screen is also mounted inside the signing flow's own NavigationContainer
+    // (SignRequestView), which has no screenListeners, so a centralized listener
+    // would miss that path.
+    useEffect(() => {
+        trackScreen(AnalyticsScreenName.TransactionDetail)
+    }, [])
 
     const {
         transaction: paramTransaction,

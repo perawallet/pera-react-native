@@ -16,6 +16,7 @@ import {
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { trackEvent, SwapEvent } from '@analytics'
 import {
     MAX_BALANCE_PERCENT,
     MAX_SLIPPAGE,
@@ -67,7 +68,17 @@ export const useSwapConfigurationContent = ({
 
     const [balanceText, setBalanceTextState] = useState('')
     const [slippageText, setSlippageTextState] = useState(slippage ?? '')
-    const [useLocalCurrency, setUseLocalCurrency] = useState(!isAlgoPreferred)
+    const [useLocalCurrency, setUseLocalCurrencyState] =
+        useState(!isAlgoPreferred)
+
+    const setUseLocalCurrency = useCallback((value: boolean) => {
+        trackEvent(
+            value
+                ? SwapEvent.SettingsLocalCurrencyOn
+                : SwapEvent.SettingsLocalCurrencyOff,
+        )
+        setUseLocalCurrencyState(value)
+    }, [])
 
     const setBalanceText = useCallback((text: string) => {
         setBalanceTextState(normalize(text))
@@ -90,6 +101,8 @@ export const useSwapConfigurationContent = ({
 
     const handleApply = useCallback(() => {
         if (!isApplyEnabled) return
+
+        trackEvent(SwapEvent.SettingsApply)
 
         const balanceValue = Number(balanceText)
         const balancePercentage =

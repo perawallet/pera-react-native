@@ -19,6 +19,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import {
     baseUnitsToDisplayUnits,
     displayUnitsToBaseUnits,
@@ -326,6 +327,9 @@ export const useSwapForm = (): UseSwapFormResult => {
     }, [applyPercentageAmount])
 
     const handleOpenPayAssetSelection = useCallback(async () => {
+        trackEvent(SwapEvent.SelectFromToken, {
+            [AnalyticsMetadataKey.AssetId]: fromAsset,
+        })
         const assetId = await requestBottomSheet<string>({
             contents: (
                 <SwapAssetSelectionContent
@@ -346,9 +350,18 @@ export const useSwapForm = (): UseSwapFormResult => {
         setQuotedAmount(null)
         setSelectedProviderName(null)
         resetQuoteMutation()
-    }, [requestBottomSheet, toAsset, setFromAsset, resetQuoteMutation])
+    }, [
+        requestBottomSheet,
+        toAsset,
+        setFromAsset,
+        fromAsset,
+        resetQuoteMutation,
+    ])
 
     const handleOpenReceiveAssetSelection = useCallback(async () => {
+        trackEvent(SwapEvent.SelectToToken, {
+            [AnalyticsMetadataKey.AssetId]: toAsset,
+        })
         const assetId = await requestBottomSheet<string>({
             contents: (
                 <SwapAssetSelectionContent
@@ -370,9 +383,13 @@ export const useSwapForm = (): UseSwapFormResult => {
         setQuotedAmount(null)
         setSelectedProviderName(null)
         resetQuoteMutation()
-    }, [requestBottomSheet, fromAsset, setToAsset, resetQuoteMutation])
+    }, [requestBottomSheet, fromAsset, setToAsset, toAsset, resetQuoteMutation])
 
     const handleOpenProvider = useCallback(async () => {
+        trackEvent(SwapEvent.SelectProviderOpen, {
+            [AnalyticsMetadataKey.RouterName]:
+                selectedProviderName ?? undefined,
+        })
         const result = await requestBottomSheet<SwapProviderResult>({
             contents: (
                 <SwapProviderContent
@@ -399,6 +416,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     const handleOpenConfirm = useCallback(async () => {
         if (!selectedQuote) return
 
+        trackEvent(SwapEvent.ConfirmSwapButton)
         const result = await requestBottomSheet<SwapConfirmationResult>({
             contents: <SwapConfirmationContent quote={selectedQuote} />,
             options: {

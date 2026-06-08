@@ -15,8 +15,10 @@ import {
     NavigationIndependentTree,
 } from '@react-navigation/native'
 
+import { useEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { ReceiveFundsRoutes } from '../../../routes/receive-funds'
 import { useReceiveFundsContent } from './useReceiveFundsContent'
@@ -28,6 +30,13 @@ export type ReceiveFundsContentProps = {
 export const ReceiveFundsContent = ({ account }: ReceiveFundsContentProps) => {
     const { t } = useLanguage()
     useReceiveFundsContent(account)
+
+    // Tracked in-screen rather than via the navigator's screenListeners: this
+    // is rendered as a bottom sheet (its own NavigationContainer below), not a
+    // route in the app's main navigator.
+    useEffect(() => {
+        trackScreen(AnalyticsScreenName.ShowQr)
+    }, [])
 
     return (
         <TransactionErrorBoundary t={t}>

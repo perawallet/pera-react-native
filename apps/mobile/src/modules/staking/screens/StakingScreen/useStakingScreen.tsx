@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
+import { trackEvent, StakingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
@@ -22,7 +23,6 @@ import {
 } from '@modules/staking/components'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import type { StakingProject } from '@modules/staking/models'
-import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type UseStakingScreenResult = {
     projects: StakingProject[]
@@ -34,8 +34,6 @@ type UseStakingScreenResult = {
 }
 
 export const useStakingScreen = (): UseStakingScreenResult => {
-    const provider = usePeraProvider()
-    const analyticsService = provider.analytics
     const { pushWebView } = useWebView()
     const {
         data: projects,
@@ -46,11 +44,15 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
     const { request: requestBottomSheet } = useBottomSheet()
 
+    useEffect(() => {
+        trackEvent(StakingEvent.Open)
+    }, [])
+
     const openProject = useCallback(
         (project: StakingProject) => {
-            analyticsService.logEvent('staking_click_dapp', {
-                name: project.title,
-                url: project.link,
+            trackEvent(StakingEvent.SelectProject, {
+                [AnalyticsMetadataKey.Name]: project.title,
+                [AnalyticsMetadataKey.Url]: project.link,
             })
 
             pushWebView({
@@ -58,7 +60,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
                 enablePeraConnect: true,
             })
         },
-        [analyticsService, pushWebView],
+        [pushWebView],
     )
 
     const handleProjectPress = useCallback(

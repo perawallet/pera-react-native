@@ -41,6 +41,11 @@ import {
 } from '../SharedAccountDetailsContent'
 import { type IconName } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import {
+    trackEvent,
+    AccountDetailsEvent,
+    AccountOptionsEvent,
+} from '@analytics'
 import { RenameAccountContent } from './RenameAccountContent'
 
 export type AccountOption = {
@@ -99,6 +104,7 @@ export const useAccountOptions = ({
     const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
 
     const handleCopyAddress = useCallback(() => {
+        trackEvent(AccountOptionsEvent.CopyAddress)
         void copyToClipboard(account.address)
         onClose()
     }, [copyToClipboard, account.address, onClose])
@@ -109,6 +115,7 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
+        trackEvent(AccountOptionsEvent.ViewPassphrase)
         // Dismiss the options menu first so we don't end up with the menu
         // sheet stacked under the PIN/acknowledge/display sheets.
         onClose()
@@ -124,6 +131,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToLedger = useCallback(() => {
+        trackEvent(AccountOptionsEvent.RekeyToLedger)
         onClose()
         navigation.navigate('RekeyToLedger', {
             screen: 'RekeyToLedgerIntro',
@@ -132,6 +140,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToStandard = useCallback(() => {
+        trackEvent(AccountOptionsEvent.RekeyToStandard)
         onClose()
         navigation.navigate('RekeyToStandard', {
             screen: 'RekeyToStandardIntro',
@@ -140,6 +149,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToShared = useCallback(() => {
+        trackEvent(AccountDetailsEvent.JointAccountRekey)
         onClose()
         navigation.navigate('RekeyToShared', {
             screen: 'RekeyToSharedIntro',
@@ -148,6 +158,7 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleExportShareAccount = useCallback(async () => {
+        trackEvent(AccountDetailsEvent.JointAccountExport)
         onClose()
         await requestBottomSheet<void>({
             contents: (
@@ -163,6 +174,7 @@ export const useAccountOptions = ({
 
     const handleOpenSharedAccountDetail = useCallback(async () => {
         if (!isMultisigAccount(account) || !account.multisigDetails) return
+        trackEvent(AccountDetailsEvent.JointAccountDetail)
         onClose()
         const details: SharedAccountDetails = {
             name: account.name ?? '',
@@ -182,6 +194,7 @@ export const useAccountOptions = ({
     }, [onClose, requestBottomSheet, account])
 
     const handleOpenRename = useCallback(async () => {
+        trackEvent(AccountOptionsEvent.Rename)
         onClose()
         const newName = await requestBottomSheet<string>({
             contents: <RenameAccountContent accountAddress={account.address} />,
@@ -265,6 +278,7 @@ export const useAccountOptions = ({
     ])
 
     const handleOpenRemoveConfirm = useCallback(async () => {
+        trackEvent(AccountOptionsEvent.Remove)
         onClose()
         if (hasSigningKeys(account)) {
             const acknowledged = await requestBottomSheet<boolean>({

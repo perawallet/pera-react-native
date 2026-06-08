@@ -32,6 +32,7 @@ import { useStyles } from './styles'
 export const ContactListScreen = () => {
     const navigation = useAppNavigation()
     const { t } = useLanguage()
+
     const styles = useStyles()
 
     const onNavigateAddContact = useCallback(

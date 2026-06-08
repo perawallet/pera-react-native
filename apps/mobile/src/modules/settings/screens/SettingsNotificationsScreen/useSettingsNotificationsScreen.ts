@@ -22,6 +22,7 @@ import {
 import { useSystemNotificationPermission } from '../../hooks/useSystemNotificationPermission'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 
 type UseSettingsNotificationsScreenResult = {
     isSystemNotificationEnabled: boolean
@@ -59,6 +60,10 @@ export const useSettingsNotificationsScreen =
 
         const handleAccountNotificationToggle = useCallback(
             (account: WalletAccount, enabled: boolean) => {
+                trackEvent(SettingsEvent.ChangeNotificationFilter, {
+                    [AnalyticsMetadataKey.AccountAddress]: account.address,
+                    [AnalyticsMetadataKey.AllowNotifications]: enabled,
+                })
                 setAccountEnabled(account.address, enabled)
                 mutateAsync({
                     accountID: account.address,

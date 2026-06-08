@@ -90,6 +90,10 @@ export default defineConfig({
                 replacement: path.resolve(__dirname, './src/hooks'),
             },
             {
+                find: '@analytics',
+                replacement: path.resolve(__dirname, './src/analytics'),
+            },
+            {
                 find: '@constants',
                 replacement: path.resolve(__dirname, './src/constants'),
             },
@@ -215,6 +219,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../extensions/platform/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-analytics',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/analytics/src/index.ts',
                 ),
             },
             {

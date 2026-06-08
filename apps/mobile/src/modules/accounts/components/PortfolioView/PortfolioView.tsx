@@ -25,6 +25,7 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
 import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -73,6 +74,7 @@ export const PortfolioView = ({
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
     const isChartShown = chartVisible && !isCollapsed
     const toggleChartVisible = () => {
+        trackEvent(HomeEvent.Chart)
         if (isChartShown) {
             setPreference(UserPreferences.chartVisible, false)
             return

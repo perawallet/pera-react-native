@@ -32,6 +32,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { bottomSheetNotifier } from '@components/core'
 import { useSendFunds } from '@modules/transactions/hooks'
+import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 
@@ -126,6 +127,13 @@ export const useTransactionProcessingScreen =
                 params: sendParams,
             })
                 .then(txId => {
+                    trackEvent(TransactionsEvent.Complete, {
+                        [AnalyticsMetadataKey.AssetId]: selectedAssetId ?? '',
+                        [AnalyticsMetadataKey.Amount]: amount?.toNumber() ?? 0,
+                        [AnalyticsMetadataKey.TransactionId]: txId,
+                        [AnalyticsMetadataKey.AccountType]:
+                            selectedAccount?.type,
+                    })
                     invalidateAccountBalances()
                     navigation.replace('TransactionSuccess', {
                         transactionId: txId,

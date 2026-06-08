@@ -22,6 +22,7 @@ import {
 } from '@modules/accounts/components/AccountMenuContent'
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     type StyleProp,
@@ -91,6 +92,7 @@ export const AccountSelection = ({
                 return
             }
             case 'add-account': {
+                trackEvent(HomeEvent.AccountAdd)
                 navigation.navigate('AddAccount', { screen: 'AddAccountHome' })
                 return
             }
@@ -99,6 +101,7 @@ export const AccountSelection = ({
                 return
             }
             case 'sort': {
+                trackEvent(HomeEvent.Sort)
                 await requestBottomSheet<void>({
                     contents: <AccountSortContent />,
                     options: {

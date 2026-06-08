@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-contacts'
 
 import { useLanguage } from '@hooks/useLanguage'
+import { trackEvent, ContactsEvent } from '@analytics'
 import { useContactForm, type UseContactFormResult } from './useContactForm'
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -54,6 +55,7 @@ export const useAddContactForm = (): UseAddContactFormResult => {
 
             try {
                 addContact(data)
+                trackEvent(ContactsEvent.Add)
             } catch (e) {
                 if (e instanceof DuplicateAddressError) {
                     form.setError('address', {

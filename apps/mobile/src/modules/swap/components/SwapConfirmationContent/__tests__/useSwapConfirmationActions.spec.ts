@@ -14,6 +14,22 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSwapConfirmationActions } from '../useSwapConfirmationActions'
 import type { SwapExecutionOutcome } from '../../../hooks/useSwapExecution'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+
+const makeQuote = (quoteIdStr?: string): SwapQuote =>
+    ({
+        quoteIdStr,
+        assetIn: {
+            assetId: '0',
+            unitName: 'ALGO',
+            verificationTier: 'trusted',
+        },
+        assetOut: {
+            assetId: '31566704',
+            unitName: 'USDC',
+            verificationTier: 'trusted',
+        },
+    }) as SwapQuote
 
 const mockResolve = vi.fn()
 const mockDismiss = vi.fn()
@@ -60,7 +76,7 @@ describe('useSwapConfirmationActions', () => {
         mockExecute.mockResolvedValueOnce({ kind: 'success' })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quoteIdStr: 'quote-1' }),
+            useSwapConfirmationActions({ quote: makeQuote('quote-1') }),
         )
 
         await act(async () => {
@@ -76,7 +92,7 @@ describe('useSwapConfirmationActions', () => {
         mockExecute.mockResolvedValueOnce({ kind: 'cancelled' })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quoteIdStr: 'quote-2' }),
+            useSwapConfirmationActions({ quote: makeQuote('quote-2') }),
         )
 
         await act(async () => {
@@ -95,7 +111,7 @@ describe('useSwapConfirmationActions', () => {
         })
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quoteIdStr: 'quote-3' }),
+            useSwapConfirmationActions({ quote: makeQuote('quote-3') }),
         )
 
         await act(async () => {
@@ -111,7 +127,7 @@ describe('useSwapConfirmationActions', () => {
 
     it('does nothing when quoteIdStr is missing', async () => {
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quoteIdStr: undefined }),
+            useSwapConfirmationActions({ quote: makeQuote() }),
         )
 
         await act(async () => {
@@ -134,7 +150,7 @@ describe('useSwapConfirmationActions', () => {
         )
 
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quoteIdStr: 'quote-4' }),
+            useSwapConfirmationActions({ quote: makeQuote('quote-4') }),
         )
 
         await act(async () => {
@@ -155,7 +171,7 @@ describe('useSwapConfirmationActions', () => {
 
     it('handleClose dismisses when not processing', () => {
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quoteIdStr: 'quote-5' }),
+            useSwapConfirmationActions({ quote: makeQuote('quote-5') }),
         )
 
         act(() => {
@@ -168,7 +184,7 @@ describe('useSwapConfirmationActions', () => {
 
     it('handleClose is a no-op while processing', () => {
         const { result } = renderHook(() =>
-            useSwapConfirmationActions({ quoteIdStr: 'quote-6' }),
+            useSwapConfirmationActions({ quote: makeQuote('quote-6') }),
         )
 
         act(() => {
@@ -180,7 +196,9 @@ describe('useSwapConfirmationActions', () => {
     })
 
     it('resets execution state on mount', () => {
-        renderHook(() => useSwapConfirmationActions({ quoteIdStr: 'quote-7' }))
+        renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-7') }),
+        )
 
         expect(mockReset).toHaveBeenCalledTimes(1)
     })

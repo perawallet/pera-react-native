@@ -21,6 +21,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { useReceiveFunds } from '@modules/transactions/hooks'
+import { trackEvent, HomeEvent, AccountDetailsEvent } from '@analytics'
 import { AccountOptionsContent } from '../AccountOptionsContent'
 import { type UseAccountOverviewModalResult } from './AccountOverviewModalContext'
 
@@ -48,6 +49,7 @@ export const useAccountOverview = ({
     const { request: requestBottomSheet } = useBottomSheet()
 
     const openSendFunds = useCallback(() => {
+        trackEvent(HomeEvent.Send)
         void requestBottomSheet({
             contents: <SendFundsContent />,
             options: {
@@ -59,6 +61,7 @@ export const useAccountOverview = ({
     }, [requestBottomSheet])
 
     const openReceiveFunds = useCallback(() => {
+        trackEvent(HomeEvent.Receive)
         if (selectedAccount) {
             setCanSelectAccount(false)
             setSelectedAccount(selectedAccount)
@@ -80,6 +83,7 @@ export const useAccountOverview = ({
     ])
 
     const openAccountOptions = useCallback(() => {
+        trackEvent(AccountDetailsEvent.More)
         void requestBottomSheet({
             contents: (
                 <AccountOptionsContent
