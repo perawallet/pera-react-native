@@ -153,11 +153,16 @@ export const useCardOnboardingEmailScreen =
                         countryCode: selectedCountry.iso3166alpha2,
                         deviceId,
                     })
-                    await request({
+                    // The success sheet's CTA resolves true → return home;
+                    // swiping it away (undefined) just stays on the screen.
+                    const returnHome = await request<boolean>({
                         contents: createElement(CardWaitlistSuccessContent, {
                             countryName: selectedCountry.name,
                         }),
                     })
+                    if (returnHome) {
+                        navigation.navigate('TabBar', { screen: 'Home' })
+                    }
                 } catch {
                     errorToast(
                         t('peraCard.waitlist.error_title'),
@@ -171,6 +176,7 @@ export const useCardOnboardingEmailScreen =
             deviceId,
             requestCountryAvailability,
             request,
+            navigation,
             errorToast,
             t,
         ])

@@ -721,7 +721,7 @@
             "join_button": "Sign up for waitlist",
             "success_title": "Coming soon",
             "success_body": "We'll notify you when we launch in {{country}}.",
-            "success_dismiss": "Got it",
+            "success_action": "Back to home",
             "error_title": "Something went wrong",
             "error_body": "We couldn't sign you up for the waitlist. Please try again."
         }

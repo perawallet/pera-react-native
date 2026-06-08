@@ -218,6 +218,23 @@ describe('useCardOnboardingEmailScreen', () => {
         )
     })
 
+    it('returns home when the success sheet CTA is confirmed', async () => {
+        mockWaitlistMutateAsync.mockResolvedValue(undefined)
+        const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+        await selectCountry(result, russia)
+        mockRequest.mockResolvedValueOnce(true) // success-sheet CTA resolves true
+        act(() => {
+            result.current.handleJoinWaitlist()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+            }),
+        )
+    })
+
     it('does not call the waitlist endpoint when there is no device id', async () => {
         mockDeviceId = null
         const { result } = renderHook(() => useCardOnboardingEmailScreen())

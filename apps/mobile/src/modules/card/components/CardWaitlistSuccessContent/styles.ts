@@ -12,14 +12,19 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     container: {
         alignItems: 'center',
-        padding: theme.spacing.xl,
-        gap: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xxl,
+        paddingBottom: theme.spacing.xl + bottomInset,
+        gap: theme.spacing.xl,
     },
     iconWrap: {
         alignItems: 'center',
+        marginBottom: theme.spacing.sm,
     },
     title: {
         textAlign: 'center',
@@ -31,5 +36,6 @@ export const useStyles = makeStyles(theme => ({
     actions: {
         width: '100%',
         gap: theme.spacing.md,
+        marginTop: theme.spacing.sm,
     },
 }))

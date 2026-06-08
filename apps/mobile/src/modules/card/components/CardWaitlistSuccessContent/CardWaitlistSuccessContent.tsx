@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -22,15 +23,17 @@ type CardWaitlistSuccessContentProps = {
 
 /**
  * Confirms a successful waitlist sign-up for an unsupported jurisdiction. The
- * device will be notified via push when the country launches, so this sheet is
- * purely informational and dismisses itself on confirm.
+ * device will be notified via push when the country launches. The CTA resolves
+ * `true` so the opener can send the user back home; swiping the sheet away just
+ * closes it (resolves `undefined`).
  */
 export const CardWaitlistSuccessContent = ({
     countryName,
 }: CardWaitlistSuccessContentProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
-    const { dismiss } = useBottomSheetResult()
+    const { resolve } = useBottomSheetResult<boolean>()
 
     return (
         <PWView style={styles.container}>
@@ -52,8 +55,8 @@ export const CardWaitlistSuccessContent = ({
             <PWView style={styles.actions}>
                 <PWButton
                     variant='primary'
-                    onPress={dismiss}
-                    title={t('peraCard.waitlist.success_dismiss')}
+                    onPress={() => resolve(true)}
+                    title={t('peraCard.waitlist.success_action')}
                     testID='card-waitlist-success-dismiss'
                 />
             </PWView>
