@@ -55,7 +55,10 @@ export const RatingsContent = () => {
     }
 
     return (
-        <PWView style={styles.bottomSheetContainer}>
+        <PWView
+            style={styles.bottomSheetContainer}
+            testID='settings_ratings_bottom_sheet'
+        >
             <PWText
                 variant='h3'
                 style={styles.title}

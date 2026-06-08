@@ -54,7 +54,10 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
     }, [contact])
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='contact_qr_sheet'
+        >
             <PWView style={styles.header}>
                 <PWText
                     variant='h4'
@@ -100,6 +103,7 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     icon='copy'
                     onPress={handleCopy}
                     style={styles.actionButton}
+                    testID='contact_qr_copy_button'
                 />
                 <PWButton
                     title={t('contacts.list.qr_sheet_share')}
@@ -107,6 +111,7 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     icon='share'
                     onPress={() => void handleShare()}
                     style={styles.actionButton}
+                    testID='contact_qr_share_button'
                 />
             </PWView>
         </PWView>

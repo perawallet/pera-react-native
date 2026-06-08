@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { type Contact } from '@perawallet/wallet-core-contacts'
 
-import { PWIcon } from '@components/core'
+import { PWTouchableIcon } from '@components/core'
 import { AddressListItem } from '@components/AddressListItem'
 
 type ContactRowProps = {
@@ -41,11 +41,13 @@ export const ContactRow = ({
             address={contact.address}
             onPress={handlePress}
             showDivider
+            testID={`contact_row_${contact.address}`}
             right={
-                <PWIcon
+                <PWTouchableIcon
                     name='qr'
                     variant='primary'
                     onPress={handleShowQR}
+                    testID={`contact_row_qr_button_${contact.address}`}
                 />
             }
         />

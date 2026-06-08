@@ -40,6 +40,8 @@ export type ConfirmActionContentProps<TResult = boolean> = {
     cancelVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
     testID?: string
+    confirmTestID?: string
+    cancelTestID?: string
 }
 
 export const ConfirmActionContent = <TResult = boolean,>({
@@ -56,6 +58,8 @@ export const ConfirmActionContent = <TResult = boolean,>({
     cancelVariant = 'secondary',
     buttonPaddingStyle,
     testID,
+    confirmTestID,
+    cancelTestID,
 }: ConfirmActionContentProps<TResult>) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({
@@ -105,6 +109,7 @@ export const ConfirmActionContent = <TResult = boolean,>({
                         title={confirmLabel}
                         onPress={handleConfirm}
                         paddingStyle={buttonPaddingStyle}
+                        testID={confirmTestID}
                     />
                     {!!cancelLabel && (
                         <PWButton
@@ -112,6 +117,7 @@ export const ConfirmActionContent = <TResult = boolean,>({
                             title={cancelLabel}
                             onPress={handleCancel}
                             paddingStyle={buttonPaddingStyle}
+                            testID={cancelTestID}
                         />
                     )}
                 </PWView>

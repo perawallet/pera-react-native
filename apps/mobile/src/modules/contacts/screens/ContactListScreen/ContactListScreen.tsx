@@ -16,8 +16,8 @@ import { type Contact } from '@perawallet/wallet-core-contacts'
 import {
     PWButton,
     PWFlatList,
-    PWIcon,
     PWScreen,
+    PWTouchableIcon,
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
@@ -57,9 +57,10 @@ export const ContactListScreen = () => {
     useNavigationHeader({
         enabled: true,
         right: allContactsCount ? (
-            <PWIcon
+            <PWTouchableIcon
                 name='plus'
                 onPress={goToAddContact}
+                testID='contacts_add_button'
             />
         ) : null,
     })
@@ -88,6 +89,7 @@ export const ContactListScreen = () => {
                         title={t('contacts.list.add_contact')}
                         onPress={goToAddContact}
                         variant='primary'
+                        testID='contacts_empty_add_button'
                     />
                 }
             />
@@ -95,12 +97,16 @@ export const ContactListScreen = () => {
     }
 
     return (
-        <PWScreen scroll='never'>
+        <PWScreen
+            scroll='never'
+            testID='contacts_list_screen'
+        >
             <PWView style={styles.searchWrapper}>
                 <SearchInput
                     placeholder={t('contacts.list.search_placeholder')}
                     value={search}
                     onChangeText={onSearchChange}
+                    testID='contacts_search_input'
                 />
             </PWView>
             <PWFlatList
