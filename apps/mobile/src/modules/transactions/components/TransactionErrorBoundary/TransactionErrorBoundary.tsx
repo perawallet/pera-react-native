@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { ReactNode } from 'react'
+import React, { type ReactNode } from 'react'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'

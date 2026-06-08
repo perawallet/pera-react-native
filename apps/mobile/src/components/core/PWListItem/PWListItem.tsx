@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { PWIcon, IconName } from '@components/core/PWIcon'
+import { PWIcon, type IconName } from '@components/core/PWIcon'
 import {
     PWTouchableOpacity,
-    PWTouchableOpacityProps,
+    type PWTouchableOpacityProps,
 } from '@components/core/PWTouchableOpacity'
 import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'

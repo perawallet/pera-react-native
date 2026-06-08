@@ -29,7 +29,7 @@ type UseStakingScreenResult = {
     isLoading: boolean
     isError: boolean
     handleRetry: () => void
-    handleProjectPress: (project: StakingProject) => void
+    handleProjectPress: (project: StakingProject) => Promise<void>
     handleHelpOpen: () => void
 }
 

@@ -14,7 +14,11 @@ import { useCallback, useMemo } from 'react'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAllAccounts } from './useAllAccounts'
 import { useCreateAccount } from './useCreateAccount'
-import { AccountTypes, HDWalletAccount, WalletAccount } from '../models'
+import {
+    AccountTypes,
+    type HDWalletAccount,
+    type WalletAccount,
+} from '../models'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseCreateNextHDAccountResult = {

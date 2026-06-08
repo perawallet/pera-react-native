@@ -65,7 +65,7 @@ export const ExportShareAccountContent = ({
                     title={t('multisig.export.share_url')}
                     variant='secondary'
                     icon='share'
-                    onPress={handleShareUrl}
+                    onPress={() => void handleShareUrl()}
                 />
             </PWView>
         </PWSheetLayout>

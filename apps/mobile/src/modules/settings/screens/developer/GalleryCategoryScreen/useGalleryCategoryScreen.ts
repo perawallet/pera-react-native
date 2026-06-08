@@ -11,14 +11,16 @@
  */
 
 import { useMemo } from 'react'
-import { useRoute } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 
-import { getCategory } from '../gallery-catalog'
+import {
+    getCategory,
+    type GallerySection,
+    type GalleryEntry,
+} from '../gallery-catalog'
 import { useGalleryLauncher } from '../gallery-catalog/useGalleryLauncher'
 import { useGalleryToolHandlers } from '../gallery-catalog/useGalleryToolHandlers'
 
-import type { GallerySection, GalleryEntry } from '../gallery-catalog'
-import type { RouteProp } from '@react-navigation/native'
 import type { DeveloperSettingsStackParamsList } from '@modules/settings/routes'
 
 type UseGalleryCategoryScreenResult = {

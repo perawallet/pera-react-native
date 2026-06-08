@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import {
+    createNativeStackNavigator,
+    type NativeStackHeaderProps,
+} from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { RekeyToSharedConfirmScreen } from '../../screens/rekey-to-shared/RekeyToSharedConfirmScreen'
 import { RekeyToSharedIntroScreen } from '../../screens/rekey-to-shared/RekeyToSharedIntroScreen'
 import { RekeyToSharedSelectTargetScreen } from '../../screens/rekey-to-shared/RekeyToSharedSelectTargetScreen'
 import { RekeyToSharedSuccessScreen } from '../../screens/rekey-to-shared/RekeyToSharedSuccessScreen'
 
-import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import type { RekeyToSharedStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<RekeyToSharedStackParamList>()

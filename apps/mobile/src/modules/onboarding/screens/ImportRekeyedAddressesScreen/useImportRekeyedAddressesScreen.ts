@@ -11,12 +11,12 @@
  */
 
 import { useState, useMemo, useCallback } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
-import { OnboardingStackParamList } from '../../routes/types'
+import { type RouteProp, useRoute } from '@react-navigation/native'
+import { type OnboardingStackParamList } from '../../routes/types'
 import {
     useAllAccounts,
     useSetAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddressSelection } from '@hooks/useAddressSelection'
@@ -90,7 +90,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         }
 
         setIsImporting(true)
-        deferToNextCycle(() => {
+        void deferToNextCycle(() => {
             setAccounts([...allAccounts, ...accountsToAdd])
             exitAccountFlow()
             setIsImporting(false)

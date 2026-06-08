@@ -128,7 +128,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                                     variant='helper'
                                     style={styles.transparentButton}
                                     paddingStyle='dense'
-                                    onPress={handleOpenFilter}
+                                    onPress={() => void handleOpenFilter()}
                                 />
                                 {isCsvExportVisible && (
                                     <PWButton

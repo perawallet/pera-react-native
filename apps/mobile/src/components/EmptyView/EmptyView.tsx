@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { ReactNode } from 'react'
-import { PWIcon, IconName } from '@components/core/PWIcon'
+import { type ReactNode } from 'react'
+import { PWIcon, type IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
-import { PWView, PWViewProps } from '@components/core/PWView'
+import { PWView, type PWViewProps } from '@components/core/PWView'
 import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
-import { ViewStyle } from 'react-native'
+import { type ViewStyle } from 'react-native'
 
 export type EmptyViewProps = {
     title?: string
@@ -83,7 +83,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                 )}
                 <PWText
                     variant='body'
-                    style={[styles.text]}
+                    style={styles.text}
                     numberOfLines={3}
                     truncate
                 >

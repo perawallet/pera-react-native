@@ -14,13 +14,16 @@ import type { InboxItem } from '@perawallet/wallet-core-messages'
 
 export const isPendingAction = (item: InboxItem): boolean => {
     switch (item.type) {
-        case 'multisig_import':
+        case 'multisig_import': {
             return true
-        case 'multisig_sign':
+        }
+        case 'multisig_sign': {
             return (
                 item.data.status === 'pending' || item.data.status === 'ready'
             )
-        case 'asa_inbox':
+        }
+        case 'asa_inbox': {
             return item.data.requestCount > 0
+        }
     }
 }

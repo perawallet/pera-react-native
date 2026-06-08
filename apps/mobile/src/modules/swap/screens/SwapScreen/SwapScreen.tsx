@@ -17,7 +17,7 @@ import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import {
     canSignWith,
     useAllAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useWebView } from '@modules/webview'

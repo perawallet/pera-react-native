@@ -11,8 +11,13 @@
  */
 
 import React, { useCallback, useRef } from 'react'
-import { GestureResponderEvent } from 'react-native'
-import { PWIcon, PWSwipeable, PWSwipeableRef, PWView } from '@components/core'
+import { type GestureResponderEvent } from 'react-native'
+import {
+    PWIcon,
+    PWSwipeable,
+    type PWSwipeableRef,
+    PWView,
+} from '@components/core'
 import { type AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
 import { AssetListItemView } from '../AssetListItemView'
 import type { AssetFiatConverter } from '../useAssetListFiat'

@@ -15,6 +15,7 @@ import {
     getAccountDisplayName,
     isRekeyedAccount,
     useFindAccountByAddress,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     useRekeyTransactionFeeQuery,
@@ -28,7 +29,6 @@ import { useHandleRekeyError } from './useHandleRekeyError'
 import { PreviousRekeyWarningSheet } from '../components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // Shared by the rekey-to-{ledger,shared,standard} confirm screens, which differ
 // only in the target stack they navigate to, the support URL, and the warning
@@ -158,6 +158,6 @@ export const useRekeyConfirmScreen = ({
         feePending,
         hasPreviousRekey,
         isSubmitting,
-        handleConfirmPress,
+        handleConfirmPress: () => void handleConfirmPress(),
     }
 }

@@ -1268,7 +1268,7 @@ const MOCK_WC_SESSION_REQUEST: WalletConnectSessionRequest = {
         url: 'https://mock-dapp.example.com',
         icons: [],
     },
-    chainId: 416001,
+    chainId: 416_001,
     permissions: ['algo_getAccounts', 'algo_signTxn'],
     clientId: 'mock-client-id',
 }

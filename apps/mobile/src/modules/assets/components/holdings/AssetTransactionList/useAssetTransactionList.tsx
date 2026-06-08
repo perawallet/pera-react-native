@@ -120,12 +120,14 @@ export const useAssetTransactionList = ({
 
     const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
         network,
-        onSuccess: async result => {
-            try {
-                await shareCsvFile(result.filename, result.csvContent)
-            } catch (error) {
-                showError(error)
-            }
+        onSuccess: result => {
+            void (async () => {
+                try {
+                    await shareCsvFile(result.filename, result.csvContent)
+                } catch (error) {
+                    showError(error)
+                }
+            })()
         },
         onError: error => {
             showError(error)
@@ -198,6 +200,6 @@ export const useAssetTransactionList = ({
         activeFilter,
         customRange,
         handleTransactionPress,
-        handleOpenFilter,
+        handleOpenFilter: () => void handleOpenFilter(),
     }
 }

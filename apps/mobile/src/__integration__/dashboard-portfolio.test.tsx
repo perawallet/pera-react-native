@@ -69,7 +69,7 @@ import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // USDC-like ASA with 6 decimals — same shape as the asset used in
 // existing send-asa / view-transactions fixtures so the math is easy to

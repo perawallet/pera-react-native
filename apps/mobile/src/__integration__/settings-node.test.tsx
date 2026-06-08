@@ -64,7 +64,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const SAME_ADDRESS_ACCOUNT: WalletAccount = {
     id: 'multi-network',

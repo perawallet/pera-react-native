@@ -15,7 +15,7 @@ import QRCode from 'react-native-qrcode-svg'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
-import { Contact } from '@perawallet/wallet-core-contacts'
+import { type Contact } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 import { PWButton, PWText, PWView } from '@components/core'
@@ -39,7 +39,7 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
     const qrSize = width - theme.spacing['5xl'] * 2
 
     const handleCopy = useCallback(() => {
-        copyToClipboard(contact.address)
+        void copyToClipboard(contact.address)
     }, [contact, copyToClipboard])
 
     const handleShare = useCallback(async () => {
@@ -105,7 +105,7 @@ export const ContactQRContent = ({ contact }: ContactQRContentProps) => {
                     title={t('contacts.list.qr_sheet_share')}
                     variant='secondary'
                     icon='share'
-                    onPress={handleShare}
+                    onPress={() => void handleShare()}
                     style={styles.actionButton}
                 />
             </PWView>

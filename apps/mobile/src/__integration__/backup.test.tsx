@@ -84,7 +84,7 @@ import {
 // Real BIP39 + xhd-wallet-api derivation runs end to end through the in-
 // memory keystore; under jsdom the first run can take a couple of seconds.
 // Give the slow tests headroom rather than mocking the crypto.
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // Mint an algo25 key from the pinned `ALGO25_TEST_MNEMONIC` and register
 // the resulting WalletAccount in the store, returning the keyPairId the
@@ -267,7 +267,7 @@ const completeVerificationQuiz = async (
                 screen.getByTestId('backup_verification_item_2'),
             ).toBeTruthy()
         },
-        { timeout: 10000 },
+        { timeout: 10_000 },
     )
 
     for (let i = 0; i < 3; i++) {
@@ -323,7 +323,7 @@ describe('Flow: Account backup', () => {
                     expect(
                         screen.getByTestId('backup_mnemonic_continue'),
                     ).toBeTruthy(),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             for (const word of ALGO25_TEST_MNEMONIC_WORDS) {
                 expect(screen.getAllByText(word).length).toBeGreaterThan(0)
@@ -364,7 +364,7 @@ describe('Flow: Account backup', () => {
                     expect(
                         screen.getByTestId('backup_mnemonic_continue'),
                     ).toBeTruthy(),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             for (const word of HD_TEST_MNEMONIC_24_WORDS) {
                 expect(screen.getAllByText(word).length).toBeGreaterThan(0)
@@ -414,7 +414,7 @@ describe('Flow: Account backup', () => {
                     expect(
                         screen.getByTestId('backup_mnemonic_continue'),
                     ).toBeTruthy(),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
 
@@ -459,7 +459,7 @@ describe('Flow: Account backup', () => {
                         screen.getByTestId('backup_verification_item_2'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // For every item, pick the first option that is provably not

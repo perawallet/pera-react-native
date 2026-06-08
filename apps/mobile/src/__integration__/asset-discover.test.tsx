@@ -35,7 +35,7 @@ import { createTestQueryClient } from '@test-utils/render'
 import { mockAssetSearch } from '@perawallet/wallet-core-assets/test-handlers'
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const buildWrapper = () => {
     const queryClient = createTestQueryClient()
@@ -63,7 +63,7 @@ describe('Flow: Asset discovery (search)', () => {
                     response: {
                         results: [
                             {
-                                asset_id: 31566704,
+                                asset_id: 31_566_704,
                                 name: 'USD Coin',
                                 unit_name: 'USDC',
                                 verification_tier: 'verified',
@@ -71,7 +71,7 @@ describe('Flow: Asset discovery (search)', () => {
                                 type: 'standard_asset',
                             },
                             {
-                                asset_id: 12345,
+                                asset_id: 12_345,
                                 name: 'Random Token',
                                 unit_name: 'RND',
                                 verification_tier: 'unverified',
@@ -79,7 +79,7 @@ describe('Flow: Asset discovery (search)', () => {
                                 type: 'standard_asset',
                             },
                             {
-                                asset_id: 99999,
+                                asset_id: 99_999,
                                 name: 'Suspicious Coin',
                                 unit_name: 'SCAM',
                                 verification_tier: 'suspicious',

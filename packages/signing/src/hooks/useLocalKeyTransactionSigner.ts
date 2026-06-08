@@ -15,9 +15,9 @@ import { useCallback } from 'react'
 import {
     Address,
     encodeAlgorandAddress,
-    PeraSignedTransaction,
-    PeraTransaction,
-    PeraTransactionGroup,
+    type PeraSignedTransaction,
+    type PeraTransaction,
+    type PeraTransactionGroup,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {

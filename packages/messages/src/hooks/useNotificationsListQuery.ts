@@ -21,7 +21,11 @@ import {
 } from '../api/notifications'
 import type { PeraNotification } from '../models'
 import { getNotificationsListQueryKey } from './querykeys'
-import { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    type Maybe,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,

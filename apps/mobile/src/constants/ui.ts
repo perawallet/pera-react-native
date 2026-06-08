@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { NativeStackNavigationOptions } from '@react-navigation/native-stack'
+import { type NativeStackNavigationOptions } from '@react-navigation/native-stack'
 
 export const CHART_FOCUS_DEBOUNCE_TIME = 200
 export const CHART_HEIGHT = 140

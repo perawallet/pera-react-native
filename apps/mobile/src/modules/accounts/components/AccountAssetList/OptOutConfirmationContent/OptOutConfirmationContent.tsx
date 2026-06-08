@@ -60,7 +60,7 @@ export const OptOutConfirmationContent = ({
     const unitName = asset?.unitName
 
     const handleCopyId = () => {
-        copyToClipboard(assetId)
+        void copyToClipboard(assetId)
     }
 
     return (

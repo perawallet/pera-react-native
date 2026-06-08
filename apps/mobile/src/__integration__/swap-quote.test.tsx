@@ -50,7 +50,7 @@ import {
 } from '@perawallet/wallet-core-swaps/test-handlers'
 import { useCreateQuotesMutation } from '@perawallet/wallet-core-swaps'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const SWAPPER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -96,7 +96,7 @@ const ALGO_USDC_QUOTES = {
                 usd_value: '0.30',
             },
             asset_out: {
-                asset_id: 31566704,
+                asset_id: 31_566_704,
                 logo: null,
                 name: 'USD Coin',
                 unit_name: 'USDC',
@@ -145,7 +145,7 @@ const ALGO_USDC_QUOTES = {
                 usd_value: '0.30',
             },
             asset_out: {
-                asset_id: 31566704,
+                asset_id: 31_566_704,
                 logo: null,
                 name: 'USD Coin',
                 unit_name: 'USDC',
@@ -215,7 +215,7 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
                 swapper_address: SWAPPER_ADDRESS,
                 swap_type: 'fixed-input',
                 asset_in_id: 0,
-                asset_out_id: 31566704,
+                asset_out_id: 31_566_704,
                 amount: '10000000',
                 slippage: '0.01',
             })
@@ -274,7 +274,7 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
                 swapper_address: SWAPPER_ADDRESS,
                 swap_type: 'fixed-input',
                 asset_in_id: 0,
-                asset_out_id: 31566704,
+                asset_out_id: 31_566_704,
                 amount: '10000000',
                 slippage: '0.01',
             })
@@ -311,7 +311,7 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
                 swapper_address: SWAPPER_ADDRESS,
                 swap_type: 'fixed-input',
                 asset_in_id: 0,
-                asset_out_id: 31566704,
+                asset_out_id: 31_566_704,
                 amount: '10000000',
                 slippage: '0.01',
             })

@@ -17,7 +17,7 @@ export const useInboxInvalidator = () => {
     const queryClient = useQueryClient()
 
     const invalidate = () => {
-        queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
             predicate: invalidateAllPredicate,
         })
     }

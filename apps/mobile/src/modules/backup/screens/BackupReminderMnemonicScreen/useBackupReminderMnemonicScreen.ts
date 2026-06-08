@@ -61,7 +61,7 @@ export const useBackupReminderMnemonicScreen =
         // navigation entry), re-check the PIN before exposing the mnemonic.
         useEffect(() => {
             let cancelled = false
-            ;(async () => {
+            void (async () => {
                 const isPinEnabled = await checkPinEnabled()
                 if (cancelled) return
                 if (isPinEnabled) {

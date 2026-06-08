@@ -57,7 +57,7 @@ export const OptInConfirmationContent = ({
     const isFavorited = asset?.peraMetadata?.isFavorited ?? false
 
     const handleCopyId = () => {
-        copyToClipboard(assetId)
+        void copyToClipboard(assetId)
     }
 
     const handleConfirm = () => resolve('confirm')

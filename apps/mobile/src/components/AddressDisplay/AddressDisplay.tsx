@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import {
-    IconName,
+    type IconName,
     PWIcon,
     PWText,
-    PWTextProps,
-    PWTouchableOpacityProps,
+    type PWTextProps,
+    type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
@@ -24,7 +24,7 @@ import { ContactAvatar } from '@components/ContactAvatar'
 import type { ContactAvatarVariant } from '@components/ContactAvatar/styles'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
-import { SvgProps } from 'react-native-svg'
+import { type SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
 import {
     useAddressDisplay,

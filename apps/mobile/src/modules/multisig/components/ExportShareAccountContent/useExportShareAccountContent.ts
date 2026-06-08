@@ -47,7 +47,7 @@ export const useExportShareAccountContent = ({
     )
 
     const handleCopyUrl = useCallback(() => {
-        copyToClipboard(exportUrl)
+        void copyToClipboard(exportUrl)
     }, [copyToClipboard, exportUrl])
 
     const handleShareUrl = useCallback(async () => {

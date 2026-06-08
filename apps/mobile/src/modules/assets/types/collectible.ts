@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import {
     type PeraAsset,
     type PeraCollectible,
 } from '@perawallet/wallet-core-assets'
-import { GestureResponderEvent } from 'react-native'
+import { type GestureResponderEvent } from 'react-native'
 
 export type CollectibleDisplayItem = {
     assetId: string

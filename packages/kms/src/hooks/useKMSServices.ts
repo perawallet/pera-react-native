@@ -28,7 +28,7 @@ import {
     removeSecret,
     withSecret,
 } from '../storage/secrets'
-import { Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 
 export const checkAccess = (key: Key, domain: string): void => {
     const acl = aclOf(key)

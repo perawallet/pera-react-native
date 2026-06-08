@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
-    AssetWithAccountBalance,
+    type AssetWithAccountBalance,
     useAccountBalancesQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'

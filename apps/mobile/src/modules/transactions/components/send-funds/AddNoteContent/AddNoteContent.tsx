@@ -50,7 +50,7 @@ export const AddNoteContent = () => {
                             : t('send_funds.add_note.button')
                     }
                     rightAction={
-                        <PWText onPress={handleSubmit(done)}>
+                        <PWText onPress={() => void handleSubmit(done)()}>
                             {t('send_funds.add_note.done')}
                         </PWText>
                     }

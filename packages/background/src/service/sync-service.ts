@@ -41,7 +41,7 @@ import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { SyncServiceDeps } from '../models'
 
 const POLL_INTERVAL = 3000
-const MAX_BACKOFF_INTERVAL = 30000
+const MAX_BACKOFF_INTERVAL = 30_000
 const BACKOFF_MULTIPLIER = 2
 
 // Asset metadata has a long TTL and only new assets need fetching — and new

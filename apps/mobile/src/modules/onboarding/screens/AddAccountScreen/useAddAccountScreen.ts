@@ -66,7 +66,7 @@ export const useAddAccountScreen = () => {
     const runCreateAccount = useCallback(
         (create: () => Promise<Nullable<WalletAccount>>) => {
             openCreatingAccount()
-            deferToNextCycle(async () => {
+            void deferToNextCycle(async () => {
                 try {
                     const newAccount = await create()
                     if (!isMounted()) return

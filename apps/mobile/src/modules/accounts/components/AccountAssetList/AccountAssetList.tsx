@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
-import type { PWFlatListRef } from '@components/core'
+import { PWButton, PWText, PWView, type PWFlatListRef } from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
 import {
-    WalletAccount,
+    type WalletAccount,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
@@ -85,6 +84,10 @@ export const AccountAssetList = ({
             listRef.current?.scrollToOffset({ offset: 0, animated: true })
         })
         return () => cancelAnimationFrame(handle)
+        // Intentionally fires on sort change only; `balances.length` is read
+        // solely as an empty-list guard (balance-driven scroll reset is handled
+        // by the effect above), so it must not be a trigger here.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [assetSortMode])
 
     const renderItem = useCallback(

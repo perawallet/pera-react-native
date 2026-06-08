@@ -45,12 +45,12 @@ const ConnectedNetworks = ({ chainId }: { chainId: number }) => {
 
     return (
         <PWView style={styles.networkContainer}>
-            {(chainId === 4160 || chainId === 416001) && (
+            {(chainId === 4160 || chainId === 416_001) && (
                 <Text style={styles.mainnetText}>
                     {t('walletconnect.request.networks_mainnet')}
                 </Text>
             )}
-            {(chainId === 4160 || chainId === 416002) && (
+            {(chainId === 4160 || chainId === 416_002) && (
                 <Text style={styles.testnetText}>
                     {t('walletconnect.request.networks_testnet')}
                 </Text>

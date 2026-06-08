@@ -37,7 +37,7 @@ export const useBannerLinkRouter = (): UseBannerLinkRouterResult => {
                 return
             }
             if (isValidDeepLink(url)) {
-                handleDeepLink(url, false, 'deeplink')
+                void handleDeepLink(url, false, 'deeplink')
             } else {
                 Linking.openURL(url).catch(err =>
                     logger.error('Failed to open banner URL', { url, err }),

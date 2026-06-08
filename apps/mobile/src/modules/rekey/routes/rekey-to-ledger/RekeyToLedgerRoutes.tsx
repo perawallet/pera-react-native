@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import {
+    createNativeStackNavigator,
+    type NativeStackHeaderProps,
+} from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { RekeyToLedgerConfirmScreen } from '../../screens/rekey-to-ledger/RekeyToLedgerConfirmScreen'
 import { RekeyToLedgerIntroScreen } from '../../screens/rekey-to-ledger/RekeyToLedgerIntroScreen'
 import { RekeyToLedgerSelectTargetScreen } from '../../screens/rekey-to-ledger/RekeyToLedgerSelectTargetScreen'
 import { RekeyToLedgerSuccessScreen } from '../../screens/rekey-to-ledger/RekeyToLedgerSuccessScreen'
 
-import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import type { RekeyToLedgerStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<RekeyToLedgerStackParamList>()

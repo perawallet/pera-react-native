@@ -70,7 +70,7 @@ import {
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 
 // The rekey txn is sent + signed by the source; the target only contributes
 // its address. A fake `keyPairId` is enough for the target to pass
@@ -240,7 +240,7 @@ describe('Flow: Rekey to standard account end-to-end', () => {
                         screen.getByTestId('rekey-to-standard-success-screen'),
                     ).toBeTruthy()
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             expect(sendSpy).toHaveBeenCalled()
@@ -302,7 +302,7 @@ describe('Flow: Rekey to standard account end-to-end', () => {
                 () => {
                     expect(Notifier.showNotification).toHaveBeenCalled()
                 },
-                { timeout: 25000 },
+                { timeout: 25_000 },
             )
 
             // The catch path does not navigate, so the confirm screen stays

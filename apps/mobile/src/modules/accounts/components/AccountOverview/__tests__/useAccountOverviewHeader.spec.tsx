@@ -15,10 +15,10 @@ import { renderHook, act } from '@testing-library/react'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { useAccountOverviewHeader } from '../useAccountOverviewHeader'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     AccountOverviewModalContext,
-    UseAccountOverviewModalResult,
+    type UseAccountOverviewModalResult,
 } from '../AccountOverviewModalContext'
 
 const { mockOnScrollEnabledChange } = vi.hoisted(() => ({
@@ -225,7 +225,7 @@ describe('useAccountOverviewHeader', () => {
             datetime: new Date(),
             algoValue: new Decimal('100'),
             preferredValue: new Decimal('200'),
-            round: 12345,
+            round: 12_345,
         }
 
         act(() => {

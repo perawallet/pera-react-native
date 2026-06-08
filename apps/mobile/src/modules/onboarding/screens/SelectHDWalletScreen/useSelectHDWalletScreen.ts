@@ -74,7 +74,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
 
     const handleCreateNewWallet = useCallback(() => {
         setIsCreatingWallet(true)
-        deferToNextCycle(async () => {
+        void deferToNextCycle(async () => {
             try {
                 const newAccount = await buildHdWalletAccount({
                     account: 0,
@@ -104,7 +104,8 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
         hdWalletGroups,
         accountBalances,
         isCreatingWallet,
-        handleSelectWallet,
+        handleSelectWallet: (group: HDWalletGroup) =>
+            void handleSelectWallet(group),
         handleCreateNewWallet,
         handleGoBack,
         t,

@@ -64,7 +64,7 @@ export const useAddressSearchView = (
         debouncedValue,
         { enabled: shouldSearchNfd },
     )
-    const nfdResults = nfdData ?? []
+    const nfdResults = useMemo(() => nfdData ?? [], [nfdData])
 
     const matchingAccounts = useMemo(
         () =>

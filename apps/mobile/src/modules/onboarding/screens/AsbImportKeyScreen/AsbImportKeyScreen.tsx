@@ -62,7 +62,7 @@ export const AsbImportKeyScreen = () => {
                         <PWButton
                             variant='primary'
                             title={t('onboarding.asb_import.key.continue')}
-                            onPress={handleContinue}
+                            onPress={() => void handleContinue()}
                             isDisabled={!canContinue}
                             testID='asb_import_key_continue_button'
                         />
@@ -116,7 +116,7 @@ export const AsbImportKeyScreen = () => {
                                                             testID={`asb_import_key_word_${globalIndex}`}
                                                             value={word}
                                                             onChangeText={text =>
-                                                                handleWordChange(
+                                                                void handleWordChange(
                                                                     text,
                                                                     globalIndex,
                                                                 )

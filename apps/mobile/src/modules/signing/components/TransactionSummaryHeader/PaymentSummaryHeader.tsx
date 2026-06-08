@@ -11,7 +11,7 @@
  */
 
 import {
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
     microAlgosToAlgos,
 } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'

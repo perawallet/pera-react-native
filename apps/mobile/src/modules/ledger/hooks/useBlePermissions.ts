@@ -11,6 +11,9 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+// PermissionsAndroid is Android-only by design and is always guarded by
+// Platform.OS checks below, so a platform-specific file split is unnecessary.
+// eslint-disable-next-line react-native/split-platform-components
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native'
 
 type UseBlePermissionsResult = {
@@ -71,7 +74,7 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
     }, [checkAndroidPermissions])
 
     useEffect(() => {
-        refresh()
+        void refresh()
     }, [refresh])
 
     // Re-check when the app comes back to the foreground so that a user who
@@ -80,7 +83,7 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
     useEffect(() => {
         if (Platform.OS === 'ios') return
         const subscription = AppState.addEventListener('change', state => {
-            if (state === 'active') refresh()
+            if (state === 'active') void refresh()
         })
         return () => subscription.remove()
     }, [refresh])

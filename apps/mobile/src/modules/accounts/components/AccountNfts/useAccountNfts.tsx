@@ -11,9 +11,9 @@
  */
 
 import { useCallback, useRef, useEffect, useMemo, useState } from 'react'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { PWFlatList } from '@components/core'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type PWFlatList } from '@components/core'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
@@ -53,7 +53,7 @@ type UseAccountNftsResult = {
     setShowOptedIn: (value: boolean) => void
     setShowWatchAccounts: (value: boolean) => void
     handlePress: (item: CollectibleDisplayItem) => void
-    openManageSheet: () => void
+    openManageSheet: () => Promise<void>
     openAddNftSheet: () => void
     flatListRef: React.MutableRefObject<React.ComponentRef<
         typeof PWFlatList
@@ -70,17 +70,19 @@ const sortCollectibles = (
     const sorted = [...items]
 
     switch (mode) {
-        case 'titleAsc':
+        case 'titleAsc': {
             sorted.sort((a, b) =>
                 getCollectibleName(a).localeCompare(getCollectibleName(b)),
             )
             break
-        case 'titleDesc':
+        }
+        case 'titleDesc': {
             sorted.sort((a, b) =>
                 getCollectibleName(b).localeCompare(getCollectibleName(a)),
             )
             break
-        case 'newestFirst':
+        }
+        case 'newestFirst': {
             sorted.sort((a, b) => {
                 const aId = BigInt(a.assetId)
                 const bId = BigInt(b.assetId)
@@ -88,7 +90,8 @@ const sortCollectibles = (
                 return aId < bId ? 1 : -1
             })
             break
-        case 'oldestFirst':
+        }
+        case 'oldestFirst': {
             sorted.sort((a, b) => {
                 const aId = BigInt(a.assetId)
                 const bId = BigInt(b.assetId)
@@ -96,6 +99,7 @@ const sortCollectibles = (
                 return aId < bId ? -1 : 1
             })
             break
+        }
     }
 
     return sorted

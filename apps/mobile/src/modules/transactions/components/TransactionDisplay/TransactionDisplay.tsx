@@ -13,7 +13,7 @@
 import { EmptyView } from '@components/EmptyView'
 import {
     getTransactionType,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -40,47 +40,52 @@ export const TransactionDisplay = ({
     const txType = getTransactionType(transaction)
 
     switch (txType) {
-        case 'payment':
+        case 'payment': {
             return (
                 <PaymentTransactionDisplay
                     transaction={transaction}
                     isInnerTransaction={isInnerTransaction}
                 />
             )
+        }
 
-        case 'asset-transfer':
+        case 'asset-transfer': {
             return (
                 <AssetTransferDisplay
                     transaction={transaction}
                     isInnerTransaction={isInnerTransaction}
                 />
             )
+        }
 
-        case 'asset-config':
+        case 'asset-config': {
             return (
                 <AssetConfigDisplay
                     transaction={transaction}
                     isInnerTransaction={isInnerTransaction}
                 />
             )
+        }
 
-        case 'asset-freeze':
+        case 'asset-freeze': {
             return (
                 <AssetFreezeDisplay
                     transaction={transaction}
                     isInnerTransaction={isInnerTransaction}
                 />
             )
+        }
 
-        case 'key-registration':
+        case 'key-registration': {
             return (
                 <KeyRegistrationDisplay
                     transaction={transaction}
                     isInnerTransaction={isInnerTransaction}
                 />
             )
+        }
 
-        case 'app-call':
+        case 'app-call': {
             return (
                 <AppCallTransactionDisplay
                     transaction={transaction}
@@ -88,16 +93,18 @@ export const TransactionDisplay = ({
                     onInnerTransactionsPress={onInnerTransactionsPress}
                 />
             )
+        }
 
         case 'state-proof':
         case 'heartbeat':
         case 'unknown':
-        default:
+        default: {
             return (
                 <EmptyView
                     title={t('transactions.unknown.title')}
                     body={t('transactions.unknown.body')}
                 />
             )
+        }
     }
 }

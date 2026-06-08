@@ -22,8 +22,11 @@ import ky, {
     isTimeoutError,
 } from 'ky'
 import { config } from '@perawallet/wallet-core-config'
-import { RequestConfiguration, ResponseConfiguration } from '../models/queries'
-import { Network, Networks } from '../models/base-types'
+import {
+    type RequestConfiguration,
+    type ResponseConfiguration,
+} from '../models/queries'
+import { type Network, Networks } from '../models/base-types'
 import { logger } from '../utils'
 
 type BackendInstances = {
@@ -177,15 +180,18 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             const responseType = requestConfig.responseType ?? 'json'
 
             switch (responseType) {
-                case 'text':
+                case 'text': {
                     data = (await response.text()) as unknown as TData
                     break
-                case 'blob':
+                }
+                case 'blob': {
                     data = (await response.blob()) as unknown as TData
                     break
-                case 'arraybuffer':
+                }
+                case 'arraybuffer': {
                     data = (await response.arrayBuffer()) as unknown as TData
                     break
+                }
                 case 'json':
                 default: {
                     // ky's response.json() pipes through JSON.parse()

@@ -13,7 +13,7 @@
 import {
     AppError,
     ErrorCategory,
-    ErrorMetadata,
+    type ErrorMetadata,
     ErrorSeverity,
     toError,
 } from '@perawallet/wallet-core-shared'

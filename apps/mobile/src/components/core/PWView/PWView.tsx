@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { View, ViewProps } from 'react-native'
+import { View, type ViewProps } from 'react-native'
 import { getContainerTestProps } from '@utils/test-id-helper'
 
 export type PWViewProps = ViewProps & {
@@ -20,7 +20,7 @@ export type PWViewProps = ViewProps & {
 export const PWView = ({ children, style, testID, ...props }: PWViewProps) => {
     return (
         <View
-            style={[style]}
+            style={style}
             {...getContainerTestProps(testID)}
             {...props}
         >

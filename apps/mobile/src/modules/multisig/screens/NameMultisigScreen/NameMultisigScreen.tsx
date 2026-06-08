@@ -32,7 +32,7 @@ export const NameMultisigScreen = () => {
             loadingTitle={t('multisig.name.creating')}
             value={accountName}
             onChangeText={handleNameChange}
-            onFinish={handleFinish}
+            onFinish={() => void handleFinish()}
             isLoading={isCreating}
             isDisabled={isFinishDisabled}
         />

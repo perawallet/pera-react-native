@@ -65,11 +65,11 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
 
     const handleApprove = useCallback(() => {
         pipeline.next()
-    }, [pipeline.next])
+    }, [pipeline])
 
     const handleReject = useCallback(() => {
         pipeline.fail()
-    }, [pipeline.fail])
+    }, [pipeline])
 
     const handleDetailsPress = useCallback(() => {
         navigation.navigate('Arc60SigningDetails')

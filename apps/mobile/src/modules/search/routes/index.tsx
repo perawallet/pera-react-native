@@ -12,7 +12,7 @@
 
 import {
     createNativeStackNavigator,
-    NativeStackHeaderProps,
+    type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -20,7 +20,7 @@ import { fullScreenLayout } from '@layouts/index'
 import { screenListeners } from '@routes/listeners'
 import { SearchScreen } from '@modules/search/screens/SearchScreen'
 
-import { SearchStackParamsList } from './types'
+import { type SearchStackParamsList } from './types'
 
 const SearchStack = createNativeStackNavigator<SearchStackParamsList>()
 

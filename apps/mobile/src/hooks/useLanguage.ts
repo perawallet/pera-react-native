@@ -18,7 +18,7 @@ export const useLanguage = () => {
 
     const changeLanguage = useCallback(
         (language: string) => {
-            i18n.changeLanguage(language)
+            void i18n.changeLanguage(language)
         },
         [i18n],
     )

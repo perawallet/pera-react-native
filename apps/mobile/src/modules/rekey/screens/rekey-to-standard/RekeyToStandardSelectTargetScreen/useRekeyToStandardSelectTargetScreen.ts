@@ -11,15 +11,14 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useRoute } from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     isEligibleRekeyTarget,
     useAllAccounts,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-import type { RouteProp } from '@react-navigation/native'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { RekeyToStandardStackParamList } from '../../../routes/rekey-to-standard/types'
 
 export type UseRekeyToStandardSelectTargetScreenResult = {

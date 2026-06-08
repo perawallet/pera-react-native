@@ -16,12 +16,14 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { isAlgoAsset } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import {
+    DEFAULT_PRECISION,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type SwapAmountSectionPayProps = {
     variant: 'pay'

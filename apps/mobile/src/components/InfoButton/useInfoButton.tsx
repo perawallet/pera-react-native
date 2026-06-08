@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ReactNode, useCallback, useRef } from 'react'
+import { type ReactNode, useCallback, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { InfoButtonContent } from './InfoButtonContent'
 

@@ -88,10 +88,10 @@ export const useSigningStore: UseBoundStore<
                 const existing = get().pendingSignRequests ?? []
                 const remaining = existing.filter(r => r.id !== request.id)
 
-                if (remaining.length != existing.length) {
+                if (remaining.length !== existing.length) {
                     set({ pendingSignRequests: remaining })
                 }
-                return remaining.length != existing.length
+                return remaining.length !== existing.length
             },
             resetState: () => set(initialState),
         }),

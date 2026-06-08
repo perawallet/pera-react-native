@@ -12,12 +12,12 @@
 
 import { useCallback, useState } from 'react'
 import {
-    AccountSortMode,
+    type AccountSortMode,
     AccountSortModes,
     useAllAccounts,
     useSortedAccounts,
     useAccountBalancesQuery,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 

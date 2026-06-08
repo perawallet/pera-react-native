@@ -74,12 +74,12 @@ export const RatingsContent = () => {
                 <RoundButton
                     icon='thumb_down'
                     size='xl'
-                    onPress={handleRatingClick}
+                    onPress={() => void handleRatingClick()}
                 />
                 <RoundButton
                     icon='thumb_up'
                     size='xl'
-                    onPress={handleRatingClick}
+                    onPress={() => void handleRatingClick()}
                 />
             </PWView>
         </PWView>

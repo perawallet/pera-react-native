@@ -11,7 +11,7 @@
  */
 
 import { PWButton } from '@components/core'
-import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useMemo } from 'react'
 import { KeyValueRow } from '@components/KeyValueRow'

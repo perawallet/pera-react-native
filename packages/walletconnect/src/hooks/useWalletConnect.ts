@@ -17,8 +17,8 @@ import {
 } from '../errors'
 import {
     AlgorandChainId,
-    WalletConnectConnection,
-    WalletConnectSessionRequest,
+    type WalletConnectConnection,
+    type WalletConnectSessionRequest,
 } from '../models'
 import { useWalletConnectStore } from '../store'
 import {
@@ -33,7 +33,7 @@ import { useWalletConnectSessionRequests } from './useWalletConnectSessionReques
 import { useWalletConnectHandlers } from './useWalletConnectHandlers'
 import {
     logger,
-    Network,
+    type Network,
     Networks,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -141,7 +141,7 @@ export const useWalletConnect = (network: Network) => {
         })
 
         connections.forEach(connection => {
-            connect({ connection })
+            void connect({ connection })
         })
 
         // Only push a new array if at least one connection's `connected`
@@ -331,7 +331,7 @@ export const useWalletConnect = (network: Network) => {
 
         connector.on('disconnect', () => {
             logger.debug('WC disconnect received')
-            disconnect(connector.clientId, false)
+            void disconnect(connector.clientId, false)
         })
 
         connector.on('session_request', (error, payload) => {

@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import {
     MaskedTextInput,
-    MaskedTextInputProps,
+    type MaskedTextInputProps,
 } from 'react-native-advanced-input-mask'
 import { getTestProps } from '@utils/test-id-helper'
 

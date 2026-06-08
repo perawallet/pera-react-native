@@ -76,7 +76,7 @@ const createPaymentTx = (
         amount: new Decimal('500000'),
         fee: new Decimal('1000'),
         confirmedRound: 100,
-        roundTime: 1700000000,
+        roundTime: 1_700_000_000,
         asset: null,
         swapGroupDetail: null,
         interpretedMeaning: null,
@@ -98,9 +98,9 @@ const createAssetTransferTx = (
         amount: new Decimal('1000000'),
         fee: new Decimal('1000'),
         confirmedRound: 100,
-        roundTime: 1700000000,
+        roundTime: 1_700_000_000,
         asset: {
-            assetId: 31566704,
+            assetId: 31_566_704,
             name: 'USD Coin',
             unitName: 'USDC',
             decimals: 6,
@@ -233,7 +233,7 @@ describe('useTransactionListItem', () => {
                 swapGroupDetail: {
                     assetInId: 0,
                     assetInUnitName: 'ALGO',
-                    assetOutId: 31566704,
+                    assetOutId: 31_566_704,
                     assetOutUnitName: 'USDC',
                     amountIn: new Decimal('1000000'),
                     amountOut: new Decimal('500000'),
@@ -295,7 +295,7 @@ describe('useTransactionListItem', () => {
             const tx = createAssetTransferTx({
                 amount: new Decimal('1000000'),
                 asset: {
-                    assetId: 31566704,
+                    assetId: 31_566_704,
                     name: 'USD Coin',
                     unitName: 'USDC',
                     decimals: 0,
@@ -317,7 +317,7 @@ describe('useTransactionListItem', () => {
             const tx = createAssetTransferTx({
                 amount: new Decimal('1000000'),
                 asset: {
-                    assetId: 31566704,
+                    assetId: 31_566_704,
                     name: 'USD Coin',
                     unitName: 'USDC',
                     decimals: 6,

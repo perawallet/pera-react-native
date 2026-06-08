@@ -72,7 +72,9 @@ export const SettingsSecurityScreen = () => {
                         <PWView style={styles.trailingContainer}>
                             <PWSwitch
                                 value={isPinEnabled}
-                                onValueChange={handlePinToggle}
+                                onValueChange={value =>
+                                    void handlePinToggle(value)
+                                }
                                 testID='settings_security_pin_toggle'
                             />
                         </PWView>
@@ -81,7 +83,7 @@ export const SettingsSecurityScreen = () => {
                     {isPinEnabled && (
                         <PWTouchableOpacity
                             style={styles.listItem}
-                            onPress={handleChangePinPress}
+                            onPress={() => void handleChangePinPress()}
                             testID='settings_security_change_pin_button'
                         >
                             <PWView style={styles.listItemContent}>
@@ -113,7 +115,9 @@ export const SettingsSecurityScreen = () => {
                             <PWView style={styles.trailingContainer}>
                                 <PWSwitch
                                     value={isBiometricEnabled}
-                                    onValueChange={handleBiometricToggle}
+                                    onValueChange={value =>
+                                        void handleBiometricToggle(value)
+                                    }
                                     testID='settings_security_biometric_toggle'
                                 />
                             </PWView>
@@ -280,8 +284,10 @@ export const SettingsSecurityScreen = () => {
                                                     isDuressPinEnabled &&
                                                     isPinEnabled
                                                 }
-                                                onValueChange={
-                                                    handleDuressPinToggle
+                                                onValueChange={value =>
+                                                    void handleDuressPinToggle(
+                                                        value,
+                                                    )
                                                 }
                                                 disabled={!isPinEnabled}
                                                 testID='settings_security_duress_pin_toggle'

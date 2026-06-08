@@ -12,7 +12,7 @@
 
 import {
     microAlgosToAlgos,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { useStyles } from './styles'
@@ -33,7 +33,7 @@ export const usePaymentTransactionDisplay = (
             return -algos
         }
         return algos
-    }, [senderAddress, payment, receiverAddress])
+    }, [senderAddress, payment, referenceAddress])
 
     const amountStyle = useMemo(() => {
         if (senderAddress === referenceAddress) {
@@ -42,7 +42,13 @@ export const usePaymentTransactionDisplay = (
             return styles.amountPositive
         }
         return undefined
-    }, [amount])
+    }, [
+        styles.amountNegative,
+        receiverAddress,
+        senderAddress,
+        styles.amountPositive,
+        referenceAddress,
+    ])
 
     const showWarnings = useMemo(() => {
         return !transaction?.confirmedRound

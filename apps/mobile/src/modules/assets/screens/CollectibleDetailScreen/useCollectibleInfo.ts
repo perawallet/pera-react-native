@@ -12,7 +12,7 @@
 
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
-import { PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
+import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { formatWithUnits } from '@perawallet/wallet-core-shared'
@@ -28,20 +28,20 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
         pushWebView({
             url: `${config.explorerUrl}/address/${asset.creator.address}`,
         })
-    }, [asset.creator.address, pushWebView])
+    }, [asset.creator.address, pushWebView, config.explorerUrl])
 
     const onAssetIdPressed = useCallback(() => {
         navigate('AssetDetails', {
             assetId: asset.assetId,
             isCollectible: true,
         }) // Navigate to the Asset Details screen
-    }, [asset.assetId, pushWebView])
+    }, [asset.assetId, navigate])
 
     const onOpenExplorer = useCallback(() => {
         pushWebView({
             url: `${config.explorerUrl}/asset/${asset.assetId}`,
         })
-    }, [asset.assetId, pushWebView])
+    }, [asset.assetId, pushWebView, config.explorerUrl])
 
     const { amount: totalSupplyAmount, unit: totalSupplyUnit } =
         formatWithUnits(toWholeUnits(asset.totalSupply, asset))

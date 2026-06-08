@@ -45,7 +45,7 @@ export const useImagePicker = (): UseImagePickerResult => {
     )
     const openSettings = useCallback(() => {
         setPermissionDeniedVisible(false)
-        Linking.openSettings()
+        void Linking.openSettings()
     }, [])
 
     const ensurePermission = useCallback(async () => {

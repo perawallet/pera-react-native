@@ -46,7 +46,7 @@ import { LedgerVerifyScreen } from '@modules/ledger/screens/LedgerVerifyScreen'
 
 import { HD_TEST_ADDRESS, ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 const REKEYED_ADDRESS = ALGO25_TEST_ADDRESS
 
@@ -152,7 +152,7 @@ describe('Flow: Ledger rekeyed-account import', () => {
             const rekeyedRow = await waitFor(
                 () =>
                     screen.getByTestId(`ledger_select_row_${REKEYED_ADDRESS}`),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             // Select the rekeyed account
@@ -170,7 +170,7 @@ describe('Flow: Ledger rekeyed-account import', () => {
                     expect(
                         screen.getByTestId('ledger_verify_card_0'),
                     ).toBeTruthy(),
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
             expect(screen.queryByTestId('ledger_verify_card_1')).toBeNull()
 
@@ -184,7 +184,7 @@ describe('Flow: Ledger rekeyed-account import', () => {
                     expect(btn.disabled).toBe(false)
                     return btn
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
 
             fireEvent.click(addBtn)
@@ -203,7 +203,7 @@ describe('Flow: Ledger rekeyed-account import', () => {
                     expect(hw?.type).toBe(AccountTypes.hardware)
                     expect(canSignWith(watch!, accounts)).toBe(true)
                 },
-                { timeout: 10000 },
+                { timeout: 10_000 },
             )
         },
         SLOW_TEST_TIMEOUT_MS,

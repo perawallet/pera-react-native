@@ -11,7 +11,11 @@
  */
 
 import React, { useMemo } from 'react'
-import { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
+import {
+    type GestureResponderEvent,
+    type StyleProp,
+    type ViewStyle,
+} from 'react-native'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PWView } from '@components/core'
 import { isCollectible } from '@perawallet/wallet-core-assets'

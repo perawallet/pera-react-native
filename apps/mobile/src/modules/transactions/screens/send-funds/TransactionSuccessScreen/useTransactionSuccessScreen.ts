@@ -53,10 +53,7 @@ export const useTransactionSuccessScreen =
         const { transactionId, variant: routeVariant } = route.params
         const { onFinished: sendFundsOnFinished, isCloseAccount } =
             useSendFunds()
-        const {
-            onFinished: claimOnFinished,
-            accountAddress: claimAccountAddress,
-        } = useClaimAssets()
+        const { onFinished: claimOnFinished } = useClaimAssets()
         const { networkConfig } = useNetwork()
         const { pushWebView } = useWebView()
         const removeAccountById = useRemoveAccountById()
@@ -78,7 +75,7 @@ export const useTransactionSuccessScreen =
                 claimOnFinished?.()
             } else {
                 if (isCloseAccount && selectedAccount?.id) {
-                    removeAccountById(selectedAccount.id)
+                    void removeAccountById(selectedAccount.id)
                     const remaining = accounts.filter(
                         a => a.id !== selectedAccount.id,
                     )
@@ -91,7 +88,6 @@ export const useTransactionSuccessScreen =
         }, [
             isClaimFlow,
             claimOnFinished,
-            claimAccountAddress,
             sendFundsOnFinished,
             isCloseAccount,
             selectedAccount,

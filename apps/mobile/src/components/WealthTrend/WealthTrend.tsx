@@ -14,7 +14,7 @@ import { PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
     DEFAULT_PRECISION,
-    HistoryPeriod,
+    type HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
@@ -23,7 +23,7 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     useAccountBalancesHistoryQuery,
     useAllAccounts,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { TrendIndicator } from '@components/TrendIndicator'

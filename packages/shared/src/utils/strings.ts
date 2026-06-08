@@ -136,24 +136,28 @@ export const formatWithUnits = (
             resultUnit = 'B'
         } else if (absAmount.gte(1_000_000)) {
             resultUnit = 'M'
-        } else if (absAmount.gte(1_000)) {
+        } else if (absAmount.gte(1000)) {
             resultUnit = 'K'
         }
     }
 
     switch (resultUnit) {
-        case 'K':
-            resultAmount = amount.div(1_000)
+        case 'K': {
+            resultAmount = amount.div(1000)
             break
-        case 'M':
+        }
+        case 'M': {
             resultAmount = amount.div(1_000_000)
             break
-        case 'B':
+        }
+        case 'B': {
             resultAmount = amount.div(1_000_000_000)
             break
-        case 'T':
+        }
+        case 'T': {
             resultAmount = amount.div(1_000_000_000_000)
             break
+        }
     }
 
     return { amount: resultAmount, unit: resultUnit ?? '' }

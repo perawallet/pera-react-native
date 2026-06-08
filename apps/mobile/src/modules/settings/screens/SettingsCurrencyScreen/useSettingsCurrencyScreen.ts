@@ -15,7 +15,7 @@ import {
     useInvalidateAssetPrices,
 } from '@perawallet/wallet-core-assets'
 import {
-    Currency,
+    type Currency,
     useCurrenciesQuery,
     useCurrency,
 } from '@perawallet/wallet-core-currencies'

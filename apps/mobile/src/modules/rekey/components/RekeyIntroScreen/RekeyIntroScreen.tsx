@@ -15,10 +15,11 @@ import heroImage from '@assets/images/rekey-hero.jpg'
 import { PWButton, PWImage, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NumberedList } from '../NumberedList'
-import { useRekeyIntroScreen } from './useRekeyIntroScreen'
+import {
+    useRekeyIntroScreen,
+    type RekeyIntroNavConfig,
+} from './useRekeyIntroScreen'
 import { useStyles } from './styles'
-
-import type { RekeyIntroNavConfig } from './useRekeyIntroScreen'
 
 export type RekeyIntroScreenProps = {
     i18nBaseKey: string

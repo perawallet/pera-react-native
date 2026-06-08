@@ -51,7 +51,7 @@ import {
     useUpdateSwapStatusMutation,
 } from '@perawallet/wallet-core-swaps'
 
-const SLOW_TEST_TIMEOUT_MS = 30000
+const SLOW_TEST_TIMEOUT_MS = 30_000
 const QUOTE_ID = 'quote-tinyman-1'
 const SWAP_ID = '12345'
 
@@ -93,7 +93,7 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
                         signed_transactions: [null, null],
                     },
                 ],
-                swap_id: 12345,
+                swap_id: 12_345,
                 swap_id_str: SWAP_ID,
                 swap_version: 'v2',
             }

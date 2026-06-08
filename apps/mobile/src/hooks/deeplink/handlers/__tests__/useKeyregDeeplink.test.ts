@@ -13,8 +13,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 
-import { DeeplinkType } from '../../types'
-import type { KeyregDeeplink } from '../../types'
+import { DeeplinkType, type KeyregDeeplink } from '../../types'
 
 const {
     mockAddSignRequest,
@@ -265,7 +264,7 @@ describe('useKeyregDeeplink', () => {
                 expect.objectContaining({
                     sender: VALID_ADDRESS,
                     voteFirst: 1300n,
-                    voteLast: 11300n,
+                    voteLast: 11_300n,
                     voteKeyDilution: 100n,
                 }),
             )

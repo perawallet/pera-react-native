@@ -13,9 +13,9 @@
 import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
 import {
-    StyleProp,
-    TextStyle,
-    TextProps,
+    type StyleProp,
+    type TextStyle,
+    type TextProps,
     StyleSheet,
     useWindowDimensions,
 } from 'react-native'

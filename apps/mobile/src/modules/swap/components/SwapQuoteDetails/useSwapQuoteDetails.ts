@@ -51,15 +51,19 @@ export const useSwapQuoteDetails = (
 ): UseSwapQuoteDetailsResult => {
     const remoteConfigService = useRemoteConfig()
 
-    const lowThreshold = new Decimal(
-        remoteConfigService.getNumberValue(
-            RemoteConfigKeys.swap_price_impact_low_threshold,
-        ),
+    const lowThresholdValue = remoteConfigService.getNumberValue(
+        RemoteConfigKeys.swap_price_impact_low_threshold,
     )
-    const highThreshold = new Decimal(
-        remoteConfigService.getNumberValue(
-            RemoteConfigKeys.swap_price_impact_high_threshold,
-        ),
+    const highThresholdValue = remoteConfigService.getNumberValue(
+        RemoteConfigKeys.swap_price_impact_high_threshold,
+    )
+    const lowThreshold = useMemo(
+        () => new Decimal(lowThresholdValue),
+        [lowThresholdValue],
+    )
+    const highThreshold = useMemo(
+        () => new Decimal(highThresholdValue),
+        [highThresholdValue],
     )
 
     return useMemo(

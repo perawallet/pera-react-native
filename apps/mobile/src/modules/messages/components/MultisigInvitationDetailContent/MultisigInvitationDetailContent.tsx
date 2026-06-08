@@ -65,7 +65,7 @@ export const MultisigInvitationDetailContent = ({
                     <PWButton
                         variant='secondary'
                         title={t('multisig.invitation.ignore')}
-                        onPress={handleIgnore}
+                        onPress={() => void handleIgnore()}
                         isLoading={isIgnoring}
                         isDisabled={isIgnoring}
                         style={styles.ignoreButton}

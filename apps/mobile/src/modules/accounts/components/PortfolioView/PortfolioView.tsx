@@ -16,7 +16,7 @@ import {
     PWText,
     PWTouchableOpacity,
     PWView,
-    PWViewProps,
+    type PWViewProps,
 } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,7 +30,7 @@ import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    AccountBalanceHistoryItem,
+    type AccountBalanceHistoryItem,
     useAccountBalancesQuery,
     useAccountBalancesHistoryQuery,
     usePortfolioTotals,

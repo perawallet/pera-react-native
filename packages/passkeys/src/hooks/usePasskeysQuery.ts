@@ -89,7 +89,7 @@ export const usePasskeysQuery = (): UsePasskeysQueryResult => {
         isLoading: nativeQuery.isLoading,
         isError: nativeQuery.isError,
         error: nativeQuery.error as Error | null,
-        refetch: nativeQuery.refetch,
+        refetch: () => void nativeQuery.refetch(),
     }
 }
 

@@ -14,14 +14,14 @@ import { PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
     getTransactionType,
-    PeraDisplayableTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { PaymentSummaryHeader } from './PaymentSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
 import { AppCallSummaryHeader } from './AppCallSummaryHeader'
 import { GenericSummaryHeader } from './GenericSummaryHeader'
-import { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { type SignRequestSource } from '@perawallet/wallet-core-signing'
 import { SourceMetadataBadge } from '../SourceMetadataBadge'
 
 export type TransactionSummaryHeaderProps = {

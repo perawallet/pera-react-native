@@ -241,7 +241,7 @@ describe('useLockScreen', () => {
 
     describe('lockout timer', () => {
         it('should calculate remaining seconds when locked out', () => {
-            const lockoutEndTime = Date.now() + 60000
+            const lockoutEndTime = Date.now() + 60_000
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,
@@ -261,7 +261,7 @@ describe('useLockScreen', () => {
         })
 
         it('should update remaining seconds over time', () => {
-            const lockoutEndTime = Date.now() + 60000
+            const lockoutEndTime = Date.now() + 60_000
 
             ;(usePinCode as Mock).mockReturnValue({
                 verifyPin: mockVerifyPin,

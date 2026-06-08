@@ -11,7 +11,7 @@
  */
 
 import { Fragment, useEffect } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, type ParamListBase } from '@react-navigation/native'
 
 import { PWScreen, PWText } from '@components/core'
 
@@ -20,7 +20,6 @@ import { GalleryItemRow } from './GalleryItemRow'
 import { useStyles } from './styles'
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { ParamListBase } from '@react-navigation/native'
 
 export const GalleryCategoryScreen = () => {
     const styles = useStyles()

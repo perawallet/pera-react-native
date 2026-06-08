@@ -15,14 +15,14 @@ import {
     useAccountSummaryQuery,
     useEnsureAccountEnriched,
     useSelectedAccount,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { AccountOptionsContent } from '../AccountOptionsContent'
-import { UseAccountOverviewModalResult } from './AccountOverviewModalContext'
+import { type UseAccountOverviewModalResult } from './AccountOverviewModalContext'
 
 export type UseAccountOverviewParams = {
     account: WalletAccount

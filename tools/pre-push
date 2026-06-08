@@ -53,6 +53,19 @@ else
 fi
 rm "$LINT_LOG"
 
+# Run type-aware lint (no-floating-promises / no-misused-promises).
+# These rules require full type information and are much slower than the
+# default lint, so they live in a separate step.
+echo "\n${YELLOW}Running type-aware lint...${NC}"
+TYPES_LOG=$(mktemp)
+if pnpm run lint:types > "$TYPES_LOG" 2>&1; then
+    echo "${GREEN}✓ Type-aware lint passed${NC}"
+else
+    echo "${RED}Type-aware lint failed.${NC}"
+    record_failure "Type-aware lint (floating/misused promises)" "$TYPES_LOG"
+fi
+rm "$TYPES_LOG"
+
 # Run formatter
 echo "\n${YELLOW}Running formatter...${NC}"
 FORMAT_LOG=$(mktemp)

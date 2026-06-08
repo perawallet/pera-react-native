@@ -14,13 +14,13 @@ import React, { useState } from 'react'
 import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import DateTimePicker, {
-    DateTimePickerChangeEvent,
+    type DateTimePickerChangeEvent,
 } from '@react-native-community/datetimepicker'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
-import { TransactionFilter, CustomDateRange } from './types'
+import { TransactionFilter, type CustomDateRange } from './types'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 
@@ -71,8 +71,9 @@ export const TransactionsFilterContent = ({
             d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })
 
         switch (filter) {
-            case TransactionFilter.Today:
+            case TransactionFilter.Today: {
                 return format(today)
+            }
             case TransactionFilter.Yesterday: {
                 const y = new Date()
                 y.setDate(y.getDate() - 1)
@@ -96,8 +97,9 @@ export const TransactionsFilterContent = ({
                 const end = new Date(today.getFullYear(), today.getMonth(), 0)
                 return `${format(start)}–${end.getDate()}`
             }
-            default:
+            default: {
                 return ''
+            }
         }
     }
 

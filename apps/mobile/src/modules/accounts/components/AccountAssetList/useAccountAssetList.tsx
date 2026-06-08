@@ -11,13 +11,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type ParamListBase, useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useAccountAssetsQuery,
     useCanSignWith,
     assetFromHoldingLiteRow,
-    WalletAccount,
+    type WalletAccount,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -29,7 +29,7 @@ import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
-import { useModalState, ModalState } from '@hooks/useModalState'
+import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -270,9 +270,9 @@ export const useAccountAssetList = ({
         isOptingOut,
         setSearchFilter,
         goToAssetScreen,
-        handleOptOut,
+        handleOptOut: (item: AccountHoldingsLiteRow) => void handleOptOut(item),
         handleOpenAddAsset,
-        handleOpenManage,
+        handleOpenManage: () => void handleOpenManage(),
         getEmptyTitle,
         getEmptyBody,
         renderItemProps,

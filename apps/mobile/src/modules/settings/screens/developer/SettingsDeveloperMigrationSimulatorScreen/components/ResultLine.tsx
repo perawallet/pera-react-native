@@ -54,9 +54,10 @@ const describeOutcome = (
     detail: string
 } => {
     switch (outcome.kind) {
-        case 'pending':
+        case 'pending': {
             return { icon: 'info', iconVariant: 'helper', detail: 'Working…' }
-        case 'success':
+        }
+        case 'success': {
             return outcome.version === 0
                 ? { icon: 'check', iconVariant: 'positive', detail: 'Reset' }
                 : {
@@ -64,17 +65,20 @@ const describeOutcome = (
                       iconVariant: 'positive',
                       detail: `v${outcome.version}`,
                   }
-        case 'done':
+        }
+        case 'done': {
             return {
                 icon: 'check',
                 iconVariant: 'positive',
                 detail: outcome.detail,
             }
-        case 'error':
+        }
+        case 'error': {
             return {
                 icon: 'cross',
                 iconVariant: 'error',
                 detail: outcome.message,
             }
+        }
     }
 }

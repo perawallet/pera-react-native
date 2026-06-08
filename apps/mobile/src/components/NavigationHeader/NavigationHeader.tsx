@@ -15,8 +15,8 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
-import { NativeStackHeaderProps } from '@react-navigation/native-stack'
-import { StackHeaderProps } from '@react-navigation/stack'
+import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { type StackHeaderProps } from '@react-navigation/stack'
 
 export type NavigationHeaderProps = (
     | Partial<NativeStackHeaderProps>
@@ -50,7 +50,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
             return t(title)
         }
         return title
-    }, [props.options?.headerTitle, props.options?.title, props.route?.name, t])
+    }, [props.route?.name, t, props.options])
 
     const left = useMemo(() => {
         if (props.options?.headerLeft) {
@@ -74,7 +74,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
         }
 
         return null
-    }, [props.options?.headerLeft, props.navigation, styles.backButton])
+    }, [props.navigation, styles.backButton, props.options])
 
     return (
         props.options?.headerShown && (

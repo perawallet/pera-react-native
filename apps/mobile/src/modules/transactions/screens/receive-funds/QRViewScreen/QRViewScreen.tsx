@@ -92,7 +92,7 @@ export const QRViewScreen = () => {
                         variant='secondary'
                         icon='share'
                         testID='receive_share_address_button'
-                        onPress={handleShareAddress}
+                        onPress={() => void handleShareAddress()}
                     />
                 </PWView>
             }

@@ -11,18 +11,21 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Decimal } from 'decimal.js'
+import { type Decimal } from 'decimal.js'
 import {
-    AccountBalanceHistoryItem,
+    type AccountBalanceHistoryItem,
     useAccountSummaryQuery,
     useAllAccounts,
     useCanSignWith,
-    WalletAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useAccountOverviewModal } from './AccountOverviewModalContext'
 
 export type UseAccountOverviewHeaderResult = {

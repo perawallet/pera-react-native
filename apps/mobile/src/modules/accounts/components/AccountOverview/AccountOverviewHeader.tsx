@@ -24,7 +24,7 @@ import { ButtonPanel } from '../ButtonPanel'
 import { useStyles } from './styles'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
@@ -185,6 +185,7 @@ export const AccountOverviewHeader = ({
         selectedPoint,
         portfolioAlgoValue,
         isPending,
+        isBalanceComplete,
         account,
         period,
         chartVisible,

@@ -34,7 +34,7 @@ export const ViewContactScreen = () => {
                 <PWTouchableIcon
                     name='share'
                     variant='primary'
-                    onPress={handleShare}
+                    onPress={() => void handleShare()}
                 />
                 <PWTouchableIcon
                     name='edit-pen'

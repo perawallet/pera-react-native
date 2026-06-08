@@ -10,8 +10,19 @@
  limitations under the License
  */
 
-import { useCallback, useContext, useEffect, useState } from 'react'
-import { Keyboard, type LayoutChangeEvent } from 'react-native'
+import {
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+    type ReactNode,
+} from 'react'
+import {
+    Keyboard,
+    type LayoutChangeEvent,
+    type StyleProp,
+    type ViewStyle,
+} from 'react-native'
 import {
     KeyboardAwareScrollView,
     KeyboardAvoidingView,
@@ -26,9 +37,6 @@ import { PWView } from '../PWView'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { usePWScreenInsets } from './usePWScreenInsets'
 import { useStyles, type HorizontalPaddingMode } from './styles'
-
-import type { ReactNode } from 'react'
-import type { StyleProp, ViewStyle } from 'react-native'
 
 export type PWScreenProps = {
     /** Sticky top zone, above the body. Most screens leave this to the

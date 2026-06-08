@@ -11,7 +11,11 @@
  */
 
 import type { MessagesStackParamList } from '@modules/messages/routes'
-import { RouteProp, useFocusEffect, useRoute } from '@react-navigation/native'
+import {
+    type RouteProp,
+    useFocusEffect,
+    useRoute,
+} from '@react-navigation/native'
 import { useCallback, useMemo, useState } from 'react'
 import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useBottomSheet } from '@modules/bottom-sheet'

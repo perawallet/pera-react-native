@@ -188,7 +188,7 @@ export const PendingSignaturesContent = () => {
                             <PWButton
                                 variant='secondary'
                                 title={t('multisig.cancel_transaction.button')}
-                                onPress={handleCancel}
+                                onPress={() => void handleCancel()}
                                 isDisabled={isCancelling}
                                 isLoading={isCancelling}
                                 style={styles.actionButton}

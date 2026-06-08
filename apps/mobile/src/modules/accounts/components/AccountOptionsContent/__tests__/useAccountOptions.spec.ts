@@ -13,7 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountOptions } from '../useAccountOptions'
-import { AccountTypes, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
@@ -175,10 +178,12 @@ describe('useAccountOptions', () => {
                 case rekeyedAccount.address:
                 case rekeyedWatchAccount.address:
                 case hardwareAccount.address:
-                case multisigAccount.address:
+                case multisigAccount.address: {
                     return true
-                default:
+                }
+                default: {
                     return false
+                }
             }
         })
     })

@@ -54,7 +54,7 @@ export const useSettingsWalletConnectDetailsScreen = (
             return
         }
         setIsLoading(true)
-        disconnect(session.clientId, true)
+        void disconnect(session.clientId, true)
             .then(() => {
                 deleteModalState.close()
             })
