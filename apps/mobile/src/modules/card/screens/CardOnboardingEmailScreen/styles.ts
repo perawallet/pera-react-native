@@ -28,12 +28,11 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGrayLighter,
     },
     // Always-rendered error line (RNElements collapses it otherwise) with a
-    // constant height so showing/clearing the message never shifts the country
-    // field. minHeight === lineHeight keeps the empty and filled states equal.
+    // constant minHeight so showing/clearing the message never shifts the
+    // country field (the one-line message fits within minHeight either way).
     errorMessage: {
         marginTop: theme.spacing.xs,
         marginBottom: 0,
         minHeight: theme.spacing.lg,
-        lineHeight: theme.spacing.lg,
     },
 }))
