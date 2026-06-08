@@ -21,14 +21,18 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
 
-// Mock DB layer
+// Mock DB layer. The hook now reads enriched, pre-joined holdings (asset
+// metadata + USD price per row) via getAccountHoldingsPage, and ALGO is itself
+// a holding row (base units / microalgos, 6 decimals) — no separate IN-list
+// metadata/price queries and no client-side ALGO append.
 const mockGetAccountBalance = vi.fn()
-const mockGetAccountHoldings = vi.fn()
+const mockGetAccountHoldingsPage = vi.fn()
 const mockFetchAndPersistAccount = vi.fn()
 
 vi.mock('../../db', () => ({
     getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
-    getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
+    getAccountHoldingsPage: (...args: unknown[]) =>
+        mockGetAccountHoldingsPage(...args),
 }))
 
 vi.mock('../../sync/account-syncer', () => ({
@@ -54,36 +58,43 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
-const mockUsdToPreferred = vi.fn((amount: Decimal) => amount)
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({
-        usdToPreferred: mockUsdToPreferred,
-    })),
-}))
-
-const mockAssets = new Map()
-const mockAssetPrices = new Map()
-
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetsQuery: vi.fn(() => ({
-        data: mockAssets,
-        isPending: false,
-    })),
-    useAssetPricesQuery: vi.fn(() => ({
-        data: mockAssetPrices,
-        isPending: false,
-    })),
     ALGO_ASSET_ID: '0',
-    ALGO_ASSET: { id: '0', decimals: 6 },
+    ALGO_ASSET: { assetId: '0', decimals: 6 },
 }))
+
+// Helpers to build enriched holding rows as getAccountHoldingsPage returns them.
+type Row = {
+    assetId: string
+    amount: Decimal
+    asset: { assetId: string; decimals: number; name?: string } | null
+    usdPrice: Decimal | null
+    isFavorited: boolean
+}
+const algoRow = (microalgos: number, usd: number | null): Row => ({
+    assetId: '0',
+    amount: new Decimal(microalgos),
+    asset: { assetId: '0', decimals: 6, name: 'Algo' },
+    usdPrice: usd === null ? null : new Decimal(usd),
+    isFavorited: false,
+})
+const asaRow = (
+    assetId: string,
+    baseAmount: number,
+    decimals: number | null,
+    usd: number | null,
+    name?: string,
+): Row => ({
+    assetId,
+    amount: new Decimal(baseAmount),
+    asset: decimals === null ? null : { assetId, decimals, name },
+    usdPrice: usd === null ? null : new Decimal(usd),
+    isFavorited: false,
+})
 
 const createWrapper = () => {
     const queryClient = new QueryClient({
-        defaultOptions: {
-            queries: {
-                retry: false,
-            },
-        },
+        defaultOptions: { queries: { retry: false } },
     })
     return ({ children }: { children: React.ReactNode }) =>
         React.createElement(
@@ -93,14 +104,19 @@ const createWrapper = () => {
         )
 }
 
+const account: WalletAccount = {
+    address: 'ADDR1',
+    name: 'Account 1',
+    id: '1',
+    type: 'algo25',
+    canSign: true,
+} as WalletAccount
+
 describe('useAccountBalances', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUsdToPreferred.mockImplementation((amount: Decimal) => amount)
-        mockAssets.clear()
-        mockAssetPrices.clear()
-        mockGetAccountBalance.mockReturnValue(undefined)
-        mockGetAccountHoldings.mockReturnValue([])
+        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+        mockGetAccountHoldingsPage.mockResolvedValue([])
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
 
@@ -111,82 +127,28 @@ describe('useAccountBalances', () => {
 
         expect(result.current.accountBalances.size).toBe(0)
         expect(result.current.isPending).toBe(false)
-        expect(result.current.isFetched).toBe(false)
-        expect(result.current.isRefetching).toBe(false)
-        expect(result.current.isError).toBe(false)
     })
 
     it('reads balances from DB and aggregates correctly', async () => {
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        // Mock DB reads
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(1), // 1 ALGO (whole units)
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([
-            { assetId: '123', amount: new Decimal(100) },
-        ])
+        mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
-            {
-                wrapper: createWrapper(),
-            },
+            { wrapper: createWrapper() },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         const accountData = result.current.accountBalances.get('ADDR1')
-        expect(accountData).toBeDefined()
-        // With empty asset prices mock, algoValue includes the ALGO balance
         expect(accountData?.algoValue).toEqual(new Decimal(1))
-
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
     })
 
     it('calculates asset balances with prices correctly', async () => {
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        // Setup asset metadata and prices
-        mockAssets.set('456', { id: '456', decimals: 2, name: 'Test Token' })
-        mockAssets.set('789', {
-            id: '789',
-            decimals: 6,
-            name: 'Another Token',
-        })
-        mockAssetPrices.set('0', { usdPrice: new Decimal(2) }) // ALGO at $2
-        mockAssetPrices.set('456', { usdPrice: new Decimal(10) }) // Token at $10
-        mockAssetPrices.set('789', { usdPrice: new Decimal(0.5) }) // Token at $0.50
-
-        // Mock DB reads
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(5), // 5 ALGO (whole units)
-            totalAssetsOptedIn: 2,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([
-            { assetId: '456', amount: new Decimal(1000) }, // 10.00 tokens (decimals: 2)
-            { assetId: '789', amount: new Decimal(2000000) }, // 2.0 tokens (decimals: 6)
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(5_000_000, 2), // 5 ALGO @ $2
+            asaRow('456', 1000, 2, 10, 'Test'), // 10 units @ $10 → 50 ALGO
+            asaRow('789', 2_000_000, 6, 0.5, 'Another'), // 2 units @ $0.5 → 0.5 ALGO
         ])
 
         const { result } = renderHook(
@@ -197,50 +159,22 @@ describe('useAccountBalances', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         const accountData = result.current.accountBalances.get('ADDR1')
-        expect(accountData).toBeDefined()
+        expect(
+            accountData?.assetBalances.find(b => b.assetId === '456')?.amount,
+        ).toEqual(new Decimal(10))
+        expect(
+            accountData?.assetBalances.find(b => b.assetId === '789')?.amount,
+        ).toEqual(new Decimal(2))
+        expect(
+            accountData?.assetBalances.find(b => b.assetId === '0')?.amount,
+        ).toEqual(new Decimal(5))
 
-        // Check that both asset balances were calculated
-        const asset456 = accountData?.assetBalances.find(
-            b => b.assetId === '456',
-        )
-        expect(asset456).toBeDefined()
-        expect(asset456?.amount).toEqual(new Decimal(10)) // 1000 / 10^2
-
-        const asset789 = accountData?.assetBalances.find(
-            b => b.assetId === '789',
-        )
-        expect(asset789).toBeDefined()
-        expect(asset789?.amount).toEqual(new Decimal(2)) // 2000000 / 10^6
-
-        // Check ALGO balance was added
-        const algoBalance = accountData?.assetBalances.find(
-            b => b.assetId === '0',
-        )
-        expect(algoBalance).toBeDefined()
-        expect(algoBalance?.amount).toEqual(new Decimal(5)) // 5000000 / 10^6
-
-        // Portfolio totals: 50 (asset456) + 0.5 (asset789) + 5 (ALGO) = 55.5 ALGO
+        // 50 (456) + 0.5 (789) + 5 (ALGO) = 55.5 ALGO
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(55.5))
     })
 
-    it('passes filters through to getAccountHoldings', async () => {
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(1),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([])
+    it('passes filters through to the holdings read', async () => {
+        mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const filters = {
             hideZeroBalance: true,
@@ -255,7 +189,7 @@ describe('useAccountBalances', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        expect(mockGetAccountHoldings).toHaveBeenCalledWith(
+        expect(mockGetAccountHoldingsPage).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
@@ -267,78 +201,33 @@ describe('useAccountBalances', () => {
     })
 
     it('refetches with a fresh DB read when filters change', async () => {
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(1),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([])
+        mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const { result, rerender } = renderHook(
             ({ hideNfts }: { hideNfts: boolean }) =>
                 useAccountBalancesQuery([account], true, { hideNfts }),
-            {
-                wrapper: createWrapper(),
-                initialProps: { hideNfts: false },
-            },
+            { wrapper: createWrapper(), initialProps: { hideNfts: false } },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        const initialCalls = mockGetAccountHoldings.mock.calls.length
-        expect(initialCalls).toBeGreaterThan(0)
+        const initialCalls = mockGetAccountHoldingsPage.mock.calls.length
 
         rerender({ hideNfts: true })
 
         await waitFor(() =>
-            expect(mockGetAccountHoldings.mock.calls.length).toBeGreaterThan(
-                initialCalls,
-            ),
+            expect(
+                mockGetAccountHoldingsPage.mock.calls.length,
+            ).toBeGreaterThan(initialCalls),
         )
-
-        const lastCallArgs = mockGetAccountHoldings.mock.calls.at(-1)?.[0]
-        expect(lastCallArgs).toEqual(
+        expect(mockGetAccountHoldingsPage.mock.calls.at(-1)?.[0]).toEqual(
             expect.objectContaining({ hideNfts: true }),
         )
     })
 
     it('handles assets with zero price correctly', async () => {
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        mockAssets.set('999', {
-            id: '999',
-            decimals: 0,
-            name: 'No Price Token',
-        })
-        mockAssetPrices.set('0', { usdPrice: new Decimal(1) })
-
-        // Mock DB reads
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(1),
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([
-            { assetId: '999', amount: new Decimal(100) },
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 1),
+            asaRow('999', 100, 0, null, 'No Price'),
         ])
 
         const { result } = renderHook(
@@ -348,43 +237,19 @@ describe('useAccountBalances', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        const accountData = result.current.accountBalances.get('ADDR1')
-        const asset999 = accountData?.assetBalances.find(
-            b => b.assetId === '999',
-        )
-
-        expect(asset999).toBeDefined()
+        const asset999 = result.current.accountBalances
+            .get('ADDR1')
+            ?.assetBalances.find(b => b.assetId === '999')
         expect(asset999?.amount).toEqual(new Decimal(100)) // decimals: 0
-        expect(asset999?.algoValue).toEqual(new Decimal(0)) // No price means 0 value
+        expect(asset999?.algoValue).toEqual(new Decimal(0)) // no price → 0
     })
 
     it('emits zero amount and zero algoValue when asset metadata is not yet loaded', async () => {
-        // Regression: if we let `decimals` default to 0 when metadata hasn't
-        // loaded, the holding's base-unit amount leaks into algoValue and
-        // dominates the value-desc sort order. The row should instead carry
-        // zeroes until the metadata query resolves.
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        // No entry in mockAssets for '456' — simulates metadata still loading.
-        mockAssetPrices.set('0', { usdPrice: new Decimal(2) })
-        mockAssetPrices.set('456', { usdPrice: new Decimal(10) })
-
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(1),
-            totalAssetsOptedIn: 1,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([
-            { assetId: '456', amount: new Decimal(1_000_000) },
+        // A holding whose metadata hasn't synced (asset: null) must carry zeros
+        // so its base-unit amount can't leak into the value-desc sort.
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 2),
+            asaRow('456', 1_000_000, null, 10), // asset null → unsynced
         ])
 
         const { result } = renderHook(
@@ -394,11 +259,9 @@ describe('useAccountBalances', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        const accountData = result.current.accountBalances.get('ADDR1')
-        const unloaded = accountData?.assetBalances.find(
-            b => b.assetId === '456',
-        )
-        expect(unloaded).toBeDefined()
+        const unloaded = result.current.accountBalances
+            .get('ADDR1')
+            ?.assetBalances.find(b => b.assetId === '456')
         expect(unloaded?.amount).toEqual(new Decimal(0))
         expect(unloaded?.algoValue).toEqual(new Decimal(0))
         expect(unloaded?.asset).toBeUndefined()
@@ -408,29 +271,12 @@ describe('useAccountBalances', () => {
     })
 
     it('falls back to fetchAndPersistAccount when the balance row is missing', async () => {
-        const account: WalletAccount = {
-            address: 'NEW_ADDR',
-            name: 'Freshly imported',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        // First read: no row in DB. Second read (after fallback sync): row present.
-        mockGetAccountBalance
-            .mockReturnValueOnce(undefined)
-            .mockReturnValueOnce({
-                accountAddress: 'NEW_ADDR',
-                algoBalance: new Decimal('1.656'),
-                totalAssetsOptedIn: 0,
-                totalCreatedAssets: 0,
-                totalAppsOptedIn: 0,
-                authAddress: null,
-            })
-        mockFetchAndPersistAccount.mockResolvedValueOnce(undefined)
+        const newAccount = { ...account, address: 'NEW_ADDR' } as WalletAccount
+        mockGetAccountBalance.mockReturnValueOnce(undefined)
+        mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_656_000, 1)])
 
         const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
+            () => useAccountBalancesQuery([newAccount]),
             { wrapper: createWrapper() },
         )
 
@@ -440,28 +286,14 @@ describe('useAccountBalances', () => {
             'NEW_ADDR',
             'mainnet',
         )
-        const accountData = result.current.accountBalances.get('NEW_ADDR')
-        const algo = accountData?.assetBalances.find(b => b.assetId === '0')
+        const algo = result.current.accountBalances
+            .get('NEW_ADDR')
+            ?.assetBalances.find(b => b.assetId === '0')
         expect(algo?.amount).toEqual(new Decimal('1.656'))
     })
 
-    it('does not call fetchAndPersistAccount when the balance row is already present', async () => {
-        const account: WalletAccount = {
-            address: 'EXISTING',
-            name: 'Existing',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'EXISTING',
-            algoBalance: new Decimal(0),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
+    it('does not call fetchAndPersistAccount when the balance row is present', async () => {
+        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -469,7 +301,6 @@ describe('useAccountBalances', () => {
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-
         expect(mockFetchAndPersistAccount).not.toHaveBeenCalled()
     })
 })
@@ -477,38 +308,15 @@ describe('useAccountBalances', () => {
 describe('useAccountAssetBalanceQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUsdToPreferred.mockImplementation((amount: Decimal) => amount)
-        mockAssets.clear()
-        mockAssetPrices.clear()
-        mockGetAccountBalance.mockReturnValue(undefined)
-        mockGetAccountHoldings.mockReturnValue([])
+        mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
+        mockGetAccountHoldingsPage.mockResolvedValue([])
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
 
     it('returns specific asset balance for an account', async () => {
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        mockAssets.set('123', { id: '123', decimals: 4, name: 'Target Asset' })
-        mockAssetPrices.set('0', { usdPrice: new Decimal(1) })
-        mockAssetPrices.set('123', { usdPrice: new Decimal(5) })
-
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(1),
-            totalAssetsOptedIn: 2,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([
-            { assetId: '123', amount: new Decimal(50000) }, // 5.0000 tokens (decimals: 4)
-            { assetId: '456', amount: new Decimal(10000) }, // Different asset
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 1),
+            asaRow('123', 50000, 4, 5, 'Target Asset'), // 5.0000 tokens
         ])
 
         const { result } = renderHook(
@@ -518,33 +326,12 @@ describe('useAccountAssetBalanceQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        expect(result.current.data).toBeDefined()
-        if (result.current.data) {
-            expect(result.current.data.assetId).toBe('123')
-            expect(result.current.data.amount).toEqual(new Decimal(5)) // 50000 / 10^4
-        }
+        expect(result.current.data?.assetId).toBe('123')
+        expect(result.current.data?.amount).toEqual(new Decimal(5))
     })
 
     it('returns null when asset not found in holdings', async () => {
-        const account: WalletAccount = {
-            address: 'ADDR1',
-            name: 'Account 1',
-            id: '1',
-            type: 'algo25',
-            canSign: true,
-        }
-
-        mockAssetPrices.set('0', { usdPrice: new Decimal(1) })
-
-        mockGetAccountBalance.mockReturnValue({
-            accountAddress: 'ADDR1',
-            algoBalance: new Decimal(1),
-            totalAssetsOptedIn: 0,
-            totalCreatedAssets: 0,
-            totalAppsOptedIn: 0,
-            authAddress: null,
-        })
-        mockGetAccountHoldings.mockReturnValue([])
+        mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
 
         const { result } = renderHook(
             () => useAccountAssetBalanceQuery(account, '123'),
@@ -552,7 +339,6 @@ describe('useAccountAssetBalanceQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-
         expect(result.current.data).toBeNull()
     })
 

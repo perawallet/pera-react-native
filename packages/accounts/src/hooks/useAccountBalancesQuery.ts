@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
     logger,
+    pow10,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -24,24 +25,19 @@ import type {
     AssetWithAccountBalance,
     WalletAccount,
 } from '../models'
-import {
-    ALGO_ASSET,
-    ALGO_ASSET_ID,
-    useAssetPricesQuery,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
     getAccountBalance,
-    getAccountHoldings,
+    getAccountHoldingsPage,
     type AccountHoldingsFilters,
+    type AccountHoldingsPageRow,
 } from '../db'
 import { fetchAndPersistAccount } from '../sync/account-syncer'
 
 type AccountDbSnapshot = {
-    algoBalance: Decimal
-    holdings: Array<{ assetId: string; amount: Decimal }>
+    holdings: AccountHoldingsPageRow[]
 }
 
 async function readAccountFromDb(
@@ -52,17 +48,13 @@ async function readAccountFromDb(
     // If this account has no balance row yet the background sync either
     // hasn't run or silently failed. Pull directly from the chain before
     // reading so the UI recovers without waiting for the next poll cycle.
-    let balance = await getAccountBalance({
+    const balance = await getAccountBalance({
         accountAddress: address,
         network,
     })
     if (!balance) {
         try {
             await fetchAndPersistAccount(address, network as Network)
-            balance = await getAccountBalance({
-                accountAddress: address,
-                network,
-            })
         } catch (error) {
             logger.warn('On-demand account fetch failed', {
                 address,
@@ -75,16 +67,16 @@ async function readAccountFromDb(
         }
     }
 
-    const holdings = await getAccountHoldings({
+    // Single join read: each holding carries its asset metadata + USD price, so
+    // there's no separate `WHERE assetId IN (…)` metadata/price read. ALGO is a
+    // holding row too (base units, 6 decimals), so it needs no special append.
+    const holdings = await getAccountHoldingsPage({
         accountAddress: address,
         network,
         ...filters,
     })
 
-    return {
-        algoBalance: balance?.algoBalance ?? new Decimal(0),
-        holdings,
-    }
+    return { holdings }
 }
 
 export const useAccountBalancesQuery = (
@@ -131,21 +123,6 @@ export const useAccountBalancesQuery = (
         })),
     })
 
-    // Always include ALGO in the asset and prices queries — holdings never
-    // contain ALGO, but every account implicitly holds it. The asset query
-    // gives us its DB-backed peraMetadata (so toggles like isFavorited reach
-    // the row); the prices query gives us its USD price for portfolio totals.
-    const assetIDs = [
-        ALGO_ASSET_ID,
-        ...results.flatMap(r => r.data?.holdings?.map(h => h.assetId) ?? []),
-    ]
-    const { data: assets } = useAssetsQuery(assetIDs)
-    const { data: assetPrices } = useAssetPricesQuery(assetIDs)
-    const usdAlgoPrice = useMemo(
-        () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0),
-        [assetPrices],
-    )
-
     const {
         accountBalances,
         portfolioAlgoValue,
@@ -166,53 +143,53 @@ export const useAccountBalancesQuery = (
         }
 
         const accountBalanceList = results.map(r => {
+            const holdings = r.data?.holdings ?? []
+            // ALGO is itself a holding row now; its joined price is the ALGO/USD
+            // rate used to express every holding's value in ALGO terms.
+            const usdAlgoPrice =
+                holdings.find(h => h.assetId === ALGO_ASSET_ID)?.usdPrice ??
+                new Decimal(0)
+
             let algoValue = new Decimal(0)
-
-            const assetBalances: AssetWithAccountBalance[] = []
-            r.data?.holdings?.forEach(holding => {
-                const asset = assets.get(holding.assetId)
-                // Without asset metadata we can't scale base units to display
-                // units, so emit zeros until the metadata query resolves —
-                // otherwise the sort-by-value key is inflated by 10^decimals
-                // and dominates ordering.
-                if (!asset) {
-                    assetBalances.push({
+            const assetBalances: AssetWithAccountBalance[] = holdings.map(
+                holding => {
+                    const isAlgo = holding.assetId === ALGO_ASSET_ID
+                    // ALGO metadata is seeded, but fall back defensively so the
+                    // native balance always renders even mid-sync.
+                    const asset = holding.asset ?? (isAlgo ? ALGO_ASSET : null)
+                    // Without asset metadata we can't scale base units to
+                    // display units, so emit zeros until the metadata syncs —
+                    // otherwise the sort-by-value key is inflated by 10^decimals.
+                    if (!asset) {
+                        return {
+                            assetId: holding.assetId,
+                            asset: undefined,
+                            amount: new Decimal(0),
+                            algoValue: new Decimal(0),
+                            usdPrice: holding.usdPrice ?? undefined,
+                        }
+                    }
+                    const usdAssetPrice = holding.usdPrice ?? new Decimal(0)
+                    const assetAmount = holding.amount.div(
+                        pow10(asset.decimals),
+                    )
+                    // ALGO's value in ALGO terms is just its amount (1:1),
+                    // independent of price. ASAs convert via the ALGO/USD rate.
+                    const algoAssetValue = isAlgo
+                        ? assetAmount
+                        : usdAlgoPrice.isZero()
+                          ? new Decimal(0)
+                          : assetAmount.times(usdAssetPrice).div(usdAlgoPrice)
+                    algoValue = algoValue.plus(algoAssetValue)
+                    return {
                         assetId: holding.assetId,
-                        asset: undefined,
-                        amount: new Decimal(0),
-                        algoValue: new Decimal(0),
-                    })
-                    return
-                }
-                const usdAssetPrice =
-                    assetPrices?.get(holding.assetId)?.usdPrice ??
-                    new Decimal(0)
-                const assetAmount = holding.amount.div(
-                    new Decimal(10).pow(asset.decimals),
-                )
-                const usdAssetValue = assetAmount.times(usdAssetPrice)
-                const algoAssetValue = usdAlgoPrice.isZero()
-                    ? new Decimal(0)
-                    : usdAssetValue.div(usdAlgoPrice)
-                algoValue = algoValue.plus(algoAssetValue)
-                assetBalances.push({
-                    assetId: holding.assetId,
-                    asset,
-                    amount: assetAmount,
-                    algoValue: algoAssetValue,
-                })
-            })
-
-            //Now add algo into the mix
-            const algoAmount = r.data?.algoBalance ?? new Decimal(0)
-            algoValue = algoValue.plus(algoAmount)
-
-            assetBalances.push({
-                assetId: ALGO_ASSET_ID,
-                asset: assets.get(ALGO_ASSET_ID) ?? ALGO_ASSET,
-                amount: algoAmount,
-                algoValue: algoAmount,
-            })
+                        asset,
+                        amount: assetAmount,
+                        algoValue: algoAssetValue,
+                        usdPrice: usdAssetPrice,
+                    }
+                },
+            )
 
             return {
                 assetBalances,
@@ -246,7 +223,7 @@ export const useAccountBalancesQuery = (
             isRefetching,
             isError,
         }
-    }, [results, accounts, hasAccounts, assets, assetPrices, usdAlgoPrice])
+    }, [results, accounts, hasAccounts])
 
     return {
         accountBalances,

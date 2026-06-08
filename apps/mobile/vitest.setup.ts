@@ -2660,8 +2660,13 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
     return {
         useCurrency: vi.fn(() => ({
             preferredCurrency: 'USD',
+            fallbackCurrency: 'USD',
             portfolioPreferredValue: '0',
             usdToPreferred: (usd: InstanceType<typeof Decimal>) => usd,
+        })),
+        usePreferredCurrencyPriceQuery: vi.fn(() => ({
+            data: { usdPrice: new Decimal(1) },
+            isPending: false,
         })),
     }
 })

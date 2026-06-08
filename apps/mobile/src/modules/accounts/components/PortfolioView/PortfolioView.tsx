@@ -86,6 +86,7 @@ export const PortfolioView = ({
     const { data: historyData } = useAccountBalancesHistoryQuery(
         addresses,
         period,
+        isChartShown,
     )
 
     const historyDataPoints = useMemo(

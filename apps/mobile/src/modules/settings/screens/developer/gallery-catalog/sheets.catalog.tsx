@@ -12,8 +12,6 @@
 
 import React from 'react'
 
-import { Decimal } from 'decimal.js'
-
 import {
     MOCK_ADDRESS,
     MOCK_ADDRESS_2,
@@ -333,11 +331,7 @@ export const getSheetSections = (): GallerySection[] => [
                         contents: (
                             <GallerySheetBoundary>
                                 <OptOutConfirmationContent
-                                    accountBalance={{
-                                        assetId: MOCK_ASSET_ID,
-                                        amount: new Decimal(100),
-                                        algoValue: new Decimal(0),
-                                    }}
+                                    assetId={MOCK_ASSET_ID}
                                     accountAddress={A}
                                 />
                             </GallerySheetBoundary>

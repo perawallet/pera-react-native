@@ -51,6 +51,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
     },
     manageButton: {
+        paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
         flexShrink: 0,
     },
@@ -58,8 +59,5 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
         flexShrink: 0,
-    },
-    loading: {
-        justifyContent: 'flex-start',
     },
 }))

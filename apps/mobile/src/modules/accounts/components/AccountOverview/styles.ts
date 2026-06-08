@@ -31,6 +31,9 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'space-between',
             minWidth: 0,
         },
+        balanceSpinner: {
+            marginLeft: theme.spacing.sm,
+        },
         secondaryValueBar: {
             flexDirection: 'row',
             alignItems: 'center',

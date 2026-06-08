@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-export { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
-export {
-    upsertAssets,
-    upsertNodeAssets,
-    upsertPeraAssets,
-    peraAssetFromColumns,
-    getAssetsByIds,
-    getAssetById,
-    getAssetPeraMetadata,
-    updateAssetPeraMetadata,
-    upsertAssetPrices,
-    getAssetPricesByIds,
-    getStaleOrMissingAssetIds,
-    type AssetPriceRow,
-} from './repository'
-export { seedAlgoAsset } from './seed'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    amountContainer: {
+        alignItems: 'flex-end',
+    },
+    primaryAmount: {
+        textAlign: 'right',
+    },
+    secondaryAmount: {
+        textAlign: 'right',
+        color: theme.colors.textGray,
+        alignSelf: 'flex-end',
+    },
+}))

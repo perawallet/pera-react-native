@@ -32,24 +32,16 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountBalancesQuery: vi.fn(() => ({
+        useAccountSummaryQuery: vi.fn(() => ({
+            algoAmount: new Decimal('100'),
             portfolioAlgoValue: new Decimal('100'),
+            portfolioUsdValue: new Decimal('200'),
+            holdingsCount: 3,
+            isComplete: true,
             isPending: false,
-            accountBalances: new Map(),
-            isFetched: true,
-            isRefetching: false,
             isError: false,
         })),
-        useAccountBalancesHistoryQuery: vi.fn(() => ({
-            data: undefined,
-            isPending: false,
-        })),
-        usePortfolioTotals: vi.fn(() => ({
-            portfolioUsdValue: new Decimal('200'),
-            accountUsdValues: new Map(),
-            isPending: false,
-        })),
-        useAllAccounts: vi.fn(() => []),
+        useAllAccounts: vi.fn(() => [{ address: 'a' }]),
         useCanSignWith: vi.fn(() => true),
     }
 })
@@ -142,17 +134,21 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.hasBalance).toBe(true)
     })
 
-    it('determines hasBalance correctly when balance is zero', async () => {
-        const { useAccountBalancesQuery } =
+    it('hasBalance is false for a lone account with 0 ALGO (shows "get started")', async () => {
+        const { useAccountSummaryQuery, useAllAccounts } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useAccountBalancesQuery).mockReturnValue({
+        vi.mocked(useAccountSummaryQuery).mockReturnValue({
+            algoAmount: new Decimal('0'),
             portfolioAlgoValue: new Decimal('0'),
+            portfolioUsdValue: new Decimal('0'),
+            holdingsCount: 1,
+            isComplete: true,
             isPending: false,
-            accountBalances: new Map(),
-            isFetched: true,
-            isRefetching: false,
             isError: false,
         })
+        vi.mocked(useAllAccounts).mockReturnValue([
+            { address: 'a' },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),
@@ -160,6 +156,31 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.hasBalance).toBe(false)
+    })
+
+    it('hasBalance is true for a 0-ALGO account in a multi-account wallet', async () => {
+        const { useAccountSummaryQuery, useAllAccounts } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(useAccountSummaryQuery).mockReturnValue({
+            algoAmount: new Decimal('0'),
+            portfolioAlgoValue: new Decimal('0'),
+            portfolioUsdValue: new Decimal('0'),
+            holdingsCount: 1,
+            isComplete: true,
+            isPending: false,
+            isError: false,
+        })
+        vi.mocked(useAllAccounts).mockReturnValue([
+            { address: 'a' },
+            { address: 'b' },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasBalance).toBe(true)
     })
 
     it('toggles privacy mode when togglePrivacyMode is called', async () => {

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { ActivityIndicator } from 'react-native'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     DEFAULT_PRECISION,
@@ -54,6 +55,7 @@ export const AccountOverviewHeader = ({
         setPeriod,
         selectedPoint,
         hasBalance,
+        isBalanceComplete,
         canSign,
         togglePrivacyMode,
         handleChartSelectionChange,
@@ -86,6 +88,17 @@ export const AccountOverviewHeader = ({
                                 style={styles.primaryCurrency}
                                 isLoading={isPending}
                             />
+                            {/* The total is still settling while held assets
+                                enrich — show a spinner rather than implying the
+                                shown balance is final. */}
+                            {!isPending &&
+                                !selectedPoint &&
+                                !isBalanceComplete && (
+                                    <ActivityIndicator
+                                        size='small'
+                                        style={styles.balanceSpinner}
+                                    />
+                                )}
                         </PWView>
                         <PWView style={styles.secondaryValueBar}>
                             <PreferredCurrencyDisplay
@@ -107,6 +120,7 @@ export const AccountOverviewHeader = ({
                                 <WealthTrend
                                     account={account}
                                     period={period}
+                                    enabled={chartVisible}
                                 />
                             )}
                             {selectedPoint && (
@@ -126,6 +140,7 @@ export const AccountOverviewHeader = ({
                                 account={account}
                                 period={period}
                                 onSelectionChanged={handleChartSelectionChange}
+                                enabled={chartVisible}
                             />
                             <ChartPeriodSelection
                                 value={period}

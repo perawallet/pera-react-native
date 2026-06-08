@@ -27,12 +27,15 @@ export type WealthChartProps = {
     account?: WalletAccount
     period: HistoryPeriod
     onSelectionChanged: (item: Nullable<AccountBalanceHistoryItem>) => void
+    /** Gate the (slow) history fetch on chart visibility. */
+    enabled?: boolean
 }
 
 export const WealthChart = ({
     onSelectionChanged,
     account,
     period,
+    enabled = true,
 }: WealthChartProps) => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
@@ -49,6 +52,7 @@ export const WealthChart = ({
     const { data, isPending } = useAccountBalancesHistoryQuery(
         addresses,
         period,
+        enabled,
     )
 
     const dataPoints = useMemo(

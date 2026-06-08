@@ -14,9 +14,9 @@ import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
-    useAccountBalancesQuery,
+    useAccountSummaryQuery,
+    useAllAccounts,
     useCanSignWith,
-    usePortfolioTotals,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -28,6 +28,8 @@ import { useAccountOverviewModal } from './AccountOverviewModalContext'
 export type UseAccountOverviewHeaderResult = {
     portfolioAlgoValue: Decimal
     portfolioPreferredValue: Decimal
+    /** False while held assets are still enriching — the total is still settling. */
+    isBalanceComplete: boolean
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
@@ -45,9 +47,19 @@ export const useAccountOverviewHeader = (
 ): UseAccountOverviewHeaderResult => {
     const { usdToPreferred } = useCurrency()
     const canSign = useCanSignWith(account)
-    const { portfolioAlgoValue, accountBalances, isPending } =
-        useAccountBalancesQuery(account ? [account] : [])
-    const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
+    // Cheap SQL-aggregate total — no full-holdings materialization for the header.
+    const {
+        algoAmount,
+        portfolioAlgoValue,
+        portfolioUsdValue,
+        isComplete,
+        isPending,
+    } = useAccountSummaryQuery(account?.address)
+    const allAccounts = useAllAccounts()
+    // Show the "get started" empty state only for a lone account with no ALGO
+    // (a brand-new wallet). Any funded account, or any account in a multi-
+    // account wallet, shows its balance (even 0) — gated on data, not value.
+    const isOnlyEmptyAccount = allAccounts.length <= 1 && algoAmount.isZero()
     const portfolioPreferredValue = useMemo(
         () => usdToPreferred(portfolioUsdValue),
         [usdToPreferred, portfolioUsdValue],
@@ -74,11 +86,15 @@ export const useAccountOverviewHeader = (
     return {
         portfolioAlgoValue,
         portfolioPreferredValue,
+        isBalanceComplete: isComplete,
         isPending,
         period,
         setPeriod,
         selectedPoint,
-        hasBalance: portfolioAlgoValue.gt(0),
+        // Drives the balance-vs-"get started" layout. True for any funded
+        // account and for every account in a multi-account wallet; false only
+        // for a lone, empty (0-ALGO) account.
+        hasBalance: !isOnlyEmptyAccount,
         canSign,
         togglePrivacyMode,
         handleChartSelectionChange,

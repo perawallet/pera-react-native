@@ -10,25 +10,22 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    useAccountBalancesQuery,
+    useAccountAssetsQuery,
     useCanSignWith,
-    useSortedAssetBalances,
+    assetFromHoldingLiteRow,
     WalletAccount,
-    AssetWithAccountBalance,
+    type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useAssetsQuery,
-    useAssetPricesQuery,
     useAssetPreferencesStore,
     isCollectible,
-    type AssetPrices,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
-import { useGlobalSearch } from '@perawallet/wallet-core-search'
+import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -44,9 +41,14 @@ import {
     type ManageAssetsAction,
 } from '../ManageAssetsContent'
 import { OptOutConfirmationContent } from './OptOutConfirmationContent'
+import {
+    useAssetListFiatConverter,
+    type AssetFiatConverter,
+} from './useAssetListFiat'
 
 type UseAccountAssetListResult = {
-    balances: AssetWithAccountBalance[]
+    holdings: AccountHoldingsLiteRow[]
+    convertFiat: AssetFiatConverter
     isPending: boolean
     isReadOnly: boolean
     hideZeroBalance: boolean
@@ -55,17 +57,16 @@ type UseAccountAssetListResult = {
     headerState: ModalState
     isOptingOut: boolean
     setSearchFilter: (value: string) => void
-    goToAssetScreen: (asset: AssetWithAccountBalance) => void
-    handleOptOut: (item: AssetWithAccountBalance) => void
+    goToAssetScreen: (item: AccountHoldingsLiteRow) => void
+    handleOptOut: (item: AccountHoldingsLiteRow) => void
     handleOpenAddAsset: () => void
     handleOpenManage: () => void
     getEmptyTitle: () => string
     getEmptyBody: () => string
     renderItemProps: {
         isReadOnly: boolean
-        assetPrices: AssetPrices
-        goToAssetScreen: (asset: AssetWithAccountBalance) => void
-        handleOptOut: (item: AssetWithAccountBalance) => void
+        goToAssetScreen: (item: AccountHoldingsLiteRow) => void
+        handleOptOut: (item: AccountHoldingsLiteRow) => void
     }
 }
 
@@ -80,15 +81,15 @@ export const useAccountAssetList = ({
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
     const headerState = useModalState(true)
     const { request: requestBottomSheet } = useBottomSheet()
-    const {
-        value: searchFilter,
-        setValue: setSearchFilter,
-        results: searchResults,
-        isLoading,
-    } = useGlobalSearch({
-        scopes: ['assets'],
-        debounceMs: SEARCH_DEBOUNCE_TIME_SHORT,
-    })
+
+    // Search is debounced locally and pushed into the DB query so pagination
+    // stays correct over the whole held set (rather than filtering a window).
+    const [searchFilter, setSearchFilter] = useState('')
+    const debouncedSearch = useDebouncedValue(
+        searchFilter,
+        SEARCH_DEBOUNCE_TIME_SHORT,
+    )
+
     const hideZeroBalance = useAssetPreferencesStore(
         state => state.hideZeroBalance,
     )
@@ -96,6 +97,7 @@ export const useAccountAssetList = ({
     const displayOptedInNfts = useAssetPreferencesStore(
         state => state.displayOptedInNfts,
     )
+    const assetSortMode = useAssetPreferencesStore(state => state.assetSortMode)
     const effectiveDisplayOptedInNfts = displayNfts && displayOptedInNfts
     const balanceFilters = useMemo(
         () => ({
@@ -105,56 +107,35 @@ export const useAccountAssetList = ({
         }),
         [hideZeroBalance, displayNfts, effectiveDisplayOptedInNfts],
     )
-    const { accountBalances, isPending } = useAccountBalancesQuery(
-        [account],
-        undefined,
-        balanceFilters,
-    )
-    const balanceData = useMemo(
-        () => accountBalances.get(account.address),
-        [accountBalances, account.address],
-    )
-    const assetIDs = useMemo(
-        () => balanceData?.assetBalances.map(b => b.assetId) ?? [],
-        [balanceData],
-    )
-    const { data: assets } = useAssetsQuery(assetIDs)
-    const { data: assetPrices } = useAssetPricesQuery(assetIDs)
+
+    // DB does the sort + filter + search in one read, returning lightweight
+    // rows; FlashList virtualizes rendering and the visible rows materialize
+    // their own metadata lazily (see AssetListItemView).
+    const { holdings, isPending } = useAccountAssetsQuery(account.address, {
+        filters: balanceFilters,
+        sortMode: assetSortMode,
+        search: debouncedSearch,
+    })
+
+    // Exchange rates read once here; the visible rows convert themselves. Keeps
+    // per-row render observer-free without precomputing all N holdings.
+    const convertFiat = useAssetListFiatConverter()
+
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const { sortedBalances, assetSortMode } = useSortedAssetBalances(
-        balanceData?.assetBalances ?? [],
-        assets,
-    )
-
     useEffect(() => {
         setSearchFilter('')
-    }, [account.address, setSearchFilter])
-
-    const matchingAssetIds = useMemo(
-        () => new Set(searchResults.assets.map(a => a.assetId)),
-        [searchResults.assets],
-    )
-
-    const balances = useMemo(() => {
-        if (!sortedBalances.length) {
-            return []
-        }
-        if (!searchFilter) {
-            return sortedBalances
-        }
-        return sortedBalances.filter(b => matchingAssetIds.has(b.assetId))
-    }, [sortedBalances, searchFilter, matchingAssetIds])
+    }, [account.address])
 
     const isReadOnly = !useCanSignWith(account)
 
     const goToAssetScreen = useCallback(
-        (item: AssetWithAccountBalance) => {
+        (item: AccountHoldingsLiteRow) => {
             headerState.open()
-            const assetInfo = assets?.get(item.assetId)
+            const assetInfo = assetFromHoldingLiteRow(item)
             if (assetInfo && isCollectible(assetInfo)) {
                 navigation.navigate('CollectibleDetails', {
                     assetId: item.assetId,
@@ -165,15 +146,15 @@ export const useAccountAssetList = ({
                 })
             }
         },
-        [headerState, navigation, assets],
+        [headerState, navigation],
     )
 
     const handleOptOut = useCallback(
-        async (item: AssetWithAccountBalance) => {
+        async (item: AccountHoldingsLiteRow) => {
             const result = await requestBottomSheet<'confirm'>({
                 contents: (
                     <OptOutConfirmationContent
-                        accountBalance={item}
+                        assetId={item.assetId}
                         accountAddress={account.address}
                     />
                 ),
@@ -185,7 +166,7 @@ export const useAccountAssetList = ({
             })
             if (result !== 'confirm') return
 
-            const asset = assets?.get(item.assetId)
+            const asset = assetFromHoldingLiteRow(item)
             try {
                 await optOut({
                     sender: account.address,
@@ -204,15 +185,7 @@ export const useAccountAssetList = ({
                 showError(err, t('asset_opt_out.error'))
             }
         },
-        [
-            requestBottomSheet,
-            assets,
-            account.address,
-            optOut,
-            showToast,
-            t,
-            showError,
-        ],
+        [requestBottomSheet, account.address, optOut, showToast, t, showError],
     )
 
     const handleOpenAddAsset = useCallback(() => {
@@ -279,16 +252,16 @@ export const useAccountAssetList = ({
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
-            assetPrices,
             goToAssetScreen,
             handleOptOut,
         }),
-        [isReadOnly, assetPrices, goToAssetScreen, handleOptOut],
+        [isReadOnly, goToAssetScreen, handleOptOut],
     )
 
     return {
-        balances,
-        isPending: isPending || isLoading,
+        holdings,
+        convertFiat,
+        isPending,
         isReadOnly,
         hideZeroBalance,
         assetSortMode,

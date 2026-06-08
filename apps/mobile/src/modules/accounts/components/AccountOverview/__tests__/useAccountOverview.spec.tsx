@@ -58,12 +58,13 @@ vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({ address: 'selected-address' })),
-    useAccountBalancesQuery: vi.fn(() => ({
+    useAccountSummaryQuery: vi.fn(() => ({
         isPending: mockBalancesPending.value,
     })),
     useAccountBalancesHistoryQuery: vi.fn(() => ({
         isPending: mockHistoryPending.value,
     })),
+    useEnsureAccountEnriched: vi.fn(),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -177,18 +178,15 @@ describe('useAccountOverview', () => {
         expect(onSwipeEnabledChange).toHaveBeenLastCalledWith(false)
     })
 
-    it('isLoading is true while balances or history are pending and stays false once both have completed', () => {
+    it('isLoading gates only on the balance summary (not the chart history) and is sticky', () => {
+        // The chart history is a separate, visibility-gated network query and
+        // must not hold the header in a skeleton.
         mockBalancesPending.value = true
-        mockHistoryPending.value = true
         const { result, rerender } = renderUseAccountOverview()
 
         expect(result.current.isLoading).toBe(true)
 
         mockBalancesPending.value = false
-        rerender()
-        expect(result.current.isLoading).toBe(true)
-
-        mockHistoryPending.value = false
         rerender()
         expect(result.current.isLoading).toBe(false)
 
