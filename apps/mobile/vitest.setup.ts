@@ -1824,6 +1824,16 @@ vi.mock('react-native-gesture-handler', () => {
         BaseButton: MockView,
         RectButton: MockView,
         BorderlessButton: MockView,
+        /* Pressable — wire onPress→onClick; drop the style fn / render-prop
+           children that the DOM can't take */
+        Pressable: ({ onPress, children, style: _style, ...props }: any) =>
+            React.createElement(
+                'div',
+                { onClick: onPress, ...props },
+                typeof children === 'function'
+                    ? children({ pressed: false })
+                    : children,
+            ),
         /* Other */
         FlatList: MockView,
         gestureHandlerRootHOC: vi.fn(),
