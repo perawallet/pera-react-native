@@ -122,7 +122,12 @@ describe('Flow: Card onboarding — email + country', () => {
     afterAll(() => server.close())
 
     it('Given a valid email and an eligible country, when Confirm is pressed, then the code is sent and the verification screen opens', async () => {
-        const sendSpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
+        const sendSpy = vi.fn(() =>
+            HttpResponse.json(
+                { contactVerificationId: 'mock-contact-id' },
+                { status: 200 },
+            ),
+        )
         server.use(
             http.get('*/v1/auth/settings', () =>
                 HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),

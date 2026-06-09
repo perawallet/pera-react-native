@@ -17,6 +17,7 @@ import {
     type CardTransportRequest,
     type CardTransportResponse,
 } from '@perawallet/wallet-core-card'
+import { MOCK_VALID_VERIFICATION_CODE } from '@modules/card/screens/CardOnboardingEmailVerifyScreen/useCardOnboardingEmailVerifyScreen'
 
 /**
  * Temporary dev-only Baanx mocks until sandbox credentials arrive. Returns
@@ -85,11 +86,28 @@ const REGISTRATION_SETTINGS = {
     usStates: [],
 }
 
-// Keyed by `${method} ${path}`. A `null` entry is a 200 with no body (the
-// register/* endpoints resolve to void).
-const MOCK_RESPONSES: Record<string, unknown> = {
-    'GET /v1/auth/settings': REGISTRATION_SETTINGS,
-    'POST /v1/auth/register/email/send': null,
+type MockResult = { status: number; data: unknown }
+// A handler inspects the request (e.g. to validate a code) and returns a status
+// + body, mirroring the real endpoint so swapping to the live API is seamless.
+type MockHandler = (req: CardTransportRequest<unknown>) => MockResult
+
+const ok = (data: unknown): MockResult => ({ status: 200, data })
+
+// Keyed by `${method} ${path}`. Handlers mirror the real Baanx responses:
+// email/send returns a contactVerificationId; email/verify validates the code
+// and returns an onboardingId (or a 4xx for a wrong code).
+const MOCK_ROUTES: Record<string, MockHandler> = {
+    'GET /v1/auth/settings': () => ok(REGISTRATION_SETTINGS),
+    'POST /v1/auth/register/email/send': () =>
+        ok({ contactVerificationId: 'mock-contact-verification-id' }),
+    'POST /v1/auth/register/email/verify': req => {
+        const code = (req.data as { verificationCode?: string } | undefined)
+            ?.verificationCode
+        if (code?.toUpperCase() === MOCK_VALID_VERIFICATION_CODE) {
+            return ok({ onboardingId: 'mock-onboarding-id' })
+        }
+        return { status: 400, data: { message: 'Invalid verification code' } }
+    },
 }
 
 if (__DEV__) {
@@ -99,15 +117,26 @@ if (__DEV__) {
         request<TData, TVars = unknown>(
             req: CardTransportRequest<TVars>,
         ): Promise<CardTransportResponse<TData>> {
-            const route = `${req.method} ${req.path}`
-            if (route in MOCK_RESPONSES) {
-                return Promise.resolve({
-                    data: MOCK_RESPONSES[route] as TData,
-                    status: 200,
-                    statusText: 'OK',
-                })
+            const handler = MOCK_ROUTES[`${req.method} ${req.path}`]
+            if (!handler) {
+                return realTransport.request<TData, TVars>(req)
             }
-            return realTransport.request<TData, TVars>(req)
+            const { status, data } = handler(
+                req as CardTransportRequest<unknown>,
+            )
+            // Mirror the real transport: non-2xx rejects so mutations see `isError`.
+            if (status >= 400) {
+                return Promise.reject(
+                    new Error(
+                        `Mock ${req.method} ${req.path} failed (${status})`,
+                    ),
+                )
+            }
+            return Promise.resolve({
+                data: data as TData,
+                status,
+                statusText: 'OK',
+            })
         },
     }
 

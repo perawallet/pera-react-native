@@ -36,6 +36,37 @@ describe('useCardStore', () => {
         expect(result.current.onboardingStep).toBe(OnboardingStep.Address)
     })
 
+    test('stores the onboarding contact inputs', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setEmail('john@example.com')
+            result.current.setCountryIso('GB')
+            result.current.setVerificationCode('PERA123')
+        })
+
+        expect(result.current.email).toBe('john@example.com')
+        expect(result.current.countryIso).toBe('GB')
+        expect(result.current.verificationCode).toBe('PERA123')
+    })
+
+    test('resetState clears the onboarding contact inputs', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setEmail('john@example.com')
+            result.current.setCountryIso('GB')
+            result.current.setVerificationCode('PERA123')
+        })
+        act(() => result.current.resetState())
+
+        expect(result.current.email).toBeNull()
+        expect(result.current.countryIso).toBeNull()
+        expect(result.current.verificationCode).toBeNull()
+    })
+
     test('setCardSnapshot stores the non-sensitive card hint', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())

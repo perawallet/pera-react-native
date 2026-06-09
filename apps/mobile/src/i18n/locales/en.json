@@ -713,8 +713,6 @@
             "send_again_in_other": "Send it again in {{count}} seconds",
             "send_again": "Send it again",
             "confirm_button": "Continue",
-            "success_title": "Email confirmed",
-            "success_body": "Your email address has been verified.",
             "dev_hint": "Testing only — use code {{code}}"
         },
         "waitlist": {
@@ -724,6 +722,16 @@
             "success_action": "Back to home",
             "error_title": "Something went wrong",
             "error_body": "We couldn't sign you up for the waitlist. Please try again."
+        },
+        "create_password": {
+            "navigation_title": "Create a Password",
+            "password_placeholder": "Enter your password",
+            "confirm_placeholder": "Confirm your password",
+            "rules": "Use at least 8 characters with an uppercase letter, a lowercase letter, a number, and a special character.",
+            "passwords_mismatch": "Passwords do not match",
+            "confirm_button": "Continue",
+            "success_title": "Password set",
+            "success_body": "Your Baanx account is ready."
         }
     },
     "notifications": {

@@ -18,6 +18,7 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { CardOnboardingEmailScreen } from '../../screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '../../screens/CardOnboardingEmailVerifyScreen'
+import { CardOnboardingPasswordScreen } from '../../screens/CardOnboardingPasswordScreen'
 import { type CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
@@ -43,6 +44,11 @@ export const CardOnboardingStackNavigator = () => {
                 name='CardOnboardingEmailVerify'
                 component={CardOnboardingEmailVerifyScreen}
                 options={{ title: 'peraCard.verify_email.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingPassword'
+                component={CardOnboardingPasswordScreen}
+                options={{ title: 'peraCard.create_password.navigation_title' }}
             />
         </Stack.Navigator>
     )

@@ -12,10 +12,10 @@
 
 import { useCallback, useState } from 'react'
 import {
-    OnboardingStep,
     useCardStore,
     useSendEmailVerificationMutation,
 } from '@perawallet/wallet-core-card'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,10 +30,6 @@ const RESEND_COOLDOWN_SECONDS = 60
  */
 export const MOCK_VALID_VERIFICATION_CODE = 'PERA123'
 
-type UseCardOnboardingEmailVerifyScreenParams = {
-    email: string
-}
-
 export type UseCardOnboardingEmailVerifyScreenResult = {
     code: string
     onChangeCode: (text: string) => void
@@ -45,69 +41,73 @@ export type UseCardOnboardingEmailVerifyScreenResult = {
     handleConfirm: () => void
 }
 
-export const useCardOnboardingEmailVerifyScreen = ({
-    email,
-}: UseCardOnboardingEmailVerifyScreenParams): UseCardOnboardingEmailVerifyScreenResult => {
-    const { t } = useLanguage()
-    const { successToast, errorToast } = useToast()
-    const setOnboardingStep = useCardStore(state => state.setOnboardingStep)
-    const sendEmailVerification = useSendEmailVerificationMutation()
-
-    const [code, setCode] = useState('')
-    const [isWrongCode, setIsWrongCode] = useState(false)
-    const { secondsRemaining, isActive, restart } = useCountdown(
-        RESEND_COOLDOWN_SECONDS,
-    )
-
-    const trimmedCode = code.trim()
-
-    const onChangeCode = useCallback((text: string) => {
-        setCode(text)
-        setIsWrongCode(false)
-    }, [])
-
-    const handleResend = useCallback(() => {
-        // Guard against duplicate sends from a double-tap while the request is
-        // in flight (the link stays visible until the cooldown restarts).
-        if (sendEmailVerification.isPending) return
-        const resend = async () => {
-            try {
-                await sendEmailVerification.mutateAsync({ email })
-                restart()
-                setIsWrongCode(false)
-            } catch {
-                errorToast(
-                    t('peraCard.create_account.error_title'),
-                    t('peraCard.create_account.error_body'),
-                )
-            }
-        }
-        void resend()
-    }, [sendEmailVerification, email, restart, errorToast, t])
-
-    // TODO(card): replace this simulated check with useVerifyEmailMutation once
-    // the backend contract (password + contactVerificationId capture) is confirmed.
-    const handleConfirm = useCallback(() => {
-        if (!trimmedCode) return
-        if (trimmedCode.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
-            setIsWrongCode(true)
-            return
-        }
-        setOnboardingStep(OnboardingStep.PhoneSend)
-        successToast(
-            t('peraCard.verify_email.success_title'),
-            t('peraCard.verify_email.success_body'),
+export const useCardOnboardingEmailVerifyScreen =
+    (): UseCardOnboardingEmailVerifyScreenResult => {
+        const { t } = useLanguage()
+        const { errorToast } = useToast()
+        const navigation = useAppNavigation()
+        const sendEmailVerification = useSendEmailVerificationMutation()
+        const email = useCardStore(state => state.email)
+        const setVerificationCode = useCardStore(
+            state => state.setVerificationCode,
         )
-    }, [trimmedCode, setOnboardingStep, successToast, t])
 
-    return {
-        code,
-        onChangeCode,
-        isValid: trimmedCode.length > 0,
-        isWrongCode,
-        secondsRemaining,
-        canResend: !isActive,
-        handleResend,
-        handleConfirm,
+        const [code, setCode] = useState('')
+        const [isWrongCode, setIsWrongCode] = useState(false)
+        const { secondsRemaining, isActive, restart } = useCountdown(
+            RESEND_COOLDOWN_SECONDS,
+        )
+
+        const trimmedCode = code.trim()
+
+        const onChangeCode = useCallback((text: string) => {
+            setCode(text)
+            setIsWrongCode(false)
+        }, [])
+
+        const handleResend = useCallback(() => {
+            // Guard against duplicate sends from a double-tap while the request
+            // is in flight (the link stays visible until the cooldown restarts).
+            if (sendEmailVerification.isPending) return
+            const resend = async () => {
+                try {
+                    await sendEmailVerification.mutateAsync({
+                        email: email ?? '',
+                    })
+                    restart()
+                    setIsWrongCode(false)
+                } catch {
+                    errorToast(
+                        t('peraCard.create_account.error_title'),
+                        t('peraCard.create_account.error_body'),
+                    )
+                }
+            }
+            void resend()
+        }, [sendEmailVerification, email, restart, errorToast, t])
+
+        // Local pre-check only — a wrong code is caught here for fast feedback.
+        // The real email/verify (which sets the password and completes
+        // verification) runs on the password screen, so a valid code just
+        // stores itself and carries forward to it.
+        const handleConfirm = useCallback(() => {
+            if (!trimmedCode) return
+            if (trimmedCode.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
+                setIsWrongCode(true)
+                return
+            }
+            setVerificationCode(trimmedCode)
+            navigation.navigate('CardOnboardingPassword')
+        }, [trimmedCode, navigation, setVerificationCode])
+
+        return {
+            code,
+            onChangeCode,
+            isValid: trimmedCode.length > 0,
+            isWrongCode,
+            secondsRemaining,
+            canResend: !isActive,
+            handleResend,
+            handleConfirm,
+        }
     }
-}

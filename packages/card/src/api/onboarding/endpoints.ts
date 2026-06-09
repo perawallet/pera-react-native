@@ -17,7 +17,11 @@ import type {
     PersonalDetailsInput,
     RegistrationSettings,
 } from '../../models'
-import { registrationSettingsResponseSchema } from './schema'
+import {
+    registrationSettingsResponseSchema,
+    sendEmailVerificationResponseSchema,
+    verifyEmailResponseSchema,
+} from './schema'
 import { transformRegistrationSettings } from './transformers'
 
 type NetworkParams = {
@@ -33,18 +37,22 @@ const postRegisterStep = <TData>(
     getCardTransport().request({ network, method: 'POST', path, data, signal })
 
 export type SendEmailVerificationParams = NetworkParams & { email: string }
+export type SendEmailVerificationResult = { contactVerificationId: string }
 export const sendEmailVerification = async (
     params: SendEmailVerificationParams,
-): Promise<void> => {
-    await postRegisterStep(
-        '/v1/auth/register/email/send',
-        { email: params.email },
-        params,
-    )
+): Promise<SendEmailVerificationResult> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/auth/register/email/send',
+        data: { email: params.email },
+        signal: params.signal,
+    })
+    return sendEmailVerificationResponseSchema.parse(response.data)
 }
 
 // Completes email verification AND sets the password / marketing consent in one
-// call, per the spec.
+// call, per the spec; returns the onboarding id later steps require.
 export type VerifyEmailParams = NetworkParams & {
     email: string
     password: string
@@ -54,12 +62,19 @@ export type VerifyEmailParams = NetworkParams & {
     allowMarketing?: boolean
     allowSms?: boolean
 }
-export const verifyEmail = async (params: VerifyEmailParams): Promise<void> => {
+export type VerifyEmailResult = { onboardingId: string }
+export const verifyEmail = async (
+    params: VerifyEmailParams,
+): Promise<VerifyEmailResult> => {
     const { network, signal, ...body } = params
-    await postRegisterStep('/v1/auth/register/email/verify', body, {
+    const response = await getCardTransport().request({
         network,
+        method: 'POST',
+        path: '/v1/auth/register/email/verify',
+        data: body,
         signal,
     })
+    return verifyEmailResponseSchema.parse(response.data)
 }
 
 export type SendPhoneVerificationParams = NetworkParams & {
