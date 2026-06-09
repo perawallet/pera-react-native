@@ -61,9 +61,13 @@ export const useStyles = makeStyles(
                 paddingHorizontal,
                 paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
             },
+            footerSafeArea: {
+                backgroundColor: theme.colors.background,
+            },
             footer: {
                 paddingHorizontal: theme.spacing.xl,
                 paddingVertical: theme.spacing.md,
+                backgroundColor: theme.colors.background,
             },
         }
     },

@@ -154,6 +154,7 @@ export const PWScreen = ({
                 <SafeAreaView
                     edges={footerEdges}
                     onLayout={handleFooterLayout}
+                    style={styles.footerSafeArea}
                 >
                     <PWView style={styles.footer}>{footer}</PWView>
                 </SafeAreaView>
@@ -162,7 +163,10 @@ export const PWScreen = ({
 
     const renderedFixedFooter =
         footer == null ? null : (
-            <SafeAreaView edges={footerEdges}>
+            <SafeAreaView
+                edges={footerEdges}
+                style={styles.footerSafeArea}
+            >
                 <PWView style={styles.footer}>{footer}</PWView>
             </SafeAreaView>
         )
