@@ -18,6 +18,7 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         minWidth: 0,
         overflow: 'hidden',
+        marginTop: theme.spacing.lg,
     },
     toolbar: {
         flexShrink: 0,

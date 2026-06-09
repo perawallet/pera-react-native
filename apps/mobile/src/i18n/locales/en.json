@@ -29,7 +29,7 @@
         },
         "restricted": {
             "title": "Content not available",
-            "body": "This section is only available to users who are 18 or older.",
+            "body": "Due to legal requirements in some jurisdictions, this content is only available to users who are 18 or older.",
             "retry": "Re-check my age"
         }
     },
