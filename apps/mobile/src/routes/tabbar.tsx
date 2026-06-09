@@ -15,6 +15,7 @@ import { type IconName, PWIcon } from '@components/core'
 import { withAgeGate } from '@components/AgeGated'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
+import { trackEvent, TabbarEvent } from '@analytics'
 import { screenListeners } from './listeners'
 import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
 import { FundScreen } from '@modules/fund/screens/FundScreen'
@@ -111,27 +112,32 @@ export const TabBarStackNavigator = () => {
             <TabBarStack.Screen
                 name='Home'
                 component={AccountStackNavigator}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Home) }}
             />
             <TabBarStack.Screen
                 name='Discover'
                 layout={headeredLayout}
                 component={GatedDiscoverScreen}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Discover) }}
             />
             <TabBarStack.Screen
                 name='Swap'
                 layout={safeAreaLayout}
                 component={GatedSwapScreen}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Swap) }}
             />
             <TabBarStack.Screen
                 name='Fund'
                 layout={headeredLayout}
                 component={GatedFundScreen}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Fund) }}
             />
             <TabBarStack.Screen
                 name='Menu'
                 layout={safeAreaLayout}
                 component={MenuScreen}
                 options={{ tabBarButtonTestID: 'tab_menu_button' }}
+                listeners={{ tabPress: () => trackEvent(TabbarEvent.Menu) }}
             />
         </TabBarStack.Navigator>
     )

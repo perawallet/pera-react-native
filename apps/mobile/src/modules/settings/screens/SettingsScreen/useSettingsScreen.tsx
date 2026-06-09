@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { trackEvent, SettingsEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -69,6 +70,9 @@ export const useSettingsScreen = () => {
         route?: keyof SettingsStackParamsList
     }) => {
         if (page.route) {
+            if (page.route === 'PasskeysSettings') {
+                trackEvent(SettingsEvent.PassKey)
+            }
             goToSettingsPage(page.route)
         } else if (page.url) {
             openWebView(page.url)
@@ -106,6 +110,8 @@ export const useSettingsScreen = () => {
                     confirmLabel={t('settings.main.remove_confirm')}
                     cancelLabel={t('settings.main.remove_cancel')}
                     testID='settings_delete_all_confirm_bottom_sheet'
+                    confirmTestID='settings_delete_all_confirm_button'
+                    cancelTestID='settings_delete_all_cancel_button'
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },

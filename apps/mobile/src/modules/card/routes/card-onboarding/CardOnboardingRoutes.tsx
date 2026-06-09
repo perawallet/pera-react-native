@@ -1,0 +1,55 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    createNativeStackNavigator,
+    type NativeStackHeaderProps,
+} from '@react-navigation/native-stack'
+import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
+import { NavigationHeader } from '@components/NavigationHeader'
+import { CardOnboardingEmailScreen } from '../../screens/CardOnboardingEmailScreen'
+import { CardOnboardingEmailVerifyScreen } from '../../screens/CardOnboardingEmailVerifyScreen'
+import { CardOnboardingPasswordScreen } from '../../screens/CardOnboardingPasswordScreen'
+import { type CardOnboardingStackParamList } from './types'
+
+const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
+
+export const CardOnboardingStackNavigator = () => {
+    return (
+        <Stack.Navigator
+            initialRouteName='CardOnboardingEmail'
+            screenOptions={{
+                headerShown: true,
+                header: (props: NativeStackHeaderProps) => (
+                    <NavigationHeader {...props} />
+                ),
+                ...SCREEN_ANIMATION_CONFIG,
+            }}
+        >
+            <Stack.Screen
+                name='CardOnboardingEmail'
+                component={CardOnboardingEmailScreen}
+                options={{ title: 'peraCard.create_account.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingEmailVerify'
+                component={CardOnboardingEmailVerifyScreen}
+                options={{ title: 'peraCard.verify_email.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingPassword'
+                component={CardOnboardingPasswordScreen}
+                options={{ title: 'peraCard.create_password.navigation_title' }}
+            />
+        </Stack.Navigator>
+    )
+}

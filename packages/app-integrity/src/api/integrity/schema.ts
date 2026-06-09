@@ -23,6 +23,5 @@ export const verifyResponseSchema = z.object({
     platform: z.enum(['ios', 'android']),
 })
 
-export type ChallengeApiResponse = z.infer<typeof challengeResponseSchema>
 export type AttestApiResponse = z.infer<typeof attestResponseSchema>
 export type VerifyApiResponse = z.infer<typeof verifyResponseSchema>

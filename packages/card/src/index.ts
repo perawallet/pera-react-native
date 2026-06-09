@@ -16,3 +16,16 @@ export * from './models'
 export * from './hooks'
 export * from './store'
 export * from './session'
+
+// Transport seam — lets the app swap in a mock/proxy transport (e.g. dev mocks
+// or a future all-proxy mode). Every endpoint calls `getCardTransport()`.
+export {
+    getCardTransport,
+    setCardTransport,
+    resetCardTransport,
+} from './api/transport/registry'
+export type {
+    CardTransport,
+    CardTransportRequest,
+    CardTransportResponse,
+} from './api/transport/types'

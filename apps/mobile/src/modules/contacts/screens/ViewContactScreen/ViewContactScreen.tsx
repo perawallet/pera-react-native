@@ -35,11 +35,13 @@ export const ViewContactScreen = () => {
                     name='share'
                     variant='primary'
                     onPress={() => void handleShare()}
+                    testID='view_contact_share_button'
                 />
                 <PWTouchableIcon
                     name='edit-pen'
                     variant='primary'
                     onPress={goToEdit}
+                    testID='view_contact_edit_button'
                 />
             </PWView>
         ) : null,
@@ -56,7 +58,7 @@ export const ViewContactScreen = () => {
     }
 
     return (
-        <PWScreen>
+        <PWScreen testID='view_contact_screen'>
             <PWView style={styles.container}>
                 <PWView style={styles.header}>
                     <ContactAvatar
@@ -100,6 +102,7 @@ export const ViewContactScreen = () => {
                             name='qr'
                             variant='primary'
                             onPress={openQR}
+                            testID='view_contact_qr_button'
                         />
                     </PWView>
                 </PWView>

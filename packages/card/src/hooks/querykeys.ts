@@ -25,6 +25,8 @@ export const cardQueryKeys = {
     user: (network: Network) => [MODULE_PREFIX, 'user', { network }] as const,
     registrationSettings: (network: Network) =>
         [MODULE_PREFIX, 'registration-settings', { network }] as const,
+    currentRegion: (network: Network) =>
+        [MODULE_PREFIX, 'current-region', { network }] as const,
     transactions: (network: Network, filters?: CardTransactionFilters) =>
         [
             MODULE_PREFIX,

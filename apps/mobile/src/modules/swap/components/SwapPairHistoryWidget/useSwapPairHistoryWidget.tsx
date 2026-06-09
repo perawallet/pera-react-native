@@ -19,6 +19,7 @@ import {
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
 
@@ -46,6 +47,9 @@ export const useSwapPairHistoryWidget = (): UseSwapPairHistoryWidgetResult => {
 
     const handlePairPress = useCallback(
         (pair: SwapDistinctPairItem) => {
+            trackEvent(SwapEvent.SelectHistory, {
+                [AnalyticsMetadataKey.SwapPairing]: `${pair.assetIn.unitName}/${pair.assetOut.unitName}`,
+            })
             setFromAsset(String(pair.assetIn.assetId))
             setToAsset(String(pair.assetOut.assetId))
         },
@@ -54,6 +58,7 @@ export const useSwapPairHistoryWidget = (): UseSwapPairHistoryWidgetResult => {
 
     const handleSeeAllPress = useCallback(() => {
         if (!address) return
+        trackEvent(SwapEvent.HistorySeeAll)
         void requestBottomSheet<void>({
             contents: <SwapHistoryContent address={address} />,
             options: {

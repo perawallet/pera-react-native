@@ -17,16 +17,19 @@ import { PWTouchableOpacity } from '../PWTouchableOpacity'
 export type PWTouchableIconProps = {
     onPress: () => void
     containerStyle?: StyleProp<ViewStyle>
+    testID?: string
 } & PWIconProps
 
 export const PWTouchableIcon = ({
     onPress,
     containerStyle,
+    testID,
     ...rest
 }: PWTouchableIconProps) => (
     <PWTouchableOpacity
         style={containerStyle}
         onPress={onPress}
+        testID={testID}
     >
         <PWIcon {...rest} />
     </PWTouchableOpacity>

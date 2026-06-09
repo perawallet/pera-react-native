@@ -50,6 +50,7 @@ export const EditContactScreen = () => {
                 onPress={() => void handleSubmit(save)()}
                 isDisabled={!isValid}
                 paddingStyle='none'
+                testID='edit_contact_done_button'
             />
         ),
     })
@@ -66,6 +67,8 @@ export const EditContactScreen = () => {
                     message={t('contacts.edit_contact.remove_message')}
                     confirmLabel={t('contacts.edit_contact.remove_confirm')}
                     cancelLabel={t('contacts.edit_contact.remove_cancel')}
+                    confirmTestID='contact_delete_confirm_button'
+                    cancelTestID='contact_delete_cancel_button'
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
@@ -80,6 +83,7 @@ export const EditContactScreen = () => {
                     onPress={() => void openDeleteConfirm()}
                     title={t('contacts.edit_contact.delete_this')}
                     variant='destructive'
+                    testID='edit_contact_delete_button'
                 />
             }
         >

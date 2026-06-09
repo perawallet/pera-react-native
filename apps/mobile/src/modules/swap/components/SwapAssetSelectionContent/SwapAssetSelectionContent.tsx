@@ -18,6 +18,7 @@ import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
+import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 import { useStyles } from './styles'
 
 const filterSwappable = (item: AssetWithAccountBalance) =>
@@ -40,9 +41,17 @@ export const SwapAssetSelectionContent = (
 
     const handleAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
+            const assetName =
+                asset.asset?.unitName ?? asset.asset?.name ?? asset.assetId
+            trackEvent(
+                variant === 'from'
+                    ? SwapEvent.SelectTopAsset
+                    : SwapEvent.SelectBottomAsset,
+                { [AnalyticsMetadataKey.AssetName]: assetName },
+            )
             resolve(asset.assetId)
         },
-        [resolve],
+        [resolve, variant],
     )
 
     const title =

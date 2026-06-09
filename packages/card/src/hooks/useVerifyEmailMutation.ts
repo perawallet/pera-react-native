@@ -12,19 +12,38 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { verifyEmail, type VerifyEmailParams } from '../api/onboarding'
+import {
+    verifyEmail,
+    type VerifyEmailParams,
+    type VerifyEmailResult,
+} from '../api/onboarding'
+import { OnboardingStep } from '../models'
+import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type VerifyEmailVariables = Omit<VerifyEmailParams, 'network' | 'signal'>
 
-export type UseVerifyEmailMutationResult =
-    CardMutationResult<VerifyEmailVariables>
+export type UseVerifyEmailMutationResult = CardMutationResult<
+    VerifyEmailVariables,
+    VerifyEmailResult
+>
 
 export const useVerifyEmailMutation = (): UseVerifyEmailMutationResult => {
     const { network } = useNetwork()
 
-    const mutation = useMutation<void, Error, VerifyEmailVariables>({
+    const mutation = useMutation<
+        VerifyEmailResult,
+        Error,
+        VerifyEmailVariables
+    >({
         mutationFn: variables => verifyEmail({ ...variables, network }),
+        // Verification completed: store the onboarding id and advance the flow.
+        onSuccess: ({ onboardingId }) => {
+            const { setOnboardingId, setOnboardingStep } =
+                useCardStore.getState()
+            setOnboardingId(onboardingId)
+            setOnboardingStep(OnboardingStep.PhoneSend)
+        },
         throwOnError: false,
     })
 

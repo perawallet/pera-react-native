@@ -21,6 +21,7 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
         borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.layerGrayLighter,
     },
@@ -34,13 +35,6 @@ export const useStyles = makeStyles(theme => ({
     selectAllText: {
         color: theme.colors.positive,
         marginRight: theme.spacing.xs,
-    },
-    checkboxContainer: {
-        padding: 0,
-        margin: 0,
-        marginLeft: 0,
-        marginRight: 0,
-        backgroundColor: 'transparent',
     },
     emptyState: {
         flex: 1,

@@ -19,6 +19,7 @@ import {
 } from 'react'
 import {
     Keyboard,
+    Platform,
     type LayoutChangeEvent,
     type StyleProp,
     type ViewStyle,
@@ -154,6 +155,7 @@ export const PWScreen = ({
                 <SafeAreaView
                     edges={footerEdges}
                     onLayout={handleFooterLayout}
+                    style={styles.footerSafeArea}
                 >
                     <PWView style={styles.footer}>{footer}</PWView>
                 </SafeAreaView>
@@ -162,7 +164,10 @@ export const PWScreen = ({
 
     const renderedFixedFooter =
         footer == null ? null : (
-            <SafeAreaView edges={footerEdges}>
+            <SafeAreaView
+                edges={footerEdges}
+                style={styles.footerSafeArea}
+            >
                 <PWView style={styles.footer}>{footer}</PWView>
             </SafeAreaView>
         )
@@ -192,7 +197,8 @@ export const PWScreen = ({
         >
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior='padding'
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? bottomInset : 0}
             >
                 {renderedHeader}
                 {renderedBody}

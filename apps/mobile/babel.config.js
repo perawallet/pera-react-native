@@ -30,6 +30,7 @@ module.exports = function (api) {
           "@layouts": "./src/layouts",
           "@routes": "./src/routes",
           "@hooks": "./src/hooks",
+          "@analytics": "./src/analytics",
           "@constants": "./src/constants",
           "@modules": "./src/modules",
           "@assets": "./assets",

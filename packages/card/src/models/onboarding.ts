@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { z } from 'zod'
+
 export const OnboardingStep = {
     EmailSend: 'EMAIL_SEND',
     EmailVerify: 'EMAIL_VERIFY',
@@ -47,6 +49,16 @@ export type RegistrationSettings = {
     usStates: SupportedUsState[]
 }
 
+/**
+ * Geo-IP detected region from GET /v1/cards/supported-countries/ (Pera backend,
+ * not Baanx). Used to preselect the user's country in the onboarding form.
+ */
+export type CurrentRegion = {
+    /** ISO 3166-1 alpha-2. */
+    iso3166alpha2: string
+    name: string
+}
+
 /** Veriff KYC session from GET /v1/user/verification. */
 export type VeriffSession = {
     sessionUrl: string
@@ -74,3 +86,45 @@ export type AddressInput = {
     /** When true, the mailing address equals the residential address. */
     isSameMailingAddress: boolean
 }
+
+/** Validation for the email-send onboarding step (email + country). */
+export const emailSendSchema = z.object({
+    email: z.string().trim().email(),
+    /** ISO 3166-1 alpha-2 of the selected country of residence. */
+    countryIso: z.string().length(2),
+})
+
+export type EmailSendFormValues = z.infer<typeof emailSendSchema>
+
+/**
+ * "Special character" = any non-alphanumeric character. Extracted into a named
+ * constant so the password rule reads clearly — inline, the negated class is
+ * easy to misread as having no special-character provision at all.
+ *
+ * NOTE: Baanx hasn't published its exact allowed set, so this is intentionally
+ * broad to match the rule shown to the user. Tighten if the backend specifies one.
+ */
+const PASSWORD_SPECIAL_CHARACTER_REGEX = /[^A-Za-z0-9]/
+
+/**
+ * Validation for the password the user sets during email verification. Mirrors
+ * Baanx's rules: at least 8 chars with an uppercase, a lowercase, a number, and
+ * a special character; `confirmPassword` must match.
+ */
+export const passwordSetSchema = z
+    .object({
+        password: z
+            .string()
+            .min(8)
+            .regex(/[A-Z]/)
+            .regex(/[a-z]/)
+            .regex(/[0-9]/)
+            .regex(PASSWORD_SPECIAL_CHARACTER_REGEX),
+        confirmPassword: z.string(),
+    })
+    .refine(values => values.password === values.confirmPassword, {
+        message: 'passwords-must-match',
+        path: ['confirmPassword'],
+    })
+
+export type PasswordSetFormValues = z.infer<typeof passwordSetSchema>

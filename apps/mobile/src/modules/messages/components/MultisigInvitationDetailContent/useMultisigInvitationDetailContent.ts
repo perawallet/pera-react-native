@@ -17,6 +17,7 @@ import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-mes
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { trackEvent, MultisigEvent } from '@analytics'
 import type { MultisigInvitationParam } from '../../routes/types'
 
 type UseMultisigInvitationDetailContentParams = {
@@ -60,8 +61,14 @@ export const useMultisigInvitationDetailContent = ({
         return accounts.some(a => participantSet.has(a.address))
     }, [accounts, renderedInvitation])
 
+    const handleAccept = useCallback(() => {
+        trackEvent(MultisigEvent.InviteAddPressed)
+        onAccepted()
+    }, [onAccepted])
+
     const handleIgnore = useCallback(async () => {
         if (isIgnoring) return
+        trackEvent(MultisigEvent.InviteIgnorePressed)
         if (!deviceId) {
             errorToast(
                 t('multisig.invitation.title'),
@@ -100,6 +107,6 @@ export const useMultisigInvitationDetailContent = ({
         isIgnoring,
         isUserIncluded,
         handleIgnore,
-        handleAccept: onAccepted,
+        handleAccept,
     }
 }

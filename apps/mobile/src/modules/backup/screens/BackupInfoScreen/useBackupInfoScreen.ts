@@ -17,6 +17,7 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupInfoScreenResult = {
@@ -33,6 +34,7 @@ export const useBackupInfoScreen = (): UseBackupInfoScreenResult => {
 
     const onContinue = useCallback(() => {
         if (address) {
+            trackEvent(OnboardingEvent.BeginPassphrase)
             navigation.navigate('BackupWriteDown', { address })
         }
     }, [navigation, address])

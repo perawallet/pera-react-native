@@ -15,6 +15,7 @@ import {
     forwardRef,
     useImperativeHandle,
     useRef,
+    useState,
 } from 'react'
 import { type TextInput, type TextInputProps } from 'react-native'
 import {
@@ -22,6 +23,7 @@ import {
     type InputProps as RNEInputProps,
 } from '@rneui/themed'
 import { type TypographyVariant } from '@theme/typography'
+import { PWTouchableIcon } from '../PWTouchableIcon'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
 import {
@@ -41,7 +43,14 @@ export type PWInputProps = {
     placeholder?: string
     errorMessage?: string
     renderErrorMessage?: boolean
+    errorStyle?: RNEInputProps['errorStyle']
     secureTextEntry?: boolean
+    /**
+     * Render a built-in reveal toggle for a secure field. While the input is
+     * focused, an eye icon is shown that flips `secureTextEntry` on/off.
+     * Mutually exclusive with `rightIcon` — the toggle takes precedence.
+     */
+    showVisibilityToggle?: boolean
     keyboardType?: RNEInputProps['keyboardType']
     returnKeyType?: RNEInputProps['returnKeyType']
     autoCapitalize?: RNEInputProps['autoCapitalize']
@@ -83,12 +92,19 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             adjustsFontSizeToFit,
             minimumFontScale,
             numberOfLines,
+            secureTextEntry,
+            showVisibilityToggle = false,
+            onFocus,
+            onBlur,
+            rightIcon,
             ...props
         },
         ref,
     ) => {
         const styles = useStyles({ variant })
         const inputRef = useRef<TextInput>(null)
+        const [isRevealed, setIsRevealed] = useState(false)
+        const [isFocused, setIsFocused] = useState(false)
 
         const resolvedMinimumFontScale =
             minimumFontScale ??
@@ -107,12 +123,46 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             [],
         )
 
+        // Internal focus tracking only matters for the reveal toggle, so it's
+        // skipped entirely unless `showVisibilityToggle` is set.
+        const handleFocus: NonNullable<RNEInputProps['onFocus']> = event => {
+            if (showVisibilityToggle) setIsFocused(true)
+            onFocus?.(event)
+        }
+        const handleBlur: NonNullable<RNEInputProps['onBlur']> = event => {
+            if (showVisibilityToggle) setIsFocused(false)
+            onBlur?.(event)
+        }
+
+        // The eye toggle is only shown while focused (matching the rest of the
+        // app's password fields) and overrides any consumer-supplied rightIcon.
+        const resolvedRightIcon =
+            showVisibilityToggle && isFocused ? (
+                <PWTouchableIcon
+                    name='eye'
+                    variant='secondary'
+                    size='md'
+                    onPress={() => setIsRevealed(prev => !prev)}
+                    testID={testID ? `${testID}-visibility-toggle` : undefined}
+                />
+            ) : (
+                rightIcon
+            )
+
         return (
             <RNEInput
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ref={inputRef as any}
                 {...getTestProps(testID)}
                 {...props}
+                secureTextEntry={
+                    showVisibilityToggle
+                        ? secureTextEntry && !isRevealed
+                        : secureTextEntry
+                }
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                rightIcon={resolvedRightIcon}
                 numberOfLines={numberOfLines}
                 {...{
                     adjustsFontSizeToFit,

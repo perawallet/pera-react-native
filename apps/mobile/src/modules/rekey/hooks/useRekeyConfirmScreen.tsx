@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from './useHandleRekeyError'
@@ -101,6 +102,7 @@ export const useRekeyConfirmScreen = ({
                 sourceAddress: source.address,
                 rekeyToAddress: target.address,
             })
+            trackEvent(OnboardingEvent.RekeyAccount)
             onSubmitSuccess(source.address)
         } catch (error) {
             handleRekeyError(error)

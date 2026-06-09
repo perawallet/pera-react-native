@@ -19,7 +19,6 @@ import type { useKMS } from '@perawallet/wallet-core-kms'
 import type {
     LegacyAccount,
     LegacyHDWallet,
-    LegacyMigrationData,
 } from '@perawallet/wallet-extension-platform'
 
 export type MigrationFailure = {
@@ -32,13 +31,6 @@ export type MigrationResult = {
     imported: number
     skipped: number
     failed: MigrationFailure[]
-}
-
-export type UseMigrateLegacyAccountsResult = {
-    migrate: (data: LegacyMigrationData) => Promise<void>
-    isMigrating: boolean
-    result: MigrationResult | null
-    error: Error | null
 }
 
 export type MigrationDeps = {

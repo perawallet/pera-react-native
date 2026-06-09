@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { BeforeYouCreateContent } from '../../components/BeforeYouCreateContent'
 import {
     useMultisigCreationStore,
@@ -50,6 +51,7 @@ export const useSetThresholdScreen = (): UseSetThresholdScreenResult => {
     }, [threshold, setThreshold])
 
     const handleContinue = useCallback(async () => {
+        trackEvent(MultisigEvent.ThresholdContinue)
         const result = await requestBottomSheet<'proceed'>({
             contents: <BeforeYouCreateContent />,
             options: {

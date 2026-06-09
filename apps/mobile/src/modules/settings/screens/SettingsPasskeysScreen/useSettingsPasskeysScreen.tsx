@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useBiometricSecurityLevel } from '@perawallet/wallet-core-security'
 import { useHasHDWallet } from '@perawallet/wallet-core-accounts'
+import { trackEvent, PasskeysEvent } from '@analytics'
 
 export type SettingsPasskeysScreenState =
     | 'loading'
@@ -110,6 +111,7 @@ export const useSettingsPasskeysScreen =
                 if (!confirmed) return
                 try {
                     await removePasskey(passkey)
+                    trackEvent(PasskeysEvent.Deleted)
                 } catch (error) {
                     // The sheet has already closed; surface the failure as a
                     // toast so the user knows the passkey is still there.

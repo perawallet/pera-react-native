@@ -11,7 +11,12 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
+import {
+    screenListeners,
+    resetPreviousRouteNameForTesting,
+    resetTrackedScreenForTesting,
+} from '../listeners'
+import { trackScreen, AnalyticsScreenName } from '@analytics'
 
 const logEventMock = vi.fn()
 
@@ -23,17 +28,34 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+vi.mock('@analytics', () => ({
+    trackScreen: vi.fn(),
+    AnalyticsScreenName: {
+        AccountList: 'screen_accounts',
+        AssetDetail: 'screen_asset_detail',
+        CollectibleList: 'screen_collectibles',
+        ContactDetail: 'screen_contact_detail',
+        ContactList: 'screen_contacts',
+    },
+}))
+
 describe('screenListeners', () => {
     // Helper to create a route object
-    const createRoute = (name: string, path?: string) => ({
+    const createRoute = (
+        name: string,
+        path?: string,
+        params?: Record<string, unknown>,
+    ) => ({
         name,
         path,
+        params,
         key: `${name}-key`,
     })
 
     beforeEach(() => {
         vi.clearAllMocks()
         resetPreviousRouteNameForTesting()
+        resetTrackedScreenForTesting()
     })
 
     it('logs event on focus for tracked screens (not in ignored list)', () => {
@@ -98,6 +120,67 @@ describe('screenListeners', () => {
         expect(logEventMock).toHaveBeenCalledWith('scr_unknown_view', {
             previous: null,
             path: '/test',
+        })
+    })
+
+    describe('typed catalog screen tracking', () => {
+        it.each([
+            ['AccountDetails', AnalyticsScreenName.AccountList],
+            ['CollectibleDetails', AnalyticsScreenName.CollectibleList],
+            ['ContactsList', AnalyticsScreenName.ContactList],
+            ['ViewContact', AnalyticsScreenName.ContactDetail],
+        ])('maps route %s to its catalog screen', (routeName, screen) => {
+            screenListeners({
+                route: createRoute(routeName) as any,
+            }).focus()
+
+            expect(trackScreen).toHaveBeenCalledWith(screen)
+        })
+
+        it('does not track a catalog screen for an unmapped route', () => {
+            screenListeners({ route: createRoute('SendAlgo') as any }).focus()
+
+            expect(trackScreen).not.toHaveBeenCalled()
+            // ...but the generic view event still fires.
+            expect(logEventMock).toHaveBeenCalledWith(
+                'scr_sendalgo_view',
+                expect.anything(),
+            )
+        })
+
+        it('fires once per route instance (dedups by key)', () => {
+            const route = createRoute('AccountDetails')
+            screenListeners({ route: route as any }).focus()
+            screenListeners({ route: route as any }).focus()
+
+            expect(trackScreen).toHaveBeenCalledTimes(1)
+        })
+
+        it('tracks AssetDetails as the asset view only when it is a real asset', () => {
+            screenListeners({
+                route: createRoute('AssetDetails', undefined, {
+                    assetId: '123',
+                    isCollectible: false,
+                }) as any,
+            }).focus()
+
+            expect(trackScreen).toHaveBeenCalledWith(
+                AnalyticsScreenName.AssetDetail,
+            )
+        })
+
+        it('does not track AssetDetails for a collectible or without an asset id', () => {
+            screenListeners({
+                route: createRoute('AssetDetails', undefined, {
+                    assetId: '123',
+                    isCollectible: true,
+                }) as any,
+            }).focus()
+            screenListeners({
+                route: createRoute('AssetDetails', undefined, {}) as any,
+            }).focus()
+
+            expect(trackScreen).not.toHaveBeenCalled()
         })
     })
 })

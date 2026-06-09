@@ -24,6 +24,20 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useNavigation } from '@react-navigation/native'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { trackEvent } from '@analytics'
+
+vi.mock('@analytics', () => ({
+    trackEvent: vi.fn(),
+    WalletConnectEvent: {
+        TransactionConfirmed: 'wc_transaction_confirmed',
+        TransactionDeclined: 'wc_transaction_declined',
+    },
+    AnalyticsMetadataKey: {
+        DappName: 'dapp_name',
+        DappUrl: 'dapp_url',
+        TransactionCount: 'transaction_count',
+    },
+}))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
@@ -298,6 +312,108 @@ describe('useSigningActionButtons', () => {
             })
 
             expect(showError).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('walletconnect transaction analytics', () => {
+        const wcRequest = {
+            id: 'wc1',
+            sourceType: 'walletconnect',
+            sourceMetadata: { name: 'Tinyman', url: 'https://tinyman.org' },
+        }
+        const wcPayload = {
+            dapp_name: 'Tinyman',
+            dapp_url: 'https://tinyman.org',
+            transaction_count: 2,
+        }
+
+        const useWalletConnectRequest = () => {
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: wcRequest,
+            })
+            // Two transactions in the group → transaction_count: 2
+            setupPipeline([], [{}, {}])
+        }
+
+        it('tracks TransactionConfirmed with the dapp payload when signing a WC request', () => {
+            useWalletConnectRequest()
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            act(() => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(
+                'wc_transaction_confirmed',
+                wcPayload,
+            )
+            expect(mockNext).toHaveBeenCalledTimes(1)
+        })
+
+        it('tracks TransactionDeclined when rejecting a WC request', () => {
+            useWalletConnectRequest()
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            act(() => {
+                result.current.handleReject()
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(
+                'wc_transaction_declined',
+                wcPayload,
+            )
+            expect(mockFail).toHaveBeenCalledTimes(1)
+        })
+
+        it('tracks TransactionConfirmed only after the security guard is confirmed', async () => {
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: wcRequest,
+            })
+            setupPipeline(
+                [
+                    {
+                        type: 'rekey',
+                        senderAddress: 'addr1',
+                        targetAddress: 'addr2',
+                    },
+                ],
+                [{}, {}],
+            )
+            mockRequestBottomSheet.mockResolvedValue('confirm')
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            await act(async () => {
+                result.current.handleSignAndSend()
+            })
+
+            await waitFor(() => {
+                expect(trackEvent).toHaveBeenCalledWith(
+                    'wc_transaction_confirmed',
+                    wcPayload,
+                )
+            })
+        })
+
+        it('does not track WC events for a local (non-walletconnect) request', () => {
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: { id: 'local1', sourceType: 'local' },
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            act(() => {
+                result.current.handleSignAndSend()
+            })
+            act(() => {
+                result.current.handleReject()
+            })
+
+            expect(trackEvent).not.toHaveBeenCalled()
+            expect(mockNext).toHaveBeenCalledTimes(1)
+            expect(mockFail).toHaveBeenCalledTimes(1)
         })
     })
 

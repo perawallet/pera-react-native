@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import React from 'react'
 import { type NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { AccountStackParamsList } from '@modules/accounts/routes'
 import {

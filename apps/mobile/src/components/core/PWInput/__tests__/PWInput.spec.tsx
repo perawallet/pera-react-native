@@ -44,6 +44,49 @@ describe('PWInput', () => {
         expect(onChangeText).toHaveBeenCalledWith('hello')
     })
 
+    describe('showVisibilityToggle', () => {
+        it('wires the reveal toggle as a right icon only while focused', () => {
+            render(
+                <PWInput
+                    placeholder='pw'
+                    secureTextEntry
+                    showVisibilityToggle
+                    testID='pw'
+                />,
+            )
+            const input = screen.getByPlaceholderText('pw')
+
+            // No toggle until the field is focused.
+            expect(input.getAttribute('righticon')).toBeNull()
+
+            fireEvent.focus(input)
+            expect(
+                screen.getByPlaceholderText('pw').getAttribute('righticon'),
+            ).toBeTruthy()
+
+            // Blurring hides it again.
+            fireEvent.blur(input)
+            expect(
+                screen.getByPlaceholderText('pw').getAttribute('righticon'),
+            ).toBeNull()
+        })
+
+        it('wires no toggle when showVisibilityToggle is not set', () => {
+            render(
+                <PWInput
+                    placeholder='plain'
+                    secureTextEntry
+                    testID='plain'
+                />,
+            )
+            fireEvent.focus(screen.getByPlaceholderText('plain'))
+
+            expect(
+                screen.getByPlaceholderText('plain').getAttribute('righticon'),
+            ).toBeNull()
+        })
+    })
+
     describe('minimumFontScale default', () => {
         it('defaults minimumFontScale to 0.5 when adjustsFontSizeToFit is true', () => {
             render(

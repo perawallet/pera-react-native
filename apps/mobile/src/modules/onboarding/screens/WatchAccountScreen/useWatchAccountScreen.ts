@@ -20,6 +20,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { trackEvent, OnboardingEvent } from '@analytics'
 import {
     generateOrderedUniqueId,
     type Optional,
@@ -70,6 +71,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         }
 
         setAccounts([...accounts, newAccount])
+        trackEvent(OnboardingEvent.WatchAccountComplete)
         navigation.push('NameAccount', {
             account: newAccount as WalletAccount,
         })

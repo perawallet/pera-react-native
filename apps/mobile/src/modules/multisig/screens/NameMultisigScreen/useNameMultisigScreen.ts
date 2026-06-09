@@ -19,6 +19,7 @@ import {
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCreateMultisigAccountMutation } from '@perawallet/wallet-core-multisig'
+import { trackEvent, MultisigEvent } from '@analytics'
 import {
     generateMultisigAddress,
     useNetwork,
@@ -97,6 +98,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const handleFinish = useCallback(async () => {
         if (isCreating) return
 
+        trackEvent(MultisigEvent.NameAccount)
         try {
             setIsCreating(true)
 

@@ -36,3 +36,14 @@ export const registrationSettingsResponseSchema = z.object({
 export type RegistrationSettingsApiResponse = z.infer<
     typeof registrationSettingsResponseSchema
 >
+
+// POST /v1/auth/register/email/send — returns the id later steps thread through.
+export const sendEmailVerificationResponseSchema = z.object({
+    contactVerificationId: z.string(),
+})
+
+// POST /v1/auth/register/email/verify — returns the onboarding id every later
+// registration step requires.
+export const verifyEmailResponseSchema = z.object({
+    onboardingId: z.string(),
+})

@@ -54,7 +54,10 @@ export const SettingsDeveloperAppIntegrityScreen = () => {
     } = useSettingsDeveloperAppIntegrity()
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='app_integrity_screen'
+        >
             <PWView style={styles.row}>
                 <PWText variant='caption'>
                     {t('settings.developer.app_integrity_environment', {
@@ -136,18 +139,21 @@ export const SettingsDeveloperAppIntegrityScreen = () => {
                     title={t('settings.developer.app_integrity_run')}
                     onPress={() => void onRunHandshake()}
                     isDisabled={isBusy}
+                    testID='app_integrity_run_handshake_button'
                 />
                 <PWButton
                     variant='secondary'
                     title={t('settings.developer.app_integrity_verify')}
                     onPress={() => void onVerifyToken()}
                     isDisabled={isBusy}
+                    testID='app_integrity_verify_token_button'
                 />
                 <PWButton
                     variant='secondary'
                     title={t('settings.developer.app_integrity_clear')}
                     onPress={onClear}
                     isDisabled={isBusy}
+                    testID='app_integrity_clear_button'
                 />
             </PWView>
         </PWView>

@@ -16,7 +16,8 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
@@ -56,6 +57,17 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     )
 
     const [swipeEnabled, setSwipeEnabled] = useState(true)
+
+    // Screen-view tracking (screen_asset_detail) is centralized in the
+    // navigator's screenListeners (see routes/listeners.ts). This effect only
+    // fires the asset-specific "Show" event, which carries the asset id.
+    useEffect(() => {
+        if (assetId && !isCollectible) {
+            trackEvent(AssetDetailsEvent.Show, {
+                [AnalyticsMetadataKey.AssetId]: assetId,
+            })
+        }
+    }, [assetId, isCollectible])
 
     useNavigationHeader({
         title: (

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAccountOverviewModal } from '../AccountOverview/AccountOverviewModalContext'
 
@@ -25,6 +26,7 @@ export const useNoFundsButtonPanel = (): UseNoFundsButtonPanelResult => {
     const { openReceiveFunds, openAccountOptions } = useAccountOverviewModal()
 
     const handleBuyAlgo = useCallback(() => {
+        trackEvent(HomeEvent.Fund)
         navigation.navigate('TabBar', { screen: 'Fund' })
     }, [navigation])
 

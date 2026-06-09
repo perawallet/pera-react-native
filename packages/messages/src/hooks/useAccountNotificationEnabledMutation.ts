@@ -17,6 +17,7 @@ import { updateNotificationEnabled } from '../api/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     getNotificationsListQueryKey,
+    getMessageStatusQueryKey,
     getNotificationStatusQueryKey,
 } from './querykeys'
 
@@ -47,6 +48,11 @@ export const useAccountNotificationEnabledMutation = () => {
                 status,
             ),
         onSuccess: () => {
+            // Reset both the primary (v3) and fallback (v1) badge sources so
+            // the badge refreshes regardless of which one is currently active.
+            void queryClient.resetQueries({
+                queryKey: getMessageStatusQueryKey(network, deviceID ?? ''),
+            })
             void queryClient.resetQueries({
                 queryKey: getNotificationStatusQueryKey(
                     network,

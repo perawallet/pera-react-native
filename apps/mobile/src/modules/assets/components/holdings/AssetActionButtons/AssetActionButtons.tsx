@@ -30,6 +30,7 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { trackEvent, AssetDetailsEvent } from '@analytics'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -53,6 +54,7 @@ export const AssetActionButtons = ({
     const { showToast } = useToast()
 
     const openReceiveFunds = useCallback(() => {
+        trackEvent(AssetDetailsEvent.Receive)
         void requestBottomSheet({
             contents: <ReceiveFundsContent account={account ?? undefined} />,
             options: {
@@ -69,6 +71,9 @@ export const AssetActionButtons = ({
 
     const handleSwap = useCallback(() => {
         const isAlgo = asset.assetId === '0'
+        if (isAlgo) {
+            trackEvent(AssetDetailsEvent.SwapAlgo)
+        }
         navigation.replace('TabBar', {
             screen: 'Swap',
             params: isAlgo
@@ -78,6 +83,7 @@ export const AssetActionButtons = ({
     }, [asset.assetId, navigation])
 
     const handleSend = useCallback(() => {
+        trackEvent(AssetDetailsEvent.Send)
         if (assetHolding) {
             setSelectedAssetId(assetHolding.assetId)
             setCanSelectAsset(false)

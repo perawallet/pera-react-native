@@ -138,6 +138,7 @@ export const ContactForm = <T extends FieldValues>({
                             onSubmitEditing={() =>
                                 addressInputRef.current?.focus()
                             }
+                            testID='contact_name_input'
                         />
                     )}
                 />
@@ -155,6 +156,7 @@ export const ContactForm = <T extends FieldValues>({
                             editable={Boolean(onAddressInputChange)}
                             autoCapitalize='none'
                             autoCorrect={false}
+                            testID='contact_address_input'
                             rightIcon={
                                 onAddressInputChange ? (
                                     <PWView style={styles.scanIconWrapper}>

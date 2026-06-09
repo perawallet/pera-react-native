@@ -12,25 +12,40 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { sendEmailVerification } from '../api/onboarding'
+import {
+    sendEmailVerification,
+    type SendEmailVerificationResult,
+} from '../api/onboarding'
+import { OnboardingStep } from '../models'
+import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type SendEmailVerificationVariables = { email: string }
 
-export type UseSendEmailVerificationMutationResult =
-    CardMutationResult<SendEmailVerificationVariables>
+export type UseSendEmailVerificationMutationResult = CardMutationResult<
+    SendEmailVerificationVariables,
+    SendEmailVerificationResult
+>
 
 export const useSendEmailVerificationMutation =
     (): UseSendEmailVerificationMutationResult => {
         const { network } = useNetwork()
 
         const mutation = useMutation<
-            void,
+            SendEmailVerificationResult,
             Error,
             SendEmailVerificationVariables
         >({
             mutationFn: ({ email }) =>
                 sendEmailVerification({ email, network }),
+            // Persist the server session id and advance the flow. Runs on every
+            // (re)send, so a resend always refreshes contactVerificationId.
+            onSuccess: ({ contactVerificationId }) => {
+                const { setContactVerificationId, setOnboardingStep } =
+                    useCardStore.getState()
+                setContactVerificationId(contactVerificationId)
+                setOnboardingStep(OnboardingStep.EmailVerify)
+            },
             throwOnError: false,
         })
 

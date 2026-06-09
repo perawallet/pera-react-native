@@ -17,6 +17,7 @@ import {
     useContacts,
 } from '@perawallet/wallet-core-contacts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { trackEvent, MultisigEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
@@ -28,9 +29,12 @@ import {
     type Participant,
 } from '../../hooks/useMultisigCreation'
 
+const MAX_PARTICIPANTS = 16
+
 type UseCreateMultisigScreenResult = {
     participants: Participant[]
     canContinue: boolean
+    maxParticipantsReached: boolean
     isParticipantInWallet: (address: string) => boolean
     handleOpenAddParticipant: () => Promise<void>
     handleEditParticipant: (index: number) => void
@@ -96,6 +100,8 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     )
 
     const handleOpenAddParticipant = useCallback(async () => {
+        trackEvent(MultisigEvent.AddAccount)
+
         const result = await requestBottomSheet<AddParticipantResult>({
             contents: <AddParticipantContent />,
             options: {
@@ -112,6 +118,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         (index: number) => {
             const participant = participants[index]
             if (!participant) return
+            trackEvent(MultisigEvent.EditAccount)
             navigation.push('EditParticipant', {
                 index,
                 address: participant.address,
@@ -122,18 +129,21 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
 
     const handleRemoveParticipant = useCallback(
         (index: number) => {
+            trackEvent(MultisigEvent.RemoveAddress)
             removeParticipant(index)
         },
         [removeParticipant],
     )
 
     const handleContinue = useCallback(() => {
+        trackEvent(MultisigEvent.AddAccountContinue)
         navigation.push('SetThreshold')
     }, [navigation])
 
     return {
         participants,
         canContinue,
+        maxParticipantsReached: participants.length >= MAX_PARTICIPANTS,
         isParticipantInWallet,
         handleOpenAddParticipant,
         handleEditParticipant,

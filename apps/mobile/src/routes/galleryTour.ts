@@ -460,7 +460,7 @@ const goToGallery = () =>
         params: { screen: 'Gallery' },
     })
 
-export const runGalleryTour = async (): Promise<void> => {
+const runGalleryTour = async (): Promise<void> => {
     if (started || !nav.isReady()) return
     started = true
 
