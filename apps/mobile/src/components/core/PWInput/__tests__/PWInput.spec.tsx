@@ -117,4 +117,43 @@ describe('PWInput', () => {
             expect(element.getAttribute('minimumfontscale')).toBeNull()
         })
     })
+
+    describe('showErrorOnBlur', () => {
+        it('withholds the error until the field has been blurred once', () => {
+            render(
+                <PWInput
+                    placeholder='field'
+                    showErrorOnBlur
+                    renderErrorMessage
+                    errorMessage='Required'
+                />,
+            )
+            const input = screen.getByPlaceholderText('field')
+
+            // Suppressed before the first blur, even though errorMessage is set.
+            expect(input.getAttribute('errormessage')).toBeNull()
+
+            fireEvent.blur(input)
+            expect(
+                screen
+                    .getByPlaceholderText('field')
+                    .getAttribute('errormessage'),
+            ).toBe('Required')
+        })
+
+        it('shows the error immediately when showErrorOnBlur is not set', () => {
+            render(
+                <PWInput
+                    placeholder='plain-err'
+                    renderErrorMessage
+                    errorMessage='Required'
+                />,
+            )
+            expect(
+                screen
+                    .getByPlaceholderText('plain-err')
+                    .getAttribute('errormessage'),
+            ).toBe('Required')
+        })
+    })
 })

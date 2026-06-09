@@ -33,7 +33,7 @@ export type UseCardOnboardingPasswordScreenResult = {
 export const useCardOnboardingPasswordScreen =
     (): UseCardOnboardingPasswordScreenResult => {
         const { t } = useLanguage()
-        const { successToast, errorToast } = useToast()
+        const { errorToast } = useToast()
         const navigation = useAppNavigation()
         const email = useCardStore(state => state.email)
         const countryIso = useCardStore(state => state.countryIso)
@@ -57,16 +57,28 @@ export const useCardOnboardingPasswordScreen =
         // completes verification and sets the password. The mutation's
         // onSuccess stores the onboarding id and advances the flow.
         const submitPassword = handleSubmit(async ({ password }) => {
-            // The flow's data lives in the store, not nav params. The
-            // verification code is a transient OTP that isn't persisted, so if
-            // we ever land here without it (e.g. the app was killed mid-flow),
-            // send the user back to re-verify rather than POSTing an empty code.
+            // The flow's data lives in the store, not nav params. Email,
+            // country, and contactVerificationId are all established by the
+            // email/send call on the first screen, so if any is missing (app
+            // killed mid-flow, flow entered out of order, rehydration edge
+            // case) restart there rather than POSTing incomplete data — going
+            // back to verify wouldn't reissue the contactVerificationId.
             if (
                 email === null ||
                 countryIso === null ||
-                verificationCode === null ||
                 contactVerificationId === null
             ) {
+                errorToast(
+                    t('peraCard.create_account.error_title'),
+                    t('peraCard.create_account.error_body'),
+                )
+                navigation.navigate('CardOnboardingEmail')
+                return
+            }
+            // The verification code is a transient OTP that isn't persisted, so
+            // if it's the only thing missing, send the user back to re-verify
+            // rather than POSTing an empty code.
+            if (verificationCode === null) {
                 errorToast(
                     t('peraCard.create_account.error_title'),
                     t('peraCard.create_account.error_body'),
@@ -82,10 +94,7 @@ export const useCardOnboardingPasswordScreen =
                     contactVerificationId,
                     countryOfResidence: countryIso,
                 })
-                successToast(
-                    t('peraCard.create_password.success_title'),
-                    t('peraCard.create_password.success_body'),
-                )
+                navigation.navigate('CardOnboardingPhone')
             } catch {
                 errorToast(
                     t('peraCard.create_account.error_title'),

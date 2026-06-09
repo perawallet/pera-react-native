@@ -127,6 +127,9 @@ describe('onboarding mutation hooks', () => {
                 network: 'mainnet',
             }),
         )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.PhoneVerify,
+        )
     })
 
     it('useVerifyPhoneMutation forwards onboardingId + code', async () => {
@@ -148,6 +151,9 @@ describe('onboarding mutation hooks', () => {
                 verificationCode: '654321',
                 network: 'mainnet',
             }),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.PersonalDetails,
         )
     })
 

@@ -729,9 +729,31 @@
             "confirm_placeholder": "Confirm your password",
             "rules": "Use at least 8 characters with an uppercase letter, a lowercase letter, a number, and a special character.",
             "passwords_mismatch": "Passwords do not match",
+            "confirm_button": "Continue"
+        },
+        "verify_phone": {
+            "entry_navigation_title": "Add your Phone Number",
+            "navigation_title": "Confirm your Phone",
+            "phone_label": "Phone Number",
+            "phone_placeholder": "Enter your phone number",
+            "phone_invalid": "Enter a valid phone number",
+            "calling_code_label": "Phone country code",
+            "calling_code_placeholder": "Code",
+            "send_button": "Confirm your Phone Number",
+            "send_error_title": "Something went wrong",
+            "send_error_body": "We couldn't send your verification code. Please try again.",
+            "body": "Use the verification code we just sent to {{phone}} to confirm your phone number.",
+            "code_placeholder": "Enter verification code from SMS",
+            "code_wrong": "The code is wrong",
+            "send_again_in_one": "Send it again in {{count}} second",
+            "send_again_in_other": "Send it again in {{count}} seconds",
+            "send_again": "Send it again",
             "confirm_button": "Continue",
-            "success_title": "Password set",
-            "success_body": "Your Baanx account is ready."
+            "dev_hint": "Testing only — use code {{code}}",
+            "verify_error_title": "Something went wrong",
+            "verify_error_body": "We couldn't verify your phone number. Please try again.",
+            "success_title": "Phone verified",
+            "success_body": "Your phone number is confirmed."
         }
     },
     "notifications": {

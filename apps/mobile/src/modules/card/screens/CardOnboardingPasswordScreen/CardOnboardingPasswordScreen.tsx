@@ -64,6 +64,7 @@ export const CardOnboardingPasswordScreen = () => {
                                     showVisibilityToggle
                                     autoCapitalize='none'
                                     autoCorrect={false}
+                                    showErrorOnBlur
                                     errorMessage={
                                         errors.confirmPassword && value
                                             ? t(
