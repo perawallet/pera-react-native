@@ -12,6 +12,7 @@
 
 import { useState } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useAgeGateStore } from '@perawallet/wallet-core-age-gate'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
@@ -30,6 +31,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
     const accounts = useAllAccounts()
     const { network } = useNetwork()
     const resetBanners = useBannersStore(state => state.resetState)
+    const resetAgeGate = useAgeGateStore(state => state.resetState)
     const { deletePreference } = usePreferences()
     const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -68,6 +70,7 @@ export const SettingsDeveloperManageCacheScreen = () => {
 
     const handleClearOneTimeFlags = () => {
         OneTimeUserPreferenceFlags.forEach(deletePreference)
+        resetAgeGate()
         showToast({
             title: t('settings.developer.clear_one_time_flags_success_title'),
             body: t('settings.developer.clear_one_time_flags_success_body'),

@@ -22,15 +22,17 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
                 ? theme.colors.layerGrayLightest
                 : theme.colors.layerGray,
         flexShrink: 1,
+        flexGrow: 1,
         minWidth: 0,
-        maxWidth: '48%',
+        maxWidth: '49%',
     },
     content: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        justifyContent: 'center',
+        gap: theme.spacing.xs,
         paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
         minWidth: 0,
     },
     icon: {

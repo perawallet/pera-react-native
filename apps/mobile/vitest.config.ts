@@ -222,6 +222,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-age-gate',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/age-gate/src/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-analytics',
                 replacement: path.resolve(
                     __dirname,

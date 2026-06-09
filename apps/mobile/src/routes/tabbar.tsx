@@ -12,6 +12,7 @@
 
 import { Platform } from 'react-native'
 import { type IconName, PWIcon } from '@components/core'
+import { withAgeGate } from '@components/AgeGated'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
 import { trackEvent, TabbarEvent } from '@analytics'
@@ -39,6 +40,12 @@ export type TabBarStackParamList = {
 }
 
 const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
+
+// Age-gated at the navigator so the screens (and their side effects) only mount
+// for users who pass the gate; blocked users see the restricted view instead.
+const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
+const GatedSwapScreen = withAgeGate(SwapScreen)
+const GatedFundScreen = withAgeGate(FundScreen)
 
 export const TabBarStackNavigator = () => {
     const insets = useSafeAreaInsets()
@@ -110,19 +117,19 @@ export const TabBarStackNavigator = () => {
             <TabBarStack.Screen
                 name='Discover'
                 layout={headeredLayout}
-                component={DiscoverScreen}
+                component={GatedDiscoverScreen}
                 listeners={{ tabPress: () => trackEvent(TabbarEvent.Discover) }}
             />
             <TabBarStack.Screen
                 name='Swap'
                 layout={safeAreaLayout}
-                component={SwapScreen}
+                component={GatedSwapScreen}
                 listeners={{ tabPress: () => trackEvent(TabbarEvent.Swap) }}
             />
             <TabBarStack.Screen
                 name='Fund'
                 layout={headeredLayout}
-                component={FundScreen}
+                component={GatedFundScreen}
                 listeners={{ tabPress: () => trackEvent(TabbarEvent.Fund) }}
             />
             <TabBarStack.Screen

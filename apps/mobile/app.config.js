@@ -125,6 +125,7 @@ module.exports = {
       // production environment; only local dev builds use the sandbox.
       'com.apple.developer.devicecheck.appattest-environment':
         variant === 'dev' ? 'development' : 'production',
+      'com.apple.developer.declared-age-range': true,
     },
     // Firebase config - stored in config/ directory (not in native folder)
     googleServicesFile: './config/GoogleService-Info.plist',
@@ -334,6 +335,8 @@ module.exports = {
     './plugins/withAndroidMigrationDependencies.js',
     './plugins/withAndroidMigrationSources.js',
     './plugins/withMainApplicationLegacyMigration.js',
+
+    './plugins/withAgeGate',
   ],
 
   // Experiments (for bleeding edge features)

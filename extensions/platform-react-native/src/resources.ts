@@ -13,6 +13,7 @@
 import type { PlatformServices } from '@perawallet/wallet-extension-platform'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import {
+    RNAgeGateService,
     RNAppIntegrityService,
     RNDatabaseService,
     RNKeyValueStorageService,
@@ -37,6 +38,7 @@ const hardwareWalletRegistry = createHardwareWalletRegistry()
 export const platformServices: PlatformServices = {
     analytics: firebaseService,
     biometrics: new RNBiometricsService(),
+    ageGate: new RNAgeGateService(),
     crashReporting: firebaseService,
     pushNotification: firebaseService,
     remoteConfig: firebaseService,

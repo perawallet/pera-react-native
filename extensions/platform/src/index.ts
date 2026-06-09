@@ -14,6 +14,7 @@ export const name = '@perawallet/wallet-extension-platform'
 
 export * from './app-integrity'
 export * from './analytics'
+export * from './age-gate'
 export * from './biometrics'
 export * from './database'
 export * from './device'

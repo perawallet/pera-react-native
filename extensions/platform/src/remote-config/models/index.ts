@@ -21,6 +21,7 @@ export const RemoteConfigKeys = {
     enable_motion_lock: 'enable_motion_lock',
     enable_duress_pin: 'enable_duress_pin',
     pera_7_migration: 'pera_7_migration',
+    force_platform_age_gate: 'force_platform_age_gate',
 } as const
 
 export type RemoteConfigKey =
@@ -40,6 +41,7 @@ export const RemoteConfigDefaults: Record<
     enable_motion_lock: false,
     enable_duress_pin: false,
     pera_7_migration: false,
+    force_platform_age_gate: false,
 }
 
 export interface RemoteConfigService {
