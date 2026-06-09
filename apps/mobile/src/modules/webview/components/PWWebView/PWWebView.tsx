@@ -108,11 +108,7 @@ export const PWWebView = (props: PWWebViewProps) => {
     const [currentUrl, setCurrentUrl] = useState(url)
 
     const isSecure = useMemo(
-        () =>
-            isTrustedWebviewOrigin(currentUrl, [
-                config.onrampBaseUrl,
-                config.discoverBaseUrl,
-            ]),
+        () => isTrustedWebviewOrigin(currentUrl, [config.discoverBaseUrl]),
         [currentUrl],
     )
 

@@ -1,0 +1,44 @@
+{
+  "name": "@perawallet/wallet-core-onramp",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@algorandfoundation/algokit-utils": "catalog:",
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-fee-delegation": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-transactions": "workspace:*",
+    "@perawallet/wallet-extension-provider": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "decimal.js": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
+    "msw": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  }
+}

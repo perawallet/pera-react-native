@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 import heroImage from '@assets/images/rekey-hero.jpg'
 import { PWButton, PWImage, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { NumberedList } from '../NumberedList'
+import { NumberedList } from '@components/NumberedList'
 import {
     useRekeyIntroScreen,
     type RekeyIntroNavConfig,

@@ -38,6 +38,7 @@ import DotStackIcon from '@assets/icons/dot-stack.svg'
 import EditPenIcon from '@assets/icons/edit-pen.svg'
 import EllipsisIcon from '@assets/icons/ellipsis.svg'
 import EnvelopeLetterIcon from '@assets/icons/envelope-letter.svg'
+import ErrorCircleIcon from '@assets/icons/error-circle.svg'
 import EyeIcon from '@assets/icons/eye.svg'
 import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
@@ -68,7 +69,9 @@ import PersonMenuIcon from '@assets/icons/person-menu.svg'
 import PersonIcon from '@assets/icons/person.svg'
 import PauseIcon from '@assets/icons/pause.svg'
 import PenSolidIcon from '@assets/icons/pen-solid.svg'
+import PendingIcon from '@assets/icons/pending.svg'
 import PlayIcon from '@assets/icons/play.svg'
+import ProgressIcon from '@assets/icons/progress.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
 import QrIcon from '@assets/icons/qr.svg'
@@ -179,6 +182,7 @@ export const ICON_LIBRARY = {
     'edit-pen': EditPenIcon,
     ellipsis: EllipsisIcon,
     'envelope-letter': EnvelopeLetterIcon,
+    'error-circle': ErrorCircleIcon,
     eye: EyeIcon,
     faceid: FaceIdIcon,
     feedback: FeedbackIcon,
@@ -209,7 +213,9 @@ export const ICON_LIBRARY = {
     'person-key': PersonKeyIcon,
     pause: PauseIcon,
     'pen-solid': PenSolidIcon,
+    pending: PendingIcon,
     play: PlayIcon,
+    progress: ProgressIcon,
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
     qr: QrIcon,

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { type Decimal } from 'decimal.js'
 import {
     PWButton,
     PWSheetLayout,
@@ -37,11 +38,17 @@ const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
 export type OptInConfirmationContentProps = {
     assetId: string
     accountAddress: string
+    /**
+     * Fee shown to the user, in ALGO. Defaults to the minimum transaction
+     * fee; pass 0 for sponsored (fee-delegated) opt-ins.
+     */
+    fee?: Decimal
 }
 
 export const OptInConfirmationContent = ({
     assetId,
     accountAddress,
+    fee = MIN_FEE_WHOLE_UNITS,
 }: OptInConfirmationContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -138,9 +145,10 @@ export const OptInConfirmationContent = ({
                         currency='ALGO'
                         precision={ALGO_ASSET.decimals}
                         minPrecision={DEFAULT_PRECISION}
-                        value={MIN_FEE_WHOLE_UNITS}
+                        value={fee}
                         showSymbol
                         style={styles.rowValue}
+                        testID='opt_in_fee'
                     />
                 </PWView>
 

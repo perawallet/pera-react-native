@@ -34,6 +34,7 @@ export type PWIconVariant =
     | 'link'
     | 'error'
     | 'positive'
+    | 'warning'
     | 'brand'
     | 'favorite'
     | 'banner'

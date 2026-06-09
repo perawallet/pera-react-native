@@ -2183,6 +2183,125 @@
             "error": "Couldn't load top swaps"
         }
     },
+    "onramp": {
+        "tabs": {
+            "fund": "Fund",
+            "history": "History"
+        },
+        "testnet": {
+            "title": "Not available on TestNet",
+            "body": "Funding your wallet is only available on MainNet. Switch to MainNet to buy ALGO or USDC."
+        },
+        "region": {
+            "unknown": "--",
+            "info_title": "Country Selection",
+            "info_body": "We've identified your location as <0>{{country}}</0>. You can't change the country, but if this is incorrect, check whether your VPN is enabled.",
+            "country_fallback": "your current location",
+            "info_body_secondary": "Based on your country, some crypto or fiat options may be limited."
+        },
+        "introduction": {
+            "title": "Fund",
+            "new_chip": "NEW",
+            "continue": "Continue",
+            "feature_buy": "Buy ALGO or USDC with fiat or crypto",
+            "feature_swap": "Swap assets from other networks into Algorand",
+            "feature_portal": "One portal for on-ramps and cross-chain swaps"
+        },
+        "form": {
+            "proceed": "Proceed",
+            "you_pay": "You pay",
+            "you_receive": "You receive",
+            "sender_address_optional": "Sender Address (Optional)",
+            "enter_sender_address": "Enter your {{name}} address",
+            "provider": "Provider",
+            "payment_method": "Payment Method",
+            "choose_asset": "Choose an asset",
+            "min": "MIN",
+            "max": "MAX",
+            "no_payment_methods": "No payment methods available for your device.",
+            "amount_below_min": "Amount must be greater than {{min}}",
+            "amount_above_max": "Amount must be less than {{max}}"
+        },
+        "pair_selection": {
+            "title_to": "To",
+            "title_from": "From",
+            "empty": "No tokens available"
+        },
+        "source_selection": {
+            "title": "From",
+            "search_placeholder": "Search Fiat or Crypto Assets",
+            "filter_all": "All",
+            "filter_fiat": "Fiat",
+            "filter_crypto": "Crypto",
+            "fiat_section": "Fiat",
+            "crypto_section": "Crypto",
+            "see_all_fiat": "See all fiat currencies",
+            "network_suffix": "{{symbol}} · {{network}} network",
+            "empty": "No assets available"
+        },
+        "provider": {
+            "title": "Select provider",
+            "best_offer": "Best offer"
+        },
+        "payment_method": {
+            "title": "Payment Method",
+            "apply": "Apply"
+        },
+        "sender_address": {
+            "title": "Sender address",
+            "body": "This is the address that will be used to send the funds to the recipient. It is optional but may accelerate the flow and can help in the case of support queries relating to this purchase.",
+            "placeholder": "Enter your sender address",
+            "confirm": "Confirm"
+        },
+        "order_review": {
+            "xo_title": "Swap Review",
+            "pay_in_address": "Pay-in Address",
+            "send_to_address": "Send {{amount}} to this address.",
+            "address": "Address",
+            "address_tag_label": "Address Tag / Memo",
+            "cancel_order": "Cancel Order",
+            "keep_order": "Keep Order",
+            "cancel_confirm_title": "Are you sure?",
+            "cancel_confirm_body": "This will cancel the fund process.",
+            "cancel_success": "Order cancelled",
+            "need_help": "Need help with your order?",
+            "contact_provider": "Contact {{name}}"
+        },
+        "order_details": {
+            "title": "Order Details",
+            "swapped": "Swapped",
+            "order_id": "Order ID",
+            "source_amount": "Source Amount",
+            "destination_amount": "Destination Amount",
+            "network": "Network",
+            "payment_method": "Payment Method",
+            "created_at": "Created At",
+            "exchange_rate": "Effective Exchange Rate",
+            "to_address": "To Address"
+        },
+        "terms": {
+            "title": "Terms and Conditions",
+            "updated": "Updated April 2026",
+            "body": "The service to allow purchase of Algo with other crypto assets is provided through a service operated by Exodus Movement LLC. These orders are executed exclusively by Exodus under Exodus' terms. Pera provides a non-custodial wallet interface and does not execute or control swaps. Pera is not a party to, nor does it custody assets for, swap transactions.",
+            "agreement": "By continuing, you agree to Exodus' <0>Terms</0> & <1>Privacy Policy</1> and acknowledge Pera's <2>Terms.</2>",
+            "accept": "Accept & Continue"
+        },
+        "status": {
+            "pending": "Pending",
+            "in_progress": "In progress",
+            "completed": "Completed",
+            "failed": "Failed",
+            "cancelled": "Cancelled"
+        },
+        "history": {
+            "filter_all": "All",
+            "for": "for",
+            "empty_title": "No transactions yet",
+            "empty_body": "Your buy transactions will appear here.",
+            "error_title": "Something went wrong",
+            "error_body": "We could not load your buy history. Please try again."
+        }
+    },
     "ledger": {
         "pair": {
             "title": "Pair with Ledger",

@@ -350,6 +350,34 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-onramp/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/onramp/src/test-handlers.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-onramp',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/onramp/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-fee-delegation/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/fee-delegation/src/test-handlers.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-fee-delegation',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/fee-delegation/src/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-swaps/test-handlers',
                 replacement: path.resolve(
                     __dirname,

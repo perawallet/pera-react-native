@@ -79,6 +79,9 @@ declare module '@rneui/themed' {
         positiveLighter: string
         negative: string
         negativeLighter: string
+        /** Legible amber for warning text/icons (rneui's `warning` is the
+         *  bright fill used for toast backgrounds). */
+        warningText: string
         successCheckmark: string
         heroBg: string
 
