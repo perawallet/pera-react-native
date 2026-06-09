@@ -32,7 +32,7 @@ export const useStyles = makeStyles(
             textContainer: {
                 flexShrink: 1,
                 minWidth: 0,
-                justifyContent: 'center',
+                justifyContent: 'center'
             },
             text: {
                 color: theme.colors.textMain,

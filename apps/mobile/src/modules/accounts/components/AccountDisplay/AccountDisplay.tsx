@@ -92,7 +92,7 @@ export const AccountDisplay = ({
             {!!account && (
                 <AccountIcon
                     account={account}
-                    size='lg'
+                    size='xl'
                     color={theme.colors.textMain}
                     {...iconProps}
                 />
@@ -112,7 +112,7 @@ export const AccountDisplay = ({
                 {(compact || renderSecondary) && (
                     <PWText
                         style={styles.addressText}
-                        variant='footnoteMedium'
+                        variant='body'
                         weight={400}
                         numberOfLines={1}
                         ellipsizeMode={showTypeAsSecondary ? 'tail' : 'middle'}

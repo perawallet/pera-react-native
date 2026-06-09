@@ -10,18 +10,11 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWFlatList,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWTouchableOpacity, PWView } from '@components/core'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
-import { PortfolioView } from '../PortfolioView'
+import { AccountMenuHeader } from './AccountMenuHeader'
 import { useAccountMenu } from './useAccountMenu'
 import { useCallback, type ReactNode } from 'react'
 
@@ -36,7 +29,6 @@ export type AccountMenuProps = {
 
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const {
         sortedAccounts,
         selectedAccountAddress,
@@ -62,57 +54,22 @@ export const AccountMenu = (props: AccountMenuProps) => {
 
     return (
         <PWView style={styles.container}>
-            {headerContent ?? (
-                <PortfolioView
-                    style={styles.portfolioContainer}
-                    isCollapsed={isChartCollapsed}
-                    onExpandChart={handleExpandChart}
-                />
-            )}
-
             <PWView style={styles.mainContent}>
-                {!hideDefaultHeader && (
-                    <PWView
-                        style={styles.titleBar}
-                        accessible={false}
-                    >
-                        <PWView style={styles.titleBarTitleContainer}>
-                            <PWText
-                                variant='h3'
-                                style={styles.activeTitle}
-                                truncate
-                            >
-                                {t('account_menu.title')}
-                            </PWText>
-                        </PWView>
-                        <PWView
-                            style={styles.titleBarButtonContainer}
-                            accessible={false}
-                        >
-                            <PWButton
-                                variant='linkPositive'
-                                icon='list-arrow-down'
-                                title={t('account_menu.sort')}
-                                paddingStyle='dense'
-                                onPress={onOpenSort}
-                            />
-                            <PWButton
-                                testID='account_menu_add_account_button'
-                                accessibilityLabel='account_menu_add_account_button'
-                                variant='helper'
-                                icon='plus'
-                                paddingStyle='dense'
-                                onPress={onAddAccount}
-                            />
-                        </PWView>
-                    </PWView>
-                )}
-
                 <PWFlatList<WalletAccount>
                     data={sortedAccounts}
                     extraData={sortMode}
                     keyExtractor={item => item.address}
                     renderItem={renderAccount}
+                    ListHeaderComponent={
+                        <AccountMenuHeader
+                            headerContent={headerContent}
+                            hideDefaultHeader={hideDefaultHeader}
+                            isChartCollapsed={isChartCollapsed}
+                            onExpandChart={handleExpandChart}
+                            onOpenSort={onOpenSort}
+                            onAddAccount={onAddAccount}
+                        />
+                    }
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
                     onScroll={handleListScroll}
