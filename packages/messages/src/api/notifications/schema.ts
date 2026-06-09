@@ -37,6 +37,7 @@ export const messageStatusResponseSchema = z.object({
     hasUnreadItems: z.boolean(),
     hasUnreadNotifications: z.boolean(),
     hasUnreadInboxItems: z.boolean(),
+    unreadInboxCount: z.number().optional().default(0),
 })
 
 export const notificationsListResponseSchema = z.object({

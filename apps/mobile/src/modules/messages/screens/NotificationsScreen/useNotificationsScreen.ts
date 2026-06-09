@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useEffect, useMemo, useRef } from 'react'
 import {
     type PeraNotification,
     useInboxStatus,
@@ -32,7 +31,6 @@ export type UseNotificationsScreenResult = {
 }
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
-    const navigation = useNavigation()
     const { hasUnreadNotifications } = useInboxStatus()
     const {
         data,
@@ -47,15 +45,22 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
 
     const notifications = useMemo(() => data ?? [], [data])
 
+    // Mark notifications as read only when leaving the screen (unmount), so the
+    // per-item unread dots stay visible the whole time the user is viewing the
+    // list instead of clearing the instant the screen gains focus. The cleanup
+    // runs once on unmount, so we read the latest values from a ref rather than
+    // closing over a stale first-render snapshot.
+    const latestRef = useRef({ notifications, hasUnreadNotifications })
+    latestRef.current = { notifications, hasUnreadNotifications }
+
     useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
+        return () => {
+            const { notifications, hasUnreadNotifications } = latestRef.current
             if (notifications.length > 0 && hasUnreadNotifications) {
                 markAsRead(parseInt(notifications[0].id, 10))
             }
-        })
-
-        return unsubscribe
-    }, [navigation, notifications, markAsRead, hasUnreadNotifications])
+        }
+    }, [markAsRead])
 
     const loadMoreItems = async () => {
         await fetchNextPage()
