@@ -40,8 +40,15 @@ export const WebViewTitleBar = ({
     return (
         <PWView style={styles.titleBar}>
             <PWView style={styles.titleIconContainer}>
-                <PWTouchableOpacity {...getTestProps('webview_close_button')} onPress={onCloseRequested}>
-                    <PWIcon name='cross' variant='primary' size='md' />
+                <PWTouchableOpacity
+                    {...getTestProps('webview_close_button')}
+                    onPress={onCloseRequested}
+                >
+                    <PWIcon
+                        name='cross'
+                        variant='primary'
+                        size='md'
+                    />
                 </PWTouchableOpacity>
             </PWView>
             <PWView style={styles.titleBarTextContainer}>
