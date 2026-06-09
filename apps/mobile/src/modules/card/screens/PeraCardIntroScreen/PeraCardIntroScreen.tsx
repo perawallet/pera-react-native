@@ -13,8 +13,9 @@
 import React from 'react'
 import { PWButton, PWImage, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-// TODO(card): swap in the reworked hero asset — current one has a baked-in gradient that clashes with the dark background
-import peraCardHero from '@assets/images/pera-card-hero.png'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import peraCardHeroLight from '@assets/images/pera-card-hero-light.png'
+import peraCardHeroDark from '@assets/images/pera-card-hero-dark.png'
 import baanxLogo from '@assets/images/baanx-logo.png'
 import { usePeraCardIntroScreen } from './usePeraCardIntroScreen'
 import { useStyles } from './styles'
@@ -22,6 +23,8 @@ import { useStyles } from './styles'
 export const PeraCardIntroScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const isDarkMode = useIsDarkMode()
+    const peraCardHero = isDarkMode ? peraCardHeroDark : peraCardHeroLight
     const { handleCreateAccount, handleAlreadyHaveAccount, handleLearnMore } =
         usePeraCardIntroScreen()
 
