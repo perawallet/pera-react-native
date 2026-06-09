@@ -137,9 +137,6 @@ export const ImportSelectAddressesScreen = () => {
                                     <PWCheckbox
                                         checked={isAllSelected}
                                         onPress={toggleSelectAll}
-                                        containerStyle={
-                                            styles.checkboxContainer
-                                        }
                                         testID='import_select_addresses_select_all_checkbox'
                                     />
                                 </PWTouchableOpacity>
