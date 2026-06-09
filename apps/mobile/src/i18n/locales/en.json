@@ -1418,7 +1418,7 @@
     "search": {
         "title": "Search",
         "screen_title": "Search Pera Wallet",
-        "placeholder": "Search...",
+        "placeholder": "Search Pera",
         "empty_prompt_title": "Start typing to search",
         "empty_prompt_body": "Search across your accounts, contacts, and assets",
         "show_more": "Show {{count}} more",

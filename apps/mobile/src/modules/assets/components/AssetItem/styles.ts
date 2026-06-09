@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontWeightVariant, getTypography } from '@theme/typography'
+import { getFontWeightVariant } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
     return {

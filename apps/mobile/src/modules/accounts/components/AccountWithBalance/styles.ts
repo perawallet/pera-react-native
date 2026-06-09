@@ -29,7 +29,7 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
             ? theme.colors.buttonSquareIcon
             : theme.colors.layerGray,
         borderRadius: theme.spacing.lg,
-        padding: theme.spacing.md,
+        padding: theme.spacing.lg,
     },
     balanceContainer: {
         gap: theme.spacing.xs,

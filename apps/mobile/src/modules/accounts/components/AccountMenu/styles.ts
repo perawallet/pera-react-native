@@ -30,7 +30,8 @@ export const useStyles = makeStyles(theme => {
         },
         mainContent: {
             flex: 1,
-            gap: theme.spacing.md,
+            marginTop: theme.spacing.xl,
+            gap: theme.spacing.sm,
             minWidth: 0,
         },
         titleBar: {

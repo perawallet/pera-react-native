@@ -23,7 +23,7 @@ import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { PortfolioView } from '../PortfolioView'
 import { useAccountMenu } from './useAccountMenu'
-import { type ReactNode } from 'react'
+import { useCallback, type ReactNode } from 'react'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
@@ -47,6 +47,17 @@ export const AccountMenu = (props: AccountMenuProps) => {
         handleExpandChart,
     } = useAccountMenu(props)
     const { onAddAccount, onOpenSort, headerContent, hideDefaultHeader } = props
+
+    const renderAccount = useCallback(({ item: acct }: { item: WalletAccount }) => (
+        <PWTouchableOpacity onPress={() => handleTap(acct)}>
+            <AccountWithBalance
+                account={acct}
+                isHighlighted={
+                    acct.address === selectedAccountAddress
+                }
+            />
+        </PWTouchableOpacity>
+    ), [handleTap, selectedAccountAddress])
 
     return (
         <PWView style={styles.container}>
@@ -100,16 +111,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     data={sortedAccounts}
                     extraData={sortMode}
                     keyExtractor={item => item.address}
-                    renderItem={({ item: acct }) => (
-                        <PWTouchableOpacity onPress={() => handleTap(acct)}>
-                            <AccountWithBalance
-                                account={acct}
-                                isHighlighted={
-                                    acct.address === selectedAccountAddress
-                                }
-                            />
-                        </PWTouchableOpacity>
-                    )}
+                    renderItem={renderAccount}
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
                     onScroll={handleListScroll}

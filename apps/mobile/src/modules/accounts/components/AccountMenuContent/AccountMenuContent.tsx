@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import { PWIcon, PWToolbar, PWView } from '@components/core'
+import { PWIcon, PWView } from '@components/core'
+import { SearchInputTrigger } from '@components/SearchInputTrigger'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useLanguage } from '@hooks/useLanguage'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { type ReactNode } from 'react'
 import { useStyles } from './styles'
@@ -37,30 +39,29 @@ export const AccountMenuContent = ({
     accountFilter,
 }: AccountMenuContentProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const { resolve, dismiss } =
         useBottomSheetResult<AccountMenuContentResult>()
 
-    const closeIcon = (
-        <PWIcon
-            name='cross'
-            onPress={dismiss}
-        />
-    )
-
-    const searchIcon = showSearch ? (
-        <PWIcon
-            name='magnifying-glass'
-            onPress={() => resolve({ kind: 'search' })}
-            testID='account_menu_search_button'
-        />
-    ) : undefined
-
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                left={closeIcon}
-                right={searchIcon}
-            />
+            <PWView style={styles.header}>
+                {showSearch ? (
+                    <PWView style={styles.searchTrigger}>
+                        <SearchInputTrigger
+                            onPress={() => resolve({ kind: 'search' })}
+                            placeholder={t('search.placeholder')}
+                            accessibilityLabel={t('search.placeholder')}
+                            testID='account_menu_search_button'
+                        />
+                    </PWView>
+                ) : null}
+                <PWIcon
+                    name='cross'
+                    onPress={dismiss}
+                    testID='account_menu_close_button'
+                />
+            </PWView>
             <AccountMenu
                 onSelected={account => resolve({ kind: 'selected', account })}
                 onAddAccount={() => resolve({ kind: 'add-account' })}

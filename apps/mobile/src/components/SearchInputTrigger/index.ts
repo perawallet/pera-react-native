@@ -10,24 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        minWidth: 0,
-        overflow: 'hidden',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        // Close stays right-aligned when the search trigger is hidden.
-        justifyContent: 'flex-end',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.md,
-    },
-    searchTrigger: {
-        flex: 1,
-    },
-}))
+export { SearchInputTrigger } from './SearchInputTrigger'
+export type { SearchInputTriggerProps } from './SearchInputTrigger'
