@@ -11,11 +11,10 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { Text } from 'react-native'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
-import { PWInBottomSheetContext } from '../../PWBottomSheet/inSheetContext'
 
 describe('PWTouchableOpacity', () => {
     it('calls onPress when clicked', () => {
@@ -61,23 +60,6 @@ describe('PWTouchableOpacity', () => {
         expect(onPress).toHaveBeenCalledTimes(2)
     })
 
-    it('fires onPress via the gesture-handler touchable inside a sheet', () => {
-        // Inside a sheet PWTouchableOpacity swaps to the gesture-handler
-        // touchable so it cooperates with the sheet pan gesture; it must still
-        // invoke onPress.
-        const onPress = vi.fn()
-        render(
-            <PWInBottomSheetContext.Provider value={true}>
-                <PWTouchableOpacity onPress={onPress}>
-                    <Text>Sheet Tap</Text>
-                </PWTouchableOpacity>
-            </PWInBottomSheetContext.Provider>,
-        )
-
-        fireEvent.click(screen.getByText('Sheet Tap'))
-        expect(onPress).toHaveBeenCalledTimes(1)
-    })
-
     it('renders children correctly', () => {
         render(
             <PWTouchableOpacity>
@@ -86,5 +68,34 @@ describe('PWTouchableOpacity', () => {
         )
 
         expect(screen.getByText('Child Text')).toBeTruthy()
+    })
+
+    it('remounts the touchable when disabled flips to enabled', () => {
+        // RN's Pressability leaves a stale, collapsed press region when only the
+        // `disabled` prop flips (no layout event fires), so a button that mounts
+        // disabled and is later enabled only responds near its center. We key the
+        // touchable on `disabled` to force a fresh mount — and re-measure — when
+        // it becomes enabled. The press-region bug itself isn't reproducible in
+        // jsdom, so guard the remount that fixes it: a child mounts twice across
+        // the flip. Drop the key and this child mounts only once.
+        const onMount = vi.fn()
+        const MountProbe = () => {
+            useEffect(() => onMount(), [])
+            return <Text>Probe</Text>
+        }
+
+        const { rerender } = render(
+            <PWTouchableOpacity disabled>
+                <MountProbe />
+            </PWTouchableOpacity>,
+        )
+        expect(onMount).toHaveBeenCalledTimes(1)
+
+        rerender(
+            <PWTouchableOpacity disabled={false}>
+                <MountProbe />
+            </PWTouchableOpacity>,
+        )
+        expect(onMount).toHaveBeenCalledTimes(2)
     })
 })

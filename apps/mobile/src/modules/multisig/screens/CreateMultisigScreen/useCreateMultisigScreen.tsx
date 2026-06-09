@@ -29,9 +29,12 @@ import {
     type Participant,
 } from '../../hooks/useMultisigCreation'
 
+const MAX_PARTICIPANTS = 16
+
 type UseCreateMultisigScreenResult = {
     participants: Participant[]
     canContinue: boolean
+    maxParticipantsReached: boolean
     isParticipantInWallet: (address: string) => boolean
     handleOpenAddParticipant: () => Promise<void>
     handleEditParticipant: (index: number) => void
@@ -98,6 +101,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
 
     const handleOpenAddParticipant = useCallback(async () => {
         trackEvent(MultisigEvent.AddAccount)
+
         const result = await requestBottomSheet<AddParticipantResult>({
             contents: <AddParticipantContent />,
             options: {
@@ -139,6 +143,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     return {
         participants,
         canContinue,
+        maxParticipantsReached: participants.length >= MAX_PARTICIPANTS,
         isParticipantInWallet,
         handleOpenAddParticipant,
         handleEditParticipant,

@@ -23,4 +23,7 @@ export const useStyles = makeStyles(theme => ({
     addButton: {
         marginTop: theme.spacing.lg,
     },
+    maxParticipantsText: {
+        color: theme.colors.textGray,
+    },
 }))
