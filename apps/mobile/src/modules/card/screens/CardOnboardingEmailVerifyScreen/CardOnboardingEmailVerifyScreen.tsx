@@ -18,11 +18,7 @@ import {
 } from './useCardOnboardingEmailVerifyScreen'
 import { useStyles } from './styles'
 
-import type { CardOnboardingScreenProps } from '../../routes/card-onboarding/types'
-
-export const CardOnboardingEmailVerifyScreen = ({
-    route,
-}: CardOnboardingScreenProps<'CardOnboardingEmailVerify'>) => {
+export const CardOnboardingEmailVerifyScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
@@ -34,10 +30,7 @@ export const CardOnboardingEmailVerifyScreen = ({
         canResend,
         handleResend,
         handleConfirm,
-    } = useCardOnboardingEmailVerifyScreen({
-        email: route.params.email,
-        countryIso: route.params.countryIso,
-    })
+    } = useCardOnboardingEmailVerifyScreen()
 
     return (
         <PWScreen testID='card-onboarding-email-verify'>

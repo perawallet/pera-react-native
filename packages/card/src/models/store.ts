@@ -18,6 +18,15 @@ import type { CardTransactionFilters } from './transaction'
 /** Client-only UX/navigation state. No tokens, no PAN/CVV/PIN. */
 export type CardUxState = BaseStoreState & {
     onboardingStep: OnboardingStep
+    /** Email entered on the first onboarding step; carried through the flow. */
+    email: Nullable<string>
+    /** ISO 3166-1 alpha-2 country of residence picked on the first step. */
+    countryIso: Nullable<string>
+    /**
+     * The verification code the user typed. Transient OTP — held in memory only
+     * and never persisted (excluded from `partialize`).
+     */
+    verificationCode: Nullable<string>
     /** Returned by email/send; required by email/verify and phone/send. */
     contactVerificationId: Nullable<string>
     /** Returned by email/verify; required by every later registration step. */
@@ -28,6 +37,9 @@ export type CardUxState = BaseStoreState & {
     lastKnownPanLast4: Nullable<string>
     transactionFilters: CardTransactionFilters
     setOnboardingStep: (step: OnboardingStep) => void
+    setEmail: (email: Nullable<string>) => void
+    setCountryIso: (countryIso: Nullable<string>) => void
+    setVerificationCode: (verificationCode: Nullable<string>) => void
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void
     setCardSnapshot: (snapshot: {

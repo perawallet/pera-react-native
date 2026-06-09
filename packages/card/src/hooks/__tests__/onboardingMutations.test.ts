@@ -36,6 +36,8 @@ import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMut
 import { useVerifyPhoneMutation } from '../useVerifyPhoneMutation'
 import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMutation'
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
+import { useCardStore } from '../../store'
+import { OnboardingStep } from '../../models'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -52,9 +54,13 @@ describe('onboarding mutation hooks', () => {
         vi.clearAllMocks()
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         Object.values(api).forEach(fn => fn.mockResolvedValue(undefined))
+        useCardStore.getState().resetState()
     })
 
-    it('useSendEmailVerificationMutation posts the email with the active network', async () => {
+    it('useSendEmailVerificationMutation posts the email and stores the verification id', async () => {
+        api.sendEmailVerification.mockResolvedValue({
+            contactVerificationId: 'cv_new',
+        })
         const { result } = renderHook(
             () => useSendEmailVerificationMutation(),
             {
@@ -68,9 +74,14 @@ describe('onboarding mutation hooks', () => {
             email: 'e@x.com',
             network: 'mainnet',
         })
+        expect(useCardStore.getState().contactVerificationId).toBe('cv_new')
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.EmailVerify,
+        )
     })
 
-    it('useVerifyEmailMutation forwards the verification payload', async () => {
+    it('useVerifyEmailMutation forwards the payload and stores the onboarding id', async () => {
+        api.verifyEmail.mockResolvedValue({ onboardingId: 'ob_new' })
         const { result } = renderHook(() => useVerifyEmailMutation(), {
             wrapper,
         })
@@ -89,6 +100,10 @@ describe('onboarding mutation hooks', () => {
                 contactVerificationId: 'cv_1',
                 network: 'mainnet',
             }),
+        )
+        expect(useCardStore.getState().onboardingId).toBe('ob_new')
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.PhoneSend,
         )
     })
 

@@ -11,35 +11,16 @@
  */
 
 import { Controller } from 'react-hook-form'
-import {
-    PWButton,
-    PWInput,
-    PWScreen,
-    PWText,
-    PWTouchableIcon,
-    PWView,
-} from '@components/core'
+import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardOnboardingPasswordScreen } from './useCardOnboardingPasswordScreen'
 import { useStyles } from './styles'
 
-import type { CardOnboardingScreenProps } from '../../routes/card-onboarding/types'
-
-export const CardOnboardingPasswordScreen = ({
-    route,
-}: CardOnboardingScreenProps<'CardOnboardingPassword'>) => {
+export const CardOnboardingPasswordScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { email, countryIso, verificationCode } = route.params
-    const {
-        control,
-        errors,
-        isValid,
-        isSubmitting,
-        passwordField,
-        confirmPasswordField,
-        handleConfirm,
-    } = useCardOnboardingPasswordScreen({ email, countryIso, verificationCode })
+    const { control, errors, isValid, isSubmitting, handleConfirm } =
+        useCardOnboardingPasswordScreen()
 
     return (
         <PWScreen>
@@ -52,29 +33,14 @@ export const CardOnboardingPasswordScreen = ({
                             <PWInput
                                 value={value}
                                 onChangeText={onChange}
-                                onFocus={passwordField.handleFocus}
-                                onBlur={() => {
-                                    onBlur()
-                                    passwordField.handleBlur()
-                                }}
+                                onBlur={onBlur}
                                 placeholder={t(
                                     'peraCard.create_password.password_placeholder',
                                 )}
-                                secureTextEntry={!passwordField.isVisible}
+                                secureTextEntry
+                                showVisibilityToggle
                                 autoCapitalize='none'
                                 autoCorrect={false}
-                                rightIcon={
-                                    passwordField.isFocused ? (
-                                        <PWTouchableIcon
-                                            name='eye'
-                                            variant='secondary'
-                                            size='md'
-                                            onPress={
-                                                passwordField.toggleVisibility
-                                            }
-                                        />
-                                    ) : undefined
-                                }
                                 testID='card-onboarding-password-input'
                             />
                         )}
@@ -90,31 +56,14 @@ export const CardOnboardingPasswordScreen = ({
                                 <PWInput
                                     value={value}
                                     onChangeText={onChange}
-                                    onFocus={confirmPasswordField.handleFocus}
-                                    onBlur={() => {
-                                        onBlur()
-                                        confirmPasswordField.handleBlur()
-                                    }}
+                                    onBlur={onBlur}
                                     placeholder={t(
                                         'peraCard.create_password.confirm_placeholder',
                                     )}
-                                    secureTextEntry={
-                                        !confirmPasswordField.isVisible
-                                    }
+                                    secureTextEntry
+                                    showVisibilityToggle
                                     autoCapitalize='none'
                                     autoCorrect={false}
-                                    rightIcon={
-                                        confirmPasswordField.isFocused ? (
-                                            <PWTouchableIcon
-                                                name='eye'
-                                                variant='secondary'
-                                                size='md'
-                                                onPress={
-                                                    confirmPasswordField.toggleVisibility
-                                                }
-                                            />
-                                        ) : undefined
-                                    }
                                     errorMessage={
                                         errors.confirmPassword && value
                                             ? t(

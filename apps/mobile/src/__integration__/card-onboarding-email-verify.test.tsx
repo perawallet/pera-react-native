@@ -10,20 +10,27 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { useCardStore } from '@perawallet/wallet-core-card'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 
+// The screen reads the email from the store (no nav params), so seed it.
 const renderVerify = () =>
     renderWithNavigation(
         CardOnboardingEmailVerifyScreen,
         'CardOnboardingEmailVerify',
-        { initialParams: { email: 'john@example.com', countryIso: 'GB' } },
     )
 
 describe('card onboarding — email verify', () => {
+    beforeEach(() => {
+        const store = useCardStore.getState()
+        store.resetState()
+        store.setEmail('john@example.com')
+    })
+
     it('surfaces a wrong-code error on submit and clears it when the code is edited', async () => {
         renderVerify()
 

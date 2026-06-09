@@ -14,6 +14,8 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const mockMutateAsync = vi.fn()
+const mockSetVerificationCode = vi.fn()
+const mockEmail = 'john@example.com'
 let mockSendIsPending = false
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -31,6 +33,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
+        useCardStore: (
+            selector: (state: {
+                email: string | null
+                setVerificationCode: (code: string | null) => void
+            }) => unknown,
+        ) =>
+            selector({
+                email: mockEmail,
+                setVerificationCode: mockSetVerificationCode,
+            }),
     }
 })
 
@@ -58,16 +70,8 @@ import {
     useCardOnboardingEmailVerifyScreen,
 } from '../useCardOnboardingEmailVerifyScreen'
 
-const EMAIL = 'john@example.com'
-const COUNTRY_ISO = 'GB'
-
 const renderVerifyHook = () =>
-    renderHook(() =>
-        useCardOnboardingEmailVerifyScreen({
-            email: EMAIL,
-            countryIso: COUNTRY_ISO,
-        }),
-    )
+    renderHook(() => useCardOnboardingEmailVerifyScreen())
 
 describe('useCardOnboardingEmailVerifyScreen', () => {
     beforeEach(() => {
@@ -100,18 +104,17 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('navigates to the password screen on the valid code', () => {
+    it('stores the code and navigates to the password screen on the valid code', () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
         act(() => result.current.handleConfirm())
 
         expect(result.current.isWrongCode).toBe(false)
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword', {
-            email: EMAIL,
-            countryIso: COUNTRY_ISO,
-            verificationCode: MOCK_VALID_VERIFICATION_CODE,
-        })
+        expect(mockSetVerificationCode).toHaveBeenCalledWith(
+            MOCK_VALID_VERIFICATION_CODE,
+        )
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
     })
 
     it('clears the wrong-code error as the user edits', () => {
@@ -138,7 +141,7 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
             await result.current.handleResend()
         })
 
-        expect(mockMutateAsync).toHaveBeenCalledWith({ email: EMAIL })
+        expect(mockMutateAsync).toHaveBeenCalledWith({ email: mockEmail })
         expect(result.current.secondsRemaining).toBe(60)
         expect(result.current.canResend).toBe(false)
     })

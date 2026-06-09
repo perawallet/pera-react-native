@@ -12,14 +12,12 @@
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 
+// The flow's data (email, country, verification code, ids) lives in the card
+// store, so screens don't thread it through navigation params.
 export type CardOnboardingStackParamList = {
     CardOnboardingEmail: undefined
-    CardOnboardingEmailVerify: { email: string; countryIso: string }
-    CardOnboardingPassword: {
-        email: string
-        countryIso: string
-        verificationCode: string
-    }
+    CardOnboardingEmailVerify: undefined
+    CardOnboardingPassword: undefined
 }
 
 export type CardOnboardingScreenProps<

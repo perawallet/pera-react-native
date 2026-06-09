@@ -17,6 +17,8 @@ import {
     type VerifyEmailParams,
     type VerifyEmailResult,
 } from '../api/onboarding'
+import { OnboardingStep } from '../models'
+import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type VerifyEmailVariables = Omit<VerifyEmailParams, 'network' | 'signal'>
@@ -35,6 +37,13 @@ export const useVerifyEmailMutation = (): UseVerifyEmailMutationResult => {
         VerifyEmailVariables
     >({
         mutationFn: variables => verifyEmail({ ...variables, network }),
+        // Verification completed: store the onboarding id and advance the flow.
+        onSuccess: ({ onboardingId }) => {
+            const { setOnboardingId, setOnboardingStep } =
+                useCardStore.getState()
+            setOnboardingId(onboardingId)
+            setOnboardingStep(OnboardingStep.PhoneSend)
+        },
         throwOnError: false,
     })
 

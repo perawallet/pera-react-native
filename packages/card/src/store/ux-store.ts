@@ -22,6 +22,9 @@ const STORE_NAME = 'card-store'
 // in React Query; secrets (PAN/CVV/PIN/tokens) never enter this store.
 const initialState = {
     onboardingStep: OnboardingStep.EmailSend,
+    email: null,
+    countryIso: null,
+    verificationCode: null,
     contactVerificationId: null,
     onboardingId: null,
     cardId: null,
@@ -37,6 +40,9 @@ export const useCardStore: UseBoundStore<
         set => ({
             ...initialState,
             setOnboardingStep: step => set({ onboardingStep: step }),
+            setEmail: email => set({ email }),
+            setCountryIso: countryIso => set({ countryIso }),
+            setVerificationCode: verificationCode => set({ verificationCode }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
             setOnboardingId: id => set({ onboardingId: id }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
@@ -53,8 +59,12 @@ export const useCardStore: UseBoundStore<
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
+            // `verificationCode` is intentionally omitted — it's a transient
+            // OTP that should never be written to disk.
             partialize: state => ({
                 onboardingStep: state.onboardingStep,
+                email: state.email,
+                countryIso: state.countryIso,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
                 cardId: state.cardId,

@@ -97,6 +97,16 @@ export const emailSendSchema = z.object({
 export type EmailSendFormValues = z.infer<typeof emailSendSchema>
 
 /**
+ * "Special character" = any non-alphanumeric character. Extracted into a named
+ * constant so the password rule reads clearly — inline, the negated class is
+ * easy to misread as having no special-character provision at all.
+ *
+ * NOTE: Baanx hasn't published its exact allowed set, so this is intentionally
+ * broad to match the rule shown to the user. Tighten if the backend specifies one.
+ */
+const PASSWORD_SPECIAL_CHARACTER_REGEX = /[^A-Za-z0-9]/
+
+/**
  * Validation for the password the user sets during email verification. Mirrors
  * Baanx's rules: at least 8 chars with an uppercase, a lowercase, a number, and
  * a special character; `confirmPassword` must match.
@@ -109,7 +119,7 @@ export const passwordSetSchema = z
             .regex(/[A-Z]/)
             .regex(/[a-z]/)
             .regex(/[0-9]/)
-            .regex(/[^A-Za-z0-9]/),
+            .regex(PASSWORD_SPECIAL_CHARACTER_REGEX),
         confirmPassword: z.string(),
     })
     .refine(values => values.password === values.confirmPassword, {

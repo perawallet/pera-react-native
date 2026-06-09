@@ -10,120 +10,99 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
-    OnboardingStep,
     passwordSetSchema,
     useCardStore,
     useVerifyEmailMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-
-type UseCardOnboardingPasswordScreenParams = {
-    email: string
-    countryIso: string
-    verificationCode: string
-}
-
-/** Per-field UI state for a password input: its reveal toggle + focus. */
-export type PasswordFieldState = {
-    isVisible: boolean
-    isFocused: boolean
-    toggleVisibility: () => void
-    handleFocus: () => void
-    handleBlur: () => void
-}
 
 export type UseCardOnboardingPasswordScreenResult = {
     control: Control<PasswordSetFormValues>
     errors: FieldErrors<PasswordSetFormValues>
     isValid: boolean
     isSubmitting: boolean
-    passwordField: PasswordFieldState
-    confirmPasswordField: PasswordFieldState
     handleConfirm: () => void
 }
 
-// The show/hide icon is only rendered while the field is focused, so each input
-// tracks its own focus + reveal state. Called once per input below.
-const usePasswordFieldState = (): PasswordFieldState => {
-    const [isVisible, setIsVisible] = useState(false)
-    const [isFocused, setIsFocused] = useState(false)
+export const useCardOnboardingPasswordScreen =
+    (): UseCardOnboardingPasswordScreenResult => {
+        const { t } = useLanguage()
+        const { successToast, errorToast } = useToast()
+        const navigation = useAppNavigation()
+        const email = useCardStore(state => state.email)
+        const countryIso = useCardStore(state => state.countryIso)
+        const verificationCode = useCardStore(state => state.verificationCode)
+        const contactVerificationId = useCardStore(
+            state => state.contactVerificationId,
+        )
+        const verifyEmail = useVerifyEmailMutation()
 
-    const toggleVisibility = useCallback(() => setIsVisible(prev => !prev), [])
-    const handleFocus = useCallback(() => setIsFocused(true), [])
-    const handleBlur = useCallback(() => setIsFocused(false), [])
+        const {
+            control,
+            handleSubmit,
+            formState: { isValid, errors },
+        } = useForm<PasswordSetFormValues>({
+            resolver: zodResolver(passwordSetSchema),
+            mode: 'onChange',
+            defaultValues: { password: '', confirmPassword: '' },
+        })
 
-    return { isVisible, isFocused, toggleVisibility, handleFocus, handleBlur }
-}
+        // This is the real Baanx `email/verify` call (mocked for now): it
+        // completes verification and sets the password. The mutation's
+        // onSuccess stores the onboarding id and advances the flow.
+        const submitPassword = handleSubmit(async ({ password }) => {
+            // The flow's data lives in the store, not nav params. The
+            // verification code is a transient OTP that isn't persisted, so if
+            // we ever land here without it (e.g. the app was killed mid-flow),
+            // send the user back to re-verify rather than POSTing an empty code.
+            if (
+                email === null ||
+                countryIso === null ||
+                verificationCode === null ||
+                contactVerificationId === null
+            ) {
+                errorToast(
+                    t('peraCard.create_account.error_title'),
+                    t('peraCard.create_account.error_body'),
+                )
+                navigation.navigate('CardOnboardingEmailVerify')
+                return
+            }
+            try {
+                await verifyEmail.mutateAsync({
+                    email,
+                    password,
+                    verificationCode,
+                    contactVerificationId,
+                    countryOfResidence: countryIso,
+                })
+                successToast(
+                    t('peraCard.create_password.success_title'),
+                    t('peraCard.create_password.success_body'),
+                )
+            } catch {
+                errorToast(
+                    t('peraCard.create_account.error_title'),
+                    t('peraCard.create_account.error_body'),
+                )
+            }
+        })
 
-export const useCardOnboardingPasswordScreen = ({
-    email,
-    countryIso,
-    verificationCode,
-}: UseCardOnboardingPasswordScreenParams): UseCardOnboardingPasswordScreenResult => {
-    const { t } = useLanguage()
-    const { successToast, errorToast } = useToast()
-    const contactVerificationId = useCardStore(
-        state => state.contactVerificationId,
-    )
-    const setOnboardingId = useCardStore(state => state.setOnboardingId)
-    const setOnboardingStep = useCardStore(state => state.setOnboardingStep)
-    const verifyEmail = useVerifyEmailMutation()
-
-    const passwordField = usePasswordFieldState()
-    const confirmPasswordField = usePasswordFieldState()
-
-    const {
-        control,
-        handleSubmit,
-        formState: { isValid, errors },
-    } = useForm<PasswordSetFormValues>({
-        resolver: zodResolver(passwordSetSchema),
-        mode: 'onChange',
-        defaultValues: { password: '', confirmPassword: '' },
-    })
-
-    // This is the real Baanx `email/verify` call (mocked for now): it completes
-    // verification, sets the password, and returns the onboarding id.
-    const submitPassword = handleSubmit(async ({ password }) => {
-        try {
-            const { onboardingId } = await verifyEmail.mutateAsync({
-                email,
-                password,
-                verificationCode,
-                contactVerificationId: contactVerificationId ?? '',
-                countryOfResidence: countryIso,
-            })
-            setOnboardingId(onboardingId)
-            setOnboardingStep(OnboardingStep.PhoneSend)
-            successToast(
-                t('peraCard.create_password.success_title'),
-                t('peraCard.create_password.success_body'),
-            )
-        } catch {
-            errorToast(
-                t('peraCard.create_account.error_title'),
-                t('peraCard.create_account.error_body'),
-            )
+        const handleConfirm = () => {
+            void submitPassword()
         }
-    })
 
-    const handleConfirm = () => {
-        void submitPassword()
+        return {
+            control,
+            errors,
+            isValid,
+            isSubmitting: verifyEmail.isPending,
+            handleConfirm,
+        }
     }
-
-    return {
-        control,
-        errors,
-        isValid,
-        isSubmitting: verifyEmail.isPending,
-        passwordField,
-        confirmPasswordField,
-        handleConfirm,
-    }
-}

@@ -15,7 +15,6 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     emailSendSchema,
-    OnboardingStep,
     useCardStore,
     useCurrentRegionQuery,
     useRegistrationSettingsQuery,
@@ -57,10 +56,8 @@ export const useCardOnboardingEmailScreen =
         const { request } = useBottomSheet()
         const { network } = useNetwork()
         const deviceId = useDeviceID(network)
-        const setOnboardingStep = useCardStore(state => state.setOnboardingStep)
-        const setContactVerificationId = useCardStore(
-            state => state.setContactVerificationId,
-        )
+        const setEmail = useCardStore(state => state.setEmail)
+        const setCountryIso = useCardStore(state => state.setCountryIso)
         const sendEmailVerification = useSendEmailVerificationMutation()
         const requestCountryAvailability =
             useRequestCountryAvailabilityMutation()
@@ -121,14 +118,12 @@ export const useCardOnboardingEmailScreen =
 
         const submitEmail = handleSubmit(async ({ email, countryIso }) => {
             try {
-                const { contactVerificationId } =
-                    await sendEmailVerification.mutateAsync({ email })
-                setContactVerificationId(contactVerificationId)
-                setOnboardingStep(OnboardingStep.EmailVerify)
-                navigation.navigate('CardOnboardingEmailVerify', {
-                    email,
-                    countryIso,
-                })
+                // The mutation's onSuccess stores contactVerificationId and
+                // advances the step; we just persist the user's inputs and move on.
+                await sendEmailVerification.mutateAsync({ email })
+                setEmail(email)
+                setCountryIso(countryIso)
+                navigation.navigate('CardOnboardingEmailVerify')
             } catch {
                 errorToast(
                     t('peraCard.create_account.error_title'),
