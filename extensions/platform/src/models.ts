@@ -11,6 +11,7 @@
  */
 
 import type { AppIntegrityService } from './app-integrity'
+import type { AgeGateService } from './age-gate'
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { DeviceInfoService } from './device'
@@ -28,6 +29,7 @@ import type { KeyValueStorageService } from './storage'
 export interface PlatformServices {
     keyValueStorage: KeyValueStorageService
     biometrics: BiometricsService
+    ageGate: AgeGateService
     pushNotification: PushNotificationService
     remoteConfig: RemoteConfigService
     analytics: AnalyticsService

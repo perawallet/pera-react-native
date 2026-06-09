@@ -17,6 +17,7 @@ import {
     type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
+import { withAgeGate } from '@components/AgeGated'
 import { BannersCarouselModalScreen } from '@modules/banners'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
@@ -53,6 +54,10 @@ import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
+
+// Age-gated at the navigator so the screen (and its data fetching) only mounts
+// for users who pass the gate; blocked users see the restricted view instead.
+const GatedStakingScreen = withAgeGate(StakingScreen)
 
 export const MainRoutes = () => {
     const showOnboarding = useShowOnboarding()
@@ -162,7 +167,7 @@ export const MainRoutes = () => {
                                 ),
                             }}
                             layout={fullScreenLayout}
-                            component={StakingScreen}
+                            component={GatedStakingScreen}
                         />
                         <RootStack.Screen
                             name='BannersCarouselModal'

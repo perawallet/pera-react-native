@@ -27,6 +27,7 @@ import {
     DevicePlatforms,
     type AnalyticsService,
     type AppIntegrityService,
+    type AgeGateService,
     type BiometricsService,
     type CrashReportingService,
     type DatabaseService,
@@ -44,6 +45,15 @@ import { testDatabaseService } from './sqlite-database'
 const buildServices = (): PlatformServices => {
     const keyValueStorage: KeyValueStorageService = new MemoryKeyValueStorage()
     const database: DatabaseService = testDatabaseService
+
+    const ageGate: AgeGateService = {
+        async requestAgeRange(_minimumAge) {
+            return { status: 'unknown', source: 'platform' }
+        },
+        async getDeviceCapability() {
+            return 'manual'
+        },
+    }
 
     const biometrics: BiometricsService = {
         async getSupportedBiometricType() {
@@ -128,6 +138,7 @@ const buildServices = (): PlatformServices => {
 
     return {
         analytics,
+        ageGate,
         biometrics,
         crashReporting,
         pushNotification,

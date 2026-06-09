@@ -16,7 +16,10 @@
  * Individual tests override what they need via vi.mock('react-native', ...).
  */
 export const Platform = {
-    OS: 'ios' as const,
+    OS: 'ios' as 'ios' | 'android',
     select: <T>(specifics: { ios?: T; android?: T; default?: T }): T =>
         (specifics.ios ?? specifics.default) as T,
 }
+
+// Mutable record so tests can install/remove native module stubs.
+export const NativeModules: Record<string, unknown> = {}

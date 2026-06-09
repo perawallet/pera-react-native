@@ -72,6 +72,7 @@ vi.unmock('@perawallet/wallet-extension-provider')
 vi.unmock('@perawallet/wallet-core-kms')
 vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-blockchain')
+vi.unmock('@perawallet/wallet-core-age-gate')
 
 // The send/swap pipelines spawn a fire-and-forget background task
 // (`submitAndAutoRefreshCore`) that awaits chain confirmation *after*

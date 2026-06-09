@@ -12,6 +12,7 @@
 
 import { Provider } from '@algorandfoundation/wallet-provider'
 import {
+    type AgeGateService,
     type AnalyticsService,
     type AppIntegrityService,
     type BiometricsService,
@@ -38,6 +39,7 @@ export type TestPlatformOverrides = Partial<{
     appIntegrity: AppIntegrityService
     keyValueStorage: KeyValueStorageService
     biometrics: BiometricsService
+    ageGate: AgeGateService
     remoteConfig: RemoteConfigService
     pushNotification: PushNotificationService
     crashReporting: CrashReportingService
@@ -179,6 +181,13 @@ export const buildTestPlatform = (
         keyValueStorage:
             overrides.keyValueStorage ?? new MemoryKeyValueStorage(),
         biometrics: overrides.biometrics ?? defaultBiometrics,
+        ageGate: overrides.ageGate ?? {
+            requestAgeRange: async () => ({
+                status: 'unknown',
+                source: 'platform',
+            }),
+            getDeviceCapability: async () => 'manual',
+        },
         remoteConfig: overrides.remoteConfig ?? defaultRemote,
         pushNotification: overrides.pushNotification ?? defaultPushNotification,
         crashReporting: overrides.crashReporting ?? defaultCrash,

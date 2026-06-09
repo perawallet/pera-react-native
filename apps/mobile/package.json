@@ -41,6 +41,7 @@
     "@noble/hashes": "catalog:",
     "@notifee/react-native": "^9.1.8",
     "@perawallet/wallet-core-accounts": "workspace:*",
+    "@perawallet/wallet-core-age-gate": "workspace:*",
     "@perawallet/wallet-core-app-integrity": "workspace:*",
     "@perawallet/wallet-core-asa-inbox": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",

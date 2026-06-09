@@ -12,6 +12,7 @@
 
 import { Platform } from 'react-native'
 import { type IconName, PWIcon } from '@components/core'
+import { withAgeGate } from '@components/AgeGated'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
 import { screenListeners } from './listeners'
@@ -38,6 +39,12 @@ export type TabBarStackParamList = {
 }
 
 const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
+
+// Age-gated at the navigator so the screens (and their side effects) only mount
+// for users who pass the gate; blocked users see the restricted view instead.
+const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
+const GatedSwapScreen = withAgeGate(SwapScreen)
+const GatedFundScreen = withAgeGate(FundScreen)
 
 export const TabBarStackNavigator = () => {
     const insets = useSafeAreaInsets()
@@ -108,17 +115,17 @@ export const TabBarStackNavigator = () => {
             <TabBarStack.Screen
                 name='Discover'
                 layout={headeredLayout}
-                component={DiscoverScreen}
+                component={GatedDiscoverScreen}
             />
             <TabBarStack.Screen
                 name='Swap'
                 layout={safeAreaLayout}
-                component={SwapScreen}
+                component={GatedSwapScreen}
             />
             <TabBarStack.Screen
                 name='Fund'
                 layout={headeredLayout}
-                component={FundScreen}
+                component={GatedFundScreen}
             />
             <TabBarStack.Screen
                 name='Menu'

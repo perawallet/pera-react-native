@@ -26,6 +26,12 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             setUserId: vi.fn(),
             setUserProperty: vi.fn(),
         },
+        ageGate: {
+            requestAgeRange: vi
+                .fn()
+                .mockResolvedValue({ status: 'unknown', source: 'platform' }),
+            getDeviceCapability: vi.fn().mockResolvedValue('manual'),
+        },
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
@@ -106,6 +112,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             logEvent: vi.fn(),
             setUserId: vi.fn(),
             setUserProperty: vi.fn(),
+        },
+        ageGate: {
+            requestAgeRange: vi
+                .fn()
+                .mockResolvedValue({ status: 'unknown', source: 'platform' }),
+            getDeviceCapability: vi.fn().mockResolvedValue('manual'),
         },
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
