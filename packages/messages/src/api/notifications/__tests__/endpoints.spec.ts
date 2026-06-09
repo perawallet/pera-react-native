@@ -202,6 +202,7 @@ describe('fetchMessageStatus', () => {
         hasUnreadItems: true,
         hasUnreadNotifications: true,
         hasUnreadInboxItems: false,
+        unreadInboxCount: 0,
     }
 
     beforeEach(() => {

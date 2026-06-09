@@ -777,7 +777,8 @@
             "description": "Choose the accounts that will share control and sign transactions for this account.",
             "accounts_section": "Accounts",
             "accounts_subtitle": "You need add at least two accounts",
-            "add_account": "Add Account"
+            "add_account": "Add Account",
+            "max_participants": "You've added the maximum number of participants"
         },
         "introduction": {
             "title": "Shared Account",

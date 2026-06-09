@@ -120,6 +120,30 @@ describe('useCreateMultisigScreen', () => {
         expect(result.current.canContinue).toBe(true)
     })
 
+    it('does not flag maxParticipantsReached below the 16-participant cap', () => {
+        const store = useMultisigCreationStore.getState()
+        for (let i = 0; i < 15; i++) {
+            store.addParticipant({ address: `ADDR${i}` })
+        }
+
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        expect(result.current.participants).toHaveLength(15)
+        expect(result.current.maxParticipantsReached).toBe(false)
+    })
+
+    it('flags maxParticipantsReached at the 16-participant cap', () => {
+        const store = useMultisigCreationStore.getState()
+        for (let i = 0; i < 16; i++) {
+            store.addParticipant({ address: `ADDR${i}` })
+        }
+
+        const { result } = renderHook(() => useCreateMultisigScreen())
+
+        expect(result.current.participants).toHaveLength(16)
+        expect(result.current.maxParticipantsReached).toBe(true)
+    })
+
     it('allows duplicate addresses', async () => {
         mockRequestBottomSheet
             .mockResolvedValueOnce({ address: 'ADDR1' })

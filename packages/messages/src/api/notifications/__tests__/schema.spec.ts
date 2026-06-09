@@ -15,6 +15,7 @@ import {
     notificationStatusResponseSchema,
     notificationResponseSchema,
     notificationsListResponseSchema,
+    messageStatusResponseSchema,
 } from '../schema'
 
 describe('notificationStatusResponseSchema', () => {
@@ -40,6 +41,42 @@ describe('notificationStatusResponseSchema', () => {
             notificationStatusResponseSchema.parse({
                 has_new_notification: 'yes',
             }),
+        ).toThrow()
+    })
+})
+
+describe('messageStatusResponseSchema', () => {
+    const validStatus = {
+        hasUnreadItems: true,
+        hasUnreadNotifications: true,
+        hasUnreadInboxItems: false,
+        unreadInboxCount: 3,
+    }
+
+    test('parses a valid status response with the inbox count', () => {
+        const result = messageStatusResponseSchema.parse(validStatus)
+        expect(result).toEqual(validStatus)
+    })
+
+    test('defaults unreadInboxCount to 0 when missing', () => {
+        const { unreadInboxCount, ...withoutCount } = validStatus
+        void unreadInboxCount
+        const result = messageStatusResponseSchema.parse(withoutCount)
+        expect(result.unreadInboxCount).toBe(0)
+    })
+
+    test('rejects a non-number unreadInboxCount', () => {
+        expect(() =>
+            messageStatusResponseSchema.parse({
+                ...validStatus,
+                unreadInboxCount: 'three',
+            }),
+        ).toThrow()
+    })
+
+    test('rejects missing required flags', () => {
+        expect(() =>
+            messageStatusResponseSchema.parse({ hasUnreadItems: true }),
         ).toThrow()
     })
 })

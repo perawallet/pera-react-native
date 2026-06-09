@@ -28,6 +28,7 @@ export const CreateMultisigScreen = () => {
         handleEditParticipant,
         handleRemoveParticipant,
         handleContinue,
+        maxParticipantsReached,
     } = useCreateMultisigScreen()
 
     return (
@@ -66,15 +67,25 @@ export const CreateMultisigScreen = () => {
                         onRemove={handleRemoveParticipant}
                     />
                 ))}
-                <PWButton
-                    variant='linkPositive'
-                    icon='plus'
-                    title={t('multisig.create.add_account')}
-                    onPress={() => void handleOpenAddParticipant()}
-                    testID='add_participant_button'
-                    paddingStyle='none'
-                    style={styles.addButton}
-                />
+
+                {maxParticipantsReached ? (
+                    <PWText
+                        variant='caption'
+                        style={styles.maxParticipantsText}
+                    >
+                        {t('multisig.create.max_participants')}
+                    </PWText>
+                ) : (
+                    <PWButton
+                        variant='linkPositive'
+                        icon='plus'
+                        title={t('multisig.create.add_account')}
+                        onPress={() => void handleOpenAddParticipant()}
+                        testID='add_participant_button'
+                        paddingStyle='none'
+                        style={styles.addButton}
+                    />
+                )}
             </PWView>
         </PWScreen>
     )

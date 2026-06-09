@@ -33,7 +33,11 @@
     "**/index.ts",
     // React Native platform-base file: Metro resolves the `.ios`/`.android` variant
     // at runtime, but TypeScript resolves this base `.ts`, so it is not dead.
-    "apps/mobile/src/hooks/useKeyboardHeight.ts"
+    "apps/mobile/src/hooks/useKeyboardHeight.ts",
+    // Public analytics hook for components to consume (see `analytics/track.ts`);
+    // no screen wires it yet, so the production import graph doesn't reach it.
+    // Intentional API surface, not dead code.
+    "apps/mobile/src/hooks/useAnalytics.ts"
   ],
 
   // Native modules (React Native autolinking) and build/polyfill packages consumed

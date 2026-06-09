@@ -15,8 +15,10 @@ import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     notificationStatusResponseSchema,
     notificationsListResponseSchema,
+    messageStatusResponseSchema,
     type NotificationStatusResponse,
     type NotificationsListResponse,
+    type MessageStatusResponse,
 } from './schema'
 
 export type MockNotificationStatusParams = {
@@ -36,6 +38,27 @@ export const mockNotificationStatus = ({
         'mockNotificationStatus',
     )
     return http.get(`*/v1/devices/${deviceID}/notification-status/`, () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+export type MockMessageStatusParams = {
+    deviceID: string
+    response: MessageStatusResponse
+    status?: number
+}
+
+export const mockMessageStatus = ({
+    deviceID,
+    response,
+    status = 200,
+}: MockMessageStatusParams): HttpHandler => {
+    validateMockResponse(
+        messageStatusResponseSchema,
+        response,
+        'mockMessageStatus',
+    )
+    return http.get(`*/api/v3/devices/${deviceID}/message-status`, () =>
         HttpResponse.json(response, { status }),
     )
 }
