@@ -19,6 +19,7 @@ import {
 } from 'react'
 import {
     Keyboard,
+    Platform,
     type LayoutChangeEvent,
     type StyleProp,
     type ViewStyle,
@@ -192,7 +193,8 @@ export const PWScreen = ({
         >
             <KeyboardAvoidingView
                 style={styles.keyboardView}
-                behavior='padding'
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? bottomInset : 0}
             >
                 {renderedHeader}
                 {renderedBody}

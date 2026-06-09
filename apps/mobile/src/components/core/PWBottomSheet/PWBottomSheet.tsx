@@ -28,6 +28,7 @@ import {
 import { useStyles } from './styles'
 import {
     Keyboard,
+    Platform,
     type StyleProp,
     useWindowDimensions,
     View,
@@ -228,7 +229,12 @@ export const PWBottomSheet = ({
                             // for `auto` (content-sized) sheets, where a
                             // height-based avoider would collapse to zero.
                             <KeyboardAvoidingView
-                                behavior='height'
+                                behavior={
+                                    Platform.OS === 'ios' ? 'padding' : 'height'
+                                }
+                                keyboardVerticalOffset={
+                                    Platform.OS === 'ios' ? insets.bottom : 0
+                                }
                                 style={styles.keyboardAvoider}
                             >
                                 {sheetContent}

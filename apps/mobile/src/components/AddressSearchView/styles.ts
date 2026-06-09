@@ -28,7 +28,7 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
         },
         listSeparator: {
-            height: theme.spacing.md,
+            height: theme.spacing.xl,
         },
         accountDisplay: {
             flexDirection: 'row',
