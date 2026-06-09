@@ -27,11 +27,15 @@ import {
 describe('onboarding endpoints', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('sends the email verification code', async () => {
-        request.mockResolvedValue({ data: { success: true } })
+    it('sends the email verification code and returns the contact verification id', async () => {
+        request.mockResolvedValue({ data: { contactVerificationId: 'cv_1' } })
 
-        await sendEmailVerification({ email: 'e@x.com', network: 'mainnet' })
+        const result = await sendEmailVerification({
+            email: 'e@x.com',
+            network: 'mainnet',
+        })
 
+        expect(result).toEqual({ contactVerificationId: 'cv_1' })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'POST',
@@ -41,10 +45,10 @@ describe('onboarding endpoints', () => {
         )
     })
 
-    it('verifies email with verificationCode + password + contactVerificationId', async () => {
-        request.mockResolvedValue({ data: { success: true } })
+    it('verifies email with verificationCode + password + contactVerificationId and returns the onboarding id', async () => {
+        request.mockResolvedValue({ data: { onboardingId: 'ob_1' } })
 
-        await verifyEmail({
+        const result = await verifyEmail({
             email: 'e@x.com',
             password: 'pw',
             verificationCode: '123456',
@@ -53,6 +57,7 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
+        expect(result).toEqual({ onboardingId: 'ob_1' })
         const body = request.mock.calls[0][0].data
         expect(request.mock.calls[0][0].path).toBe(
             '/v1/auth/register/email/verify',

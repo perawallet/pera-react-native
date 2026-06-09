@@ -11,11 +11,8 @@
  */
 
 import { useCallback, useState } from 'react'
-import {
-    OnboardingStep,
-    useCardStore,
-    useSendEmailVerificationMutation,
-} from '@perawallet/wallet-core-card'
+import { useSendEmailVerificationMutation } from '@perawallet/wallet-core-card'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -32,6 +29,7 @@ export const MOCK_VALID_VERIFICATION_CODE = 'PERA123'
 
 type UseCardOnboardingEmailVerifyScreenParams = {
     email: string
+    countryIso: string
 }
 
 export type UseCardOnboardingEmailVerifyScreenResult = {
@@ -47,10 +45,11 @@ export type UseCardOnboardingEmailVerifyScreenResult = {
 
 export const useCardOnboardingEmailVerifyScreen = ({
     email,
+    countryIso,
 }: UseCardOnboardingEmailVerifyScreenParams): UseCardOnboardingEmailVerifyScreenResult => {
     const { t } = useLanguage()
-    const { successToast, errorToast } = useToast()
-    const setOnboardingStep = useCardStore(state => state.setOnboardingStep)
+    const { errorToast } = useToast()
+    const navigation = useAppNavigation()
     const sendEmailVerification = useSendEmailVerificationMutation()
 
     const [code, setCode] = useState('')
@@ -85,20 +84,21 @@ export const useCardOnboardingEmailVerifyScreen = ({
         void resend()
     }, [sendEmailVerification, email, restart, errorToast, t])
 
-    // TODO(card): replace this simulated check with useVerifyEmailMutation once
-    // the backend contract (password + contactVerificationId capture) is confirmed.
+    // Local pre-check only — a wrong code is caught here for fast feedback. The
+    // real email/verify (which sets the password and completes verification)
+    // runs on the password screen, so a valid code just carries forward to it.
     const handleConfirm = useCallback(() => {
         if (!trimmedCode) return
         if (trimmedCode.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
             setIsWrongCode(true)
             return
         }
-        setOnboardingStep(OnboardingStep.PhoneSend)
-        successToast(
-            t('peraCard.verify_email.success_title'),
-            t('peraCard.verify_email.success_body'),
-        )
-    }, [trimmedCode, setOnboardingStep, successToast, t])
+        navigation.navigate('CardOnboardingPassword', {
+            email,
+            countryIso,
+            verificationCode: trimmedCode,
+        })
+    }, [trimmedCode, navigation, email, countryIso])
 
     return {
         code,

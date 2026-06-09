@@ -12,20 +12,25 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { sendEmailVerification } from '../api/onboarding'
+import {
+    sendEmailVerification,
+    type SendEmailVerificationResult,
+} from '../api/onboarding'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type SendEmailVerificationVariables = { email: string }
 
-export type UseSendEmailVerificationMutationResult =
-    CardMutationResult<SendEmailVerificationVariables>
+export type UseSendEmailVerificationMutationResult = CardMutationResult<
+    SendEmailVerificationVariables,
+    SendEmailVerificationResult
+>
 
 export const useSendEmailVerificationMutation =
     (): UseSendEmailVerificationMutationResult => {
         const { network } = useNetwork()
 
         const mutation = useMutation<
-            void,
+            SendEmailVerificationResult,
             Error,
             SendEmailVerificationVariables
         >({

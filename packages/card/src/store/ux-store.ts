@@ -22,6 +22,8 @@ const STORE_NAME = 'card-store'
 // in React Query; secrets (PAN/CVV/PIN/tokens) never enter this store.
 const initialState = {
     onboardingStep: OnboardingStep.EmailSend,
+    contactVerificationId: null,
+    onboardingId: null,
     cardId: null,
     lastKnownStatus: null,
     lastKnownPanLast4: null,
@@ -35,6 +37,8 @@ export const useCardStore: UseBoundStore<
         set => ({
             ...initialState,
             setOnboardingStep: step => set({ onboardingStep: step }),
+            setContactVerificationId: id => set({ contactVerificationId: id }),
+            setOnboardingId: id => set({ onboardingId: id }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({
                     cardId,
@@ -51,6 +55,8 @@ export const useCardStore: UseBoundStore<
             version: 1,
             partialize: state => ({
                 onboardingStep: state.onboardingStep,
+                contactVerificationId: state.contactVerificationId,
+                onboardingId: state.onboardingId,
                 cardId: state.cardId,
                 lastKnownStatus: state.lastKnownStatus,
                 lastKnownPanLast4: state.lastKnownPanLast4,

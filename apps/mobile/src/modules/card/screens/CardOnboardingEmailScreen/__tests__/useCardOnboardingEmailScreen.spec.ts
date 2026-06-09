@@ -138,6 +138,7 @@ describe('useCardOnboardingEmailScreen', () => {
         mockSettings = { countries: [france, russia], usStates: [] }
         // Default: no detected region → nothing preselected.
         mockCurrentRegion = undefined
+        mockMutateAsync.mockResolvedValue({ contactVerificationId: 'mock' })
     })
 
     it('starts with an invalid form and no selected country', () => {

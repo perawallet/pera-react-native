@@ -18,12 +18,18 @@ import type { CardTransactionFilters } from './transaction'
 /** Client-only UX/navigation state. No tokens, no PAN/CVV/PIN. */
 export type CardUxState = BaseStoreState & {
     onboardingStep: OnboardingStep
+    /** Returned by email/send; required by email/verify and phone/send. */
+    contactVerificationId: Nullable<string>
+    /** Returned by email/verify; required by every later registration step. */
+    onboardingId: Nullable<string>
     cardId: Nullable<string>
     lastKnownStatus: Nullable<CardStatus>
     /** PCI-safe render hint shown before the status query resolves. */
     lastKnownPanLast4: Nullable<string>
     transactionFilters: CardTransactionFilters
     setOnboardingStep: (step: OnboardingStep) => void
+    setContactVerificationId: (id: Nullable<string>) => void
+    setOnboardingId: (id: Nullable<string>) => void
     setCardSnapshot: (snapshot: {
         cardId: string
         status: CardStatus

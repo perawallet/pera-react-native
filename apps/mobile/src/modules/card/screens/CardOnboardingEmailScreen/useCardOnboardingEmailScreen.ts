@@ -58,6 +58,9 @@ export const useCardOnboardingEmailScreen =
         const { network } = useNetwork()
         const deviceId = useDeviceID(network)
         const setOnboardingStep = useCardStore(state => state.setOnboardingStep)
+        const setContactVerificationId = useCardStore(
+            state => state.setContactVerificationId,
+        )
         const sendEmailVerification = useSendEmailVerificationMutation()
         const requestCountryAvailability =
             useRequestCountryAvailabilityMutation()
@@ -118,7 +121,9 @@ export const useCardOnboardingEmailScreen =
 
         const submitEmail = handleSubmit(async ({ email, countryIso }) => {
             try {
-                await sendEmailVerification.mutateAsync({ email })
+                const { contactVerificationId } =
+                    await sendEmailVerification.mutateAsync({ email })
+                setContactVerificationId(contactVerificationId)
                 setOnboardingStep(OnboardingStep.EmailVerify)
                 navigation.navigate('CardOnboardingEmailVerify', {
                     email,

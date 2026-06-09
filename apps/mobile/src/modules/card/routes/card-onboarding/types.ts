@@ -15,6 +15,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 export type CardOnboardingStackParamList = {
     CardOnboardingEmail: undefined
     CardOnboardingEmailVerify: { email: string; countryIso: string }
+    CardOnboardingPassword: {
+        email: string
+        countryIso: string
+        verificationCode: string
+    }
 }
 
 export type CardOnboardingScreenProps<

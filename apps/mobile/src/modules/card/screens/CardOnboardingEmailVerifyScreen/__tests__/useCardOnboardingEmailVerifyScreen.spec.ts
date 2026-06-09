@@ -14,7 +14,6 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const mockMutateAsync = vi.fn()
-const mockSetOnboardingStep = vi.fn()
 let mockSendIsPending = false
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -32,17 +31,18 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
-        useCardStore: (
-            selector: (state: { setOnboardingStep: unknown }) => unknown,
-        ) => selector({ setOnboardingStep: mockSetOnboardingStep }),
     }
 })
 
-const mockSuccessToast = vi.fn()
+const mockNavigate = vi.fn()
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({ navigate: mockNavigate }),
+}))
+
 const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        successToast: mockSuccessToast,
+        successToast: vi.fn(),
         errorToast: mockErrorToast,
         infoToast: vi.fn(),
         showToast: vi.fn(),
@@ -53,16 +53,21 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { OnboardingStep } from '@perawallet/wallet-core-card'
 import {
     MOCK_VALID_VERIFICATION_CODE,
     useCardOnboardingEmailVerifyScreen,
 } from '../useCardOnboardingEmailVerifyScreen'
 
 const EMAIL = 'john@example.com'
+const COUNTRY_ISO = 'GB'
 
 const renderVerifyHook = () =>
-    renderHook(() => useCardOnboardingEmailVerifyScreen({ email: EMAIL }))
+    renderHook(() =>
+        useCardOnboardingEmailVerifyScreen({
+            email: EMAIL,
+            countryIso: COUNTRY_ISO,
+        }),
+    )
 
 describe('useCardOnboardingEmailVerifyScreen', () => {
     beforeEach(() => {
@@ -85,28 +90,28 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         expect(result.current.canResend).toBe(false)
     })
 
-    it('flags a wrong code without advancing the onboarding step', () => {
+    it('flags a wrong code without navigating onward', () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode('NOPE'))
         act(() => result.current.handleConfirm())
 
         expect(result.current.isWrongCode).toBe(true)
-        expect(mockSetOnboardingStep).not.toHaveBeenCalled()
-        expect(mockSuccessToast).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('advances to the phone step and toasts on the valid code', () => {
+    it('navigates to the password screen on the valid code', () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
         act(() => result.current.handleConfirm())
 
         expect(result.current.isWrongCode).toBe(false)
-        expect(mockSetOnboardingStep).toHaveBeenCalledWith(
-            OnboardingStep.PhoneSend,
-        )
-        expect(mockSuccessToast).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword', {
+            email: EMAIL,
+            countryIso: COUNTRY_ISO,
+            verificationCode: MOCK_VALID_VERIFICATION_CODE,
+        })
     })
 
     it('clears the wrong-code error as the user edits', () => {
@@ -146,7 +151,7 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
 
         expect(result.current.isValid).toBe(false)
         expect(result.current.isWrongCode).toBe(false)
-        expect(mockSetOnboardingStep).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('does not re-send while a send is already in flight', async () => {

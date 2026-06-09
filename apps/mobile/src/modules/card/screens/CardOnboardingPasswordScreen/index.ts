@@ -10,20 +10,4 @@
  limitations under the License
  */
 
-export {
-    sendEmailVerification,
-    verifyEmail,
-    sendPhoneVerification,
-    verifyPhone,
-    submitPersonalDetails,
-    submitAddress,
-    fetchRegistrationSettings,
-    type SendEmailVerificationParams,
-    type SendEmailVerificationResult,
-    type VerifyEmailParams,
-    type VerifyEmailResult,
-    type SendPhoneVerificationParams,
-    type VerifyPhoneParams,
-    type SubmitPersonalDetailsParams,
-    type SubmitAddressParams,
-} from './endpoints'
+export { CardOnboardingPasswordScreen } from './CardOnboardingPasswordScreen'

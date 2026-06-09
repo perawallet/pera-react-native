@@ -95,3 +95,26 @@ export const emailSendSchema = z.object({
 })
 
 export type EmailSendFormValues = z.infer<typeof emailSendSchema>
+
+/**
+ * Validation for the password the user sets during email verification. Mirrors
+ * Baanx's rules: at least 8 chars with an uppercase, a lowercase, a number, and
+ * a special character; `confirmPassword` must match.
+ */
+export const passwordSetSchema = z
+    .object({
+        password: z
+            .string()
+            .min(8)
+            .regex(/[A-Z]/)
+            .regex(/[a-z]/)
+            .regex(/[0-9]/)
+            .regex(/[^A-Za-z0-9]/),
+        confirmPassword: z.string(),
+    })
+    .refine(values => values.password === values.confirmPassword, {
+        message: 'passwords-must-match',
+        path: ['confirmPassword'],
+    })
+
+export type PasswordSetFormValues = z.infer<typeof passwordSetSchema>

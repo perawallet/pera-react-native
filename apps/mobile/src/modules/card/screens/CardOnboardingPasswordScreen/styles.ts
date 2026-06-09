@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-export {
-    sendEmailVerification,
-    verifyEmail,
-    sendPhoneVerification,
-    verifyPhone,
-    submitPersonalDetails,
-    submitAddress,
-    fetchRegistrationSettings,
-    type SendEmailVerificationParams,
-    type SendEmailVerificationResult,
-    type VerifyEmailParams,
-    type VerifyEmailResult,
-    type SendPhoneVerificationParams,
-    type VerifyPhoneParams,
-    type SubmitPersonalDetailsParams,
-    type SubmitAddressParams,
-} from './endpoints'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    content: {
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.xxl,
+    },
+    fields: {
+        gap: theme.spacing.xl,
+    },
+    confirmGroup: {
+        gap: theme.spacing.md,
+    },
+    rules: {
+        color: theme.colors.textGrayLighter,
+    },
+}))

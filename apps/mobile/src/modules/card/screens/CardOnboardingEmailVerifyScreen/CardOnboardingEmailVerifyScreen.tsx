@@ -34,7 +34,10 @@ export const CardOnboardingEmailVerifyScreen = ({
         canResend,
         handleResend,
         handleConfirm,
-    } = useCardOnboardingEmailVerifyScreen({ email: route.params.email })
+    } = useCardOnboardingEmailVerifyScreen({
+        email: route.params.email,
+        countryIso: route.params.countryIso,
+    })
 
     return (
         <PWScreen testID='card-onboarding-email-verify'>
