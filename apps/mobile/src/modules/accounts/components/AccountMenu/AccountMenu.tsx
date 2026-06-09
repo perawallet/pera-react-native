@@ -48,16 +48,17 @@ export const AccountMenu = (props: AccountMenuProps) => {
     } = useAccountMenu(props)
     const { onAddAccount, onOpenSort, headerContent, hideDefaultHeader } = props
 
-    const renderAccount = useCallback(({ item: acct }: { item: WalletAccount }) => (
-        <PWTouchableOpacity onPress={() => handleTap(acct)}>
-            <AccountWithBalance
-                account={acct}
-                isHighlighted={
-                    acct.address === selectedAccountAddress
-                }
-            />
-        </PWTouchableOpacity>
-    ), [handleTap, selectedAccountAddress])
+    const renderAccount = useCallback(
+        ({ item: acct }: { item: WalletAccount }) => (
+            <PWTouchableOpacity onPress={() => handleTap(acct)}>
+                <AccountWithBalance
+                    account={acct}
+                    isHighlighted={acct.address === selectedAccountAddress}
+                />
+            </PWTouchableOpacity>
+        ),
+        [handleTap, selectedAccountAddress],
+    )
 
     return (
         <PWView style={styles.container}>
