@@ -14,10 +14,12 @@ export { mockInbox, type MockInboxParams } from './api/inbox/msw-handlers'
 
 export {
     mockNotificationStatus,
+    mockMessageStatus,
     mockNotificationList,
     mockUpdateLastSeenNotification,
     mockUpdateNotificationEnabled,
     type MockNotificationStatusParams,
+    type MockMessageStatusParams,
     type MockNotificationListParams,
     type MockUpdateLastSeenNotificationParams,
     type MockUpdateNotificationEnabledParams,

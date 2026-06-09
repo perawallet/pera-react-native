@@ -16,10 +16,14 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import {
+    fetchMessageStatus,
     fetchNotificationStatus,
     type NotificationStatusResponse,
 } from '../api/notifications'
-import { getNotificationStatusQueryKey } from './querykeys'
+import {
+    getMessageStatusQueryKey,
+    getNotificationStatusQueryKey,
+} from './querykeys'
 import { useInboxQuery } from './useInboxQuery'
 
 type UseInboxStatusResult = {
@@ -33,12 +37,30 @@ export const useInboxStatus = (): UseInboxStatusResult => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
 
-    const { data: inboxData } = useInboxQuery()
+    // Primary source of truth: the unified v3 message-status endpoint returns
+    // both the unread flags and the inbox count in a single call.
+    const messageStatus = useQuery({
+        queryKey: getMessageStatusQueryKey(network, deviceID ?? ''),
+        queryFn: () => fetchMessageStatus(network, deviceID ?? ''),
+        enabled: !!deviceID,
+        refetchInterval: config.pollingEnabled
+            ? config.notificationRefreshTime
+            : false,
+    })
 
+    // Only fall back when v3 has produced no usable data at all (errored and
+    // never succeeded). If an earlier poll succeeded, TanStack keeps the last
+    // good data, so we keep using it instead of flapping to the legacy path.
+    const hasMessageStatus = messageStatus.data !== undefined
+    const shouldUseFallback = !hasMessageStatus && messageStatus.isError
+
+    // Fallback source of truth: the legacy v1 notification-status endpoint plus
+    // the inbox list. Fired only when the v3 endpoint is unavailable, so a
+    // backend problem degrades gracefully rather than hiding the badge.
     const { data: notificationStatusData } = useQuery({
         queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
-        enabled: !!deviceID,
+        enabled: !!deviceID && shouldUseFallback,
         refetchInterval: config.pollingEnabled
             ? config.notificationRefreshTime
             : false,
@@ -47,6 +69,17 @@ export const useInboxStatus = (): UseInboxStatusResult => {
             [],
         ),
     })
+
+    const { data: inboxData } = useInboxQuery()
+
+    if (hasMessageStatus) {
+        return {
+            hasUnreadItems: messageStatus.data.hasUnreadItems,
+            hasUnreadInboxItems: messageStatus.data.hasUnreadInboxItems,
+            hasUnreadNotifications: messageStatus.data.hasUnreadNotifications,
+            unreadInboxCount: messageStatus.data.unreadInboxCount,
+        }
+    }
 
     const unreadInboxCount = inboxData?.length ?? 0
     const hasUnreadInboxItems = unreadInboxCount > 0
