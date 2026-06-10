@@ -1019,7 +1019,7 @@ describe('usePeraWebviewInterface', () => {
             )
         })
 
-        it('auto-connects for a trusted origin with a valid wc URI', () => {
+        it('opens the approval flow (never auto-connects) for a trusted origin with a valid wc URI', () => {
             const { result } = renderHook(() =>
                 usePeraWebviewInterface(
                     mockWebview,
@@ -1037,15 +1037,16 @@ describe('usePeraWebviewInterface', () => {
                 })
             })
 
+            // No autoConnect, even on a trusted origin: the connection always
+            // goes through the user-facing approval sheet.
             expect(mockConnect).toHaveBeenCalledWith({
                 connection: {
                     uri: 'wc:topic@2?relay-protocol=irn',
-                    autoConnect: true,
                 },
             })
         })
 
-        it('shows the modal (autoConnect=false) for an untrusted origin with a valid wc URI', () => {
+        it('opens the approval flow for an untrusted origin with a valid wc URI', () => {
             const { result } = renderHook(() =>
                 usePeraWebviewInterface(
                     mockWebview,
@@ -1066,7 +1067,6 @@ describe('usePeraWebviewInterface', () => {
             expect(mockConnect).toHaveBeenCalledWith({
                 connection: {
                     uri: 'wc:topic@2?relay-protocol=irn',
-                    autoConnect: false,
                 },
             })
         })

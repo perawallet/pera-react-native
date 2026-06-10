@@ -672,14 +672,17 @@ export const usePeraWebviewInterface = (
                 return
             }
 
+            // Always surface the connection approval sheet — as if the user
+            // had scanned the QR themselves. The bridge never auto-approves a
+            // WC session (which would expose account addresses with no UI),
+            // regardless of origin trust.
             void connect({
                 connection: {
                     uri: parsed.uri,
-                    autoConnect: securedConnection,
                 },
             })
         },
-        [connect, securedConnection, hadRequiredParams, webview],
+        [connect, hadRequiredParams, webview],
     )
 
     const onBackPressed = useCallback(() => {
