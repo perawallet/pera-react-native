@@ -155,6 +155,18 @@ describe('env-loader', () => {
             expect(result.pollingEnabled).toBe(false)
         })
 
+        test('parses disableScreenCapturePrevention as true when DISABLE_SCREEN_CAPTURE_PREVENTION is "true"', () => {
+            process.env.DISABLE_SCREEN_CAPTURE_PREVENTION = 'true'
+            const result = loadEnvOverrides()
+            expect(result.disableScreenCapturePrevention).toBe(true)
+        })
+
+        test('parses disableScreenCapturePrevention as false when DISABLE_SCREEN_CAPTURE_PREVENTION is any other value', () => {
+            process.env.DISABLE_SCREEN_CAPTURE_PREVENTION = 'yes'
+            const result = loadEnvOverrides()
+            expect(result.disableScreenCapturePrevention).toBe(false)
+        })
+
         test('loads defaultNetwork from DEFAULT_NETWORK', () => {
             process.env.DEFAULT_NETWORK = 'testnet'
             const result = loadEnvOverrides()
@@ -301,6 +313,7 @@ describe('env-loader', () => {
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,
+            disableScreenCapturePrevention: false,
             arc59: {
                 testnet: {
                     appId: 643020148n,
@@ -341,12 +354,14 @@ describe('env-loader', () => {
             process.env.DEBUG_ENABLED = 'true'
             process.env.PROFILING_ENABLED = 'true'
             process.env.POLLING_ENABLED = 'false'
+            process.env.DISABLE_SCREEN_CAPTURE_PREVENTION = 'true'
 
             const result = getConfigWithEnvOverrides(mockBaseConfig)
 
             expect(result.debugEnabled).toBe(true)
             expect(result.profilingEnabled).toBe(true)
             expect(result.pollingEnabled).toBe(false)
+            expect(result.disableScreenCapturePrevention).toBe(true)
         })
 
         test('validates merged config against schema', () => {

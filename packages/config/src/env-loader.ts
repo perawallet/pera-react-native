@@ -32,7 +32,8 @@ export function loadEnvOverrides(): OverridesType {
             if (
                 key === 'debugEnabled' ||
                 key === 'profilingEnabled' ||
-                key === 'pollingEnabled'
+                key === 'pollingEnabled' ||
+                key === 'disableScreenCapturePrevention'
             ) {
                 overrides[key] = envValue === 'true'
             } else {
