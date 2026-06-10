@@ -96,6 +96,16 @@ export const emailSendSchema = z.object({
 
 export type EmailSendFormValues = z.infer<typeof emailSendSchema>
 
+/** Validation for the phone-send onboarding step (calling code + number). */
+export const phoneSendSchema = z.object({
+    /** International dialing code, digits only, no leading '+'. */
+    phoneCountryCode: z.string().min(1).regex(/^\d+$/),
+    /** National phone number, digits only. */
+    phoneNumber: z.string().trim().min(4).regex(/^\d+$/),
+})
+
+export type PhoneSendFormValues = z.infer<typeof phoneSendSchema>
+
 /**
  * "Special character" = any non-alphanumeric character. Extracted into a named
  * constant so the password rule reads clearly — inline, the negated class is

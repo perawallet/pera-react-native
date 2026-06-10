@@ -31,22 +31,26 @@ describe('card onboarding — email verify', () => {
         store.setEmail('john@example.com')
     })
 
-    it('surfaces a wrong-code error on submit and clears it when the code is edited', async () => {
+    it('auto-submits a full code and surfaces a wrong-code error, cleared on edit', async () => {
         renderVerify()
 
         const input = screen.getByTestId('card-onboarding-verify-input')
 
-        // Submitting a wrong code surfaces the error message on the input.
-        fireEvent.change(input, { target: { value: 'WRONG1' } })
-        fireEvent.click(screen.getByTestId('card-onboarding-verify-confirm'))
+        // A full but wrong 6-digit code auto-submits and surfaces the inline
+        // error (no button tap needed).
+        fireEvent.change(input, { target: { value: '654321' } })
         await waitFor(() =>
-            expect(input.getAttribute('errormessage')).toBeTruthy(),
+            expect(
+                screen.queryByTestId('card-onboarding-verify-input-error'),
+            ).toBeTruthy(),
         )
 
-        // Editing the code clears the error.
-        fireEvent.change(input, { target: { value: 'WRONG12' } })
+        // Editing to a shorter value clears the error (and doesn't re-submit).
+        fireEvent.change(input, { target: { value: '65432' } })
         await waitFor(() =>
-            expect(input.getAttribute('errormessage')).toBeFalsy(),
+            expect(
+                screen.queryByTestId('card-onboarding-verify-input-error'),
+            ).toBeNull(),
         )
     })
 })

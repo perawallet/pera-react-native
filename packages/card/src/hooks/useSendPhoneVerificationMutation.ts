@@ -16,6 +16,8 @@ import {
     sendPhoneVerification,
     type SendPhoneVerificationParams,
 } from '../api/onboarding'
+import { OnboardingStep } from '../models'
+import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type SendPhoneVerificationVariables = Omit<
@@ -37,6 +39,12 @@ export const useSendPhoneVerificationMutation =
         >({
             mutationFn: variables =>
                 sendPhoneVerification({ ...variables, network }),
+            // Code sent: advance the flow. Runs on every (re)send.
+            onSuccess: () => {
+                useCardStore
+                    .getState()
+                    .setOnboardingStep(OnboardingStep.PhoneVerify)
+            },
             throwOnError: false,
         })
 

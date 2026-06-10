@@ -13,6 +13,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { verifyPhone, type VerifyPhoneParams } from '../api/onboarding'
+import { OnboardingStep } from '../models'
+import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type VerifyPhoneVariables = Omit<VerifyPhoneParams, 'network' | 'signal'>
@@ -25,6 +27,12 @@ export const useVerifyPhoneMutation = (): UseVerifyPhoneMutationResult => {
 
     const mutation = useMutation<void, Error, VerifyPhoneVariables>({
         mutationFn: variables => verifyPhone({ ...variables, network }),
+        // Phone verified: advance to the personal-details step.
+        onSuccess: () => {
+            useCardStore
+                .getState()
+                .setOnboardingStep(OnboardingStep.PersonalDetails)
+        },
         throwOnError: false,
     })
 

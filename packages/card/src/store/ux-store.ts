@@ -25,6 +25,8 @@ const initialState = {
     email: null,
     countryIso: null,
     verificationCode: null,
+    phoneCountryCode: null,
+    phoneNumber: null,
     contactVerificationId: null,
     onboardingId: null,
     cardId: null,
@@ -43,6 +45,8 @@ export const useCardStore: UseBoundStore<
             setEmail: email => set({ email }),
             setCountryIso: countryIso => set({ countryIso }),
             setVerificationCode: verificationCode => set({ verificationCode }),
+            setPhone: ({ phoneCountryCode, phoneNumber }) =>
+                set({ phoneCountryCode, phoneNumber }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
             setOnboardingId: id => set({ onboardingId: id }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
@@ -65,6 +69,8 @@ export const useCardStore: UseBoundStore<
                 onboardingStep: state.onboardingStep,
                 email: state.email,
                 countryIso: state.countryIso,
+                phoneCountryCode: state.phoneCountryCode,
+                phoneNumber: state.phoneNumber,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
                 cardId: state.cardId,

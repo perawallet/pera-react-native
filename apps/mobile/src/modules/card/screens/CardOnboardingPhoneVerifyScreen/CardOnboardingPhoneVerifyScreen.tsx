@@ -22,32 +22,33 @@ import {
     CARD_VERIFICATION_CODE_LENGTH,
     MOCK_VALID_VERIFICATION_CODE,
 } from '../cardVerificationConstants'
-import { useCardOnboardingEmailVerifyScreen } from './useCardOnboardingEmailVerifyScreen'
+import { useCardOnboardingPhoneVerifyScreen } from './useCardOnboardingPhoneVerifyScreen'
 import { useStyles } from './styles'
 
-export const CardOnboardingEmailVerifyScreen = () => {
+export const CardOnboardingPhoneVerifyScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
         code,
-        email,
         onChangeCode,
         isValid,
         isWrongCode,
+        isSubmitting,
+        phoneDisplay,
         secondsRemaining,
         canResend,
         handleResend,
         handleConfirm,
-    } = useCardOnboardingEmailVerifyScreen()
+    } = useCardOnboardingPhoneVerifyScreen()
 
     return (
-        <PWScreen testID='card-onboarding-email-verify'>
+        <PWScreen testID='card-onboarding-phone-verify'>
             <PWView style={styles.content}>
                 <PWText
                     variant='body'
                     style={styles.description}
                 >
-                    {t('peraCard.verify_email.body', { email })}
+                    {t('peraCard.verify_phone.body', { phone: phoneDisplay })}
                 </PWText>
 
                 <PWView style={styles.form}>
@@ -61,29 +62,29 @@ export const CardOnboardingEmailVerifyScreen = () => {
                             autoFocus
                             errorMessage={
                                 isWrongCode
-                                    ? t('peraCard.verify_email.code_wrong')
+                                    ? t('peraCard.verify_phone.code_wrong')
                                     : undefined
                             }
                             accessibilityLabel={t(
-                                'peraCard.verify_email.navigation_title',
+                                'peraCard.verify_phone.navigation_title',
                             )}
-                            testID='card-onboarding-verify-input'
+                            testID='card-onboarding-phone-verify-input'
                         />
 
                         {canResend ? (
                             <PWText
                                 variant='linkPositive'
                                 onPress={handleResend}
-                                testID='card-onboarding-verify-resend'
+                                testID='card-onboarding-phone-verify-resend'
                             >
-                                {t('peraCard.verify_email.send_again')}
+                                {t('peraCard.verify_phone.send_again')}
                             </PWText>
                         ) : (
                             <PWText
                                 variant='footnoteMedium'
                                 style={styles.countdownText}
                             >
-                                {t('peraCard.verify_email.send_again_in', {
+                                {t('peraCard.verify_phone.send_again_in', {
                                     count: secondsRemaining,
                                 })}
                             </PWText>
@@ -92,20 +93,20 @@ export const CardOnboardingEmailVerifyScreen = () => {
 
                     <PWButton
                         variant='primary'
-                        title={t('peraCard.verify_email.confirm_button')}
+                        title={t('peraCard.verify_phone.confirm_button')}
                         onPress={() => handleConfirm()}
-                        isDisabled={!isValid}
-                        testID='card-onboarding-verify-confirm'
+                        isDisabled={!isValid || isSubmitting}
+                        isLoading={isSubmitting}
+                        testID='card-onboarding-phone-verify-confirm'
                     />
                 </PWView>
 
-                {/* TODO(card): remove this testing hint once the real verify
-                    API is wired up. */}
+                {/* TODO(card): remove this dev hint once the real verify API is wired. */}
                 <PWText
                     variant='footnoteMedium'
                     style={styles.devHint}
                 >
-                    {t('peraCard.verify_email.dev_hint', {
+                    {t('peraCard.verify_phone.dev_hint', {
                         code: MOCK_VALID_VERIFICATION_CODE,
                     })}
                 </PWText>

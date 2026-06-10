@@ -17,15 +17,15 @@ import {
     type CardTransportRequest,
     type CardTransportResponse,
 } from '@perawallet/wallet-core-card'
-import { MOCK_VALID_VERIFICATION_CODE } from '@modules/card/screens/CardOnboardingEmailVerifyScreen/useCardOnboardingEmailVerifyScreen'
+import { MOCK_VALID_VERIFICATION_CODE } from '@modules/card/screens/cardVerificationConstants'
 
 /**
- * Temporary dev-only Baanx mocks until sandbox credentials arrive. Returns
- * canned data for the endpoints the onboarding email step needs and delegates
+ * Temporary dev-only Baanx mocks until the sandbox is usable. Returns canned
+ * data for the endpoints the onboarding email + phone steps need and delegates
  * everything else to the real transport. Imported (for side effects) from
  * App.tsx; the `__DEV__` guard makes it a no-op in production.
  *
- * Remove once `TESTNET_BAANX_CLIENT_KEY` is wired up.
+ * Remove once the real Baanx sandbox responds (set `TESTNET_BAANX_CLIENT_KEY`).
  */
 
 // Raw GET /v1/auth/settings shape (camelCase; matches the card package's
@@ -93,21 +93,34 @@ type MockHandler = (req: CardTransportRequest<unknown>) => MockResult
 
 const ok = (data: unknown): MockResult => ({ status: 200, data })
 
+// A code-verification endpoint (email/verify, phone/verify): accepts the dev
+// code and returns `successData`, otherwise mirrors the real 4xx for a wrong
+// code. The verify screens also pre-check the code locally, so a wrong code
+// rarely reaches here — but we mirror the real contract anyway.
+const verifyCode =
+    (successData: unknown): MockHandler =>
+    req => {
+        const code = (req.data as { verificationCode?: string } | undefined)
+            ?.verificationCode
+        if (code?.toUpperCase() === MOCK_VALID_VERIFICATION_CODE) {
+            return ok(successData)
+        }
+        return { status: 400, data: { message: 'Invalid verification code' } }
+    }
+
 // Keyed by `${method} ${path}`. Handlers mirror the real Baanx responses:
 // email/send returns a contactVerificationId; email/verify validates the code
-// and returns an onboardingId (or a 4xx for a wrong code).
+// and returns an onboardingId; phone/send triggers the SMS (empty body) and
+// phone/verify validates the code (both endpoints return void on success).
 const MOCK_ROUTES: Record<string, MockHandler> = {
     'GET /v1/auth/settings': () => ok(REGISTRATION_SETTINGS),
     'POST /v1/auth/register/email/send': () =>
         ok({ contactVerificationId: 'mock-contact-verification-id' }),
-    'POST /v1/auth/register/email/verify': req => {
-        const code = (req.data as { verificationCode?: string } | undefined)
-            ?.verificationCode
-        if (code?.toUpperCase() === MOCK_VALID_VERIFICATION_CODE) {
-            return ok({ onboardingId: 'mock-onboarding-id' })
-        }
-        return { status: 400, data: { message: 'Invalid verification code' } }
-    },
+    'POST /v1/auth/register/email/verify': verifyCode({
+        onboardingId: 'mock-onboarding-id',
+    }),
+    'POST /v1/auth/register/phone/send': () => ok({}),
+    'POST /v1/auth/register/phone/verify': verifyCode({}),
 }
 
 if (__DEV__) {
