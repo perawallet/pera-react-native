@@ -29,9 +29,19 @@ const mockBuild = vi.fn()
 const mockAddPayment = vi.fn()
 const mockAddAssetTransfer = vi.fn()
 const mockAddAssetOptIn = vi.fn()
+const mockAddToAssetHolding = vi.fn()
+const mockFetchAndPersistAssets = vi.fn()
+const mockInvalidateBalances = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    addToAssetHolding: (...args: unknown[]) => mockAddToAssetHolding(...args),
+    useAccountBalancesInvalidator: () => ({
+        invalidate: mockInvalidateBalances,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
@@ -61,11 +71,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     }),
     displayUnitsToBaseUnits: (val: Decimal, _decimals: number) => val,
     ASSET_MBR: 100000n,
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: 0n,
     ALGO_ASSET: { assetId: 0n, decimals: 6, name: 'Algo', unitName: 'ALGO' },
+    fetchAndPersistAssets: (...args: unknown[]) =>
+        mockFetchAndPersistAssets(...args),
 }))
 
 const TXN = { sender: 'SENDER' } as unknown
@@ -83,6 +96,8 @@ describe('useTransactionSendFlow', () => {
         mockBuildSendViaInbox.mockResolvedValue([TXN])
         mockBuildClaimAsset.mockResolvedValue([TXN])
         mockBuildRejectAsset.mockResolvedValue([TXN])
+        mockAddToAssetHolding.mockResolvedValue(undefined)
+        mockFetchAndPersistAssets.mockResolvedValue(undefined)
     })
 
     it('normal ALGO send: builds payment + submits via pipeline', async () => {
@@ -222,6 +237,68 @@ describe('useTransactionSendFlow', () => {
         )
     })
 
+    it('claimArc59 with amount: optimistically credits the holding after submit', async () => {
+        const { result } = renderHook(() => useTransactionSendFlow())
+        await act(async () => {
+            const id = await result.current.execute({
+                params: {
+                    sendMode: 'claimArc59',
+                    sender: { address: 'A' } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
+                    shouldClaimAlgo: false,
+                    amount: new Decimal(250),
+                },
+            })
+            expect(id).toBe('tx1')
+        })
+        expect(mockAddToAssetHolding).toHaveBeenCalledWith({
+            accountAddress: 'A',
+            assetId: '99',
+            network: 'mainnet',
+            amount: new Decimal(250),
+        })
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
+            ['99'],
+            'mainnet',
+        )
+        expect(mockInvalidateBalances).toHaveBeenCalled()
+    })
+
+    it('claimArc59 without amount: skips the optimistic credit', async () => {
+        const { result } = renderHook(() => useTransactionSendFlow())
+        await act(async () => {
+            await result.current.execute({
+                params: {
+                    sendMode: 'claimArc59',
+                    sender: { address: 'A' } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
+                    shouldClaimAlgo: false,
+                },
+            })
+        })
+        expect(mockAddToAssetHolding).not.toHaveBeenCalled()
+        expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()
+        expect(mockInvalidateBalances).not.toHaveBeenCalled()
+    })
+
+    it('claimArc59: a failed optimistic credit does not fail the claim', async () => {
+        mockAddToAssetHolding.mockRejectedValueOnce(new Error('db locked'))
+        const { result } = renderHook(() => useTransactionSendFlow())
+        await act(async () => {
+            const id = await result.current.execute({
+                params: {
+                    sendMode: 'claimArc59',
+                    sender: { address: 'A' } as any,
+                    asset: { assetId: '99', decimals: 0 } as any,
+                    shouldClaimAlgo: false,
+                    amount: new Decimal(250),
+                },
+            })
+            expect(id).toBe('tx1')
+        })
+        expect(mockInvalidateBalances).toHaveBeenCalled()
+    })
+
     it('rejectArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {
         const { result } = renderHook(() => useTransactionSendFlow())
         await act(async () => {
@@ -231,6 +308,7 @@ describe('useTransactionSendFlow', () => {
                     sender: { address: 'A' } as any,
                     asset: { assetId: 99n, decimals: 0 } as any,
                     shouldClaimAlgo: false,
+                    amount: new Decimal(250),
                 },
             })
         })
@@ -244,6 +322,8 @@ describe('useTransactionSendFlow', () => {
                 },
             }),
         )
+        // Rejecting returns the asset to the sender — never credit holdings.
+        expect(mockAddToAssetHolding).not.toHaveBeenCalled()
     })
 
     it('throws InvalidSendParamsError for an empty assetId string', async () => {

@@ -27,6 +27,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     getAlgorandClient: (...args: unknown[]) => mockGetAlgorandClient(...args),
 }))
 
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    ALGO_ASSET_ID: '0',
+    fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
+    fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
+}))
+
 const mockUpsertAccountBalance = vi.fn()
 const mockRefreshAccountHoldings = vi.fn()
 const mockGetAccountBalance = vi.fn()
@@ -37,6 +43,7 @@ vi.mock('../../db', () => ({
     refreshAccountHoldings: (...args: unknown[]) =>
         mockRefreshAccountHoldings(...args),
     getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
+    getAccountHoldings: vi.fn().mockResolvedValue([]),
 }))
 
 describe('fetchAndPersistAccount', () => {
@@ -48,7 +55,7 @@ describe('fetchAndPersistAccount', () => {
         mockLookupAccountAssets.mockResolvedValue({ assets: [] })
     })
 
-    it('persists converted balance from algod account info (assets excluded)', async () => {
+    it('persists balance and holdings from a single full algod read', async () => {
         mockAccountInformation.mockResolvedValue({
             amount: 1_500_000n,
             minBalance: 100_000n,
@@ -57,20 +64,18 @@ describe('fetchAndPersistAccount', () => {
             totalAppsOptedIn: 0,
             status: 'Online',
             authAddr: { toString: () => 'REKEY_ADDR' },
-        })
-        mockLookupAccountAssets.mockResolvedValue({
             assets: [
-                { assetId: 10n, amount: 500n },
-                { assetId: 20n, amount: 0n },
+                { assetId: 10n, amount: 500n, isFrozen: false },
+                { assetId: 20n, amount: 0n, isFrozen: false },
             ],
         })
 
         const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
 
         expect(mockGetAlgorandClient).toHaveBeenCalledWith('mainnet')
-        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1', {
-            exclude: 'all',
-        })
+        // Small account → holdings come inline from algod, no indexer paging.
+        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
+        expect(mockLookupAccountAssets).not.toHaveBeenCalled()
 
         expect(mockUpsertAccountBalance).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
@@ -95,8 +100,25 @@ describe('fetchAndPersistAccount', () => {
             ],
         })
 
-        // First sync of an account with no prior row → changed.
-        expect(result).toEqual({ changed: true, holdingsChanged: true })
+        // First sync of an account with no prior row → changed. The mocked
+        // response carries no round, so none is reported.
+        expect(result).toEqual({
+            changed: true,
+            holdingsChanged: true,
+            observedRound: null,
+        })
+    })
+
+    it('reports the algod round the inline read observed', async () => {
+        mockAccountInformation.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+            round: 1234n,
+        })
+
+        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        expect(result.observedRound).toBe(1234)
     })
 
     it('defaults missing optional fields', async () => {
@@ -130,8 +152,6 @@ describe('fetchAndPersistAccount', () => {
         mockAccountInformation.mockResolvedValue({
             amount: 0n,
             minBalance: 0n,
-        })
-        mockLookupAccountAssets.mockResolvedValue({
             assets: [{ assetId: 42n }],
         })
 
@@ -147,7 +167,16 @@ describe('fetchAndPersistAccount', () => {
         )
     })
 
-    it('pages through holdings using the indexer nextToken', async () => {
+    it('skips the full read and pages the indexer when persisted resource counts exceed the inline cap', async () => {
+        mockGetAccountBalance.mockResolvedValue({
+            algoBalance: new Decimal(0),
+            totalAssetsOptedIn: 1500,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(0),
+            status: 'Offline',
+            authAddress: null,
+        })
         mockAccountInformation.mockResolvedValue({ amount: 0n, minBalance: 0n })
         mockLookupAccountAssets
             .mockResolvedValueOnce({
@@ -160,6 +189,11 @@ describe('fetchAndPersistAccount', () => {
 
         await fetchAndPersistAccount('ADDR1', 'mainnet')
 
+        // Goes straight to the asset-less info read — no doomed full read.
+        expect(mockAccountInformation).toHaveBeenCalledTimes(1)
+        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1', {
+            exclude: 'all',
+        })
         expect(mockLookupAccountAssets).toHaveBeenNthCalledWith(1, 'ADDR1', {
             limit: 1000,
             next: undefined,
@@ -177,6 +211,76 @@ describe('fetchAndPersistAccount', () => {
                 ],
             }),
         )
+    })
+
+    it('reports the minimum round across algod and indexer on the split path', async () => {
+        mockGetAccountBalance.mockResolvedValue({
+            algoBalance: new Decimal(0),
+            totalAssetsOptedIn: 1500,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(0),
+            status: 'Offline',
+            authAddress: null,
+        })
+        mockAccountInformation.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+            round: 1200n,
+        })
+        // The indexer trails algod — the lower round must win so the
+        // checkpoint can't run ahead of what was actually read.
+        mockLookupAccountAssets.mockResolvedValue({
+            assets: [],
+            currentRound: 1188n,
+        })
+
+        const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        expect(result.observedRound).toBe(1188)
+    })
+
+    it('falls back to the split algod+indexer read when algod rejects the full read with 400', async () => {
+        // algod's resource-cap rejection surfaces as an ApiError with status.
+        const capError = Object.assign(new Error('Result limit exceeded'), {
+            status: 400,
+        })
+        mockAccountInformation
+            .mockRejectedValueOnce(capError)
+            .mockResolvedValueOnce({ amount: 0n, minBalance: 0n })
+        mockLookupAccountAssets.mockResolvedValue({
+            assets: [{ assetId: 7n, amount: 3n }],
+        })
+
+        await fetchAndPersistAccount('ADDR1', 'mainnet')
+
+        expect(mockAccountInformation).toHaveBeenNthCalledWith(1, 'ADDR1')
+        expect(mockAccountInformation).toHaveBeenNthCalledWith(2, 'ADDR1', {
+            exclude: 'all',
+        })
+        expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
+            expect.objectContaining({
+                holdings: [
+                    { assetId: '0', amount: new Decimal(0) },
+                    { assetId: '7', amount: new Decimal(3) },
+                ],
+            }),
+        )
+    })
+
+    it('propagates non-resource-cap errors from the full read without falling back', async () => {
+        mockAccountInformation.mockRejectedValue(
+            Object.assign(new Error('Too Many Requests: 429'), {
+                status: 429,
+            }),
+        )
+
+        await expect(
+            fetchAndPersistAccount('ADDR1', 'mainnet'),
+        ).rejects.toThrow('429')
+
+        expect(mockAccountInformation).toHaveBeenCalledTimes(1)
+        expect(mockLookupAccountAssets).not.toHaveBeenCalled()
     })
 
     it('reports no change when balance and holdings are unchanged', async () => {
@@ -201,7 +305,11 @@ describe('fetchAndPersistAccount', () => {
 
         const result = await fetchAndPersistAccount('ADDR1', 'mainnet')
 
-        expect(result).toEqual({ changed: false, holdingsChanged: false })
+        expect(result).toEqual({
+            changed: false,
+            holdingsChanged: false,
+            observedRound: null,
+        })
     })
 
     it('coalesces concurrent fetches for the same account', async () => {
@@ -239,9 +347,7 @@ describe('ensureAccountFetched', () => {
 
         await ensureAccountFetched('ADDR1', 'mainnet')
 
-        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1', {
-            exclude: 'all',
-        })
+        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
     })
 
     it('swallows fetch errors (never throws to the caller)', async () => {

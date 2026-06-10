@@ -29,6 +29,7 @@ import {
     getAccountPortfolioTotals,
     getAccountHoldingsPage,
     insertAssetHolding,
+    addToAssetHolding,
     deleteAssetHoldings,
     upsertAccountBalance,
     getAccountBalance,
@@ -485,6 +486,91 @@ describe('account repository', () => {
 
             expect(result).toHaveLength(2)
             expect(result.map(r => r.assetId).sort()).toEqual(['100', '200'])
+        })
+    })
+
+    describe('addToAssetHolding', () => {
+        it('inserts a new holding carrying the credited amount', async () => {
+            await addToAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '100',
+                network: 'mainnet',
+                amount: new Decimal(250),
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(1)
+            expect(result[0].assetId).toBe('100')
+            expect(result[0].amount).toEqual(new Decimal(250))
+        })
+
+        it('adds to the existing amount when the holding exists', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 500n }],
+                network: 'mainnet',
+            })
+
+            await addToAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '100',
+                network: 'mainnet',
+                amount: new Decimal(250),
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(1)
+            expect(result[0].amount).toEqual(new Decimal(750))
+        })
+
+        it('leaves other accounts and assets untouched', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 10n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                holdings: [{ assetId: '100', amount: 20n }],
+                network: 'mainnet',
+            })
+
+            await addToAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '100',
+                network: 'mainnet',
+                amount: new Decimal(5),
+            })
+
+            const addr1 = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            const addr2 = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                network: 'mainnet',
+            })
+
+            expect(addr1[0].amount).toEqual(new Decimal(15))
+            expect(addr2[0].amount).toEqual(new Decimal(20))
         })
     })
 

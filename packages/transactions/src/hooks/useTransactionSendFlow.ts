@@ -13,7 +13,10 @@
 import { useCallback } from 'react'
 
 import { type Decimal } from 'decimal.js'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET_ID,
+    fetchAndPersistAssets,
+} from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -24,11 +27,17 @@ import {
     ASSET_MBR,
     displayUnitsToBaseUnits,
     useAlgorandClient,
+    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
+import {
+    addToAssetHolding,
+    useAccountBalancesInvalidator,
+} from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type BaseSendParams = {
@@ -50,6 +59,13 @@ type SendTransactionParams = BaseSendParams & {
 type SendClaimParams = BaseSendParams & {
     sendMode: 'claimArc59' | 'rejectArc59'
     shouldClaimAlgo: boolean
+    /**
+     * Claimed amount in base units. When provided on a `claimArc59` send, the
+     * flow optimistically credits it to the sender's local holdings right
+     * after submission. Callers that don't know the amount can omit it and
+     * rely on the post-confirmation refresh instead.
+     */
+    amount?: Decimal
 }
 
 type SendParams = SendTransactionParams | SendClaimParams
@@ -76,6 +92,8 @@ type UseTransactionSendFlowResult = {
 export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
+    const { network } = useNetwork()
+    const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const { buildSendViaInboxTxs } = useArc59SendTransaction()
     const { buildClaimAssetTxs, buildRejectAssetTxs } =
         useArc59ClaimTransaction()
@@ -257,6 +275,36 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     unsignedTxs,
                     source: SEND_TRANSACTION_SOURCE,
                 })
+
+                // Optimistically credit the claimed amount (and make sure the
+                // asset's metadata is persisted) so the asset list shows the
+                // new balance immediately instead of waiting for confirmation
+                // + refresh. The next account sync replaces the credit with
+                // chain truth, so a failed claim self-corrects within a poll
+                // tick. Mirrors useAssetOptInMutation's optimistic holding
+                // insert.
+                if (params.amount) {
+                    try {
+                        await addToAssetHolding({
+                            accountAddress: params.sender.address,
+                            assetId: String(params.asset.assetId),
+                            network,
+                            amount: params.amount,
+                        })
+                        await fetchAndPersistAssets(
+                            [String(params.asset.assetId)],
+                            network,
+                        )
+                    } catch (error) {
+                        // Cosmetic-only failure — the post-confirmation
+                        // refresh still updates the balances.
+                        logger.warn('Optimistic claim credit failed', {
+                            error,
+                        })
+                    }
+                    invalidateBalances()
+                }
+
                 return result.txIds[result.txIds.length - 1]
             } else {
                 const unsignedTxs = await buildRejectAssetTxs({
@@ -271,7 +319,13 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 return result.txIds[result.txIds.length - 1]
             }
         },
-        [buildClaimAssetTxs, buildRejectAssetTxs, submit],
+        [
+            buildClaimAssetTxs,
+            buildRejectAssetTxs,
+            submit,
+            network,
+            invalidateBalances,
+        ],
     )
 
     const execute = useCallback(

@@ -74,6 +74,9 @@ export const useClaimProcessingScreen = () => {
             sender: account,
             asset: asset.asset,
             shouldClaimAlgo,
+            // Claimed amount in base units — lets the send flow credit the
+            // balance optimistically right after submission.
+            amount: asset.totalAmount,
         }
 
         execute({
