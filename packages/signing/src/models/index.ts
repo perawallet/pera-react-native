@@ -44,6 +44,14 @@ type BaseSignRequest = {
     sourceType?: SourceType
     sourceMetadata?: SignRequestSource
     /**
+     * Origin the platform itself observed the request arriving from (the
+     * in-app webview's loaded host). Unlike {@link sourceMetadata}, this is
+     * NOT dApp-asserted, so it can be trusted for origin-binding checks (e.g.
+     * ARC-60 SIWA domain ↔ origin). Left unset for transports with no
+     * verifiable origin (e.g. WalletConnect, whose peer URL is self-asserted).
+     */
+    verifiedOrigin?: string
+    /**
      * Multisig-cosign only: the existing sign-request ID being cosigned.
      * Threaded into {@link SourceMetadata.signRequestId} so the cosign
      * transport can target the right backend record.

@@ -1825,6 +1825,7 @@
             "siwa_not_before": "Not Before",
             "siwa_resources": "Resources",
             "siwa_invalid": "This sign-in request is malformed and cannot be signed.",
+            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Only continue if you trust it.",
             "show_details": "Show Details",
             "details_title": "Sign-in Request Details",
             "details_description": "Review the full metadata of this sign-in request before approving."

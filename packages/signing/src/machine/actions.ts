@@ -200,6 +200,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
         type: sourceType,
         transport: request.transport,
         requestId: request.transportId ?? request.id,
+        verifiedOrigin: request.verifiedOrigin,
         callbacks: {
             approve: approveCallback,
             reject: 'reject' in request ? request.reject : undefined,
