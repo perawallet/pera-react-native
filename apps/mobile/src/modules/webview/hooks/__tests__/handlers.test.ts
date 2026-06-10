@@ -13,6 +13,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     BROWSER_FAVORITE_ACTION,
+    generateBridgeToken,
+    hasValidBridgeToken,
     isSafeBrowserUrl,
     isSafeRelativePath,
     isTrustedWebviewOrigin,
@@ -306,5 +308,63 @@ describe('isSafeRelativePath', () => {
 
     it('rejects empty or missing paths', () => {
         expect(isSafeRelativePath('')).toBe(false)
+    })
+})
+
+describe('generateBridgeToken', () => {
+    it('returns a 32-char hex string', () => {
+        expect(generateBridgeToken()).toMatch(/^[0-9a-f]{32}$/)
+    })
+
+    it('returns a different token on each call', () => {
+        expect(generateBridgeToken()).not.toBe(generateBridgeToken())
+    })
+})
+
+describe('hasValidBridgeToken', () => {
+    const token = 'abc123'
+
+    it('accepts a single message carrying the matching token', () => {
+        expect(
+            hasValidBridgeToken({ method: 'getAddresses', token }, token),
+        ).toBe(true)
+    })
+
+    it('accepts a batch where every message carries the matching token', () => {
+        expect(
+            hasValidBridgeToken(
+                [
+                    { id: '1', token },
+                    { id: '2', token },
+                ],
+                token,
+            ),
+        ).toBe(true)
+    })
+
+    it('rejects a message with a missing token', () => {
+        expect(hasValidBridgeToken({ method: 'getAddresses' }, token)).toBe(
+            false,
+        )
+    })
+
+    it('rejects a message with a wrong token', () => {
+        expect(hasValidBridgeToken({ token: 'forged' }, token)).toBe(false)
+    })
+
+    it('rejects a batch if any message lacks the token', () => {
+        expect(
+            hasValidBridgeToken([{ token }, { token: 'forged' }], token),
+        ).toBe(false)
+    })
+
+    it('rejects empty arrays and non-objects', () => {
+        expect(hasValidBridgeToken([], token)).toBe(false)
+        expect(hasValidBridgeToken(null, token)).toBe(false)
+        expect(hasValidBridgeToken('string', token)).toBe(false)
+    })
+
+    it('rejects everything when the expected token is empty', () => {
+        expect(hasValidBridgeToken({ token: '' }, '')).toBe(false)
     })
 })

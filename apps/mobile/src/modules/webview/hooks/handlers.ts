@@ -85,6 +85,45 @@ export const isTrustedWebviewOrigin = (
     })
 }
 
+/**
+ * Per-load secret stamped onto every bridge message by the main-frame-only
+ * injected script. `injectedJavaScript` runs only in the main frame, but
+ * `window.ReactNativeWebView.postMessage` is reachable from every subframe —
+ * so a cross-origin iframe or injected subresource could otherwise post a
+ * forged JSON-RPC message straight to the bridge. The token defeats that: a
+ * cross-origin frame can't read the main frame's token, so it can't stamp a
+ * message the native side will accept.
+ */
+export const generateBridgeToken = (): string => {
+    const bytes = new Uint8Array(16)
+    const webCrypto = (globalThis as { crypto?: Crypto }).crypto
+    if (webCrypto?.getRandomValues) {
+        webCrypto.getRandomValues(bytes)
+    } else {
+        for (let i = 0; i < bytes.length; i++) {
+            bytes[i] = Math.floor(Math.random() * 256)
+        }
+    }
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * True only if every message in the payload carries the expected bridge
+ * token. Messages without it came from a subframe (or were forged) and must
+ * be dropped. An empty/non-object payload is never valid.
+ */
+export const hasValidBridgeToken = (data: unknown, token: string): boolean => {
+    if (!token) return false
+    const items = Array.isArray(data) ? data : [data]
+    if (items.length === 0) return false
+    return items.every(
+        item =>
+            typeof item === 'object' &&
+            item !== null &&
+            (item as { token?: unknown }).token === token,
+    )
+}
+
 export const isSafeBrowserUrl = (url: string): boolean => {
     let parsed: URL
     try {

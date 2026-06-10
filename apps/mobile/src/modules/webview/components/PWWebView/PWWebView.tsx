@@ -35,7 +35,11 @@ import {
     useContextFingerprints,
     usePeraWebviewInterface,
 } from '@modules/webview/hooks'
-import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
+import {
+    generateBridgeToken,
+    hasValidBridgeToken,
+    isTrustedWebviewOrigin,
+} from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import { EmptyView } from '@components/EmptyView'
 import {
@@ -91,6 +95,9 @@ export const PWWebView = (props: PWWebViewProps) => {
     const removeWebView = useWebViewStore(state => state.removeWebView)
     const internalRef = useRef<WebView>(null)
     const webview = webviewRef ?? internalRef
+    // Per-mount secret stamped onto bridge messages by the main-frame-only
+    // injected script; native drops messages without it (subframe-forged).
+    const bridgeToken = useRef(generateBridgeToken()).current
     const { showToast } = useToast()
     const [title, setTitle] = useState('')
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
@@ -162,6 +169,17 @@ export const PWWebView = (props: PWWebViewProps) => {
                 return
             }
 
+            // Main-frame-only gate: the bridge API is injected into the main
+            // frame only and stamps each message with this webview's token. A
+            // message lacking the matching token originated from a subframe
+            // (or was forged) and must not reach the bridge.
+            if (!hasValidBridgeToken(data, bridgeToken)) {
+                logger.warn(
+                    'WebView: dropped bridge message with missing/invalid token',
+                )
+                return
+            }
+
             logger.debug('WebView: Received onMessage event', {
                 data,
             })
@@ -169,7 +187,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 data as Parameters<typeof mobileInterface.handleMessage>[0],
             )
         },
-        [onCustomMessage, enablePeraConnect, mobileInterface],
+        [onCustomMessage, enablePeraConnect, mobileInterface, bridgeToken],
     )
 
     const navigationStateChange = useCallback(
@@ -244,7 +262,7 @@ export const PWWebView = (props: PWWebViewProps) => {
 
         if (enablePeraConnect) {
             js += peraConnectJS
-            js += peraMobileInterfaceJS
+            js += peraMobileInterfaceJS(bridgeToken)
         }
 
         if (customJavaScript) {
@@ -254,7 +272,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         js += updateTheme(theme.mode)
 
         return js
-    }, [enablePeraConnect, customJavaScript, theme.mode])
+    }, [enablePeraConnect, customJavaScript, theme.mode, bridgeToken])
 
     const renderWebView = useCallback(() => {
         return (

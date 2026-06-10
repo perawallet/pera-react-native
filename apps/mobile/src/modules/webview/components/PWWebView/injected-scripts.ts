@@ -17,18 +17,36 @@ var head = document.head || document.getElementsByTagName('head')[0];
 var style = document.createElement('style'); style.type = 'text/css';
 style.appendChild(document.createTextNode(css)); head.appendChild(style);`
 
-export const peraMobileInterfaceJS = `
+// Injected into the MAIN FRAME ONLY (react-native-webview's
+// injectedJavaScript default). The token closes over the per-load secret so
+// every outbound message is stamped with it; native drops any message that
+// arrives without the matching token (i.e. forged by a subframe that can't
+// read this closure). See generateBridgeToken / hasValidBridgeToken.
+export const peraMobileInterfaceJS = (bridgeToken: string) => `
 console.log('peraMobileInterfaceJS setup');
+(function setupPeraMobileInterface(){
+var __peraBridgeToken = ${JSON.stringify(bridgeToken)};
+function __stampToken(request) {
+    var obj;
+    try {
+        obj = typeof request === 'string' ? JSON.parse(request) : (request || {});
+    } catch (_) {
+        obj = {};
+    }
+    obj.token = __peraBridgeToken;
+    return JSON.stringify(obj);
+}
 window.peraRPC = {
     sendJsonRPCMessage: (request) => {
-        window.ReactNativeWebView?.postMessage(request); 
+        window.ReactNativeWebView?.postMessage(__stampToken(request));
     },
     sendRNMessage: (action, params = {}) => {
         window.ReactNativeWebView?.postMessage(JSON.stringify({
             jsonrpc: '2.0',
             method: action,
             params,
-            id: Date.now()
+            id: Date.now(),
+            token: __peraBridgeToken
         }));
     },
 };
@@ -51,6 +69,7 @@ window.peraMobileInterface = {
     // V1 function for backwards compatibility
     getAuthorizedAddresses: () => window.peraRPC.sendRNMessage('getAddresses'),
 };
+})();
 `
 
 export const peraConnectJS = `

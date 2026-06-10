@@ -68,6 +68,9 @@ type WebviewMessage = {
     jsonrpc: '2.0'
     method: string
     params?: Record<string, unknown>
+    // Stamped by the main-frame-only injected bridge; validated at the
+    // PWWebView message boundary, ignored by handler dispatch.
+    token?: string
 }
 
 /**
