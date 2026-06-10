@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 
 const collectibleTraitSchema = z.object({
     display_name: z.string().optional(),
@@ -52,7 +53,7 @@ const collectibleResponseSchema = z.object({
 export type CollectibleResponse = z.infer<typeof collectibleResponseSchema>
 
 export const assetResponseSchema = z.object({
-    asset_id: z.number(),
+    asset_id: uint64IdSchema,
     name: z.string().optional(),
     logo: z.string().nullable().optional(),
     unit_name: z.string().optional(),
@@ -88,7 +89,7 @@ export const assetsResponseSchema = z.object({
 })
 
 export const publicAssetResponseSchema = z.object({
-    asset_id: z.number(),
+    asset_id: uint64IdSchema,
     name: z.string().optional().nullable(),
     unit_name: z.string().optional().nullable(),
     fraction_decimals: z.number(),
@@ -109,7 +110,7 @@ export const indexerAssetResponseSchema = z.object({
         'created-at-round': z.number().optional(),
         deleted: z.boolean().optional(),
         'destroyed-at-round': z.number().optional(),
-        index: z.number(),
+        index: uint64IdSchema,
         params: z.object({
             clawback: z.string().optional(),
             creator: z.string(),

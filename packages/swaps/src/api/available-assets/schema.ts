@@ -11,9 +11,10 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 
 export const dexSwapAssetSchema = z.object({
-    asset_id: z.number().optional(),
+    asset_id: uint64IdSchema.optional(),
     logo: z.string().nullable().optional(),
     name: z.string().optional(),
     unit_name: z.string().optional(),

@@ -44,7 +44,7 @@ describe('useCalculatePeraFeeMutation', () => {
     test('forwards the request and active network to calculatePeraFee', async () => {
         vi.mocked(calculatePeraFee).mockResolvedValue({
             peraFee: '5000',
-            peraFeeAssetId: 0,
+            peraFeeAssetId: '0',
         } as never)
 
         const { result } = renderHook(() => useCalculatePeraFeeMutation(), {

@@ -11,20 +11,20 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { z } from 'zod'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     assetResponseSchema,
     assetsResponseSchema,
     indexerAssetResponseSchema,
     publicAssetResponseSchema,
-    type AssetResponse,
-    type AssetsResponse,
-    type IndexerAssetResponse,
-    type PublicAssetResponse,
 } from './schema'
 
+// Mock payloads are typed with the schema *input* (wire) shape, not the
+// parsed output — e.g. asset ids may be numbers on the wire but are
+// normalized to strings by `uint64IdSchema` during parsing.
 export type MockAssetsParams = {
-    response: AssetsResponse
+    response: z.input<typeof assetsResponseSchema>
     status?: number
 }
 
@@ -40,7 +40,7 @@ export const mockAssets = ({
 
 export type MockAccountAssetsParams = {
     address: string
-    response: AssetsResponse
+    response: z.input<typeof assetsResponseSchema>
     status?: number
 }
 
@@ -57,7 +57,7 @@ export const mockAccountAssets = ({
 
 export type MockAssetDetailsParams = {
     assetID: string
-    response: AssetResponse
+    response: z.input<typeof assetResponseSchema>
     status?: number
 }
 
@@ -74,7 +74,7 @@ export const mockAssetDetails = ({
 
 export type MockPublicAssetDetailsParams = {
     assetID: string
-    response: PublicAssetResponse
+    response: z.input<typeof publicAssetResponseSchema>
     status?: number
 }
 
@@ -95,7 +95,7 @@ export const mockPublicAssetDetails = ({
 
 export type MockIndexerAssetDetailsParams = {
     assetID: string
-    response: IndexerAssetResponse
+    response: z.input<typeof indexerAssetResponseSchema>
     status?: number
 }
 

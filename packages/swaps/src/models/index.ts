@@ -131,13 +131,15 @@ export interface TopPairItem {
 
 export interface CalculatePeraFeeResult {
     peraFeeAmount?: Decimal
-    peraFeeAssetId?: number
+    /** Asset id as a decimal string — uint64 ids must never live in a JS number. */
+    peraFeeAssetId?: string
 }
 
 export interface CalculateSwapAmountResult {
     amount?: Decimal
     peraFee?: Decimal
-    peraFeeAssetId?: number
+    /** Asset id as a decimal string — uint64 ids must never live in a JS number. */
+    peraFeeAssetId?: string
 }
 
 export interface PrepareTransactionsResult {

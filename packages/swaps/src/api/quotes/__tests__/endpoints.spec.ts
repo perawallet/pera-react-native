@@ -20,9 +20,14 @@ import {
 import type { CreateQuotesRequest } from '../schema'
 import type { SwapProviderItem } from '../../../models'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    queryClient: vi.fn(),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        queryClient: vi.fn(),
+    }
+})
 
 const request: CreateQuotesRequest = {
     swapper_address: 'ALGO_ADDRESS',
@@ -127,7 +132,7 @@ describe('calculatePeraFee', () => {
             }),
         )
         expect(result.peraFeeAmount?.toString()).toBe('5000')
-        expect(result.peraFeeAssetId).toBe(0)
+        expect(result.peraFeeAssetId).toBe('0')
     })
 
     test('returns peraFeeAmount undefined when the API omits the field', async () => {

@@ -11,24 +11,28 @@
  */
 
 import { z } from 'zod'
+import {
+    uint64IdNumberSchema,
+    uint64IdSchema,
+} from '@perawallet/wallet-core-shared'
 import { dexSwapAssetSchema } from '../available-assets/schema'
 
 const swapTypeEnum = z.enum(['fixed-input', 'fixed-output'])
 
 export const calculatePeraFeeRequestSchema = z.object({
-    asset_in_id: z.number(),
+    asset_in_id: uint64IdNumberSchema,
     amount: z.string(),
 })
 
 export const calculatePeraFeeResponseSchema = z.object({
     pera_fee_amount: z.number().optional(),
-    pera_fee_asset_id: z.number().optional(),
+    pera_fee_asset_id: uint64IdSchema.optional(),
 })
 
 export const calculateSwapAmountRequestSchema = z.object({
     address: z.string(),
-    asset_in_id: z.number(),
-    asset_out_id: z.number(),
+    asset_in_id: uint64IdNumberSchema,
+    asset_out_id: uint64IdNumberSchema,
     amount_input: z.string().nullable().optional(),
     percentage: z.string().nullable().optional(),
 })
@@ -36,15 +40,15 @@ export const calculateSwapAmountRequestSchema = z.object({
 export const calculateSwapAmountResponseSchema = z.object({
     amount: z.string().optional(),
     pera_fee: z.string().optional(),
-    pera_fee_asset_id: z.number().optional(),
+    pera_fee_asset_id: uint64IdSchema.optional(),
 })
 
 export const createQuotesRequestSchema = z.object({
     swapper_address: z.string(),
     swap_type: swapTypeEnum,
     device: z.string().nullable().optional(),
-    asset_in_id: z.number(),
-    asset_out_id: z.number(),
+    asset_in_id: uint64IdNumberSchema,
+    asset_out_id: uint64IdNumberSchema,
     amount: z.string(),
     slippage: z.string().optional(),
     referrer_url: z.string().nullable().optional(),
