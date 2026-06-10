@@ -10,20 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { getFontWeightVariant } from '@theme/typography'
-
-export const useStyles = makeStyles(theme => ({
-    amountContainer: {
-        alignItems: 'flex-end',
-    },
-    primaryAmount: {
-        ...getFontWeightVariant(theme, 'h4', 500),
-        textAlign: 'right',
-    },
-    secondaryAmount: {
-        textAlign: 'right',
-        color: theme.colors.textGray,
-        alignSelf: 'flex-end',
-    },
-}))
+export { SearchInputTrigger } from './SearchInputTrigger'
+export type { SearchInputTriggerProps } from './SearchInputTrigger'

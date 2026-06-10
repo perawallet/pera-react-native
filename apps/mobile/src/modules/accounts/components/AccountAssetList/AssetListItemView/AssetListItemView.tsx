@@ -109,7 +109,7 @@ const AssetListItemViewBase = ({
                 precision={2}
                 minPrecision={2}
                 showSymbol
-                variant='caption'
+                variant='body'
                 style={styles.secondaryAmount}
                 numberOfLines={1}
             />

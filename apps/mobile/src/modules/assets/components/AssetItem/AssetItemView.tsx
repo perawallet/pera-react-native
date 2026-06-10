@@ -74,7 +74,10 @@ export const AssetItemView = ({
             {t('asset.deleted_label')}
         </PWText>
     ) : copyableAssetId ? (
-        <CopyableText copyValue={String(asset.assetId)}>
+        <CopyableText
+            copyValue={String(asset.assetId)}
+            style={styles.copyableSubtitle}
+        >
             <PWText
                 style={styles.subtitle}
                 numberOfLines={1}
@@ -108,7 +111,7 @@ export const AssetItemView = ({
             <PWView style={styles.infoContainer}>
                 <PWView style={styles.titleRow}>
                     <PWText
-                        variant='body'
+                        variant='h4'
                         style={
                             isSuspicious
                                 ? styles.suspiciousTitle

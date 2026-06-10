@@ -25,12 +25,10 @@ export const useStyles = makeStyles(theme => {
             margin: 0,
             flex: 1,
             overflow: 'hidden',
-            gap: theme.spacing.md,
             minWidth: 0,
         },
         mainContent: {
             flex: 1,
-            gap: theme.spacing.md,
             minWidth: 0,
         },
         titleBar: {
@@ -40,6 +38,12 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'space-between',
             width: '100%',
             minWidth: 0,
+            // Spacing the portfolio and title bar used to get from the
+            // container gap (md) + mainContent margin (xl), now that both live
+            // in the scrolling list header.
+            marginTop: theme.spacing.xxl,
+            // No separator sits above the first account row.
+            marginBottom: theme.spacing.sm,
         },
         titleBarTitleContainer: {
             flex: 1,
