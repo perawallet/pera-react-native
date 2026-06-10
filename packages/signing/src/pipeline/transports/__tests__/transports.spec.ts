@@ -565,6 +565,7 @@ describe('createMultisigProposeTransport', () => {
             const proposeSignRequest = vi.fn().mockResolvedValue({
                 signRequestId: 'wc-handoff',
                 status: 'pending',
+                rawTransactionsBase64: ['cHJvcG9zZWQ='],
             })
             const approveSignedBytes = vi.fn()
             const error = vi.fn()
@@ -602,6 +603,11 @@ describe('createMultisigProposeTransport', () => {
             expect(handoff?.deviceId).toBe('device-1')
             expect(handoff?.network).toBe('testnet')
             expect(handoff?.msigMetadata).toEqual(MSIG_METADATA)
+            // The bytes the adapter actually sent are pinned on the handoff
+            // so the resolver can refuse mismatching poll responses.
+            expect(handoff?.expectedRawTransactionsBase64).toEqual([
+                'cHJvcG9zZWQ=',
+            ])
             expect(handoff?.callbacks.approveSignedBytes).toBe(
                 approveSignedBytes,
             )

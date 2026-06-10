@@ -53,6 +53,12 @@ import {
 
 const SIGN_REQUEST_ID = 'sr-1'
 
+// Valid base64 of distinct byte strings — the classifier byte-compares the
+// poll's raw transactions against the handoff's pinned (proposed) bytes
+// before assembling.
+const RAW_TX_B64 = btoa('raw-tx-1')
+const OTHER_TX_B64 = btoa('attacker-tx')
+
 const messages: ResolverMessages = {
     declined: 'msg.declined',
     expired: 'msg.expired',
@@ -68,6 +74,7 @@ const makeHandoff = (
     signRequestId: SIGN_REQUEST_ID,
     multisigAddress: 'MSIG_ADDR',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
+    expectedRawTransactionsBase64: [RAW_TX_B64],
     deviceId: 'device-1',
     network: 'testnet',
     callbacks: {
@@ -91,7 +98,7 @@ const makeDetail = (
         fail_reason_display: null,
         transaction_lists: [
             {
-                raw_transactions: ['raw-tx-1'],
+                raw_transactions: [RAW_TX_B64],
                 responses: [
                     { address: 'A', response: 'signed', signatures: ['sig-a'] },
                 ],
@@ -129,7 +136,7 @@ describe('classifyHandoffPoll', () => {
                 status: 'ready',
                 transaction_lists: [
                     {
-                        raw_transactions: ['raw-tx-1'],
+                        raw_transactions: [RAW_TX_B64],
                         responses: [
                             {
                                 address: 'A',
@@ -176,6 +183,93 @@ describe('classifyHandoffPoll', () => {
             kind: 'error',
             reason: { kind: 'assembly-failed', detail: 'bad subsig' },
         })
+    })
+
+    it('refuses to assemble when the poll bytes differ from the proposed bytes', () => {
+        const outcome = classifyHandoffPoll(
+            makeDetail({
+                transaction_lists: [
+                    {
+                        raw_transactions: [OTHER_TX_B64],
+                        responses: [
+                            {
+                                address: 'A',
+                                response: 'signed',
+                                signatures: ['sig-a'],
+                            },
+                        ],
+                    },
+                ],
+            }),
+            makeHandoff(),
+        )
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            reason: {
+                kind: 'assembly-failed',
+                detail: expect.stringMatching(/do not match/),
+            },
+        })
+        expect(assembleMock).not.toHaveBeenCalled()
+    })
+
+    it('refuses to assemble when the poll carries extra transactions', () => {
+        const outcome = classifyHandoffPoll(
+            makeDetail({
+                transaction_lists: [
+                    {
+                        raw_transactions: [RAW_TX_B64, OTHER_TX_B64],
+                        responses: [
+                            {
+                                address: 'A',
+                                response: 'signed',
+                                signatures: ['sig-a', 'sig-a2'],
+                            },
+                        ],
+                    },
+                ],
+            }),
+            makeHandoff(),
+        )
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            reason: {
+                kind: 'assembly-failed',
+                detail: expect.stringMatching(/do not match/),
+            },
+        })
+        expect(assembleMock).not.toHaveBeenCalled()
+    })
+
+    it('refuses to assemble when the poll bytes are not decodable base64', () => {
+        const outcome = classifyHandoffPoll(
+            makeDetail({
+                transaction_lists: [
+                    {
+                        raw_transactions: ['@@not-base64@@'],
+                        responses: [
+                            {
+                                address: 'A',
+                                response: 'signed',
+                                signatures: ['sig-a'],
+                            },
+                        ],
+                    },
+                ],
+            }),
+            makeHandoff(),
+        )
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            reason: {
+                kind: 'assembly-failed',
+                detail: expect.stringMatching(/do not match/),
+            },
+        })
+        expect(assembleMock).not.toHaveBeenCalled()
     })
 
     it('classifies confirmed like ready', () => {

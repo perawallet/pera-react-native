@@ -35,6 +35,15 @@ export type PendingWalletConnectHandoff = {
         threshold: number
         addresses: string[]
     }
+    /**
+     * Base64-encoded raw (unprefixed) msgpack bytes of the transactions
+     * exactly as the wallet proposed them — i.e. what the user reviewed
+     * and the proposer signed. The resolver refuses to assemble/deliver
+     * if the backend's `with-signatures` poll returns different bytes,
+     * so a compromised backend can't swap in transactions nobody
+     * reviewed.
+     */
+    expectedRawTransactionsBase64: string[]
     /** Device id for the `with-signatures` + `mark-confirmed` calls. */
     deviceId: string
     /**

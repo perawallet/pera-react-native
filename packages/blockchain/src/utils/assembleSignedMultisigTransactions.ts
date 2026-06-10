@@ -16,6 +16,7 @@ import {
     PUBLIC_KEY_BYTE_LENGTH,
     SIGNATURE_BYTE_LENGTH,
 } from '@algorandfoundation/algokit-utils/common'
+import nacl from 'tweetnacl'
 import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -55,6 +56,13 @@ export type AssembleSignedMultisigResult =
  * bytes go in verbatim as the final value, never decoded and re-encoded.
  */
 const SIGNED_TXN_MAP_HEADER = new Uint8Array([0x82])
+
+/**
+ * Algorand transaction domain-separation prefix. Each multisig participant
+ * signs `"TX" || <canonical txn msgpack>`; the wire payload carries the
+ * unprefixed bytes, so the prefix is re-applied for verification.
+ */
+const TX_PREFIX = new Uint8Array([0x54, 0x58]) // "TX"
 
 const isAllZero = (bytes: Uint8Array): boolean => {
     for (const b of bytes) if (b !== 0) return false
@@ -125,6 +133,14 @@ const resolvePublicKeys = (
  * as missing (matches Android's sanity filter, defends against backend
  * returning placeholder bytes).
  *
+ * Every contributing signature is Ed25519-verified against
+ * `"TX" || <raw transaction bytes>` under the participant's public key
+ * before assembly. The backend is a collection/relay service, not a trust
+ * anchor: without this check a compromised backend could pair harvested
+ * signatures with attacker-substituted transaction bytes and the wallet
+ * would affirmatively deliver a transaction nobody reviewed. A
+ * non-verifying (or non-participant) signature is a hard error.
+ *
  * @returns `success` with the assembled signed-transaction bytes per item,
  *   or `error` with a human-readable reason if any item failed (e.g.
  *   insufficient signatures, invalid pubkey).
@@ -176,19 +192,6 @@ export const assembleSignedMultisigTransactions = (
 
     const signedList: Uint8Array[] = []
     for (let txIndex = 0; txIndex < rawTransactionsBase64.length; txIndex++) {
-        // Threshold check per transaction index. Decline-only participants
-        // contribute zero signatures here; missing arrays count as zero.
-        let validCount = 0
-        for (const sigs of sigsByAddress.values()) {
-            if (sigs[txIndex]) validCount++
-        }
-        if (validCount < threshold) {
-            return {
-                kind: 'error',
-                reason: `Transaction ${txIndex}: not enough valid signatures (${validCount}/${threshold})`,
-            }
-        }
-
         let rawTxBytes: Uint8Array
         try {
             rawTxBytes = decodeFromBase64(rawTransactionsBase64[txIndex])
@@ -202,6 +205,42 @@ export const assembleSignedMultisigTransactions = (
             return {
                 kind: 'error',
                 reason: `Transaction ${txIndex}: invalid base64 raw transaction`,
+            }
+        }
+
+        // Cryptographically verify every contributing signature against the
+        // exact bytes being assembled, under the participant's public key.
+        // A well-formed signature that does NOT verify is a hard error, not
+        // a missing signature: it means the backend paired signatures with
+        // transaction bytes the participants never signed (corruption or a
+        // swapped-transaction attack) — refuse to produce output for it.
+        const signedBytes = concatBytes(TX_PREFIX, rawTxBytes)
+        let validCount = 0
+        for (const [address, sigs] of sigsByAddress) {
+            const sig = sigs[txIndex]
+            if (!sig) continue
+            const pk = pubkeys.get(address)
+            if (!pk) {
+                return {
+                    kind: 'error',
+                    reason: `Transaction ${txIndex}: signature from non-participant ${address}`,
+                }
+            }
+            if (!nacl.sign.detached.verify(signedBytes, sig, pk)) {
+                return {
+                    kind: 'error',
+                    reason: `Transaction ${txIndex}: signature from ${address} failed verification against the transaction bytes`,
+                }
+            }
+            validCount++
+        }
+
+        // Threshold check per transaction index. Decline-only participants
+        // contribute zero signatures here; missing arrays count as zero.
+        if (validCount < threshold) {
+            return {
+                kind: 'error',
+                reason: `Transaction ${txIndex}: not enough valid signatures (${validCount}/${threshold})`,
             }
         }
 

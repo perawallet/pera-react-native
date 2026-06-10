@@ -14,7 +14,11 @@ import {
     assembleSignedMultisigTransactions,
     type ParticipantResponse,
 } from '@perawallet/wallet-core-blockchain'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
@@ -120,6 +124,40 @@ export const classifyHandoffPoll = (
     }
 }
 
+const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean => {
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false
+    }
+    return true
+}
+
+/**
+ * True when the poll's raw transactions (flattened in list order) are
+ * byte-for-byte the transactions the wallet proposed. Compared as decoded
+ * bytes so cosmetic base64 differences (padding) can't cause a false
+ * mismatch; undecodable entries are a mismatch. Order-sensitive on
+ * purpose — the assembled output must preserve the reviewed order.
+ */
+const rawTransactionsMatch = (
+    expectedBase64: string[],
+    polledBase64: string[],
+): boolean => {
+    if (expectedBase64.length !== polledBase64.length) return false
+    for (let i = 0; i < expectedBase64.length; i++) {
+        let expected: Uint8Array
+        let polled: Uint8Array
+        try {
+            expected = decodeFromBase64(expectedBase64[i])
+            polled = decodeFromBase64(polledBase64[i])
+        } catch {
+            return false
+        }
+        if (!bytesEqual(expected, polled)) return false
+    }
+    return true
+}
+
 const classifyReadyPoll = (
     detail: HandoffPollDetail,
     handoff: PendingWalletConnectHandoff,
@@ -140,6 +178,27 @@ const classifyReadyPoll = (
 
     if (lists.length === 0) {
         return { kind: 'error', reason: { kind: 'no-transactions' } }
+    }
+
+    // Trust-anchor check: the bytes the backend hands back must be exactly
+    // the bytes the wallet proposed (= what the user reviewed and the
+    // proposer signed). Refuse to assemble anything else — a compromised
+    // backend must not be able to substitute transactions. Signature-level
+    // verification inside the assembler backs this up per participant.
+    const polledRawTransactions = lists.flatMap(list => list.raw_transactions)
+    if (
+        !rawTransactionsMatch(
+            handoff.expectedRawTransactionsBase64,
+            polledRawTransactions,
+        )
+    ) {
+        return {
+            kind: 'error',
+            reason: {
+                kind: 'assembly-failed',
+                detail: 'transactions returned by the backend do not match the proposed transactions',
+            },
+        }
     }
 
     // Assemble one composite SignedTransaction per item, in canonical order:
