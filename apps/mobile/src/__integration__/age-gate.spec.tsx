@@ -28,11 +28,12 @@ const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
 describe('Flow: Discover — age gate', () => {
     beforeEach(() => {
         // Start each test from a clean unknown state so the gate always runs.
-        act(() => useAgeGateStore.getState().resetState())
+        // resetState is synchronous; void marks the act() return as ignored.
+        void act(() => useAgeGateStore.getState().resetState())
     })
 
     afterEach(() => {
-        act(() => useAgeGateStore.getState().resetState())
+        void act(() => useAgeGateStore.getState().resetState())
     })
 
     it('Given age is unknown, when Discover mounts, then the self-declaration sheet appears', async () => {
