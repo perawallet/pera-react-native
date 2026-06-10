@@ -65,10 +65,8 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import {
-    MOCK_VALID_VERIFICATION_CODE,
-    useCardOnboardingEmailVerifyScreen,
-} from '../useCardOnboardingEmailVerifyScreen'
+import { MOCK_VALID_VERIFICATION_CODE } from '../../cardVerificationConstants'
+import { useCardOnboardingEmailVerifyScreen } from '../useCardOnboardingEmailVerifyScreen'
 
 const renderVerifyHook = () =>
     renderHook(() => useCardOnboardingEmailVerifyScreen())
@@ -89,9 +87,20 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         const { result } = renderVerifyHook()
 
         expect(result.current.code).toBe('')
+        expect(result.current.email).toBe(mockEmail)
         expect(result.current.isValid).toBe(false)
         expect(result.current.secondsRemaining).toBe(60)
         expect(result.current.canResend).toBe(false)
+    })
+
+    it('is valid only when the code is the full expected length', () => {
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode('123'))
+        expect(result.current.isValid).toBe(false)
+
+        act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
+        expect(result.current.isValid).toBe(true)
     })
 
     it('flags a wrong code without navigating onward', () => {

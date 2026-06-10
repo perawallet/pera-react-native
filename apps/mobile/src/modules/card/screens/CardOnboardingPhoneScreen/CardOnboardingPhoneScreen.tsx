@@ -13,6 +13,7 @@
 import { Controller } from 'react-hook-form'
 import {
     PWButton,
+    PWIcon,
     PWInput,
     PWScreen,
     PWText,
@@ -74,6 +75,13 @@ export const CardOnboardingPhoneScreen = () => {
                                     )}
                                     editable={false}
                                     renderErrorMessage={false}
+                                    rightIcon={
+                                        <PWIcon
+                                            name='chevron-down'
+                                            variant='secondary'
+                                            size='sm'
+                                        />
+                                    }
                                 />
                             </PWView>
                         </PWTouchableOpacity>
@@ -113,6 +121,13 @@ export const CardOnboardingPhoneScreen = () => {
                             )}
                         />
                     </PWView>
+
+                    <PWText
+                        variant='footnoteMedium'
+                        style={styles.helper}
+                    >
+                        {t('peraCard.verify_phone.phone_helper')}
+                    </PWText>
                 </PWView>
 
                 <PWButton

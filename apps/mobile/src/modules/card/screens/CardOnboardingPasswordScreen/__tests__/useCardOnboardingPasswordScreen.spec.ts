@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             selector({
                 email: 'john@example.com',
                 countryIso: 'GB',
-                verificationCode: 'PERA123',
+                verificationCode: '123456',
                 contactVerificationId: 'mock-contact-id',
             }),
     }

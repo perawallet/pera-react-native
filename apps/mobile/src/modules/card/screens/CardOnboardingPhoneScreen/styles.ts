@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     content: {
         paddingTop: theme.spacing.xl,
-        gap: theme.spacing.xxl,
+        gap: theme.spacing.xl,
     },
     fields: {
         gap: theme.spacing.xs,
@@ -23,15 +23,20 @@ export const useStyles = makeStyles(theme => ({
     label: {
         color: theme.colors.textGrayLighter,
     },
+    // Sets the SMS expectation; same muted token as the label.
+    helper: {
+        color: theme.colors.textGrayLighter,
+    },
     // Top-aligned so the number's error line doesn't offset the calling code.
     phoneRow: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: theme.spacing.sm,
+        gap: theme.spacing.xs,
     },
-    // Just wide enough for the flag + a 3-4 digit dial code.
+    // Wide enough for the flag + a 3-4 digit dial code + the chevron (no `6xl`
+    // token, so compose `5xl` + `lg`).
     callingCode: {
-        width: theme.spacing['5xl'],
+        width: theme.spacing['5xl'] + theme.spacing.lg,
         flexShrink: 0,
     },
     numberInput: {

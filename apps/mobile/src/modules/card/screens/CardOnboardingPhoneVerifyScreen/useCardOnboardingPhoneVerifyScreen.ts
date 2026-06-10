@@ -20,12 +20,13 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    CARD_VERIFICATION_CODE_LENGTH,
+    MOCK_VALID_VERIFICATION_CODE,
+} from '../cardVerificationConstants'
 
 /** Seconds the user must wait before the SMS code can be re-sent. */
 const RESEND_COOLDOWN_SECONDS = 60
-
-/** Dev-only stand-in for the real code; case-insensitive match. */
-export const MOCK_VALID_VERIFICATION_CODE = 'PERA123'
 
 export type UseCardOnboardingPhoneVerifyScreenResult = {
     code: string
@@ -38,7 +39,12 @@ export type UseCardOnboardingPhoneVerifyScreenResult = {
     secondsRemaining: number
     canResend: boolean
     handleResend: () => void
-    handleConfirm: () => void
+    /**
+     * `submittedCode` is passed by `PWCodeInput`'s `onComplete` (auto-submit),
+     * carrying the just-completed value because `code` state hasn't re-rendered
+     * yet. The button/keyboard call it with no arg and use the settled state.
+     */
+    handleConfirm: (submittedCode?: string) => void
 }
 
 export const useCardOnboardingPhoneVerifyScreen =
@@ -110,64 +116,68 @@ export const useCardOnboardingPhoneVerifyScreen =
         ])
 
         // Local pre-check for fast feedback, then the real (mocked) verify call.
-        const handleConfirm = useCallback(() => {
-            if (!trimmedCode) return
-            if (trimmedCode.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
-                setIsWrongCode(true)
-                return
-            }
-            const confirm = async () => {
-                if (
-                    onboardingId === null ||
-                    phoneCountryCode === null ||
-                    phoneNumber === null ||
-                    contactVerificationId === null
-                ) {
-                    errorToast(
-                        t('peraCard.verify_phone.verify_error_title'),
-                        t('peraCard.verify_phone.verify_error_body'),
-                    )
-                    navigation.navigate('CardOnboardingEmailVerify')
+        const handleConfirm = useCallback(
+            (submittedCode?: string) => {
+                const value = (submittedCode ?? code).trim()
+                if (!value) return
+                if (value.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
+                    setIsWrongCode(true)
                     return
                 }
-                try {
-                    await verifyPhone.mutateAsync({
-                        onboardingId,
-                        phoneCountryCode,
-                        phoneNumber,
-                        contactVerificationId,
-                        verificationCode: trimmedCode,
-                    })
-                    // TODO(card): go to personal-details once that screen exists.
-                    successToast(
-                        t('peraCard.verify_phone.success_title'),
-                        t('peraCard.verify_phone.success_body'),
-                    )
-                } catch {
-                    errorToast(
-                        t('peraCard.verify_phone.verify_error_title'),
-                        t('peraCard.verify_phone.verify_error_body'),
-                    )
+                const confirm = async () => {
+                    if (
+                        onboardingId === null ||
+                        phoneCountryCode === null ||
+                        phoneNumber === null ||
+                        contactVerificationId === null
+                    ) {
+                        errorToast(
+                            t('peraCard.verify_phone.verify_error_title'),
+                            t('peraCard.verify_phone.verify_error_body'),
+                        )
+                        navigation.navigate('CardOnboardingEmailVerify')
+                        return
+                    }
+                    try {
+                        await verifyPhone.mutateAsync({
+                            onboardingId,
+                            phoneCountryCode,
+                            phoneNumber,
+                            contactVerificationId,
+                            verificationCode: value,
+                        })
+                        // TODO(card): go to personal-details once it exists.
+                        successToast(
+                            t('peraCard.verify_phone.success_title'),
+                            t('peraCard.verify_phone.success_body'),
+                        )
+                    } catch {
+                        errorToast(
+                            t('peraCard.verify_phone.verify_error_title'),
+                            t('peraCard.verify_phone.verify_error_body'),
+                        )
+                    }
                 }
-            }
-            void confirm()
-        }, [
-            trimmedCode,
-            onboardingId,
-            phoneCountryCode,
-            phoneNumber,
-            contactVerificationId,
-            verifyPhone,
-            successToast,
-            errorToast,
-            navigation,
-            t,
-        ])
+                void confirm()
+            },
+            [
+                code,
+                onboardingId,
+                phoneCountryCode,
+                phoneNumber,
+                contactVerificationId,
+                verifyPhone,
+                successToast,
+                errorToast,
+                navigation,
+                t,
+            ],
+        )
 
         return {
             code,
             onChangeCode,
-            isValid: trimmedCode.length > 0,
+            isValid: trimmedCode.length === CARD_VERIFICATION_CODE_LENGTH,
             isWrongCode,
             isSubmitting: verifyPhone.isPending,
             phoneDisplay,

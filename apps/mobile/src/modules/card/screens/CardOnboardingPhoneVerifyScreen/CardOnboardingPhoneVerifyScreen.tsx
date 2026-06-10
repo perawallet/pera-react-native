@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWCodeInput,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import {
+    CARD_VERIFICATION_CODE_LENGTH,
     MOCK_VALID_VERIFICATION_CODE,
-    useCardOnboardingPhoneVerifyScreen,
-} from './useCardOnboardingPhoneVerifyScreen'
+} from '../cardVerificationConstants'
+import { useCardOnboardingPhoneVerifyScreen } from './useCardOnboardingPhoneVerifyScreen'
 import { useStyles } from './styles'
 
 export const CardOnboardingPhoneVerifyScreen = () => {
@@ -46,21 +53,21 @@ export const CardOnboardingPhoneVerifyScreen = () => {
 
                 <PWView style={styles.form}>
                     <PWView style={styles.inputGroup}>
-                        <PWInput
+                        <PWCodeInput
                             value={code}
                             onChangeText={onChangeCode}
-                            placeholder={t(
-                                'peraCard.verify_phone.code_placeholder',
-                            )}
-                            autoCapitalize='characters'
-                            autoCorrect={false}
-                            returnKeyType='done'
-                            onSubmitEditing={handleConfirm}
+                            length={CARD_VERIFICATION_CODE_LENGTH}
+                            onComplete={handleConfirm}
+                            onSubmitEditing={() => handleConfirm()}
+                            autoFocus
                             errorMessage={
                                 isWrongCode
                                     ? t('peraCard.verify_phone.code_wrong')
                                     : undefined
                             }
+                            accessibilityLabel={t(
+                                'peraCard.verify_phone.navigation_title',
+                            )}
                             testID='card-onboarding-phone-verify-input'
                         />
 
@@ -87,7 +94,7 @@ export const CardOnboardingPhoneVerifyScreen = () => {
                     <PWButton
                         variant='primary'
                         title={t('peraCard.verify_phone.confirm_button')}
-                        onPress={handleConfirm}
+                        onPress={() => handleConfirm()}
                         isDisabled={!isValid || isSubmitting}
                         isLoading={isSubmitting}
                         testID='card-onboarding-phone-verify-confirm'

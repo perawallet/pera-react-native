@@ -85,10 +85,8 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import {
-    MOCK_VALID_VERIFICATION_CODE,
-    useCardOnboardingPhoneVerifyScreen,
-} from '../useCardOnboardingPhoneVerifyScreen'
+import { MOCK_VALID_VERIFICATION_CODE } from '../../cardVerificationConstants'
+import { useCardOnboardingPhoneVerifyScreen } from '../useCardOnboardingPhoneVerifyScreen'
 
 const renderVerifyHook = () =>
     renderHook(() => useCardOnboardingPhoneVerifyScreen())

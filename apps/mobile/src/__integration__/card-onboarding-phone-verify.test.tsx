@@ -29,7 +29,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
 
-const VALID_CODE = 'PERA123'
+const VALID_CODE = '123456'
 
 // The screen reads the flow's data from the store (no nav params), so seed it.
 const renderVerify = () =>
@@ -51,37 +51,43 @@ describe('card onboarding — phone verify', () => {
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('surfaces a wrong-code error on submit and clears it when the code is edited', async () => {
+    it('surfaces a wrong-code error on auto-submit and clears it when the code is edited', async () => {
         renderVerify()
 
         const input = screen.getByTestId('card-onboarding-phone-verify-input')
 
-        fireEvent.change(input, { target: { value: 'WRONG1' } })
-        fireEvent.click(
-            screen.getByTestId('card-onboarding-phone-verify-confirm'),
-        )
+        // A full but wrong 6-digit code auto-submits; the local pre-check
+        // surfaces the inline error without hitting the API.
+        fireEvent.change(input, { target: { value: '654321' } })
         await waitFor(() =>
-            expect(input.getAttribute('errormessage')).toBeTruthy(),
+            expect(
+                screen.queryByTestId(
+                    'card-onboarding-phone-verify-input-error',
+                ),
+            ).toBeTruthy(),
         )
 
-        fireEvent.change(input, { target: { value: 'WRONG12' } })
+        // Editing to a shorter value clears the error (and doesn't re-submit).
+        fireEvent.change(input, { target: { value: '65432' } })
         await waitFor(() =>
-            expect(input.getAttribute('errormessage')).toBeFalsy(),
+            expect(
+                screen.queryByTestId(
+                    'card-onboarding-phone-verify-input-error',
+                ),
+            ).toBeNull(),
         )
     })
 
-    it('verifies the phone with the valid code and confirms success', async () => {
+    it('verifies the phone with the valid code (auto-submit) and confirms success', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
         server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
 
         renderVerify()
 
+        // Entering the full valid code auto-submits — no button tap needed.
         fireEvent.change(
             screen.getByTestId('card-onboarding-phone-verify-input'),
             { target: { value: VALID_CODE } },
-        )
-        fireEvent.click(
-            screen.getByTestId('card-onboarding-phone-verify-confirm'),
         )
 
         await waitFor(() => expect(verifySpy).toHaveBeenCalled())

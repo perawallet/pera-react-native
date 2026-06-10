@@ -81,7 +81,7 @@ describe('card onboarding — password', () => {
         store.resetState()
         store.setEmail('john@example.com')
         store.setCountryIso('GB')
-        store.setVerificationCode('PERA123')
+        store.setVerificationCode('123456')
         store.setContactVerificationId('mock-contact-id')
     })
     afterEach(() => server.resetHandlers())
