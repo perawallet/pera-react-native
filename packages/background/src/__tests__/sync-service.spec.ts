@@ -239,6 +239,75 @@ describe('SyncService', () => {
         expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 42)
     })
 
+    it('does not advance the round when any account fetch fails', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: true,
+            round: 42,
+        })
+        // One account fails — its new state was not persisted, so the
+        // checkpoint must stay put and the next tick retries.
+        vi.mocked(fetchAndPersistAccount).mockImplementation(
+            async (address: string) => {
+                if (address === 'ADDR2') {
+                    throw new Error('indexer hiccup')
+                }
+                return {
+                    changed: true,
+                    holdingsChanged: true,
+                    observedRound: 42,
+                }
+            },
+        )
+
+        service.start()
+
+        // First tick: force-sync; second tick: shouldRefresh-gated sync.
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise(resolve => setTimeout(resolve, 3100))
+        vi.useFakeTimers()
+
+        service.stop()
+
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+        expect(mockSetLastRefreshedRound).not.toHaveBeenCalled()
+    })
+
+    it('advances the round to the minimum the account fetches observed', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: true,
+            round: 105,
+        })
+        // ADDR2's data source trails the backend-reported round 105 — the
+        // checkpoint must not move past what was actually read, so the next
+        // tick re-asks and re-syncs until the source catches up.
+        vi.mocked(fetchAndPersistAccount).mockImplementation(
+            async (address: string) => ({
+                changed: false,
+                holdingsChanged: false,
+                observedRound: address === 'ADDR1' ? 105 : 99,
+            }),
+        )
+
+        service.start()
+
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        mockSetLastRefreshedRound.mockClear()
+        await new Promise(resolve => setTimeout(resolve, 3100))
+        vi.useFakeTimers()
+
+        service.stop()
+
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 99)
+    })
+
     it('restart stops, resets initial sync flag, and starts immediately', async () => {
         mockSendShouldRefreshRequest.mockResolvedValue({
             refresh: false,

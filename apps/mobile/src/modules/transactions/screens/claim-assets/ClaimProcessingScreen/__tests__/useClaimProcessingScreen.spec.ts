@@ -57,9 +57,16 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-const { mockUseFindAccountByAddress, mockUseClaimAssets } = vi.hoisted(() => ({
+const {
+    mockUseFindAccountByAddress,
+    mockUseClaimAssets,
+    mockAddToAssetHolding,
+    mockFetchAndPersistAssets,
+} = vi.hoisted(() => ({
     mockUseFindAccountByAddress: vi.fn(),
     mockUseClaimAssets: vi.fn(),
+    mockAddToAssetHolding: vi.fn(() => Promise.resolve()),
+    mockFetchAndPersistAssets: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -71,10 +78,32 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...actual,
         useFindAccountByAddress: mockUseFindAccountByAddress,
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+        addToAssetHolding: mockAddToAssetHolding,
+    }
+})
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
+    return {
+        ...actual,
+        fetchAndPersistAssets: mockFetchAndPersistAssets,
+    }
+})
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        useNetwork: () => ({ network: 'mainnet' }),
     }
 })
 
 const defaultAssetRequest = {
+    totalAmount: new Decimal(250),
     asset: {
         assetId: '123',
         name: 'Test Asset',
@@ -140,6 +169,44 @@ describe('useClaimProcessingScreen', () => {
             })
         })
 
+        it('optimistically credits the claimed amount before navigating to success', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-123')
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockAddToAssetHolding).toHaveBeenCalledWith({
+                accountAddress: 'test-address',
+                assetId: '123',
+                network: 'mainnet',
+                amount: new Decimal(250),
+            })
+            expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
+                ['123'],
+                'mainnet',
+            )
+            expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
+                transactionId: 'tx-id-123',
+                variant: 'claim',
+            })
+        })
+
+        it('still navigates to success when the optimistic credit fails', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-123')
+            mockAddToAssetHolding.mockRejectedValueOnce(new Error('db locked'))
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
+                transactionId: 'tx-id-123',
+                variant: 'claim',
+            })
+            expect(mockShowError).not.toHaveBeenCalled()
+        })
+
         it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {
             mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
 
@@ -184,6 +251,17 @@ describe('useClaimProcessingScreen', () => {
                 transactionId: 'tx-id-456',
                 variant: 'reject',
             })
+        })
+
+        it('does not credit holdings when rejecting', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-456')
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockAddToAssetHolding).not.toHaveBeenCalled()
+            expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()
         })
 
         it('calls navigation.goBack and does not show an error toast when user cancels', async () => {
