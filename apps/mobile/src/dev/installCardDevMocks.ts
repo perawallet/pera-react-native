@@ -17,13 +17,14 @@ import {
     type CardTransportRequest,
     type CardTransportResponse,
 } from '@perawallet/wallet-core-card'
+import { config } from '@perawallet/wallet-core-config'
 import { MOCK_VALID_VERIFICATION_CODE } from '@modules/card/screens/cardVerificationConstants'
 
 /**
- * Temporary dev-only Baanx mocks until the sandbox is usable. Returns canned
- * data for the endpoints the onboarding email + phone steps need and delegates
+ * Temporary Baanx mocks until the sandbox is usable. Returns canned data for
+ * the endpoints the onboarding email + phone steps need and delegates
  * everything else to the real transport. Imported (for side effects) from
- * App.tsx; the `__DEV__` guard makes it a no-op in production.
+ * App.tsx; runs in development + staging builds and is a no-op in production.
  *
  * Remove once the real Baanx sandbox responds (set `TESTNET_BAANX_CLIENT_KEY`).
  */
@@ -123,7 +124,7 @@ const MOCK_ROUTES: Record<string, MockHandler> = {
     'POST /v1/auth/register/phone/verify': verifyCode({}),
 }
 
-if (__DEV__) {
+if (__DEV__ || config.appEnvironment === 'staging') {
     const realTransport = getCardTransport()
 
     const mockTransport: CardTransport = {
