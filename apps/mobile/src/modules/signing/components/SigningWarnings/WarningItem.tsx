@@ -11,11 +11,16 @@
  */
 
 import { type TransactionWarning } from '@perawallet/wallet-core-signing'
+import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    formatNumber,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { LONG_ADDRESS_FORMAT } from '@constants/ui'
 
 type WarningItemProps = {
@@ -24,10 +29,12 @@ type WarningItemProps = {
     isGroup: boolean
 }
 
-const getWarningConfig = (
-    type: TransactionWarning['type'],
-    isGroup: boolean,
-) => {
+type AddressWarning = Extract<
+    TransactionWarning,
+    { type: 'close' | 'rekey' | 'asset-freeze' }
+>
+
+const getWarningConfig = (type: AddressWarning['type'], isGroup: boolean) => {
     switch (type) {
         case 'close': {
             return {
@@ -68,6 +75,40 @@ export const WarningItem = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
+    const divider = showDivider && (
+        <PWDivider
+            style={styles.divider}
+            color={theme.colors.layerGray}
+        />
+    )
+
+    if (warning.type === 'high-fee') {
+        return (
+            <>
+                {divider}
+                <PWView style={styles.warningSection}>
+                    <PWView style={styles.warningSectionIconContainer}>
+                        <PWRoundIcon
+                            icon='info'
+                            size='md'
+                            variant='secondary'
+                        />
+                        <PWView style={styles.warningMessageContainer}>
+                            <PWText style={styles.warningMessage}>
+                                {t('transactions.warning.high_fee_warning', {
+                                    fee: formatNumber(
+                                        microAlgosToAlgos(warning.totalFee),
+                                        ALGO_ASSET.decimals,
+                                    ),
+                                })}
+                            </PWText>
+                        </PWView>
+                    </PWView>
+                </PWView>
+            </>
+        )
+    }
+
     const { icon, messageKey, boldKey } = getWarningConfig(
         warning.type,
         isGroup,
@@ -75,12 +116,7 @@ export const WarningItem = ({
 
     return (
         <>
-            {showDivider && (
-                <PWDivider
-                    style={styles.divider}
-                    color={theme.colors.layerGray}
-                />
-            )}
+            {divider}
             <PWView style={styles.warningSection}>
                 <PWView style={styles.warningSectionIconContainer}>
                     <PWRoundIcon

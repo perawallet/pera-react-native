@@ -20,7 +20,7 @@ import {
     createTransactionListItems,
     classifyRequestStructure,
 } from '../utils/classification'
-import { calculateTotalFee } from '../utils/fees'
+import { calculateTotalFee, detectHighGroupFee } from '../utils/fees'
 import { aggregateTransactionWarnings } from '../utils/warnings'
 import type {
     SigningConfiguration,
@@ -106,11 +106,22 @@ export const useSigningPipeline = (
 
         const totalFee = calculateTotalFee(allTransactions, signableAddresses)
 
-        const warnings = aggregateTransactionWarnings(
+        const addressWarnings = aggregateTransactionWarnings(
             allTransactions,
             userAccountAddresses,
             signableAddresses,
         )
+
+        // High fee is a group-level concern ("what's being signed"), so it
+        // lives here rather than in the per-transaction aggregator that the
+        // transaction-history view also consumes.
+        const highFeeWarning = detectHighGroupFee(
+            allTransactions,
+            signableAddresses,
+        )
+        const warnings = highFeeWarning
+            ? [...addressWarnings, highFeeWarning]
+            : addressWarnings
 
         const distinctWarnings = warnings.filter(
             (warning, index) =>

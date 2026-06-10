@@ -148,11 +148,19 @@ export type SigningStore = BaseStoreState & {
     removeSignRequest: (request: SignRequest) => boolean
 }
 
-export type TransactionWarning = {
-    type: 'close' | 'rekey' | 'asset-freeze'
-    senderAddress: string
-    targetAddress: string
-}
+export type TransactionWarning =
+    | {
+          type: 'close' | 'rekey' | 'asset-freeze'
+          senderAddress: string
+          targetAddress: string
+      }
+    // Group-level: the total fee across signable transactions exceeds the
+    // type-aware budget (see detectHighGroupFee). Carries the offending total
+    // (µAlgo) for display; has no sender/target since it's not tx-specific.
+    | {
+          type: 'high-fee'
+          totalFee: bigint
+      }
 
 /**
  * Flat representation of the signing machine's current state.

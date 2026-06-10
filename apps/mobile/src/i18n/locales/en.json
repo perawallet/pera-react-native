@@ -1895,6 +1895,7 @@
             "rekey_are_you_sure_title": "Are you sure?",
             "rekey_are_you_sure_description": "This signature includes rekey transaction, giving control over your accounts to another address. Please make sure that you understand the implications before proceeding.",
             "rekey_are_you_sure_continue": "Continue",
+            "high_fee_warning": "This request pays an unusually high network fee of {{fee}} ALGO. Make sure you trust the source before signing.",
             "asset_freeze_warning": "This transaction freezes or unfreezes assets for the following address: {{address}}.",
             "asset_freeze_group_warning": "This transaction group freezes or unfreezes assets for one of the accounts in this group. Please review carefully before signing.",
             "asset_freeze_warning_bold": "This may prevent the target account from transacting with the frozen asset. Please review carefully before signing.",

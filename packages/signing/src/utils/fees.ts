@@ -13,6 +13,7 @@
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import type { TransactionWarning } from '../models'
 
 export const calculateTotalFee = (
     transactions: PeraDisplayableTransaction[],
@@ -29,3 +30,52 @@ export const calculateTotalFee = (
                 : sum,
         new Decimal(0),
     )
+
+// Per-transaction fee allowances (µAlgo) for the high-fee sanity check.
+// keyreg gets generous headroom: incentive-eligibility online keyreg
+// legitimately pays 2 ALGO. Everything else is min-fee territory, but fee
+// pooling lets one tx in a group cover the others, so the budget scales per tx
+// rather than capping each tx individually.
+const KEYREG_FEE_ALLOWANCE_MICRO_ALGO = 5_000_000n // 5 ALGO
+const DEFAULT_FEE_ALLOWANCE_MICRO_ALGO = 500_000n // 0.5 ALGO
+
+/**
+ * Type-aware upper bound (µAlgo) on what a group of transactions should
+ * reasonably cost in fees. The budget is the sum of each transaction's
+ * per-type allowance, so it scales with both the kind of transactions and the
+ * group size — a 16-tx ordinary group allows 8 ALGO, a single keyreg 5 ALGO.
+ */
+export const maxReasonableGroupFee = (
+    transactions: PeraDisplayableTransaction[],
+): bigint =>
+    transactions.reduce(
+        (sum, tx) =>
+            sum +
+            (tx.txType === 'keyreg'
+                ? KEYREG_FEE_ALLOWANCE_MICRO_ALGO
+                : DEFAULT_FEE_ALLOWANCE_MICRO_ALGO),
+        0n,
+    )
+
+/**
+ * Flags a request whose total fee across the user's signable transactions
+ * exceeds the type-aware budget from {@link maxReasonableGroupFee}. The budget
+ * is computed over the WHOLE group so legitimate fee-pooling (one signed tx
+ * paying the group's fees) is not flagged. Returns a single group-level
+ * warning, or null when the fee is within budget.
+ */
+export const detectHighGroupFee = (
+    transactions: PeraDisplayableTransaction[],
+    signableAddresses: Set<string>,
+): TransactionWarning | null => {
+    const totalSignableFee = transactions.reduce(
+        (sum, tx) =>
+            signableAddresses.has(tx.sender) ? sum + (tx.fee ?? 0n) : sum,
+        0n,
+    )
+
+    if (totalSignableFee > maxReasonableGroupFee(transactions)) {
+        return { type: 'high-fee', totalFee: totalSignableFee }
+    }
+    return null
+}
