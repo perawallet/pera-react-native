@@ -27,13 +27,9 @@ import {
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
 import {
-    addToAssetHolding,
     useAccountBalancesInvalidator,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
-import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useArc59Invalidator } from '@perawallet/wallet-core-asa-inbox'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
@@ -55,7 +51,6 @@ export const useClaimProcessingScreen = () => {
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
     const { execute } = useTransactionSendFlow()
-    const { network } = useNetwork()
 
     const asset = assetRequests[assetIndex]
 
@@ -79,39 +74,15 @@ export const useClaimProcessingScreen = () => {
             sender: account,
             asset: asset.asset,
             shouldClaimAlgo,
+            // Claimed amount in base units — lets the send flow credit the
+            // balance optimistically right after submission.
+            amount: asset.totalAmount,
         }
 
         execute({
             params: sendParams,
         })
-            .then(async txId => {
-                // Optimistically credit the claimed amount (and make sure the
-                // asset's metadata is persisted) so the asset list shows the
-                // new balance the moment the user lands back on Home, instead
-                // of waiting for confirmation + refresh. The next account
-                // sync replaces the credit with chain truth, so a failed
-                // claim self-corrects within a poll tick.
-                if (mode === 'claimArc59') {
-                    try {
-                        await addToAssetHolding({
-                            accountAddress: account.address,
-                            assetId: asset.asset.assetId,
-                            network,
-                            amount: asset.totalAmount,
-                        })
-                        await fetchAndPersistAssets(
-                            [asset.asset.assetId],
-                            network,
-                        )
-                    } catch (error) {
-                        // Cosmetic-only failure — the post-confirmation
-                        // refresh still updates the balances.
-                        logger.warn('Optimistic claim credit failed', {
-                            error,
-                        })
-                    }
-                    invalidateAccountBalances()
-                }
+            .then(txId => {
                 setOnFinished(() => {
                     removeArc59Queries()
                     invalidateInboxQueries()
