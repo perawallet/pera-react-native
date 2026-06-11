@@ -92,9 +92,7 @@ const proposeResponse = {
             first_valid_block: 1000,
             last_valid_block: 2000,
             expected_expire_datetime: '2026-01-02T00:00:00Z',
-            responses: [
-                { address: REVIEW_SIGNER_ADDRESS, response: 'signed' },
-            ],
+            responses: [{ address: REVIEW_SIGNER_ADDRESS, response: 'signed' }],
         },
     ],
     proposer_address: REVIEW_SIGNER_ADDRESS,

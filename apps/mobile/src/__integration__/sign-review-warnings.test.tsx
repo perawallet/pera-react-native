@@ -55,9 +55,7 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 const expectWarningPanel = async () => {
     await waitFor(
         () => {
-            expect(
-                screen.getByText('transactions.warning.title'),
-            ).toBeTruthy()
+            expect(screen.getByText('transactions.warning.title')).toBeTruthy()
         },
         { timeout: 10_000 },
     )

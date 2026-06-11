@@ -67,8 +67,7 @@ describe('Flow: arbitrary-data (algo_signData) signing review', () => {
     it(
         'signs a single arbitrary-data message and delivers the signature to the callback',
         async () => {
-            const { request, approve, reject } =
-                buildArbitraryDataSignRequest()
+            const { request, approve, reject } = buildArbitraryDataSignRequest()
 
             const { confirm } = renderSignReview(request)
 

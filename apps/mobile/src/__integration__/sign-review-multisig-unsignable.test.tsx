@@ -103,9 +103,7 @@ describe('Flow: multisig-unsignable transaction review', () => {
                 },
                 { timeout: 10_000 },
             )
-            expect(
-                screen.queryByTestId('signing-confirm-slide'),
-            ).toBeNull()
+            expect(screen.queryByTestId('signing-confirm-slide')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
