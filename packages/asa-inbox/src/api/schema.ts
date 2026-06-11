@@ -25,13 +25,24 @@ export const arc59WarningMessageSchema = z.object({
     link_text: z.string(),
 })
 
+// These arrive as JSON integers in base units (microAlgos) or as a count, and
+// flow straight into BigInt() and a payment amount. Reject floats (BigInt() of a
+// non-integer throws), negatives, and precision-losing magnitudes (> 2^53) at the
+// boundary so a malformed or hostile summary can't crash signing or fund a bogus
+// payment.
+const safeBaseUnitInteger = z
+    .number()
+    .int()
+    .nonnegative()
+    .lte(Number.MAX_SAFE_INTEGER)
+
 export const arc59SendSummaryResponseSchema = z.object({
     is_arc59_opted_in: z.boolean(),
-    minimum_balance_requirement: z.number(),
-    inner_tx_count: z.number(),
-    total_protocol_and_mbr_fee: z.number(),
+    minimum_balance_requirement: safeBaseUnitInteger,
+    inner_tx_count: safeBaseUnitInteger,
+    total_protocol_and_mbr_fee: safeBaseUnitInteger,
     inbox_address: z.string().nullable(),
-    algo_fund_amount: z.number(),
+    algo_fund_amount: safeBaseUnitInteger,
     warning_message: arc59WarningMessageSchema.nullable(),
 })
 
