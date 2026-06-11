@@ -78,6 +78,7 @@ export const useSwitchNetwork = (): UseSwitchNetworkResult => {
                             platform,
                             push_token: pushToken ?? undefined,
                             model,
+                            application: 'pera',
                             locale,
                         })
                     } catch (error) {

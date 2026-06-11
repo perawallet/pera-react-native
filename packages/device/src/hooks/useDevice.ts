@@ -44,6 +44,10 @@ export const useDevice = () => {
     // back the wrong network's deviceID.
     const inFlightIdRef = useRef(0)
 
+    // `application` is sent on every write (create, update, token cleanup),
+    // matching Android's DeviceUpdateRequest and iOS's DeviceUpdateDraft —
+    // omitting it on PUT would let the server-side device record lose its
+    // application association.
     const buildPayload = useCallback(
         async (addresses: string[]) => ({
             accounts: addresses,
@@ -51,6 +55,7 @@ export const useDevice = () => {
             push_token: pushToken ?? undefined,
             model: deviceInfoService.getDeviceModel(),
             locale: deviceInfoService.getDeviceLocale(),
+            application: 'pera' as const,
         }),
         [deviceInfoService, pushToken],
     )
@@ -63,7 +68,7 @@ export const useDevice = () => {
         ) => {
             const payload = await buildPayload(addresses)
             const result = await createDevice({
-                data: { ...payload, application: 'pera' },
+                data: payload,
             })
             if (inFlightIdRef.current === attemptId) {
                 setDeviceID(targetNetwork, result.id ?? null)

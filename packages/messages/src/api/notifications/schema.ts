@@ -16,21 +16,24 @@ export const notificationStatusResponseSchema = z.object({
     has_new_notification: z.boolean().optional().default(false),
 })
 
+// Mirror the native apps' leniency: every field except `id` and
+// `creation_datetime` may be null or absent depending on the notification
+// type (e.g. rekey notifications carry no deeplink target), so only reject
+// rows that can't be keyed or sorted.
 export const notificationResponseSchema = z.object({
     id: z.coerce.string(),
-    type: z.string().optional(),
-    account_address: z.string(),
-    message: z.string(),
-    url: z.string(),
+    type: z.string().nullish(),
+    account_address: z.string().nullish(),
+    message: z.string().nullish(),
+    url: z.string().nullish(),
     creation_datetime: z.string(),
-    is_unread: z.boolean().optional(),
+    is_unread: z.boolean().nullish(),
     icon: z
         .object({
             logo: z.string().url(),
             shape: z.enum(['circle', 'rectangle']),
         })
-        .nullable()
-        .optional(),
+        .nullish(),
 })
 
 export const messageStatusResponseSchema = z.object({

@@ -27,16 +27,20 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 
+// Wire fields are nullable per notification type (rekey notifications carry
+// no deeplink, for example); default them here so consumers keep working with
+// the non-null `PeraNotification` shape. An empty `url` simply renders a
+// non-navigating item, matching native behavior.
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
 ): PeraNotification => ({
     id: response.id,
-    type: response.type,
-    accountAddress: response.account_address,
-    message: response.message,
-    url: response.url,
+    type: response.type ?? undefined,
+    accountAddress: response.account_address ?? '',
+    message: response.message ?? '',
+    url: response.url ?? '',
     createdAt: new Date(response.creation_datetime),
-    isUnread: response.is_unread,
+    isUnread: response.is_unread ?? undefined,
     icon: response.icon ?? null,
 })
 

@@ -232,6 +232,7 @@ describe('services/device/hooks', () => {
                 platform: 'ios',
                 push_token: 'test-fcm-token',
                 model: 'iPhone 14',
+                application: 'pera',
                 locale: 'en-US',
             },
         })
@@ -363,6 +364,7 @@ describe('services/device/hooks', () => {
                 platform: 'ios',
                 push_token: '',
                 model: 'iPhone 14',
+                application: 'pera',
                 locale: 'en-US',
             },
         )

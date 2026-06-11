@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { z } from 'zod'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     notificationStatusResponseSchema,
-    notificationsListResponseSchema,
+    notificationResponseSchema,
     type NotificationStatusResponse,
+    type NotificationResponse,
     type NotificationsListResponse,
     messageStatusResponseSchema,
     type MessageStatusResponse,
@@ -30,6 +32,29 @@ const getUpdateNotificationEnabledEndpoint = (
     deviceID: string,
     accountID: string,
 ) => `/v1/devices/${deviceID}/accounts/${accountID}/`
+
+// Pagination envelope parsed separately from the rows so a single malformed
+// notification can be dropped instead of failing the whole page — parity with
+// the native apps, which treat every row field as optional.
+const notificationsListEnvelopeSchema = z.object({
+    results: z.array(z.unknown()),
+    next: z.string().nullable(),
+    previous: z.string().nullable(),
+})
+
+export const parseNotificationsListResponse = (
+    data: unknown,
+): NotificationsListResponse => {
+    const envelope = notificationsListEnvelopeSchema.parse(data)
+    const results: NotificationResponse[] = []
+    for (const item of envelope.results) {
+        const parsed = notificationResponseSchema.safeParse(item)
+        if (parsed.success) {
+            results.push(parsed.data)
+        }
+    }
+    return { results, next: envelope.next, previous: envelope.previous }
+}
 
 export const fetchNotificationStatus = async (
     network: Network,
@@ -58,7 +83,7 @@ export const fetchNotificationList = async (
         params: { cursor },
     })
 
-    return notificationsListResponseSchema.parse(response.data)
+    return parseNotificationsListResponse(response.data)
 }
 
 export const updateLastSeenNotification = async (
