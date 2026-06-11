@@ -19,15 +19,16 @@ import {
 } from './useCardOnboardingVerificationScreen'
 import { useStyles } from './styles'
 
-// Each phase drives the copy and the single CTA. `start` handlers begin/retry
-// verification; `done` handlers leave onboarding from a terminal state.
+// Each phase drives the copy and the single CTA. `start` begins/retries
+// verification; `continue` advances to personal details while Baanx reviews;
+// `done` leaves onboarding from the rejected terminal state.
 const PHASE_CONTENT: Record<
     VerificationPhase,
     {
         titleKey: string
         bodyKey: string
         buttonKey: string
-        action: 'start' | 'done'
+        action: 'start' | 'continue' | 'done'
         showSpinner: boolean
     }
 > = {
@@ -55,15 +56,15 @@ const PHASE_CONTENT: Record<
     [VerificationPhase.Submitted]: {
         titleKey: 'peraCard.verification.submitted_title',
         bodyKey: 'peraCard.verification.submitted_body',
-        buttonKey: 'peraCard.verification.done_button',
-        action: 'done',
+        buttonKey: 'peraCard.verification.submitted_button',
+        action: 'continue',
         showSpinner: false,
     },
     [VerificationPhase.Verified]: {
         titleKey: 'peraCard.verification.success_title',
         bodyKey: 'peraCard.verification.success_body',
-        buttonKey: 'peraCard.verification.done_button',
-        action: 'done',
+        buttonKey: 'peraCard.verification.submitted_button',
+        action: 'continue',
         showSpinner: false,
     },
     [VerificationPhase.Rejected]: {
@@ -85,12 +86,21 @@ const PHASE_CONTENT: Record<
 export const CardOnboardingVerificationScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { phase, isBusy, handleStartVerification, handleDone } =
-        useCardOnboardingVerificationScreen()
+    const {
+        phase,
+        isBusy,
+        handleStartVerification,
+        handleContinue,
+        handleDone,
+    } = useCardOnboardingVerificationScreen()
 
     const content = PHASE_CONTENT[phase]
-    const onPress =
-        content.action === 'start' ? handleStartVerification : handleDone
+    const actionHandlers = {
+        start: handleStartVerification,
+        continue: handleContinue,
+        done: handleDone,
+    }
+    const onPress = actionHandlers[content.action]
 
     return (
         <PWScreen

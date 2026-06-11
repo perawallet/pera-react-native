@@ -161,8 +161,9 @@ describe('onboarding mutation hooks', () => {
                 network: 'mainnet',
             }),
         )
+        // Phone verified → the KYC (verification) step comes next.
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.PersonalDetails,
+            OnboardingStep.Verification,
         )
     })
 
@@ -200,7 +201,7 @@ describe('onboarding mutation hooks', () => {
         isSameMailingAddress: true,
     }
 
-    it('useSubmitAddressMutation commits the session token and advances to verification', async () => {
+    it('useSubmitAddressMutation commits the session token and completes onboarding', async () => {
         api.submitAddress.mockResolvedValue({
             accessToken: 'tok',
             onboardingId: 'ob_1',
@@ -220,13 +221,13 @@ describe('onboarding mutation hooks', () => {
             refreshToken: '',
         })
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Verification,
+            OnboardingStep.Completed,
         )
     })
 
     it('useSubmitAddressMutation skips the session commit when no token is issued', async () => {
         // The US separate-mailing path returns accessToken: null (the mailing
-        // step issues the token); the flow still advances to verification.
+        // step issues the token); onboarding is still marked complete.
         api.submitAddress.mockResolvedValue({
             accessToken: null,
             onboardingId: 'ob_1',
@@ -239,7 +240,7 @@ describe('onboarding mutation hooks', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(session.setCardSession).not.toHaveBeenCalled()
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.Verification,
+            OnboardingStep.Completed,
         )
     })
 })

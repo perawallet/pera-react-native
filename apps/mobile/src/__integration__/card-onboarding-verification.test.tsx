@@ -28,34 +28,37 @@ import { OnboardingStep, useCardStore } from '@perawallet/wallet-core-card'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
-import { PeraCardIntroScreen } from '@modules/card/screens/PeraCardIntroScreen'
+import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
 
 const SESSION_URL = 'https://veriff.example/dev-session'
 
-// Land back on the intro screen once verification completes.
+// KYC verified → the flow advances to the personal-details step.
 const renderFlow = () =>
     renderWithNavigation(
         CardOnboardingVerificationScreen,
         'CardOnboardingVerification',
         {
             additionalScreens: [
-                { name: 'PeraCardIntro', component: PeraCardIntroScreen },
+                {
+                    name: 'CardOnboardingPersonalDetails',
+                    component: CardOnboardingPersonalDetailsScreen,
+                },
             ],
         },
     )
 
-const mockVerificationSession = () =>
+const mockStartVerification = () =>
     server.use(
-        http.get('*/v1/user/verification', () =>
+        http.post('*/v1/auth/register/verification', () =>
             HttpResponse.json({ sessionUrl: SESSION_URL }, { status: 200 }),
         ),
     )
 
-const mockUser = (verificationState: string) =>
+const mockOnboardingDetails = (verificationState: string) =>
     server.use(
-        http.get('*/v1/user', () =>
+        http.get('*/v1/auth/register', () =>
             HttpResponse.json(
-                { id: 'mock-user-id', verificationState },
+                { id: 'mock-onboarding-id', verificationState },
                 { status: 200 },
             ),
         ),
@@ -69,6 +72,16 @@ describe('Flow: Card onboarding — identity verification', () => {
         store.setOnboardingId('mock-onboarding-id')
         store.setCountryIso('GB')
         vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        // The personal-details screen fetches the registration settings for
+        // its nationality picker on mount.
+        server.use(
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(
+                    { countries: [], usStates: [] },
+                    { status: 200 },
+                ),
+            ),
+        )
     })
     afterEach(() => {
         server.resetHandlers()
@@ -77,7 +90,7 @@ describe('Flow: Card onboarding — identity verification', () => {
     afterAll(() => server.close())
 
     it('Given the verification screen, when Start is pressed, then the Veriff session URL opens', async () => {
-        mockVerificationSession()
+        mockStartVerification()
 
         renderFlow()
         fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
@@ -87,22 +100,44 @@ describe('Flow: Card onboarding — identity verification', () => {
         )
     })
 
-    it('Given verification becomes VERIFIED, then onboarding completes and returns to the intro', async () => {
-        mockVerificationSession()
-        mockUser('VERIFIED')
+    it('Given verification becomes VERIFIED, then the flow advances to personal details', async () => {
+        mockStartVerification()
+        mockOnboardingDetails('VERIFIED')
 
         renderFlow()
         fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
 
         await waitFor(() =>
             expect(useCardStore.getState().onboardingStep).toBe(
-                OnboardingStep.Completed,
+                OnboardingStep.PersonalDetails,
             ),
         )
         await waitFor(() =>
             expect(
-                screen.getByTestId('pera_card_intro_create_button'),
+                screen.getByTestId('card-onboarding-personal-details'),
             ).toBeTruthy(),
+        )
+    })
+
+    it('Given verification is PENDING, then the user can continue to personal details', async () => {
+        mockStartVerification()
+        mockOnboardingDetails('PENDING')
+
+        renderFlow()
+        fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
+
+        // Submitted state: Baanx reviews async; the CTA continues the flow.
+        // (t() returns raw keys in the integration harness.)
+        await screen.findByText('peraCard.verification.submitted_title')
+        fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
+
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-personal-details'),
+            ).toBeTruthy(),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.PersonalDetails,
         )
     })
 })

@@ -43,6 +43,8 @@ export type UseCardOnboardingAddressScreenResult = {
     /** True when the address form is valid AND both T&C boxes are accepted. */
     isValid: boolean
     isSubmitting: boolean
+    /** Registration finalized — the screen swaps to its completion state. */
+    isCompleted: boolean
     selectedCountry: Optional<SupportedCountry>
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
@@ -57,6 +59,8 @@ export type UseCardOnboardingAddressScreenResult = {
     handleOpenCardTerms: () => void
     handleOpenPlatformTerms: () => void
     handleConfirm: () => void
+    /** Leaves onboarding from the completion state. */
+    handleDone: () => void
 }
 
 export const useCardOnboardingAddressScreen =
@@ -83,6 +87,7 @@ export const useCardOnboardingAddressScreen =
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
+        const [isCompleted, setIsCompleted] = useState(false)
         const hasPreselected = useRef(false)
 
         const {
@@ -209,8 +214,10 @@ export const useCardOnboardingAddressScreen =
             }
             try {
                 await submitAddress.mutateAsync(address)
-                // The mutation committed the session; continue to KYC.
-                navigation.navigate('CardOnboardingVerification')
+                // Registration finalized (the mutation committed the session
+                // and marked onboarding complete) — swap to the completion
+                // state in place.
+                setIsCompleted(true)
             } catch {
                 errorToast(
                     t('peraCard.address.error_title'),
@@ -223,11 +230,17 @@ export const useCardOnboardingAddressScreen =
             void submitAddressForm()
         }
 
+        const handleDone = useCallback(() => {
+            // TODO(card): route into card creation once that slice lands.
+            navigation.navigate('PeraCardIntro')
+        }, [navigation])
+
         return {
             control,
             errors,
             isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
             isSubmitting: submitAddress.isPending,
+            isCompleted,
             selectedCountry,
             isUsResident,
             selectedUsState,
@@ -242,5 +255,6 @@ export const useCardOnboardingAddressScreen =
             handleOpenCardTerms,
             handleOpenPlatformTerms,
             handleConfirm,
+            handleDone,
         }
     }

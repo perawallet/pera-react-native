@@ -140,7 +140,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(result.current.isWrongCode).toBe(false)
     })
 
-    it('verifies with the stored ids on the valid code and goes to personal details', async () => {
+    it('verifies with the stored ids on the valid code and goes to identity verification', async () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
@@ -155,9 +155,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
             contactVerificationId: 'mock-contact-id',
             verificationCode: MOCK_VALID_VERIFICATION_CODE,
         })
-        expect(mockNavigate).toHaveBeenCalledWith(
-            'CardOnboardingPersonalDetails',
-        )
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
     })
 
     it('shows an error toast and stays put when verification fails', async () => {

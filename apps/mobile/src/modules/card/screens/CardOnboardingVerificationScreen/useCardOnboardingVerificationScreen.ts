@@ -15,7 +15,7 @@ import { AppState, Linking, type AppStateStatus } from 'react-native'
 import {
     OnboardingStep,
     useCardStore,
-    useCardUserQuery,
+    useOnboardingDetailsQuery,
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
@@ -31,8 +31,8 @@ export const VerificationPhase = {
     Idle: 'IDLE', // not started — CTA opens Veriff
     Starting: 'STARTING', // fetching the session URL
     InProgress: 'IN_PROGRESS', // Veriff opened (or closed early); polling
-    Submitted: 'SUBMITTED', // PENDING — submitted, Veriff still processing
-    Verified: 'VERIFIED', // terminal success
+    Submitted: 'SUBMITTED', // PENDING — submitted; user may continue
+    Verified: 'VERIFIED', // terminal success (auto-advances)
     Rejected: 'REJECTED', // terminal failure
     Error: 'ERROR', // start failed — CTA retries
 } as const
@@ -45,7 +45,9 @@ export type UseCardOnboardingVerificationScreenResult = {
     isBusy: boolean
     /** Starts (Idle), re-opens with a fresh session (InProgress), or retries (Error). */
     handleStartVerification: () => void
-    /** Leaves onboarding from a terminal state (submitted/rejected/verified). */
+    /** Advances to personal details while Baanx reviews (Submitted phase). */
+    handleContinue: () => void
+    /** Leaves onboarding from the rejected terminal state. */
     handleDone: () => void
 }
 
@@ -53,7 +55,8 @@ export const useCardOnboardingVerificationScreen =
     (): UseCardOnboardingVerificationScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { successToast } = useToast()
+        const { successToast, errorToast } = useToast()
+        const onboardingId = useCardStore(state => state.onboardingId)
         const [phase, setPhase] = useState<VerificationPhase>(
             VerificationPhase.Idle,
         )
@@ -61,17 +64,29 @@ export const useCardOnboardingVerificationScreen =
         const startVerification = useStartVerificationMutation()
 
         const isPolling = phase === VerificationPhase.InProgress
-        const userQuery = useCardUserQuery({
+        const onboardingDetails = useOnboardingDetailsQuery({
+            onboardingId,
             enabled: isPolling,
             refetchInterval: isPolling ? POLL_INTERVAL_MS : false,
         })
 
         const handleStartVerification = useCallback(() => {
+            // Set by email/verify; if missing, re-verify rather than start a
+            // KYC session with an empty onboarding id.
+            if (onboardingId === null) {
+                errorToast(
+                    t('peraCard.verification.error_title'),
+                    t('peraCard.verification.error_body'),
+                )
+                navigation.navigate('CardOnboardingEmailVerify')
+                return
+            }
             setPhase(VerificationPhase.Starting)
-            // The session URL is single-use/time-limited, so "Continue" and
-            // "Try again" both fetch a fresh one rather than reopening the old.
+            // The session URL is single-use/time-limited, so "Continue
+            // verification" and "Try again" both fetch a fresh one rather than
+            // reopening the old.
             startVerification
-                .mutateAsync()
+                .mutateAsync({ onboardingId })
                 .then(({ sessionUrl }) => {
                     setPhase(VerificationPhase.InProgress)
                     void Linking.openURL(sessionUrl)
@@ -79,33 +94,42 @@ export const useCardOnboardingVerificationScreen =
                 .catch(() => {
                     setPhase(VerificationPhase.Error)
                 })
-        }, [startVerification])
+        }, [startVerification, onboardingId, errorToast, navigation, t])
+
+        const advanceToPersonalDetails = useCallback(() => {
+            useCardStore
+                .getState()
+                .setOnboardingStep(OnboardingStep.PersonalDetails)
+            navigation.navigate('CardOnboardingPersonalDetails')
+        }, [navigation])
+
+        const handleContinue = useCallback(() => {
+            advanceToPersonalDetails()
+        }, [advanceToPersonalDetails])
 
         const handleDone = useCallback(() => {
             navigation.navigate('PeraCardIntro')
         }, [navigation])
 
         // React to the polled verificationState while the user is mid-flow.
-        const verificationState = userQuery.data?.verificationState
+        const { verificationState } = onboardingDetails
         useEffect(() => {
             if (phase !== VerificationPhase.InProgress || !verificationState) {
                 return
             }
             switch (verificationState) {
                 case VerificationState.Verified: {
-                    useCardStore
-                        .getState()
-                        .setOnboardingStep(OnboardingStep.Completed)
                     setPhase(VerificationPhase.Verified)
                     successToast(
                         t('peraCard.verification.success_title'),
                         t('peraCard.verification.success_body'),
                     )
-                    // TODO(card): route into card creation once that slice lands.
-                    navigation.navigate('PeraCardIntro')
+                    advanceToPersonalDetails()
                     break
                 }
                 case VerificationState.Pending: {
+                    // Submitted to Veriff; review runs async — the user may
+                    // continue with the remaining registration steps.
                     setPhase(VerificationPhase.Submitted)
                     break
                 }
@@ -118,7 +142,13 @@ export const useCardOnboardingVerificationScreen =
                     break
                 }
             }
-        }, [phase, verificationState, navigation, successToast, t])
+        }, [
+            phase,
+            verificationState,
+            advanceToPersonalDetails,
+            successToast,
+            t,
+        ])
 
         // When the user returns from the Veriff browser, refetch immediately
         // rather than waiting for the next poll tick. Refs keep the listener
@@ -126,8 +156,8 @@ export const useCardOnboardingVerificationScreen =
         const previousAppState = useRef<AppStateStatus>(AppState.currentState)
         const isPollingRef = useRef(isPolling)
         isPollingRef.current = isPolling
-        const refetchRef = useRef(userQuery.refetch)
-        refetchRef.current = userQuery.refetch
+        const refetchRef = useRef(onboardingDetails.refetch)
+        refetchRef.current = onboardingDetails.refetch
         useEffect(() => {
             const subscription = AppState.addEventListener(
                 'change',
@@ -138,7 +168,7 @@ export const useCardOnboardingVerificationScreen =
                     )
                     previousAppState.current = nextAppState
                     if (isPollingRef.current && wasForeground) {
-                        void refetchRef.current()
+                        refetchRef.current()
                     }
                 },
             )
@@ -149,6 +179,7 @@ export const useCardOnboardingVerificationScreen =
             phase,
             isBusy: phase === VerificationPhase.Starting,
             handleStartVerification,
+            handleContinue,
             handleDone,
         }
     }

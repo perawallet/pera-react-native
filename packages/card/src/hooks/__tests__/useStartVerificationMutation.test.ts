@@ -20,10 +20,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mockUseNetwork,
 }))
 
-const { fetchVerificationSession } = vi.hoisted(() => ({
-    fetchVerificationSession: vi.fn(),
+const { startRegisterVerification } = vi.hoisted(() => ({
+    startRegisterVerification: vi.fn(),
 }))
-vi.mock('../../api/user', () => ({ fetchVerificationSession }))
+vi.mock('../../api/onboarding', () => ({ startRegisterVerification }))
 
 import { useStartVerificationMutation } from '../useStartVerificationMutation'
 
@@ -48,17 +48,21 @@ describe('useStartVerificationMutation', () => {
             children,
         )
 
-    it('returns the Veriff session url for the caller to open', async () => {
-        fetchVerificationSession.mockResolvedValue({
+    it('starts pre-auth KYC with the onboarding id and returns the session url', async () => {
+        startRegisterVerification.mockResolvedValue({
             sessionUrl: 'https://veriff/session',
         })
 
         const { result } = renderHook(() => useStartVerificationMutation(), {
             wrapper,
         })
-        result.current.mutate()
+        result.current.mutate({ onboardingId: 'ob_1' })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(startRegisterVerification).toHaveBeenCalledWith({
+            onboardingId: 'ob_1',
+            network: 'mainnet',
+        })
         expect(result.current.data?.sessionUrl).toBe('https://veriff/session')
     })
 })

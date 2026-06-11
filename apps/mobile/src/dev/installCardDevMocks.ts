@@ -129,17 +129,19 @@ const verifyCode =
         return { status: 400, data: { message: 'Invalid verification code' } }
     }
 
-// DEV ONLY: the verification (KYC) step polls GET /v1/user for verificationState.
-// The external browser can't run Veriff in dev, so the first poll reports PENDING
-// and subsequent ones VERIFIED — exercising the poll loop and the success path
-// without a real Veriff run. Resets only on app reload. Remove with these mocks.
-let mockUserPollCount = 0
+// DEV ONLY: the verification (KYC) step polls GET /v1/auth/register for the
+// verificationState. The external browser can't run Veriff in dev, so the
+// first poll reports PENDING (exercises the submitted/continue path) and
+// subsequent ones VERIFIED (exercises the auto-advance) — without a real
+// Veriff run. Resets only on app reload. Remove with these mocks.
+let mockOnboardingPollCount = 0
 
 // Keyed by `${method} ${path}`. Handlers mirror the real Baanx responses:
 // email/send returns a contactVerificationId; email/verify validates the code
 // and returns an onboardingId; phone/send triggers the SMS (empty body) and
 // phone/verify validates the code (both endpoints return void on success);
-// address returns the access token + onboarding id the verification step needs.
+// register/verification starts the pre-auth KYC session; address finalizes
+// registration and returns the access token.
 const MOCK_ROUTES: Record<string, MockHandler> = {
     'GET /v1/auth/settings': () => ok(REGISTRATION_SETTINGS),
     'POST /v1/auth/register/email/send': () =>
@@ -149,22 +151,23 @@ const MOCK_ROUTES: Record<string, MockHandler> = {
     }),
     'POST /v1/auth/register/phone/send': () => ok({}),
     'POST /v1/auth/register/phone/verify': verifyCode({}),
+    // Any URL; in dev the poll below auto-completes regardless of what opens.
+    'POST /v1/auth/register/verification': () =>
+        ok({ sessionUrl: 'https://veriff.example/dev-session' }),
+    'GET /v1/auth/register': () => {
+        mockOnboardingPollCount += 1
+        return ok({
+            id: 'mock-onboarding-id',
+            verificationState:
+                mockOnboardingPollCount >= 2 ? 'VERIFIED' : 'PENDING',
+        })
+    },
     'POST /v1/auth/register/personal-details': () => ok({}),
     'POST /v1/auth/register/address': () =>
         ok({
             accessToken: 'mock-access-token',
             onboardingId: 'mock-onboarding-id',
         }),
-    // Any URL; in dev the poll below auto-completes regardless of what opens.
-    'GET /v1/user/verification': () =>
-        ok({ sessionUrl: 'https://veriff.example/dev-session' }),
-    'GET /v1/user': () => {
-        mockUserPollCount += 1
-        return ok({
-            id: 'mock-user-id',
-            verificationState: mockUserPollCount >= 2 ? 'VERIFIED' : 'PENDING',
-        })
-    },
 }
 
 if (__DEV__ || config.appEnvironment === 'staging') {

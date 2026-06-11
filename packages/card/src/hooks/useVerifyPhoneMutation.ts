@@ -27,11 +27,11 @@ export const useVerifyPhoneMutation = (): UseVerifyPhoneMutationResult => {
 
     const mutation = useMutation<void, Error, VerifyPhoneVariables>({
         mutationFn: variables => verifyPhone({ ...variables, network }),
-        // Phone verified: advance to the personal-details step.
+        // Phone verified: advance to the verification (KYC) step.
         onSuccess: () => {
             useCardStore
                 .getState()
-                .setOnboardingStep(OnboardingStep.PersonalDetails)
+                .setOnboardingStep(OnboardingStep.Verification)
         },
         throwOnError: false,
     })

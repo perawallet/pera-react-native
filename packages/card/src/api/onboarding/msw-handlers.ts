@@ -14,8 +14,12 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     addressResponseSchema,
+    onboardingDetailsResponseSchema,
+    registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     type AddressApiResponse,
+    type OnboardingDetailsApiResponse,
+    type RegisterVerificationApiResponse,
     type RegistrationSettingsApiResponse,
 } from './schema'
 
@@ -32,6 +36,45 @@ export const mockVerifyPhone = (): HttpHandler =>
     successPost('*/v1/auth/register/phone/verify')
 export const mockSubmitPersonalDetails = (): HttpHandler =>
     successPost('*/v1/auth/register/personal-details')
+
+// Onboarding KYC: pre-auth start (returns the Veriff session URL) + the status
+// poll the verification screen watches.
+export type MockStartRegisterVerificationParams = {
+    response?: RegisterVerificationApiResponse
+    status?: number
+}
+export const mockStartRegisterVerification = ({
+    response = { sessionUrl: 'https://veriff.example/session' },
+    status = 200,
+}: MockStartRegisterVerificationParams = {}): HttpHandler => {
+    validateMockResponse(
+        registerVerificationResponseSchema,
+        response,
+        'mockStartRegisterVerification',
+    )
+    return http.post('*/v1/auth/register/verification', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+export type MockGetOnboardingDetailsParams = {
+    response: OnboardingDetailsApiResponse
+    status?: number
+}
+export const mockGetOnboardingDetails = ({
+    response,
+    status = 200,
+}: MockGetOnboardingDetailsParams): HttpHandler => {
+    validateMockResponse(
+        onboardingDetailsResponseSchema,
+        response,
+        'mockGetOnboardingDetails',
+    )
+    // GET-only, so this can't shadow the POST register/* routes.
+    return http.get('*/v1/auth/register', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
 
 // The address step returns the access token the verification step needs, so the
 // mock returns a token-bearing body by default (overridable per test).

@@ -28,7 +28,7 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
-import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
+import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
 
 const VALID_CODE = '123456'
 
@@ -40,8 +40,8 @@ const renderVerify = () =>
         {
             additionalScreens: [
                 {
-                    name: 'CardOnboardingPersonalDetails',
-                    component: CardOnboardingPersonalDetailsScreen,
+                    name: 'CardOnboardingVerification',
+                    component: CardOnboardingVerificationScreen,
                 },
             ],
         },
@@ -87,7 +87,7 @@ describe('card onboarding — phone verify', () => {
         )
     })
 
-    it('verifies the phone with the valid code (auto-submit) and advances to personal details', async () => {
+    it('verifies the phone with the valid code (auto-submit) and advances to identity verification', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
         server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
 
@@ -100,10 +100,10 @@ describe('card onboarding — phone verify', () => {
         )
 
         await waitFor(() => expect(verifySpy).toHaveBeenCalled())
-        // A successful verify advances the flow to the personal-details step.
+        // A successful verify advances the flow to the verification (KYC) step.
         await waitFor(() =>
             expect(
-                screen.getByTestId('card-onboarding-personal-details'),
+                screen.getByTestId('card-onboarding-verification'),
             ).toBeTruthy(),
         )
     })

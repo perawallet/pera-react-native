@@ -23,15 +23,14 @@ import {
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { OnboardingStep, useCardStore } from '@perawallet/wallet-core-card'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
-import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
 
-// Address returns the access token + onboarding id the verification step needs.
+// The final registration step returns the access token + onboarding id.
 const ADDRESS_RESPONSE = {
     accessToken: 'mock-access-token',
     onboardingId: 'mock-onboarding-id',
@@ -78,10 +77,6 @@ const renderFlow = () =>
                 name: 'CardOnboardingEmailVerify',
                 component: CardOnboardingEmailVerifyScreen,
             },
-            {
-                name: 'CardOnboardingVerification',
-                component: CardOnboardingVerificationScreen,
-            },
         ],
     })
 
@@ -125,7 +120,7 @@ describe('Flow: Card onboarding — residential address', () => {
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true and the flow advances to verification', async () => {
+    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true and registration completes', async () => {
         let body: Record<string, unknown> | undefined
         const submitSpy = vi.fn()
         server.use(
@@ -154,11 +149,15 @@ describe('Flow: Card onboarding — residential address', () => {
         })
         // No US residence, so no state is sent.
         expect(body?.usState).toBeUndefined()
-        // A successful submit advances to the verification (KYC) step.
+        // Address is the final step: the screen swaps to its completion state
+        // and onboarding is marked done.
         await waitFor(() =>
             expect(
-                screen.getByTestId('card-onboarding-verification'),
+                screen.getByTestId('card-onboarding-address-success'),
             ).toBeTruthy(),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
         )
     })
 

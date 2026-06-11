@@ -12,14 +12,16 @@
 
 import { z } from 'zod'
 
+// Declared in flow order: KYC (Verification) runs after phone verify and
+// before personal details; address is the final step and issues the session.
 export const OnboardingStep = {
     EmailSend: 'EMAIL_SEND',
     EmailVerify: 'EMAIL_VERIFY',
     PhoneSend: 'PHONE_SEND',
     PhoneVerify: 'PHONE_VERIFY',
+    Verification: 'VERIFICATION',
     PersonalDetails: 'PERSONAL_DETAILS',
     Address: 'ADDRESS',
-    Verification: 'VERIFICATION',
     Completed: 'COMPLETED',
 } as const
 export type OnboardingStep =
@@ -59,7 +61,11 @@ export type CurrentRegion = {
     name: string
 }
 
-/** Veriff KYC session from GET /v1/user/verification. */
+/**
+ * Veriff KYC session. During onboarding it comes from the pre-auth
+ * POST /v1/auth/register/verification; post-login re-verification uses
+ * GET /v1/user/verification.
+ */
 export type VeriffSession = {
     sessionUrl: string
 }

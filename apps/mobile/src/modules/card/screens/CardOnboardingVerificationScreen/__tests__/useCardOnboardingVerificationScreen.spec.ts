@@ -19,7 +19,8 @@ import { OnboardingStep } from '@perawallet/wallet-core-card'
 const mockStartMutateAsync = vi.fn()
 const mockRefetch = vi.fn()
 const mockSetOnboardingStep = vi.fn()
-let mockUserData: { id: string; verificationState: string } | undefined
+let mockOnboardingId: string | null = 'mock-onboarding-id'
+let mockVerificationState: string | null = null
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -37,10 +38,20 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
-        useCardUserQuery: () => ({ data: mockUserData, refetch: mockRefetch }),
-        useCardStore: Object.assign(() => undefined, {
-            getState: () => ({ setOnboardingStep: mockSetOnboardingStep }),
+        useOnboardingDetailsQuery: () => ({
+            verificationState: mockVerificationState,
+            isLoading: false,
+            refetch: mockRefetch,
         }),
+        useCardStore: Object.assign(
+            (selector: (state: { onboardingId: string | null }) => unknown) =>
+                selector({ onboardingId: mockOnboardingId }),
+            {
+                getState: () => ({
+                    setOnboardingStep: mockSetOnboardingStep,
+                }),
+            },
+        ),
     }
 })
 
@@ -50,10 +61,11 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 const mockSuccessToast = vi.fn()
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: mockSuccessToast,
-        errorToast: vi.fn(),
+        errorToast: mockErrorToast,
         infoToast: vi.fn(),
         showToast: vi.fn(),
     }),
@@ -74,7 +86,8 @@ let appStateListener: ((state: string) => void) | undefined
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockUserData = undefined
+    mockOnboardingId = 'mock-onboarding-id'
+    mockVerificationState = null
     mockStartMutateAsync.mockResolvedValue({ sessionUrl: SESSION_URL })
     vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     vi.spyOn(AppState, 'addEventListener').mockImplementation(
@@ -99,7 +112,7 @@ const startVerification = async (result: {
 }
 
 describe('useCardOnboardingVerificationScreen', () => {
-    it('opens the Veriff session URL and enters the in-progress phase', async () => {
+    it('starts pre-auth KYC with the onboarding id and opens the session URL', async () => {
         const { result } = renderHook(() =>
             useCardOnboardingVerificationScreen(),
         )
@@ -107,41 +120,70 @@ describe('useCardOnboardingVerificationScreen', () => {
         expect(result.current.phase).toBe(VerificationPhase.Idle)
         await startVerification(result)
 
-        expect(mockStartMutateAsync).toHaveBeenCalled()
+        expect(mockStartMutateAsync).toHaveBeenCalledWith({
+            onboardingId: 'mock-onboarding-id',
+        })
         expect(Linking.openURL).toHaveBeenCalledWith(SESSION_URL)
     })
 
-    it('completes onboarding and routes out when verification is VERIFIED', async () => {
+    it('routes back to email verification when the onboarding id is missing', async () => {
+        mockOnboardingId = null
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        act(() => {
+            result.current.handleStartVerification()
+        })
+
+        expect(mockErrorToast).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingEmailVerify')
+        expect(mockStartMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('advances to personal details when verification is VERIFIED', async () => {
         const { result, rerender } = renderHook(() =>
             useCardOnboardingVerificationScreen(),
         )
         await startVerification(result)
 
-        mockUserData = { id: 'u1', verificationState: 'VERIFIED' }
+        mockVerificationState = 'VERIFIED'
         act(() => rerender())
 
         await waitFor(() =>
             expect(result.current.phase).toBe(VerificationPhase.Verified),
         )
         expect(mockSetOnboardingStep).toHaveBeenCalledWith(
-            OnboardingStep.Completed,
+            OnboardingStep.PersonalDetails,
         )
-        expect(mockNavigate).toHaveBeenCalledWith('PeraCardIntro')
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'CardOnboardingPersonalDetails',
+        )
     })
 
-    it('moves to submitted when verification is PENDING', async () => {
+    it('moves to submitted on PENDING and lets the user continue', async () => {
         const { result, rerender } = renderHook(() =>
             useCardOnboardingVerificationScreen(),
         )
         await startVerification(result)
 
-        mockUserData = { id: 'u1', verificationState: 'PENDING' }
+        mockVerificationState = 'PENDING'
         act(() => rerender())
 
         await waitFor(() =>
             expect(result.current.phase).toBe(VerificationPhase.Submitted),
         )
-        expect(mockSetOnboardingStep).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+
+        act(() => {
+            result.current.handleContinue()
+        })
+        expect(mockSetOnboardingStep).toHaveBeenCalledWith(
+            OnboardingStep.PersonalDetails,
+        )
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'CardOnboardingPersonalDetails',
+        )
     })
 
     it('moves to rejected when verification is REJECTED', async () => {
@@ -150,12 +192,17 @@ describe('useCardOnboardingVerificationScreen', () => {
         )
         await startVerification(result)
 
-        mockUserData = { id: 'u1', verificationState: 'REJECTED' }
+        mockVerificationState = 'REJECTED'
         act(() => rerender())
 
         await waitFor(() =>
             expect(result.current.phase).toBe(VerificationPhase.Rejected),
         )
+
+        act(() => {
+            result.current.handleDone()
+        })
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCardIntro')
     })
 
     it('enters the error phase when starting fails, then recovers on retry', async () => {
@@ -176,7 +223,7 @@ describe('useCardOnboardingVerificationScreen', () => {
         expect(Linking.openURL).toHaveBeenCalledWith(SESSION_URL)
     })
 
-    it('refetches the user when the app returns to the foreground while polling', async () => {
+    it('refetches the status when the app returns to the foreground while polling', async () => {
         const { result } = renderHook(() =>
             useCardOnboardingVerificationScreen(),
         )

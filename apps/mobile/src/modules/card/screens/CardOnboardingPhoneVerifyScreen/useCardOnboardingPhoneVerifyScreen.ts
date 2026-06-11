@@ -146,7 +146,8 @@ export const useCardOnboardingPhoneVerifyScreen =
                             contactVerificationId,
                             verificationCode: value,
                         })
-                        navigation.navigate('CardOnboardingPersonalDetails')
+                        // Phone verified: KYC (identity verification) is next.
+                        navigation.navigate('CardOnboardingVerification')
                     } catch {
                         errorToast(
                             t('peraCard.verify_phone.verify_error_title'),

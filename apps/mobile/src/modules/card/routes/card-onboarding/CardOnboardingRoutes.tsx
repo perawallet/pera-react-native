@@ -68,6 +68,11 @@ export const CardOnboardingStackNavigator = () => {
                 options={{ title: 'peraCard.verify_phone.navigation_title' }}
             />
             <Stack.Screen
+                name='CardOnboardingVerification'
+                component={CardOnboardingVerificationScreen}
+                options={{ title: 'peraCard.verification.navigation_title' }}
+            />
+            <Stack.Screen
                 name='CardOnboardingPersonalDetails'
                 component={CardOnboardingPersonalDetailsScreen}
                 options={{
@@ -78,11 +83,6 @@ export const CardOnboardingStackNavigator = () => {
                 name='CardOnboardingAddress'
                 component={CardOnboardingAddressScreen}
                 options={{ title: 'peraCard.address.navigation_title' }}
-            />
-            <Stack.Screen
-                name='CardOnboardingVerification'
-                component={CardOnboardingVerificationScreen}
-                options={{ title: 'peraCard.verification.navigation_title' }}
             />
         </Stack.Navigator>
     )

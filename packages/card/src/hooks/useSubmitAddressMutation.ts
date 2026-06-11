@@ -28,9 +28,9 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
 
     const mutation = useMutation<SubmitAddressResult, Error, AddressInput>({
         mutationFn: address => submitAddress({ address, network }),
-        // The address step issues the bearer token; commit it (no refresh token
-        // mid-onboarding, like direct login) so the verification step's
-        // authenticated calls succeed, then advance to the verification step.
+        // The address step finalizes registration and issues the bearer token;
+        // commit it (no refresh token at registration, like direct login) so
+        // the post-onboarding user endpoints work, then mark onboarding done.
         onSuccess: async result => {
             // accessToken is null only on the US separate-mailing path, which we
             // don't yet collect (the address screen always sends
@@ -43,9 +43,7 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
                     refreshToken: '',
                 })
             }
-            useCardStore
-                .getState()
-                .setOnboardingStep(OnboardingStep.Verification)
+            useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
         },
         throwOnError: false,
     })

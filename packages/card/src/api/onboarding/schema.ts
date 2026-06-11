@@ -48,12 +48,28 @@ export const verifyEmailResponseSchema = z.object({
     onboardingId: z.string(),
 })
 
-// POST /v1/auth/register/address — issues the bearer token the post-address
-// authenticated calls (GET /v1/user, GET /v1/user/verification) require.
-// `accessToken` is null only when US AND isSameMailingAddress=false (a mailing
-// address is still owed). The response also carries a `user` block, but the
-// verification step reads `verificationState` from GET /v1/user, so we don't
-// re-model it here.
+// POST /v1/auth/register/verification — pre-auth (client key only); returns the
+// Veriff session URL for the onboarding KYC step.
+export const registerVerificationResponseSchema = z.object({
+    sessionUrl: z.string(),
+})
+export type RegisterVerificationApiResponse = z.infer<
+    typeof registerVerificationResponseSchema
+>
+
+// GET /v1/auth/register?onboardingId= — onboarding status. We only model the
+// KYC state the verification screen polls; Zod strips the profile fields.
+export const onboardingDetailsResponseSchema = z.object({
+    verificationState: z.string(),
+})
+export type OnboardingDetailsApiResponse = z.infer<
+    typeof onboardingDetailsResponseSchema
+>
+
+// POST /v1/auth/register/address — the final registration step; issues the
+// bearer token the authenticated user endpoints require. `accessToken` is null
+// only when US AND isSameMailingAddress=false (a mailing address is still
+// owed). The response also carries a `user` block we don't model yet.
 export const addressResponseSchema = z.object({
     accessToken: z.string().nullable(),
     onboardingId: z.string(),

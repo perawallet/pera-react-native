@@ -10,15 +10,19 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import { toEnumValue, type Network } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
+import { VerificationState } from '../../models'
 import type {
     AddressInput,
     PersonalDetailsInput,
     RegistrationSettings,
+    VeriffSession,
 } from '../../models'
 import {
     addressResponseSchema,
+    onboardingDetailsResponseSchema,
+    registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     sendEmailVerificationResponseSchema,
     verifyEmailResponseSchema,
@@ -121,10 +125,60 @@ export const submitPersonalDetails = async (
     )
 }
 
+export type StartRegisterVerificationParams = NetworkParams & {
+    onboardingId: string
+}
+/**
+ * Starts the onboarding KYC session (step 3 of registration, after phone
+ * verification). Pre-auth — only the client key is required. The caller opens
+ * the returned Veriff `sessionUrl`, then polls `fetchOnboardingDetails` for the
+ * `verificationState` to transition.
+ */
+export const startRegisterVerification = async (
+    params: StartRegisterVerificationParams,
+): Promise<VeriffSession> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/auth/register/verification',
+        data: { onboardingId: params.onboardingId },
+        signal: params.signal,
+    })
+    return registerVerificationResponseSchema.parse(response.data)
+}
+
+export type FetchOnboardingDetailsParams = NetworkParams & {
+    onboardingId: string
+}
+export type OnboardingDetails = { verificationState: VerificationState }
+/** Pre-auth onboarding status — polled to detect KYC completion. */
+export const fetchOnboardingDetails = async (
+    params: FetchOnboardingDetailsParams,
+): Promise<OnboardingDetails> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'GET',
+        path: '/v1/auth/register',
+        params: { onboardingId: params.onboardingId },
+        signal: params.signal,
+    })
+    const parsed = onboardingDetailsResponseSchema.parse(response.data)
+    return {
+        // Unknown/missing state falls back to Unverified — never report KYC
+        // progress on a state we don't recognise.
+        verificationState: toEnumValue(
+            VerificationState,
+            parsed.verificationState,
+            VerificationState.Unverified,
+        ),
+    }
+}
+
 export type SubmitAddressParams = NetworkParams & { address: AddressInput }
-// Unlike the other register steps, the address response matters: it carries the
-// `accessToken` that authenticates the verification (KYC) step, so we parse and
-// return it rather than discarding the body via `postRegisterStep`.
+// The final registration step. Unlike the other register steps its response
+// matters: it carries the `accessToken` that authenticates the post-onboarding
+// user endpoints, so we parse and return it rather than discarding the body
+// via `postRegisterStep`.
 export type SubmitAddressResult = {
     accessToken: string | null
     onboardingId: string

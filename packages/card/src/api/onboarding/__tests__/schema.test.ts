@@ -11,7 +11,11 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { addressResponseSchema } from '../schema'
+import {
+    addressResponseSchema,
+    onboardingDetailsResponseSchema,
+    registerVerificationResponseSchema,
+} from '../schema'
 
 describe('addressResponseSchema', () => {
     it('parses a token-bearing response', () => {
@@ -34,5 +38,27 @@ describe('addressResponseSchema', () => {
         expect(() =>
             addressResponseSchema.parse({ accessToken: 'tok' }),
         ).toThrow()
+    })
+})
+
+describe('registerVerificationResponseSchema', () => {
+    it('parses the session url and rejects a missing one', () => {
+        expect(
+            registerVerificationResponseSchema.parse({
+                sessionUrl: 'https://veriff/session',
+            }).sessionUrl,
+        ).toBe('https://veriff/session')
+        expect(() => registerVerificationResponseSchema.parse({})).toThrow()
+    })
+})
+
+describe('onboardingDetailsResponseSchema', () => {
+    it('keeps the verification state and strips the profile fields', () => {
+        const parsed = onboardingDetailsResponseSchema.parse({
+            id: 'ob_1',
+            firstName: 'John',
+            verificationState: 'VERIFIED',
+        })
+        expect(parsed).toEqual({ verificationState: 'VERIFIED' })
     })
 })
