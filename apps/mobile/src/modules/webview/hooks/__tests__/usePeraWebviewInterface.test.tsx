@@ -194,6 +194,31 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     useArc0001Resolver: () => fakeArc0001Resolve,
     useEnqueueArc0001SignRequest: () => fakeEnqueue,
+    // Mirrors the real discriminator (arc60-wire.ts) so the legacy
+    // arbitrary-data payloads in this file route to the legacy branch. The
+    // real module can't be imported here — the signing barrel pulls in MMKV.
+    isArc60WirePayload: (params: unknown) => {
+        if (
+            params == null ||
+            typeof params !== 'object' ||
+            Array.isArray(params)
+        ) {
+            return false
+        }
+        const candidate = params as {
+            authenticatorData?: unknown
+            metadata?: { scope?: unknown }
+        }
+        return (
+            candidate.authenticatorData != null ||
+            candidate.metadata?.scope != null
+        )
+    },
+    parseArc60WireRequest: vi.fn(() => {
+        throw new Error(
+            'parseArc60WireRequest not mocked — no test in this file exercises the ARC-60 branch',
+        )
+    }),
 }))
 
 const mockConnect = vi.fn()
