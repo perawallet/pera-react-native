@@ -33,7 +33,18 @@ function __stampToken(request) {
     } catch (_) {
         obj = {};
     }
-    obj.token = __peraBridgeToken;
+    // JSON-RPC batches arrive as arrays: stamp each element — a named
+    // property set on the array itself is dropped by JSON.stringify, and
+    // native requires the token on every batch element.
+    if (Array.isArray(obj)) {
+        for (var i = 0; i < obj.length; i++) {
+            if (obj[i] && typeof obj[i] === 'object') {
+                obj[i].token = __peraBridgeToken;
+            }
+        }
+    } else {
+        obj.token = __peraBridgeToken;
+    }
     return JSON.stringify(obj);
 }
 window.peraRPC = {
