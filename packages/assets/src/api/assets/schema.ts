@@ -93,7 +93,9 @@ export const publicAssetResponseSchema = z.object({
     name: z.string().optional().nullable(),
     unit_name: z.string().optional().nullable(),
     fraction_decimals: z.number(),
-    total_supply: z.number(),
+    // uint64 total: max-supply ASAs (~2^64) exceed double precision, so the
+    // precision-safe JSON parser delivers them as strings — accept both.
+    total_supply: z.union([z.number(), z.string()]),
     total_supply_as_str: z.string(),
     is_deleted: z.boolean().optional().nullable(),
     creator_address: z.string().optional().nullable(),
@@ -122,7 +124,8 @@ export const indexerAssetResponseSchema = z.object({
             name: z.string().optional(),
             'name-b64': z.string().optional(),
             reserve: z.string().optional(),
-            total: z.number(),
+            // uint64 total — see total_supply above for why string is accepted
+            total: z.union([z.number(), z.string()]),
             'unit-name': z.string().optional(),
             'unit-name-b64': z.string().optional(),
             url: z.string().optional(),

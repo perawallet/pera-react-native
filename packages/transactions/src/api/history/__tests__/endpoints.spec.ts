@@ -96,16 +96,18 @@ describe('fetchTransactionHistory', () => {
 
         mockQueryClient.mockResolvedValue(mockResponse)
 
+        // Above 2^53: must pass through as a string, unrounded.
+        const bigId = '18446744073709551615' // 2^64 - 1
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
             network: Networks.mainnet,
-            assetId: 31566704,
+            assetId: bigId,
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 params: expect.objectContaining({
-                    asset_id: 31566704,
+                    asset_id: bigId,
                 }),
             }),
         )
@@ -179,7 +181,7 @@ describe('fetchTransactionHistory', () => {
         await fetchTransactionHistory({
             accountAddress: 'ABC123DEF456',
             network: Networks.testnet,
-            assetId: 31566704,
+            assetId: '31566704',
             afterTime: '2025-02-01',
             beforeTime: '2025-02-13',
             limit: 50,
@@ -192,7 +194,7 @@ describe('fetchTransactionHistory', () => {
             url: '/v1/accounts/ABC123DEF456/transactions/',
             params: {
                 limit: 50,
-                asset_id: 31566704,
+                asset_id: '31566704',
                 after_time: '2025-02-01',
                 before_time: '2025-02-13',
             },
