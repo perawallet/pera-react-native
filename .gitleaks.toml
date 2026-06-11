@@ -36,6 +36,7 @@ paths = [
     '''.*\.spec\.(ts|tsx|js|jsx)$''',
     '''.*/mocks/.*''',
     '''.*/__mocks__/.*''',
+    '''.*/test-utils/.*''',
 ]
 
 [[allowlists]]
