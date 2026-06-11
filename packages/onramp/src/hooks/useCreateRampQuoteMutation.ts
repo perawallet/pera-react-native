@@ -10,38 +10,25 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, type UseMutationResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 import { createRampQuote, type CreateRampQuoteParams } from '../api'
 import type { RampQuote } from '../models'
 
-export type UseCreateRampQuoteMutationResult = {
-    mutateAsync: (params: CreateRampQuoteParams) => Promise<RampQuote[]>
-    isPending: boolean
-    isSuccess: boolean
-    error: Error | null
-    reset: () => void
+export const useCreateRampQuoteMutation = (): UseMutationResult<
+    RampQuote[],
+    Error,
+    CreateRampQuoteParams
+> => {
+    const { network } = useNetwork()
+
+    return useMutation({
+        mutationFn: (params: CreateRampQuoteParams) =>
+            createRampQuote(params, network),
+        // The app defaults mutations to throwOnError:true (escalates to the
+        // root error boundary). Quote errors (e.g. SourceAmountIsTooLow) are
+        // expected and handled inline by the form, so opt out here.
+        throwOnError: false,
+    })
 }
-
-export const useCreateRampQuoteMutation =
-    (): UseCreateRampQuoteMutationResult => {
-        const { network } = useNetwork()
-
-        const mutation = useMutation({
-            mutationFn: (params: CreateRampQuoteParams) =>
-                createRampQuote(params, network),
-            // The app defaults mutations to throwOnError:true (escalates to the
-            // root error boundary). Quote errors (e.g. SourceAmountIsTooLow) are
-            // expected and handled inline by the form, so opt out here.
-            throwOnError: false,
-        })
-
-        return {
-            mutateAsync: mutation.mutateAsync,
-            isPending: mutation.isPending,
-            isSuccess: mutation.isSuccess,
-            error: mutation.error,
-            reset: () => mutation.reset(),
-        }
-    }

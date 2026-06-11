@@ -125,7 +125,14 @@ export const useOnrampQuotes = ({
         }, ONRAMP_QUOTE_DEBOUNCE_TIME)
 
         return () => clearTimeout(timeoutId)
-    }, [pairId, selectedAccountAddress, isMeld, meldAmountTrigger, createQuote, t])
+    }, [
+        pairId,
+        selectedAccountAddress,
+        isMeld,
+        meldAmountTrigger,
+        createQuote,
+        t,
+    ])
 
     // Reset quotes + selection when the pair changes.
     useEffect(() => {

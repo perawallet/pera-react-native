@@ -15,7 +15,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { CircleFlag } from '@components/CircleFlag'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
 import { OnrampTokenIcon } from '../OnrampTokenIcon'
-import { countryNameFromCode } from './countryNames'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 
@@ -40,15 +39,19 @@ export const OnrampSourceRow = ({
 
     const flagCountryCode = isFiat ? token.countryCode : undefined
 
-    // Fiat sub-line: the country name (derived from the ISO code), falling back
-    // to the token name. Crypto sub-line: "{symbol} · {network} network".
-    const subLine = isFiat
-        ? (token.countryCode && countryNameFromCode(token.countryCode)) ||
-          token.name
-        : t('onramp.source_selection.network_suffix', {
-              symbol: token.symbol,
-              network: token.network.name,
-          })
+    // Fiat sub-line: the localized country name keyed by ISO 3166-1 alpha-2
+    // code, falling back to the raw code when untranslated. Crypto sub-line:
+    // "{symbol} · {network} network".
+    const countryCode = token.countryCode?.toUpperCase()
+    const subLine =
+        isFiat && countryCode
+            ? t(`countries.${countryCode}`, { defaultValue: countryCode })
+            : isFiat
+              ? token.name
+              : t('onramp.source_selection.network_suffix', {
+                    symbol: token.symbol,
+                    network: token.network.name,
+                })
 
     return (
         <PWTouchableOpacity

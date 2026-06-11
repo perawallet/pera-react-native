@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 import { getRampPairs } from '../api'
@@ -18,34 +18,16 @@ import { ONRAMP_DESTINATION_TOKEN_IDS } from '../constants'
 import type { RampPair } from '../models'
 import { onrampQueryKeys } from './querykeys'
 
-export type UseRampPairsQueryResult = {
-    data: RampPair[] | undefined
-    isLoading: boolean
-    isSuccess: boolean
-    isError: boolean
-    error: Error | null
-    refetch: () => void
-}
-
 export const useRampPairsQuery = (
     enabled: boolean = true,
-): UseRampPairsQueryResult => {
+): UseQueryResult<RampPair[], Error> => {
     const { network } = useNetwork()
 
     const destinationTokenIds = [...ONRAMP_DESTINATION_TOKEN_IDS]
 
-    const query = useQuery({
+    return useQuery({
         queryKey: onrampQueryKeys.pairs(destinationTokenIds, network),
         queryFn: () => getRampPairs(destinationTokenIds, network),
         enabled,
     })
-
-    return {
-        data: query.data,
-        isLoading: query.isLoading,
-        isSuccess: query.isSuccess,
-        isError: query.isError,
-        error: query.error,
-        refetch: () => void query.refetch(),
-    }
 }
