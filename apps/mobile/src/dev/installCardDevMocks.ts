@@ -84,7 +84,27 @@ const REGISTRATION_SETTINGS = {
             canSignUp: false,
         },
     ],
-    usStates: [],
+    // A few states so the US residential-address path is exercisable.
+    usStates: [
+        {
+            id: 'ca',
+            name: 'California',
+            postalAbbreviation: 'CA',
+            canSignUp: true,
+        },
+        {
+            id: 'ny',
+            name: 'New York',
+            postalAbbreviation: 'NY',
+            canSignUp: true,
+        },
+        {
+            id: 'tx',
+            name: 'Texas',
+            postalAbbreviation: 'TX',
+            canSignUp: true,
+        },
+    ],
 }
 
 type MockResult = { status: number; data: unknown }
@@ -122,6 +142,8 @@ const MOCK_ROUTES: Record<string, MockHandler> = {
     }),
     'POST /v1/auth/register/phone/send': () => ok({}),
     'POST /v1/auth/register/phone/verify': verifyCode({}),
+    'POST /v1/auth/register/personal-details': () => ok({}),
+    'POST /v1/auth/register/address': () => ok({}),
 }
 
 if (__DEV__ || config.appEnvironment === 'staging') {

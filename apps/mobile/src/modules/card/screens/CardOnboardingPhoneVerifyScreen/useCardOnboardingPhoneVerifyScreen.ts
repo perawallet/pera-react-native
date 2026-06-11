@@ -50,7 +50,7 @@ export type UseCardOnboardingPhoneVerifyScreenResult = {
 export const useCardOnboardingPhoneVerifyScreen =
     (): UseCardOnboardingPhoneVerifyScreenResult => {
         const { t } = useLanguage()
-        const { successToast, errorToast } = useToast()
+        const { errorToast } = useToast()
         const navigation = useAppNavigation()
         const phoneCountryCode = useCardStore(state => state.phoneCountryCode)
         const phoneNumber = useCardStore(state => state.phoneNumber)
@@ -146,11 +146,7 @@ export const useCardOnboardingPhoneVerifyScreen =
                             contactVerificationId,
                             verificationCode: value,
                         })
-                        // TODO(card): go to personal-details once it exists.
-                        successToast(
-                            t('peraCard.verify_phone.success_title'),
-                            t('peraCard.verify_phone.success_body'),
-                        )
+                        navigation.navigate('CardOnboardingPersonalDetails')
                     } catch {
                         errorToast(
                             t('peraCard.verify_phone.verify_error_title'),
@@ -167,7 +163,6 @@ export const useCardOnboardingPhoneVerifyScreen =
                 phoneNumber,
                 contactVerificationId,
                 verifyPhone,
-                successToast,
                 errorToast,
                 navigation,
                 t,

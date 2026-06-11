@@ -13,46 +13,46 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     useRegistrationSettingsQuery,
-    type SupportedCountry,
+    type SupportedUsState,
 } from '@perawallet/wallet-core-card'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 
-export type UseCardCountryPickerResult = {
+export type UseCardUsStatePickerResult = {
     search: string
     setSearch: (value: string) => void
-    countries: SupportedCountry[]
+    states: SupportedUsState[]
     isLoading: boolean
     isError: boolean
     refetch: () => void
-    handleSelect: (country: SupportedCountry) => void
+    handleSelect: (state: SupportedUsState) => void
 }
 
 /**
- * Drives the country-picker sheet: all countries (eligibility is decided by the
- * caller via `canSignUp`, so unsupported ones stay selectable for the waitlist),
- * name search, and resolving the chosen country back to the caller.
+ * Drives the US-state picker sheet: signup-eligible states from
+ * `GET /v1/auth/settings` (states have no waitlist flow, so `canSignUp: false`
+ * ones are hidden), name search, and resolving the chosen state back to the
+ * caller.
  */
-export const useCardCountryPicker = (): UseCardCountryPickerResult => {
+export const useCardUsStatePicker = (): UseCardUsStatePickerResult => {
     const { data, isLoading, isError, refetch } = useRegistrationSettingsQuery()
-    const { resolve } = useBottomSheetResult<SupportedCountry>()
+    const { resolve } = useBottomSheetResult<SupportedUsState>()
     const [search, setSearch] = useState('')
 
-    const countries = useMemo(() => {
-        // Copy before sorting — sorting in place would mutate the query cache.
-        const available = [...(data?.countries ?? [])].sort((first, second) =>
-            first.name.localeCompare(second.name),
-        )
+    const states = useMemo(() => {
+        const available = (data?.usStates ?? [])
+            .filter(state => state.canSignUp)
+            .sort((first, second) => first.name.localeCompare(second.name))
 
         const query = search.trim().toLowerCase()
         return query
-            ? available.filter(country =>
-                  country.name.toLowerCase().includes(query),
+            ? available.filter(state =>
+                  state.name.toLowerCase().includes(query),
               )
             : available
     }, [data, search])
 
     const handleSelect = useCallback(
-        (country: SupportedCountry) => resolve(country),
+        (state: SupportedUsState) => resolve(state),
         [resolve],
     )
 
@@ -63,7 +63,7 @@ export const useCardCountryPicker = (): UseCardCountryPickerResult => {
     return {
         search,
         setSearch,
-        countries,
+        states,
         isLoading,
         isError,
         refetch: handleRefetch,

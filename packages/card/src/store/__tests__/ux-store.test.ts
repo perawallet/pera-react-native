@@ -88,6 +88,17 @@ describe('useCardStore', () => {
         expect(result.current.phoneNumber).toBeNull()
     })
 
+    test('setAllowMarketing updates the consent flag (defaults to opted-in)', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        expect(result.current.allowMarketing).toBe(true)
+
+        act(() => result.current.setAllowMarketing(false))
+
+        expect(result.current.allowMarketing).toBe(false)
+    })
+
     test('setCardSnapshot stores the non-sensitive card hint', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())

@@ -1,0 +1,249 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { createElement, useCallback, useEffect, useRef, useState } from 'react'
+import { useForm, type Control, type FieldErrors } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+    addressSchema,
+    useCardStore,
+    useRegistrationSettingsQuery,
+    useSubmitAddressMutation,
+    type AddressFormValues,
+    type AddressInput,
+    type SupportedCountry,
+    type SupportedUsState,
+} from '@perawallet/wallet-core-card'
+import { config } from '@perawallet/wallet-core-config'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
+import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
+import { useWebView } from '@modules/webview'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
+
+import type { Optional } from '@perawallet/wallet-core-shared'
+
+/** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */
+const US_ISO = 'US'
+
+export type UseCardOnboardingAddressScreenResult = {
+    control: Control<AddressFormValues>
+    errors: FieldErrors<AddressFormValues>
+    /** True when the address form is valid AND both T&C boxes are accepted. */
+    isValid: boolean
+    isSubmitting: boolean
+    selectedCountry: Optional<SupportedCountry>
+    isUsResident: boolean
+    selectedUsState: Optional<SupportedUsState>
+    allowMarketing: boolean
+    cardTermsAccepted: boolean
+    platformTermsAccepted: boolean
+    handleSelectCountry: () => void
+    handleSelectUsState: () => void
+    handleToggleMarketing: () => void
+    handleToggleCardTerms: () => void
+    handleTogglePlatformTerms: () => void
+    handleOpenCardTerms: () => void
+    handleOpenPlatformTerms: () => void
+    handleConfirm: () => void
+}
+
+export const useCardOnboardingAddressScreen =
+    (): UseCardOnboardingAddressScreenResult => {
+        const { t } = useLanguage()
+        const navigation = useAppNavigation()
+        const { successToast, errorToast } = useToast()
+        const { request } = useBottomSheet()
+        const { pushWebView } = useWebView()
+        const onboardingId = useCardStore(state => state.onboardingId)
+        const residenceCountryIso = useCardStore(state => state.countryIso)
+        const setCountryIso = useCardStore(state => state.setCountryIso)
+        const setAllowMarketing = useCardStore(state => state.setAllowMarketing)
+        // The checkbox binds straight to the persisted preference so an
+        // opt-out survives remounts and failed submits.
+        const allowMarketing = useCardStore(state => state.allowMarketing)
+        const submitAddress = useSubmitAddressMutation()
+        const { data: settings } = useRegistrationSettingsQuery()
+
+        const [selectedCountry, setSelectedCountry] =
+            useState<Optional<SupportedCountry>>(undefined)
+        const [selectedUsState, setSelectedUsState] =
+            useState<Optional<SupportedUsState>>(undefined)
+        const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
+        const [platformTermsAccepted, setPlatformTermsAccepted] =
+            useState(false)
+        const hasPreselected = useRef(false)
+
+        const {
+            control,
+            handleSubmit,
+            setValue,
+            watch,
+            formState: { isValid: isFormValid, errors },
+        } = useForm<AddressFormValues>({
+            resolver: zodResolver(addressSchema),
+            mode: 'onChange',
+            defaultValues: {
+                countryIso: '',
+                addressLine1: '',
+                addressLine2: '',
+                city: '',
+                zip: '',
+                usState: '',
+            },
+        })
+
+        const isUsResident = watch('countryIso') === US_ISO
+
+        // Prefill the residence country chosen earlier in the flow, once settings
+        // load. One-shot; matches it against the supported list for the flag/name.
+        useEffect(() => {
+            if (hasPreselected.current || selectedCountry) return
+            if (!residenceCountryIso || !settings?.countries.length) return
+            const match = settings.countries.find(
+                country => country.iso3166alpha2 === residenceCountryIso,
+            )
+            if (!match) return
+            hasPreselected.current = true
+            setSelectedCountry(match)
+            setValue('countryIso', match.iso3166alpha2, {
+                shouldValidate: true,
+            })
+        }, [residenceCountryIso, settings, selectedCountry, setValue])
+
+        // TODO(card): confirm whether residence is editable here — Baanx already
+        // received the country at email/verify, and this pick (even a
+        // canSignUp:false country) only updates local state.
+        const handleSelectCountry = useCallback(() => {
+            const openPicker = async () => {
+                const country = await request<SupportedCountry>({
+                    contents: createElement(CardCountryPickerContent),
+                    options: { size: 'full' },
+                })
+                if (!country) return
+                setSelectedCountry(country)
+                setValue('countryIso', country.iso3166alpha2, {
+                    shouldValidate: true,
+                })
+                setCountryIso(country.iso3166alpha2)
+                // Residence drives the state requirement — a country change
+                // invalidates any previously picked state.
+                setSelectedUsState(undefined)
+                setValue('usState', '', { shouldValidate: true })
+            }
+            void openPicker()
+        }, [request, setValue, setCountryIso])
+
+        const handleSelectUsState = useCallback(() => {
+            const openPicker = async () => {
+                const usState = await request<SupportedUsState>({
+                    contents: createElement(CardUsStatePickerContent),
+                    options: { size: 'full' },
+                })
+                if (!usState) return
+                setSelectedUsState(usState)
+                setValue('usState', usState.postalAbbreviation, {
+                    shouldValidate: true,
+                })
+            }
+            void openPicker()
+        }, [request, setValue])
+
+        const handleToggleMarketing = useCallback(
+            () => setAllowMarketing(!allowMarketing),
+            [setAllowMarketing, allowMarketing],
+        )
+        const handleToggleCardTerms = useCallback(
+            () => setCardTermsAccepted(previous => !previous),
+            [],
+        )
+        const handleTogglePlatformTerms = useCallback(
+            () => setPlatformTermsAccepted(previous => !previous),
+            [],
+        )
+
+        const handleOpenCardTerms = useCallback(() => {
+            // TODO(card): use the real Baanx Card-Issue T&C URL once provided.
+            pushWebView({ url: config.termsOfServiceUrl, id: 'card-terms' })
+        }, [pushWebView])
+        const handleOpenPlatformTerms = useCallback(() => {
+            // TODO(card): use the real Baanx Platform T&C URL once provided.
+            pushWebView({ url: config.termsOfServiceUrl, id: 'platform-terms' })
+        }, [pushWebView])
+
+        const submitAddressForm = handleSubmit(async values => {
+            // Set by email/verify; if missing, re-verify rather than submit an
+            // empty onboarding id.
+            if (onboardingId === null) {
+                errorToast(
+                    t('peraCard.address.error_title'),
+                    t('peraCard.address.error_body'),
+                )
+                navigation.navigate('CardOnboardingEmailVerify')
+                return
+            }
+            const address: AddressInput = {
+                onboardingId,
+                addressLine1: values.addressLine1,
+                city: values.city,
+                zip: values.zip,
+                // No separate mailing address is collected; residence is used.
+                isSameMailingAddress: true,
+                ...(values.addressLine2
+                    ? { addressLine2: values.addressLine2 }
+                    : {}),
+                ...(values.countryIso === US_ISO && values.usState
+                    ? { usState: values.usState }
+                    : {}),
+            }
+            try {
+                await submitAddress.mutateAsync(address)
+                // TODO(card): navigate to CardOnboardingVerification once it exists.
+                successToast(
+                    t('peraCard.address.success_title'),
+                    t('peraCard.address.success_body'),
+                )
+            } catch {
+                errorToast(
+                    t('peraCard.address.error_title'),
+                    t('peraCard.address.error_body'),
+                )
+            }
+        })
+
+        const handleConfirm = () => {
+            void submitAddressForm()
+        }
+
+        return {
+            control,
+            errors,
+            isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
+            isSubmitting: submitAddress.isPending,
+            selectedCountry,
+            isUsResident,
+            selectedUsState,
+            allowMarketing,
+            cardTermsAccepted,
+            platformTermsAccepted,
+            handleSelectCountry,
+            handleSelectUsState,
+            handleToggleMarketing,
+            handleToggleCardTerms,
+            handleTogglePlatformTerms,
+            handleOpenCardTerms,
+            handleOpenPlatformTerms,
+            handleConfirm,
+        }
+    }

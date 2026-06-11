@@ -13,7 +13,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { submitPersonalDetails } from '../api/onboarding'
-import type { PersonalDetailsInput } from '../models'
+import { OnboardingStep, type PersonalDetailsInput } from '../models'
+import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseSubmitPersonalDetailsMutationResult =
@@ -25,6 +26,12 @@ export const useSubmitPersonalDetailsMutation =
 
         const mutation = useMutation<void, Error, PersonalDetailsInput>({
             mutationFn: details => submitPersonalDetails({ details, network }),
+            // Personal details saved: advance to the address step.
+            onSuccess: () => {
+                useCardStore
+                    .getState()
+                    .setOnboardingStep(OnboardingStep.Address)
+            },
             throwOnError: false,
         })
 

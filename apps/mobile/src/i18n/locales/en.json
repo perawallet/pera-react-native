@@ -763,9 +763,45 @@
             "confirm_button": "Continue",
             "dev_hint": "Testing only — use code {{code}}",
             "verify_error_title": "Something went wrong",
-            "verify_error_body": "We couldn't verify your phone number. Please try again.",
-            "success_title": "Phone verified",
-            "success_body": "Your phone number is confirmed."
+            "verify_error_body": "We couldn't verify your phone number. Please try again."
+        },
+        "personal_details": {
+            "navigation_title": "Personal Information",
+            "first_name_label": "First Name",
+            "last_name_label": "Last Name",
+            "dob_label": "Date of Birth DD/MM/YYYY",
+            "dob_invalid": "Enter a valid date (DD/MM/YYYY)",
+            "nationality_label": "Nationality",
+            "nationality_placeholder": "Select nationality",
+            "nationality_picker_title": "Nationality",
+            "confirm_button": "Continue",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't save your details. Please try again."
+        },
+        "address": {
+            "navigation_title": "Residential Address",
+            "country_label": "Country of Residence",
+            "city_label": "City",
+            "zip_label": "ZIP/Post Code",
+            "address_line1_label": "Address Line 1 (Street Address)",
+            "address_line2_label": "Address Line 2 (Apartment, Floor, etc.)",
+            "us_state_label": "State",
+            "us_state_placeholder": "Select state",
+            "us_state_picker_title": "State",
+            "us_state_search_placeholder": "Search states",
+            "us_state_empty_title": "No states found",
+            "us_state_empty_body": "Try a different search.",
+            "us_state_error_title": "Couldn't load states",
+            "us_state_error_body": "Please check your connection and try again.",
+            "us_state_retry": "Try again",
+            "marketing_opt_in": "Untick this box if you do not wish to receive additional communication on updates.",
+            "card_terms": "I have read and understood the Card Issue <0>Terms & Conditions</0> and accept them.",
+            "platform_terms": "I have read and understood the Platform <0>Terms & Conditions</0> and accept them.",
+            "confirm_button": "Continue",
+            "success_title": "Address saved",
+            "success_body": "Your residential address has been saved.",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't save your address. Please try again."
         }
     },
     "notifications": {

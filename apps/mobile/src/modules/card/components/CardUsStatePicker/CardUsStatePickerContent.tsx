@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import type { SupportedCountry } from '@perawallet/wallet-core-card'
+import type { SupportedUsState } from '@perawallet/wallet-core-card'
 import {
     PWButton,
     PWFlatList,
@@ -24,64 +24,50 @@ import { SheetHeader } from '@modules/bottom-sheet'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import { isoToFlagEmoji } from '../../utils/isoToFlagEmoji'
-import { useCardCountryPicker } from './useCardCountryPicker'
+import { useCardUsStatePicker } from './useCardUsStatePicker'
 import { useStyles } from './styles'
 
-export type CardCountryPickerContentProps = {
-    /** Sheet header title; defaults to the country-of-residence copy. */
-    title?: string
-}
-
-export const CardCountryPickerContent = ({
-    title,
-}: CardCountryPickerContentProps = {}) => {
+export const CardUsStatePickerContent = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
         search,
         setSearch,
-        countries,
+        states,
         isLoading,
         isError,
         refetch,
         handleSelect,
-    } = useCardCountryPicker()
+    } = useCardUsStatePicker()
 
     const renderItem = useCallback(
-        ({ item }: { item: SupportedCountry }) => (
+        ({ item }: { item: SupportedUsState }) => (
             <PWTouchableOpacity
                 style={styles.row}
                 onPress={() => handleSelect(item)}
-                testID={`card-country-${item.iso3166alpha2}`}
+                testID={`card-us-state-${item.postalAbbreviation}`}
             >
-                <PWText variant='body'>
-                    {`${isoToFlagEmoji(item.iso3166alpha2)}  ${item.name}`}
-                </PWText>
+                <PWText variant='body'>{item.name}</PWText>
             </PWTouchableOpacity>
         ),
         [handleSelect, styles.row],
     )
 
-    const keyExtractor = useCallback((item: SupportedCountry) => item.id, [])
+    const keyExtractor = useCallback((item: SupportedUsState) => item.id, [])
 
     return (
         <PWView style={styles.container}>
-            <SheetHeader
-                title={
-                    title ?? t('peraCard.create_account.country_picker_title')
-                }
-            />
+            <SheetHeader title={t('peraCard.address.us_state_picker_title')} />
 
             {isError ? (
                 <EmptyView
                     style={styles.center}
-                    title={t('peraCard.create_account.country_error_title')}
-                    body={t('peraCard.create_account.country_error_body')}
+                    title={t('peraCard.address.us_state_error_title')}
+                    body={t('peraCard.address.us_state_error_body')}
                     button={
                         <PWButton
                             variant='secondary'
-                            title={t('peraCard.create_account.country_retry')}
+                            title={t('peraCard.address.us_state_retry')}
                             onPress={refetch}
                         />
                     }
@@ -96,12 +82,12 @@ export const CardCountryPickerContent = ({
                         value={search}
                         onChangeText={setSearch}
                         placeholder={t(
-                            'peraCard.create_account.country_search_placeholder',
+                            'peraCard.address.us_state_search_placeholder',
                         )}
                     />
                     <PWFlatList
                         inBottomSheet
-                        data={countries}
+                        data={states}
                         renderItem={renderItem}
                         keyExtractor={keyExtractor}
                         style={styles.list}
@@ -109,11 +95,9 @@ export const CardCountryPickerContent = ({
                         ListEmptyComponent={
                             <EmptyView
                                 title={t(
-                                    'peraCard.create_account.country_empty_title',
+                                    'peraCard.address.us_state_empty_title',
                                 )}
-                                body={t(
-                                    'peraCard.create_account.country_empty_body',
-                                )}
+                                body={t('peraCard.address.us_state_empty_body')}
                             />
                         }
                     />
