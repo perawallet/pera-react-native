@@ -2239,6 +2239,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     truncateAlgorandAddress: vi.fn(a => a),
     stripUrlScheme: vi.fn(url => url),
     DEFAULT_PRECISION: 6,
+    ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
     ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     formatDatetime: vi.fn(d => String(d)),

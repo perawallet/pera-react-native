@@ -24,9 +24,15 @@ export type SheetHeaderProps = {
     title: ReactNode
     titleVariant?: TypographyVariant
     titleWeight?: FontWeight
-    subtitle?: string
+    subtitle?: string | ReactNode
     rightAction?: ReactNode
     onClose?: () => void
+    /**
+     * Force the close icon on/off. When omitted, the close icon shows only for
+     * full/modal sheets or when pan-down-to-close is disabled. Set `true` to
+     * show it on an auto sheet that also allows pan-down (per some designs).
+     */
+    showClose?: boolean
     paddingStyle?: 'normal' | 'dense' | 'none'
     style?: StyleProp<ViewStyle>
     testID?: string
@@ -40,6 +46,7 @@ export const SheetHeader = ({
     subtitle,
     rightAction,
     onClose,
+    showClose: showCloseProp,
     paddingStyle = 'dense',
     style,
     testID,
@@ -51,7 +58,7 @@ export const SheetHeader = ({
     const handleClose = onClose ?? dismiss
 
     const isFullScreen = size === 'full' || size === 'modal'
-    const showClose = isFullScreen || !isPanDownEnabled
+    const showClose = showCloseProp ?? (isFullScreen || !isPanDownEnabled)
 
     return (
         <PWToolbar
@@ -79,15 +86,21 @@ export const SheetHeader = ({
                         >
                             {title}
                         </PWText>
-                        <PWText
-                            variant='footnoteMedium'
-                            weight={400}
-                            truncate
-                            style={styles.subtitle}
-                            testID={testID ? `${testID}-subtitle` : undefined}
-                        >
-                            {subtitle}
-                        </PWText>
+                        {typeof subtitle !== 'string' ? (
+                            subtitle
+                        ) : (
+                            <PWText
+                                variant='footnoteMedium'
+                                weight={400}
+                                truncate
+                                style={styles.subtitle}
+                                testID={
+                                    testID ? `${testID}-subtitle` : undefined
+                                }
+                            >
+                                {subtitle}
+                            </PWText>
+                        )}
                     </PWView>
                 ) : (
                     <PWText

@@ -54,15 +54,11 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
         flexShrink: 0,
     },
-    rowAddressContainer: {
-        flexGrow: 0,
-        flexShrink: 1,
-        flexBasis: 'auto',
-        justifyContent: 'flex-end',
-    },
-    rowAddress: {
-        flex: 1,
-        textAlign: 'right',
+    // Account row label: never shrinks (RN default flexShrink 0) — the
+    // AddressDisplay value side hugs its content (`hugContent`) and truncates
+    // instead, mirroring the OnrampDetailRow address rows.
+    accountLabel: {
+        color: theme.colors.textGrayLighter,
     },
     description: {
         color: theme.colors.textMain,
