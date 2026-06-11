@@ -29,6 +29,13 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
+import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
+
+// Address returns the access token + onboarding id the verification step needs.
+const ADDRESS_RESPONSE = {
+    accessToken: 'mock-access-token',
+    onboardingId: 'mock-onboarding-id',
+}
 
 const SETTINGS_RESPONSE = {
     countries: [
@@ -70,6 +77,10 @@ const renderFlow = () =>
             {
                 name: 'CardOnboardingEmailVerify',
                 component: CardOnboardingEmailVerifyScreen,
+            },
+            {
+                name: 'CardOnboardingVerification',
+                component: CardOnboardingVerificationScreen,
             },
         ],
     })
@@ -114,14 +125,14 @@ describe('Flow: Card onboarding — residential address', () => {
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true', async () => {
+    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true and the flow advances to verification', async () => {
         let body: Record<string, unknown> | undefined
         const submitSpy = vi.fn()
         server.use(
             http.post('*/v1/auth/register/address', async ({ request }) => {
                 body = (await request.json()) as Record<string, unknown>
                 submitSpy()
-                return HttpResponse.json({}, { status: 200 })
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
             }),
         )
 
@@ -143,9 +154,11 @@ describe('Flow: Card onboarding — residential address', () => {
         })
         // No US residence, so no state is sent.
         expect(body?.usState).toBeUndefined()
-        // The address step is the terminus for now — a success toast confirms it.
+        // A successful submit advances to the verification (KYC) step.
         await waitFor(() =>
-            expect(Notifier.showNotification).toHaveBeenCalled(),
+            expect(
+                screen.getByTestId('card-onboarding-verification'),
+            ).toBeTruthy(),
         )
     })
 
@@ -169,7 +182,7 @@ describe('Flow: Card onboarding — residential address', () => {
             http.post('*/v1/auth/register/address', async ({ request }) => {
                 body = (await request.json()) as Record<string, unknown>
                 submitSpy()
-                return HttpResponse.json({}, { status: 200 })
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
             }),
         )
 
@@ -228,7 +241,7 @@ describe('Flow: Card onboarding — residential address', () => {
         server.use(
             http.post('*/v1/auth/register/address', () => {
                 submitSpy()
-                return HttpResponse.json({}, { status: 200 })
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
             }),
         )
 

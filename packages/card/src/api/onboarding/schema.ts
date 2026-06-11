@@ -47,3 +47,15 @@ export const sendEmailVerificationResponseSchema = z.object({
 export const verifyEmailResponseSchema = z.object({
     onboardingId: z.string(),
 })
+
+// POST /v1/auth/register/address — issues the bearer token the post-address
+// authenticated calls (GET /v1/user, GET /v1/user/verification) require.
+// `accessToken` is null only when US AND isSameMailingAddress=false (a mailing
+// address is still owed). The response also carries a `user` block, but the
+// verification step reads `verificationState` from GET /v1/user, so we don't
+// re-model it here.
+export const addressResponseSchema = z.object({
+    accessToken: z.string().nullable(),
+    onboardingId: z.string(),
+})
+export type AddressApiResponse = z.infer<typeof addressResponseSchema>

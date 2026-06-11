@@ -798,10 +798,27 @@
             "card_terms": "I have read and understood the Card Issue <0>Terms & Conditions</0> and accept them.",
             "platform_terms": "I have read and understood the Platform <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
-            "success_title": "Address saved",
-            "success_body": "Your residential address has been saved.",
             "error_title": "Something went wrong",
             "error_body": "We couldn't save your address. Please try again."
+        },
+        "verification": {
+            "navigation_title": "Identity Verification",
+            "title": "Verify your identity",
+            "body": "We use Veriff to confirm your identity. You'll be taken to your browser and need a photo ID and your camera. This usually takes a couple of minutes.",
+            "start_button": "Start verification",
+            "continue_button": "Continue verification",
+            "retry_button": "Try again",
+            "done_button": "Done",
+            "processing_title": "Verifying your identity",
+            "processing_body": "Hang tight — finish in your browser, then come back. This can take a moment.",
+            "submitted_title": "Identity submitted",
+            "submitted_body": "We're reviewing your identity. We'll let you know once it's confirmed.",
+            "success_title": "Identity verified",
+            "success_body": "Your identity has been confirmed.",
+            "rejected_title": "Verification unsuccessful",
+            "rejected_body": "We couldn't verify your identity. Please contact support for help.",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't start verification. Please try again."
         }
     },
     "notifications": {

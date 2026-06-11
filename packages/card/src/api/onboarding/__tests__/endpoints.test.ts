@@ -119,10 +119,12 @@ describe('onboarding endpoints', () => {
         )
     })
 
-    it('submits address with onboardingId + isSameMailingAddress', async () => {
-        request.mockResolvedValue({ data: { success: true } })
+    it('submits address and returns the issued access token + onboarding id', async () => {
+        request.mockResolvedValue({
+            data: { accessToken: 'tok', onboardingId: 'ob_1' },
+        })
 
-        await submitAddress({
+        const result = await submitAddress({
             address: {
                 onboardingId: 'ob_1',
                 addressLine1: '23 Werrington Bridge Rd',
@@ -133,6 +135,7 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
+        expect(result).toEqual({ accessToken: 'tok', onboardingId: 'ob_1' })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 path: '/v1/auth/register/address',

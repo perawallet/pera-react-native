@@ -63,7 +63,7 @@ export const useCardOnboardingAddressScreen =
     (): UseCardOnboardingAddressScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { successToast, errorToast } = useToast()
+        const { errorToast } = useToast()
         const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -209,11 +209,8 @@ export const useCardOnboardingAddressScreen =
             }
             try {
                 await submitAddress.mutateAsync(address)
-                // TODO(card): navigate to CardOnboardingVerification once it exists.
-                successToast(
-                    t('peraCard.address.success_title'),
-                    t('peraCard.address.success_body'),
-                )
+                // The mutation committed the session; continue to KYC.
+                navigation.navigate('CardOnboardingVerification')
             } catch {
                 errorToast(
                     t('peraCard.address.error_title'),

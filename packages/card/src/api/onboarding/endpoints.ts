@@ -18,6 +18,7 @@ import type {
     RegistrationSettings,
 } from '../../models'
 import {
+    addressResponseSchema,
     registrationSettingsResponseSchema,
     sendEmailVerificationResponseSchema,
     verifyEmailResponseSchema,
@@ -121,10 +122,24 @@ export const submitPersonalDetails = async (
 }
 
 export type SubmitAddressParams = NetworkParams & { address: AddressInput }
+// Unlike the other register steps, the address response matters: it carries the
+// `accessToken` that authenticates the verification (KYC) step, so we parse and
+// return it rather than discarding the body via `postRegisterStep`.
+export type SubmitAddressResult = {
+    accessToken: string | null
+    onboardingId: string
+}
 export const submitAddress = async (
     params: SubmitAddressParams,
-): Promise<void> => {
-    await postRegisterStep('/v1/auth/register/address', params.address, params)
+): Promise<SubmitAddressResult> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/auth/register/address',
+        data: params.address,
+        signal: params.signal,
+    })
+    return addressResponseSchema.parse(response.data)
 }
 
 export const fetchRegistrationSettings = async (

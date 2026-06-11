@@ -58,4 +58,14 @@ describe('useCardUserQuery', () => {
             VerificationState.Verified,
         )
     })
+
+    it('does not fetch when disabled (used to gate KYC polling)', async () => {
+        const { result } = renderHook(
+            () => useCardUserQuery({ enabled: false }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.fetchStatus).toBe('idle'))
+        expect(fetchUser).not.toHaveBeenCalled()
+    })
 })

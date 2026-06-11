@@ -12,20 +12,37 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { submitAddress } from '../api/onboarding'
+import { submitAddress, type SubmitAddressResult } from '../api/onboarding'
 import { OnboardingStep, type AddressInput } from '../models'
+import { setCardSession } from '../session'
 import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
-export type UseSubmitAddressMutationResult = CardMutationResult<AddressInput>
+export type UseSubmitAddressMutationResult = CardMutationResult<
+    AddressInput,
+    SubmitAddressResult
+>
 
 export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
     const { network } = useNetwork()
 
-    const mutation = useMutation<void, Error, AddressInput>({
+    const mutation = useMutation<SubmitAddressResult, Error, AddressInput>({
         mutationFn: address => submitAddress({ address, network }),
-        // Address saved: advance to the verification (KYC) step.
-        onSuccess: () => {
+        // The address step issues the bearer token; commit it (no refresh token
+        // mid-onboarding, like direct login) so the verification step's
+        // authenticated calls succeed, then advance to the verification step.
+        onSuccess: async result => {
+            // accessToken is null only on the US separate-mailing path, which we
+            // don't yet collect (the address screen always sends
+            // isSameMailingAddress:true).
+            // TODO(card): the US mailing-address step will issue the token; until
+            // then accessToken is always present here.
+            if (result.accessToken) {
+                await setCardSession({
+                    accessToken: result.accessToken,
+                    refreshToken: '',
+                })
+            }
             useCardStore
                 .getState()
                 .setOnboardingStep(OnboardingStep.Verification)

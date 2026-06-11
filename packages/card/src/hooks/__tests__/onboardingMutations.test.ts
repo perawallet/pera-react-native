@@ -30,6 +30,9 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/onboarding', () => api)
 
+const session = vi.hoisted(() => ({ setCardSession: vi.fn() }))
+vi.mock('../../session', () => session)
+
 import { useSendEmailVerificationMutation } from '../useSendEmailVerificationMutation'
 import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
 import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMutation'
@@ -54,6 +57,12 @@ describe('onboarding mutation hooks', () => {
         vi.clearAllMocks()
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         Object.values(api).forEach(fn => fn.mockResolvedValue(undefined))
+        // The address step returns a token-bearing body the mutation reads.
+        api.submitAddress.mockResolvedValue({
+            accessToken: 'tok',
+            onboardingId: 'ob_1',
+        })
+        session.setCardSession.mockResolvedValue(undefined)
         useCardStore.getState().resetState()
     })
 
@@ -183,14 +192,19 @@ describe('onboarding mutation hooks', () => {
         )
     })
 
-    it('useSubmitAddressMutation wraps the address with the network', async () => {
-        const address = {
+    const address = {
+        onboardingId: 'ob_1',
+        addressLine1: '23 Werrington Bridge Rd',
+        city: 'Peterborough',
+        zip: 'PE6 7PP',
+        isSameMailingAddress: true,
+    }
+
+    it('useSubmitAddressMutation commits the session token and advances to verification', async () => {
+        api.submitAddress.mockResolvedValue({
+            accessToken: 'tok',
             onboardingId: 'ob_1',
-            addressLine1: '23 Werrington Bridge Rd',
-            city: 'Peterborough',
-            zip: 'PE6 7PP',
-            isSameMailingAddress: true,
-        }
+        })
         const { result } = renderHook(() => useSubmitAddressMutation(), {
             wrapper,
         })
@@ -201,6 +215,29 @@ describe('onboarding mutation hooks', () => {
             address,
             network: 'mainnet',
         })
+        expect(session.setCardSession).toHaveBeenCalledWith({
+            accessToken: 'tok',
+            refreshToken: '',
+        })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Verification,
+        )
+    })
+
+    it('useSubmitAddressMutation skips the session commit when no token is issued', async () => {
+        // The US separate-mailing path returns accessToken: null (the mailing
+        // step issues the token); the flow still advances to verification.
+        api.submitAddress.mockResolvedValue({
+            accessToken: null,
+            onboardingId: 'ob_1',
+        })
+        const { result } = renderHook(() => useSubmitAddressMutation(), {
+            wrapper,
+        })
+        result.current.mutate(address)
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(session.setCardSession).not.toHaveBeenCalled()
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Verification,
         )

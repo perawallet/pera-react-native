@@ -15,12 +15,20 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchUser } from '../api/user'
 import { cardQueryKeys } from './querykeys'
 
+export type UseCardUserQueryOptions = {
+    enabled?: boolean
+    /** Poll interval in ms (or `false` to disable) — used to watch KYC state. */
+    refetchInterval?: number | false
+}
+
 /** `data` is the `CardUser` (or `null`); read `data?.verificationState` to gate KYC. */
-export const useCardUserQuery = () => {
+export const useCardUserQuery = (options: UseCardUserQueryOptions = {}) => {
     const { network } = useNetwork()
 
     return useQuery({
         queryKey: cardQueryKeys.user(network),
         queryFn: ({ signal }) => fetchUser({ network, signal }),
+        enabled: options.enabled,
+        refetchInterval: options.refetchInterval,
     })
 }

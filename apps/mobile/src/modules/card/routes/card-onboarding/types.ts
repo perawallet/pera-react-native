@@ -22,6 +22,7 @@ export type CardOnboardingStackParamList = {
     CardOnboardingPhoneVerify: undefined
     CardOnboardingPersonalDetails: undefined
     CardOnboardingAddress: undefined
+    CardOnboardingVerification: undefined
 }
 
 export type CardOnboardingScreenProps<

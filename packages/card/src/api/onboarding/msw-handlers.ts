@@ -13,7 +13,9 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
+    addressResponseSchema,
     registrationSettingsResponseSchema,
+    type AddressApiResponse,
     type RegistrationSettingsApiResponse,
 } from './schema'
 
@@ -30,8 +32,25 @@ export const mockVerifyPhone = (): HttpHandler =>
     successPost('*/v1/auth/register/phone/verify')
 export const mockSubmitPersonalDetails = (): HttpHandler =>
     successPost('*/v1/auth/register/personal-details')
-export const mockSubmitAddress = (): HttpHandler =>
-    successPost('*/v1/auth/register/address')
+
+// The address step returns the access token the verification step needs, so the
+// mock returns a token-bearing body by default (overridable per test).
+export type MockSubmitAddressParams = {
+    response?: AddressApiResponse
+    status?: number
+}
+export const mockSubmitAddress = ({
+    response = {
+        accessToken: 'mock-access-token',
+        onboardingId: 'mock-onboarding-id',
+    },
+    status = 200,
+}: MockSubmitAddressParams = {}): HttpHandler => {
+    validateMockResponse(addressResponseSchema, response, 'mockSubmitAddress')
+    return http.post('*/v1/auth/register/address', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
 
 export type MockGetRegistrationSettingsParams = {
     response: RegistrationSettingsApiResponse
