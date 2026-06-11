@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { logger, AppError, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    AppError,
+    bytesToHex,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
 const MAX_ERROR_LENGTH = 200
@@ -104,7 +109,7 @@ export const generateBridgeToken = (): string => {
             bytes[i] = Math.floor(Math.random() * 256)
         }
     }
-    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+    return bytesToHex(bytes)
 }
 
 /**

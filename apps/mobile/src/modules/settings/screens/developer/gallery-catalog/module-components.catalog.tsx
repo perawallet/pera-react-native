@@ -623,7 +623,7 @@ registerPreview({
 })
 
 const mockBanner: Banner = {
-    id: 1,
+    id: '1',
     type: 'governance',
     title: 'Algorand Governance',
     subtitle: 'Participate and earn rewards',

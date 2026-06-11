@@ -42,7 +42,7 @@ const buildBanner = (
     id: number,
     autoOpenMode: BannerAutoOpenMode | null = null,
 ): Banner => ({
-    id,
+    id: String(id),
     type: 'generic',
     title: `Banner ${id}`,
     subtitle: null,
@@ -89,7 +89,7 @@ describe('useHomeBannersStrip', () => {
         const { result } = renderHook(() => useHomeBannersStrip())
 
         expect(result.current.isVisible).toBe(true)
-        expect(result.current.current?.id).toBe(1)
+        expect(result.current.current?.id).toBe('1')
         expect(result.current.banners).toHaveLength(3)
         expect(result.current.additionalCount).toBe(2)
     })
@@ -120,9 +120,9 @@ describe('useHomeBannersStrip', () => {
 
         renderHook(() => useHomeBannersStrip())
 
-        expect(mockMarkAutoOpened).toHaveBeenCalledWith(42)
+        expect(mockMarkAutoOpened).toHaveBeenCalledWith('42')
         expect(mockNavigate).toHaveBeenCalledWith('BannersCarouselModal', {
-            bannerId: 42,
+            bannerId: '42',
         })
     })
 
@@ -137,9 +137,9 @@ describe('useHomeBannersStrip', () => {
 
         renderHook(() => useHomeBannersStrip())
 
-        expect(mockMarkAutoOpened).toHaveBeenCalledWith(99)
+        expect(mockMarkAutoOpened).toHaveBeenCalledWith('99')
         expect(mockNavigate).toHaveBeenCalledWith('BannersCarouselModal', {
-            bannerId: 99,
+            bannerId: '99',
         })
     })
 

@@ -19,8 +19,8 @@ import type { BannersState } from '../models'
 const STORE_NAME = 'banners-store'
 
 const initialState = {
-    dismissedBannerIds: [] as number[],
-    autoOpenedBannerIds: [] as number[],
+    dismissedBannerIds: [] as string[],
+    autoOpenedBannerIds: [] as string[],
 }
 
 export const useBannersStore: UseBoundStore<
@@ -29,26 +29,40 @@ export const useBannersStore: UseBoundStore<
     persist(
         (set, get) => ({
             ...initialState,
-            dismissBanner: (id: number) => {
+            dismissBanner: (id: string) => {
                 const current = get().dismissedBannerIds
                 if (current.includes(id)) return
                 set({ dismissedBannerIds: [...current, id] })
             },
-            isBannerDismissed: (id: number) =>
+            isBannerDismissed: (id: string) =>
                 get().dismissedBannerIds.includes(id),
-            markAutoOpened: (id: number) => {
+            markAutoOpened: (id: string) => {
                 const current = get().autoOpenedBannerIds
                 if (current.includes(id)) return
                 set({ autoOpenedBannerIds: [...current, id] })
             },
-            hasAutoOpened: (id: number) =>
+            hasAutoOpened: (id: string) =>
                 get().autoOpenedBannerIds.includes(id),
             resetState: () => set({ ...initialState }),
         }),
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
+            // v1 persisted banner ids as numbers; ids are decimal strings now,
+            // so normalize old entries or previously dismissed banners would
+            // reappear after upgrade.
+            migrate: persisted => {
+                const state = persisted as {
+                    dismissedBannerIds?: Array<string | number>
+                }
+                return {
+                    ...state,
+                    dismissedBannerIds: (state.dismissedBannerIds ?? []).map(
+                        String,
+                    ),
+                }
+            },
             // autoOpenedBannerIds is intentionally NOT persisted — it's a
             // session-scoped flag so the carousel re-prompts each launch when
             // the server still flags a banner as 'select' or 'force'.

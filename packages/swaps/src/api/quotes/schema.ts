@@ -57,12 +57,14 @@ export const createQuotesRequestSchema = z.object({
 })
 
 const quoteSchema = z.object({
-    id: z.number().optional(),
+    // Backend quote/device ids exceed 2^53; the precision-safe JSON parser
+    // delivers them as strings. quote_id_str is the canonical identity.
+    id: uint64IdSchema.optional(),
     quote_id_str: z.string().optional(),
     provider: z.string().optional(),
     swap_type: swapTypeEnum.optional(),
     swapper_address: z.string().optional(),
-    device: z.number().nullable().optional(),
+    device: uint64IdSchema.nullable().optional(),
     asset_in: dexSwapAssetSchema,
     asset_out: dexSwapAssetSchema,
     amount_in: z.string().optional(),

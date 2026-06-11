@@ -11,15 +11,14 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { z } from 'zod'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
-import {
-    spotBannerListResponseSchema,
-    type SpotBannerListResponse,
-} from './schema'
+import { spotBannerListResponseSchema } from './schema'
 
 export type MockSpotBannersParams = {
     deviceID: string
-    response: SpotBannerListResponse
+    // wire (pre-parse) shape: ids may be numbers or strings
+    response: z.input<typeof spotBannerListResponseSchema>
     status?: number
 }
 
@@ -40,7 +39,7 @@ export const mockSpotBanners = ({
 
 export type MockCloseSpotBannerParams = {
     deviceID: string
-    spotBannerID: number
+    spotBannerID: string
     status?: number
 }
 

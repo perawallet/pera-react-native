@@ -52,12 +52,8 @@ describe('injectBackupExclusion', () => {
         const twice = injectBackupExclusion(once)
 
         expect(twice).toBe(once)
-        expect(
-            twice.match(new RegExp(CALL.replace(/[()]/g, '\\$&'), 'g')),
-        ).toHaveLength(
-            // one call site + the function declaration line
-            2,
-        )
+        // one call site + the function declaration line
+        expect(twice.split(CALL).length - 1).toBe(2)
     })
 
     it('throws loudly if the AppDelegate class anchor is missing', () => {

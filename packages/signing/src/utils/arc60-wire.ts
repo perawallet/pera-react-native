@@ -11,7 +11,10 @@
  */
 
 import { z } from 'zod'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    utf8ByteLength,
+} from '@perawallet/wallet-core-shared'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import { Arc60BadRequestError } from './arc60-errors'
 
@@ -23,9 +26,6 @@ import { Arc60BadRequestError } from './arc60-errors'
 // shared by every transport that accepts one (WalletConnect bridge + the
 // in-app webview bridge). Keep the schema and limits here — do not re-declare
 // them per transport, or the two paths will drift.
-
-const byteLength = (value: string): number =>
-    new TextEncoder().encode(value).length
 
 /**
  * Hard cap on the serialized size of an ARC-60 `algo_signData` request.
@@ -41,7 +41,7 @@ export const ARC60_MAX_REQUEST_BYTES = 64 * 1024
  */
 export const assertArc60RequestWithinLimits = (rawParams: unknown): void => {
     const serialized = JSON.stringify(rawParams) ?? ''
-    if (byteLength(serialized) > ARC60_MAX_REQUEST_BYTES) {
+    if (utf8ByteLength(serialized) > ARC60_MAX_REQUEST_BYTES) {
         throw new Arc60BadRequestError(
             'request exceeds the maximum allowed size',
         )

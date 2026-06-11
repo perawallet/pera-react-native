@@ -74,7 +74,7 @@ describe('fetchSwapHistory', () => {
             params: { address: 'ADDRESS' },
         })
         expect(result.results).toHaveLength(1)
-        expect(result.results[0].id).toBe(1)
+        expect(result.results[0].id).toBe('1')
         expect(result.results[0].amountIn.toString()).toBe('1000')
         expect(result.next).toBe('next-cursor')
         expect(result.previous).toBeNull()

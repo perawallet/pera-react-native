@@ -12,13 +12,10 @@
 
 import {
     assembleSignedMultisigTransactions,
+    rawTransactionsMatch,
     type ParticipantResponse,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    decodeFromBase64,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
@@ -122,40 +119,6 @@ export const classifyHandoffPoll = (
             return { kind: 'keep-polling' }
         }
     }
-}
-
-const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean => {
-    if (a.length !== b.length) return false
-    for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) return false
-    }
-    return true
-}
-
-/**
- * True when the poll's raw transactions (flattened in list order) are
- * byte-for-byte the transactions the wallet proposed. Compared as decoded
- * bytes so cosmetic base64 differences (padding) can't cause a false
- * mismatch; undecodable entries are a mismatch. Order-sensitive on
- * purpose — the assembled output must preserve the reviewed order.
- */
-const rawTransactionsMatch = (
-    expectedBase64: string[],
-    polledBase64: string[],
-): boolean => {
-    if (expectedBase64.length !== polledBase64.length) return false
-    for (let i = 0; i < expectedBase64.length; i++) {
-        let expected: Uint8Array
-        let polled: Uint8Array
-        try {
-            expected = decodeFromBase64(expectedBase64[i])
-            polled = decodeFromBase64(polledBase64[i])
-        } catch {
-            return false
-        }
-        if (!bytesEqual(expected, polled)) return false
-    }
-    return true
 }
 
 const classifyReadyPoll = (

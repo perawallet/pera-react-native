@@ -30,6 +30,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         return mockLogger
     },
     AppError: class AppError extends Error {},
+    bytesToHex: (bytes: Uint8Array) =>
+        Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(''),
 }))
 
 vi.mock('react-native-webview', () => ({ default: {} }))

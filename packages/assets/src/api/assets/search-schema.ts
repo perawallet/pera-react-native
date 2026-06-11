@@ -16,7 +16,7 @@ import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 const collectibleSearchSchema = z.object({
     collection: z
         .object({
-            collection_id: z.number().nullable().optional(),
+            collection_id: uint64IdSchema.nullable().optional(),
             name: z.string().nullable().optional(),
         })
         .nullable()

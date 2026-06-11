@@ -19,6 +19,7 @@ import {
 import nacl from 'tweetnacl'
 import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { addTxPrefix } from './rawTransactions'
 
 /**
  * Per-participant response from the multisig backend. `signatures[i]` is
@@ -56,13 +57,6 @@ export type AssembleSignedMultisigResult =
  * bytes go in verbatim as the final value, never decoded and re-encoded.
  */
 const SIGNED_TXN_MAP_HEADER = new Uint8Array([0x82])
-
-/**
- * Algorand transaction domain-separation prefix. Each multisig participant
- * signs `"TX" || <canonical txn msgpack>`; the wire payload carries the
- * unprefixed bytes, so the prefix is re-applied for verification.
- */
-const TX_PREFIX = new Uint8Array([0x54, 0x58]) // "TX"
 
 const isAllZero = (bytes: Uint8Array): boolean => {
     for (const b of bytes) if (b !== 0) return false
@@ -214,7 +208,7 @@ export const assembleSignedMultisigTransactions = (
         // a missing signature: it means the backend paired signatures with
         // transaction bytes the participants never signed (corruption or a
         // swapped-transaction attack) — refuse to produce output for it.
-        const signedBytes = concatBytes(TX_PREFIX, rawTxBytes)
+        const signedBytes = addTxPrefix(rawTxBytes)
         let validCount = 0
         for (const [address, sigs] of sigsByAddress) {
             const sig = sigs[txIndex]

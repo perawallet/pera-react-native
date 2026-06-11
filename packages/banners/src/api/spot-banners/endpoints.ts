@@ -19,7 +19,7 @@ import {
 const getSpotBannersEndpoint = (deviceID: string) =>
     `/v1/devices/${deviceID}/spot-banners/`
 
-const getCloseSpotBannerEndpoint = (deviceID: string, spotBannerID: number) =>
+const getCloseSpotBannerEndpoint = (deviceID: string, spotBannerID: string) =>
     `/v1/devices/${deviceID}/spot-banners/${spotBannerID}/close/`
 
 export const fetchSpotBanners = async (
@@ -39,7 +39,7 @@ export const fetchSpotBanners = async (
 export const closeSpotBanner = async (
     network: Network,
     deviceID: string,
-    spotBannerID: number,
+    spotBannerID: string,
 ): Promise<void> => {
     await queryClient({
         backend: 'pera',

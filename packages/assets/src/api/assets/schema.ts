@@ -26,7 +26,8 @@ const collectibleMediaSchema = z.object({
 })
 
 const collectibleCollectionSchema = z.object({
-    id: z.number().optional(),
+    // Backend collection ids can exceed 2^53 — see uint64IdSchema.
+    id: uint64IdSchema.optional(),
     name: z.string(),
     description: z.string().optional(),
 })
