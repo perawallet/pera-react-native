@@ -140,7 +140,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(result.current.isWrongCode).toBe(false)
     })
 
-    it('verifies with the stored ids on the valid code and shows success', async () => {
+    it('verifies with the stored ids on the valid code and goes to personal details', async () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
@@ -155,12 +155,12 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
             contactVerificationId: 'mock-contact-id',
             verificationCode: MOCK_VALID_VERIFICATION_CODE,
         })
-        expect(mockSuccessToast).toHaveBeenCalled()
-        // Terminus: the verify screen does not navigate onward yet.
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith(
+            'CardOnboardingPersonalDetails',
+        )
     })
 
-    it('shows an error toast when verification fails', async () => {
+    it('shows an error toast and stays put when verification fails', async () => {
         mockVerifyMutateAsync.mockRejectedValue(new Error('nope'))
         const { result } = renderVerifyHook()
 
@@ -170,7 +170,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         })
 
         expect(mockErrorToast).toHaveBeenCalled()
-        expect(mockSuccessToast).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('routes back to verify when the onboarding id is missing', async () => {

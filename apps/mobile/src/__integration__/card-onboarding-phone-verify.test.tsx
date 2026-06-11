@@ -28,6 +28,7 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
+import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
 
 const VALID_CODE = '123456'
 
@@ -36,6 +37,14 @@ const renderVerify = () =>
     renderWithNavigation(
         CardOnboardingPhoneVerifyScreen,
         'CardOnboardingPhoneVerify',
+        {
+            additionalScreens: [
+                {
+                    name: 'CardOnboardingPersonalDetails',
+                    component: CardOnboardingPersonalDetailsScreen,
+                },
+            ],
+        },
     )
 
 describe('card onboarding — phone verify', () => {
@@ -78,7 +87,7 @@ describe('card onboarding — phone verify', () => {
         )
     })
 
-    it('verifies the phone with the valid code (auto-submit) and confirms success', async () => {
+    it('verifies the phone with the valid code (auto-submit) and advances to personal details', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
         server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
 
@@ -91,8 +100,11 @@ describe('card onboarding — phone verify', () => {
         )
 
         await waitFor(() => expect(verifySpy).toHaveBeenCalled())
+        // A successful verify advances the flow to the personal-details step.
         await waitFor(() =>
-            expect(Notifier.showNotification).toHaveBeenCalled(),
+            expect(
+                screen.getByTestId('card-onboarding-personal-details'),
+            ).toBeTruthy(),
         )
     })
 })

@@ -21,6 +21,8 @@ import { CardOnboardingEmailVerifyScreen } from '../../screens/CardOnboardingEma
 import { CardOnboardingPasswordScreen } from '../../screens/CardOnboardingPasswordScreen'
 import { CardOnboardingPhoneScreen } from '../../screens/CardOnboardingPhoneScreen'
 import { CardOnboardingPhoneVerifyScreen } from '../../screens/CardOnboardingPhoneVerifyScreen'
+import { CardOnboardingPersonalDetailsScreen } from '../../screens/CardOnboardingPersonalDetailsScreen'
+import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddressScreen'
 import { type CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
@@ -63,6 +65,18 @@ export const CardOnboardingStackNavigator = () => {
                 name='CardOnboardingPhoneVerify'
                 component={CardOnboardingPhoneVerifyScreen}
                 options={{ title: 'peraCard.verify_phone.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingPersonalDetails'
+                component={CardOnboardingPersonalDetailsScreen}
+                options={{
+                    title: 'peraCard.personal_details.navigation_title',
+                }}
+            />
+            <Stack.Screen
+                name='CardOnboardingAddress'
+                component={CardOnboardingAddressScreen}
+                options={{ title: 'peraCard.address.navigation_title' }}
             />
         </Stack.Navigator>
     )

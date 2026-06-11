@@ -13,7 +13,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { submitAddress } from '../api/onboarding'
-import type { AddressInput } from '../models'
+import { OnboardingStep, type AddressInput } from '../models'
+import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseSubmitAddressMutationResult = CardMutationResult<AddressInput>
@@ -23,6 +24,12 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
 
     const mutation = useMutation<void, Error, AddressInput>({
         mutationFn: address => submitAddress({ address, network }),
+        // Address saved: advance to the verification (KYC) step.
+        onSuccess: () => {
+            useCardStore
+                .getState()
+                .setOnboardingStep(OnboardingStep.Verification)
+        },
         throwOnError: false,
     })
 

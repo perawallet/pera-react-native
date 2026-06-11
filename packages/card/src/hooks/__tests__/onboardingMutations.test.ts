@@ -178,6 +178,9 @@ describe('onboarding mutation hooks', () => {
             details,
             network: 'mainnet',
         })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Address,
+        )
     })
 
     it('useSubmitAddressMutation wraps the address with the network', async () => {
@@ -198,5 +201,8 @@ describe('onboarding mutation hooks', () => {
             address,
             network: 'mainnet',
         })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Verification,
+        )
     })
 })
