@@ -135,4 +135,11 @@ describe('Flow: signing review safety warnings', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
+
+    // The security-guard *confirm* flow (rekey/asset-freeze → confirm → guard
+    // sheet) passes in isolation but is suite-flaky: the signing-overlay driver
+    // shows the first pending interactive request, and a leftover request from
+    // an earlier same-run test can shadow this one. A clean fix needs
+    // per-test signing-store isolation that doesn't disrupt the actor lifecycle
+    // (a plain store.resetState() does) — tracked in the test plan.
 })
