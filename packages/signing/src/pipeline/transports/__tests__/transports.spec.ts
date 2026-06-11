@@ -202,6 +202,71 @@ describe('createAlgodTransport', () => {
         ).rejects.toBeInstanceOf(NetworkChangedError)
         expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
     })
+
+    test('invokes source.callbacks.approve after successful submission', async () => {
+        const algokit = makeAlgokit('TX1')
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+            'testnet',
+        )
+        const approve = vi.fn().mockResolvedValue(undefined)
+        const source: SourceMetadata = {
+            type: 'gift-card',
+            callbacks: { approve },
+        }
+
+        const result = await transport.send(transactionResult, source)
+
+        expect(approve).toHaveBeenCalledWith(transactionResult)
+        expect(result).toEqual({ type: 'submitted', txIds: ['TX1'] })
+    })
+
+    test('returns submitted even when the approve callback throws', async () => {
+        const algokit = makeAlgokit('TX1')
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+            'testnet',
+        )
+        const approve = vi.fn().mockRejectedValue(new Error('webview gone'))
+        const source: SourceMetadata = {
+            type: 'gift-card',
+            callbacks: { approve },
+        }
+
+        const result = await transport.send(transactionResult, source)
+
+        expect(approve).toHaveBeenCalled()
+        expect(result).toEqual({ type: 'submitted', txIds: ['TX1'] })
+    })
+
+    test('does not invoke approve when submission fails', async () => {
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi
+                        .fn()
+                        .mockRejectedValue(new Error('algod down')),
+                },
+            },
+        }
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+            'testnet',
+        )
+        const approve = vi.fn()
+        const source: SourceMetadata = {
+            type: 'gift-card',
+            callbacks: { approve },
+        }
+
+        await expect(transport.send(transactionResult, source)).rejects.toThrow(
+            TransportError,
+        )
+        expect(approve).not.toHaveBeenCalled()
+    })
 })
 
 // =============================================================================

@@ -11,7 +11,7 @@
  */
 
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { toError, type Network } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Network } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
@@ -51,7 +51,7 @@ export const createAlgodTransport = (
     return {
         send: async (
             result: SigningResult,
-            _source: SourceMetadata,
+            source: SourceMetadata,
             _multisigAddress?: string,
         ): Promise<TransportResult> => {
             // Only handle transaction data
@@ -68,20 +68,38 @@ export const createAlgodTransport = (
 
             const { signed } = result.signedData
 
+            let txIds: string[]
             try {
-                const txIds = await submitAndAutoRefresh(
+                txIds = await submitAndAutoRefresh(
                     algokit,
                     encodeSignedTransactions,
                     signed,
                 )
-
-                return {
-                    type: 'submitted',
-                    txIds,
-                }
             } catch (error) {
                 const err = toError(error)
                 throw new TransportError(err.message, err)
+            }
+
+            // Notify the originator after a successful submission. Sources
+            // like gift-card route here (algod submits the payment) but
+            // still carry an approve callback that relays the outcome to
+            // an external surface (e.g. the Bidali webview's paymentSent).
+            // The submission already went through, so a failing callback
+            // must not fail the pipeline — log and return success.
+            if (source.callbacks?.approve) {
+                try {
+                    await source.callbacks.approve(result)
+                } catch (error) {
+                    logger.error(
+                        'Algod transport: approve callback failed after submission',
+                        { error },
+                    )
+                }
+            }
+
+            return {
+                type: 'submitted',
+                txIds,
             }
         },
     }
