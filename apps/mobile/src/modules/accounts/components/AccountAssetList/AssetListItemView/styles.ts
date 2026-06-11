@@ -11,12 +11,14 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getFontWeightVariant } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     amountContainer: {
         alignItems: 'flex-end',
     },
     primaryAmount: {
+        ...getFontWeightVariant(theme, 'h4', 500),
         textAlign: 'right',
     },
     secondaryAmount: {

@@ -15,7 +15,6 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         container: {
-            backgroundColor: theme.colors.layerGrayLightest,
             borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGray,
             borderRadius: theme.spacing.lg,

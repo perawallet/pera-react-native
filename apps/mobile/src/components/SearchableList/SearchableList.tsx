@@ -21,6 +21,7 @@ import {
     type PWFlatListRef,
 } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
+import { SearchInputTrigger } from '@components/SearchInputTrigger'
 import {
     isHeaderSentinel,
     isSearchSentinel,
@@ -32,7 +33,6 @@ import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { type Maybe } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
-const NOOP = () => {}
 // testID for the real (focusable) overlay input; the sticky bar is a
 // non-interactive display mirror.
 const SEARCH_INPUT_TEST_ID = 'searchable-list-search-input'
@@ -197,30 +197,24 @@ const SearchableListInner = <T,>(
             }
             if (isSearchSentinel(info.item)) {
                 // Display mirror: the same SearchInput so it looks identical to
-                // the overlay, but non-interactive
+                // the overlay, but non-interactive. Keyboard dismiss is off so
+                // it doesn't fight handleEnterSearch focusing the overlay.
                 return (
                     <PWView style={styles.searchSticky}>
-                        <Pressable
+                        <SearchInputTrigger
                             onPress={handleEnterSearch}
+                            value={currentValue}
+                            placeholder={searchPlaceholder}
+                            SearchInputComponent={SearchInputComponent}
+                            displayStyle={
+                                showOverlay
+                                    ? styles.searchOverlayHidden
+                                    : undefined
+                            }
+                            dismissKeyboardOnPress={false}
                             accessibilityElementsHidden
                             importantForAccessibility='no-hide-descendants'
-                        >
-                            <PWView
-                                pointerEvents='none'
-                                style={
-                                    showOverlay
-                                        ? styles.searchOverlayHidden
-                                        : undefined
-                                }
-                            >
-                                <SearchInputComponent
-                                    value={currentValue}
-                                    placeholder={searchPlaceholder}
-                                    onFocus={NOOP}
-                                    onChangeText={NOOP}
-                                />
-                            </PWView>
-                        </Pressable>
+                        />
                         {/* Transparent tap target over the visible clear (X):
                             clears in place without pinning. Rendered last so it
                             sits above the body Pressable. */}

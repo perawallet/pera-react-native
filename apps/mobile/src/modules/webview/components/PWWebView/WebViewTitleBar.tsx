@@ -12,9 +12,11 @@
 
 import { useMemo } from 'react'
 import { PWIcon } from '@components/core/PWIcon'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWText } from '@components/core/PWText'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type WebViewTitleBarProps = {
     title: string
@@ -38,12 +40,16 @@ export const WebViewTitleBar = ({
     return (
         <PWView style={styles.titleBar}>
             <PWView style={styles.titleIconContainer}>
-                <PWIcon
-                    name='cross'
+                <PWTouchableOpacity
+                    {...getTestProps('webview_close_button')}
                     onPress={onCloseRequested}
-                    variant='primary'
-                    size='md'
-                />
+                >
+                    <PWIcon
+                        name='cross'
+                        variant='primary'
+                        size='md'
+                    />
+                </PWTouchableOpacity>
             </PWView>
             <PWView style={styles.titleBarTextContainer}>
                 <PWText

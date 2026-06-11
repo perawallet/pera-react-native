@@ -96,6 +96,16 @@ export const emailSendSchema = z.object({
 
 export type EmailSendFormValues = z.infer<typeof emailSendSchema>
 
+/** Validation for the phone-send onboarding step (calling code + number). */
+export const phoneSendSchema = z.object({
+    /** International dialing code, digits only, no leading '+'. */
+    phoneCountryCode: z.string().min(1).regex(/^\d+$/),
+    /** National phone number, digits only. */
+    phoneNumber: z.string().trim().min(4).regex(/^\d+$/),
+})
+
+export type PhoneSendFormValues = z.infer<typeof phoneSendSchema>
+
 /**
  * "Special character" = any non-alphanumeric character. Extracted into a named
  * constant so the password rule reads clearly — inline, the negated class is
@@ -128,3 +138,88 @@ export const passwordSetSchema = z
     })
 
 export type PasswordSetFormValues = z.infer<typeof passwordSetSchema>
+
+/** Display format for the date of birth field, e.g. `27/02/1986`. */
+const DOB_DISPLAY_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})$/
+
+/** Oldest plausible birth year; anything earlier is treated as a typo. */
+const DOB_MIN_YEAR = 1900
+
+/**
+ * True when a `DD/MM/YYYY` string is a real, non-future calendar date no earlier
+ * than 1900. Round-trips through `Date` so impossible dates (e.g. `31/02/1990`)
+ * are rejected. The 18+ minimum-age rule is enforced by Baanx, not here.
+ */
+const isValidPastDob = (value: string): boolean => {
+    const match = DOB_DISPLAY_REGEX.exec(value)
+    if (!match) return false
+    const [, dd, mm, yyyy] = match
+    const day = Number(dd)
+    const month = Number(mm)
+    const year = Number(yyyy)
+    if (year < DOB_MIN_YEAR) return false
+    const date = new Date(year, month - 1, day)
+    const isRealDate =
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day
+    return isRealDate && date.getTime() <= Date.now()
+}
+
+/** Validation for the personal-details onboarding step. */
+export const personalDetailsSchema = z.object({
+    firstName: z.string().trim().min(1),
+    lastName: z.string().trim().min(1),
+    /** Display format `DD/MM/YYYY`; converted to ISO before submission. */
+    dateOfBirth: z.string().refine(isValidPastDob),
+    /** ISO 3166-1 alpha-2 of the selected nationality. */
+    countryOfNationality: z.string().length(2),
+})
+
+export type PersonalDetailsFormValues = z.infer<typeof personalDetailsSchema>
+
+/**
+ * Masks raw keyboard input into the `DD/MM/YYYY` shape as the user types: keeps
+ * digits only, inserts `/` after the day and month, and caps at 8 digits.
+ */
+export const formatDobInput = (raw: string): string => {
+    const digits = raw.replace(/\D/g, '').slice(0, 8)
+    const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)]
+    return parts.filter(part => part.length > 0).join('/')
+}
+
+/** Converts a validated `DD/MM/YYYY` string to the API's ISO `YYYY-MM-DD`. */
+export const dobToIsoDate = (ddmmyyyy: string): string => {
+    const [dd, mm, yyyy] = ddmmyyyy.split('/')
+    return `${yyyy}-${mm}-${dd}`
+}
+
+/** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */
+const US_ISO = 'US'
+
+/**
+ * Validation for the residential-address onboarding step. `countryIso` is the
+ * editable residence country — it drives the US-state requirement but is NOT
+ * part of the address request (the API derives it from the onboarding session).
+ * `usState` is required only for US residents.
+ */
+export const addressSchema = z
+    .object({
+        countryIso: z.string().length(2),
+        addressLine1: z.string().trim().min(1),
+        addressLine2: z.string().trim().optional(),
+        city: z.string().trim().min(1),
+        zip: z.string().trim().min(1),
+        usState: z.string().optional(),
+    })
+    .superRefine((values, ctx) => {
+        if (values.countryIso === US_ISO && !values.usState) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['usState'],
+                message: 'us-state-required',
+            })
+        }
+    })
+
+export type AddressFormValues = z.infer<typeof addressSchema>

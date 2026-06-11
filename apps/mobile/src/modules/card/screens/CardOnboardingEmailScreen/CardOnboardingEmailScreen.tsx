@@ -41,7 +41,7 @@ export const CardOnboardingEmailScreen = () => {
                         name='email'
                         render={({
                             field: { onChange, onBlur, value },
-                            fieldState: { isTouched, error },
+                            fieldState: { error },
                         }) => (
                             <PWInput
                                 label={t('peraCard.create_account.email_label')}
@@ -56,12 +56,11 @@ export const CardOnboardingEmailScreen = () => {
                                 autoCapitalize='none'
                                 autoCorrect={false}
                                 returnKeyType='next'
+                                showErrorOnBlur
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
                                 errorMessage={
-                                    // Only after the field is blurred (and not
-                                    // while empty), so we don't error mid-typing.
-                                    isTouched && error && value
+                                    error && value
                                         ? t(
                                               'peraCard.create_account.email_invalid',
                                           )

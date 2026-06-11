@@ -132,17 +132,20 @@ export class SyncService {
         try {
             const activeNetwork = useNetworkStore.getState().network
             let networksToSync: Network[]
+            let shouldRefreshRound: Nullable<number> = null
 
             if (!this.hasCompletedInitialSync) {
                 // First tick: force-sync the active network to ensure DB is populated
                 networksToSync = [activeNetwork]
                 this.hasCompletedInitialSync = true
             } else {
-                networksToSync = await this.checkShouldRefresh(activeNetwork)
+                const check = await this.checkShouldRefresh(activeNetwork)
+                networksToSync = check.networks
+                shouldRefreshRound = check.round
             }
 
             if (networksToSync.length > 0) {
-                await this.syncAll(networksToSync)
+                await this.syncAll(networksToSync, shouldRefreshRound)
             }
 
             // Reset interval on success
@@ -166,16 +169,24 @@ export class SyncService {
         this.timer = setTimeout(() => void this.tick(), this.currentInterval)
     }
 
+    /**
+     * Ask the backend whether any watched address has activity newer than the
+     * checkpoint. Deliberately does NOT advance the checkpoint here — that
+     * happens in {@link advanceLastRefreshedRound} only after the sync pass
+     * actually observed the new state. Advancing up front loses updates: if
+     * the data source still lags the backend-reported round when we read it,
+     * every subsequent tick asks "anything since round R?" and is told no,
+     * so the stale balances stick until unrelated on-chain activity.
+     */
     private async checkShouldRefresh(
         activeNetwork: Network,
-    ): Promise<Network[]> {
+    ): Promise<{ networks: Network[]; round: Nullable<number> }> {
         const accounts = useAccountsStore.getState().accounts
         const addresses = accounts.map(a => a.address)
 
-        if (addresses.length === 0) return []
+        if (addresses.length === 0) return { networks: [], round: null }
 
-        const { lastRefreshedRound, setLastRefreshedRound } =
-            usePollingStore.getState()
+        const { lastRefreshedRound } = usePollingStore.getState()
 
         const neverSynced = lastRefreshedRound[activeNetwork] === null
 
@@ -187,19 +198,63 @@ export class SyncService {
             )
 
             if (result.refresh || neverSynced) {
-                setLastRefreshedRound(activeNetwork, result.round ?? null)
-                return [activeNetwork]
+                return {
+                    networks: [activeNetwork],
+                    round: result.round ?? null,
+                }
             }
         } catch {
             if (neverSynced) {
-                return [activeNetwork]
+                return { networks: [activeNetwork], round: null }
             }
         }
 
-        return []
+        return { networks: [], round: null }
     }
 
-    private async syncAll(networks: Network[]): Promise<void> {
+    /**
+     * Move the should-refresh checkpoint forward after an account pass.
+     *
+     * Only advances when every account fetch succeeded — a failed fetch means
+     * that account's new state was not persisted, so the checkpoint must stay
+     * put and the next tick retries. Advances to the minimum round the
+     * fetches observed (state at round X covers all activity ≤ X), falling
+     * back to the backend-reported round only when no fetch reported one.
+     * If the observed round still trails the backend's, the next tick's
+     * should-refresh answers yes again and the sync retries until the data
+     * source catches up.
+     */
+    private advanceLastRefreshedRound(
+        network: Network,
+        accountResults: PromiseSettledResult<
+            Awaited<ReturnType<typeof fetchAndPersistAccount>>
+        >[],
+        fallbackRound: Nullable<number>,
+    ): void {
+        if (accountResults.length === 0) return
+        if (accountResults.some(r => r.status === 'rejected')) return
+
+        const observedRounds = accountResults
+            .map(r =>
+                r.status === 'fulfilled'
+                    ? (r.value?.observedRound ?? null)
+                    : null,
+            )
+            .filter((round): round is number => round !== null)
+
+        const round =
+            observedRounds.length > 0
+                ? Math.min(...observedRounds)
+                : fallbackRound
+        if (round === null) return
+
+        usePollingStore.getState().setLastRefreshedRound(network, round)
+    }
+
+    private async syncAll(
+        networks: Network[],
+        shouldRefreshRound: Nullable<number> = null,
+    ): Promise<void> {
         const accounts = useAccountsStore.getState().accounts
         let hasRateLimitError = false
 
@@ -217,6 +272,14 @@ export class SyncService {
             if (this.hasRateLimitFailure(accountResults)) {
                 hasRateLimitError = true
             }
+
+            // The checkpoint only moves once this pass has demonstrably
+            // persisted state covering it — see advanceLastRefreshedRound.
+            this.advanceLastRefreshedRound(
+                network,
+                accountResults,
+                shouldRefreshRound,
+            )
 
             // Only invalidate the accounts whose balance/holdings actually
             // changed — invalidation forces a wide DB re-read per account, so

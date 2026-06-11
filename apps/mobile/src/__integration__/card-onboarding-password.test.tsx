@@ -27,12 +27,31 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPasswordScreen } from '@modules/card/screens/CardOnboardingPasswordScreen'
+import { CardOnboardingEmailScreen } from '@modules/card/screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
+import { CardOnboardingPhoneScreen } from '@modules/card/screens/CardOnboardingPhoneScreen'
 
 const VALID_PASSWORD = 'Passw0rd!'
 
+// GET /v1/auth/settings — consumed by the phone screen the password step
+// advances to, to preselect the residence country's calling code.
+const SETTINGS_RESPONSE = {
+    countries: [
+        {
+            id: 'gb',
+            iso3166alpha2: 'GB',
+            name: 'United Kingdom',
+            callingCode: '44',
+            canSignUp: true,
+        },
+    ],
+    usStates: [],
+}
+
 // The screen reads the flow's data from the store (no nav params), so seed it.
-// EmailVerify is registered so the "missing code" guard can route back to it.
+// Email is registered so the "missing email-step data" guard can restart there,
+// EmailVerify so the "missing code" guard can route back to it, and Phone so a
+// successful submit can advance to it.
 const renderPassword = () =>
     renderWithNavigation(
         CardOnboardingPasswordScreen,
@@ -40,8 +59,16 @@ const renderPassword = () =>
         {
             additionalScreens: [
                 {
+                    name: 'CardOnboardingEmail',
+                    component: CardOnboardingEmailScreen,
+                },
+                {
                     name: 'CardOnboardingEmailVerify',
                     component: CardOnboardingEmailVerifyScreen,
+                },
+                {
+                    name: 'CardOnboardingPhone',
+                    component: CardOnboardingPhoneScreen,
                 },
             ],
         },
@@ -54,17 +81,22 @@ describe('card onboarding — password', () => {
         store.resetState()
         store.setEmail('john@example.com')
         store.setCountryIso('GB')
-        store.setVerificationCode('PERA123')
+        store.setVerificationCode('123456')
         store.setContactVerificationId('mock-contact-id')
     })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('submits email/verify only once the password is valid and matches', async () => {
+    it('submits email/verify once the password is valid, then advances to the phone step', async () => {
         const verifySpy = vi.fn(() =>
             HttpResponse.json({ onboardingId: 'mock' }, { status: 200 }),
         )
-        server.use(http.post('*/v1/auth/register/email/verify', verifySpy))
+        server.use(
+            http.post('*/v1/auth/register/email/verify', verifySpy),
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
+        )
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
@@ -72,13 +104,15 @@ describe('card onboarding — password', () => {
             'card-onboarding-confirm-password-input',
         )
 
-        // Mismatched confirmation surfaces an error and blocks submission.
+        // Mismatched confirmation surfaces an error (only after the confirm
+        // field is blurred) and blocks submission.
         fireEvent.change(password, { target: { value: VALID_PASSWORD } })
         fireEvent.change(confirm, { target: { value: 'different' } })
-        fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
+        fireEvent.blur(confirm)
         await waitFor(() =>
             expect(confirm.getAttribute('errormessage')).toBeTruthy(),
         )
+        fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
         expect(verifySpy).not.toHaveBeenCalled()
 
         // Once the confirmation matches, the form validates (error clears, the
@@ -89,6 +123,11 @@ describe('card onboarding — password', () => {
         )
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
         await waitFor(() => expect(verifySpy).toHaveBeenCalled())
+
+        // A successful verify advances the flow to the phone entry screen.
+        await waitFor(() =>
+            expect(screen.getByTestId('card-onboarding-phone')).toBeTruthy(),
+        )
     })
 
     it('routes back to verify (without calling email/verify) when the code is missing', async () => {
@@ -117,6 +156,44 @@ describe('card onboarding — password', () => {
         await waitFor(() =>
             expect(
                 screen.getByTestId('card-onboarding-email-verify'),
+            ).toBeTruthy(),
+        )
+        expect(verifySpy).not.toHaveBeenCalled()
+    })
+
+    it('restarts at the email step (without calling email/verify) when the contact verification id is missing', async () => {
+        const verifySpy = vi.fn(() =>
+            HttpResponse.json({ onboardingId: 'mock' }, { status: 200 }),
+        )
+        server.use(
+            http.post('*/v1/auth/register/email/verify', verifySpy),
+            // The email screen the guard restarts at loads the country list.
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
+        )
+
+        // The contactVerificationId is issued by the email/send call on the
+        // first screen; without it we can't verify, so the guard must restart
+        // the flow at the email step rather than POSTing an empty id.
+        useCardStore.getState().setContactVerificationId(null)
+
+        renderPassword()
+        const password = screen.getByTestId('card-onboarding-password-input')
+        const confirm = screen.getByTestId(
+            'card-onboarding-confirm-password-input',
+        )
+        fireEvent.change(password, { target: { value: VALID_PASSWORD } })
+        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
+        await waitFor(() =>
+            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
+        )
+        fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
+
+        // The guard lands the user back on the email entry screen.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-email-input'),
             ).toBeTruthy(),
         )
         expect(verifySpy).not.toHaveBeenCalled()

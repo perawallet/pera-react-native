@@ -12,39 +12,64 @@
 
 import { useMemo } from 'react'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    useAssetsQuery,
+    type DisplayableAsset,
+} from '@perawallet/wallet-core-assets'
+import { type Optional } from '@perawallet/wallet-core-shared'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type SwapAssetSelectorProps = {
-    assetId: string
-    variant: 'pay' | 'receive'
+type SwapAssetSelectorVariant = 'pay' | 'receive'
+
+type SwapAssetSelectorBaseProps = {
+    variant: SwapAssetSelectorVariant
     onPress: () => void
+    testID?: string
 }
 
-export const SwapAssetSelector = ({
-    assetId,
+export type SwapAssetSelectorProps = SwapAssetSelectorBaseProps &
+    (
+        | { assetId: string }
+        | {
+              /** Pre-resolved asset, bypassing `useAssetsQuery`. */
+              asset: Optional<DisplayableAsset>
+              /** Label shown next to the icon (e.g. token symbol). */
+              label: string
+              /** Direct logo URL, forwarded to `AssetIcon`. */
+              logoUrl?: string
+          }
+    )
+
+type SwapAssetSelectorContentProps = SwapAssetSelectorBaseProps & {
+    asset: Optional<DisplayableAsset>
+    label: string
+    logoUrl?: string
+}
+
+const SwapAssetSelectorContent = ({
     variant,
     onPress,
-}: SwapAssetSelectorProps) => {
-    const { t } = useLanguage()
+    testID,
+    asset,
+    label,
+    logoUrl,
+}: SwapAssetSelectorContentProps) => {
     const styles = useStyles({ variant })
-
-    const { data: assets } = useAssetsQuery([assetId])
-
-    const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     return (
         <PWTouchableOpacity
             style={styles.container}
             onPress={onPress}
+            testID={testID}
         >
             <PWView style={styles.content}>
                 {asset ? (
                     <>
                         <AssetIcon
                             asset={asset}
+                            logoUrl={logoUrl}
                             style={styles.icon}
                         />
                         <PWText
@@ -52,7 +77,7 @@ export const SwapAssetSelector = ({
                             truncate
                             style={styles.assetName}
                         >
-                            {asset.unitName}
+                            {label}
                         </PWText>
                     </>
                 ) : (
@@ -61,11 +86,40 @@ export const SwapAssetSelector = ({
                         truncate
                         style={styles.assetName}
                     >
-                        {t('swap.form.select_asset')}
+                        {label}
                     </PWText>
                 )}
                 <PWIcon name='chevron-right' />
             </PWView>
         </PWTouchableOpacity>
     )
+}
+
+type SwapAssetSelectorByIdProps = SwapAssetSelectorBaseProps & {
+    assetId: string
+}
+
+const SwapAssetSelectorById = ({
+    assetId,
+    ...rest
+}: SwapAssetSelectorByIdProps) => {
+    const { t } = useLanguage()
+    const { data: assets } = useAssetsQuery([assetId])
+    const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
+
+    return (
+        <SwapAssetSelectorContent
+            {...rest}
+            asset={asset}
+            label={asset?.unitName ?? t('swap.form.select_asset')}
+        />
+    )
+}
+
+export const SwapAssetSelector = (props: SwapAssetSelectorProps) => {
+    if ('assetId' in props) {
+        return <SwapAssetSelectorById {...props} />
+    }
+
+    return <SwapAssetSelectorContent {...props} />
 }

@@ -75,6 +75,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const defaultAssetRequest = {
+    totalAmount: new Decimal(250),
     asset: {
         assetId: '123',
         name: 'Test Asset',
@@ -137,6 +138,21 @@ describe('useClaimProcessingScreen', () => {
             expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
                 transactionId: 'tx-id-123',
                 variant: 'claim',
+            })
+        })
+
+        it('passes the claimed amount to the send flow so it can credit optimistically', async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-123')
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(mockExecute).toHaveBeenCalledWith({
+                params: expect.objectContaining({
+                    sendMode: 'claimArc59',
+                    amount: new Decimal(250),
+                }),
             })
         })
 

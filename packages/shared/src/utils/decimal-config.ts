@@ -36,6 +36,12 @@ export const initDecimalConfig = () => {
 initDecimalConfig()
 
 /**
+ * Shared zero constant. Decimal instances are immutable, so reuse this instead
+ * of allocating `new Decimal(0)` at call sites.
+ */
+export const ZERO_DECIMAL = new Decimal(0)
+
+/**
  * Null-safe equality check for two Decimal values.
  * Returns true if both are null, or both are non-null and numerically equal.
  */

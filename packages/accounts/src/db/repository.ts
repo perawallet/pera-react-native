@@ -190,6 +190,64 @@ export async function insertAssetHolding({
         .run()
 }
 
+type AddToAssetHoldingParams = {
+    db?: Database
+    accountAddress: string
+    assetId: string
+    network: string
+    /** Amount to credit, in base units. */
+    amount: Decimal
+}
+
+/**
+ * Optimistically credit an asset holding: insert the row if the account
+ * doesn't hold the asset yet, otherwise add to the persisted amount.
+ *
+ * Used by wallet-initiated flows (e.g. claiming from the ARC-59 inbox) to
+ * surface the expected post-transaction balance immediately, before the
+ * chain/indexer reflect it. The next account sync's full-diff refresh
+ * replaces the row with chain truth, so an optimistic credit can never stick
+ * around wrong. The read-modify-write is safe on the single serialized
+ * SQLite connection.
+ */
+export async function addToAssetHolding({
+    db = getDatabase(),
+    accountAddress,
+    assetId,
+    network,
+    amount,
+}: AddToAssetHoldingParams): Promise<void> {
+    const conditions = and(
+        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+        eq(AccountAssetHoldingsSchema.network, network),
+        eq(AccountAssetHoldingsSchema.assetId, new Decimal(assetId)),
+    )
+
+    const existing = await db
+        .select({ amount: AccountAssetHoldingsSchema.amount })
+        .from(AccountAssetHoldingsSchema)
+        .where(conditions)
+        .all()
+
+    const prior = existing[0]?.amount
+    if (prior === undefined) {
+        await insertAssetHolding({
+            db,
+            accountAddress,
+            assetId,
+            network,
+            amount: amount.toString(),
+        })
+        return
+    }
+
+    await db
+        .update(AccountAssetHoldingsSchema)
+        .set({ amount: prior.plus(amount), updatedAt: Date.now() })
+        .where(conditions)
+        .run()
+}
+
 export type AccountHoldingsFilters = {
     /** When true, rows with amount === 0 are excluded. */
     hideZeroBalance?: boolean

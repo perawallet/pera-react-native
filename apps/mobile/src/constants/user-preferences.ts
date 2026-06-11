@@ -23,6 +23,8 @@ export const UserPreferences = {
 
     expressSendWarningDismissed: 'express-send-warning-dismissed',
     swapIntroductionSeen: 'swap-introduction-seen',
+    onrampIntroductionSeen: 'onramp-introduction-seen',
+    onrampXoTermsAccepted: 'onramp-xo-terms-accepted',
 
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
     _securityPinSetupPrompt: 'security_pin_setup_prompt',
@@ -39,5 +41,7 @@ export const OneTimeUserPreferenceFlags = [
     UserPreferences.stakingDisclaimerAccepted,
     UserPreferences.expressSendWarningDismissed,
     UserPreferences.swapIntroductionSeen,
+    UserPreferences.onrampIntroductionSeen,
+    UserPreferences.onrampXoTermsAccepted,
     UserPreferences._securityPinSetupPrompt,
 ] as const

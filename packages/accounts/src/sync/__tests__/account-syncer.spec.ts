@@ -34,10 +34,20 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     })),
 }))
 
+// Mocked so the resetModules loop below doesn't re-evaluate the real assets
+// package graph on every test — under full-suite parallel load that import
+// alone can blow the test timeout.
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    ALGO_ASSET_ID: '0',
+    fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
+    fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('../../db', () => ({
     upsertAccountBalance: vi.fn(),
     refreshAccountHoldings: vi.fn().mockResolvedValue(true),
     getAccountBalance: vi.fn().mockResolvedValue(undefined),
+    getAccountHoldings: vi.fn().mockResolvedValue([]),
 }))
 
 describe('fetchAndPersistAccount', () => {

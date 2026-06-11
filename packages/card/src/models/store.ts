@@ -27,10 +27,20 @@ export type CardUxState = BaseStoreState & {
      * and never persisted (excluded from `partialize`).
      */
     verificationCode: Nullable<string>
+    /** Phone dialing code (no leading '+') entered on the phone/send step. */
+    phoneCountryCode: Nullable<string>
+    /** National phone number entered on the phone/send step. */
+    phoneNumber: Nullable<string>
     /** Returned by email/send; required by email/verify and phone/send. */
     contactVerificationId: Nullable<string>
     /** Returned by email/verify; required by every later registration step. */
     onboardingId: Nullable<string>
+    /**
+     * Marketing-communication opt-in captured on the address step.
+     * TODO(card): confirm with backend how to transmit it — `email/verify`
+     * accepts `allowMarketing`, but it fires before this consent is collected.
+     */
+    allowMarketing: boolean
     cardId: Nullable<string>
     lastKnownStatus: Nullable<CardStatus>
     /** PCI-safe render hint shown before the status query resolves. */
@@ -40,8 +50,10 @@ export type CardUxState = BaseStoreState & {
     setEmail: (email: Nullable<string>) => void
     setCountryIso: (countryIso: Nullable<string>) => void
     setVerificationCode: (verificationCode: Nullable<string>) => void
+    setPhone: (phone: { phoneCountryCode: string; phoneNumber: string }) => void
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void
+    setAllowMarketing: (allowMarketing: boolean) => void
     setCardSnapshot: (snapshot: {
         cardId: string
         status: CardStatus

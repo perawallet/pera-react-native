@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getFontWeightVariant } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
     return {
@@ -43,14 +44,21 @@ export const useStyles = makeStyles(theme => {
             flexShrink: 1,
         },
         titleText: {
+            ...getFontWeightVariant(theme, 'h4', 500),
             flexShrink: 1,
         },
         suspiciousTitle: {
+            ...getFontWeightVariant(theme, 'h4', 500),
             color: theme.colors.error,
             flexShrink: 1,
         },
         subtitle: {
             color: theme.colors.textGray,
+        },
+        // Hug the text so the copy touchable doesn't stretch across the row's
+        // full width and swallow taps meant for the row (navigation).
+        copyableSubtitle: {
+            alignSelf: 'flex-start',
         },
         rightSlot: {
             marginLeft: theme.spacing.md,

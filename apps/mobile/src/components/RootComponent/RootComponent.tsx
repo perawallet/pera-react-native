@@ -22,7 +22,10 @@ import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSyncNewAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
@@ -111,6 +114,10 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     useDeviceRegistration(addresses)
     useSyncMultisigAccountsOnNetworkSwitch()
+    // Accounts added mid-session (import/create/watch/discovery) get an
+    // immediate fetch + asset/price enrichment — the gated background poll
+    // never picks up an account whose activity predates its checkpoint.
+    useSyncNewAccounts()
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {

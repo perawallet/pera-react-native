@@ -173,6 +173,7 @@ export const SearchScreen = () => {
                 containerStyle={styles.searchContainer}
                 inputContainerStyle={styles.searchField}
                 testID='search_input'
+                autoFocus
             />
             <PWFlatList
                 key={listKey}

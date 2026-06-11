@@ -51,6 +51,21 @@ describe('useCardStore', () => {
         expect(result.current.verificationCode).toBe('PERA123')
     })
 
+    test('setPhone stores the phone inputs', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() =>
+            result.current.setPhone({
+                phoneCountryCode: '44',
+                phoneNumber: '7400846282',
+            }),
+        )
+
+        expect(result.current.phoneCountryCode).toBe('44')
+        expect(result.current.phoneNumber).toBe('7400846282')
+    })
+
     test('resetState clears the onboarding contact inputs', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
@@ -59,12 +74,29 @@ describe('useCardStore', () => {
             result.current.setEmail('john@example.com')
             result.current.setCountryIso('GB')
             result.current.setVerificationCode('PERA123')
+            result.current.setPhone({
+                phoneCountryCode: '44',
+                phoneNumber: '7400846282',
+            })
         })
         act(() => result.current.resetState())
 
         expect(result.current.email).toBeNull()
         expect(result.current.countryIso).toBeNull()
         expect(result.current.verificationCode).toBeNull()
+        expect(result.current.phoneCountryCode).toBeNull()
+        expect(result.current.phoneNumber).toBeNull()
+    })
+
+    test('setAllowMarketing updates the consent flag (defaults to opted-in)', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        expect(result.current.allowMarketing).toBe(true)
+
+        act(() => result.current.setAllowMarketing(false))
+
+        expect(result.current.allowMarketing).toBe(false)
     })
 
     test('setCardSnapshot stores the non-sensitive card hint', async () => {

@@ -19,26 +19,30 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    CARD_VERIFICATION_CODE_LENGTH,
+    MOCK_VALID_VERIFICATION_CODE,
+} from '../cardVerificationConstants'
 
 /** Seconds the user must wait before the verification email can be re-sent. */
 const RESEND_COOLDOWN_SECONDS = 60
 
-/**
- * Dev-only stand-in for the real verification code. Until the Baanx verify
- * contract is wired up, a code matching this (case-insensitive) is treated as
- * correct and anything else surfaces the "wrong code" error.
- */
-export const MOCK_VALID_VERIFICATION_CODE = 'PERA123'
-
 export type UseCardOnboardingEmailVerifyScreenResult = {
     code: string
+    /** The address the code was sent to, shown in the screen copy. */
+    email: string
     onChangeCode: (text: string) => void
     isValid: boolean
     isWrongCode: boolean
     secondsRemaining: number
     canResend: boolean
     handleResend: () => void
-    handleConfirm: () => void
+    /**
+     * `submittedCode` is passed by `PWCodeInput`'s `onComplete` (auto-submit),
+     * carrying the just-completed value because `code` state hasn't re-rendered
+     * yet. The button/keyboard call it with no arg and use the settled state.
+     */
+    handleConfirm: (submittedCode?: string) => void
 }
 
 export const useCardOnboardingEmailVerifyScreen =
@@ -90,20 +94,25 @@ export const useCardOnboardingEmailVerifyScreen =
         // The real email/verify (which sets the password and completes
         // verification) runs on the password screen, so a valid code just
         // stores itself and carries forward to it.
-        const handleConfirm = useCallback(() => {
-            if (!trimmedCode) return
-            if (trimmedCode.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
-                setIsWrongCode(true)
-                return
-            }
-            setVerificationCode(trimmedCode)
-            navigation.navigate('CardOnboardingPassword')
-        }, [trimmedCode, navigation, setVerificationCode])
+        const handleConfirm = useCallback(
+            (submittedCode?: string) => {
+                const value = (submittedCode ?? code).trim()
+                if (!value) return
+                if (value.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
+                    setIsWrongCode(true)
+                    return
+                }
+                setVerificationCode(value)
+                navigation.navigate('CardOnboardingPassword')
+            },
+            [code, navigation, setVerificationCode],
+        )
 
         return {
             code,
+            email: email ?? '',
             onChangeCode,
-            isValid: trimmedCode.length > 0,
+            isValid: trimmedCode.length === CARD_VERIFICATION_CODE_LENGTH,
             isWrongCode,
             secondsRemaining,
             canResend: !isActive,

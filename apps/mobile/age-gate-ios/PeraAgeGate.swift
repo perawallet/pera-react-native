@@ -1,5 +1,6 @@
 import Foundation
 import React
+import UIKit
 
 #if canImport(DeclaredAgeRange)
 import DeclaredAgeRange
@@ -25,10 +26,15 @@ class PeraAgeGate: NSObject {
                        rejecter reject: @escaping RCTPromiseRejectBlock) {
     if #available(iOS 26.0, *) {
       Task { @MainActor in
+        // requestAgeRange anchors its system UI to a view controller.
+        guard let anchor = Self.topViewController() else {
+          resolve(["status": "unknown"])
+          return
+        }
         do {
-          // NOTE: confirm exact API surface against the iOS 26 SDK in Xcode.
           let response = try await AgeRangeService.shared.requestAgeRange(
-            ageGates: minimumAge.intValue
+            ageGates: minimumAge.intValue,
+            in: anchor
           )
           switch response {
           case .sharing(let range):
@@ -48,5 +54,21 @@ class PeraAgeGate: NSObject {
     } else {
       resolve(["status": "unknown"])
     }
+  }
+
+  // Walks to the currently-presented view controller on the active scene.
+  @MainActor
+  private static func topViewController() -> UIViewController? {
+    let scene = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .first { $0.activationState == .foregroundActive }
+      ?? UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+
+    let keyWindow = scene?.windows.first { $0.isKeyWindow } ?? scene?.windows.first
+    var top = keyWindow?.rootViewController
+    while let presented = top?.presentedViewController {
+      top = presented
+    }
+    return top
   }
 }

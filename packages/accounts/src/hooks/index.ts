@@ -61,3 +61,4 @@ export {
 export * from './useAccountSummaryQuery'
 export * from './useAccountAssetsQuery'
 export * from './useEnsureAccountEnriched'
+export * from './useSyncNewAccounts'

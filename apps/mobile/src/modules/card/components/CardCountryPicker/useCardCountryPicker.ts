@@ -38,7 +38,8 @@ export const useCardCountryPicker = (): UseCardCountryPickerResult => {
     const [search, setSearch] = useState('')
 
     const countries = useMemo(() => {
-        const available = (data?.countries ?? []).sort((first, second) =>
+        // Copy before sorting — sorting in place would mutate the query cache.
+        const available = [...(data?.countries ?? [])].sort((first, second) =>
             first.name.localeCompare(second.name),
         )
 

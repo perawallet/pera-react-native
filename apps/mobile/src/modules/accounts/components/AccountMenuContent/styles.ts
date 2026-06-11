@@ -19,4 +19,15 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
         overflow: 'hidden',
     },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        // Close stays right-aligned when the search trigger is hidden.
+        justifyContent: 'flex-end',
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+    },
+    searchTrigger: {
+        flex: 1,
+    },
 }))

@@ -25,8 +25,12 @@ const initialState = {
     email: null,
     countryIso: null,
     verificationCode: null,
+    phoneCountryCode: null,
+    phoneNumber: null,
     contactVerificationId: null,
     onboardingId: null,
+    // Defaults to opted-in, matching the address screen's pre-checked box.
+    allowMarketing: true,
     cardId: null,
     lastKnownStatus: null,
     lastKnownPanLast4: null,
@@ -43,8 +47,11 @@ export const useCardStore: UseBoundStore<
             setEmail: email => set({ email }),
             setCountryIso: countryIso => set({ countryIso }),
             setVerificationCode: verificationCode => set({ verificationCode }),
+            setPhone: ({ phoneCountryCode, phoneNumber }) =>
+                set({ phoneCountryCode, phoneNumber }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
             setOnboardingId: id => set({ onboardingId: id }),
+            setAllowMarketing: allowMarketing => set({ allowMarketing }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({
                     cardId,
@@ -65,8 +72,11 @@ export const useCardStore: UseBoundStore<
                 onboardingStep: state.onboardingStep,
                 email: state.email,
                 countryIso: state.countryIso,
+                phoneCountryCode: state.phoneCountryCode,
+                phoneNumber: state.phoneNumber,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
+                allowMarketing: state.allowMarketing,
                 cardId: state.cardId,
                 lastKnownStatus: state.lastKnownStatus,
                 lastKnownPanLast4: state.lastKnownPanLast4,

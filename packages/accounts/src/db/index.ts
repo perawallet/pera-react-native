@@ -19,6 +19,7 @@ export {
     getAccountHoldingsLite,
     assetFromHoldingLiteRow,
     insertAssetHolding,
+    addToAssetHolding,
     deleteAssetHoldings,
     upsertAccountBalance,
     getAccountBalance,

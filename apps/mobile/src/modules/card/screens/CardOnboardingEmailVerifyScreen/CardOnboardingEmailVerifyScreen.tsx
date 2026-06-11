@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWCodeInput,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import {
+    CARD_VERIFICATION_CODE_LENGTH,
     MOCK_VALID_VERIFICATION_CODE,
-    useCardOnboardingEmailVerifyScreen,
-} from './useCardOnboardingEmailVerifyScreen'
+} from '../cardVerificationConstants'
+import { useCardOnboardingEmailVerifyScreen } from './useCardOnboardingEmailVerifyScreen'
 import { useStyles } from './styles'
 
 export const CardOnboardingEmailVerifyScreen = () => {
@@ -23,6 +30,7 @@ export const CardOnboardingEmailVerifyScreen = () => {
     const styles = useStyles()
     const {
         code,
+        email,
         onChangeCode,
         isValid,
         isWrongCode,
@@ -39,26 +47,26 @@ export const CardOnboardingEmailVerifyScreen = () => {
                     variant='body'
                     style={styles.description}
                 >
-                    {t('peraCard.verify_email.body')}
+                    {t('peraCard.verify_email.body', { email })}
                 </PWText>
 
                 <PWView style={styles.form}>
                     <PWView style={styles.inputGroup}>
-                        <PWInput
+                        <PWCodeInput
                             value={code}
                             onChangeText={onChangeCode}
-                            placeholder={t(
-                                'peraCard.verify_email.code_placeholder',
-                            )}
-                            autoCapitalize='characters'
-                            autoCorrect={false}
-                            returnKeyType='done'
-                            onSubmitEditing={handleConfirm}
+                            length={CARD_VERIFICATION_CODE_LENGTH}
+                            onComplete={handleConfirm}
+                            onSubmitEditing={() => handleConfirm()}
+                            autoFocus
                             errorMessage={
                                 isWrongCode
                                     ? t('peraCard.verify_email.code_wrong')
                                     : undefined
                             }
+                            accessibilityLabel={t(
+                                'peraCard.verify_email.navigation_title',
+                            )}
                             testID='card-onboarding-verify-input'
                         />
 
@@ -85,7 +93,7 @@ export const CardOnboardingEmailVerifyScreen = () => {
                     <PWButton
                         variant='primary'
                         title={t('peraCard.verify_email.confirm_button')}
-                        onPress={handleConfirm}
+                        onPress={() => handleConfirm()}
                         isDisabled={!isValid}
                         testID='card-onboarding-verify-confirm'
                     />

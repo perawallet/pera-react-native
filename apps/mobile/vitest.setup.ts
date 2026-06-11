@@ -534,6 +534,42 @@ vi.mock('@components/core', () => {
                 onChange: (e: any) => onChangeText?.(e.target.value),
                 'data-testid': testID || 'PWInput',
             }),
+        // Segmented OTP input: a single <input> mirroring the real component's
+        // digit filter, length cap, onComplete (auto-submit), and `-error` node.
+        PWCodeInput: ({
+            value,
+            onChangeText,
+            length = 6,
+            errorMessage,
+            onComplete,
+            testID,
+        }: any) =>
+            React.createElement(
+                'div',
+                {},
+                React.createElement('input', {
+                    value: value ?? '',
+                    'data-testid': testID || 'PWCodeInput',
+                    onChange: (e: any) => {
+                        const next = String(e.target.value)
+                            .replace(/\D/g, '')
+                            .slice(0, length)
+                        onChangeText?.(next)
+                        if (next.length === length) onComplete?.(next)
+                    },
+                }),
+                errorMessage
+                    ? React.createElement(
+                          'div',
+                          {
+                              'data-testid': testID
+                                  ? `${testID}-error`
+                                  : 'PWCodeInput-error',
+                          },
+                          errorMessage,
+                      )
+                    : null,
+            ),
         PWListItem: ({
             title,
             subtitle,
@@ -2224,6 +2260,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     truncateAlgorandAddress: vi.fn(a => a),
     stripUrlScheme: vi.fn(url => url),
     DEFAULT_PRECISION: 6,
+    ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
     ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     formatDatetime: vi.fn(d => String(d)),

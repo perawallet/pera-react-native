@@ -26,6 +26,7 @@ export { useAccountsStore } from './store'
 export {
     fetchAndPersistAccount,
     ensureAccountFetched,
+    syncAndEnrichNewAccount,
     type AccountSyncResult,
 } from './sync/account-syncer'
 

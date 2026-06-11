@@ -44,12 +44,8 @@ export type PWInputProps = {
     errorMessage?: string
     renderErrorMessage?: boolean
     errorStyle?: RNEInputProps['errorStyle']
+    showErrorOnBlur?: boolean
     secureTextEntry?: boolean
-    /**
-     * Render a built-in reveal toggle for a secure field. While the input is
-     * focused, an eye icon is shown that flips `secureTextEntry` on/off.
-     * Mutually exclusive with `rightIcon` — the toggle takes precedence.
-     */
     showVisibilityToggle?: boolean
     keyboardType?: RNEInputProps['keyboardType']
     returnKeyType?: RNEInputProps['returnKeyType']
@@ -97,6 +93,8 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             onFocus,
             onBlur,
             rightIcon,
+            errorMessage,
+            showErrorOnBlur = false,
             ...props
         },
         ref,
@@ -105,6 +103,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
         const inputRef = useRef<TextInput>(null)
         const [isRevealed, setIsRevealed] = useState(false)
         const [isFocused, setIsFocused] = useState(false)
+        const [hasBlurred, setHasBlurred] = useState(false)
 
         const resolvedMinimumFontScale =
             minimumFontScale ??
@@ -131,6 +130,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
         }
         const handleBlur: NonNullable<RNEInputProps['onBlur']> = event => {
             if (showVisibilityToggle) setIsFocused(false)
+            if (showErrorOnBlur) setHasBlurred(true)
             onBlur?.(event)
         }
 
@@ -149,6 +149,10 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 rightIcon
             )
 
+        // Withhold the error until the first blur when opted in.
+        const resolvedErrorMessage =
+            showErrorOnBlur && !hasBlurred ? undefined : errorMessage
+
         return (
             <RNEInput
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -163,6 +167,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 onFocus={handleFocus}
                 onBlur={handleBlur}
                 rightIcon={resolvedRightIcon}
+                errorMessage={resolvedErrorMessage}
                 numberOfLines={numberOfLines}
                 {...{
                     adjustsFontSizeToFit,

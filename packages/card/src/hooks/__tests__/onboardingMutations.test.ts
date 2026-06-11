@@ -127,6 +127,9 @@ describe('onboarding mutation hooks', () => {
                 network: 'mainnet',
             }),
         )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.PhoneVerify,
+        )
     })
 
     it('useVerifyPhoneMutation forwards onboardingId + code', async () => {
@@ -148,6 +151,9 @@ describe('onboarding mutation hooks', () => {
                 verificationCode: '654321',
                 network: 'mainnet',
             }),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.PersonalDetails,
         )
     })
 
@@ -172,6 +178,9 @@ describe('onboarding mutation hooks', () => {
             details,
             network: 'mainnet',
         })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Address,
+        )
     })
 
     it('useSubmitAddressMutation wraps the address with the network', async () => {
@@ -192,5 +201,8 @@ describe('onboarding mutation hooks', () => {
             address,
             network: 'mainnet',
         })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Verification,
+        )
     })
 })

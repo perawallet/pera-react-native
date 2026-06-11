@@ -28,7 +28,14 @@ import { isoToFlagEmoji } from '../../utils/isoToFlagEmoji'
 import { useCardCountryPicker } from './useCardCountryPicker'
 import { useStyles } from './styles'
 
-export const CardCountryPickerContent = () => {
+export type CardCountryPickerContentProps = {
+    /** Sheet header title; defaults to the country-of-residence copy. */
+    title?: string
+}
+
+export const CardCountryPickerContent = ({
+    title,
+}: CardCountryPickerContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -61,7 +68,9 @@ export const CardCountryPickerContent = () => {
     return (
         <PWView style={styles.container}>
             <SheetHeader
-                title={t('peraCard.create_account.country_picker_title')}
+                title={
+                    title ?? t('peraCard.create_account.country_picker_title')
+                }
             />
 
             {isError ? (
