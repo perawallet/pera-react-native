@@ -19,7 +19,16 @@ export const currencyResponseSchema = z.object({
     symbol: z.string(),
     exchange_price: z.string().optional().nullable(),
     last_updated_at: z.string().optional().nullable(),
-    usd_value: z.number().optional().nullable(),
+    // Normalize to a string so the value flows losslessly into Decimal. The
+    // backend sends it as a decimal string (per the OpenAPI contract); we also
+    // accept a number for back-compat, but note a value that arrives as a JSON
+    // number has already passed through a lossy double — only the string form
+    // guarantees full precision.
+    usd_value: z
+        .union([z.string(), z.number()])
+        .transform(String)
+        .nullable()
+        .optional(),
 })
 
 export const currenciesListResponseSchema = z.array(currencyResponseSchema)
