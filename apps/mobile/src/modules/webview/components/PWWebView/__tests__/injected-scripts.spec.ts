@@ -15,8 +15,15 @@
 // against each other — a stamping bug that the validator rejects (e.g. batch
 // arrays losing the token) fails here.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Mock } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock,
+} from 'vitest'
 import { peraMobileInterfaceJS } from '../injected-scripts'
 import { hasValidBridgeToken } from '../../../hooks/handlers'
 
