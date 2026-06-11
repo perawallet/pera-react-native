@@ -34,3 +34,5 @@ export const currencyResponseSchema = z.object({
 export const currenciesListResponseSchema = z.array(currencyResponseSchema)
 
 export type CurrencyApiResponse = z.infer<typeof currencyResponseSchema>
+/** Pre-parse wire shape (usd_value may still be a number) — for MSW mocks. */
+export type CurrencyApiWireResponse = z.input<typeof currencyResponseSchema>
