@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export type OnrampStatusVariant =
+type OnrampStatusVariant =
     | 'positive'
     | 'warning'
     | 'negative'

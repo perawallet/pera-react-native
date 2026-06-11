@@ -12,10 +12,6 @@
 
 import { z } from 'zod'
 
-export const rampPairsRequestSchema = z.object({
-    destination_tokens: z.string(),
-})
-
 const rampNetworkSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -55,12 +51,8 @@ const rampPairSchema = z.object({
 
 export const rampPairsResponseSchema = z.array(rampPairSchema)
 
-export type RampPairsRequest = z.infer<typeof rampPairsRequestSchema>
 export type RampNetworkApiResponse = z.infer<typeof rampNetworkSchema>
 export type RampTokenApiResponse = z.infer<typeof rampTokenSchema>
-export type RampProviderLimitsApiResponse = z.infer<
-    typeof rampProviderLimitsSchema
->
 export type RampProviderApiResponse = z.infer<typeof rampProviderSchema>
 export type RampPairApiResponse = z.infer<typeof rampPairSchema>
 export type RampPairsApiResponse = z.infer<typeof rampPairsResponseSchema>

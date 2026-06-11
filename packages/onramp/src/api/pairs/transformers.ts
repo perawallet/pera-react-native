@@ -25,15 +25,13 @@ import type {
     RampTokenApiResponse,
 } from './schema'
 
-export const transformRampNetwork = (
-    data: RampNetworkApiResponse,
-): RampNetwork => ({
+const transformRampNetwork = (data: RampNetworkApiResponse): RampNetwork => ({
     id: data.id,
     name: data.name,
     logo: data.logo,
 })
 
-export const transformRampToken = (data: RampTokenApiResponse): RampToken => ({
+const transformRampToken = (data: RampTokenApiResponse): RampToken => ({
     id: data.id,
     symbol: data.symbol,
     name: data.name,
@@ -45,7 +43,7 @@ export const transformRampToken = (data: RampTokenApiResponse): RampToken => ({
     countryCode: data.extra.country_code,
 })
 
-export const transformRampProvider = (
+const transformRampProvider = (
     data: RampProviderApiResponse,
 ): RampProvider => ({
     id: data.id,

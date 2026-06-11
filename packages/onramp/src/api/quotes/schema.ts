@@ -77,15 +77,9 @@ const rampQuoteSchema = z.object({
 
 export const createRampQuoteResponseSchema = z.array(rampQuoteSchema)
 
-export type CreateRampQuoteRequest = z.infer<
-    typeof createRampQuoteRequestSchema
->
 export type QuoteAmountApiResponse = z.infer<typeof quoteAmountSchema>
 export type XoProviderQuoteApiResponse = z.infer<
     typeof xoProviderQuoteResponseSchema
->
-export type MeldProviderQuoteApiResponse = z.infer<
-    typeof meldProviderQuoteResponseSchema
 >
 export type RampQuotePaymentMethodApiResponse = z.infer<
     typeof rampQuotePaymentMethodSchema

@@ -149,6 +149,5 @@ export type MeldProviderResponsesApiResponse = z.infer<
 export type XoProviderResponsesApiResponse = z.infer<
     typeof xoProviderResponsesSchema
 >
-export type RampHistoryQuoteApiResponse = z.infer<typeof rampHistoryQuoteSchema>
 export type RampHistoryItemApiResponse = z.infer<typeof rampHistoryItemSchema>
 export type RampHistoryPageApiResponse = z.infer<typeof rampHistoryPageSchema>

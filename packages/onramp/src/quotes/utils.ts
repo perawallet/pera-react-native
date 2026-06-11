@@ -17,7 +17,7 @@ import type { RampQuote } from '../models'
 
 // Mirrors the decimal.js accepted grammar for plain (non-scientific) positive
 // numbers: "12", "12.", "12.5", ".5" — but not "", ".", or "1.2.3".
-const PLAIN_DECIMAL_PATTERN = /^(\d+\.?\d*|\.\d+)$/
+const PLAIN_DECIMAL_PATTERN = /^(?:\d+(?:\.\d*)?|\.\d+)$/
 
 /**
  * Parse a user-entered amount string in display units. Returns null when the

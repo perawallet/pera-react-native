@@ -65,17 +65,6 @@ export const cancelRampOrderResponseSchema = z.object({
     account_address: z.string(),
 })
 
-export type CreateRampOrderRequest = z.infer<
-    typeof createRampOrderRequestSchema
->
-export type CancelRampOrderRequest = z.infer<
-    typeof cancelRampOrderRequestSchema
->
-export type XoProviderOrderApiResponse = z.infer<
-    typeof xoProviderOrderResponseSchema
->
-export type RampOrderXoApiResponse = z.infer<typeof rampOrderXoSchema>
-export type RampOrderMeldApiResponse = z.infer<typeof rampOrderMeldSchema>
 export type RampOrderApiResponse = z.infer<typeof createRampOrderResponseSchema>
 export type CancelRampOrderApiResponse = z.infer<
     typeof cancelRampOrderResponseSchema
