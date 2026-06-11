@@ -20,7 +20,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { type RampToken } from '@perawallet/wallet-core-onramp'
 import { SwapAssetSelector } from '@modules/swap/components'
-import { getCircleFlagUrl } from '@components/CircleFlag'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
@@ -55,27 +54,23 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
     const { theme } = useTheme()
     const styles = useStyles({ variant })
 
-    const onAmountChange = variant === 'pay' ? props.onAmountChange : undefined
-    const { isPay, fiatBaseAmount, shouldUseUsdFallback, handleTextChange } =
-        useOnrampAmountSection({
-            variant,
-            amount: props.amount,
-            onAmountChange,
-        })
-
-    const isLoading = variant === 'receive' ? props.isLoading : false
-
-    const receiveValue =
-        variant === 'receive' && props.amount
-            ? props.amount.toFixed(token?.fractionDecimals ?? 2)
-            : ''
-    const hasReceiveValue = receiveValue !== ''
-
-    // FIAT tokens render the round country flag (matching the From-sheet rows);
-    // crypto tokens render their logo.
-    const logoUrl = token?.countryCode
-        ? getCircleFlagUrl(token.countryCode)
-        : (token?.logo ?? undefined)
+    const {
+        isPay,
+        inputValue,
+        receiveValue,
+        hasReceiveValue,
+        isReceiveLoading,
+        logoUrl,
+        fiatBaseAmount,
+        shouldUseUsdFallback,
+        handleTextChange,
+    } = useOnrampAmountSection({
+        variant,
+        token,
+        amount: props.amount,
+        isLoading: variant === 'receive' ? props.isLoading : false,
+        onAmountChange: variant === 'pay' ? props.onAmountChange : undefined,
+    })
 
     return (
         <PWView style={styles.container}>
@@ -93,7 +88,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                     {isPay ? (
                         <PWInput
                             variant='h1'
-                            value={props.variant === 'pay' ? props.amount : ''}
+                            value={inputValue}
                             onChangeText={handleTextChange}
                             keyboardType='decimal-pad'
                             placeholder='0.00'
@@ -107,7 +102,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                             adjustsFontSizeToFit
                             testID='onramp-pay-input'
                         />
-                    ) : isLoading ? (
+                    ) : isReceiveLoading ? (
                         <PWSkeleton
                             width={120}
                             height={40}

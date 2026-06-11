@@ -12,14 +12,17 @@
 
 import { type Platform } from 'react-native'
 import { type Decimal } from 'decimal.js'
+import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
     ANDROID_EXCLUDED_PAYMENT_METHODS,
     IOS_EXCLUDED_PAYMENT_METHODS,
+    parseRampAmount,
     type RampHistoryItem,
     type RampPair,
     type XoOrder,
+    type XoQuote,
 } from '@perawallet/wallet-core-onramp'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import { type Network, type Nullable } from '@perawallet/wallet-core-shared'
 
 /** Payment-method ids excluded on the given platform (matches the web filter). */
 export const getExcludedPaymentMethodIds = (
@@ -32,6 +35,45 @@ export const getExcludedPaymentMethodIds = (
 
 export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
     pair?.provider.id.toLowerCase() === 'meld'
+
+/**
+ * On-chain asset id the destination opt-in targets. ALGO needs no opt-in; the
+ * ramp token id is symbolic (e.g. 'USDC_ALGORAND'), so resolve the
+ * network-correct ASA id. Only USDC is opt-in-able today.
+ */
+export const resolveDestinationAssetId = (
+    pair: RampPair,
+    network: Network,
+): bigint | 'ALGO' => {
+    const { destinationToken } = pair
+    const isAlgo =
+        destinationToken.id === 'ALGO' || destinationToken.symbol === 'ALGO'
+    return isAlgo ? 'ALGO' : BigInt(getKnownAssetId('USDC', network))
+}
+
+/** An XO source amount that falls outside the quote's min/max window. */
+export type XoLimitViolation =
+    | { type: 'below'; min: string }
+    | { type: 'above'; max: string }
+
+/**
+ * Whether the entered source amount violates the XO quote's min/max limits.
+ * Returns null when the amount is empty/unparseable or within range.
+ */
+export const getXoLimitViolation = (
+    quote: XoQuote,
+    sourceAmount: string,
+): Nullable<XoLimitViolation> => {
+    const parsed = parseRampAmount(sourceAmount)
+    if (parsed === null) return null
+    if (parsed.lessThan(quote.min.value)) {
+        return { type: 'below', min: quote.min.value.toString() }
+    }
+    if (parsed.greaterThan(quote.max.value)) {
+        return { type: 'above', max: quote.max.value.toString() }
+    }
+    return null
+}
 
 /**
  * Shape a freshly-created XO order as a (pending) history item so the

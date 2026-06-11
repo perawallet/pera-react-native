@@ -15,17 +15,34 @@ import { type Decimal } from 'decimal.js'
 import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { parseRampAmount } from '@perawallet/wallet-core-onramp'
+import { parseRampAmount, type RampToken } from '@perawallet/wallet-core-onramp'
+import { getCircleFlagUrl } from '@components/CircleFlag'
+
+// Receive amounts fall back to this many fraction digits when the token does
+// not declare its own.
+const RECEIVE_FALLBACK_DECIMALS = 2
 
 type UseOnrampAmountSectionParams = {
     variant: 'pay' | 'receive'
+    token: Nullable<RampToken>
     /** Pay: the raw input string; receive: the quoted destination Decimal. */
     amount: string | Nullable<Decimal>
+    /** Receive variant only: a quote is in flight. */
+    isLoading?: boolean
     onAmountChange?: (value: string) => void
 }
 
 type UseOnrampAmountSectionResult = {
     isPay: boolean
+    /** Value bound to the (pay-only) text input. */
+    inputValue: string
+    /** Formatted quoted amount for the receive row; '' when there is none. */
+    receiveValue: string
+    hasReceiveValue: boolean
+    /** Resolved loading flag — only the receive variant can be loading. */
+    isReceiveLoading: boolean
+    /** FIAT tokens show their round country flag; crypto tokens their logo. */
+    logoUrl: string | undefined
     /** Token-unit amount feeding the fiat row; zero when not computable. */
     fiatBaseAmount: Decimal
     /** ALGO-preferred users see fiat values in USD, like the rest of the app. */
@@ -60,13 +77,33 @@ export const getFiatBaseAmount = (
 // Decimal round-trip that would re-format mid-edit.
 export const useOnrampAmountSection = ({
     variant,
+    token,
     amount,
+    isLoading = false,
     onAmountChange,
 }: UseOnrampAmountSectionParams): UseOnrampAmountSectionResult => {
     const isPay = variant === 'pay'
 
     const { preferredCurrency } = useCurrency()
     const shouldUseUsdFallback = preferredCurrency === ALGO_ASSET.unitName
+
+    // Pay holds a raw string; receive holds a Decimal. Split them out once so
+    // the input value and the formatted receive value are each well-typed.
+    const inputValue = typeof amount === 'string' ? amount : ''
+    const receiveAmount = typeof amount === 'string' ? null : (amount ?? null)
+
+    const receiveValue = receiveAmount
+        ? receiveAmount.toFixed(
+              token?.fractionDecimals ?? RECEIVE_FALLBACK_DECIMALS,
+          )
+        : ''
+    const hasReceiveValue = receiveValue !== ''
+
+    const isReceiveLoading = !isPay && isLoading
+
+    const logoUrl = token?.countryCode
+        ? getCircleFlagUrl(token.countryCode)
+        : (token?.logo ?? undefined)
 
     const fiatBaseAmount = useMemo(() => getFiatBaseAmount(amount), [amount])
 
@@ -78,5 +115,15 @@ export const useOnrampAmountSection = ({
         [isPay, onAmountChange],
     )
 
-    return { isPay, fiatBaseAmount, shouldUseUsdFallback, handleTextChange }
+    return {
+        isPay,
+        inputValue,
+        receiveValue,
+        hasReceiveValue,
+        isReceiveLoading,
+        logoUrl,
+        fiatBaseAmount,
+        shouldUseUsdFallback,
+        handleTextChange,
+    }
 }
