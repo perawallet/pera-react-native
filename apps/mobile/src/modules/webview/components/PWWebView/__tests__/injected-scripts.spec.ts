@@ -16,6 +16,7 @@
 // arrays losing the token) fails here.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { peraMobileInterfaceJS } from '../injected-scripts'
 import { hasValidBridgeToken } from '../../../hooks/handlers'
 
@@ -31,11 +32,12 @@ type BridgeWindow = typeof window & {
 
 const bridgeWindow = window as BridgeWindow
 
-const lastPostedMessage = (postMessage: ReturnType<typeof vi.fn>): unknown =>
-    JSON.parse(postMessage.mock.calls.at(-1)?.[0] as string)
+const lastPostedMessage = (
+    postMessage: Mock<(data: string) => void>,
+): unknown => JSON.parse(postMessage.mock.calls.at(-1)?.[0] as string)
 
 describe('peraMobileInterfaceJS token stamping', () => {
-    let postMessage: ReturnType<typeof vi.fn>
+    let postMessage: Mock<(data: string) => void>
 
     beforeEach(() => {
         postMessage = vi.fn()
