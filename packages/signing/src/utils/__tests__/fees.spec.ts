@@ -62,13 +62,15 @@ describe('calculateTotalFee', () => {
 })
 
 describe('maxReasonableGroupFee', () => {
+    const signable = new Set(['ADDR1'])
+
     test('allows 0.5 ALGO per ordinary transaction', () => {
         const txs = [makeTx(1000n), makeTx(1000n), makeTx(1000n)]
-        expect(maxReasonableGroupFee(txs)).toBe(1_500_000n)
+        expect(maxReasonableGroupFee(txs, signable)).toBe(1_500_000n)
     })
 
-    test('allows 5 ALGO for a keyreg transaction', () => {
-        expect(maxReasonableGroupFee([makeTx(1000n, 'keyreg')])).toBe(
+    test('allows 5 ALGO for a signable keyreg transaction', () => {
+        expect(maxReasonableGroupFee([makeTx(1000n, 'keyreg')], signable)).toBe(
             5_000_000n,
         )
     })
@@ -79,7 +81,14 @@ describe('maxReasonableGroupFee', () => {
             makeTx(1000n, 'keyreg'),
             ...Array.from({ length: 15 }, () => makeTx(1000n)),
         ]
-        expect(maxReasonableGroupFee(txs)).toBe(12_500_000n)
+        expect(maxReasonableGroupFee(txs, signable)).toBe(12_500_000n)
+    })
+
+    test('a foreign keyreg only earns the default allowance', () => {
+        // The user does not sign ADDR2's keyreg — it must not inflate the
+        // budget for fees the user pays.
+        const txs = [makeTx(1000n, 'keyreg', 'ADDR2')]
+        expect(maxReasonableGroupFee(txs, signable)).toBe(500_000n)
     })
 })
 
@@ -125,6 +134,21 @@ describe('detectHighGroupFee', () => {
         expect(detectHighGroupFee(txs, signable)).toEqual({
             type: 'high-fee',
             totalFee: 9_000_000n,
+        })
+    })
+
+    test('keyreg-padding cannot inflate the budget past the warning', () => {
+        // Attack shape: 15 zero-fee keyregs from the attacker's own address.
+        // If foreign keyregs earned the 5 ALGO allowance the budget would be
+        // 75.5 ALGO; with the signable-only rule it stays 0.5 * 16 = 8 ALGO,
+        // so a 10 ALGO fee on the user's payment still warns.
+        const txs = [
+            makeTx(10_000_000n, 'pay', 'ADDR1'),
+            ...Array.from({ length: 15 }, () => makeTx(0n, 'keyreg', 'ADDR2')),
+        ]
+        expect(detectHighGroupFee(txs, signable)).toEqual({
+            type: 'high-fee',
+            totalFee: 10_000_000n,
         })
     })
 })

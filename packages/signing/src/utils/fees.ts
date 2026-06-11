@@ -44,14 +44,20 @@ const DEFAULT_FEE_ALLOWANCE_MICRO_ALGO = 500_000n // 0.5 ALGO
  * reasonably cost in fees. The budget is the sum of each transaction's
  * per-type allowance, so it scales with both the kind of transactions and the
  * group size — a 16-tx ordinary group allows 8 ALGO, a single keyreg 5 ALGO.
+ *
+ * The keyreg allowance only counts when the keyreg's sender is one the user
+ * signs for: a third party's keyreg has no business raising the budget for
+ * fees the USER pays, and otherwise a request padded with zero-fee foreign
+ * keyregs could buy a huge unflagged budget (15 of them ≈ 75 ALGO).
  */
 export const maxReasonableGroupFee = (
     transactions: PeraDisplayableTransaction[],
+    signableAddresses: Set<string>,
 ): bigint =>
     transactions.reduce(
         (sum, tx) =>
             sum +
-            (tx.txType === 'keyreg'
+            (tx.txType === 'keyreg' && signableAddresses.has(tx.sender)
                 ? KEYREG_FEE_ALLOWANCE_MICRO_ALGO
                 : DEFAULT_FEE_ALLOWANCE_MICRO_ALGO),
         0n,
@@ -74,7 +80,10 @@ export const detectHighGroupFee = (
         0n,
     )
 
-    if (totalSignableFee > maxReasonableGroupFee(transactions)) {
+    if (
+        totalSignableFee >
+        maxReasonableGroupFee(transactions, signableAddresses)
+    ) {
         return { type: 'high-fee', totalFee: totalSignableFee }
     }
     return null
