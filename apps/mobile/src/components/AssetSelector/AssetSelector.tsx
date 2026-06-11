@@ -18,20 +18,23 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { type Optional } from '@perawallet/wallet-core-shared'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
-import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type SwapAssetSelectorVariant = 'pay' | 'receive'
+type AssetSelectorVariant = 'pay' | 'receive'
 
-type SwapAssetSelectorBaseProps = {
-    variant: SwapAssetSelectorVariant
+type AssetSelectorBaseProps = {
+    variant: AssetSelectorVariant
     onPress: () => void
     testID?: string
 }
 
-export type SwapAssetSelectorProps = SwapAssetSelectorBaseProps &
+export type AssetSelectorProps = AssetSelectorBaseProps &
     (
-        | { assetId: string }
+        | {
+              assetId: string
+              /** Label shown when the asset has no resolvable unit name. */
+              fallbackLabel?: string
+          }
         | {
               /** Pre-resolved asset, bypassing `useAssetsQuery`. */
               asset: Optional<DisplayableAsset>
@@ -42,20 +45,20 @@ export type SwapAssetSelectorProps = SwapAssetSelectorBaseProps &
           }
     )
 
-type SwapAssetSelectorContentProps = SwapAssetSelectorBaseProps & {
+type AssetSelectorContentProps = AssetSelectorBaseProps & {
     asset: Optional<DisplayableAsset>
     label: string
     logoUrl?: string
 }
 
-const SwapAssetSelectorContent = ({
+const AssetSelectorContent = ({
     variant,
     onPress,
     testID,
     asset,
     label,
     logoUrl,
-}: SwapAssetSelectorContentProps) => {
+}: AssetSelectorContentProps) => {
     const styles = useStyles({ variant })
 
     return (
@@ -95,31 +98,32 @@ const SwapAssetSelectorContent = ({
     )
 }
 
-type SwapAssetSelectorByIdProps = SwapAssetSelectorBaseProps & {
+type AssetSelectorByIdProps = AssetSelectorBaseProps & {
     assetId: string
+    fallbackLabel?: string
 }
 
-const SwapAssetSelectorById = ({
+const AssetSelectorById = ({
     assetId,
+    fallbackLabel,
     ...rest
-}: SwapAssetSelectorByIdProps) => {
-    const { t } = useLanguage()
+}: AssetSelectorByIdProps) => {
     const { data: assets } = useAssetsQuery([assetId])
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     return (
-        <SwapAssetSelectorContent
+        <AssetSelectorContent
             {...rest}
             asset={asset}
-            label={asset?.unitName ?? t('swap.form.select_asset')}
+            label={asset?.unitName ?? fallbackLabel ?? ''}
         />
     )
 }
 
-export const SwapAssetSelector = (props: SwapAssetSelectorProps) => {
+export const AssetSelector = (props: AssetSelectorProps) => {
     if ('assetId' in props) {
-        return <SwapAssetSelectorById {...props} />
+        return <AssetSelectorById {...props} />
     }
 
-    return <SwapAssetSelectorContent {...props} />
+    return <AssetSelectorContent {...props} />
 }

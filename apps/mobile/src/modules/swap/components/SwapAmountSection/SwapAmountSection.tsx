@@ -12,6 +12,8 @@
 
 import { Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
+import { AmountField } from '@components/AmountField'
+import { AssetSelector } from '@components/AssetSelector'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,7 +22,6 @@ import {
     DEFAULT_PRECISION,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
@@ -67,16 +68,11 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     } = useSwapAmountSection({ variant, assetId, amount, onAmountChange })
 
     return (
-        <PWView style={isPay ? styles.container : styles.receiveContainer}>
-            <PWView style={styles.headerRow}>
-                <PWText
-                    variant='body'
-                    style={styles.label}
-                >
-                    {isPay
-                        ? t('swap.form.you_pay')
-                        : t('swap.form.you_receive')}
-                </PWText>
+        <AmountField
+            variant={isPay ? 'plain' : 'card'}
+            label={isPay ? t('swap.form.you_pay') : t('swap.form.you_receive')}
+            amountSize='h2'
+            headerTrailing={
                 <PWView style={styles.balanceWrapper}>
                     <PWText
                         variant='body'
@@ -96,58 +92,54 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                         style={styles.balance}
                     />
                 </PWView>
-            </PWView>
-
-            <PWView style={styles.inputRow}>
-                <PWView style={styles.amountContainer}>
-                    {isPay ? (
-                        <PWInput
-                            variant='h2'
-                            value={displayValue}
-                            onChangeText={handleTextChange}
-                            onFocus={handleFocus}
-                            onBlur={handleBlur}
-                            keyboardType='decimal-pad'
-                            placeholder='0.00'
-                            placeholderTextColor={theme.colors.textGrayLighter}
-                            containerStyle={styles.amountInputContainer}
-                            inputContainerStyle={
-                                styles.amountInputInnerContainer
-                            }
-                            inputStyle={styles.amountInput}
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            testID='swap-pay-input'
-                        />
-                    ) : isLoading ? (
-                        <PWSkeleton
-                            width={120}
-                            height={28}
-                        />
-                    ) : (
-                        <PWText
-                            style={
-                                hasPositiveAmount
-                                    ? styles.amountText
-                                    : styles.amountTextMuted
-                            }
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            testID='swap-receive-amount'
-                        >
-                            {displayValue || '0.00'}
-                        </PWText>
-                    )}
-                </PWView>
-
-                <SwapAssetSelector
+            }
+            amount={
+                isPay ? (
+                    <PWInput
+                        variant='h2'
+                        value={displayValue}
+                        onChangeText={handleTextChange}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        keyboardType='decimal-pad'
+                        placeholder='0.00'
+                        placeholderTextColor={theme.colors.textGrayLighter}
+                        containerStyle={styles.amountInputContainer}
+                        inputContainerStyle={styles.amountInputInnerContainer}
+                        inputStyle={styles.amountInput}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        testID='swap-pay-input'
+                    />
+                ) : isLoading ? (
+                    <PWSkeleton
+                        width={120}
+                        height={28}
+                    />
+                ) : (
+                    <PWText
+                        style={
+                            hasPositiveAmount
+                                ? styles.amountText
+                                : styles.amountTextMuted
+                        }
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        testID='swap-receive-amount'
+                    >
+                        {displayValue || '0.00'}
+                    </PWText>
+                )
+            }
+            selector={
+                <AssetSelector
                     assetId={assetId}
                     variant={variant}
                     onPress={onAssetPress}
+                    fallbackLabel={t('swap.form.select_asset')}
                 />
-            </PWView>
-
-            <PWView style={styles.fiatValueContainer}>
+            }
+            fiat={
                 <PreferredCurrencyDisplay
                     sourceAmount={amount ?? new Decimal(0)}
                     sourceAssetId={assetId}
@@ -157,7 +149,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     isLoading={isLoading}
                     style={styles.fiatValue}
                 />
-            </PWView>
-        </PWView>
+            }
+        />
     )
 }

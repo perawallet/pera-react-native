@@ -106,7 +106,7 @@ export const useSwapToAssetSelectionList = ({
     const handleAssetSelected = useCallback(
         (item: AvailableAssetWithBalance) => {
             const assetId = item.dexAsset.assetId
-            // Seed the query cache so SwapAssetSelector can display the asset
+            // Seed the query cache so the AssetSelector can display the asset
             // immediately after selection, even for unowned assets that aren't
             // in the local asset database yet.
             const queryKey = getAssetsQueryKey([assetId], network)

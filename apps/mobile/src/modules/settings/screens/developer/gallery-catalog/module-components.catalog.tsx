@@ -1012,7 +1012,7 @@ export const getModuleComponentSections = (): GallerySection[] => [
             },
             {
                 id: 'comp-swap-asset-selector',
-                label: 'SwapAssetSelector (needs live assets query)',
+                label: 'AssetSelector (needs live assets query)',
                 launch: { kind: 'action', run: () => undefined },
             },
             {

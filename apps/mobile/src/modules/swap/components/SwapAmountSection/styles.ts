@@ -13,30 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
+// Frame, label and spacing live in the shared `AmountField`; this only holds the
+// balance row, amount-text typography and the PWInput resets passed as slots.
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-    },
-    receiveContainer: {
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xl,
-        paddingBottom: theme.spacing.md,
-        marginTop: theme.spacing.xl,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        marginBottom: theme.spacing.sm,
-    },
-    label: {
-        color: theme.colors.textGray,
-        flexShrink: 0,
-    },
     balance: {
         color: theme.colors.textGray,
     },
@@ -45,16 +24,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         flexShrink: 1,
         minWidth: 0,
-    },
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    amountContainer: {
-        flex: 1,
-        minHeight: getTypography(theme, 'h2').lineHeight,
     },
     amountText: getTypography(theme, 'h2'),
     amountTextMuted: {
@@ -71,10 +40,6 @@ export const useStyles = makeStyles(theme => ({
     },
     amountInput: {
         paddingLeft: 0,
-    },
-    fiatValueContainer: {
-        minHeight: getTypography(theme, 'body').lineHeight,
-        justifyContent: 'center' as const,
     },
     fiatValue: {
         color: theme.colors.textGray,
