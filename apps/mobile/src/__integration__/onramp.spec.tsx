@@ -844,6 +844,9 @@ describe('Flow: Onramp buy (native XO)', () => {
             // Sponsored opt-in → the confirmation sheet shows a ZERO fee
             // (vs '0.001' for a self-funded opt-in).
             expect(screen.getByTestId('opt_in_fee').textContent).toBe('0.00')
+            // The Account row shows the receiving account (a second 'Buyer'
+            // beyond the header account selector).
+            expect(screen.getAllByText('Buyer').length).toBeGreaterThan(1)
 
             fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
