@@ -147,4 +147,27 @@ describe('isArc60OriginMismatch', () => {
             isArc60OriginMismatch('arc60.io:8080', 'https://arc60.io/x'),
         ).toBe(true)
     })
+
+    it('matches a bare host:port domain against the same-port origin', () => {
+        expect(
+            isArc60OriginMismatch('arc60.io:8080', 'https://arc60.io:8080/x'),
+        ).toBe(false)
+        expect(
+            isArc60OriginMismatch('localhost:3000', 'http://localhost:3000'),
+        ).toBe(false)
+    })
+
+    it('normalizes an explicit default port on either side', () => {
+        expect(
+            isArc60OriginMismatch('arc60.io:443', 'https://arc60.io/x'),
+        ).toBe(false)
+    })
+
+    it('treats a domain smuggling userinfo as a mismatch', () => {
+        // "trusted.com@evil.com" displays a trusted-looking string while its
+        // URL host is evil.com — must warn even when served from evil.com.
+        expect(
+            isArc60OriginMismatch('trusted.com@evil.com', 'https://evil.com'),
+        ).toBe(true)
+    })
 })

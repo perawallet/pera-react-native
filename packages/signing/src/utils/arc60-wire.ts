@@ -148,16 +148,21 @@ export const parseArc60WireRequest = (
 
 const hostFromMaybeUrl = (value: string): string => {
     const trimmed = value.trim().toLowerCase()
+    // A bare authority with a port ("arc60.io:8080" — the SIWA `domain`
+    // shape) parses as a URL with the host in the *scheme* position and an
+    // empty host, so prefix a scheme unless the value clearly carries one.
+    const candidate = trimmed.includes('//') ? trimmed : `https://${trimmed}`
     try {
-        return new URL(trimmed).host
-    } catch {
-        // SIWA `domain` is a bare authority (host[:port]); give it a scheme so
-        // the URL parser can extract a comparable host.
-        try {
-            return new URL(`https://${trimmed}`).host
-        } catch {
+        const url = new URL(candidate)
+        // Userinfo smuggling ("trusted.com@evil.com") is never legitimate in
+        // a SIWA domain or an observed origin; return the raw string so the
+        // comparison fails safe (warns).
+        if (url.username || url.password) {
             return trimmed
         }
+        return url.host
+    } catch {
+        return trimmed
     }
 }
 
