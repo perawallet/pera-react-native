@@ -35,7 +35,7 @@ export type CardCountryPickerContentProps = {
 
 export const CardCountryPickerContent = ({
     title,
-}: CardCountryPickerContentProps = {}) => {
+}: CardCountryPickerContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
