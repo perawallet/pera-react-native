@@ -12,7 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useRemoveAccountById } from '../useRemoveAccountById'
+import { useRemoveAccountByAddress } from '../useRemoveAccountByAddress'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 
@@ -43,11 +43,51 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     }),
 }))
 
-describe('useRemoveAccountById', () => {
+const ledgerAccount = (
+    address: string,
+    accountIndex: number,
+): WalletAccount => ({
+    // Hardware accounts imported via the Ledger pairing flow carry no `id`
+    // (they are deduped by address) — removal must still work for them.
+    type: 'hardware',
+    address,
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'device-1',
+        deviceName: 'Nano X',
+        accountIndex,
+        transportType: 'ble',
+    },
+})
+
+describe('useRemoveAccountByAddress', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
         parentMap.clear()
+    })
+
+    test('removes an id-less hardware account and keeps siblings from the same device', async () => {
+        useAccountsStore.setState({
+            accounts: [
+                ledgerAccount('LEDGER1', 0),
+                ledgerAccount('LEDGER2', 1),
+                ledgerAccount('LEDGER3', 2),
+            ],
+        })
+
+        const { result } = renderHook(() => useRemoveAccountByAddress())
+
+        await act(async () => {
+            await result.current('LEDGER2')
+        })
+
+        expect(
+            useAccountsStore.getState().accounts.map(a => a.address),
+        ).toEqual(['LEDGER1', 'LEDGER3'])
+        // Hardware accounts hold no local key material.
+        expect(deleteKeySpy).not.toHaveBeenCalled()
+        expect(removeKeyAndChildrenSpy).not.toHaveBeenCalled()
     })
 
     test('removes the child key and sweeps the seed when no other account references it', async () => {
@@ -61,10 +101,10 @@ describe('useRemoveAccountById', () => {
         }
         useAccountsStore.setState({ accounts: [a] })
 
-        const { result } = renderHook(() => useRemoveAccountById())
+        const { result } = renderHook(() => useRemoveAccountByAddress())
 
         await act(async () => {
-            await result.current('1')
+            await result.current('ALICE')
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
@@ -89,10 +129,10 @@ describe('useRemoveAccountById', () => {
         }
         useAccountsStore.setState({ accounts: [a] })
 
-        const { result } = renderHook(() => useRemoveAccountById())
+        const { result } = renderHook(() => useRemoveAccountByAddress())
 
         await act(async () => {
-            await result.current('1')
+            await result.current('BOB')
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
@@ -133,10 +173,10 @@ describe('useRemoveAccountById', () => {
         ]
         useAccountsStore.setState({ accounts })
 
-        const { result } = renderHook(() => useRemoveAccountById())
+        const { result } = renderHook(() => useRemoveAccountByAddress())
 
         await act(async () => {
-            await result.current('1')
+            await result.current('ADDR1')
         })
 
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
@@ -165,10 +205,10 @@ describe('useRemoveAccountById', () => {
         ]
         useAccountsStore.setState({ accounts })
 
-        const { result } = renderHook(() => useRemoveAccountById())
+        const { result } = renderHook(() => useRemoveAccountByAddress())
 
         await act(async () => {
-            await result.current('1')
+            await result.current('ADDR1')
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])

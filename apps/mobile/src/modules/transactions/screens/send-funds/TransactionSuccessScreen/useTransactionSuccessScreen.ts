@@ -16,7 +16,7 @@ import { BackHandler } from 'react-native'
 import { useWebView } from '@modules/webview/hooks'
 import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
 import {
-    useRemoveAccountById,
+    useRemoveAccountByAddress,
     useSelectedAccount,
     useSelectedAccountAddress,
     useAccountsStore,
@@ -56,7 +56,7 @@ export const useTransactionSuccessScreen =
         const { onFinished: claimOnFinished } = useClaimAssets()
         const { networkConfig } = useNetwork()
         const { pushWebView } = useWebView()
-        const removeAccountById = useRemoveAccountById()
+        const removeAccountByAddress = useRemoveAccountByAddress()
         const selectedAccount = useSelectedAccount()
         const accounts = useAccountsStore(state => state.accounts)
         const { setSelectedAccountAddress } = useSelectedAccountAddress()
@@ -74,10 +74,10 @@ export const useTransactionSuccessScreen =
             if (isClaimFlow) {
                 claimOnFinished?.()
             } else {
-                if (isCloseAccount && selectedAccount?.id) {
-                    void removeAccountById(selectedAccount.id)
+                if (isCloseAccount && selectedAccount) {
+                    void removeAccountByAddress(selectedAccount.address)
                     const remaining = accounts.filter(
-                        a => a.id !== selectedAccount.id,
+                        a => a.address !== selectedAccount.address,
                     )
                     setSelectedAccountAddress(
                         remaining.length > 0 ? remaining[0].address : null,
@@ -91,7 +91,7 @@ export const useTransactionSuccessScreen =
             sendFundsOnFinished,
             isCloseAccount,
             selectedAccount,
-            removeAccountById,
+            removeAccountByAddress,
             accounts,
             setSelectedAccountAddress,
         ])

@@ -13,14 +13,16 @@
 import { useAccountsStore } from '../store'
 import { useKMS } from '@perawallet/wallet-core-kms'
 
-export const useRemoveAccountById = () => {
+// Removal is keyed by address (the store's unique key) rather than `id`:
+// hardware accounts imported via the Ledger pairing flow carry no `id`.
+export const useRemoveAccountByAddress = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const { deleteKey, seedIdOf, removeKeyAndChildren } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
-    return async (id: string) => {
-        const account = accounts.find(a => a.id === id)
-        const remaining = accounts.filter(a => a.id !== id)
+    return async (address: string) => {
+        const account = accounts.find(a => a.address === address)
+        const remaining = accounts.filter(a => a.address !== address)
 
         if (account?.keyPairId) {
             const childKeyId = account.keyPairId
@@ -28,7 +30,7 @@ export const useRemoveAccountById = () => {
 
             if (seedId) {
                 // Always wipe this account's own derived child — no other
-                // account references it (account.id is unique).
+                // account references it (account.address is unique).
                 await deleteKey(childKeyId)
 
                 // If no remaining account hangs off the same seed, sweep
