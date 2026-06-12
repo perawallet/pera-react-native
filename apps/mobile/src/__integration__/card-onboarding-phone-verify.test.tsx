@@ -29,6 +29,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
 import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
+import { CardOnboardingPasswordScreen } from '@modules/card/screens/CardOnboardingPasswordScreen'
 
 const VALID_CODE = '123456'
 
@@ -39,6 +40,10 @@ const renderVerify = () =>
         'CardOnboardingPhoneVerify',
         {
             additionalScreens: [
+                {
+                    name: 'CardOnboardingPassword',
+                    component: CardOnboardingPasswordScreen,
+                },
                 {
                     name: 'CardOnboardingVerification',
                     component: CardOnboardingVerificationScreen,
@@ -54,7 +59,6 @@ describe('card onboarding — phone verify', () => {
         const store = useCardStore.getState()
         store.resetState()
         store.setPhone({ phoneCountryCode: '44', phoneNumber: '7400846282' })
-        store.setOnboardingId('mock-onboarding-id')
         store.setContactVerificationId('mock-contact-id')
     })
     afterEach(() => server.resetHandlers())
@@ -87,7 +91,7 @@ describe('card onboarding — phone verify', () => {
         )
     })
 
-    it('verifies the phone with the valid code (auto-submit) and advances to identity verification', async () => {
+    it('stashes the valid code (auto-submit) and advances to the password step', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
         server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
 
@@ -99,8 +103,32 @@ describe('card onboarding — phone verify', () => {
             { target: { value: VALID_CODE } },
         )
 
+        // The real phone/verify is deferred to the password step (it needs the
+        // onboardingId email/verify returns), so the code is stashed instead.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-password-input'),
+            ).toBeTruthy(),
+        )
+        expect(verifySpy).not.toHaveBeenCalled()
+        expect(useCardStore.getState().phoneVerificationCode).toBe(VALID_CODE)
+    })
+
+    it('verifies directly and advances to identity verification on the retry path', async () => {
+        // After the password step the onboardingId exists; a re-entered code
+        // (e.g. the deferred verify failed) fires the real call from here.
+        useCardStore.getState().setOnboardingId('mock-onboarding-id')
+        const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
+        server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
+
+        renderVerify()
+
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-phone-verify-input'),
+            { target: { value: VALID_CODE } },
+        )
+
         await waitFor(() => expect(verifySpy).toHaveBeenCalled())
-        // A successful verify advances the flow to the verification (KYC) step.
         await waitFor(() =>
             expect(
                 screen.getByTestId('card-onboarding-verification'),

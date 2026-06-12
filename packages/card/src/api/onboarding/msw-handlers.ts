@@ -36,6 +36,8 @@ export const mockVerifyPhone = (): HttpHandler =>
     successPost('*/v1/auth/register/phone/verify')
 export const mockSubmitPersonalDetails = (): HttpHandler =>
     successPost('*/v1/auth/register/personal-details')
+export const mockSubmitOnboardingConsent = (): HttpHandler =>
+    successPost('*/v2/consent/onboarding')
 
 // Onboarding KYC: pre-auth start (returns the Veriff session URL) + the status
 // poll the verification screen watches.

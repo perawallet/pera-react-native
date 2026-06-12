@@ -28,17 +28,22 @@ import { OnboardingStep, useCardStore } from '@perawallet/wallet-core-card'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
+import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
 import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
 
 const SESSION_URL = 'https://veriff.example/dev-session'
 
-// KYC verified → the flow advances to the personal-details step.
+// KYC entry → setup-status checklist → personal details.
 const renderFlow = () =>
     renderWithNavigation(
         CardOnboardingVerificationScreen,
         'CardOnboardingVerification',
         {
             additionalScreens: [
+                {
+                    name: 'CardOnboardingStatus',
+                    component: CardOnboardingStatusScreen,
+                },
                 {
                     name: 'CardOnboardingPersonalDetails',
                     component: CardOnboardingPersonalDetailsScreen,
@@ -89,7 +94,7 @@ describe('Flow: Card onboarding — identity verification', () => {
     })
     afterAll(() => server.close())
 
-    it('Given the verification screen, when Start is pressed, then the Veriff session URL opens', async () => {
+    it('Given the KYC entry, when Verify is pressed, then the Veriff session URL opens in the browser', async () => {
         mockStartVerification()
 
         renderFlow()
@@ -100,7 +105,24 @@ describe('Flow: Card onboarding — identity verification', () => {
         )
     })
 
-    it('Given verification becomes VERIFIED, then the flow advances to personal details', async () => {
+    it('Given Veriff reports PENDING, then the setup status shows the pending documents row', async () => {
+        mockStartVerification()
+        mockOnboardingDetails('PENDING')
+
+        renderFlow()
+        fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
+
+        // The poll confirms Veriff reported back → the checklist appears,
+        // with step 1 pending while Baanx reviews.
+        await waitFor(() =>
+            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
+        )
+        expect(
+            screen.getByTestId('card-onboarding-status-pending-label'),
+        ).toBeTruthy()
+    })
+
+    it('Given the identity is VERIFIED, then Enter Your Details continues to personal details', async () => {
         mockStartVerification()
         mockOnboardingDetails('VERIFIED')
 
@@ -108,28 +130,15 @@ describe('Flow: Card onboarding — identity verification', () => {
         fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
 
         await waitFor(() =>
-            expect(useCardStore.getState().onboardingStep).toBe(
-                OnboardingStep.PersonalDetails,
-            ),
+            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
         )
-        await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-personal-details'),
-            ).toBeTruthy(),
+        // Verified: no pending label; the details CTA continues the flow.
+        expect(
+            screen.queryByTestId('card-onboarding-status-pending-label'),
+        ).toBeNull()
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-status-details-cta'),
         )
-    })
-
-    it('Given verification is PENDING, then the user can continue to personal details', async () => {
-        mockStartVerification()
-        mockOnboardingDetails('PENDING')
-
-        renderFlow()
-        fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
-
-        // Submitted state: Baanx reviews async; the CTA continues the flow.
-        // (t() returns raw keys in the integration harness.)
-        await screen.findByText('peraCard.verification.submitted_title')
-        fireEvent.click(screen.getByTestId('card-onboarding-verification-cta'))
 
         await waitFor(() =>
             expect(

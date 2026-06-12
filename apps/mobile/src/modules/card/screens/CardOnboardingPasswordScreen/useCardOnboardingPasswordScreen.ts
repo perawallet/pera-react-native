@@ -16,6 +16,7 @@ import {
     passwordSetSchema,
     useCardStore,
     useVerifyEmailMutation,
+    useVerifyPhoneMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -38,10 +39,17 @@ export const useCardOnboardingPasswordScreen =
         const email = useCardStore(state => state.email)
         const countryIso = useCardStore(state => state.countryIso)
         const verificationCode = useCardStore(state => state.verificationCode)
+        const phoneVerificationCode = useCardStore(
+            state => state.phoneVerificationCode,
+        )
+        const phoneCountryCode = useCardStore(state => state.phoneCountryCode)
+        const phoneNumber = useCardStore(state => state.phoneNumber)
         const contactVerificationId = useCardStore(
             state => state.contactVerificationId,
         )
+        const existingOnboardingId = useCardStore(state => state.onboardingId)
         const verifyEmail = useVerifyEmailMutation()
+        const verifyPhone = useVerifyPhoneMutation()
 
         const {
             control,
@@ -53,9 +61,10 @@ export const useCardOnboardingPasswordScreen =
             defaultValues: { password: '', confirmPassword: '' },
         })
 
-        // This is the real Baanx `email/verify` call (mocked for now): it
-        // completes verification and sets the password. The mutation's
-        // onSuccess stores the onboarding id and advances the flow.
+        // The password step fires the two deferred Baanx calls back to back:
+        // email/verify (completes email verification, sets the password, and
+        // returns the onboardingId) and then phone/verify (which needs that
+        // onboardingId — the reason the phone code screen only stashed it).
         const submitPassword = handleSubmit(async ({ password }) => {
             // The flow's data lives in the store, not nav params. Email,
             // country, and contactVerificationId are all established by the
@@ -75,9 +84,9 @@ export const useCardOnboardingPasswordScreen =
                 navigation.navigate('CardOnboardingEmail')
                 return
             }
-            // The verification code is a transient OTP that isn't persisted, so
-            // if it's the only thing missing, send the user back to re-verify
-            // rather than POSTing an empty code.
+            // The verification codes are transient OTPs that aren't persisted;
+            // if one is missing, send the user back to the matching verify
+            // screen rather than POSTing an empty code.
             if (verificationCode === null) {
                 errorToast(
                     t('peraCard.create_account.error_title'),
@@ -86,20 +95,65 @@ export const useCardOnboardingPasswordScreen =
                 navigation.navigate('CardOnboardingEmailVerify')
                 return
             }
-            try {
-                await verifyEmail.mutateAsync({
-                    email,
-                    password,
-                    verificationCode,
-                    contactVerificationId,
-                    countryOfResidence: countryIso,
-                })
-                navigation.navigate('CardOnboardingPhone')
-            } catch {
+            if (
+                phoneCountryCode === null ||
+                phoneNumber === null ||
+                phoneVerificationCode === null
+            ) {
                 errorToast(
-                    t('peraCard.create_account.error_title'),
-                    t('peraCard.create_account.error_body'),
+                    t('peraCard.verify_phone.verify_error_title'),
+                    t('peraCard.verify_phone.verify_error_body'),
                 )
+                navigation.navigate(
+                    phoneCountryCode === null || phoneNumber === null
+                        ? 'CardOnboardingPhone'
+                        : 'CardOnboardingPhoneVerify',
+                )
+                return
+            }
+            // email/verify sets the password and completes email verification,
+            // so it runs on the first pass. If an onboardingId already exists
+            // (the user came back here after the deferred phone/verify failed),
+            // the password is set and the email code is already spent — skip it
+            // and re-run only the phone/verify below.
+            let onboardingId = existingOnboardingId
+            if (onboardingId === null) {
+                try {
+                    const result = await verifyEmail.mutateAsync({
+                        email,
+                        password,
+                        verificationCode,
+                        contactVerificationId,
+                        countryOfResidence: countryIso,
+                    })
+                    onboardingId = result.onboardingId
+                } catch {
+                    errorToast(
+                        t('peraCard.create_account.error_title'),
+                        t('peraCard.create_account.error_body'),
+                    )
+                    return
+                }
+            }
+            try {
+                await verifyPhone.mutateAsync({
+                    onboardingId,
+                    phoneCountryCode,
+                    phoneNumber,
+                    contactVerificationId,
+                    verificationCode: phoneVerificationCode,
+                })
+                // Both verifications done: KYC (identity verification) is next.
+                navigation.navigate('CardOnboardingVerification')
+            } catch {
+                // The deferred phone code was wrong/expired. The password is
+                // already set, so retrying there verifies directly (the
+                // onboardingId now exists in the store).
+                errorToast(
+                    t('peraCard.verify_phone.verify_error_title'),
+                    t('peraCard.verify_phone.verify_error_body'),
+                )
+                navigation.navigate('CardOnboardingPhoneVerify')
             }
         })
 
@@ -111,7 +165,7 @@ export const useCardOnboardingPasswordScreen =
             control,
             errors,
             isValid,
-            isSubmitting: verifyEmail.isPending,
+            isSubmitting: verifyEmail.isPending || verifyPhone.isPending,
             handleConfirm,
         }
     }

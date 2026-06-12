@@ -25,6 +25,7 @@ const initialState = {
     email: null,
     countryIso: null,
     verificationCode: null,
+    phoneVerificationCode: null,
     phoneCountryCode: null,
     phoneNumber: null,
     contactVerificationId: null,
@@ -47,6 +48,8 @@ export const useCardStore: UseBoundStore<
             setEmail: email => set({ email }),
             setCountryIso: countryIso => set({ countryIso }),
             setVerificationCode: verificationCode => set({ verificationCode }),
+            setPhoneVerificationCode: phoneVerificationCode =>
+                set({ phoneVerificationCode }),
             setPhone: ({ phoneCountryCode, phoneNumber }) =>
                 set({ phoneCountryCode, phoneNumber }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
@@ -66,8 +69,8 @@ export const useCardStore: UseBoundStore<
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
-            // `verificationCode` is intentionally omitted — it's a transient
-            // OTP that should never be written to disk.
+            // `verificationCode` and `phoneVerificationCode` are intentionally
+            // omitted — transient OTPs that should never be written to disk.
             partialize: state => ({
                 onboardingStep: state.onboardingStep,
                 email: state.email,

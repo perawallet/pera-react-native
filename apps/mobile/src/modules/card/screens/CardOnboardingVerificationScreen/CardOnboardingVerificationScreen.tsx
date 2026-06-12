@@ -10,133 +10,122 @@
  limitations under the License
  */
 
-import { PWButton, PWScreen, PWText, PWView } from '@components/core'
-import { LoadingView } from '@components/LoadingView'
-import { useLanguage } from '@hooks/useLanguage'
+import React from 'react'
+import { Trans } from 'react-i18next'
 import {
-    useCardOnboardingVerificationScreen,
-    VerificationPhase,
-} from './useCardOnboardingVerificationScreen'
+    PWButton,
+    PWIcon,
+    PWImage,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import peraCardHeroLight from '@assets/images/pera-card-hero-light.png'
+import peraCardHeroDark from '@assets/images/pera-card-hero-dark.png'
+import baanxLogo from '@assets/images/baanx-logo.png'
+import { useCardOnboardingVerificationScreen } from './useCardOnboardingVerificationScreen'
 import { useStyles } from './styles'
-
-// Each phase drives the copy and the single CTA. `start` begins/retries
-// verification; `continue` advances to personal details while Baanx reviews;
-// `done` leaves onboarding from the rejected terminal state.
-const PHASE_CONTENT: Record<
-    VerificationPhase,
-    {
-        titleKey: string
-        bodyKey: string
-        buttonKey: string
-        action: 'start' | 'continue' | 'done'
-        showSpinner: boolean
-    }
-> = {
-    [VerificationPhase.Idle]: {
-        titleKey: 'peraCard.verification.title',
-        bodyKey: 'peraCard.verification.body',
-        buttonKey: 'peraCard.verification.start_button',
-        action: 'start',
-        showSpinner: false,
-    },
-    [VerificationPhase.Starting]: {
-        titleKey: 'peraCard.verification.title',
-        bodyKey: 'peraCard.verification.body',
-        buttonKey: 'peraCard.verification.start_button',
-        action: 'start',
-        showSpinner: false,
-    },
-    [VerificationPhase.InProgress]: {
-        titleKey: 'peraCard.verification.processing_title',
-        bodyKey: 'peraCard.verification.processing_body',
-        buttonKey: 'peraCard.verification.continue_button',
-        action: 'start',
-        showSpinner: true,
-    },
-    [VerificationPhase.Submitted]: {
-        titleKey: 'peraCard.verification.submitted_title',
-        bodyKey: 'peraCard.verification.submitted_body',
-        buttonKey: 'peraCard.verification.submitted_button',
-        action: 'continue',
-        showSpinner: false,
-    },
-    [VerificationPhase.Verified]: {
-        titleKey: 'peraCard.verification.success_title',
-        bodyKey: 'peraCard.verification.success_body',
-        buttonKey: 'peraCard.verification.submitted_button',
-        action: 'continue',
-        showSpinner: false,
-    },
-    [VerificationPhase.Rejected]: {
-        titleKey: 'peraCard.verification.rejected_title',
-        bodyKey: 'peraCard.verification.rejected_body',
-        buttonKey: 'peraCard.verification.done_button',
-        action: 'done',
-        showSpinner: false,
-    },
-    [VerificationPhase.Error]: {
-        titleKey: 'peraCard.verification.error_title',
-        bodyKey: 'peraCard.verification.error_body',
-        buttonKey: 'peraCard.verification.retry_button',
-        action: 'start',
-        showSpinner: false,
-    },
-}
 
 export const CardOnboardingVerificationScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const {
-        phase,
-        isBusy,
-        handleStartVerification,
-        handleContinue,
-        handleDone,
-    } = useCardOnboardingVerificationScreen()
-
-    const content = PHASE_CONTENT[phase]
-    const actionHandlers = {
-        start: handleStartVerification,
-        continue: handleContinue,
-        done: handleDone,
-    }
-    const onPress = actionHandlers[content.action]
+    const isDarkMode = useIsDarkMode()
+    const peraCardHero = isDarkMode ? peraCardHeroDark : peraCardHeroLight
+    const { isBusy, handleVerify, handleLogout, handleOpenSupport } =
+        useCardOnboardingVerificationScreen()
 
     return (
         <PWScreen
             testID='card-onboarding-verification'
             footer={
-                <PWButton
-                    variant='primary'
-                    title={t(content.buttonKey)}
-                    onPress={onPress}
-                    isDisabled={isBusy}
-                    isLoading={isBusy}
-                    testID='card-onboarding-verification-cta'
-                />
+                <PWView style={styles.footer}>
+                    <PWButton
+                        variant='secondary'
+                        title={t('peraCard.verification.logout_button')}
+                        onPress={handleLogout}
+                        testID='card-onboarding-verification-logout'
+                    />
+                    <PWText
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.contactText}
+                    >
+                        <Trans
+                            i18nKey='peraCard.verification.contact_us'
+                            components={[
+                                <PWText
+                                    key='link'
+                                    variant='linkPositive'
+                                    onPress={handleOpenSupport}
+                                    testID='card-onboarding-verification-contact-link'
+                                />,
+                            ]}
+                        />
+                    </PWText>
+                </PWView>
             }
         >
             <PWView style={styles.content}>
+                <PWImage
+                    source={peraCardHero}
+                    style={styles.hero}
+                    resizeMode='contain'
+                />
+
+                <PWView style={styles.poweredByRow}>
+                    <PWText
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.poweredByText}
+                    >
+                        {t('peraCard.intro.powered_by')}
+                    </PWText>
+                    <PWImage
+                        source={baanxLogo}
+                        style={styles.baanxLogo}
+                        resizeMode='contain'
+                    />
+                </PWView>
+
                 <PWText
                     variant='h1'
                     style={styles.title}
                 >
-                    {t(content.titleKey)}
+                    {t('peraCard.verification.title')}
                 </PWText>
-                <PWText
-                    variant='bodyLarge'
-                    weight={400}
-                    style={styles.body}
-                >
-                    {t(content.bodyKey)}
-                </PWText>
-                {content.showSpinner ? (
-                    <LoadingView
-                        variant='circle'
-                        size='sm'
-                        style={styles.spinner}
-                    />
-                ) : null}
+
+                <PWView style={styles.callout}>
+                    <PWView style={styles.calloutIcon}>
+                        <PWIcon
+                            name='shield-warning'
+                            variant='favorite'
+                        />
+                    </PWView>
+                    <PWView style={styles.calloutColumn}>
+                        <PWView style={styles.calloutTexts}>
+                            <PWText variant='bodyLarge'>
+                                {t('peraCard.verification.callout_title')}
+                            </PWText>
+                            <PWText
+                                variant='footnoteMedium'
+                                weight={400}
+                                style={styles.calloutBody}
+                            >
+                                {t('peraCard.verification.callout_body')}
+                            </PWText>
+                        </PWView>
+                        <PWButton
+                            variant='primary'
+                            title={t('peraCard.verification.verify_button')}
+                            onPress={handleVerify}
+                            isDisabled={isBusy}
+                            isLoading={isBusy}
+                            testID='card-onboarding-verification-cta'
+                        />
+                    </PWView>
+                </PWView>
             </PWView>
         </PWScreen>
     )

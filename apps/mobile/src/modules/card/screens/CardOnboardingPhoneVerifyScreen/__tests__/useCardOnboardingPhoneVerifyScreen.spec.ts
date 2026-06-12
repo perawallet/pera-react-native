@@ -21,6 +21,7 @@ let mockPhoneCountryCode: string | null = '44'
 let mockPhoneNumber: string | null = '7400846282'
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockContactVerificationId: string | null = 'mock-contact-id'
+const mockSetPhoneVerificationCode = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -54,6 +55,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: string | null
                 onboardingId: string | null
                 contactVerificationId: string | null
+                setPhoneVerificationCode: (code: string | null) => void
             }) => unknown,
         ) =>
             selector({
@@ -61,6 +63,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: mockPhoneNumber,
                 onboardingId: mockOnboardingId,
                 contactVerificationId: mockContactVerificationId,
+                setPhoneVerificationCode: mockSetPhoneVerificationCode,
             }),
     }
 })
@@ -171,7 +174,10 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('routes back to verify when the onboarding id is missing', async () => {
+    it('stashes the code for the password step when there is no onboarding id yet', async () => {
+        // First pass: email/verify (which returns the onboardingId the real
+        // phone/verify needs) only fires at the password step, so the code is
+        // stashed and the flow continues there.
         mockOnboardingId = null
         const { result } = renderVerifyHook()
 
@@ -181,7 +187,23 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         })
 
         expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingEmailVerify')
+        expect(mockSetPhoneVerificationCode).toHaveBeenCalledWith(
+            MOCK_VALID_VERIFICATION_CODE,
+        )
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
+    })
+
+    it('routes back to the phone screen when the phone inputs are missing', async () => {
+        mockPhoneNumber = null
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
     })
 
     it('ignores an empty or whitespace-only code on confirm', () => {

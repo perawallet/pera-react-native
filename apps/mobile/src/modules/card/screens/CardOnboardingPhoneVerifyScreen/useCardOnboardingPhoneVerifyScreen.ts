@@ -58,6 +58,9 @@ export const useCardOnboardingPhoneVerifyScreen =
         const contactVerificationId = useCardStore(
             state => state.contactVerificationId,
         )
+        const setPhoneVerificationCode = useCardStore(
+            state => state.setPhoneVerificationCode,
+        )
         const sendPhoneVerification = useSendPhoneVerificationMutation()
         const verifyPhone = useVerifyPhoneMutation()
 
@@ -115,7 +118,12 @@ export const useCardOnboardingPhoneVerifyScreen =
             t,
         ])
 
-        // Local pre-check for fast feedback, then the real (mocked) verify call.
+        // Local pre-check for fast feedback. The real phone/verify call needs
+        // the onboardingId email/verify returns, and email/verify fires at the
+        // PASSWORD step (it carries the password) — so on the first pass the
+        // code is stashed for the password screen to verify. After the password
+        // step (retry path: the deferred verify failed), onboardingId exists
+        // and the call fires here directly.
         const handleConfirm = useCallback(
             (submittedCode?: string) => {
                 const value = (submittedCode ?? code).trim()
@@ -124,20 +132,25 @@ export const useCardOnboardingPhoneVerifyScreen =
                     setIsWrongCode(true)
                     return
                 }
+                if (
+                    phoneCountryCode === null ||
+                    phoneNumber === null ||
+                    contactVerificationId === null
+                ) {
+                    errorToast(
+                        t('peraCard.verify_phone.verify_error_title'),
+                        t('peraCard.verify_phone.verify_error_body'),
+                    )
+                    navigation.navigate('CardOnboardingPhone')
+                    return
+                }
+                if (onboardingId === null) {
+                    // First pass: stash the code; the password step verifies it.
+                    setPhoneVerificationCode(value)
+                    navigation.navigate('CardOnboardingPassword')
+                    return
+                }
                 const confirm = async () => {
-                    if (
-                        onboardingId === null ||
-                        phoneCountryCode === null ||
-                        phoneNumber === null ||
-                        contactVerificationId === null
-                    ) {
-                        errorToast(
-                            t('peraCard.verify_phone.verify_error_title'),
-                            t('peraCard.verify_phone.verify_error_body'),
-                        )
-                        navigation.navigate('CardOnboardingEmailVerify')
-                        return
-                    }
                     try {
                         await verifyPhone.mutateAsync({
                             onboardingId,
@@ -163,6 +176,7 @@ export const useCardOnboardingPhoneVerifyScreen =
                 phoneCountryCode,
                 phoneNumber,
                 contactVerificationId,
+                setPhoneVerificationCode,
                 verifyPhone,
                 errorToast,
                 navigation,

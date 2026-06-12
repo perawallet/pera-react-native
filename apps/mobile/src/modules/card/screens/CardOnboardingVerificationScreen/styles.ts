@@ -12,18 +12,70 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const HERO_HEIGHT = 210
+
 export const useStyles = makeStyles(theme => ({
     content: {
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.xl,
+        paddingTop: theme.spacing.sm,
     },
-    title: {
+    hero: {
+        width: '100%',
+        height: HERO_HEIGHT,
+    },
+    poweredByRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.sm,
+        marginTop: theme.spacing.xl,
+    },
+    poweredByText: {
         color: theme.colors.textGray,
     },
-    body: {
-        color: theme.colors.textGrayLighter,
+    baanxLogo: {
+        width: theme.spacing['4xl'],
+        height: theme.spacing.md,
     },
-    spinner: {
+    title: {
+        marginTop: theme.spacing.lg,
+        textAlign: 'center',
+    },
+    callout: {
+        marginTop: theme.spacing.xxl,
+        flexDirection: 'row',
         alignItems: 'flex-start',
+        gap: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        paddingLeft: theme.spacing.lg,
+        paddingHorizontal: theme.spacing['3xl'],
+        paddingBottom: theme.spacing.xl,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.favorite,
+        borderRadius: theme.spacing.lg,
+        backgroundColor: theme.colors.warningSurface,
+    },
+    calloutIcon: {
+        padding: theme.spacing.sm,
+        borderRadius: theme.spacing.xl,
+        backgroundColor: theme.colors.background,
+        // Subtle elevation matching the design's Light/Card/Shadow on the circle.
+        ...theme.shadows.sm,
+    },
+    calloutColumn: {
+        flex: 1,
+        gap: theme.spacing.lg,
+    },
+    calloutTexts: {
+        gap: theme.spacing.sm,
+    },
+    calloutBody: {
+        color: theme.colors.textGray,
+    },
+    footer: {
+        gap: theme.spacing.md,
+    },
+    contactText: {
+        textAlign: 'center',
+        color: theme.colors.textGrayLighter,
     },
 }))

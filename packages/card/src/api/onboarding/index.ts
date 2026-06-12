@@ -19,6 +19,7 @@ export {
     fetchOnboardingDetails,
     submitPersonalDetails,
     submitAddress,
+    submitOnboardingConsent,
     fetchRegistrationSettings,
     type SendEmailVerificationParams,
     type SendEmailVerificationResult,
@@ -32,4 +33,5 @@ export {
     type SubmitPersonalDetailsParams,
     type SubmitAddressParams,
     type SubmitAddressResult,
+    type SubmitOnboardingConsentParams,
 } from './endpoints'

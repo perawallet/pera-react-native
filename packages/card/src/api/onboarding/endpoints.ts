@@ -196,6 +196,23 @@ export const submitAddress = async (
     return addressResponseSchema.parse(response.data)
 }
 
+// Records the user's onboarding consents (T&C acceptances + marketing opt-in)
+// collected on the final address step. The Baanx sandbox is unavailable, so the
+// exact request shape is an assumption pending the live /v2/consent/onboarding
+// contract — it's mocked in installCardDevMocks for now.
+export type SubmitOnboardingConsentParams = NetworkParams & {
+    onboardingId: string
+    allowMarketing: boolean
+    cardTermsAccepted: boolean
+    platformTermsAccepted: boolean
+}
+export const submitOnboardingConsent = async (
+    params: SubmitOnboardingConsentParams,
+): Promise<void> => {
+    const { network, signal, ...body } = params
+    await postRegisterStep('/v2/consent/onboarding', body, { network, signal })
+}
+
 export const fetchRegistrationSettings = async (
     params: NetworkParams,
 ): Promise<RegistrationSettings> => {

@@ -24,6 +24,7 @@ import { CardOnboardingPhoneVerifyScreen } from '../../screens/CardOnboardingPho
 import { CardOnboardingPersonalDetailsScreen } from '../../screens/CardOnboardingPersonalDetailsScreen'
 import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddressScreen'
 import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVerificationScreen'
+import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusScreen'
 import { type CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
@@ -51,11 +52,6 @@ export const CardOnboardingStackNavigator = () => {
                 options={{ title: 'peraCard.verify_email.navigation_title' }}
             />
             <Stack.Screen
-                name='CardOnboardingPassword'
-                component={CardOnboardingPasswordScreen}
-                options={{ title: 'peraCard.create_password.navigation_title' }}
-            />
-            <Stack.Screen
                 name='CardOnboardingPhone'
                 component={CardOnboardingPhoneScreen}
                 options={{
@@ -68,9 +64,19 @@ export const CardOnboardingStackNavigator = () => {
                 options={{ title: 'peraCard.verify_phone.navigation_title' }}
             />
             <Stack.Screen
+                name='CardOnboardingPassword'
+                component={CardOnboardingPasswordScreen}
+                options={{ title: 'peraCard.create_password.navigation_title' }}
+            />
+            <Stack.Screen
                 name='CardOnboardingVerification'
                 component={CardOnboardingVerificationScreen}
-                options={{ title: 'peraCard.verification.navigation_title' }}
+                options={{ title: 'peraCard.intro.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingStatus'
+                component={CardOnboardingStatusScreen}
+                options={{ title: '' }}
             />
             <Stack.Screen
                 name='CardOnboardingPersonalDetails'

@@ -19,6 +19,7 @@ import type {
 } from '@perawallet/wallet-core-card'
 
 const mockMutateAsync = vi.fn()
+const mockConsentMutateAsync = vi.fn()
 const mockSetCountryIso = vi.fn()
 const mockSetAllowMarketing = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
@@ -36,6 +37,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useSubmitAddressMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockMutateAsync,
+            isPending: false,
+            isError: false,
+            isSuccess: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
+        }),
+        useSubmitConsentMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mockConsentMutateAsync,
             isPending: false,
             isError: false,
             isSuccess: false,
@@ -132,6 +143,7 @@ describe('useCardOnboardingAddressScreen', () => {
         mockCountryIso = 'GB'
         mockSettings = { countries: [gb, us], usStates: [california] }
         mockMutateAsync.mockResolvedValue(undefined)
+        mockConsentMutateAsync.mockResolvedValue(undefined)
     })
 
     it('starts with an invalid form and is not submitting', () => {

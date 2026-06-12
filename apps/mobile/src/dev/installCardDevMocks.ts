@@ -168,6 +168,9 @@ const MOCK_ROUTES: Record<string, MockHandler> = {
             accessToken: 'mock-access-token',
             onboardingId: 'mock-onboarding-id',
         }),
+    // Consent (T&Cs + marketing) recorded just before the address submit on the
+    // final step; returns void on success, mirroring /v2/consent/onboarding.
+    'POST /v2/consent/onboarding': () => ok({}),
 }
 
 if (__DEV__ || config.appEnvironment === 'staging') {

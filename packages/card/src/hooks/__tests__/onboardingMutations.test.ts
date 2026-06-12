@@ -27,6 +27,7 @@ const api = vi.hoisted(() => ({
     verifyPhone: vi.fn(),
     submitPersonalDetails: vi.fn(),
     submitAddress: vi.fn(),
+    submitOnboardingConsent: vi.fn(),
 }))
 vi.mock('../../api/onboarding', () => api)
 
@@ -39,6 +40,7 @@ import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMut
 import { useVerifyPhoneMutation } from '../useVerifyPhoneMutation'
 import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMutation'
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
+import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
 import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 
@@ -111,8 +113,11 @@ describe('onboarding mutation hooks', () => {
             }),
         )
         expect(useCardStore.getState().onboardingId).toBe('ob_new')
+        // The step does NOT advance here: the phone screens already ran (UI
+        // order is phone → password) and the deferred phone/verify that
+        // follows this call advances to Verification.
         expect(useCardStore.getState().onboardingStep).toBe(
-            OnboardingStep.PhoneSend,
+            OnboardingStep.EmailSend,
         )
     })
 
@@ -141,7 +146,9 @@ describe('onboarding mutation hooks', () => {
         )
     })
 
-    it('useVerifyPhoneMutation forwards onboardingId + code', async () => {
+    it('useVerifyPhoneMutation forwards the code, clears the stash, and advances', async () => {
+        // The phone code is stashed during the first pass; verifying consumes it.
+        useCardStore.getState().setPhoneVerificationCode('654321')
         const { result } = renderHook(() => useVerifyPhoneMutation(), {
             wrapper,
         })
@@ -161,10 +168,12 @@ describe('onboarding mutation hooks', () => {
                 network: 'mainnet',
             }),
         )
-        // Phone verified → the KYC (verification) step comes next.
+        // Phone verified → the KYC (verification) step comes next, and the
+        // transient stash is dropped.
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Verification,
         )
+        expect(useCardStore.getState().phoneVerificationCode).toBeNull()
     })
 
     it('useSubmitPersonalDetailsMutation wraps the details with the network', async () => {
@@ -242,5 +251,32 @@ describe('onboarding mutation hooks', () => {
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Completed,
         )
+    })
+
+    it('useSubmitConsentMutation forwards the consent payload without advancing the step', async () => {
+        const stepBefore = useCardStore.getState().onboardingStep
+        const { result } = renderHook(() => useSubmitConsentMutation(), {
+            wrapper,
+        })
+        result.current.mutate({
+            onboardingId: 'ob_1',
+            allowMarketing: true,
+            cardTermsAccepted: true,
+            platformTermsAccepted: true,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.submitOnboardingConsent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                onboardingId: 'ob_1',
+                allowMarketing: true,
+                cardTermsAccepted: true,
+                platformTermsAccepted: true,
+                network: 'mainnet',
+            }),
+        )
+        // Consent is part of the final address step — it must not advance the
+        // onboarding step on its own.
+        expect(useCardStore.getState().onboardingStep).toBe(stepBefore)
     })
 })

@@ -18,6 +18,7 @@ import {
     useCardStore,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
+    useSubmitConsentMutation,
     type AddressFormValues,
     type AddressInput,
     type SupportedCountry,
@@ -78,6 +79,7 @@ export const useCardOnboardingAddressScreen =
         // opt-out survives remounts and failed submits.
         const allowMarketing = useCardStore(state => state.allowMarketing)
         const submitAddress = useSubmitAddressMutation()
+        const submitConsent = useSubmitConsentMutation()
         const { data: settings } = useRegistrationSettingsQuery()
 
         const [selectedCountry, setSelectedCountry] =
@@ -213,6 +215,15 @@ export const useCardOnboardingAddressScreen =
                     : {}),
             }
             try {
+                // Record the user's consents (T&Cs + marketing) first, then
+                // finalize registration with the address. Both T&Cs are
+                // guaranteed accepted here — the Continue button gates on them.
+                await submitConsent.mutateAsync({
+                    onboardingId,
+                    allowMarketing,
+                    cardTermsAccepted,
+                    platformTermsAccepted,
+                })
                 await submitAddress.mutateAsync(address)
                 // Registration finalized (the mutation committed the session
                 // and marked onboarding complete) — swap to the completion
@@ -239,7 +250,7 @@ export const useCardOnboardingAddressScreen =
             control,
             errors,
             isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
-            isSubmitting: submitAddress.isPending,
+            isSubmitting: submitAddress.isPending || submitConsent.isPending,
             isCompleted,
             selectedCountry,
             isUsResident,
