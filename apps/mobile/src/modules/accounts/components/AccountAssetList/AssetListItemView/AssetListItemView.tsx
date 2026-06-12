@@ -120,6 +120,7 @@ const AssetListItemViewBase = ({
         <AssetItemView
             asset={asset}
             right={balance}
+            iconSize='xl'
             showFavorite
             showDeletedLabel
             copyableAssetId

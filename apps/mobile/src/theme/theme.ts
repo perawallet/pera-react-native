@@ -150,6 +150,14 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             wallet5: palette.salmon[400],
             wallet5Icon: '#424F76',
 
+            // Account Icons
+            accountIconTurquoiseBg: palette.turquoise[300],
+            accountIconPurpleBg: '#8755D5',
+            accountIconMagentaBg: '#9B1F69',
+            accountIconPinkBg: '#F5B2C6',
+            accountIconPeachBg: palette.salmon[100],
+            accountIconNeutralBg: palette.gray[100],
+
             // ASA Icons
             trustedIconBg: palette.turquoise[600],
             trustedIconInline: palette.white,
@@ -345,6 +353,14 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             wallet4IconGovernor: palette.turquoise[600],
             wallet5: palette.salmon[400],
             wallet5Icon: '#424F76',
+
+            // Account Icons
+            accountIconTurquoiseBg: palette.turquoise[300],
+            accountIconPurpleBg: '#8755D5',
+            accountIconMagentaBg: '#9B1F69',
+            accountIconPinkBg: '#F5B2C6',
+            accountIconPeachBg: palette.salmon[100],
+            accountIconNeutralBg: palette.gray[100],
 
             // ASA Icons
             trustedIconBg: palette.turquoise[600],

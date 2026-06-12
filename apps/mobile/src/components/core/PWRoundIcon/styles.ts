@@ -12,38 +12,41 @@
 
 import { makeStyles } from '@rneui/themed'
 
-import type { PWRoundIconProps } from './PWRoundIcon'
+import { getRoundIconDimensions } from './sizing'
+import type { PWRoundIconProps, PWRoundIconVariant } from './PWRoundIcon'
 
 export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
     const { variant = 'secondary', size = 'lg' } = props
 
-    const sizeMap: Record<string, number> = {
-        xs: theme.spacing.xl,
-        sm: theme.spacing.xxl,
-        md: theme.spacing['3xl'],
-        lg: theme.spacing['4xl'],
-        xl: theme.spacing['5xl'],
+    const { diameter } = getRoundIconDimensions(theme, size)
+
+    const accountBackgrounds: Partial<Record<PWRoundIconVariant, string>> = {
+        accountTurquoise: theme.colors.accountIconTurquoiseBg,
+        accountPurple: theme.colors.accountIconPurpleBg,
+        accountMagenta: theme.colors.accountIconMagentaBg,
+        accountPink: theme.colors.accountIconPinkBg,
+        accountPeach: theme.colors.accountIconPeachBg,
+        accountNeutral: theme.colors.accountIconNeutralBg,
     }
 
-    const buttonSize = sizeMap[size] || theme.spacing['3xl']
-
     const backgroundColor =
-        variant === 'primary'
+        accountBackgrounds[variant] ??
+        (variant === 'primary'
             ? theme.mode === 'dark'
                 ? theme.colors.buttonHelperBg
                 : theme.colors.buttonPrimaryBg
             : variant === 'helper'
               ? theme.colors.buttonSquareBg
-              : theme.colors.layerGrayLighter
+              : theme.colors.layerGrayLighter)
 
     return {
         container: {
             backgroundColor,
-            width: buttonSize,
-            height: buttonSize,
+            width: diameter,
+            height: diameter,
             justifyContent: 'center',
             alignItems: 'center',
-            borderRadius: buttonSize / 2,
+            borderRadius: diameter / 2,
         },
     }
 })

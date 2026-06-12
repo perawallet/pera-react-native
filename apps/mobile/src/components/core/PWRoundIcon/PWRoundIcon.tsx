@@ -21,27 +21,28 @@ import {
     type PWIconVariant,
 } from '@components/core/PWIcon'
 import { PWView, type PWViewProps } from '@components/core/PWView'
+import { ROUND_ICON_SIZE_MAP, type PWRoundIconSize } from './sizing'
 import { useStyles } from './styles'
+
+export type PWRoundIconAccountVariant =
+    | 'accountTurquoise'
+    | 'accountPurple'
+    | 'accountMagenta'
+    | 'accountPink'
+    | 'accountPeach'
+    | 'accountNeutral'
+
+export type PWRoundIconVariant = PWIconVariant | PWRoundIconAccountVariant
 
 export type PWRoundIconProps = {
     icon: IconName
-    size?: PWIconSize
+    size?: PWRoundIconSize
     iconSize?: PWIconSize
-    variant?: PWIconVariant
+    variant?: PWRoundIconVariant
     style?: ViewStyle
 } & PWViewProps
 
-const ICON_SIZE_MAP: Record<PWIconSize, PWIconSize> = {
-    xs: 'xs',
-    sm: 'sm',
-    md: 'sm',
-    lg: 'md',
-    xl: 'lg',
-    xxl: 'xl',
-    '3xl': 'xxl',
-}
-
-const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
+const ICON_VARIANT_MAP: Partial<Record<PWRoundIconVariant, PWIconVariant>> = {
     primary: 'white',
     secondary: 'primary',
     buttonPrimary: 'buttonPrimary',
@@ -69,8 +70,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         if (theme.mode === 'dark' && variant === 'primary') {
             return 'brand'
         }
-        return (ICON_VARIANT_MAP[variant as string] ||
-            'primary') as PWIconVariant
+        return ICON_VARIANT_MAP[variant] ?? 'primary'
     }, [theme.mode, variant])
 
     return (
@@ -80,7 +80,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         >
             <PWIcon
                 name={icon}
-                size={iconSize ?? ICON_SIZE_MAP[size]}
+                size={iconSize ?? ROUND_ICON_SIZE_MAP[size].icon}
                 variant={resolvedIconVariant}
             />
         </PWView>

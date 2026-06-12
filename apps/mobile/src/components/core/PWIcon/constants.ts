@@ -127,6 +127,16 @@ import LightRekeyedMultisigIcon from '@assets/icons/accounts/light/rekeyed-multi
 import LightNoAuthIcon from '@assets/icons/accounts/light/noauth-account.svg'
 import LightUnknownAccountIcon from '@assets/icons/accounts/light/unknown-account.svg'
 import LightWatchAccountIcon from '@assets/icons/accounts/light/watch-account.svg'
+import Algo25AccountGlyph from '@assets/icons/accounts/glyph/algo25-account.svg'
+import HdWalletAccountGlyph from '@assets/icons/accounts/glyph/hdwallet-account.svg'
+import LedgerAccountGlyph from '@assets/icons/accounts/glyph/ledger-account.svg'
+import MultisigAccountGlyph from '@assets/icons/accounts/glyph/multisig-account.svg'
+import NoAuthAccountGlyph from '@assets/icons/accounts/glyph/noauth-account.svg'
+import RekeyedLedgerGlyph from '@assets/icons/accounts/glyph/rekeyed-ledger.svg'
+import RekeyedMultisigGlyph from '@assets/icons/accounts/glyph/rekeyed-multisig.svg'
+import RekeyedStandardGlyph from '@assets/icons/accounts/glyph/rekeyed-standard.svg'
+import UnknownAccountGlyph from '@assets/icons/accounts/glyph/unknown-account.svg'
+import WatchAccountGlyph from '@assets/icons/accounts/glyph/watch-account.svg'
 import USDCAssetIcon from '@assets/icons/assets/usdc.svg'
 import VerifiedAssetIcon from '@assets/icons/assets/verified.svg'
 import VestAssetIcon from '@assets/icons/assets/vest.svg'
@@ -268,6 +278,16 @@ export const ICON_LIBRARY = {
     'accounts/light/noauth-account': LightNoAuthIcon,
     'accounts/light/unknown-account': LightUnknownAccountIcon,
     'accounts/light/watch-account': LightWatchAccountIcon,
+    'accounts/glyph/algo25-account': Algo25AccountGlyph,
+    'accounts/glyph/hdwallet-account': HdWalletAccountGlyph,
+    'accounts/glyph/ledger-account': LedgerAccountGlyph,
+    'accounts/glyph/multisig-account': MultisigAccountGlyph,
+    'accounts/glyph/noauth-account': NoAuthAccountGlyph,
+    'accounts/glyph/rekeyed-ledger': RekeyedLedgerGlyph,
+    'accounts/glyph/rekeyed-multisig': RekeyedMultisigGlyph,
+    'accounts/glyph/rekeyed-standard': RekeyedStandardGlyph,
+    'accounts/glyph/unknown-account': UnknownAccountGlyph,
+    'accounts/glyph/watch-account': WatchAccountGlyph,
     'assets/algo': AlgoAssetIcon,
     'assets/suspicious': SuspiciousAssetIcon,
     'assets/trusted': TrustedAssetIcon,
