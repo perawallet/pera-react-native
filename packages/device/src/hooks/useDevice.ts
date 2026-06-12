@@ -44,10 +44,6 @@ export const useDevice = () => {
     // back the wrong network's deviceID.
     const inFlightIdRef = useRef(0)
 
-    // `application` is sent on every write (create, update, token cleanup),
-    // matching Android's DeviceUpdateRequest and iOS's DeviceUpdateDraft —
-    // omitting it on PUT would let the server-side device record lose its
-    // application association.
     const buildPayload = useCallback(
         async (addresses: string[]) => ({
             accounts: addresses,

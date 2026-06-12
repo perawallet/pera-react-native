@@ -86,7 +86,7 @@ describe('useNotificationsListQuery', () => {
         ])
     })
 
-    it('maps null wire fields to safe defaults so consumers stay non-null', async () => {
+    it('preserves null wire fields so the UI can handle absence explicitly', async () => {
         const mockResponse = {
             count: 1,
             next: null,
@@ -114,12 +114,12 @@ describe('useNotificationsListQuery', () => {
         expect(result.current.data).toEqual([
             {
                 id: '5',
-                type: undefined,
-                accountAddress: '',
-                message: '',
-                url: '',
+                type: null,
+                accountAddress: null,
+                message: null,
+                url: null,
                 createdAt: new Date('2023-01-01T00:00:00Z'),
-                isUnread: undefined,
+                isUnread: null,
                 icon: null,
             },
         ])

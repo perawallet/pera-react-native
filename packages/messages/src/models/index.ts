@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    BaseStoreState,
+    Maybe,
+    Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     MultiSigAccount,
     MultisigSignRequest,
@@ -46,14 +50,17 @@ export const MULTISIG_IMPORT_ACCOUNT_NOTIFICATION_TYPE =
 export const MULTISIG_DECLINED_NOTIFICATION_TYPE = 'multisig-declined'
 export const MULTISIG_EXPIRED_NOTIFICATION_TYPE = 'multisig-expired'
 
+// Per notification type the backend may omit any of these fields (rekey
+// notifications carry no deeplink, for example), so absence is part of the
+// model and handled by the UI rather than masked with defaults.
 export type PeraNotification = {
     id: string
-    type?: string
-    accountAddress: string
-    message: string
-    url: string
+    type?: Maybe<string>
+    accountAddress: Maybe<string>
+    message: Maybe<string>
+    url: Maybe<string>
     createdAt: Date
-    isUnread?: boolean
+    isUnread?: Maybe<boolean>
     icon?: Nullable<NotificationIcon>
 }
 

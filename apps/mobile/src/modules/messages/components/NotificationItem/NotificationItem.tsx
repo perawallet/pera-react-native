@@ -71,7 +71,9 @@ export const NotificationItem = ({ item, onPress }: NotificationItemProps) => {
             </PWView>
             {image}
             <PWView style={styles.messageBox}>
-                <PWText style={styles.messageText}>{item.message}</PWText>
+                {!!item.message && (
+                    <PWText style={styles.messageText}>{item.message}</PWText>
+                )}
                 <PWText
                     variant='caption'
                     style={styles.timeText}
