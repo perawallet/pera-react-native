@@ -223,6 +223,11 @@ workflows:
       # Bitrise steps, which previously let "Build packages" regenerate the
       # config blank (appEnvironment fell back to development).
       - APP_ENV: staging
+      # QA-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
+      # Deliberately absent from ios-production so release builds keep
+      # seed-screen capture protection. Workflow-level (see APP_ENV) so
+      # generate-config.sh bakes it.
+      - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
       - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
@@ -487,6 +492,11 @@ workflows:
       - ENVIRONMENT: staging
       # See ios-staging: APP_ENV must be a workflow-level env.
       - APP_ENV: staging
+      # QA-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
+      # Deliberately absent from android-production so release builds keep
+      # seed-screen capture protection. Workflow-level (see APP_ENV) so
+      # generate-config.sh bakes it.
+      - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
       - ANDROID_FLAVOR: staging
       - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)

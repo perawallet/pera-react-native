@@ -84,9 +84,9 @@ describe('transformTransactionItem', () => {
     it('transforms swap group detail when present', () => {
         const apiItem = makeApiItem({
             swap_group_detail: {
-                asset_in_id: 31566704,
+                asset_in_id: '31566704',
                 asset_in_unit_name: 'USDC',
-                asset_out_id: 0,
+                asset_out_id: '0',
                 asset_out_unit_name: 'ALGO',
                 amount_in: '1000000',
                 amount_out: '5000000',
@@ -95,9 +95,9 @@ describe('transformTransactionItem', () => {
         const result = transformTransactionItem(apiItem)
 
         expect(result.swapGroupDetail).toEqual({
-            assetInId: 31566704,
+            assetInId: '31566704',
             assetInUnitName: 'USDC',
-            assetOutId: 0,
+            assetOutId: '0',
             assetOutUnitName: 'ALGO',
             amountIn: new Decimal('1000000'),
             amountOut: new Decimal('5000000'),
@@ -130,7 +130,7 @@ describe('transformTransactionItem', () => {
     it('transforms asset summary when present', () => {
         const apiItem = makeApiItem({
             asset: {
-                asset_id: 31566704,
+                asset_id: '31566704',
                 name: 'USD Coin',
                 unit_name: 'USDC',
                 decimals: 6,
@@ -139,7 +139,7 @@ describe('transformTransactionItem', () => {
         const result = transformTransactionItem(apiItem)
 
         expect(result.asset).toEqual({
-            assetId: 31566704,
+            assetId: '31566704',
             name: 'USD Coin',
             unitName: 'USDC',
             decimals: 6,
@@ -149,7 +149,7 @@ describe('transformTransactionItem', () => {
     it('handles asset summary with missing optional fields', () => {
         const apiItem = makeApiItem({
             asset: {
-                asset_id: 123,
+                asset_id: '123',
                 name: undefined,
                 unit_name: undefined,
                 decimals: undefined,
@@ -158,7 +158,7 @@ describe('transformTransactionItem', () => {
         const result = transformTransactionItem(apiItem)
 
         expect(result.asset).toEqual({
-            assetId: 123,
+            assetId: '123',
             name: '',
             unitName: '',
             decimals: 0,
@@ -195,8 +195,8 @@ describe('transformTransactionItem', () => {
         })
     })
 
-    it('converts application_id to string when present', () => {
-        const apiItem = makeApiItem({ application_id: 12345 })
+    it('passes the application_id string through when present', () => {
+        const apiItem = makeApiItem({ application_id: '12345' })
         const result = transformTransactionItem(apiItem)
 
         expect(result.applicationId).toBe('12345')

@@ -15,10 +15,7 @@ import {
     preventScreenCaptureAsync,
     allowScreenCaptureAsync,
 } from 'expo-screen-capture'
-import {
-    useRemoteConfig,
-    RemoteConfigKeys,
-} from '@perawallet/wallet-core-remote-config'
+import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 
 // Blocks screenshots and screen recordings while the mounting component is
@@ -27,17 +24,16 @@ import { logger } from '@perawallet/wallet-core-shared'
 // bricking the caller — errors are logged so we notice them in crash reports.
 // The `tag` is required so overlapping callers (e.g. mnemonic screen plus a
 // deep-linked verification sheet) don't clobber each other's lock.
+//
+// The e2e escape hatch is a build-time config flag, not a remote/runtime
+// signal: store builds compile `disableScreenCapturePrevention` to false, so
+// nobody can weaken seed-screen protection on the live fleet.
 export const usePreventScreenCapture = (
     tag: string,
     enabled: boolean = true,
 ): void => {
-    const remoteConfig = useRemoteConfig()
-    const isDisabledByFlag = remoteConfig.getBooleanValue(
-        RemoteConfigKeys.disable_screen_capture_prevention,
-    )
-
     useEffect(() => {
-        if (!enabled || isDisabledByFlag) return
+        if (!enabled || config.disableScreenCapturePrevention) return
         void preventScreenCaptureAsync(tag).catch(err => {
             logger.error(
                 'usePreventScreenCapture: failed to prevent screen capture',
@@ -58,5 +54,5 @@ export const usePreventScreenCapture = (
                 )
             })
         }
-    }, [tag, enabled, isDisabledByFlag])
+    }, [tag, enabled])
 }

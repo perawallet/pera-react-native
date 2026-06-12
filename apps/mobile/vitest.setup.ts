@@ -2229,12 +2229,33 @@ vi.mock('@react-native-clipboard/clipboard', () => ({
 }))
 
 // Mock @perawallet/wallet-core-shared
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
     logger: {
         debug: vi.fn(),
         info: vi.fn(),
         warn: vi.fn(),
         error: vi.fn(),
+    },
+    // Real implementations — package schemas evaluate uint64IdSchema at
+    // import time, so it must be a genuine zod schema.
+    uint64IdSchema: (await import('zod')).z
+        .union([
+            (await import('zod')).z.number().int().nonnegative(),
+            (await import('zod')).z.string().regex(/^\d+$/),
+        ])
+        .transform(String),
+    uint64IdNumberSchema: (await import('zod')).z.number().int().nonnegative(),
+    uint64IdToNumber: (id: string | number) => {
+        if (typeof id === 'string' && id.trim() === '') {
+            throw new RangeError('Cannot convert empty string to a uint64 id')
+        }
+        const value = typeof id === 'number' ? id : Number(id)
+        if (!Number.isSafeInteger(value) || value < 0) {
+            throw new RangeError(
+                `Cannot represent uint64 id "${id}" exactly as a JS number`,
+            )
+        }
+        return value
     },
     truncateAlgorandAddress: vi.fn(a => a),
     stripUrlScheme: vi.fn(url => url),

@@ -12,6 +12,7 @@
 
 import type { Key } from '@algorandfoundation/keystore'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 import nacl from 'tweetnacl'
 import type { AccessControl } from './models'
 import { SeedScheme } from './constants'
@@ -106,17 +107,6 @@ export const createdAtOf = (key: Key): Date => {
 export const expiresAtOf = (key: Key): Date | undefined => {
     const iso = seedMetadata(key).pera?.expiresAt
     return iso ? new Date(iso) : undefined
-}
-
-const HEX_LOOKUP = '0123456789abcdef'
-
-const bytesToHex = (bytes: Uint8Array): string => {
-    let out = ''
-    for (let i = 0; i < bytes.length; i++) {
-        const b = bytes[i]
-        out += HEX_LOOKUP[(b >> 4) & 0xf] + HEX_LOOKUP[b & 0xf]
-    }
-    return out
 }
 
 export const hexToBytes = (hex: string): Uint8Array => {

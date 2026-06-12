@@ -11,6 +11,7 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { z } from 'zod'
 import {
     validateMockRequest,
     validateMockResponse,
@@ -22,13 +23,12 @@ import {
     calculateSwapAmountResponseSchema,
     createQuotesRequestSchema,
     createQuotesResponseSchema,
-    type CalculatePeraFeeApiResponse,
-    type CalculateSwapAmountApiResponse,
-    type CreateQuotesApiResponse,
 } from './schema'
 
+// Mock payloads are typed with the schema *input* (wire) shape — asset ids
+// may be numbers on the wire but are normalized to strings during parsing.
 export type MockCalculatePeraFeeParams = {
-    response: CalculatePeraFeeApiResponse
+    response: z.input<typeof calculatePeraFeeResponseSchema>
     status?: number
 }
 
@@ -55,7 +55,7 @@ export const mockCalculatePeraFee = ({
 }
 
 export type MockCalculateSwapAmountParams = {
-    response: CalculateSwapAmountApiResponse
+    response: z.input<typeof calculateSwapAmountResponseSchema>
     status?: number
 }
 
@@ -82,7 +82,7 @@ export const mockCalculateSwapAmount = ({
 }
 
 export type MockCreateQuotesParams = {
-    response: CreateQuotesApiResponse
+    response: z.input<typeof createQuotesResponseSchema>
     status?: number
 }
 

@@ -12,12 +12,11 @@
 
 import { canonify } from 'canonify'
 import { z } from 'zod'
+import { utf8ByteLength } from '@perawallet/wallet-core-shared'
 import { Arc60BadJsonError } from './arc60-errors'
 
-const byteLength = (value: string): number =>
-    new TextEncoder().encode(value).length
-
-const maxBytes = (max: number) => (value: string) => byteLength(value) <= max
+const maxBytes = (max: number) => (value: string) =>
+    utf8ByteLength(value) <= max
 
 /** Per the security review: statement ≤ 1KB, resources ≤ 32 × 256B, other fields capped. */
 export const SIWA_MAX_STATEMENT_BYTES = 1024
@@ -97,7 +96,7 @@ export type Siwa = z.infer<typeof siwaSchema>
  * break signature-replay protections downstream. Mirrors Lute's behaviour.
  */
 export const parseSiwa = (jsonString: string): Siwa => {
-    if (byteLength(jsonString) > SIWA_MAX_PAYLOAD_BYTES) {
+    if (utf8ByteLength(jsonString) > SIWA_MAX_PAYLOAD_BYTES) {
         throw new Arc60BadJsonError('payload exceeds the maximum allowed size')
     }
     let parsed: unknown

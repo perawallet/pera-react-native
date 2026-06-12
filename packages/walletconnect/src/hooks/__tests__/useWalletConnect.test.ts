@@ -227,22 +227,11 @@ describe('useWalletConnect', () => {
             })
         })
 
-        it('should auto-approve session if autoConnect is true', async () => {
+        it('never auto-approves a session_request — always routes to the approval sheet', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
             )
-            const connection = {
-                clientId: 'client-auto',
-                autoConnect: true,
-            } as any
-
-            // Must mock store to return specific session or assume passed session is enough for autoConnect logic?
-            // The logic: if (session.autoConnect) { approveSession(...) }
-            // references 'session' from closure scope of 'connect'.
-            // Yes, passes 'session' arg.
-
-            // Also needs accounts to be present for approveSession
-            // useAllAccounts mock returns [] by default (line 36)
+            const connection = { clientId: 'client-no-auto' } as any
 
             await act(async () => {
                 await result.current.connect({ connection })
@@ -265,30 +254,18 @@ describe('useWalletConnect', () => {
                 ],
             }
 
-            // We need to spy on approveSession of the *hook* or check if connector.approveSession is called.
-            // But approveSession in hook logic calls `approveSession(clientId, ...)`
-            // Wait, line 62 in useWalletConnect.ts calls `approveSession(...)` (the hook function).
-            // It calls the internal `approveSession` function defined in the hook.
-            // Which then calls `connector.approveSession`.
-
-            // However, `approveSession` requires the session to be in the store to find it (lines 140-142).
-            // So we must put the session in the store.
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) =>
-                    selector({
-                        walletConnectConnections: [connection],
-                        setWalletConnectConnections: mockSetConnections,
-                    }),
-            )
-
             act(() => {
                 sessionRequestCallback(null, payload)
             })
 
-            expect(mockAddSessionRequest).not.toHaveBeenCalled()
-            expect(mockConnectorInstance.approveSession).toHaveBeenCalledWith({
+            // No zero-click connect: the wallet must never hand a dApp account
+            // addresses without the user approving through the sheet.
+            expect(mockConnectorInstance.approveSession).not.toHaveBeenCalled()
+            expect(mockAddSessionRequest).toHaveBeenCalledWith({
+                peerMeta: { name: 'App' },
                 chainId: 4160,
-                accounts: [],
+                permissions: ['perm1'],
+                clientId: 'client-no-auto',
             })
         })
 
@@ -373,13 +350,12 @@ describe('useWalletConnect', () => {
             expect(mockSetConnectionError).not.toHaveBeenCalled()
         })
 
-        it('should reject session and surface invalid network error during autoConnect when chainId does not match active network', async () => {
+        it('should reject session and surface invalid network error when chainId does not match active network (store-populated)', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
             )
             const connection = {
                 clientId: 'client-auto-wrong-net',
-                autoConnect: true,
             } as any
 
             ;(useWalletConnectStore as any).mockImplementation(

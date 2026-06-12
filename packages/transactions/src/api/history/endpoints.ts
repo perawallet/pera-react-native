@@ -65,7 +65,9 @@ const buildQueryParams = (
     }
 
     if (params.assetId !== undefined) {
-        queryParams.asset_id = parseInt(params.assetId, 10)
+        // Pass the id through as a string: parseInt would silently round an
+        // id above 2^53 and filter by the wrong asset.
+        queryParams.asset_id = params.assetId
     }
 
     if (params.afterTime !== undefined) {

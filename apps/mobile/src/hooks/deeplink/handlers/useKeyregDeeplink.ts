@@ -132,14 +132,23 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 return
             }
 
-            // Editable note + locked xnote both end up in the txn note. Native
-            // shows xnote read-only in its review UI; the signing modal here
-            // just displays the resulting note string.
-            const note = data.note ?? data.xnote
-            const noteBytes = note ? new TextEncoder().encode(note) : undefined
-            const staticFee = data.fee ? microAlgo(BigInt(data.fee)) : undefined
-
             try {
+                // Editable note + locked xnote both end up in the txn note.
+                // Native shows xnote read-only in its review UI; the signing
+                // modal here just displays the resulting note string.
+                const note = data.note ?? data.xnote
+                const noteBytes = note
+                    ? new TextEncoder().encode(note)
+                    : undefined
+                // `BigInt()` throws on a malformed fee (non-numeric, decimal);
+                // keep the coercion inside the try so a bad deeplink routes to
+                // the error sheet instead of throwing uncaught out of the
+                // handler. An out-of-range fee is caught at review time by the
+                // signing pipeline's high-fee warning (see detectHighGroupFee).
+                const staticFee = data.fee
+                    ? microAlgo(BigInt(data.fee))
+                    : undefined
+
                 let tx
                 if (data.keyregType === 'offline') {
                     tx = await withTimeout(

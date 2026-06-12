@@ -19,10 +19,12 @@ import type { WalletAccount } from '../../models'
 const mocks = vi.hoisted(() => ({
     updateAccount: vi.fn(),
     useMultisigAccountDetailQuery: vi.fn(),
+    generateMultisigAddress: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
+    generateMultisigAddress: mocks.generateMultisigAddress,
 }))
 
 vi.mock('../useUpdateAccount', () => ({
@@ -46,6 +48,8 @@ const detailLessMultisig = {
 describe('useMultisigDetailsBackfill', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        // default: server data legitimately derives the account's address
+        mocks.generateMultisigAddress.mockReturnValue('MSIG_ADDR')
     })
 
     it('enables the detail query only when a multisig account lacks details', () => {
@@ -87,6 +91,7 @@ describe('useMultisigDetailsBackfill', () => {
             data: {
                 threshold: 2,
                 participantAddresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+                version: 1,
             },
             isFetching: false,
         })
@@ -95,6 +100,11 @@ describe('useMultisigDetailsBackfill', () => {
             useMultisigDetailsBackfill(detailLessMultisig),
         )
 
+        expect(mocks.generateMultisigAddress).toHaveBeenCalledWith(1, 2, [
+            'ADDR1',
+            'ADDR2',
+            'ADDR3',
+        ])
         expect(mocks.updateAccount).toHaveBeenCalledTimes(1)
         expect(mocks.updateAccount).toHaveBeenCalledWith({
             type: 'multisig',
@@ -103,10 +113,45 @@ describe('useMultisigDetailsBackfill', () => {
             multisigDetails: {
                 threshold: 2,
                 addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+                version: 1,
             },
         })
 
         rerender()
         expect(mocks.updateAccount).toHaveBeenCalledTimes(1)
+    })
+
+    it('refuses to backfill when the participant set does not derive the address', () => {
+        mocks.generateMultisigAddress.mockReturnValue('A_DIFFERENT_ADDRESS')
+        mocks.useMultisigAccountDetailQuery.mockReturnValue({
+            data: {
+                threshold: 2,
+                participantAddresses: ['EVIL1', 'EVIL2'],
+                version: 1,
+            },
+            isFetching: false,
+        })
+
+        renderHook(() => useMultisigDetailsBackfill(detailLessMultisig))
+
+        expect(mocks.updateAccount).not.toHaveBeenCalled()
+    })
+
+    it('refuses to backfill when derivation throws on a malformed participant', () => {
+        mocks.generateMultisigAddress.mockImplementation(() => {
+            throw new Error('invalid address')
+        })
+        mocks.useMultisigAccountDetailQuery.mockReturnValue({
+            data: {
+                threshold: 2,
+                participantAddresses: ['NOT_AN_ADDRESS'],
+                version: 1,
+            },
+            isFetching: false,
+        })
+
+        renderHook(() => useMultisigDetailsBackfill(detailLessMultisig))
+
+        expect(mocks.updateAccount).not.toHaveBeenCalled()
     })
 })

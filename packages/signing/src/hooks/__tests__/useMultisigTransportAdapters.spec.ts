@@ -186,6 +186,7 @@ describe('useMultisigTransportAdapters', () => {
             expect(response).toEqual({
                 signRequestId: 'sr-1',
                 status: 'pending',
+                rawTransactionsBase64: ['oQ=='],
             })
         })
 
@@ -235,6 +236,7 @@ describe('useMultisigTransportAdapters', () => {
             expect(response).toEqual({
                 signRequestId: 'sr-1',
                 status: 'ready',
+                rawTransactionsBase64: ['oQ==', 'og=='],
             })
         })
 
@@ -272,6 +274,7 @@ describe('useMultisigTransportAdapters', () => {
             expect(response).toEqual({
                 signRequestId: 'sr-1',
                 status: 'pending',
+                rawTransactionsBase64: ['oQ==', 'og=='],
             })
         })
 

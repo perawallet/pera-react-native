@@ -27,7 +27,7 @@ import {
     type ResponseConfiguration,
 } from '../models/queries'
 import { type Network, Networks } from '../models/base-types'
-import { logger } from '../utils'
+import { logger, parsePrecisionSafeJson } from '../utils'
 
 type BackendInstances = {
     algod: KyInstance
@@ -199,8 +199,14 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
                     // end of input" on 204 No Content and 200-with-empty-body
                     // responses. Read as text and only parse when there's
                     // real content — trim covers whitespace-only bodies too.
+                    //
+                    // parsePrecisionSafeJson (not bare JSON.parse): uint64
+                    // ids above 2^53 - 1 must surface as strings instead of
+                    // being silently rounded — see `uint64IdSchema`.
                     const text = await response.text()
-                    data = (text.trim() ? JSON.parse(text) : undefined) as TData
+                    data = (
+                        text.trim() ? parsePrecisionSafeJson(text) : undefined
+                    ) as TData
                     break
                 }
             }

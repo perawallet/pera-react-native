@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     AccountTypes,
+    canSignArc60,
     canSignWith,
     isRekeyedAccount,
     useAllAccounts,
@@ -34,10 +35,13 @@ import { useCallback } from 'react'
 import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
 import {
+    type Arc60SignRequest,
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type SignRequestSource,
+    isArc60WirePayload,
+    parseArc60WireRequest,
     useArc0001Resolver,
     useEnqueueArc0001SignRequest,
     useSigningRequest,
@@ -68,6 +72,9 @@ type WebviewMessage = {
     jsonrpc: '2.0'
     method: string
     params?: Record<string, unknown>
+    // Stamped by the main-frame-only injected bridge; validated at the
+    // PWWebView message boundary, ignored by handler dispatch.
+    token?: string
 }
 
 /**
@@ -543,7 +550,6 @@ export const usePeraWebviewInterface = (
         ],
     )
 
-    //TODO handle arc60 here
     const requestDataSigning = useCallback(
         (message: WebviewMessage) => {
             requireSecure(
@@ -555,6 +561,81 @@ export const usePeraWebviewInterface = (
                     webview,
                 },
                 () => {
+                    // ARC-60 (`StdSigData` + `Metadata`) and the legacy
+                    // arbitrary-data shape both arrive on `requestDataSigning`;
+                    // discriminate on the ARC-60 signals before the legacy
+                    // param check (which an ARC-60 payload would also satisfy).
+                    if (isArc60WirePayload(message.params)) {
+                        try {
+                            const { stdSigData, metadata } =
+                                parseArc60WireRequest(message.params)
+                            const account = allAccounts.find(
+                                a => a.address === stdSigData.signer,
+                            )
+                            if (!account || !canSignArc60(account)) {
+                                sendErrorToWebview(
+                                    message.id,
+                                    JsonRpcErrorCode.InvalidParams,
+                                    t('errors.webview.invalid_params', {
+                                        params: 'signer',
+                                    }),
+                                    webview,
+                                )
+                                return
+                            }
+                            addSignRequest({
+                                id: generateOrderedUniqueId(),
+                                type: 'arc60',
+                                transport: 'callback',
+                                sourceType: 'webview',
+                                transportId: message.id,
+                                // The verified webview origin — NOT the
+                                // dApp-asserted metadata — is what the analyzer
+                                // checks the SIWA domain against.
+                                sourceMetadata: sourceUrl
+                                    ? { url: sourceUrl }
+                                    : undefined,
+                                verifiedOrigin: sourceUrl ?? undefined,
+                                stdSigData,
+                                metadata,
+                                approve: async (
+                                    signed: PeraArbitraryDataSignResult[],
+                                ) => {
+                                    sendMessageToWebview(
+                                        message.id,
+                                        signed.map(s =>
+                                            encodeToBase64(s.signature),
+                                        ),
+                                        webview,
+                                    )
+                                },
+                                reject: async () => {
+                                    sendErrorToWebview(
+                                        message.id,
+                                        JsonRpcErrorCode.InternalError,
+                                        'User rejected',
+                                        webview,
+                                    )
+                                },
+                                error: async (err: Error) =>
+                                    sendErrorToWebview(
+                                        message.id,
+                                        JsonRpcErrorCode.InternalError,
+                                        err,
+                                        webview,
+                                    ),
+                            } as Arc60SignRequest)
+                        } catch (e) {
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InvalidParams,
+                                e as Error,
+                                webview,
+                            )
+                        }
+                        return
+                    }
+
                     if (!hadRequiredParams(['data', 'metadata'], message)) {
                         return
                     }
@@ -636,6 +717,7 @@ export const usePeraWebviewInterface = (
             webview,
             hadRequiredParams,
             addSignRequest,
+            allAccounts,
             showToast,
             t,
         ],
@@ -672,14 +754,17 @@ export const usePeraWebviewInterface = (
                 return
             }
 
+            // Always surface the connection approval sheet — as if the user
+            // had scanned the QR themselves. The bridge never auto-approves a
+            // WC session (which would expose account addresses with no UI),
+            // regardless of origin trust.
             void connect({
                 connection: {
                     uri: parsed.uri,
-                    autoConnect: securedConnection,
                 },
             })
         },
-        [connect, securedConnection, hadRequiredParams, webview],
+        [connect, hadRequiredParams, webview],
     )
 
     const onBackPressed = useCallback(() => {

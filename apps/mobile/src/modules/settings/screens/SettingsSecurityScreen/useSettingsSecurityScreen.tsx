@@ -216,12 +216,14 @@ export const useSettingsSecurityScreen =
                     })
                     return { ok: false, reason: 'matches-regular-pin' }
                 }
+                // The keystore record is the only source of truth for whether
+                // a duress PIN exists (read via checkDuressPinEnabled); don't
+                // mirror it into a plaintext MMKV flag.
                 await saveDuressPin(pin)
-                setPreference(UserPreferences.duressPinEnabled, true)
                 setIsDuressPinEnabled(true)
                 return { ok: true }
             },
-            [verifyPin, saveDuressPin, setPreference, showToast, t],
+            [verifyPin, saveDuressPin, showToast, t],
         )
 
         const handleDuressPinToggle = useCallback(
@@ -245,14 +247,12 @@ export const useSettingsSecurityScreen =
                     return
                 }
                 await saveDuressPin(null)
-                setPreference(UserPreferences.duressPinEnabled, false)
                 setIsDuressPinEnabled(false)
             },
             [
                 openPinSheet,
                 duressSavePinHandler,
                 saveDuressPin,
-                setPreference,
                 refreshPinState,
             ],
         )

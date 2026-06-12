@@ -179,6 +179,15 @@ export interface SourceMetadata {
     /** For WalletConnect: the dApp info */
     peerMetadata?: { name?: string; url?: string; icons?: string[] }
 
+    /**
+     * Origin the platform itself observed the request arriving from (the in-app
+     * webview's loaded host). Trusted for origin-binding checks because, unlike
+     * {@link peerMetadata}, it is not dApp-asserted. Unset for transports with
+     * no verifiable origin (e.g. WalletConnect). See
+     * {@link isArc60OriginMismatch}.
+     */
+    verifiedOrigin?: string
+
     /** For multisig co-sign: the sign request ID */
     signRequestId?: string
 

@@ -13,33 +13,47 @@
 import { describe, test, expect } from 'vitest'
 import { Address } from '@algorandfoundation/algokit-utils'
 import { decodeMsgpack } from '@algorandfoundation/algokit-utils/common'
+import nacl from 'tweetnacl'
 import {
     assembleSignedMultisigTransactions,
     type ParticipantResponse,
 } from '../assembleSignedMultisigTransactions'
 
 // =============================================================================
-// Test fixtures
+// Test fixtures — real Ed25519 keypairs: the assembler verifies every
+// signature against `"TX" || txnBytes` under the participant pubkey, so
+// fabricated byte-fill signatures no longer pass.
 // =============================================================================
 
-const pkOfByte = (byte: number): Uint8Array => new Uint8Array(32).fill(byte)
-const addrFromByte = (byte: number): string =>
-    new Address(pkOfByte(byte)).toString()
+const keyPairOf = (byte: number): nacl.SignKeyPair =>
+    nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(byte))
 
-const ADDR_1 = addrFromByte(0x01)
-const ADDR_2 = addrFromByte(0x02)
-const ADDR_3 = addrFromByte(0x03)
+const KP_1 = keyPairOf(0x01)
+const KP_2 = keyPairOf(0x02)
+const KP_3 = keyPairOf(0x03)
 
-const sigOf = (byte: number): string => {
-    const bytes = new Uint8Array(64).fill(byte)
+const addrOf = (kp: nacl.SignKeyPair): string =>
+    new Address(kp.publicKey).toString()
+
+const ADDR_1 = addrOf(KP_1)
+const ADDR_2 = addrOf(KP_2)
+const ADDR_3 = addrOf(KP_3)
+
+const toBase64 = (bytes: Uint8Array): string => {
     let s = ''
     for (const b of bytes) s += String.fromCharCode(b)
     return btoa(s)
 }
 
-const SIG_1 = sigOf(0xaa)
-const SIG_2 = sigOf(0xbb)
-const ZERO_SIG = sigOf(0x00)
+const TX_PREFIX = new Uint8Array([0x54, 0x58]) // "TX"
+
+/** Signs `"TX" || txBytes` — what a real participant produces. */
+const signTx = (kp: nacl.SignKeyPair, txBytes: Uint8Array): string => {
+    const prefixed = new Uint8Array(TX_PREFIX.length + txBytes.length)
+    prefixed.set(TX_PREFIX, 0)
+    prefixed.set(txBytes, TX_PREFIX.length)
+    return toBase64(nacl.sign.detached(prefixed, kp.secretKey))
+}
 
 // A minimal valid msgpack object — a 1-entry map { "x": 1 } — so the
 // assembler has something concrete to embed as the "txn" value.
@@ -49,11 +63,15 @@ const FAKE_TX_BYTES = new Uint8Array([
     0x78, // "x"
     0x01, // positive fixint, value 1
 ])
-const FAKE_TX_B64 = (() => {
-    let s = ''
-    for (const b of FAKE_TX_BYTES) s += String.fromCharCode(b)
-    return btoa(s)
-})()
+const FAKE_TX_B64 = toBase64(FAKE_TX_BYTES)
+
+// A second, different transaction — { "y": 2 }.
+const OTHER_TX_BYTES = new Uint8Array([0x81, 0xa1, 0x79, 0x02])
+const OTHER_TX_B64 = toBase64(OTHER_TX_BYTES)
+
+const SIG_1 = signTx(KP_1, FAKE_TX_BYTES)
+const SIG_2 = signTx(KP_2, FAKE_TX_BYTES)
+const ZERO_SIG = toBase64(new Uint8Array(64))
 
 const buildResponse = (
     address: string,
@@ -101,9 +119,9 @@ describe('assembleSignedMultisigTransactions', () => {
         expect(subsigs[2].s).toBeUndefined()
         // Each subsig.pk is the corresponding 32-byte public key
         expect(subsigs[0].pk.length).toBe(32)
-        expect(Array.from(subsigs[0].pk)).toEqual(Array.from(pkOfByte(0x01)))
-        expect(Array.from(subsigs[1].pk)).toEqual(Array.from(pkOfByte(0x02)))
-        expect(Array.from(subsigs[2].pk)).toEqual(Array.from(pkOfByte(0x03)))
+        expect(Array.from(subsigs[0].pk)).toEqual(Array.from(KP_1.publicKey))
+        expect(Array.from(subsigs[1].pk)).toEqual(Array.from(KP_2.publicKey))
+        expect(Array.from(subsigs[2].pk)).toEqual(Array.from(KP_3.publicKey))
     })
 
     test('embeds raw transaction bytes verbatim (no decode + re-encode)', () => {
@@ -122,6 +140,60 @@ describe('assembleSignedMultisigTransactions', () => {
         ) as Record<string, unknown>
         // The inner txn map was `{ "x": 1 }` — survives roundtrip.
         expect(decoded.txn).toEqual({ x: 1 })
+    })
+
+    test('rejects a signature paired with transaction bytes the participant never signed', () => {
+        // The swapped-transaction attack: SIG_1 is a real signature over
+        // FAKE_TX_BYTES, but the backend supplies different raw bytes.
+        const result = assembleSignedMultisigTransactions({
+            rawTransactionsBase64: [OTHER_TX_B64],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 1,
+            responses: [buildResponse(ADDR_1, 'signed', [SIG_1])],
+        })
+
+        expect(result.kind).toBe('error')
+        if (result.kind === 'error') {
+            expect(result.reason).toMatch(/failed verification/i)
+        }
+    })
+
+    test('rejects a well-formed signature from the wrong key', () => {
+        // KP_2 signed the right bytes, but the backend attributes the
+        // signature to ADDR_1.
+        const result = assembleSignedMultisigTransactions({
+            rawTransactionsBase64: [FAKE_TX_B64],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 1,
+            responses: [buildResponse(ADDR_1, 'signed', [SIG_2])],
+        })
+
+        expect(result.kind).toBe('error')
+        if (result.kind === 'error') {
+            expect(result.reason).toMatch(/failed verification/i)
+        }
+    })
+
+    test('rejects a signature from an address outside the participant set', () => {
+        const outsider = keyPairOf(0x42)
+        const result = assembleSignedMultisigTransactions({
+            rawTransactionsBase64: [FAKE_TX_B64],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 1,
+            responses: [
+                buildResponse(addrOf(outsider), 'signed', [
+                    signTx(outsider, FAKE_TX_BYTES),
+                ]),
+            ],
+        })
+
+        expect(result.kind).toBe('error')
+        if (result.kind === 'error') {
+            expect(result.reason).toMatch(/non-participant/i)
+        }
     })
 
     test('errors when threshold is not met', () => {
@@ -261,14 +333,16 @@ describe('assembleSignedMultisigTransactions', () => {
     })
 
     test('handles multi-transaction lists (each tx gets its own signed bytes)', () => {
+        const sig1ForOther = signTx(KP_1, OTHER_TX_BYTES)
+        const sig2ForOther = signTx(KP_2, OTHER_TX_BYTES)
         const result = assembleSignedMultisigTransactions({
-            rawTransactionsBase64: [FAKE_TX_B64, FAKE_TX_B64],
+            rawTransactionsBase64: [FAKE_TX_B64, OTHER_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
             threshold: 2,
             responses: [
-                buildResponse(ADDR_1, 'signed', [SIG_1, SIG_1]),
-                buildResponse(ADDR_2, 'signed', [SIG_2, SIG_2]),
+                buildResponse(ADDR_1, 'signed', [SIG_1, sig1ForOther]),
+                buildResponse(ADDR_2, 'signed', [SIG_2, sig2ForOther]),
             ],
         })
 

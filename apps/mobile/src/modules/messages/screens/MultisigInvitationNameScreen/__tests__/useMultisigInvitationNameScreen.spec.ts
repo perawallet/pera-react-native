@@ -30,6 +30,7 @@ const mockAddListener = vi.fn(
 const mockSetOptions = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 const mockUseDeviceID = vi.fn(() => 'device-id')
+const mockGenerateMultisigAddress = vi.fn()
 
 const invitation: MultisigInvitationParam = {
     customId: 'invite-1',
@@ -85,6 +86,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     return {
         ...actual,
         useNetwork: () => ({ network: 'mainnet' }),
+        generateMultisigAddress: (...args: unknown[]) =>
+            mockGenerateMultisigAddress(...args),
     }
 })
 
@@ -129,6 +132,8 @@ describe('useMultisigInvitationNameScreen', () => {
         mockUseDeviceID.mockReturnValue('device-id')
         mockMutateAsync.mockResolvedValue(undefined)
         mockAddListener.mockReturnValue(vi.fn())
+        // Default: re-derived address matches the invitation's claimed address.
+        mockGenerateMultisigAddress.mockReturnValue(invitation.address)
     })
 
     it('initializes with auto-numbered default name (#1) when no shared accounts exist', () => {
@@ -278,6 +283,33 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockSuccessToast).toHaveBeenCalled()
         expect(mockPopToTop).toHaveBeenCalled()
+    })
+
+    it('handleFinish refuses to persist (and does not consume the invitation) when the re-derived address does not match the claimed address', async () => {
+        // Backend-supplied address disagrees with what the participant set
+        // actually derives to — corrupt or tampered invitation.
+        mockGenerateMultisigAddress.mockReturnValue('DERIVED_DIFFERENT_ADDR')
+
+        const { result } = renderHook(() => useMultisigInvitationNameScreen())
+
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        expect(mockGenerateMultisigAddress).toHaveBeenCalledWith(
+            invitation.version,
+            invitation.threshold,
+            invitation.participantAddresses,
+        )
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'multisig.import.address_mismatch_title',
+            'multisig.import.address_mismatch_body',
+        )
+        expect(mockMutateAsync).not.toHaveBeenCalled()
+        expect(mockSetAccounts).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockPopToTop).not.toHaveBeenCalled()
+        expect(result.current.isSaving).toBe(false)
     })
 
     it('handleFinish bails with error toast when account with same address already exists', async () => {

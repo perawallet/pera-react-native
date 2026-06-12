@@ -291,3 +291,41 @@ vi.mock('react-native-pager-view', () => {
         ),
     }
 })
+
+// PWSlideToConfirm drives its confirm via a react-native-gesture-handler pan
+// gesture + reanimated worklet — neither of which can be fired under jsdom
+// (the gesture-handler mock makes `onEnd` a no-op). The slide's gesture
+// mechanics are unit-tested in PWSlideToConfirm.spec; for integration flows we
+// only need to *trigger* confirmation. Replace it with a plain tappable element
+// that keeps the same `testID` and calls `onConfirm` on click (no-op while
+// loading/disabled), so signing-review tests can
+// `fireEvent.click(getByTestId('signing-confirm-slide'))`.
+vi.mock('@components/core/PWSlideToConfirm', () => {
+    const React = require('react')
+    return {
+        PWSlideToConfirm: ({
+            title,
+            onConfirm,
+            isLoading,
+            isDisabled,
+            testID,
+        }: {
+            title?: string
+            onConfirm?: () => void
+            isLoading?: boolean
+            isDisabled?: boolean
+            testID?: string
+        }) =>
+            React.createElement(
+                'button',
+                {
+                    'data-testid': testID,
+                    disabled: !!isLoading || !!isDisabled,
+                    onClick: () => {
+                        if (!isLoading && !isDisabled) onConfirm?.()
+                    },
+                },
+                title,
+            ),
+    }
+})

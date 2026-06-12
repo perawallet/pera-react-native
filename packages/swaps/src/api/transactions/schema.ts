@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 
 const transactionGroupSchema = z.object({
     purpose: z.enum(['opt-in', 'swap', 'fee']).optional(),
@@ -25,7 +26,8 @@ export const prepareTransactionsRequestSchema = z.object({
 
 export const prepareTransactionsResponseSchema = z.object({
     transaction_groups: z.array(transactionGroupSchema).optional(),
-    swap_id: z.number().optional(),
+    // Backend ids exceed 2^53; swap_id_str is the canonical identity.
+    swap_id: uint64IdSchema.optional(),
     swap_id_str: z.string().optional(),
     swap_version: z.string().optional(),
 })

@@ -80,6 +80,13 @@ export const configSchema = z.object({
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
 
+    // Build-time escape hatch for e2e automation (Appium/BrowserStack), whose
+    // tooling can't drive a FLAG_SECURE surface. Sourced only from the
+    // DISABLE_SCREEN_CAPTURE_PREVENTION build env — never a remote/runtime
+    // signal. Defaults safe (false) so seed-screen capture protection can't be
+    // weakened post-release.
+    disableScreenCapturePrevention: z.boolean().default(false),
+
     mainnetBidaliApiKey: z.string(),
     testnetBidaliApiKey: z.string(),
     mainnetBidaliBaseUrl: z.url(),
@@ -188,6 +195,7 @@ const productionConfig = {
     debugEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
+    disableScreenCapturePrevention: false,
 
     mainnetBidaliApiKey: '',
     testnetBidaliApiKey: '',
@@ -263,6 +271,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     debugEnabled: 'DEBUG_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
+    disableScreenCapturePrevention: 'DISABLE_SCREEN_CAPTURE_PREVENTION',
 
     mainnetBidaliApiKey: 'MAINNET_BIDALI_API_KEY',
     testnetBidaliApiKey: 'TESTNET_BIDALI_API_KEY',

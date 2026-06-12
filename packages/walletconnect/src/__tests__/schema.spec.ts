@@ -12,13 +12,27 @@
 
 import { describe, expect, test, vi } from 'vitest'
 
-// `../constants` re-exports a couple of values from the signing barrel, which
-// transitively loads `react-native-mmkv` (no native binding under vitest).
-// Stub the barrel so importing constants/schema stays pure — mirrors the
-// approach in the sibling WC handler/registry specs.
+// The canonical ARC-60 wire schema + size cap now live in the signing package
+// (and are unit-tested there: utils/__tests__/arc60-wire.spec.ts). WC only
+// re-exports the schema and re-wraps the size-cap error into a
+// `WalletConnectSignRequestError`, so this spec covers that wrapper contract.
+//
+// The barrel is mocked because importing it for real transitively loads
+// `react-native-mmkv` (no native binding under vitest) — mirrors the sibling
+// WC handler/registry specs. The factory is hoisted, so the cap is inlined
+// rather than referencing a top-level constant.
 vi.mock('@perawallet/wallet-core-signing', () => ({
     MAX_DATA_SIGN_REQUESTS: 10,
     MAX_TRANSACTION_SIGN_REQUESTS: 10,
+    ARC60_MAX_REQUEST_BYTES: 64 * 1024,
+    arc60WireSchema: {
+        safeParse: (value: unknown) => ({ success: true, data: value }),
+    },
+    assertArc60RequestWithinLimits: (rawParams: unknown) => {
+        if ((JSON.stringify(rawParams) ?? '').length > 64 * 1024) {
+            throw new Error('request exceeds the maximum allowed size')
+        }
+    },
 }))
 
 import { ARC60_MAX_REQUEST_BYTES } from '../constants'
@@ -38,47 +52,19 @@ describe('assertArc60RequestWithinLimits', () => {
         expect(() => assertArc60RequestWithinLimits(validPayload)).not.toThrow()
     })
 
-    test('rejects a request over the serialized size cap', () => {
+    test('re-wraps the shared size-cap error as a WalletConnectSignRequestError', () => {
         const oversized = { blob: 'x'.repeat(ARC60_MAX_REQUEST_BYTES) }
         expect(() => assertArc60RequestWithinLimits(oversized)).toThrow(
             WalletConnectSignRequestError,
         )
+        expect(() => assertArc60RequestWithinLimits(oversized)).toThrow(
+            /Invalid ARC-60 sign request payload/,
+        )
     })
 })
 
-describe('arc60PayloadSchema — field caps', () => {
-    test('accepts a valid payload', () => {
+describe('arc60PayloadSchema', () => {
+    test('re-exports the shared signing wire schema', () => {
         expect(arc60PayloadSchema.safeParse(validPayload).success).toBe(true)
-    })
-
-    test('rejects an over-cap data field', () => {
-        const payload = { ...validPayload, data: 'x'.repeat(16 * 1024 + 1) }
-        expect(arc60PayloadSchema.safeParse(payload).success).toBe(false)
-    })
-
-    test('rejects an over-cap signer', () => {
-        const payload = { ...validPayload, signer: 'x'.repeat(129) }
-        expect(arc60PayloadSchema.safeParse(payload).success).toBe(false)
-    })
-
-    test('rejects an over-cap domain', () => {
-        const payload = { ...validPayload, domain: 'x'.repeat(257) }
-        expect(arc60PayloadSchema.safeParse(payload).success).toBe(false)
-    })
-
-    test('rejects an over-cap authenticatorData', () => {
-        const payload = {
-            ...validPayload,
-            authenticatorData: 'x'.repeat(513),
-        }
-        expect(arc60PayloadSchema.safeParse(payload).success).toBe(false)
-    })
-
-    test('rejects an over-cap metadata.encoding', () => {
-        const payload = {
-            ...validPayload,
-            metadata: { scope: 1, encoding: 'x'.repeat(33) },
-        }
-        expect(arc60PayloadSchema.safeParse(payload).success).toBe(false)
     })
 })

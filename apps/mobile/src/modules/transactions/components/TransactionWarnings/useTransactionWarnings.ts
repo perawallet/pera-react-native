@@ -21,9 +21,16 @@ import {
     type TransactionWarning,
 } from '@perawallet/wallet-core-signing'
 
-type TransactionWarningType = TransactionWarning['type']
+// The history view only surfaces the per-transaction, address-based warnings.
+// High fee is a signing-review concern (see useSigningPipeline) and is never
+// emitted by the aggregator used here, so it's excluded from this view's type.
+type AddressWarning = Extract<TransactionWarning, { senderAddress: string }>
 
-type WarningsByType = Record<TransactionWarningType, TransactionWarning[]>
+type WarningsByType = {
+    close: AddressWarning[]
+    rekey: AddressWarning[]
+    'asset-freeze': AddressWarning[]
+}
 
 type UseTransactionWarningsResult = {
     warningCount: number
@@ -56,14 +63,18 @@ export const useTransactionWarnings = (
         [transaction, userAccountAddresses, signableAddresses],
     )
 
-    const warningsByType: WarningsByType = useMemo(
-        () => ({
-            close: warnings.filter(w => w.type === 'close'),
-            rekey: warnings.filter(w => w.type === 'rekey'),
-            'asset-freeze': warnings.filter(w => w.type === 'asset-freeze'),
-        }),
-        [warnings],
-    )
+    const warningsByType: WarningsByType = useMemo(() => {
+        const addressWarnings = warnings.filter(
+            (w): w is AddressWarning => w.type !== 'high-fee',
+        )
+        return {
+            close: addressWarnings.filter(w => w.type === 'close'),
+            rekey: addressWarnings.filter(w => w.type === 'rekey'),
+            'asset-freeze': addressWarnings.filter(
+                w => w.type === 'asset-freeze',
+            ),
+        }
+    }, [warnings])
 
     return {
         warningCount: warnings.length,

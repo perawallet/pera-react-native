@@ -61,6 +61,10 @@ overrides:
   "@algorandfoundation/keystore": 1.0.0-canary.16
   "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4"
   "@expo/dom-webview": ^56.0.5
+  # Security backport for GHSA-5375-pq7m-f5r2 + GHSA-99f4-grh7-6pcq (DoS).
+  # Pinned exactly, NOT ">=", so it stays inside @firebase/firestore's
+  # "~1.9.0" range — 1.10+ would break Firestore's resolution.
+  "@grpc/grpc-js@<1.9.16": "1.9.16"
   "@xmldom/xmldom": 0.8.13
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.13
