@@ -74,6 +74,7 @@ const AssetSelectorContent = ({
                             asset={asset}
                             logoUrl={logoUrl}
                             style={styles.icon}
+                            size='lg'
                         />
                         <PWText
                             variant='h4'

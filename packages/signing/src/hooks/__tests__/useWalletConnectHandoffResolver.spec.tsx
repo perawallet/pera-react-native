@@ -68,6 +68,7 @@ const makeHandoff = (signRequestId: string): PendingWalletConnectHandoff => ({
     signRequestId,
     multisigAddress: 'MSIG_ADDR',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
+    expectedRawTransactionsBase64: [btoa('raw-tx-1')],
     deviceId: 'device-1',
     network: 'testnet',
     callbacks: {},

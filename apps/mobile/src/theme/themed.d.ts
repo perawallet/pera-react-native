@@ -114,6 +114,14 @@ declare module '@rneui/themed' {
         wallet5: string
         wallet5Icon: string
 
+        // Account Icons
+        accountIconTurquoiseBg: string
+        accountIconPurpleBg: string
+        accountIconMagentaBg: string
+        accountIconPinkBg: string
+        accountIconPeachBg: string
+        accountIconNeutralBg: string
+
         // ASA Icons
         trustedIconBg: string
         trustedIconInline: string

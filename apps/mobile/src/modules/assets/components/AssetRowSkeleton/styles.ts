@@ -19,9 +19,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         paddingVertical: theme.spacing.sm,
     },
-    // Matches the loaded asset icon (AssetIcon size 'lg').
+    // Matches the loaded asset icon (AssetIcon size 'xl').
     icon: {
-        width: theme.spacing.xxl,
+        width: theme.spacing['3xl'],
     },
     textColumn: {
         flex: 1,

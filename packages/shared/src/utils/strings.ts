@@ -37,6 +37,14 @@ export const bytesToHex = (bytes: Uint8Array): string => {
 }
 
 /**
+ * UTF-8 byte length of a string (not its `.length`, which counts UTF-16 code
+ * units). Use for size caps on untrusted payloads, where the on-the-wire byte
+ * count is what matters.
+ */
+export const utf8ByteLength = (value: string): number =>
+    new TextEncoder().encode(value).length
+
+/**
  * Decode a value that may be a JS number, a string-encoded number, or null.
  *
  * Used at FFI / native-bridge boundaries where 64-bit integers are serialized

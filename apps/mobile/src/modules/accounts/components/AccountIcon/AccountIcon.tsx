@@ -10,125 +10,65 @@
  limitations under the License
  */
 
-import { type IconName, PWIcon, PWView } from '@components/core'
-
-import { useMemo } from 'react'
-import {
-    AccountTypes,
-    isRekeyedAccount,
-    useCanSignWith,
-    useRekeyAccount,
-    type AccountType,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { type ViewStyle } from 'react-native'
 import { type SvgProps } from 'react-native-svg'
-import { type AccountIconSize, useStyles } from './styles'
 
-const THEME_TOKEN = '__theme__'
-const FALLBACK_ASSET = `accounts/${THEME_TOKEN}/unknown-account`
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { PWRoundIcon, type PWRoundIconSize } from '@components/core/PWRoundIcon'
+import { useAccountIcon, type AccountDisplayState } from './useAccountIcon'
 
-export type AccountDisplayState =
-    | 'base'
-    | 'rekeyedSignable'
-    | 'rekeyedUnsignable'
+export type { AccountDisplayState } from './useAccountIcon'
+
+export type AccountIconSize = 'sm' | 'md' | 'lg' | 'xl'
 
 export type AccountIconProps = {
     account?: WalletAccount
     size?: AccountIconSize
     /**
      * When true, render the icon for the account's base `type` and ignore
-     * its rekey state. Used by the undo-rekey preview to show what the
-     * source would look like once the rekey is undone.
+     * its rekey state.
      */
     ignoreRekey?: boolean
     /**
      * Force the display state. Use for accounts not yet in the store
-     * (e.g. import previews) where `canSignWith` can't resolve from store
-     * state alone.
+     * (e.g. import previews).
      */
     displayState?: AccountDisplayState
+    // Extends SvgProps for source-compat with existing call sites, but only
+    // `style` and `testID` are forwarded to PWRoundIcon; other SvgProps
+    // (color/fill/width/onPress) are intentionally ignored — the account
+    // glyphs are self-colored, so a tint/color prop was already a no-op.
 } & SvgProps
 
-const BASE_ICON: Record<AccountType, string> = {
-    [AccountTypes.algo25]: `accounts/${THEME_TOKEN}/algo25-account`,
-    [AccountTypes.hdWallet]: `accounts/${THEME_TOKEN}/hdwallet-account`,
-    [AccountTypes.hardware]: `accounts/${THEME_TOKEN}/ledger-account`,
-    [AccountTypes.multisig]: `accounts/${THEME_TOKEN}/multisig-account`,
-    [AccountTypes.watch]: `accounts/${THEME_TOKEN}/watch-account`,
+// Account icons have two Figma formats: small (24px circle) and large (40px).
+// All non-small sizes resolve to the large format.
+const ACCOUNT_SIZE_MAP: Record<AccountIconSize, PWRoundIconSize> = {
+    sm: 'sm',
+    md: 'md',
+    lg: 'md',
+    xl: 'md',
 }
-
-const REKEYED_SIGNABLE_ICON: Partial<Record<AccountType, string>> = {
-    [AccountTypes.hardware]: `accounts/${THEME_TOKEN}/rekeyed-ledger`,
-    [AccountTypes.multisig]: `accounts/${THEME_TOKEN}/rekeyed-multisig`,
-}
-const REKEYED_SIGNABLE_DEFAULT = `accounts/${THEME_TOKEN}/rekeyed-standard`
-const REKEYED_UNSIGNABLE_ICON = `accounts/${THEME_TOKEN}/noauth-account`
 
 export const AccountIcon = (props: AccountIconProps) => {
-    const { account, size = 'md', ignoreRekey, displayState, ...rest } = props
-    const darkmode = useIsDarkMode()
-    const rekeyAccount = useRekeyAccount(account?.address)
-    const canSign = useCanSignWith(account)
-    const styles = useStyles({ size })
-
-    const icon = useMemo(() => {
-        if (!account) return null
-
-        const isRekeyed = !ignoreRekey && isRekeyedAccount(account)
-        const state: AccountDisplayState =
-            displayState ??
-            (isRekeyed
-                ? canSign
-                    ? 'rekeyedSignable'
-                    : 'rekeyedUnsignable'
-                : 'base')
-
-        let asset: string
-        switch (state) {
-            case 'rekeyedSignable': {
-                asset =
-                    REKEYED_SIGNABLE_ICON[account.type] ??
-                    REKEYED_SIGNABLE_DEFAULT
-                break
-            }
-            case 'rekeyedUnsignable': {
-                asset = REKEYED_UNSIGNABLE_ICON
-                break
-            }
-            case 'base': {
-                asset = BASE_ICON[account.type] ?? FALLBACK_ASSET
-                break
-            }
-        }
-
-        const theme = darkmode ? 'dark' : 'light'
-        const iconName: IconName = asset.replaceAll(
-            THEME_TOKEN,
-            theme,
-        ) as IconName
-        return (
-            <PWIcon
-                {...rest}
-                name={iconName}
-                size={size}
-            />
-        )
-        // rekeyAccount keeps the memo invalidating when the auth account
-        // changes (which can flip canSign).
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
+    const {
         account,
+        size = 'md',
         ignoreRekey,
         displayState,
-        canSign,
-        rekeyAccount,
-        darkmode,
-        size,
-        rest,
-    ])
+        style,
+        testID,
+    } = props
+    const glyph = useAccountIcon(account, { ignoreRekey, displayState })
 
-    if (!icon) return <></>
+    if (!glyph) return <></>
 
-    return <PWView style={styles.container}>{icon}</PWView>
+    return (
+        <PWRoundIcon
+            icon={glyph.name}
+            variant={glyph.variant}
+            size={ACCOUNT_SIZE_MAP[size]}
+            style={style as ViewStyle}
+            testID={testID}
+        />
+    )
 }

@@ -11,4 +11,9 @@
  */
 
 export { PWRoundIcon } from './PWRoundIcon'
-export type { PWRoundIconProps } from './PWRoundIcon'
+export type {
+    PWRoundIconProps,
+    PWRoundIconVariant,
+    PWRoundIconAccountVariant,
+} from './PWRoundIcon'
+export type { PWRoundIconSize } from './sizing'

@@ -24,7 +24,7 @@ export const useDismissSpotBannerMutation = () => {
 
     return useMutation({
         throwOnError: false,
-        mutationFn: (spotBannerID: number) =>
+        mutationFn: (spotBannerID: string) =>
             closeSpotBanner(network, deviceID ?? '', spotBannerID),
         onMutate: async spotBannerID => {
             const key = getSpotBannersQueryKey(network, deviceID ?? '')

@@ -46,10 +46,10 @@ describe('banners/store', () => {
         const { result } = renderHook(() => useBannersStore())
 
         act(() => {
-            result.current.dismissBanner(1)
+            result.current.dismissBanner('1')
         })
 
-        expect(result.current.dismissedBannerIds).toEqual([1])
+        expect(result.current.dismissedBannerIds).toEqual(['1'])
     })
 
     test('dismissBanner is idempotent', async () => {
@@ -57,12 +57,12 @@ describe('banners/store', () => {
         const { result } = renderHook(() => useBannersStore())
 
         act(() => {
-            result.current.dismissBanner(7)
-            result.current.dismissBanner(7)
-            result.current.dismissBanner(7)
+            result.current.dismissBanner('7')
+            result.current.dismissBanner('7')
+            result.current.dismissBanner('7')
         })
 
-        expect(result.current.dismissedBannerIds).toEqual([7])
+        expect(result.current.dismissedBannerIds).toEqual(['7'])
     })
 
     test('isBannerDismissed reflects dismissal state', async () => {
@@ -70,11 +70,11 @@ describe('banners/store', () => {
         const { result } = renderHook(() => useBannersStore())
 
         act(() => {
-            result.current.dismissBanner(42)
+            result.current.dismissBanner('42')
         })
 
-        expect(result.current.isBannerDismissed(42)).toBe(true)
-        expect(result.current.isBannerDismissed(99)).toBe(false)
+        expect(result.current.isBannerDismissed('42')).toBe(true)
+        expect(result.current.isBannerDismissed('99')).toBe(false)
     })
 
     test('resetState clears dismissed IDs', async () => {
@@ -82,8 +82,8 @@ describe('banners/store', () => {
         const { result } = renderHook(() => useBannersStore())
 
         act(() => {
-            result.current.dismissBanner(1)
-            result.current.dismissBanner(2)
+            result.current.dismissBanner('1')
+            result.current.dismissBanner('2')
             result.current.resetState()
         })
 
@@ -95,14 +95,14 @@ describe('banners/store', () => {
         const { result } = renderHook(() => useBannersStore())
 
         act(() => {
-            result.current.markAutoOpened(50)
-            result.current.markAutoOpened(50)
-            result.current.markAutoOpened(51)
+            result.current.markAutoOpened('50')
+            result.current.markAutoOpened('50')
+            result.current.markAutoOpened('51')
         })
 
-        expect(result.current.autoOpenedBannerIds).toEqual([50, 51])
-        expect(result.current.hasAutoOpened(50)).toBe(true)
-        expect(result.current.hasAutoOpened(99)).toBe(false)
+        expect(result.current.autoOpenedBannerIds).toEqual(['50', '51'])
+        expect(result.current.hasAutoOpened('50')).toBe(true)
+        expect(result.current.hasAutoOpened('99')).toBe(false)
     })
 
     test('resetState clears autoOpenedBannerIds', async () => {
@@ -110,7 +110,7 @@ describe('banners/store', () => {
         const { result } = renderHook(() => useBannersStore())
 
         act(() => {
-            result.current.markAutoOpened(7)
+            result.current.markAutoOpened('7')
             result.current.resetState()
         })
         expect(result.current.autoOpenedBannerIds).toEqual([])
@@ -123,7 +123,7 @@ describe('banners/store', () => {
 
         const { useBannersStore } = await import('../index')
         act(() => {
-            useBannersStore.getState().dismissBanner(3)
+            useBannersStore.getState().dismissBanner('3')
         })
 
         act(() => registration.resetState())

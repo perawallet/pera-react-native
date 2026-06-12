@@ -104,6 +104,61 @@ describe('createStandardAnalyzer', () => {
         expect(result.signableAddresses).toEqual([ACCOUNT_A, ACCOUNT_B])
     })
 
+    const makeArc60Group = (
+        domain: string,
+        verifiedOrigin?: string,
+    ): SignableGroup =>
+        ({
+            data: {
+                type: 'arc60',
+                stdSigData: { domain, signer: ACCOUNT_A },
+                metadata: { scope: 1, encoding: 'base64' },
+            },
+            source: { type: 'webview', verifiedOrigin },
+            signerAddress: ACCOUNT_A,
+        }) as SignableGroup
+
+    test('arc60 with no verified origin produces no warnings (WC-style)', async () => {
+        const analyzer = createStandardAnalyzer()
+        const result = await analyzer.analyze(
+            makeArc60Group('arc60.io', undefined),
+            makeContext([ACCOUNT_A]),
+        )
+
+        expect(result.warnings).toEqual([])
+        expect(result.riskLevel).toBe('low')
+        expect(result.signableAddresses).toEqual([ACCOUNT_A])
+    })
+
+    test('arc60 with verified origin matching the SIWA domain produces no warnings', async () => {
+        const analyzer = createStandardAnalyzer()
+        const result = await analyzer.analyze(
+            makeArc60Group('arc60.io', 'https://arc60.io/sign-in'),
+            makeContext([ACCOUNT_A]),
+        )
+
+        expect(result.warnings).toEqual([])
+        expect(result.riskLevel).toBe('low')
+    })
+
+    test('arc60 flags a danger warning when the verified origin host differs from the SIWA domain', async () => {
+        const analyzer = createStandardAnalyzer()
+        const result = await analyzer.analyze(
+            makeArc60Group(
+                'trusted-exchange.com',
+                'https://evil.example/phish',
+            ),
+            makeContext([ACCOUNT_A]),
+        )
+
+        expect(result.warnings).toHaveLength(1)
+        expect(result.warnings[0].type).toBe('suspicious')
+        expect(result.warnings[0].severity).toBe('danger')
+        expect(result.warnings[0].message).toContain('trusted-exchange.com')
+        expect(result.warnings[0].message).toContain('evil.example')
+        expect(result.riskLevel).toBe('high')
+    })
+
     test('sums fees only for transactions from user accounts', async () => {
         const analyzer = createStandardAnalyzer()
         const group = makeGroup([

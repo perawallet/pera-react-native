@@ -149,6 +149,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         return a.equals(b)
     },
     useDebouncedValue: (value: unknown) => value,
+    uint64IdToNumber: (id: string | number) => Number(id),
 }))
 
 vi.mock('../../SwapConfirmationContent', () => ({

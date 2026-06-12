@@ -27,7 +27,8 @@ export const BANNER_AUTO_OPEN_MODES = ['select', 'force'] as const
 export type BannerAutoOpenMode = (typeof BANNER_AUTO_OPEN_MODES)[number]
 
 export type Banner = {
-    id: number
+    /** Decimal string — backend ids exceed 2^53 and must not live in a JS number. */
+    id: string
     type: BannerType
     title: Nullable<string>
     subtitle: Nullable<string>
@@ -43,7 +44,8 @@ export type Banner = {
 }
 
 export type SpotBanner = {
-    id: number
+    /** Decimal string — backend ids exceed 2^53 and must not live in a JS number. */
+    id: string
     text: string
     imageUrl: string
     url: string
@@ -51,13 +53,13 @@ export type SpotBanner = {
 }
 
 export type BannersState = BaseStoreState & {
-    dismissedBannerIds: number[]
+    dismissedBannerIds: string[]
     // Session-only: tracks banners we've already auto-opened the carousel for
     // so we don't bounce the user back into the modal after they close it.
     // Resets on app launch.
-    autoOpenedBannerIds: number[]
-    dismissBanner: (id: number) => void
-    isBannerDismissed: (id: number) => boolean
-    markAutoOpened: (id: number) => void
-    hasAutoOpened: (id: number) => boolean
+    autoOpenedBannerIds: string[]
+    dismissBanner: (id: string) => void
+    isBannerDismissed: (id: string) => boolean
+    markAutoOpened: (id: string) => void
+    hasAutoOpened: (id: string) => boolean
 }

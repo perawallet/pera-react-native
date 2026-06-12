@@ -194,6 +194,31 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     useArc0001Resolver: () => fakeArc0001Resolve,
     useEnqueueArc0001SignRequest: () => fakeEnqueue,
+    // Mirrors the real discriminator (arc60-wire.ts) so the legacy
+    // arbitrary-data payloads in this file route to the legacy branch. The
+    // real module can't be imported here — the signing barrel pulls in MMKV.
+    isArc60WirePayload: (params: unknown) => {
+        if (
+            params == null ||
+            typeof params !== 'object' ||
+            Array.isArray(params)
+        ) {
+            return false
+        }
+        const candidate = params as {
+            authenticatorData?: unknown
+            metadata?: { scope?: unknown }
+        }
+        return (
+            candidate.authenticatorData != null ||
+            candidate.metadata?.scope != null
+        )
+    },
+    parseArc60WireRequest: vi.fn(() => {
+        throw new Error(
+            'parseArc60WireRequest not mocked — no test in this file exercises the ARC-60 branch',
+        )
+    }),
 }))
 
 const mockConnect = vi.fn()
@@ -1019,7 +1044,7 @@ describe('usePeraWebviewInterface', () => {
             )
         })
 
-        it('auto-connects for a trusted origin with a valid wc URI', () => {
+        it('opens the approval flow (never auto-connects) for a trusted origin with a valid wc URI', () => {
             const { result } = renderHook(() =>
                 usePeraWebviewInterface(
                     mockWebview,
@@ -1037,15 +1062,16 @@ describe('usePeraWebviewInterface', () => {
                 })
             })
 
+            // No autoConnect, even on a trusted origin: the connection always
+            // goes through the user-facing approval sheet.
             expect(mockConnect).toHaveBeenCalledWith({
                 connection: {
                     uri: 'wc:topic@2?relay-protocol=irn',
-                    autoConnect: true,
                 },
             })
         })
 
-        it('shows the modal (autoConnect=false) for an untrusted origin with a valid wc URI', () => {
+        it('opens the approval flow for an untrusted origin with a valid wc URI', () => {
             const { result } = renderHook(() =>
                 usePeraWebviewInterface(
                     mockWebview,
@@ -1066,7 +1092,6 @@ describe('usePeraWebviewInterface', () => {
             expect(mockConnect).toHaveBeenCalledWith({
                 connection: {
                     uri: 'wc:topic@2?relay-protocol=irn',
-                    autoConnect: false,
                 },
             })
         })

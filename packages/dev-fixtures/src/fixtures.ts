@@ -210,7 +210,7 @@ export const mockCollectible: PeraAsset = {
             mediaType: 'image',
             explorerUrl: 'https://explorer.perawallet.app/asset/470842789',
             collection: {
-                id: 1001,
+                id: '1001',
                 name: 'Mock Collection',
                 description: 'A collection of mock NFTs for gallery preview.',
             },

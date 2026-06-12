@@ -862,6 +862,26 @@ registerPreview({
                         />
                     ),
                 },
+                {
+                    label: 'algo25 glyph / md / accountTurquoise',
+                    node: (
+                        <PWRoundIcon
+                            icon='accounts/glyph/algo25-account'
+                            size='md'
+                            variant='accountTurquoise'
+                        />
+                    ),
+                },
+                {
+                    label: 'ledger glyph / sm / accountPurple',
+                    node: (
+                        <PWRoundIcon
+                            icon='accounts/glyph/ledger-account'
+                            size='sm'
+                            variant='accountPurple'
+                        />
+                    ),
+                },
             ]}
         />
     ),

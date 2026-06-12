@@ -38,7 +38,8 @@ export type CollectibleMedia = {
 }
 
 export type CollectibleCollection = {
-    id?: number
+    /** Decimal string — backend ids can exceed 2^53 and must not live in a JS number. */
+    id?: string
     name: string
     description?: string
 }

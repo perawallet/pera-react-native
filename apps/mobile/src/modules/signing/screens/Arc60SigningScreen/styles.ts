@@ -24,4 +24,17 @@ export const useStyles = makeStyles(theme => ({
     buttonContainer: {
         gap: theme.spacing.md,
     },
+    originWarning: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.sm,
+        backgroundColor: theme.colors.negativeLighter,
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing.md,
+        marginBottom: theme.spacing.md,
+    },
+    originWarningText: {
+        flex: 1,
+        color: theme.colors.negative,
+    },
 }))

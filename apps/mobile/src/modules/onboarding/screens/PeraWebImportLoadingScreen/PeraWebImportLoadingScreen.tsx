@@ -30,7 +30,7 @@ export const PeraWebImportLoadingScreen = () => {
             <PWView style={styles.container}>
                 <PWRoundIcon
                     icon='globe'
-                    size='xxl'
+                    size='xl'
                 />
                 <PWText
                     variant='h2'

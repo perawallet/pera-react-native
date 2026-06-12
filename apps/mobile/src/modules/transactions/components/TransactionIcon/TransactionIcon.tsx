@@ -14,6 +14,7 @@ import {
     PWIcon,
     PWView,
     type IconName,
+    type PWIconVariant,
     type PWRoundIconProps,
 } from '@components/core'
 import type { PeraTransactionType } from '@perawallet/wallet-core-blockchain'
@@ -29,7 +30,8 @@ export type TransactionIconType =
 export type TransactionIconProps = {
     type: TransactionIconType
     size?: 'sm' | 'md' | 'lg' | 'xl'
-} & Omit<PWRoundIconProps, 'icon' | 'size' | 'name'>
+    variant?: PWIconVariant
+} & Omit<PWRoundIconProps, 'icon' | 'size' | 'name' | 'variant'>
 
 const iconNameMap: Record<TransactionIconType, IconName> = {
     payment: 'transactions/payment',

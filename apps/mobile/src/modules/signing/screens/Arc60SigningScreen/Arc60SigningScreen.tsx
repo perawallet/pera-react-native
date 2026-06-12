@@ -12,6 +12,7 @@
 
 import {
     PWButton,
+    PWRoundIcon,
     PWScreen,
     PWSlideToConfirm,
     PWText,
@@ -33,6 +34,7 @@ export const Arc60SigningScreen = () => {
         isPending,
         canConfirm,
         error,
+        hasOriginMismatch,
         handleApprove,
         handleReject,
         handleDetailsPress,
@@ -84,6 +86,26 @@ export const Arc60SigningScreen = () => {
             }
         >
             <PWView style={styles.bodyContainer}>
+                {hasOriginMismatch && (
+                    <PWView
+                        style={styles.originWarning}
+                        testID='arc60-origin-mismatch-warning'
+                    >
+                        <PWRoundIcon
+                            icon='warning'
+                            size='md'
+                            variant='error'
+                        />
+                        <PWText
+                            variant='body'
+                            style={styles.originWarningText}
+                        >
+                            {t('signing.arc60_view.origin_mismatch', {
+                                domain: request.stdSigData.domain,
+                            })}
+                        </PWText>
+                    </PWView>
+                )}
                 <Arc60DataSigningSummaryView
                     request={request}
                     account={account}

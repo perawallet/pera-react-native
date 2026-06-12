@@ -38,3 +38,21 @@ export const concatBytes = (...arrays: Uint8Array[]): Uint8Array => {
     }
     return result
 }
+
+/**
+ * Length-then-content equality for two byte arrays. Nullish-tolerant: two
+ * absent arrays are equal, one absent is not. Use over a deep-equal helper on
+ * hot paths (signature/transaction byte checks) — it short-circuits on length.
+ */
+export const bytesEqual = (
+    a: Uint8Array | null | undefined,
+    b: Uint8Array | null | undefined,
+): boolean => {
+    if (!a && !b) return true
+    if (!a || !b) return false
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false
+    }
+    return true
+}

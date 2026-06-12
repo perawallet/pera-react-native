@@ -1882,6 +1882,7 @@
             "siwa_not_before": "Not Before",
             "siwa_resources": "Resources",
             "siwa_invalid": "This sign-in request is malformed and cannot be signed.",
+            "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Only continue if you trust it.",
             "show_details": "Show Details",
             "details_title": "Sign-in Request Details",
             "details_description": "Review the full metadata of this sign-in request before approving."
@@ -1951,6 +1952,7 @@
             "rekey_are_you_sure_title": "Are you sure?",
             "rekey_are_you_sure_description": "This signature includes rekey transaction, giving control over your accounts to another address. Please make sure that you understand the implications before proceeding.",
             "rekey_are_you_sure_continue": "Continue",
+            "high_fee_warning": "This request pays an unusually high network fee of {{fee}} ALGO. Make sure you trust the source before signing.",
             "asset_freeze_warning": "This transaction freezes or unfreezes assets for the following address: {{address}}.",
             "asset_freeze_group_warning": "This transaction group freezes or unfreezes assets for one of the accounts in this group. Please review carefully before signing.",
             "asset_freeze_warning_bold": "This may prevent the target account from transacting with the frozen asset. Please review carefully before signing.",

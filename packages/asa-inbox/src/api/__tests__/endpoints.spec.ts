@@ -14,7 +14,8 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { fetchArc59SendSummary, fetchArc59AssetRequests } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
     queryClient: vi.fn(),
 }))
 

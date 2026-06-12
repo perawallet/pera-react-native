@@ -14,9 +14,14 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { fetchSwapHistory, fetchDistinctPairsHistory } from '../endpoints'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    queryClient: vi.fn(),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        queryClient: vi.fn(),
+    }
+})
 
 const baseAsset = {
     asset_id: 0,
@@ -69,7 +74,7 @@ describe('fetchSwapHistory', () => {
             params: { address: 'ADDRESS' },
         })
         expect(result.results).toHaveLength(1)
-        expect(result.results[0].id).toBe(1)
+        expect(result.results[0].id).toBe('1')
         expect(result.results[0].amountIn.toString()).toBe('1000')
         expect(result.next).toBe('next-cursor')
         expect(result.previous).toBeNull()

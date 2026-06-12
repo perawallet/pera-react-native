@@ -17,12 +17,11 @@ import { PWIcon } from '@components/core/PWIcon'
 import { PWView } from '@components/core/PWView'
 import { PWRoundIcon } from '../PWRoundIcon'
 
-// Mock PWIcon
 vi.mock('@components/core/PWIcon', () => ({
     PWIcon: vi.fn(() => null),
+    getIconPixelSize: vi.fn(() => 24),
 }))
 
-// Mock PWView to ensure testID is passed to the DOM and avoid checking styles
 vi.mock('@components/core/PWView', () => ({
     PWView: vi.fn(({ children, testID }) => (
         <div data-testid={testID}>{children}</div>
@@ -34,7 +33,7 @@ describe('PWRoundIcon', () => {
         vi.clearAllMocks()
     })
 
-    it('renders PWIcon with default props (secondary/lg)', () => {
+    it('renders the glyph at the default size (lg -> md icon, secondary -> primary tint)', () => {
         render(
             <PWRoundIcon
                 icon='globe'
@@ -42,47 +41,74 @@ describe('PWRoundIcon', () => {
             />,
         )
 
-        // Verify container rendering (via mocked PWView)
         expect(screen.getByTestId('round-icon')).toBeTruthy()
-
-        // Verify props passed to PWIcon
-        // PWRoundIcon maps default size 'lg' -> 'md'
-        // PWRoundIcon maps 'secondary' (default) -> 'primary' icon variant
         expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'globe',
                 size: 'md',
                 variant: 'primary',
             }),
-            undefined, // context is typically undefined for FC
+            undefined,
         )
     })
 
-    it('forwards custom size and variant to PWIcon', () => {
+    it('maps size md to a 24px (md) glyph', () => {
         render(
             <PWRoundIcon
                 icon='check'
                 size='md'
                 variant='primary'
-                testID='round-icon-custom'
+                testID='round-icon-md'
             />,
         )
 
-        expect(screen.getByTestId('round-icon-custom')).toBeTruthy()
-
-        // PWRoundIcon maps 'md' -> 'sm'
-        // PWRoundIcon maps 'primary' variant -> 'white' icon variant
         expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'check',
-                size: 'sm',
+                size: 'md',
                 variant: 'white',
             }),
             undefined,
         )
     })
 
-    it('passes extra props to container', () => {
+    it('respects an explicit iconSize override', () => {
+        render(
+            <PWRoundIcon
+                icon='check'
+                size='lg'
+                iconSize='xl'
+                testID='round-icon-override'
+            />,
+        )
+
+        expect(PWIcon).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'check', size: 'xl' }),
+            undefined,
+        )
+    })
+
+    it('renders a self-colored account glyph without forcing a tint', () => {
+        render(
+            <PWRoundIcon
+                icon='accounts/glyph/algo25-account'
+                variant='accountTurquoise'
+                size='md'
+                testID='round-icon-account'
+            />,
+        )
+
+        expect(PWIcon).toHaveBeenCalledWith(
+            expect.objectContaining({
+                name: 'accounts/glyph/algo25-account',
+                size: 'md',
+                variant: 'primary',
+            }),
+            undefined,
+        )
+    })
+
+    it('passes extra props to the container', () => {
         render(
             <PWRoundIcon
                 icon='globe'
@@ -90,12 +116,8 @@ describe('PWRoundIcon', () => {
             />,
         )
 
-        expect(screen.getByTestId('round-icon-simple')).toBeTruthy()
-        // PWView validation
         expect(PWView).toHaveBeenCalledWith(
-            expect.objectContaining({
-                testID: 'round-icon-simple',
-            }),
+            expect.objectContaining({ testID: 'round-icon-simple' }),
             undefined,
         )
     })
