@@ -20,7 +20,7 @@ import { useWebView } from '@modules/webview/hooks'
 const mockOnFinished = vi.fn()
 const mockPushWebView = vi.fn()
 const mockRemove = vi.fn()
-const mockRemoveAccountById = vi.fn()
+const mockRemoveAccountByAddress = vi.fn()
 const mockSetSelectedAccountAddress = vi.fn()
 const mockInvalidateQueries = vi.fn()
 
@@ -56,7 +56,7 @@ vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useRemoveAccountById: vi.fn(() => mockRemoveAccountById),
+    useRemoveAccountByAddress: vi.fn(() => mockRemoveAccountByAddress),
     useSelectedAccount: vi.fn(() => ({ id: 'account-1', address: 'ADDR1' })),
     useSelectedAccountAddress: vi.fn(() => ({
         selectedAccountAddress: 'ADDR1',

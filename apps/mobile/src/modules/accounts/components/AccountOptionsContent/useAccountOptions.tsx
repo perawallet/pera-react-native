@@ -23,7 +23,7 @@ import {
     useCanSignWith,
     useFindAccountByAddress,
     useMultisigDetailsBackfill,
-    useRemoveAccountById,
+    useRemoveAccountByAddress,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
@@ -82,7 +82,7 @@ export const useAccountOptions = ({
     const { copyToClipboard } = useClipboard()
     const { isAccountEnabled, setAccountEnabled } = useNotificationPreferences()
     const accounts = useAllAccounts()
-    const removeAccount = useRemoveAccountById()
+    const removeAccount = useRemoveAccountByAddress()
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -238,7 +238,9 @@ export const useAccountOptions = ({
 
     const performRemoveAccount = useCallback(() => {
         const rekeyedToThisAccount = accounts.filter(
-            a => a.rekeyAddress === account.address && a.id !== account.id,
+            a =>
+                a.rekeyAddress === account.address &&
+                a.address !== account.address,
         )
 
         if (rekeyedToThisAccount.length > 0) {
@@ -252,9 +254,7 @@ export const useAccountOptions = ({
             return
         }
         const hasOtherAccounts = accounts.length > 1
-        if (account.id) {
-            void removeAccount(account.id)
-        }
+        void removeAccount(account.address)
         showToast(
             {
                 title: t('account_options.remove_account_success_message'),
@@ -267,15 +267,7 @@ export const useAccountOptions = ({
         if (hasOtherAccounts) {
             navigation.navigate('TabBar', { screen: 'Home' })
         }
-    }, [
-        accounts,
-        account.address,
-        account.id,
-        removeAccount,
-        navigation,
-        showToast,
-        t,
-    ])
+    }, [accounts, account.address, removeAccount, navigation, showToast, t])
 
     const handleOpenRemoveConfirm = useCallback(async () => {
         trackEvent(AccountOptionsEvent.Remove)

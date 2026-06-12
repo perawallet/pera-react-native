@@ -27,8 +27,8 @@ const { mockIsAccountEnabled, mockSetAccountEnabled } = vi.hoisted(() => ({
     mockIsAccountEnabled: vi.fn(() => true),
     mockSetAccountEnabled: vi.fn(),
 }))
-const { mockRemoveAccountById } = vi.hoisted(() => ({
-    mockRemoveAccountById: vi.fn(),
+const { mockRemoveAccountByAddress } = vi.hoisted(() => ({
+    mockRemoveAccountByAddress: vi.fn(),
 }))
 const { mockAllAccounts } = vi.hoisted(() => ({
     mockAllAccounts: vi.fn((): WalletAccount[] => []),
@@ -102,7 +102,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useRemoveAccountById: () => mockRemoveAccountById,
+        useRemoveAccountByAddress: () => mockRemoveAccountByAddress,
         useUpdateAccount: () => mockUpdateAccount,
         useAllAccounts: () => mockAllAccounts(),
         useCanSignWith: (account?: WalletAccount | null) =>
@@ -503,7 +503,7 @@ describe('useAccountOptions', () => {
                 enablePanDownToClose: true,
             })
             // Backup warning cancelled — should not proceed to remove
-            expect(mockRemoveAccountById).not.toHaveBeenCalled()
+            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
         })
 
         it('skips backup warning and goes straight to remove confirm for watch account', async () => {
@@ -572,7 +572,9 @@ describe('useAccountOptions', () => {
                 await removeOption?.onPress()
             })
 
-            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+            )
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
             })
@@ -816,7 +818,9 @@ describe('useAccountOptions', () => {
                 await removeOption?.onPress()
             })
 
-            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+            )
             expect(mockNavigate).not.toHaveBeenCalled()
         })
 
@@ -849,7 +853,7 @@ describe('useAccountOptions', () => {
                 await removeOption?.onPress()
             })
 
-            expect(mockRemoveAccountById).not.toHaveBeenCalled()
+            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith({
                 title: 'account_options.remove_rekey_error_title',
                 body: 'account_options.remove_rekey_error_message',
@@ -879,7 +883,53 @@ describe('useAccountOptions', () => {
                 await removeOption?.onPress()
             })
 
-            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+            )
+        })
+
+        it('removes a Ledger account imported without an id', async () => {
+            // Hardware accounts from the Ledger pairing flow carry no `id` —
+            // removal must still go through (regression: silent no-op with
+            // a success toast).
+            const idlessLedgerAccount: WalletAccount = {
+                address: 'LEDGERADDRESS',
+                type: AccountTypes.hardware,
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    accountIndex: 0,
+                    transportType: 'ble',
+                },
+            }
+            mockAllAccounts.mockReturnValue([
+                algo25Account,
+                idlessLedgerAccount,
+            ])
+            mockRequestBottomSheet
+                .mockResolvedValueOnce('continue')
+                .mockResolvedValueOnce('confirm')
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: idlessLedgerAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+
+            expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
+                'LEDGERADDRESS',
+            )
         })
     })
 })

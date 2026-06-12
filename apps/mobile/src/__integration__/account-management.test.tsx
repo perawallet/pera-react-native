@@ -202,6 +202,60 @@ describe('Flow: Account management', () => {
     )
 
     it(
+        'Given a Ledger account imported without an id, when the user removes it via the options sheet, then it is gone from the store and sibling accounts from the same device stay',
+        async () => {
+            // Hardware accounts from the Ledger pairing flow carry no `id`
+            // (they are deduped by address). Removal used to silently no-op
+            // for them while still showing the success toast (PERA-4293).
+            const ledgerAccount = (
+                address: string,
+                accountIndex: number,
+                name: string,
+            ): WalletAccount => ({
+                type: AccountTypes.hardware,
+                address,
+                name,
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'nano-x-1',
+                    deviceName: 'Ledger Nano X',
+                    accountIndex,
+                    transportType: 'ble',
+                },
+            })
+            const ledgerA = ledgerAccount(ALGO25_TEST_ADDRESS, 0, 'Ledger 1')
+            const ledgerB = ledgerAccount(HD_TEST_ADDRESS, 1, 'Ledger 2')
+            useAccountsStore.getState().setAccounts([ledgerA, ledgerB])
+            useAccountsStore
+                .getState()
+                .setSelectedAccountAddress(ledgerA.address)
+
+            renderWithNavigation(
+                () => <AccountOptionsHost account={ledgerA} />,
+                'AccountOptionsHost',
+            )
+
+            // Hardware accounts hold no local key material, so the
+            // backup-warning gate is skipped — straight to the confirm.
+            tapButtonByLabel('account_options.remove_account')
+
+            await waitFor(() =>
+                tapButtonByLabel('account_options.remove_confirm'),
+            )
+
+            await waitFor(() => {
+                expect(useAccountsStore.getState().accounts).toHaveLength(1)
+            })
+            // The sibling from the same device (same deviceId, different
+            // address) must survive the removal.
+            expect(useAccountsStore.getState().accounts[0].address).toBe(
+                ledgerB.address,
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given an algo25 account with real keystore keys, when the user removes it, then the backup-warning gate appears, the account is removed, and the keystore key plus its `-seed` sibling are wiped (no orphans)',
         async () => {
             // Mint a real algo25 key from the pinned mnemonic so the
