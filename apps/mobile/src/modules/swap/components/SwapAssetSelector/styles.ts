@@ -30,9 +30,9 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.xs,
+        gap: theme.spacing.sm,
         paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xs,
         minWidth: 0,
     },
     icon: {
