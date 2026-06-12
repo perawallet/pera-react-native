@@ -169,6 +169,9 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
                     : { json: requestConfig.data }),
                 signal: requestConfig.signal,
                 headers: requestConfig.headers,
+                ...(requestConfig.timeout !== undefined
+                    ? { timeout: requestConfig.timeout }
+                    : {}),
             })
 
             logger.debug('Received response', {

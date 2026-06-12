@@ -11,6 +11,7 @@
  */
 
 import {
+    CHART_QUERY_TIMEOUT_MS,
     queryClient,
     type HistoryPeriod,
     type Network,
@@ -53,6 +54,7 @@ export const fetchAssetPriceHistory = async (
             asset_id: assetID,
             period,
         },
+        timeout: CHART_QUERY_TIMEOUT_MS,
     })
 
     return assetPriceHistoryResponseSchema.parse(res.data)
