@@ -52,7 +52,7 @@ export const TransactionListItem = ({
             left={
                 <TransactionIcon
                     type={iconType}
-                    size='sm'
+                    size='md'
                 />
             }
             right={

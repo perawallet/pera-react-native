@@ -42,7 +42,7 @@ export type AssetItemViewProps = {
 export const AssetItemView = ({
     asset,
     right,
-    iconSize = 'lg',
+    iconSize = 'xl',
     logoUrl,
     showFavorite = false,
     showDeletedLabel = false,

@@ -36,11 +36,7 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { withDangerousMod } = require('expo/config-plugins');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const fs = require('fs');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const path = require('path');
+const withAppDelegateSwiftMod = require('./utils/withAppDelegateSwiftMod');
 
 const CALL = 'excludePeraDataFromBackupIfNeeded()';
 
@@ -129,35 +125,8 @@ function injectBackupExclusion(contents) {
   return withCall;
 }
 
-const withExcludeDataFromBackup = (config) => {
-  return withDangerousMod(config, [
-    'ios',
-    async (modConfig) => {
-      const appDelegatePath = path.join(
-        modConfig.modRequest.platformProjectRoot,
-        modConfig.modRequest.projectName,
-        'AppDelegate.swift'
-      );
-
-      // Read-then-catch rather than existsSync+read: avoids a check/use race
-      // (CodeQL js/file-system-race) and survives prebuild runs that haven't
-      // yet materialized the iOS project.
-      let contents;
-      try {
-        contents = fs.readFileSync(appDelegatePath, 'utf-8');
-      } catch (err) {
-        if (err.code === 'ENOENT') {
-          return modConfig;
-        }
-        throw err;
-      }
-
-      fs.writeFileSync(appDelegatePath, injectBackupExclusion(contents));
-
-      return modConfig;
-    },
-  ]);
-};
+const withExcludeDataFromBackup = (config) =>
+  withAppDelegateSwiftMod(config, injectBackupExclusion);
 
 module.exports = withExcludeDataFromBackup;
 module.exports.injectBackupExclusion = injectBackupExclusion;
