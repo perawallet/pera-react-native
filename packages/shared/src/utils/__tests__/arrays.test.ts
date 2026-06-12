@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { partition, partitionBy, concatBytes } from '../arrays'
+import { partition, partitionBy, concatBytes, bytesEqual } from '../arrays'
 
 describe('utils/arrays', () => {
     describe('partition', () => {
@@ -77,6 +77,42 @@ describe('utils/arrays', () => {
             const result = concatBytes()
             expect(result).toBeInstanceOf(Uint8Array)
             expect(result.length).toBe(0)
+        })
+    })
+
+    describe('bytesEqual', () => {
+        test('true for identical content', () => {
+            expect(
+                bytesEqual(
+                    new Uint8Array([1, 2, 3]),
+                    new Uint8Array([1, 2, 3]),
+                ),
+            ).toBe(true)
+        })
+
+        test('false when content differs', () => {
+            expect(
+                bytesEqual(
+                    new Uint8Array([1, 2, 3]),
+                    new Uint8Array([1, 2, 4]),
+                ),
+            ).toBe(false)
+        })
+
+        test('false when lengths differ', () => {
+            expect(
+                bytesEqual(new Uint8Array([1, 2]), new Uint8Array([1, 2, 3])),
+            ).toBe(false)
+        })
+
+        test('nullish-tolerant: both absent are equal, one absent is not', () => {
+            expect(bytesEqual(undefined, null)).toBe(true)
+            expect(bytesEqual(new Uint8Array([1]), undefined)).toBe(false)
+            expect(bytesEqual(null, new Uint8Array([1]))).toBe(false)
+        })
+
+        test('two empty arrays are equal', () => {
+            expect(bytesEqual(new Uint8Array(), new Uint8Array())).toBe(true)
         })
     })
 })

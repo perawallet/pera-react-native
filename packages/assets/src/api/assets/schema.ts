@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 
 const collectibleTraitSchema = z.object({
     display_name: z.string().optional(),
@@ -25,7 +26,8 @@ const collectibleMediaSchema = z.object({
 })
 
 const collectibleCollectionSchema = z.object({
-    id: z.number().optional(),
+    // Backend collection ids can exceed 2^53 — see uint64IdSchema.
+    id: uint64IdSchema.optional(),
     name: z.string(),
     description: z.string().optional(),
 })
@@ -52,7 +54,7 @@ const collectibleResponseSchema = z.object({
 export type CollectibleResponse = z.infer<typeof collectibleResponseSchema>
 
 export const assetResponseSchema = z.object({
-    asset_id: z.number(),
+    asset_id: uint64IdSchema,
     name: z.string().optional(),
     logo: z.string().nullable().optional(),
     unit_name: z.string().optional(),
@@ -88,11 +90,13 @@ export const assetsResponseSchema = z.object({
 })
 
 export const publicAssetResponseSchema = z.object({
-    asset_id: z.number(),
+    asset_id: uint64IdSchema,
     name: z.string().optional().nullable(),
     unit_name: z.string().optional().nullable(),
     fraction_decimals: z.number(),
-    total_supply: z.number(),
+    // uint64 total: max-supply ASAs (~2^64) exceed double precision, so the
+    // precision-safe JSON parser delivers them as strings — accept both.
+    total_supply: z.union([z.number(), z.string()]),
     total_supply_as_str: z.string(),
     is_deleted: z.boolean().optional().nullable(),
     creator_address: z.string().optional().nullable(),
@@ -109,7 +113,7 @@ export const indexerAssetResponseSchema = z.object({
         'created-at-round': z.number().optional(),
         deleted: z.boolean().optional(),
         'destroyed-at-round': z.number().optional(),
-        index: z.number(),
+        index: uint64IdSchema,
         params: z.object({
             clawback: z.string().optional(),
             creator: z.string(),
@@ -121,7 +125,8 @@ export const indexerAssetResponseSchema = z.object({
             name: z.string().optional(),
             'name-b64': z.string().optional(),
             reserve: z.string().optional(),
-            total: z.number(),
+            // uint64 total — see total_supply above for why string is accepted
+            total: z.union([z.number(), z.string()]),
             'unit-name': z.string().optional(),
             'unit-name-b64': z.string().optional(),
             url: z.string().optional(),

@@ -16,7 +16,8 @@ import { fetchApplication } from '../endpoints'
 
 const mockQueryClient = vi.fn()
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
     queryClient: (...args: unknown[]) => mockQueryClient(...args),
     logger: { warn: vi.fn() },
 }))
@@ -53,7 +54,7 @@ describe('fetchApplication', () => {
         })
 
         expect(result).toEqual({
-            applicationId: 123,
+            applicationId: '123',
             name: 'Test App',
             project: {
                 name: 'Test Project',

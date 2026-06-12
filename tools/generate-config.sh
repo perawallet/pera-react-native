@@ -94,6 +94,9 @@ append_config "DEMO_DAPP_URL" "peraDemoDappUrl" "string"
 append_config "DEBUG_ENABLED" "debugEnabled" "boolean"
 append_config "PROFILING_ENABLED" "profilingEnabled" "boolean"
 append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
+# e2e-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
+# Set ONLY in the e2e build job — never in store-submission builds.
+append_config "DISABLE_SCREEN_CAPTURE_PREVENTION" "disableScreenCapturePrevention" "boolean"
 
 append_config "MAINNET_BIDALI_API_KEY" "mainnetBidaliApiKey" "string"
 append_config "TESTNET_BIDALI_API_KEY" "testnetBidaliApiKey" "string"

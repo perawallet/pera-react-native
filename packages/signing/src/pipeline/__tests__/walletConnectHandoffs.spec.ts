@@ -27,6 +27,7 @@ const buildHandoff = (
         threshold: 2,
         addresses: ['A1', 'A2', 'A3'],
     },
+    expectedRawTransactionsBase64: [btoa('raw-tx-1')],
     deviceId: 'device-1',
     network: 'testnet',
     callbacks: {

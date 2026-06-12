@@ -26,6 +26,7 @@
     "decimal.js": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "tweetnacl": "^1.0.3",
     "zod": "catalog:",
     "zustand": "catalog:"
   },

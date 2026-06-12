@@ -29,7 +29,7 @@ vi.mock('../../api', () => ({
 const mockResult = {
     amount: new Decimal('1000000'),
     peraFee: new Decimal('5000'),
-    peraFeeAssetId: 0,
+    peraFeeAssetId: '0',
 }
 
 const mockRequest = {

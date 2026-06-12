@@ -110,6 +110,43 @@ describe('currencies endpoints', () => {
         expect(result.usdPrice.toString()).toBe('1.12345')
     })
 
+    test('fetchCurrency parses a string usd_value losslessly through the schema', async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                currency_id: 'EUR',
+                name: 'Euro',
+                symbol: '€',
+                usd_value: '12345678.123456789',
+            },
+        })
+
+        const result = await fetchCurrency({
+            currencyId: 'EUR',
+            network: 'mainnet',
+        })
+
+        expect(result.usdPrice.toString()).toBe('12345678.123456789')
+    })
+
+    test('fetchCurrency normalizes a numeric usd_value through the schema', async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                currency_id: 'EUR',
+                name: 'Euro',
+                symbol: '€',
+                usd_value: 1.27,
+            },
+        })
+
+        const result = await fetchCurrency({
+            currencyId: 'EUR',
+            network: 'mainnet',
+        })
+
+        expect(result.usdPrice).toBeInstanceOf(Decimal)
+        expect(result.usdPrice.toString()).toBe('1.27')
+    })
+
     test('fetchCurrency defaults usdPrice to 0 when usd_value is missing', async () => {
         queryClientMock.mockResolvedValue({
             data: { currency_id: 'USD', name: 'US Dollar', symbol: '$' },

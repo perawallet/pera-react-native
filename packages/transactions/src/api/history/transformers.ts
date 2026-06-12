@@ -32,11 +32,9 @@ const transformSwapGroupDetail = (
 ): Nullable<TransactionSwapGroupDetail> => {
     if (!detail) return null
     return {
-        assetInId:
-            detail.asset_in_id != null ? Number(detail.asset_in_id) : null,
+        assetInId: detail.asset_in_id ?? null,
         assetInUnitName: detail.asset_in_unit_name ?? '',
-        assetOutId:
-            detail.asset_out_id != null ? Number(detail.asset_out_id) : null,
+        assetOutId: detail.asset_out_id ?? null,
         assetOutUnitName: detail.asset_out_unit_name ?? '',
         amountIn: new Decimal(detail.amount_in ?? '0'),
         amountOut: new Decimal(detail.amount_out ?? '0'),
@@ -51,7 +49,7 @@ const transformAssetSummary = (
 ): Nullable<TransactionAssetSummary> => {
     if (!asset) return null
     return {
-        assetId: Number(asset.asset_id),
+        assetId: asset.asset_id,
         name: asset.name ?? '',
         unitName: asset.unit_name ?? '',
         decimals: asset.decimals ?? 0,
@@ -94,8 +92,7 @@ export const transformTransactionItem = (
             : null,
     closeTo: item.close_to ?? null,
     asset: transformAssetSummary(item.asset),
-    applicationId:
-        item.application_id != null ? String(item.application_id) : null,
+    applicationId: item.application_id ?? null,
     innerTransactionCount:
         item.inner_transaction_count != null
             ? Number(item.inner_transaction_count)

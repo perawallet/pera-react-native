@@ -57,7 +57,9 @@ export const buildCsvQueryParams = (
     }
 
     if (assetId !== undefined) {
-        params.asset_id = parseInt(assetId, 10)
+        // Pass the id through as a string: parseInt would silently round an
+        // id above 2^53 and export the wrong asset's history.
+        params.asset_id = assetId
     }
 
     return params

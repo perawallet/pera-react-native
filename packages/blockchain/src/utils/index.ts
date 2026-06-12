@@ -22,6 +22,7 @@ import {
 export * from './algorandClient'
 export * from './addresses'
 export * from './transactions'
+export * from './rawTransactions'
 export * from './json'
 export * from './multisig'
 export * from './assembleSignedMultisigTransactions'

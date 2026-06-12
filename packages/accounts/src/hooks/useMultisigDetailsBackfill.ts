@@ -11,8 +11,12 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    generateMultisigAddress,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
 import { useMultisigAccountDetailQuery } from '@perawallet/wallet-core-multisig'
+import { logger } from '@perawallet/wallet-core-shared'
 import { isMultisigAccount } from '../utils'
 import { useUpdateAccount } from './useUpdateAccount'
 
@@ -49,6 +53,27 @@ export const useMultisigDetailsBackfill = (
         }
         if (backfilledAddresses.current.has(account.address)) return
         backfilledAddresses.current.add(account.address)
+
+        // The address is the local source of truth; never persist a
+        // server-provided cosigner set it doesn't commit to. A mismatch means
+        // a wrong or malicious backend response — leave the account un-healed.
+        let derivedAddress: string | null = null
+        try {
+            derivedAddress = generateMultisigAddress(
+                data.version,
+                data.threshold,
+                data.participantAddresses,
+            )
+        } catch {
+            // malformed participant address — treated as a mismatch below
+        }
+        if (derivedAddress !== account.address) {
+            logger.warn(
+                'Multisig backfill skipped: server participant set does not derive the account address',
+                { address: account.address },
+            )
+            return
+        }
 
         updateAccount({
             ...account,

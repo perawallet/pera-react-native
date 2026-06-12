@@ -11,6 +11,7 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { z } from 'zod'
 import {
     validateMockRequest,
     validateMockResponse,
@@ -18,11 +19,11 @@ import {
 import {
     prepareTransactionsRequestSchema,
     prepareTransactionsResponseSchema,
-    type PrepareTransactionsApiResponse,
 } from './schema'
 
 export type MockPrepareTransactionsParams = {
-    response: PrepareTransactionsApiResponse
+    // wire (pre-parse) shape: ids may be numbers or strings
+    response: z.input<typeof prepareTransactionsResponseSchema>
     status?: number
 }
 

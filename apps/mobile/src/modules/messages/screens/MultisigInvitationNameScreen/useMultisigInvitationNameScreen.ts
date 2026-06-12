@@ -24,7 +24,10 @@ import {
     useSelectedAccountAddress,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    generateMultisigAddress,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { useLanguage } from '@hooks/useLanguage'
@@ -128,13 +131,33 @@ export const useMultisigInvitationNameScreen =
             try {
                 setIsSaving(true)
 
+                // Re-derive the address from the invitation's (version,
+                // threshold, participants) and refuse to persist on mismatch.
+                // The inbox backend is a relay, not a trust anchor: an address
+                // that doesn't match its own participant set means the
+                // invitation is corrupt or tampered. Checked before the inbox
+                // delete so a bad invitation isn't consumed. Mirrors the QR
+                // import path in useNameMultisigScreen.
+                const derivedAddress = generateMultisigAddress(
+                    invitation.version,
+                    invitation.threshold,
+                    invitation.participantAddresses,
+                )
+                if (derivedAddress !== invitation.address) {
+                    errorToast(
+                        t('multisig.import.address_mismatch_title'),
+                        t('multisig.import.address_mismatch_body'),
+                    )
+                    return
+                }
+
                 await deleteImportInboxMutation.mutateAsync({
                     multisigAddress: invitation.address,
                 })
 
                 const newAccount: MultiSigAccount = {
                     type: AccountTypes.multisig,
-                    address: invitation.address,
+                    address: derivedAddress,
                     name: trimmedName,
                     multisigDetails: {
                         threshold: invitation.threshold,
@@ -144,7 +167,7 @@ export const useMultisigInvitationNameScreen =
                 }
 
                 setAccounts([...accounts, newAccount])
-                setSelectedAccountAddress(invitation.address)
+                setSelectedAccountAddress(derivedAddress)
                 setShouldPlayConfetti(true)
                 successToast(
                     t('multisig.invitation.accept_success'),

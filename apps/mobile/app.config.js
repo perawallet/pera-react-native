@@ -311,6 +311,10 @@ module.exports = {
     // open an empty keystore after the passkey App Group is enabled.
     './plugins/withMMKVAppGroupMigration.js',
 
+    // Custom plugin: exclude the local data stores (MMKV + pera.db) from iOS
+    // backups (NSURLIsExcludedFromBackupKey). Android parity is allowBackup:false.
+    './plugins/withExcludeDataFromBackup.js',
+
     // Passkey autofill (FIDO2) — system credential provider extension
     [
       '@algorandfoundation/react-native-passkey-autofill',

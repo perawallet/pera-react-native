@@ -99,8 +99,8 @@ describe('CSV Export Utils', () => {
         })
 
         it('includes asset_id when provided', () => {
-            expect(buildCsvQueryParams(undefined, 12345)).toEqual({
-                asset_id: 12345,
+            expect(buildCsvQueryParams(undefined, '12345')).toEqual({
+                asset_id: '12345',
             })
         })
 
@@ -115,18 +115,25 @@ describe('CSV Export Utils', () => {
                         startDate: '2024-01-01',
                         endDate: '2024-12-31',
                     },
-                    12345,
+                    '12345',
                 ),
             ).toEqual({
                 start_date: '2024-01-01',
                 end_date: '2024-12-31',
-                asset_id: 12345,
+                asset_id: '12345',
             })
         })
 
         it('includes asset_id with zero value', () => {
-            expect(buildCsvQueryParams(undefined, 0)).toEqual({
-                asset_id: 0,
+            expect(buildCsvQueryParams(undefined, '0')).toEqual({
+                asset_id: '0',
+            })
+        })
+
+        it('passes an asset_id above 2^53 through without rounding', () => {
+            const bigId = '18446744073709551615' // 2^64 - 1
+            expect(buildCsvQueryParams(undefined, bigId)).toEqual({
+                asset_id: bigId,
             })
         })
     })

@@ -11,14 +11,14 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { z } from 'zod'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
-import {
-    availableAssetsResponseSchema,
-    type AvailableAssetsApiResponse,
-} from './schema'
+import { availableAssetsResponseSchema } from './schema'
 
+// Typed with the schema *input* (wire) shape — asset ids may be numbers on
+// the wire but are normalized to strings during parsing.
 export type MockAvailableAssetsParams = {
-    response: AvailableAssetsApiResponse
+    response: z.input<typeof availableAssetsResponseSchema>
     status?: number
 }
 

@@ -11,10 +11,13 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 import { TransactionTypes } from '../../models/types'
 
 /**
- * Helper to coerce string to number (API sometimes returns numeric fields as strings)
+ * Helper to coerce string to number (API sometimes returns numeric fields as
+ * strings). Only for round/count-class values that fit a double — uint64 ids
+ * use {@link uint64IdSchema}, which keeps them as strings.
  */
 const coerceNumber = z.union([
     z.number(),
@@ -25,9 +28,9 @@ const coerceNumber = z.union([
  * Schema for swap group detail from API response
  */
 export const transactionSwapGroupDetailSchema = z.object({
-    asset_in_id: coerceNumber.optional(),
+    asset_in_id: uint64IdSchema.optional(),
     asset_in_unit_name: z.string().optional().default(''),
-    asset_out_id: coerceNumber.optional(),
+    asset_out_id: uint64IdSchema.optional(),
     asset_out_unit_name: z.string().optional().default(''),
     amount_in: z.string().optional().default('0'),
     amount_out: z.string().optional().default('0'),
@@ -38,7 +41,7 @@ export const transactionSwapGroupDetailSchema = z.object({
  * Note: Some fields may be missing for certain asset types
  */
 export const transactionAssetSummarySchema = z.object({
-    asset_id: coerceNumber,
+    asset_id: uint64IdSchema,
     name: z.string().optional().default(''),
     unit_name: z.string().optional().default(''),
     decimals: z.number().optional().default(0),
@@ -71,7 +74,7 @@ export const transactionHistoryItemResponseSchema = z.object({
     amount: z.string().nullable().optional(),
     close_to: z.string().nullable().optional(),
     asset: transactionAssetSummarySchema.nullable().optional(),
-    application_id: coerceNumber.nullable().optional(),
+    application_id: uint64IdSchema.nullable().optional(),
     inner_transaction_count: coerceNumber.nullable().optional(),
 })
 

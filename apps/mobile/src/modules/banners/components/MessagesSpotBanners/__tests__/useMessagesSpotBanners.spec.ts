@@ -30,7 +30,7 @@ vi.mock('../../../hooks', () => ({
 import { useMessagesSpotBanners } from '../useMessagesSpotBanners'
 
 const banner: SpotBanner = {
-    id: 17,
+    id: '17',
     text: 'Try',
     imageUrl: 'https://cdn.test/x.png',
     url: 'pera://x',
@@ -93,6 +93,6 @@ describe('useMessagesSpotBanners', () => {
         const { result } = renderHook(() => useMessagesSpotBanners())
         act(() => result.current.onDismiss(banner))
 
-        expect(mockDismiss).toHaveBeenCalledWith(17)
+        expect(mockDismiss).toHaveBeenCalledWith('17')
     })
 })

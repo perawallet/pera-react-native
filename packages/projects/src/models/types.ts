@@ -33,7 +33,8 @@ export type PeraProject = {
 }
 
 export type PeraApplication = {
-    applicationId?: number
+    /** uint64 app id as a decimal string — must not live in a JS number. */
+    applicationId?: string
     name?: string
     project: PeraProject
 }

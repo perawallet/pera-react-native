@@ -38,7 +38,17 @@ export type ProposeSignRequestFn = (params: {
     signedData: SigningResult['signedData']
     signers: SigningResult['signers']
     type: MultisigProposeMode
-}) => Promise<{ signRequestId: string; status: SignRequestStatus }>
+}) => Promise<{
+    signRequestId: string
+    status: SignRequestStatus
+    /**
+     * The base64-encoded raw transaction bytes the adapter actually sent
+     * to the propose endpoint. Pinned on the WC handoff so the resolver
+     * can refuse backend poll responses whose bytes differ from what the
+     * user reviewed.
+     */
+    rawTransactionsBase64: string[]
+}>
 
 /** Multisig metadata needed by the resolver listener to build subsigs. */
 export type MsigMetadata = {
@@ -212,6 +222,8 @@ export const createMultisigProposeTransport = (
                         signRequestId: response.signRequestId,
                         multisigAddress,
                         msigMetadata: msig,
+                        expectedRawTransactionsBase64:
+                            response.rawTransactionsBase64,
                         deviceId,
                         network: capturedNetwork,
                         callbacks: {
