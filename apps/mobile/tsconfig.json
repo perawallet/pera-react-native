@@ -92,6 +92,9 @@
       ],
       "@perawallet/wallet-core-onramp/test-handlers": [
         "../../packages/onramp/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-core-nfd/test-handlers": [
+        "../../packages/nfd/src/test-handlers.ts"
       ]
     },
     "lib": [

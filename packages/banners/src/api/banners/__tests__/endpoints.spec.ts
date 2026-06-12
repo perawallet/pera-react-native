@@ -14,7 +14,8 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { fetchBanners } from '../endpoints'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
     queryClient: vi.fn(),
 }))
 
@@ -60,7 +61,20 @@ describe('fetchBanners', () => {
         const result = await fetchBanners('mainnet', DEVICE_ID)
 
         expect(result.count).toBe(1)
+        expect(result.results[0].id).toBe('1')
         expect(result.results[0].type).toBe('governance')
+    })
+
+    test('preserves an id above 2^53 delivered as a string', async () => {
+        // The precision-safe JSON parser surfaces >2^53 ids as strings.
+        const bigId = '1786243907000000001'
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { count: 1, results: [{ id: bigId, type: 'generic' }] },
+        })
+
+        const result = await fetchBanners('mainnet', DEVICE_ID)
+
+        expect(result.results[0].id).toBe(bigId)
     })
 
     test('coerces unknown banner types to generic', async () => {

@@ -16,7 +16,7 @@ import type { Banner } from '@perawallet/wallet-core-banners'
 import { BannerCard } from '../BannerCard'
 
 const banner: Banner = {
-    id: 1,
+    id: '1',
     type: 'staking',
     title: 'Stake your ALGOs',
     subtitle: 'Earn yield',

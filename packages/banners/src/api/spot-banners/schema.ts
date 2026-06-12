@@ -11,9 +11,11 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 
 export const spotBannerResponseSchema = z.object({
-    id: z.number(),
+    // Backend ids exceed 2^53 — see bannerResponseSchema.
+    id: uint64IdSchema,
     text: z.string(),
     image: z.string().url(),
     url: z.string(),

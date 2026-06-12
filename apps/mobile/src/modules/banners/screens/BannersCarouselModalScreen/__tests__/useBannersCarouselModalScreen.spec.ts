@@ -44,7 +44,7 @@ vi.mock('../../../hooks', () => ({
 import { useBannersCarouselModalScreen } from '../useBannersCarouselModalScreen'
 
 const buildBanner = (id: number): Banner => ({
-    id,
+    id: String(id),
     type: 'generic',
     title: `B${id}`,
     subtitle: null,
@@ -89,7 +89,7 @@ describe('useBannersCarouselModalScreen', () => {
     })
 
     it('initialIndex focuses the banner matching the route bannerId param', () => {
-        mockUseRoute.mockReturnValue({ params: { bannerId: 2 } })
+        mockUseRoute.mockReturnValue({ params: { bannerId: '2' } })
         mockUseVisibleBanners.mockReturnValue({
             banners: [buildBanner(1), buildBanner(2), buildBanner(3)],
             totalCount: 3,
@@ -103,7 +103,7 @@ describe('useBannersCarouselModalScreen', () => {
     })
 
     it('initialIndex falls back to 0 when bannerId is not found', () => {
-        mockUseRoute.mockReturnValue({ params: { bannerId: 999 } })
+        mockUseRoute.mockReturnValue({ params: { bannerId: '999' } })
         mockUseVisibleBanners.mockReturnValue({
             banners: [buildBanner(1)],
             totalCount: 1,
@@ -146,7 +146,7 @@ describe('useBannersCarouselModalScreen', () => {
         const { result } = renderHook(() => useBannersCarouselModalScreen())
         act(() => result.current.onDismiss(buildBanner(5)))
 
-        expect(mockDismissBanner).toHaveBeenCalledWith(5)
+        expect(mockDismissBanner).toHaveBeenCalledWith('5')
     })
 
     it('auto-closes when there are no banners', () => {

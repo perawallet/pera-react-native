@@ -16,7 +16,7 @@ import type { DexSwapAssetApiResponse } from './schema'
 export const transformDexSwapAsset = (
     data: DexSwapAssetApiResponse,
 ): DexSwapAsset => ({
-    assetId: String(data.asset_id ?? 0),
+    assetId: data.asset_id ?? '0',
     logo: data.logo ?? undefined,
     name: data.name,
     unitName: data.unit_name,

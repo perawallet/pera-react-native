@@ -38,6 +38,7 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     isDecimalEqual,
+    uint64IdToNumber,
     useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -180,8 +181,10 @@ export const useSwapForm = (): UseSwapFormResult => {
                 const result = await createQuotesRef.current({
                     swapper_address: selectedAccount.address,
                     swap_type: 'fixed-input',
-                    asset_in_id: Number(fromAsset),
-                    asset_out_id: Number(toAsset),
+                    // uint64IdToNumber (not Number()): throws on ids above
+                    // 2^53 - 1 instead of silently quoting a different asset.
+                    asset_in_id: uint64IdToNumber(fromAsset),
+                    asset_out_id: uint64IdToNumber(toAsset),
                     amount: amountInBaseUnits.toFixed(0),
                     slippage:
                         slippage !== null
@@ -304,8 +307,8 @@ export const useSwapForm = (): UseSwapFormResult => {
             try {
                 const result = await calculateSwapAmountRef.current!({
                     address: selectedAccount.address,
-                    asset_in_id: Number(fromAsset),
-                    asset_out_id: Number(toAsset),
+                    asset_in_id: uint64IdToNumber(fromAsset),
+                    asset_out_id: uint64IdToNumber(toAsset),
                     percentage: String(percentage / 100),
                 })
                 if (result.amount) {

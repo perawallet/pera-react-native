@@ -25,6 +25,7 @@ import {
     classifyPeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { validateTransactionRoundTrip } from '../../utils/validateTransactionRoundTrip'
+import { isArc60OriginMismatch } from '../../utils/arc60-wire'
 
 /**
  * Creates the standard analyzer that provides basic analysis:
@@ -100,19 +101,40 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
 }
 
 /**
- * Creates analysis for non-transaction signable data (arbitrary data, Arc60)
+ * Creates analysis for non-transaction signable data (arbitrary data, Arc60).
+ *
+ * There are no transaction details to summarise here, but ARC-60 carries one
+ * analysable risk: the SIWA `domain` is self-asserted by the request, so a
+ * relayed/phishing request can bind to a domain the user trusts while actually
+ * originating elsewhere. When the platform observed a trustworthy origin (the
+ * webview host) and it doesn't match `domain`, flag it as a danger.
  */
 const createNonTransactionAnalysis = (
-    _group: SignableGroup,
+    group: SignableGroup,
     context: AnalysisContext,
 ): SignableAnalysis => {
-    // For arbitrary data/Arc60, we don't have transaction details
+    const warnings: AnalysisWarning[] = []
+
+    if (
+        group.data.type === 'arc60' &&
+        isArc60OriginMismatch(
+            group.data.stdSigData.domain,
+            group.source.verifiedOrigin,
+        )
+    ) {
+        warnings.push({
+            type: 'suspicious',
+            severity: 'danger',
+            message: `The sign-in domain "${group.data.stdSigData.domain}" does not match the site that requested it (${group.source.verifiedOrigin}).`,
+        })
+    }
+
     return {
         totalFees: 0n,
         transactionSummaries: [],
-        warnings: [],
+        warnings,
         signableAddresses: context.accounts.map(a => a.address),
-        riskLevel: 'low',
+        riskLevel: calculateRiskLevel(warnings),
     }
 }
 

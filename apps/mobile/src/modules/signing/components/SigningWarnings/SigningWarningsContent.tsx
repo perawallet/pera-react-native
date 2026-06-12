@@ -39,7 +39,11 @@ export const SigningWarningsContent = ({
         >
             {distinctWarnings.map((warning, index) => (
                 <WarningItem
-                    key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
+                    key={
+                        warning.type === 'high-fee'
+                            ? 'high-fee'
+                            : `${warning.type}-${warning.senderAddress}-${warning.targetAddress}`
+                    }
                     warning={warning}
                     showDivider={index > 0}
                     isGroup={isGroup}

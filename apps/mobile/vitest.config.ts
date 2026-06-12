@@ -236,6 +236,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-nfd/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/nfd/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-accounts/test-handlers',
                 replacement: path.resolve(
                     __dirname,

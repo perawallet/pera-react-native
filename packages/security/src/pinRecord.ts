@@ -11,6 +11,7 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
 import { pbkdf2, randomBytes } from 'crypto'
 
 // v1 used Argon2id in pure-JS; unusably slow on mobile engines, so it was
@@ -33,14 +34,6 @@ export type PinRecord = {
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
-
-const bytesToHex = (bytes: Uint8Array): string => {
-    let out = ''
-    for (let i = 0; i < bytes.length; i += 1) {
-        out += bytes[i].toString(16).padStart(2, '0')
-    }
-    return out
-}
 
 const hexToBytes = (hex: string): Uint8Array => {
     const bytes = new Uint8Array(hex.length / 2)

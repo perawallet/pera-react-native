@@ -16,7 +16,7 @@ import type { Banner } from '@perawallet/wallet-core-banners'
 import { CompactBanner } from '../CompactBanner'
 
 const banner: Banner = {
-    id: 1,
+    id: '1',
     type: 'governance',
     title: 'Vote in Period 12',
     subtitle: null,

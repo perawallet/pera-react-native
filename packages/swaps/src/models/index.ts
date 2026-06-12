@@ -59,7 +59,8 @@ export interface DexSwapAsset extends MinimalAsset {
 }
 
 export interface SwapHistoryItem {
-    id: number
+    /** Decimal string — backend ids exceed 2^53 and must not live in a JS number. */
+    id: string
     idStr?: Nullable<string>
     provider: SwapProvider
     status: SwapStatus
@@ -83,13 +84,14 @@ export interface SwapDistinctPairItem {
 }
 
 export interface SwapQuote {
-    id?: number
+    /** Decimal string — backend ids exceed 2^53; quoteIdStr is canonical. */
+    id?: string
     quoteIdStr?: string
     provider?: SwapProvider
     providerDisplayName?: string
     swapType?: SwapType
     swapperAddress?: string
-    device?: Nullable<number>
+    device?: Nullable<string>
     assetIn: DexSwapAsset
     assetOut: DexSwapAsset
     /** Amount of input asset, in base units */
@@ -131,18 +133,21 @@ export interface TopPairItem {
 
 export interface CalculatePeraFeeResult {
     peraFeeAmount?: Decimal
-    peraFeeAssetId?: number
+    /** Asset id as a decimal string — uint64 ids must never live in a JS number. */
+    peraFeeAssetId?: string
 }
 
 export interface CalculateSwapAmountResult {
     amount?: Decimal
     peraFee?: Decimal
-    peraFeeAssetId?: number
+    /** Asset id as a decimal string — uint64 ids must never live in a JS number. */
+    peraFeeAssetId?: string
 }
 
 export interface PrepareTransactionsResult {
     transactionGroups?: TransactionGroup[]
-    swapId?: number
+    /** Decimal string — backend ids exceed 2^53; swapIdStr is canonical. */
+    swapId?: string
     swapIdStr?: string
     swapVersion?: string
 }

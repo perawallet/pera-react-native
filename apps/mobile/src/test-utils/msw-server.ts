@@ -11,12 +11,23 @@
  */
 
 import { setupServer } from 'msw/node'
+import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 
-// Shared MSW server for integration tests. Starts with no handlers registered
-// — tests opt in per-scenario via `server.use(...)`, importing factories from
-// each domain package's `*/test-handlers` barrel and fixtures from
-// `__integration__/__fixtures__/`. This keeps the contract explicit:
-// unhandled requests warn, surfacing missing mocks immediately.
-export const server = setupServer()
+// Shared MSW server for integration tests. Starts with only the ambient
+// baseline handlers below — tests opt in per-scenario via `server.use(...)`,
+// importing factories from each domain package's `*/test-handlers` barrel and
+// fixtures from `__integration__/__fixtures__/`. This keeps the contract
+// explicit: unhandled requests warn, surfacing missing mocks immediately.
+//
+// Baseline handlers cover background services that fire in nearly every flow
+// regardless of scenario. They survive `server.resetHandlers()`; tests can
+// still override them with `server.use(...)`.
+export const server = setupServer(
+    // The NFD batch queue bulk-reads names for any address rendered on
+    // screen. Unhandled, the request escapes to staging, 403s, and
+    // error-logs after the test ends — racing vitest's worker teardown
+    // ("Closing rpc while onUserConsoleLog was pending") and failing CI.
+    mockNfdBulkRead({ response: { results: [] } }),
+)
 
 export { http, HttpResponse } from 'msw'

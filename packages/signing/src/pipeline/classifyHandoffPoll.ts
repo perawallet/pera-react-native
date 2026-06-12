@@ -12,6 +12,7 @@
 
 import {
     assembleSignedMultisigTransactions,
+    rawTransactionsMatch,
     type ParticipantResponse,
 } from '@perawallet/wallet-core-blockchain'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
@@ -140,6 +141,27 @@ const classifyReadyPoll = (
 
     if (lists.length === 0) {
         return { kind: 'error', reason: { kind: 'no-transactions' } }
+    }
+
+    // Trust-anchor check: the bytes the backend hands back must be exactly
+    // the bytes the wallet proposed (= what the user reviewed and the
+    // proposer signed). Refuse to assemble anything else — a compromised
+    // backend must not be able to substitute transactions. Signature-level
+    // verification inside the assembler backs this up per participant.
+    const polledRawTransactions = lists.flatMap(list => list.raw_transactions)
+    if (
+        !rawTransactionsMatch(
+            handoff.expectedRawTransactionsBase64,
+            polledRawTransactions,
+        )
+    ) {
+        return {
+            kind: 'error',
+            reason: {
+                kind: 'assembly-failed',
+                detail: 'transactions returned by the backend do not match the proposed transactions',
+            },
+        }
     }
 
     // Assemble one composite SignedTransaction per item, in canonical order:

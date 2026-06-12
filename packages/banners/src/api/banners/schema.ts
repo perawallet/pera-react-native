@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 
 export const bannerTypeResponseSchema = z.enum([
     'generic',
@@ -23,7 +24,9 @@ export const bannerTypeResponseSchema = z.enum([
 export const bannerAutoOpenModeResponseSchema = z.enum(['select', 'force'])
 
 export const bannerResponseSchema = z.object({
-    id: z.number(),
+    // Backend banner ids exceed 2^53, so the precision-safe JSON parser
+    // delivers them as strings; uint64IdSchema normalizes either form.
+    id: uint64IdSchema,
     type: bannerTypeResponseSchema.catch('generic'),
     title: z.string().nullable().optional(),
     subtitle: z.string().nullable().optional(),

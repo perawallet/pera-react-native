@@ -37,7 +37,6 @@ import {
     Networks,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
 
 /**
  * Surface a WalletConnect error to the UI. We go through the store rather
@@ -63,10 +62,7 @@ const surfaceError = (error: Error) => {
 let coldStartReconnectDone = false
 
 /** Re-binds the dApp request handlers onto a (re)created connector. */
-type BindRequestHandlers = (
-    connector: WalletConnect,
-    autoConnect?: boolean,
-) => void
+type BindRequestHandlers = (connector: WalletConnect) => void
 
 export const useWalletConnect = (network: Network) => {
     const connections = useWalletConnectStore(
@@ -77,7 +73,6 @@ export const useWalletConnect = (network: Network) => {
     )
     const { addSessionRequest } = useWalletConnectSessionRequests()
     const { handleSignData, handleSignTransaction } = useWalletConnectHandlers()
-    const signingAccounts = useSigningAccounts()
 
     // Refs let the connector's registered event handlers always read the
     // latest values. Without this, network changes don't propagate because
@@ -89,8 +84,6 @@ export const useWalletConnect = (network: Network) => {
     handleSignDataRef.current = handleSignData
     const handleSignTransactionRef = useRef(handleSignTransaction)
     handleSignTransactionRef.current = handleSignTransaction
-    const signingAccountsRef = useRef(signingAccounts)
-    signingAccountsRef.current = signingAccounts
 
     // Holds the latest `bindRequestHandlers`. The connector registry
     // recreates connectors on socket recovery and re-binds handlers
@@ -109,15 +102,13 @@ export const useWalletConnect = (network: Network) => {
                 connection,
                 network: networkRef.current,
             })
-            const { autoConnect, ...restConnection } = connection
-
             let connector: Optional<WalletConnect> = connection.clientId
                 ? getConnector(connection.clientId)
                 : undefined
 
             if (!connector) {
                 connector = new WalletConnect({
-                    ...restConnection,
+                    ...connection,
                     clientMeta: PERA_CLIENT_META,
                 })
             }
@@ -125,7 +116,7 @@ export const useWalletConnect = (network: Network) => {
             // Bind (or re-bind, for a reused connector) the dApp request
             // handlers, then adopt the connector into the shared registry
             // so its socket liveness is tracked for delivery recovery.
-            bindRequestHandlersRef.current(connector, autoConnect)
+            bindRequestHandlersRef.current(connector)
             registerConnector(connector.clientId, connector)
         },
         [],
@@ -225,7 +216,6 @@ export const useWalletConnect = (network: Network) => {
                 },
                 createdAt: existingSession?.createdAt ?? new Date(),
                 lastActiveAt: new Date(),
-                autoConnect: existingSession?.autoConnect,
             }
 
             setConnections([
@@ -269,15 +259,8 @@ export const useWalletConnect = (network: Network) => {
      * Registers the dApp request handlers on a connector. Always
      * `off`s first so it is safe to call on a reused connector (clears
      * the previous binding) or a freshly recreated one (no-op).
-     *
-     * `autoConnect` is only meaningful for a brand-new session handshake;
-     * the connector registry re-binds recovered (already-established)
-     * connectors with it omitted, where `session_request` never fires.
      */
-    const bindRequestHandlers: BindRequestHandlers = (
-        connector,
-        autoConnect,
-    ) => {
+    const bindRequestHandlers: BindRequestHandlers = connector => {
         connector.off('algo_signData')
         connector.off('algo_signTxn')
         connector.off('disconnect')
@@ -365,22 +348,16 @@ export const useWalletConnect = (network: Network) => {
                 return
             }
 
-            if (autoConnect) {
-                // Filter to signable accounts so later requests don't fail
-                // with an opaque "Invalid signer".
-                approveSession(
-                    connector.clientId,
-                    payload.params[0],
-                    signingAccountsRef.current.map(a => a.address),
-                )
-            } else {
-                addSessionRequest({
-                    peerMeta,
-                    chainId,
-                    permissions: permissions ?? ALL_PERMISSIONS,
-                    clientId: connector.clientId,
-                })
-            }
+            // A session is only ever established through the user-facing
+            // approval sheet, which is where account selection happens. The
+            // wallet never auto-approves a handshake (that would hand the
+            // dApp account addresses with no review).
+            addSessionRequest({
+                peerMeta,
+                chainId,
+                permissions: permissions ?? ALL_PERMISSIONS,
+                clientId: connector.clientId,
+            })
         })
 
         connector.on('error', error => {
@@ -394,8 +371,7 @@ export const useWalletConnect = (network: Network) => {
 
     // Register the handler binder once so the connector registry can
     // re-bind request handlers onto a connector it recreates during
-    // socket recovery. `autoConnect` is intentionally omitted — recovered
-    // connectors are for already-established sessions.
+    // socket recovery.
     useEffect(() => {
         setConnectorHandlerBinder(connector =>
             bindRequestHandlersRef.current(connector),

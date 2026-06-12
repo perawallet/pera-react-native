@@ -12,32 +12,12 @@
 
 import {
     encodeTransactionRaw,
+    stripTxPrefix,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { bytesEqual, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
 import { TransactionRoundTripError } from '../pipeline/errors'
-
-const TX_PREFIX = new Uint8Array([0x54, 0x58]) // "TX"
-
-const stripTxPrefix = (bytes: Uint8Array): Uint8Array => {
-    if (
-        bytes.length >= TX_PREFIX.length &&
-        bytes[0] === TX_PREFIX[0] &&
-        bytes[1] === TX_PREFIX[1]
-    ) {
-        return bytes.subarray(TX_PREFIX.length)
-    }
-    return bytes
-}
-
-const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean => {
-    if (a.length !== b.length) return false
-    for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) return false
-    }
-    return true
-}
 
 /**
  * Re-encodes each decoded transaction and compares the result to the

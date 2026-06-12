@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { encodeToBase64, decodeFromBase64 } from '../strings'
-import { hexToBytes, bytesToHex } from '../strings'
+import { hexToBytes, bytesToHex, utf8ByteLength } from '../strings'
 import {
     decodeLongString,
     formatCurrency,
@@ -194,6 +194,23 @@ describe('utils/strings - formatCurrency', () => {
         expect(
             formatCurrency('1.10000', 6, 'USD', 'en-US', true, false, 0),
         ).toBe('$ 1.1')
+    })
+})
+
+describe('utf8ByteLength', () => {
+    test('counts ASCII as one byte each', () => {
+        expect(utf8ByteLength('hello')).toBe(5)
+    })
+
+    test('counts multi-byte characters by their UTF-8 size, not code units', () => {
+        // '€' is 3 UTF-8 bytes but length 1; '😀' is 4 bytes, length 2.
+        expect(utf8ByteLength('€')).toBe(3)
+        expect(utf8ByteLength('😀')).toBe(4)
+        expect('😀'.length).toBe(2)
+    })
+
+    test('empty string is zero', () => {
+        expect(utf8ByteLength('')).toBe(0)
     })
 })
 
