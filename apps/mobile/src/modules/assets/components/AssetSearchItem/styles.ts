@@ -32,7 +32,7 @@ export const useStyles = makeStyles(theme => ({
     separator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
-        // Align under the text: row left-padding + AssetIcon 'lg' (xxl) + itemContainer gap (lg)
-        marginLeft: theme.spacing.lg + theme.spacing.xxl + theme.spacing.lg,
+        // Align under the text: row left-padding + AssetIcon 'xl' (3xl) + itemContainer gap (lg)
+        marginLeft: theme.spacing.lg + theme.spacing['3xl'] + theme.spacing.lg,
     },
 }))
