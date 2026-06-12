@@ -20,47 +20,18 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { withDangerousMod } = require('expo/config-plugins');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const fs = require('fs');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const path = require('path');
+const withAppDelegateSwiftMod = require('./utils/withAppDelegateSwiftMod');
 
-const withPublicSwiftImports = (config) => {
-  return withDangerousMod(config, [
-    'ios',
-    async (modConfig) => {
-      const appDelegatePath = path.join(
-        modConfig.modRequest.platformProjectRoot,
-        modConfig.modRequest.projectName,
-        'AppDelegate.swift'
-      );
+// Replace bare `import X` with `public import X` at the top of the file, but
+// only for lines that don't already have an access level modifier.
+const injectPublicImports = (contents) =>
+  contents.replace(
+    /^(?!(?:public|internal|private|fileprivate|package)\s+import\b)(import\s+\w+)/gm,
+    'public $1'
+  );
 
-      // Read-then-catch rather than existsSync+read: avoids a check/use
-      // race (CodeQL js/file-system-race) and survives prebuild runs that
-      // haven't yet materialized the iOS project.
-      let contents;
-      try {
-        contents = fs.readFileSync(appDelegatePath, 'utf-8');
-      } catch (err) {
-        if (err.code === 'ENOENT') {
-          return modConfig;
-        }
-        throw err;
-      }
-
-      // Replace bare `import X` with `public import X` at the top of the file,
-      // but only for lines that don't already have an access level modifier
-      contents = contents.replace(
-        /^(?!(?:public|internal|private|fileprivate|package)\s+import\b)(import\s+\w+)/gm,
-        'public $1'
-      );
-
-      fs.writeFileSync(appDelegatePath, contents);
-
-      return modConfig;
-    },
-  ]);
-};
+const withPublicSwiftImports = (config) =>
+  withAppDelegateSwiftMod(config, injectPublicImports);
 
 module.exports = withPublicSwiftImports;
+module.exports.injectPublicImports = injectPublicImports;

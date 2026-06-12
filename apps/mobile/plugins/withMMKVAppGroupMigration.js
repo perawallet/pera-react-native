@@ -35,11 +35,7 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { withDangerousMod } = require('expo/config-plugins');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const fs = require('fs');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const path = require('path');
+const withAppDelegateSwiftMod = require('./utils/withAppDelegateSwiftMod');
 
 const CALL = 'migrateMMKVToAppGroupIfNeeded()';
 
@@ -134,35 +130,8 @@ function injectMigration(contents) {
   return withCall;
 }
 
-const withMMKVAppGroupMigration = (config) => {
-  return withDangerousMod(config, [
-    'ios',
-    async (modConfig) => {
-      const appDelegatePath = path.join(
-        modConfig.modRequest.platformProjectRoot,
-        modConfig.modRequest.projectName,
-        'AppDelegate.swift'
-      );
-
-      // Read-then-catch rather than existsSync+read: avoids a check/use race
-      // (CodeQL js/file-system-race) and survives prebuild runs that haven't
-      // yet materialized the iOS project.
-      let contents;
-      try {
-        contents = fs.readFileSync(appDelegatePath, 'utf-8');
-      } catch (err) {
-        if (err.code === 'ENOENT') {
-          return modConfig;
-        }
-        throw err;
-      }
-
-      fs.writeFileSync(appDelegatePath, injectMigration(contents));
-
-      return modConfig;
-    },
-  ]);
-};
+const withMMKVAppGroupMigration = (config) =>
+  withAppDelegateSwiftMod(config, injectMigration);
 
 module.exports = withMMKVAppGroupMigration;
 module.exports.injectMigration = injectMigration;
