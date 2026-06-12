@@ -10,77 +10,46 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWDivider, PWFlatList, PWText, PWView } from '@components/core'
-import {
-    useRampPairsQuery,
-    type RampPair,
-    type RampToken,
-} from '@perawallet/wallet-core-onramp'
+import { useCallback } from 'react'
+import { PWText, PWView } from '@components/core'
+import { AssetSelectionList } from '@modules/assets/components'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { OnrampAssetRow } from './OnrampAssetRow'
+import { SheetHeader } from '@modules/bottom-sheet'
+import { OnrampAssetItemView } from './OnrampAssetItemView'
+import {
+    useOnrampPairSelectionContent,
+    type OnrampSelectableToken,
+} from './useOnrampPairSelectionContent'
 import { useStyles } from './styles'
 
 export type OnrampPairSelectionContentProps = {
     variant?: 'source' | 'destination'
 }
 
-// Deduplicate pairs by token id so we show one row per unique token. The sheet
-// resolves the selected TOKEN id; the form handler maps it back to a pair while
-// preserving the other side of the pair.
-const dedupeByToken = (
-    pairs: RampPair[],
-    variant: 'source' | 'destination',
-): RampPair[] => {
-    const seen = new Set<string>()
-    const result: RampPair[] = []
-    for (const pair of pairs) {
-        const token =
-            variant === 'source' ? pair.sourceToken : pair.destinationToken
-        if (!seen.has(token.id)) {
-            seen.add(token.id)
-            result.push(pair)
-        }
-    }
-    return result
-}
-
-const RowSeparator = () => <PWDivider />
-
 export const OnrampPairSelectionContent = ({
     variant = 'destination',
 }: OnrampPairSelectionContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<string>()
-    const { data: pairs, isLoading } = useRampPairsQuery()
-
-    const dedupedPairs = useMemo(
-        () => dedupeByToken(pairs ?? [], variant),
-        [pairs, variant],
-    )
-
-    const handleTokenSelected = useCallback(
-        (token: RampToken) => {
-            resolve(token.id)
-        },
-        [resolve],
-    )
+    const {
+        items,
+        searchFilter,
+        setSearchFilter,
+        isLoading,
+        handleTokenSelected,
+    } = useOnrampPairSelectionContent({ variant })
 
     const renderItem = useCallback(
-        ({ item }: { item: RampPair }) => {
-            const token =
-                variant === 'source' ? item.sourceToken : item.destinationToken
-            return (
-                <OnrampAssetRow
-                    token={token}
-                    onPress={() => handleTokenSelected(token)}
-                />
-            )
-        },
-        [variant, handleTokenSelected],
+        ({ item }: { item: OnrampSelectableToken }) => (
+            <OnrampAssetItemView
+                token={item.token}
+                balance={item.balance}
+                onPress={() => handleTokenSelected(item.token)}
+                style={styles.item}
+                testID={`onramp-asset-row-${item.token.id}`}
+            />
+        ),
+        [handleTokenSelected, styles],
     )
 
     const title =
@@ -92,29 +61,26 @@ export const OnrampPairSelectionContent = ({
         <>
             <SheetHeader title={title} />
             <PWView style={styles.body}>
-                {isLoading ? (
-                    <PWView style={styles.centered}>
-                        <ActivityIndicator />
-                    </PWView>
-                ) : (
-                    <PWFlatList<RampPair>
-                        data={dedupedPairs}
-                        keyExtractor={pair => pair.id}
-                        renderItem={renderItem}
-                        inBottomSheet
-                        ItemSeparatorComponent={RowSeparator}
-                        ListEmptyComponent={
-                            <PWView style={styles.centered}>
-                                <PWText
-                                    variant='body'
-                                    style={styles.emptyText}
-                                >
-                                    {t('onramp.pair_selection.empty')}
-                                </PWText>
-                            </PWView>
-                        }
-                    />
-                )}
+                <AssetSelectionList
+                    data={items}
+                    renderItem={renderItem}
+                    keyExtractor={item => item.token.id}
+                    searchValue={searchFilter}
+                    onSearchChange={setSearchFilter}
+                    searchPlaceholder={t('onramp.pair_selection.search')}
+                    isLoading={isLoading && items.length === 0}
+                    cardLayout
+                    ListEmptyComponent={
+                        <PWView style={styles.centered}>
+                            <PWText
+                                variant='body'
+                                style={styles.emptyText}
+                            >
+                                {t('onramp.pair_selection.empty')}
+                            </PWText>
+                        </PWView>
+                    }
+                />
             </PWView>
         </>
     )

@@ -2461,6 +2461,12 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         unverified: 'unverified',
         suspicious: 'suspicious',
     },
+    DEFAULT_ASSET_METADATA: {
+        isDeleted: false,
+        verificationTier: 'unverified',
+        isFavorited: false,
+        isPriceAlertEnabled: false,
+    },
     useAssetPriceHistoryQuery: vi.fn(() => ({ data: [], isPending: false })),
     useAssetsQuery: vi.fn(() => ({ data: [], isPending: false })),
     useAssetPricesQuery: vi.fn(() => ({

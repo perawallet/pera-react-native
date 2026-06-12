@@ -15,7 +15,10 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     body: {
         flex: 1,
-        paddingHorizontal: theme.spacing.xl,
+    },
+    item: {
+        width: '100%',
+        paddingHorizontal: theme.spacing.lg,
     },
     centered: {
         flex: 1,
@@ -26,25 +29,5 @@ export const useStyles = makeStyles(theme => ({
     emptyText: {
         color: theme.colors.textGray,
         textAlign: 'center',
-    },
-    // Row layout: icon + text block
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-    },
-    rowTextContainer: {
-        flex: 1,
-        minWidth: 0,
-    },
-    // Inline row: token name bold + verification badge
-    rowNameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
-    rowUnitName: {
-        color: theme.colors.textGray,
     },
 }))

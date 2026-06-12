@@ -35,6 +35,12 @@ export const useStyles = makeStyles(theme => ({
     root: {
         flex: 1,
     },
+    // Pinned (non-collapsing) search bar used in bottom-sheet mode.
+    sheetSearchContainer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+    },
     // The focusable search input, floated over the sticky bar while pinned.
     // Opaque so the rows beneath don't show through.
     searchOverlay: {

@@ -29,6 +29,7 @@ import {
     useSearchableList,
     type AugmentedItem,
 } from './useSearchableList'
+import { SearchableListSheet } from './SearchableListSheet'
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
 import { type Maybe } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -44,6 +45,7 @@ export type SearchableListSearchProps = {
     placeholder?: string
     onChangeText?: (value: string) => void
     onFocus: () => void
+    autoFocus?: boolean
     testID?: string
 }
 
@@ -76,9 +78,34 @@ export type SearchableListProps<T> = Omit<
      * (search bar pinned). Defaults to 0.25.
      */
     snapThreshold?: number
+    /** Autofocus the search input. Only honored in `inBottomSheet` mode. */
+    autoFocusSearch?: boolean
 }
 
+// Branches to the dedicated sheet path; otherwise the full-screen render with
+// its collapse-on-scroll machinery. Kept hook-free so each branch is a separate
+// component (rules-of-hooks safe).
 const SearchableListInner = <T,>(
+    props: SearchableListProps<T>,
+    ref: React.ForwardedRef<PWFlatListRef>,
+) => {
+    if (props.inBottomSheet) {
+        return (
+            <SearchableListSheet
+                {...props}
+                ref={ref}
+            />
+        )
+    }
+    return (
+        <SearchableListFull
+            {...props}
+            ref={ref}
+        />
+    )
+}
+
+const SearchableListFullInner = <T,>(
     props: SearchableListProps<T>,
     ref: React.ForwardedRef<PWFlatListRef>,
 ) => {
@@ -339,6 +366,10 @@ const SearchableListInner = <T,>(
         </PWView>
     )
 }
+
+const SearchableListFull = forwardRef(SearchableListFullInner) as <T>(
+    props: SearchableListProps<T> & React.RefAttributes<PWFlatListRef>,
+) => React.ReactElement
 
 export const SearchableList = forwardRef(SearchableListInner) as <T>(
     props: SearchableListProps<T> & React.RefAttributes<PWFlatListRef>,

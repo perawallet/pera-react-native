@@ -13,13 +13,7 @@
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
 import type { AccountType } from '@perawallet/wallet-core-accounts'
-import {
-    PWFlatList,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { SearchableList } from '@components/SearchableList'
@@ -186,31 +180,10 @@ export const AddressSearchView = ({
         emptyComponent()
     )
 
-    if (inBottomSheet) {
-        return (
-            <PWView style={styles.container}>
-                <AddressSearchInput
-                    value={value}
-                    placeholder={t('address_entry.search_placeholder')}
-                    onChangeText={setValue}
-                    onFocus={() => undefined}
-                />
-                <PWFlatList
-                    data={hasResults ? matchingItems : []}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor}
-                    ListEmptyComponent={listEmptyComponent}
-                    ItemSeparatorComponent={renderSeparator}
-                    inBottomSheet
-                    style={styles.list}
-                />
-            </PWView>
-        )
-    }
-
     return (
         <PWView style={styles.container}>
             <SearchableList
+                inBottomSheet={inBottomSheet}
                 data={hasResults ? matchingItems : []}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}

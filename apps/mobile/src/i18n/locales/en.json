@@ -2261,6 +2261,7 @@
         "pair_selection": {
             "title_to": "To",
             "title_from": "From",
+            "search": "Search",
             "empty": "No tokens available"
         },
         "source_selection": {

@@ -13,8 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    item: {
-        width: '100%',
+    skeletonRow: {
         paddingHorizontal: theme.spacing.lg,
+    },
+    footer: {
+        paddingVertical: theme.spacing.lg,
+        alignItems: 'center',
     },
 }))

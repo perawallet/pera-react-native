@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
+import { PWText } from '@components/core'
 import { SearchableList } from '../SearchableList'
 
 type Item = {
@@ -90,5 +91,53 @@ describe('SearchableList', () => {
 
         expect(screen.getAllByPlaceholderText('Search items')[0]).toBeTruthy()
         expect(screen.getByText('No items')).toBeTruthy()
+    })
+})
+
+describe('SearchableList in bottom sheet', () => {
+    const DATA = [
+        { id: 'a', label: 'Apple' },
+        { id: 'b', label: 'Banana' },
+    ]
+    const renderRow = ({ item }: { item: (typeof DATA)[number] }) => (
+        <PWText>{item.label}</PWText>
+    )
+
+    it('renders rows and a working search input in sheet mode', () => {
+        const onSearchChange = vi.fn()
+        render(
+            <SearchableList
+                inBottomSheet
+                data={DATA}
+                keyExtractor={item => item.id}
+                renderItem={renderRow}
+                searchValue=''
+                searchPlaceholder='Search assets'
+                onSearchChange={onSearchChange}
+            />,
+        )
+
+        expect(screen.getByText('Apple')).toBeTruthy()
+        expect(screen.getByText('Banana')).toBeTruthy()
+
+        fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
+            target: { value: 'app' },
+        })
+        expect(onSearchChange).toHaveBeenCalledWith('app')
+    })
+
+    it('renders the empty component when data is empty in sheet mode', () => {
+        render(
+            <SearchableList
+                inBottomSheet
+                data={[] as (typeof DATA)[number][]}
+                keyExtractor={item => item.id}
+                renderItem={renderRow}
+                searchValue='zzz'
+                onSearchChange={vi.fn()}
+                ListEmptyComponent={<PWText>No results</PWText>}
+            />,
+        )
+        expect(screen.getByText('No results')).toBeTruthy()
     })
 })

@@ -91,6 +91,19 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },
     toWholeUnits: (value: number) => value,
     useAssetsQuery: () => ({ data: undefined }),
+    // Imported at module scope by buildAccountBalanceFromRampToken, reached via
+    // the destination pair-selection sheet's OnrampAssetItemView.
+    PeraAssetVerificationTier: {
+        verified: 'verified',
+        suspicious: 'suspicious',
+        unverified: 'unverified',
+    },
+    DEFAULT_ASSET_METADATA: {
+        isDeleted: false,
+        verificationTier: 'unverified',
+        isFavorited: false,
+        isPriceAlertEnabled: false,
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({

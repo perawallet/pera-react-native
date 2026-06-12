@@ -10,11 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    item: {
-        width: '100%',
-        paddingHorizontal: theme.spacing.lg,
-    },
-}))
+export { AssetSelectionList } from './AssetSelectionList'
+export type { AssetSelectionListProps } from './AssetSelectionList'
