@@ -94,9 +94,10 @@ export const AssetMarkets = ({
     } = useSingleAssetDetailsQuery(asset.assetId)
 
     const openDiscover = () => {
-        //TODO: pass relative URL to go straight to the asset
+        // mirror native: deep-link straight to the asset's token detail page
         navigation.navigate('TabBar', {
             screen: 'Discover',
+            params: { path: `token-detail/${asset.assetId}` },
         })
     }
 
