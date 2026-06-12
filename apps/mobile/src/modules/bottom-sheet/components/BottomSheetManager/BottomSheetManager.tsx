@@ -11,10 +11,12 @@
  */
 
 import { useBottomSheetStack } from '../../hooks/useBottomSheetStack'
+import { useBlockHardwareBackWhileSheetOpen } from '../../hooks/useBlockHardwareBackWhileSheetOpen'
 import { BottomSheetHost } from '../BottomSheetHost'
 
 export const BottomSheetManager = () => {
     const { requests } = useBottomSheetStack()
+    useBlockHardwareBackWhileSheetOpen()
     return (
         <>
             {requests.map(req => (
