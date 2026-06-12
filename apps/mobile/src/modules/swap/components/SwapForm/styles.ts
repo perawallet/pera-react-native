@@ -23,6 +23,12 @@ export const useStyles = makeStyles(theme => {
             paddingVertical: theme.spacing.lg,
             gap: theme.spacing.md,
         },
+        // Gap between the pay and receive sections (the absolutely-positioned
+        // controls row sits on top and is out of flow). Previously baked into
+        // the receive card's marginTop, now part of the shared layout.
+        amountSections: {
+            gap: theme.spacing.xl,
+        },
         controlsRow: {
             position: 'absolute',
             top: '50%',

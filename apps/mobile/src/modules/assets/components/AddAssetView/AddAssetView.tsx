@@ -11,20 +11,21 @@
  */
 
 import React, { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { PWFlatList, PWIcon, PWText, PWView } from '@components/core'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
+import { AssetSelectionList } from '@modules/assets/components'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import { useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
-import { LoadingView } from '@components/LoadingView'
-import { SearchInput } from '@components/SearchInput'
 
 type AddAssetScreenProps = {
     variant?: AddAssetContentVariant
 }
+
+// AssetSearchItem draws its own full-width separator; render no list divider.
+const NoSeparator = () => null
 
 export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
     const styles = useStyles()
@@ -61,74 +62,51 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
+    const collectibleNote = isCollectible ? (
+        <PWView style={styles.noteContainer}>
+            <PWIcon
+                name='info'
+                size='sm'
+                variant='positive'
+                style={styles.noteIcon}
+            />
+            <PWText
+                variant='body'
+                style={styles.noteText}
+            >
+                {t('add_asset.collectible_note')}
+            </PWText>
+        </PWView>
+    ) : undefined
+
     return (
         <PWView style={styles.container}>
-            {isCollectible && (
-                <PWView style={styles.noteContainer}>
-                    <PWIcon
-                        name='info'
-                        size='sm'
-                        variant='positive'
-                        style={styles.noteIcon}
+            <AssetSelectionList
+                data={results}
+                renderItem={renderItem}
+                keyExtractor={item => item.assetId}
+                searchValue={searchQuery}
+                onSearchChange={handleSearchChange}
+                searchPlaceholder={
+                    isCollectible
+                        ? t('add_asset.collectible_search_placeholder')
+                        : t('add_asset.search_placeholder')
+                }
+                autoFocusSearch
+                isLoading={isLoading}
+                skeletonCount={5}
+                onEndReached={handleEndReached}
+                isFetchingNextPage={isFetchingNextPage}
+                ListHeaderComponent={collectibleNote}
+                ItemSeparatorComponent={NoSeparator}
+                ListEmptyComponent={
+                    <EmptyView
+                        title={t('add_asset.no_results')}
+                        body=''
+                        icon='magnifying-glass'
                     />
-                    <PWText
-                        variant='body'
-                        style={styles.noteText}
-                    >
-                        {t('add_asset.collectible_note')}
-                    </PWText>
-                </PWView>
-            )}
-            <PWView style={styles.searchContainer}>
-                <SearchInput
-                    value={searchQuery}
-                    onChangeText={handleSearchChange}
-                    placeholder={
-                        isCollectible
-                            ? t('add_asset.collectible_search_placeholder')
-                            : t('add_asset.search_placeholder')
-                    }
-                    autoCapitalize='none'
-                    autoCorrect={false}
-                    autoFocus
-                />
-            </PWView>
-
-            {isLoading ? (
-                <LoadingView
-                    variant='skeleton'
-                    count={5}
-                    style={styles.loadingContainer}
-                />
-            ) : (
-                <PWFlatList
-                    data={results}
-                    renderItem={renderItem}
-                    // AssetSearchItem draws its own full-width separator.
-                    ItemSeparatorComponent={null}
-                    keyExtractor={item => item.assetId}
-                    onEndReached={handleEndReached}
-                    onEndReachedThreshold={0.5}
-                    keyboardDismissMode='on-drag'
-                    inBottomSheet
-                    ListEmptyComponent={
-                        !isLoading ? (
-                            <EmptyView
-                                title={t('add_asset.no_results')}
-                                body=''
-                                icon='magnifying-glass'
-                            />
-                        ) : null
-                    }
-                    ListFooterComponent={
-                        isFetchingNextPage ? (
-                            <PWView style={styles.emptyContainer}>
-                                <ActivityIndicator />
-                            </PWView>
-                        ) : null
-                    }
-                />
-            )}
+                }
+            />
         </PWView>
     )
 }

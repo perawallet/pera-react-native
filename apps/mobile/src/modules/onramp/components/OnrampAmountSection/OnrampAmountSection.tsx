@@ -11,7 +11,10 @@
  */
 
 import { type Decimal } from 'decimal.js'
-import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
+import { PWInput, PWSkeleton, PWText } from '@components/core'
+import { AmountField } from '@components/AmountField'
+import { AssetSelector } from '@components/AssetSelector'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     DEFAULT_PRECISION,
@@ -19,8 +22,6 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { type RampToken } from '@perawallet/wallet-core-onramp'
-import { SwapAssetSelector } from '@modules/swap/components'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
 import { useOnrampAmountSection } from './useOnrampAmountSection'
@@ -52,7 +53,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
     const { variant, token, onAssetPress } = props
     const { t } = useLanguage()
     const { theme } = useTheme()
-    const styles = useStyles({ variant })
+    const styles = useStyles()
 
     const {
         isPay,
@@ -73,57 +74,50 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
     })
 
     return (
-        <PWView style={styles.container}>
-            <PWText
-                variant='body'
-                style={styles.label}
-            >
-                {isPay
-                    ? t('onramp.form.you_pay')
-                    : t('onramp.form.you_receive')}
-            </PWText>
-
-            <PWView style={styles.inputRow}>
-                <PWView style={styles.amountContainer}>
-                    {isPay ? (
-                        <PWInput
-                            variant='h1'
-                            value={inputValue}
-                            onChangeText={handleTextChange}
-                            keyboardType='decimal-pad'
-                            placeholder='0.00'
-                            placeholderTextColor={theme.colors.textGrayLighter}
-                            containerStyle={styles.amountInputContainer}
-                            inputContainerStyle={
-                                styles.amountInputInnerContainer
-                            }
-                            inputStyle={styles.amountInput}
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            testID='onramp-pay-input'
-                        />
-                    ) : isReceiveLoading ? (
-                        <PWSkeleton
-                            width={120}
-                            height={40}
-                        />
-                    ) : (
-                        <PWText
-                            style={
-                                hasReceiveValue
-                                    ? styles.amountText
-                                    : styles.amountTextMuted
-                            }
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            testID='onramp-receive-amount'
-                        >
-                            {receiveValue || '0.00'}
-                        </PWText>
-                    )}
-                </PWView>
-
-                <SwapAssetSelector
+        <AmountField
+            variant={isPay ? 'plain' : 'card'}
+            label={
+                isPay ? t('onramp.form.you_pay') : t('onramp.form.you_receive')
+            }
+            amountSize='h1'
+            amount={
+                isPay ? (
+                    <PWInput
+                        variant='h1'
+                        value={inputValue}
+                        onChangeText={handleTextChange}
+                        keyboardType='decimal-pad'
+                        placeholder='0.00'
+                        placeholderTextColor={theme.colors.textGrayLighter}
+                        containerStyle={styles.amountInputContainer}
+                        inputContainerStyle={styles.amountInputInnerContainer}
+                        inputStyle={styles.amountInput}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        testID='onramp-pay-input'
+                    />
+                ) : isReceiveLoading ? (
+                    <PWSkeleton
+                        width={120}
+                        height={40}
+                    />
+                ) : (
+                    <PWText
+                        style={
+                            hasReceiveValue
+                                ? styles.amountText
+                                : styles.amountTextMuted
+                        }
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        testID='onramp-receive-amount'
+                    >
+                        {receiveValue || '0.00'}
+                    </PWText>
+                )
+            }
+            selector={
+                <AssetSelector
                     variant={variant}
                     asset={
                         token
@@ -135,9 +129,8 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                     onPress={onAssetPress}
                     testID='onramp-pair-selector'
                 />
-            </PWView>
-
-            <PWView style={styles.fiatValueContainer}>
+            }
+            fiat={
                 <PreferredCurrencyDisplay
                     sourceAmount={fiatBaseAmount}
                     sourceAssetId={token?.id ?? ''}
@@ -149,7 +142,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                     style={styles.fiatValue}
                     testID={`onramp-${variant}-fiat-value`}
                 />
-            </PWView>
-        </PWView>
+            }
+        />
     )
 }

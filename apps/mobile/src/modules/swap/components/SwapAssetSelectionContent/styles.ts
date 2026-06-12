@@ -12,9 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles(() => ({
     body: {
         flex: 1,
-        paddingHorizontal: theme.spacing.xl,
     },
 }))

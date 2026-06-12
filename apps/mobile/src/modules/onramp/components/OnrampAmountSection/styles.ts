@@ -13,39 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
-type StyleProps = { variant: 'pay' | 'receive' }
-
-export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
-    container:
-        variant === 'pay'
-            ? {
-                  // `lg` inset matches the `lg` inside the receive grey card so
-                  // the pay/receive amounts line up at the same left edge.
-                  paddingHorizontal: theme.spacing.lg,
-              }
-            : {
-                  // Grey card spans the full section width; the `lg` padding is
-                  // INSIDE the box so its content aligns with the pay section.
-                  backgroundColor: theme.colors.layerGrayLighter,
-                  borderRadius: theme.borderRadius.xl,
-                  paddingHorizontal: theme.spacing.lg,
-                  paddingVertical: theme.spacing.lg,
-              },
-    label: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.sm,
-    },
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    amountContainer: {
-        flex: 1,
-        minHeight: getTypography(theme, 'h1').lineHeight,
-        justifyContent: 'center',
-    },
+// Frame, label and spacing live in the shared `AmountField`; this only holds the
+// amount-text typography and the PWInput resets that ride on the amount node.
+export const useStyles = makeStyles(theme => ({
     amountText: getTypography(theme, 'h1'),
     amountTextMuted: {
         ...getTypography(theme, 'h1'),
@@ -61,11 +31,6 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
     },
     amountInput: {
         paddingLeft: 0,
-    },
-    fiatValueContainer: {
-        minHeight: getTypography(theme, 'body').lineHeight,
-        justifyContent: 'center',
-        marginTop: theme.spacing.xs,
     },
     fiatValue: {
         color: theme.colors.textGray,

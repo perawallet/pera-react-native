@@ -30,6 +30,7 @@ type UseAccountAssetSelectionListResult = {
     searchFilter: string
     setSearchFilter: (value: string) => void
     debouncedSearchFilter: string
+    isLoading: boolean
 }
 
 export const useAccountAssetSelectionList = ({
@@ -38,7 +39,7 @@ export const useAccountAssetSelectionList = ({
     filterAsset,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
     const selectedAccount = useSelectedAccount()
-    const { accountBalances } = useAccountBalancesQuery(
+    const { accountBalances, isPending } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
 
@@ -90,5 +91,6 @@ export const useAccountAssetSelectionList = ({
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
+        isLoading: isPending,
     }
 }

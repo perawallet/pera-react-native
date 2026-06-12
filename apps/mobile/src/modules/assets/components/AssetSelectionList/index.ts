@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { SwapAssetSelector } from './SwapAssetSelector'
-export type { SwapAssetSelectorProps } from './SwapAssetSelector'
+export { AssetSelectionList } from './AssetSelectionList'
+export type { AssetSelectionListProps } from './AssetSelectionList'

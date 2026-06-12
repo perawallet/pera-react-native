@@ -110,11 +110,16 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     }
 })
 
-vi.mock('@constants/ui', () => ({
-    SEARCH_DEBOUNCE_TIME_SHORT: 150,
-    SHORT_PROMPT_DISPLAY_DELAY: 300,
-    LONG_PROMPT_DISPLAY_DELAY: 600,
-}))
+vi.mock('@constants/ui', async () => {
+    const actual =
+        await vi.importActual<typeof import('@constants/ui')>('@constants/ui')
+    return {
+        ...actual,
+        SEARCH_DEBOUNCE_TIME_SHORT: 150,
+        SHORT_PROMPT_DISPLAY_DELAY: 300,
+        LONG_PROMPT_DISPLAY_DELAY: 600,
+    }
+})
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),

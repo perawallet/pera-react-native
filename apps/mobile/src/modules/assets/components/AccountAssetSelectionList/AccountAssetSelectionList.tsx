@@ -12,10 +12,8 @@
 
 import { useCallback } from 'react'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { PWFlatList, PWView } from '@components/core'
-import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
-import { LoadingView } from '@components/LoadingView'
+import { AssetSelectionList } from '@modules/assets/components'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
@@ -49,6 +47,7 @@ export const AccountAssetSelectionList = ({
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
+        isLoading,
     } = useAccountAssetSelectionList({ isVisible, excludeAssetId, filterAsset })
 
     const renderItem = useCallback(
@@ -63,35 +62,24 @@ export const AccountAssetSelectionList = ({
     )
 
     return (
-        <>
-            <PWView style={styles.searchContainer}>
-                <SearchInput
-                    placeholder={searchPlaceholder}
-                    value={searchFilter}
-                    onChangeText={setSearchFilter}
-                />
-            </PWView>
-            <PWFlatList
-                data={filteredBalanceData}
-                renderItem={renderItem}
-                keyExtractor={item => item.assetId}
-                showsVerticalScrollIndicator={false}
-                keyboardDismissMode='on-drag'
-                inBottomSheet={inBottomSheet}
-                ListEmptyComponent={
-                    debouncedSearchFilter ? (
-                        <EmptyView
-                            title={emptyResultTitle}
-                            body={emptyResultBody}
-                        />
-                    ) : (
-                        <LoadingView
-                            variant='skeleton'
-                            count={3}
-                        />
-                    )
-                }
-            />
-        </>
+        <AssetSelectionList
+            data={filteredBalanceData}
+            renderItem={renderItem}
+            keyExtractor={item => item.assetId}
+            searchValue={searchFilter}
+            onSearchChange={setSearchFilter}
+            searchPlaceholder={searchPlaceholder}
+            isLoading={isLoading}
+            skeletonCount={3}
+            inBottomSheet={inBottomSheet}
+            ListEmptyComponent={
+                debouncedSearchFilter ? (
+                    <EmptyView
+                        title={emptyResultTitle}
+                        body={emptyResultBody}
+                    />
+                ) : undefined
+            }
+        />
     )
 }

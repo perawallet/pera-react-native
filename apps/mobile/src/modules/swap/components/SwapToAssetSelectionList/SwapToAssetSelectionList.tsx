@@ -12,28 +12,14 @@
 
 import { useCallback } from 'react'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { PWFlatList, PWView } from '@components/core'
-import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
-import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
+import { AssetSelectionList } from '@modules/assets/components'
 import {
     useSwapToAssetSelectionList,
     type AvailableAssetWithBalance,
 } from './useSwapToAssetSelectionList'
 import { SwapToAssetItemView } from './SwapToAssetItemView'
 import { useStyles } from './styles'
-
-type SkeletonItem = { _skeleton: true; id: string }
-
-const SKELETON_ITEMS: SkeletonItem[] = [
-    { _skeleton: true, id: 'skeleton-0' },
-    { _skeleton: true, id: 'skeleton-1' },
-    { _skeleton: true, id: 'skeleton-2' },
-]
-
-const isSkeletonItem = (
-    item: AvailableAssetWithBalance | SkeletonItem,
-): item is SkeletonItem => '_skeleton' in item
 
 export type SwapToAssetSelectionListProps = {
     fromAssetId: string
@@ -71,56 +57,38 @@ export const SwapToAssetSelectionList = ({
         onAssetSelected,
     })
 
-    const listData = isLoading && items.length === 0 ? SKELETON_ITEMS : items
-
     const renderItem = useCallback(
-        ({ item }: { item: AvailableAssetWithBalance | SkeletonItem }) => {
-            if (isSkeletonItem(item)) {
-                return (
-                    <PWView style={styles.item}>
-                        <AssetRowSkeleton />
-                    </PWView>
-                )
-            }
-            return (
-                <SwapToAssetItemView
-                    dexAsset={item.dexAsset}
-                    balance={item.balance}
-                    onPress={() => handleAssetSelected(item)}
-                    style={styles.item}
-                />
-            )
-        },
+        ({ item }: { item: AvailableAssetWithBalance }) => (
+            <SwapToAssetItemView
+                dexAsset={item.dexAsset}
+                balance={item.balance}
+                onPress={() => handleAssetSelected(item)}
+                style={styles.item}
+            />
+        ),
         [handleAssetSelected, styles],
     )
 
     return (
-        <>
-            <PWView style={styles.searchContainer}>
-                <SearchInput
-                    placeholder={searchPlaceholder}
-                    value={searchFilter}
-                    onChangeText={setSearchFilter}
-                />
-            </PWView>
-            <PWFlatList
-                data={listData}
-                renderItem={renderItem}
-                cardLayout
-                keyboardDismissMode='on-drag'
-                inBottomSheet={inBottomSheet}
-                keyExtractor={item =>
-                    isSkeletonItem(item) ? item.id : item.dexAsset.assetId
-                }
-                ListEmptyComponent={
-                    !isLoading && debouncedSearchFilter ? (
-                        <EmptyView
-                            title={emptyResultTitle}
-                            body={emptyResultBody}
-                        />
-                    ) : undefined
-                }
-            />
-        </>
+        <AssetSelectionList
+            data={items}
+            renderItem={renderItem}
+            keyExtractor={item => item.dexAsset.assetId}
+            searchValue={searchFilter}
+            onSearchChange={setSearchFilter}
+            searchPlaceholder={searchPlaceholder}
+            isLoading={isLoading && items.length === 0}
+            skeletonCount={3}
+            cardLayout
+            inBottomSheet={inBottomSheet}
+            ListEmptyComponent={
+                !isLoading && debouncedSearchFilter ? (
+                    <EmptyView
+                        title={emptyResultTitle}
+                        body={emptyResultBody}
+                    />
+                ) : undefined
+            }
+        />
     )
 }

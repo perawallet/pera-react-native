@@ -47,7 +47,7 @@ export const SwapForm = () => {
 
     return (
         <PWScrollView contentContainerStyle={styles.formContainer}>
-            <PWView>
+            <PWView style={styles.amountSections}>
                 <SwapAmountSection
                     variant='pay'
                     assetId={payAssetId}

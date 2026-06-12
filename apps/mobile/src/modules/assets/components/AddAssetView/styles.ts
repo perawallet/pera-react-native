@@ -17,10 +17,6 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    searchContainer: {
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-    },
     noteContainer: {
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -37,16 +33,5 @@ export const useStyles = makeStyles(theme => ({
     },
     noteIcon: {
         marginTop: theme.spacing.xs,
-    },
-    loadingContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-    },
-    emptyContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: theme.spacing['3xl'],
     },
 }))
