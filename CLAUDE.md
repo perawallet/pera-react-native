@@ -97,7 +97,6 @@ If creating a core component, update `apps/mobile/src/components/core/index.ts` 
 
 ### Rules
 
-- **Explicit return types** — define `type Use[Name]Result = {...}`, never expose dependency types (`UseQueryResult`, `UseMutationResult`, `StoreApi`)
 - **Complex logic MUST be extracted** from component body into a colocated `use[ComponentName]` hook
 - React Query is **REQUIRED** for all async requests; Zustand is **REQUIRED** for all local state
 - Cross-domain hooks: keep in origin domain, export via barrel, import via `@modules/[domain]`

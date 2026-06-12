@@ -64,6 +64,7 @@
     "@perawallet/wallet-core-migrate": "workspace:*",
     "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-core-nfd": "workspace:*",
+    "@perawallet/wallet-core-onramp": "workspace:*",
     "@perawallet/wallet-core-passkeys": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-projects": "workspace:*",

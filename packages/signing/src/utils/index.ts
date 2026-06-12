@@ -11,6 +11,7 @@
  */
 
 export * from './arc60'
+export * from './arc60-wire'
 export * from './balance-validation'
 export * from './classification'
 export * from './classifyLedgerErrorKind'

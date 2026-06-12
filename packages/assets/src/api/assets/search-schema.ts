@@ -11,11 +11,12 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 
 const collectibleSearchSchema = z.object({
     collection: z
         .object({
-            collection_id: z.number().nullable().optional(),
+            collection_id: uint64IdSchema.nullable().optional(),
             name: z.string().nullable().optional(),
         })
         .nullable()
@@ -25,7 +26,7 @@ const collectibleSearchSchema = z.object({
 })
 
 const assetSearchResultSchema = z.object({
-    asset_id: z.number(),
+    asset_id: uint64IdSchema,
     name: z.string().nullable().optional(),
     logo: z.string().nullable().optional(),
     unit_name: z.string().nullable().optional(),

@@ -11,12 +11,14 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { z } from 'zod'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
-import { bannerListResponseSchema, type BannerListResponse } from './schema'
+import { bannerListResponseSchema } from './schema'
 
 export type MockBannersParams = {
     deviceID: string
-    response: BannerListResponse
+    // wire (pre-parse) shape: ids may be numbers or strings
+    response: z.input<typeof bannerListResponseSchema>
     status?: number
 }
 

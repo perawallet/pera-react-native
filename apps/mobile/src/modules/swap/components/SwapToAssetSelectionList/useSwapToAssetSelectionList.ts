@@ -29,6 +29,7 @@ import {
     type DexSwapAsset,
 } from '@perawallet/wallet-core-swaps'
 import {
+    uint64IdToNumber,
     useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -71,10 +72,21 @@ export const useSwapToAssetSelectionList = ({
         }
     }, [isVisible])
 
+    // uint64IdToNumber throws on ids above 2^53 - 1 (Number() would silently
+    // round to a different asset id); disable the query instead of crashing
+    // the render for such an id.
+    const fromAssetIdNumber = useMemo(() => {
+        try {
+            return uint64IdToNumber(fromAssetId)
+        } catch {
+            return null
+        }
+    }, [fromAssetId])
+
     const { data: availableAssets, isLoading } = useAvailableAssetsQuery(
-        Number(fromAssetId),
+        fromAssetIdNumber ?? 0,
         debouncedSearchFilter || undefined,
-        Boolean(fromAssetId),
+        Boolean(fromAssetId) && fromAssetIdNumber !== null,
     )
 
     const selectedAccount = useSelectedAccount()

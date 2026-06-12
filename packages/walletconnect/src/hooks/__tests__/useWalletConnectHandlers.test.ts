@@ -198,11 +198,42 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(),
 }))
 
+// The ARC-60 wire schema + size cap live in the signing package (canonical
+// tests in its own arc60-wire.spec.ts). The barrel can't be imported for real
+// here (it loads react-native-mmkv), so reproduce just those two with `zod`
+// via vi.hoisted — faithful enough for the handler's validate/route logic.
+const { arc60WireSchema, assertArc60RequestWithinLimits } = vi.hoisted(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { z } = require('zod')
+    return {
+        arc60WireSchema: z.object({
+            data: z.string().max(16 * 1024),
+            signer: z.string().min(1).max(128),
+            domain: z.string().min(1).max(256),
+            authenticatorData: z.string().min(1).max(512),
+            requestId: z.string().max(256).optional(),
+            hdPath: z.string().max(256).optional(),
+            metadata: z.object({
+                scope: z.number().int(),
+                encoding: z.string().min(1).max(32),
+            }),
+        }),
+        assertArc60RequestWithinLimits: (rawParams: unknown) => {
+            if ((JSON.stringify(rawParams) ?? '').length > 64 * 1024) {
+                throw new Error('request exceeds the maximum allowed size')
+            }
+        },
+    }
+})
+
 // Mocks the real `useArc0001Resolver` + `useEnqueueArc0001SignRequest` —
 // the enqueue stub mirrors the real hook (which has its own tests) so
 // these tests can keep asserting on the addSignRequest shape.
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(),
+    ARC60_MAX_REQUEST_BYTES: 64 * 1024,
+    arc60WireSchema,
+    assertArc60RequestWithinLimits,
     useArc0001Resolver:
         () =>
         (request: any, options: any = {}) =>

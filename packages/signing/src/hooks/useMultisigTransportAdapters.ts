@@ -230,7 +230,11 @@ export const useMultisigTransportAdapters =
                     },
                 )
 
-                return { signRequestId, status: latestResponse.status }
+                return {
+                    signRequestId,
+                    status: latestResponse.status,
+                    rawTransactionsBase64,
+                }
             },
             [encodeTransactionRaw, network, queryClient],
         )

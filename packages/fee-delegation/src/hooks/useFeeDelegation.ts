@@ -1,0 +1,243 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback } from 'react'
+import {
+    useAlgorandClient,
+    useNetwork,
+    useTransactionEncoder,
+} from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    submitAndAutoRefresh,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
+import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+    generateOrderedUniqueId,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+
+import { requestFeeDelegation } from '../api'
+import { FeeDelegationAttestationRequiredError } from '../errors'
+
+export type FeeDelegatedSubmitParams = {
+    /** The wallet account whose transactions are being sponsored. */
+    account: string
+    /**
+     * The UNSIGNED wallet transactions to sponsor. The backend prepends its
+     * sponsor payment and re-groups everything (the group id changes), so
+     * nothing may be signed before the response comes back.
+     */
+    transactions: PeraTransaction[]
+    /** Also fund the account's MBR shortfall (e.g. for new opt-ins). */
+    includeMbr?: boolean
+    /** Asset ids of the opt-in transactions contained in `transactions`. */
+    optInAssetIds?: bigint[]
+    /** Source metadata shown in the signing sheet for the wallet slot(s). */
+    sourceMetadata: TransactionSignRequest['sourceMetadata']
+}
+
+export type UseFeeDelegationResult = {
+    submitWithFeeDelegation: (params: FeeDelegatedSubmitParams) => Promise<void>
+}
+
+/**
+ * A slot in the server re-grouped group: either the sponsor's pre-signed
+ * transaction (passed straight through to algod) or an unsigned wallet
+ * transaction that must be signed against the NEW group id.
+ */
+type GroupSlot =
+    | { kind: 'preSigned'; signed: PeraSignedTransaction }
+    | { kind: 'toSign'; flatIndex: number }
+
+/**
+ * The current non-expired device attestation token, or null when absent or
+ * expired. Read synchronously from the store snapshot so the decision is made
+ * at call time, not at render time.
+ */
+const getValidIntegrityToken = (): Nullable<string> => {
+    const { integrityToken, expiresAt } = useAppIntegrityStore.getState()
+    if (!integrityToken || !expiresAt) {
+        return null
+    }
+    const expiry = Date.parse(expiresAt)
+    return Number.isFinite(expiry) && expiry > Date.now()
+        ? integrityToken
+        : null
+}
+
+/**
+ * Hand the wallet-signable slot(s) to the signing pipeline as a headless
+ * callback request and resolve with the signed bytes. `groupContext` is the
+ * full re-grouped payload (sponsor pre-signed + wallet txns) so the pipeline's
+ * group-integrity check recomputes the hash over what the sponsor signed.
+ */
+const requestSignatures = (
+    addSignRequest: (request: TransactionSignRequest) => void,
+    unsignedTxs: PeraTransaction[],
+    groupContext: PeraTransaction[],
+    signableIndices: number[],
+    sourceMetadata: TransactionSignRequest['sourceMetadata'],
+): Promise<PeraSignedTransaction[]> =>
+    new Promise((resolve, reject) => {
+        const request: TransactionSignRequest = {
+            id: generateOrderedUniqueId(),
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'local',
+            txs: unsignedTxs,
+            groupContext,
+            signableIndices,
+            sourceMetadata,
+            approve: async signed => {
+                resolve(signed)
+            },
+            reject: async () => {
+                reject(new Error('User rejected fee-delegated signing'))
+            },
+            error: async (err: Error) => {
+                reject(err)
+            },
+        }
+        addSignRequest(request)
+    })
+
+/**
+ * Submits a transaction group with backend-sponsored fees (and optionally MBR
+ * funding) via `POST /api/v3/fee-delegation`:
+ *
+ * 1. Requires a valid app-integrity attestation token (the route sits behind
+ *    the integrity guard) — throws `FeeDelegationAttestationRequiredError`
+ *    when none is available.
+ * 2. Sends the unsigned group; the backend adds a sponsor fee/MBR-paying
+ *    transaction and RE-GROUPS it (changing the group id); only AFTER
+ *    receiving the re-grouped txns are the wallet slots signed.
+ * 3. Sponsor slots come back pre-signed (`stxn`); wallet slots are signed
+ *    through the signing pipeline, scattered back into submission order, and
+ *    submitted.
+ */
+export const useFeeDelegation = (): UseFeeDelegationResult => {
+    const algokit = useAlgorandClient()
+    const { network } = useNetwork()
+    const { addSignRequest } = useSigningRequest()
+    const {
+        encodeTransaction,
+        encodeSignedTransactions,
+        decodeTransaction,
+        decodeSignedTransaction,
+    } = useTransactionEncoder()
+
+    const submitWithFeeDelegation = useCallback(
+        async ({
+            account,
+            transactions,
+            includeMbr = false,
+            optInAssetIds = [],
+            sourceMetadata,
+        }: FeeDelegatedSubmitParams): Promise<void> => {
+            const integrityToken = getValidIntegrityToken()
+            if (!integrityToken) {
+                throw new FeeDelegationAttestationRequiredError()
+            }
+
+            const { txnGroup } = await requestFeeDelegation(
+                {
+                    txnGroup: transactions.map(txn => ({
+                        txn: encodeToBase64(encodeTransaction(txn)),
+                    })),
+                    account,
+                    includeMbr,
+                    optInAssetIds: optInAssetIds.map(id => id.toString()),
+                },
+                integrityToken,
+                network,
+            )
+
+            // Decode the re-grouped txns into a merge plan: slots carrying
+            // `stxn` are sponsor-signed; the rest are the wallet's own and
+            // must be signed AFTER the re-group.
+            const slots: GroupSlot[] = []
+            const unsignedTxs: PeraTransaction[] = []
+            const groupContext: PeraTransaction[] = []
+
+            for (const entry of txnGroup) {
+                if (entry.stxn) {
+                    const signed = decodeSignedTransaction(
+                        decodeFromBase64(entry.stxn),
+                    )
+                    slots.push({ kind: 'preSigned', signed })
+                    groupContext.push(signed.txn)
+                } else {
+                    const unsignedTxn = decodeTransaction(
+                        decodeFromBase64(entry.txn),
+                    )
+                    slots.push({
+                        kind: 'toSign',
+                        flatIndex: unsignedTxs.length,
+                    })
+                    unsignedTxs.push(unsignedTxn)
+                    groupContext.push(unsignedTxn)
+                }
+            }
+
+            const signableIndices = slots.reduce<number[]>(
+                (indices, slot, index) => {
+                    if (slot.kind === 'toSign') {
+                        indices.push(index)
+                    }
+                    return indices
+                },
+                [],
+            )
+
+            const flatSigned = await requestSignatures(
+                addSignRequest,
+                unsignedTxs,
+                groupContext,
+                signableIndices,
+                sourceMetadata,
+            )
+
+            // Scatter the wallet signatures back into submission order,
+            // interleaved with the sponsor's pre-signed slots, and submit.
+            const orderedSigned = slots.map(slot =>
+                slot.kind === 'preSigned'
+                    ? slot.signed
+                    : flatSigned[slot.flatIndex]!,
+            )
+
+            await submitAndAutoRefresh(
+                algokit,
+                encodeSignedTransactions,
+                orderedSigned,
+            )
+        },
+        [
+            algokit,
+            network,
+            addSignRequest,
+            encodeTransaction,
+            encodeSignedTransactions,
+            decodeTransaction,
+            decodeSignedTransaction,
+        ],
+    )
+
+    return { submitWithFeeDelegation }
+}

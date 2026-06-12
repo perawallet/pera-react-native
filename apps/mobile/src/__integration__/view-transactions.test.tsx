@@ -105,7 +105,7 @@ const TX_ASSET_TRANSFER: TransactionHistoryItem = {
     amount: new Decimal(2_500_000),
     closeTo: null,
     asset: {
-        assetId: 31_566_704,
+        assetId: '31566704',
         name: 'USD Coin',
         unitName: 'USDC',
         decimals: 6,

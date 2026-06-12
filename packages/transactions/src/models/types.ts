@@ -46,12 +46,12 @@ export type TransactionType =
  * are grouped together. This object contains the aggregate details.
  */
 export interface TransactionSwapGroupDetail {
-    /** The asset ID being swapped from (input asset) */
-    assetInId: Nullable<number>
+    /** The asset ID being swapped from (input asset). Decimal string — uint64 ids must never live in a JS number. */
+    assetInId: Nullable<string>
     /** The ticker symbol/unit name of the input asset (e.g., "ALGO", "USDC") */
     assetInUnitName: string
-    /** The asset ID being swapped to (output asset) */
-    assetOutId: Nullable<number>
+    /** The asset ID being swapped to (output asset). Decimal string. */
+    assetOutId: Nullable<string>
     /** The ticker symbol/unit name of the output asset */
     assetOutUnitName: string
     /** The amount of input asset being swapped, in base units */
@@ -66,8 +66,8 @@ export interface TransactionSwapGroupDetail {
  * This provides basic information about an asset involved in the transaction.
  */
 export interface TransactionAssetSummary {
-    /** The asset ID (ASA ID) */
-    assetId: number
+    /** The asset ID (ASA ID). Decimal string — uint64 ids must never live in a JS number. */
+    assetId: string
     /** The display name of the asset (e.g., "USD Coin") */
     name: string
     /** The unit name/ticker symbol (e.g., "USDC") */

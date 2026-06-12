@@ -120,6 +120,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             positiveLighter: palette.turquoise[100],
             negative: palette.salmon[600],
             negativeLighter: palette.salmon[100],
+            warningText: palette.yellow[600],
             successCheckmark: palette.white,
             heroBg: palette.gray[50],
 
@@ -315,6 +316,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             positiveLighter: 'rgba(44, 183, 188, 0.12)',
             negative: palette.salmon[500],
             negativeLighter: 'rgba(255, 109, 95, 0.12)',
+            warningText: palette.yellow[600],
             successCheckmark: palette.gray[900],
             heroBg: '#1D1D21',
 

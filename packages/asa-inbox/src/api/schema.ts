@@ -16,7 +16,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 import { z } from 'zod'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { uint64IdSchema, type Nullable } from '@perawallet/wallet-core-shared'
 
 export const arc59WarningMessageSchema = z.object({
     title: z.string(),
@@ -25,13 +25,24 @@ export const arc59WarningMessageSchema = z.object({
     link_text: z.string(),
 })
 
+// These arrive as JSON integers in base units (microAlgos) or as a count, and
+// flow straight into BigInt() and a payment amount. Reject floats (BigInt() of a
+// non-integer throws), negatives, and precision-losing magnitudes (> 2^53) at the
+// boundary so a malformed or hostile summary can't crash signing or fund a bogus
+// payment.
+const safeBaseUnitInteger = z
+    .number()
+    .int()
+    .nonnegative()
+    .lte(Number.MAX_SAFE_INTEGER)
+
 export const arc59SendSummaryResponseSchema = z.object({
     is_arc59_opted_in: z.boolean(),
-    minimum_balance_requirement: z.number(),
-    inner_tx_count: z.number(),
-    total_protocol_and_mbr_fee: z.number(),
+    minimum_balance_requirement: safeBaseUnitInteger,
+    inner_tx_count: safeBaseUnitInteger,
+    total_protocol_and_mbr_fee: safeBaseUnitInteger,
     inbox_address: z.string().nullable(),
-    algo_fund_amount: z.number(),
+    algo_fund_amount: safeBaseUnitInteger,
     warning_message: arc59WarningMessageSchema.nullable(),
 })
 
@@ -50,7 +61,8 @@ const arc59AssetCollectibleSchema = z.object({
 })
 
 const arc59AssetSchema = z.object({
-    asset_id: z.number(),
+    // uint64 asset id — normalized to a decimal string (see uint64IdSchema).
+    asset_id: uint64IdSchema,
     name: z.string(),
     logo: z.string().nullable(),
     unit_name: z.string(),
@@ -125,10 +137,10 @@ export type Arc59AssetRequest = {
 export const mapArc59AssetRequest = (
     raw: Arc59AssetRequestResponse,
 ): Arc59AssetRequest => ({
-    id: raw.asset.asset_id.toString(),
+    id: raw.asset.asset_id,
     totalAmount: new Decimal(raw.total_amount),
     asset: {
-        assetId: raw.asset.asset_id.toString(),
+        assetId: raw.asset.asset_id,
         name: raw.asset.name,
         unitName: raw.asset.unit_name,
         decimals: raw.asset.fraction_decimals,

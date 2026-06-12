@@ -69,7 +69,7 @@ import { AppVersion } from '@modules/settings/components/AppVersion'
 
 import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
 
-import { NumberedList } from '@modules/rekey/components/NumberedList'
+import { NumberedList } from '@components/NumberedList'
 import { RekeySummaryRow } from '@modules/rekey/components/RekeySummaryRow'
 
 import { PinEntry } from '@modules/security/components/PinEntry'
@@ -623,7 +623,7 @@ registerPreview({
 })
 
 const mockBanner: Banner = {
-    id: 1,
+    id: '1',
     type: 'governance',
     title: 'Algorand Governance',
     subtitle: 'Participate and earn rewards',

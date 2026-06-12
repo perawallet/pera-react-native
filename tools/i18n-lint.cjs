@@ -53,6 +53,11 @@ const EXCLUDED_PREFIXES = [
     'onboarding.asb_import.key.errors.',
     // Search section headers: t(`search.sections.${item.kind}`)
     'search.sections.',
+    // Onramp status badge: t(`onramp.status.${status}`) in OnrampStatusBadge.
+    'onramp.status.',
+    // Country names: t(`countries.${code}`) for ISO 3166-1 alpha-2 codes,
+    // resolved dynamically from the ramp token's country code.
+    'countries.',
     // Key-reg type: t(`transactions.key_reg.${keyRegType}`)
     'transactions.key_reg.',
     // Rekey screens build every key from i18nBaseKey/i18nPrefix props, e.g.

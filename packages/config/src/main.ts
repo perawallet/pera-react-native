@@ -52,6 +52,8 @@ export const configSchema = z.object({
     discoverBaseUrl: z.url(),
     stakingBaseUrl: z.url(),
     onrampBaseUrl: z.url(),
+    /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
+    onrampSupportEmail: z.email(),
     supportBaseUrl: z.url(),
     termsOfServiceUrl: z.url(),
     privacyPolicyUrl: z.url(),
@@ -77,6 +79,13 @@ export const configSchema = z.object({
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
+
+    // Build-time escape hatch for e2e automation (Appium/BrowserStack), whose
+    // tooling can't drive a FLAG_SECURE surface. Sourced only from the
+    // DISABLE_SCREEN_CAPTURE_PREVENTION build env — never a remote/runtime
+    // signal. Defaults safe (false) so seed-screen capture protection can't be
+    // weakened post-release.
+    disableScreenCapturePrevention: z.boolean().default(false),
 
     mainnetBidaliApiKey: z.string(),
     testnetBidaliApiKey: z.string(),
@@ -136,6 +145,7 @@ const productionConfig = {
     discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
+    onrampSupportEmail: 'support@xoswap.com',
     supportBaseUrl: 'https://support.perawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
@@ -185,6 +195,7 @@ const productionConfig = {
     debugEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
+    disableScreenCapturePrevention: false,
 
     mainnetBidaliApiKey: '',
     testnetBidaliApiKey: '',
@@ -235,6 +246,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     discoverBaseUrl: 'DISCOVER_BASE_URL',
     stakingBaseUrl: 'STAKING_BASE_URL',
     onrampBaseUrl: 'ONRAMP_BASE_URL',
+    onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
     termsOfServiceUrl: 'TERMS_OF_SERVICE_URL',
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',
@@ -259,6 +271,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     debugEnabled: 'DEBUG_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
+    disableScreenCapturePrevention: 'DISABLE_SCREEN_CAPTURE_PREVENTION',
 
     mainnetBidaliApiKey: 'MAINNET_BIDALI_API_KEY',
     testnetBidaliApiKey: 'TESTNET_BIDALI_API_KEY',

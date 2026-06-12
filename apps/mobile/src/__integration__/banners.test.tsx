@@ -135,12 +135,12 @@ describe('Flow: Banners (regular)', () => {
             )
 
             const byId = new Map(result.current.banners.map(b => [b.id, b]))
-            expect(byId.get(1)?.type).toBe('governance')
-            expect(byId.get(1)?.title).toBe('Vote in Period 12')
-            expect(byId.get(1)?.buttonLabel).toBe('Vote now')
-            expect(byId.get(1)?.buttonUrl).toBe('pera://governance')
-            expect(byId.get(1)?.isButtonUrlExternal).toBe(false)
-            expect(byId.get(2)?.subtitle).toBeNull()
+            expect(byId.get('1')?.type).toBe('governance')
+            expect(byId.get('1')?.title).toBe('Vote in Period 12')
+            expect(byId.get('1')?.buttonLabel).toBe('Vote now')
+            expect(byId.get('1')?.buttonUrl).toBe('pera://governance')
+            expect(byId.get('1')?.isButtonUrlExternal).toBe(false)
+            expect(byId.get('2')?.subtitle).toBeNull()
             // No forced banner → forcedBanner is null.
             expect(result.current.forcedBanner).toBeNull()
         },
@@ -185,10 +185,10 @@ describe('Flow: Banners (regular)', () => {
             // Client-side dismissal — no server call required for
             // regular banners. Store action triggers re-derive of the
             // visible set.
-            act(() => useBannersStore.getState().dismissBanner(10))
+            act(() => useBannersStore.getState().dismissBanner('10'))
 
             await waitFor(() => {
-                expect(result.current.banners.map(b => b.id)).toEqual([11])
+                expect(result.current.banners.map(b => b.id)).toEqual(['11'])
             })
             expect(result.current.totalCount).toBe(1)
         },
@@ -229,7 +229,7 @@ describe('Flow: Banners (regular)', () => {
             // bypasses the dismissal filter (so a "security" banner
             // can't be silenced by a prior dismissal of an id-aliased
             // earlier banner).
-            act(() => useBannersStore.getState().dismissBanner(21))
+            act(() => useBannersStore.getState().dismissBanner('21'))
 
             const { result } = renderHook(() => useVisibleBanners(), {
                 wrapper: buildWrapper(),
@@ -238,12 +238,12 @@ describe('Flow: Banners (regular)', () => {
             await waitFor(
                 () => {
                     expect(result.current.banners).toHaveLength(1)
-                    expect(result.current.banners[0].id).toBe(21)
+                    expect(result.current.banners[0].id).toBe('21')
                 },
                 { timeout: 5000 },
             )
 
-            expect(result.current.forcedBanner?.id).toBe(21)
+            expect(result.current.forcedBanner?.id).toBe('21')
             expect(result.current.forcedBanner?.autoOpenMode).toBe('force')
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -285,7 +285,7 @@ describe('Flow: Banners (regular)', () => {
                 () => expect(result.current.banners).toHaveLength(1),
                 { timeout: 5000 },
             )
-            expect(result.current.banners[0].id).toBe(31)
+            expect(result.current.banners[0].id).toBe('31')
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -335,12 +335,12 @@ describe('Flow: Spot banners', () => {
             )
 
             const byId = new Map(result.current.spotBanners.map(b => [b.id, b]))
-            expect(byId.get(100)?.text).toBe('Try staking')
-            expect(byId.get(100)?.imageUrl).toBe(
+            expect(byId.get('100')?.text).toBe('Try staking')
+            expect(byId.get('100')?.imageUrl).toBe(
                 'https://cdn.pera.test/icons/stake.png',
             )
-            expect(byId.get(100)?.isUrlExternal).toBe(false)
-            expect(byId.get(101)?.isUrlExternal).toBe(true)
+            expect(byId.get('100')?.isUrlExternal).toBe(false)
+            expect(byId.get('101')?.isUrlExternal).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,
     )
@@ -348,13 +348,13 @@ describe('Flow: Spot banners', () => {
     it(
         'Given a spot banner is visible, when the dismiss mutation runs, then the close endpoint is called and the next GET excludes the banner',
         async () => {
-            const SPOT_ID = 42
-            const KEEP_ID = 43
+            const SPOT_ID = '42'
+            const KEEP_ID = '43'
             // Stateful mock: the close PATCH records the id and the GET
             // filters it out. Mirrors real backend behaviour where the
             // device's `closed_spot_banner_ids` array is what gates the
             // subsequent reads.
-            const closedIds = new Set<number>()
+            const closedIds = new Set<string>()
             const ALL_BANNERS = [
                 {
                     id: SPOT_ID,
@@ -371,7 +371,7 @@ describe('Flow: Spot banners', () => {
                     button_url_is_external: false,
                 },
             ]
-            const closeRequests: number[] = []
+            const closeRequests: string[] = []
             server.use(
                 http.get(`*/v1/devices/${DEVICE_ID}/spot-banners/`, () =>
                     HttpResponse.json(
@@ -381,7 +381,7 @@ describe('Flow: Spot banners', () => {
                 http.patch(
                     `*/v1/devices/${DEVICE_ID}/spot-banners/:spotId/close/`,
                     ({ params }) => {
-                        const id = Number(params.spotId)
+                        const id = String(params.spotId)
                         closedIds.add(id)
                         closeRequests.push(id)
                         return new HttpResponse(null, { status: 204 })
@@ -426,7 +426,7 @@ describe('Flow: Spot banners', () => {
     it(
         'Given the close endpoint returns an error, when the dismiss mutation finishes, then the optimistic removal is rolled back so the user sees the banner again',
         async () => {
-            const SPOT_ID = 50
+            const SPOT_ID = '50'
             server.use(
                 mockSpotBanners({
                     deviceID: DEVICE_ID,

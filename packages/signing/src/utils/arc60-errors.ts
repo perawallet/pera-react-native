@@ -123,6 +123,27 @@ export class Arc60DomainMismatchError extends AppError {
     }
 }
 
+/**
+ * ERROR_INVALID_INPUT — the request's wire shape or size is malformed, before
+ * any SIWA-level parsing (bad field types, oversized payload, non-base64
+ * `authenticatorData`). Distinct from {@link Arc60BadJsonError}, which is
+ * specifically about the decoded AUTH SIWA payload.
+ */
+export class Arc60BadRequestError extends AppError {
+    constructor(reason: string, originalError?: Error) {
+        super(
+            `ARC-60 sign request is invalid: ${reason}`,
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.VALIDATION,
+                recoverable: false,
+                params: { reason },
+            },
+            originalError,
+        )
+    }
+}
+
 /** ERROR_FAILED_HD_PATH — provided `hdPath` is invalid or doesn't match the signer. */
 export class Arc60FailedHdPathError extends AppError {
     constructor(hdPath: string, reason?: string) {

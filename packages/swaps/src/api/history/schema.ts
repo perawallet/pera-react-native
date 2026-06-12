@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 import { dexSwapAssetSchema } from '../available-assets/schema'
 
 export const swapStatusEnum = z.enum([
@@ -22,7 +23,8 @@ export const swapStatusEnum = z.enum([
 ])
 
 const swapHistoryItemSchema = z.object({
-    id: z.number(),
+    // Backend ids exceed 2^53; id_str is the canonical identity.
+    id: uint64IdSchema,
     id_str: z.string().nullable().optional(),
     provider: z.string(),
     status: swapStatusEnum,

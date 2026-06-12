@@ -46,7 +46,7 @@ export const useStyles = makeStyles((theme, { hugContent }: StyleProps) => {
             gap: theme.spacing.md,
             alignItems: 'center',
             minWidth: 0,
-            flex: 1,
+            ...fillOrHug,
         },
         unifiedTextContainer: {
             flex: 1,

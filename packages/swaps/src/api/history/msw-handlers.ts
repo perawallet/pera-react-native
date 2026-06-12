@@ -11,16 +11,17 @@
  */
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import type { z } from 'zod'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     swapHistoryResponseSchema,
     swapDistinctPairsHistoryResponseSchema,
-    type SwapHistoryApiResponse,
     type SwapDistinctPairsHistoryApiResponse,
 } from './schema'
 
 export type MockSwapHistoryParams = {
-    response: SwapHistoryApiResponse
+    // wire (pre-parse) shape: ids may be numbers or strings
+    response: z.input<typeof swapHistoryResponseSchema>
     status?: number
 }
 

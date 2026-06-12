@@ -132,9 +132,11 @@ export async function upsertTransactions({
             })
             .run()
 
+        // assetId is a decimal string in current rows; numbers come from rows
+        // persisted before the uint64-string migration.
         const assetId = row.assetJson
             ? ((
-                  JSON.parse(row.assetJson) as { assetId?: number }
+                  JSON.parse(row.assetJson) as { assetId?: number | string }
               ).assetId?.toString() ?? null)
             : null
 

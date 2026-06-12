@@ -126,4 +126,39 @@ describe('arc59SendSummaryResponseSchema', () => {
             }),
         ).toThrow()
     })
+
+    test.each([
+        'minimum_balance_requirement',
+        'inner_tx_count',
+        'total_protocol_and_mbr_fee',
+        'algo_fund_amount',
+    ] as const)('rejects a fractional %s (would crash BigInt())', field => {
+        expect(() =>
+            arc59SendSummaryResponseSchema.parse({
+                ...validSummary,
+                [field]: 1.5,
+            }),
+        ).toThrow()
+    })
+
+    test.each(['minimum_balance_requirement', 'algo_fund_amount'] as const)(
+        'rejects a negative %s',
+        field => {
+            expect(() =>
+                arc59SendSummaryResponseSchema.parse({
+                    ...validSummary,
+                    [field]: -1,
+                }),
+            ).toThrow()
+        },
+    )
+
+    test('rejects an amount beyond safe-integer precision', () => {
+        expect(() =>
+            arc59SendSummaryResponseSchema.parse({
+                ...validSummary,
+                algo_fund_amount: Number.MAX_SAFE_INTEGER + 2,
+            }),
+        ).toThrow()
+    })
 })

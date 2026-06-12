@@ -76,13 +76,23 @@ describe('transformCurrencyList', () => {
 })
 
 describe('transformCurrencyToPrice', () => {
-    it('maps currency_id to id and parses usd_value', () => {
+    it('maps currency_id to id and parses a string usd_value', () => {
         const result = transformCurrencyToPrice(
             makeCurrencyResponse({ currency_id: 'EUR', usd_value: '0.85' }),
         )
 
         expect(result.id).toBe('EUR')
-        expect(result.usdPrice).toEqual(Decimal('0.85'))
+        expect(result.usdPrice).toEqual(new Decimal('0.85'))
+    })
+
+    it('preserves precision from the string usd_value a JS number would drop', () => {
+        // A high-magnitude rate that round-trips exactly as a string but loses
+        // precision once coerced through a JS double.
+        const result = transformCurrencyToPrice(
+            makeCurrencyResponse({ usd_value: '12345678.123456789' }),
+        )
+
+        expect(result.usdPrice.toString()).toBe('12345678.123456789')
     })
 
     it('defaults to 0 when usd_value is null', () => {
@@ -90,22 +100,12 @@ describe('transformCurrencyToPrice', () => {
             makeCurrencyResponse({ usd_value: null }),
         )
 
-        expect(result.usdPrice).toEqual(Decimal('0'))
+        expect(result.usdPrice).toEqual(new Decimal('0'))
     })
 
     it('defaults to 0 when usd_value is undefined', () => {
-        const result = transformCurrencyToPrice(
-            makeCurrencyResponse({ usd_value: undefined }),
-        )
+        const result = transformCurrencyToPrice(makeCurrencyResponse())
 
-        expect(result.usdPrice).toEqual(Decimal('0'))
-    })
-
-    it('handles decimal precision', () => {
-        const result = transformCurrencyToPrice(
-            makeCurrencyResponse({ usd_value: '1.23456789' }),
-        )
-
-        expect(result.usdPrice.toString()).toBe('1.23456789')
+        expect(result.usdPrice).toEqual(new Decimal('0'))
     })
 })

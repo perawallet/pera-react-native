@@ -11,10 +11,12 @@
  */
 
 import { z } from 'zod'
+import { uint64IdSchema } from '@perawallet/wallet-core-shared'
 import { projectResponseSchema } from '../projects/schema'
 
 export const applicationResponseSchema = z.object({
-    application_id: z.number(),
+    // uint64 app id — normalized to a decimal string (see uint64IdSchema).
+    application_id: uint64IdSchema,
     name: z.string(),
     project: projectResponseSchema,
 })

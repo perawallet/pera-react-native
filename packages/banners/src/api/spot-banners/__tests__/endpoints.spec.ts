@@ -14,7 +14,8 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import { fetchSpotBanners, closeSpotBanner } from '../endpoints'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
     queryClient: vi.fn(),
 }))
 
@@ -53,9 +54,27 @@ describe('fetchSpotBanners', () => {
         const result = await fetchSpotBanners('mainnet', DEVICE_ID)
 
         expect(result[0]).toMatchObject({
-            id: 1,
+            id: '1',
             button_url_is_external: true,
         })
+    })
+
+    test('preserves an id above 2^53 delivered as a string', async () => {
+        const bigId = '1786243907000000001'
+        ;(queryClient as Mock).mockResolvedValue({
+            data: [
+                {
+                    id: bigId,
+                    text: 'Try',
+                    image: 'https://cdn.test/img.png',
+                    url: 'pera://x',
+                },
+            ],
+        })
+
+        const result = await fetchSpotBanners('mainnet', DEVICE_ID)
+
+        expect(result[0].id).toBe(bigId)
     })
 
     test('throws on schema failure', async () => {

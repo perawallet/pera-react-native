@@ -17,6 +17,7 @@ import type { BannersEvent } from './contexts/banners'
 import type { AccountDetailsEvent } from './contexts/account-details'
 import type { AssetDetailsEvent } from './contexts/asset-details'
 import type { SwapEvent } from './contexts/swap'
+import type { OnrampEvent } from './contexts/onramp'
 import type { WalletConnectEvent } from './contexts/wallet-connect'
 import type { MenuEvent } from './contexts/menu'
 import type { SettingsEvent } from './contexts/settings'
@@ -43,6 +44,7 @@ export type AnalyticsEventName =
     | AccountDetailsEvent
     | AssetDetailsEvent
     | SwapEvent
+    | OnrampEvent
     | WalletConnectEvent
     | MenuEvent
     | SettingsEvent

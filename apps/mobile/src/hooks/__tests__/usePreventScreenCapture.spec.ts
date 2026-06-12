@@ -1,0 +1,68 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import {
+    preventScreenCaptureAsync,
+    allowScreenCaptureAsync,
+} from 'expo-screen-capture'
+import { usePreventScreenCapture } from '../usePreventScreenCapture'
+
+// Mutable so each test can flip the build-time flag the hook reads.
+const { mockConfig } = vi.hoisted(() => ({
+    mockConfig: { disableScreenCapturePrevention: false },
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: mockConfig,
+}))
+
+describe('usePreventScreenCapture', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockConfig.disableScreenCapturePrevention = false
+    })
+
+    test('prevents screen capture on mount and re-allows on unmount', () => {
+        const { unmount } = renderHook(() =>
+            usePreventScreenCapture('mnemonic'),
+        )
+
+        expect(preventScreenCaptureAsync).toHaveBeenCalledWith('mnemonic')
+        expect(allowScreenCaptureAsync).not.toHaveBeenCalled()
+
+        unmount()
+
+        expect(allowScreenCaptureAsync).toHaveBeenCalledWith('mnemonic')
+    })
+
+    test('does nothing while enabled is false', () => {
+        renderHook(() => usePreventScreenCapture('mnemonic', false))
+
+        expect(preventScreenCaptureAsync).not.toHaveBeenCalled()
+    })
+
+    test('skips prevention when the build-time flag disables it', () => {
+        mockConfig.disableScreenCapturePrevention = true
+
+        const { unmount } = renderHook(() =>
+            usePreventScreenCapture('mnemonic'),
+        )
+
+        expect(preventScreenCaptureAsync).not.toHaveBeenCalled()
+
+        unmount()
+
+        expect(allowScreenCaptureAsync).not.toHaveBeenCalled()
+    })
+})

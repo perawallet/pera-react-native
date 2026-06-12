@@ -22,11 +22,11 @@ import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     currenciesListResponseSchema,
     currencyResponseSchema,
-    type CurrencyApiResponse,
+    type CurrencyApiWireResponse,
 } from './schema'
 
 export type MockListCurrenciesParams = {
-    response: CurrencyApiResponse[]
+    response: CurrencyApiWireResponse[]
     status?: number
 }
 
@@ -46,7 +46,7 @@ export const mockListCurrencies = ({
 
 export type MockGetCurrencyParams = {
     id: string
-    response: CurrencyApiResponse
+    response: CurrencyApiWireResponse
     status?: number
 }
 

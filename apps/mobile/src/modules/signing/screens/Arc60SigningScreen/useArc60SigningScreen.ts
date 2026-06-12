@@ -17,6 +17,7 @@ import {
     type Arc60ParsedPayload,
     type Arc60SignRequest,
     type SigningLifecycleEvent,
+    isArc60OriginMismatch,
     useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
@@ -36,6 +37,13 @@ type UseArc60SigningScreenResult = {
     isPending: boolean
     canConfirm: boolean
     error: Nullable<Error>
+    /**
+     * The SIWA `domain` is asking for a signature from an origin the wallet
+     * actually loaded a different page from — a relay/phishing signal. Surfaced
+     * as a non-blocking warning (the user can still confirm). False unless the
+     * request carries a platform-verified origin (i.e. webview-sourced).
+     */
+    hasOriginMismatch: boolean
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: () => void
@@ -78,6 +86,11 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const isPending = pipeline.isLoading || isApproving
     const canConfirm = !isPending && !!account && parsed?.type === 'siwa'
 
+    const hasOriginMismatch = isArc60OriginMismatch(
+        request?.stdSigData.domain ?? '',
+        request?.verifiedOrigin,
+    )
+
     return {
         request,
         account: account ?? undefined,
@@ -85,6 +98,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         isPending,
         canConfirm,
         error: pipeline.error,
+        hasOriginMismatch,
         handleApprove,
         handleReject,
         handleDetailsPress,

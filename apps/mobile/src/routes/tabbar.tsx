@@ -18,7 +18,7 @@ import { useTheme } from '@rneui/themed'
 import { trackEvent, TabbarEvent } from '@analytics'
 import { screenListeners } from './listeners'
 import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
-import { FundScreen } from '@modules/fund/screens/FundScreen'
+import { OnrampScreen } from '@modules/onramp/screens/OnrampScreen'
 import { SwapScreen } from '@modules/swap/screens/SwapScreen'
 import { MenuScreen } from '@modules/menu/screens/MenuScreen'
 import { headeredLayout, safeAreaLayout } from '@layouts/index'
@@ -26,6 +26,7 @@ import { TabLabel } from '@components/TabLabel'
 import { AccountStackNavigator } from '@modules/accounts/routes'
 import { type AccountStackParamsList } from '@modules/accounts/routes/types'
 import { type SwapScreenParams } from '@modules/swap/routes/types'
+import { type OnrampScreenParams } from '@modules/onramp/routes/types'
 import { type NavigatorScreenParams } from '@react-navigation/native'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -35,7 +36,7 @@ export type TabBarStackParamList = {
     Home: NavigatorScreenParams<AccountStackParamsList>
     Discover: { path?: string } | undefined
     Swap: Optional<SwapScreenParams>
-    Fund: undefined
+    Fund: Optional<OnrampScreenParams>
     Menu: undefined
 }
 
@@ -45,7 +46,7 @@ const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
 // for users who pass the gate; blocked users see the restricted view instead.
 const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
 const GatedSwapScreen = withAgeGate(SwapScreen)
-const GatedFundScreen = withAgeGate(FundScreen)
+const GatedOnrampScreen = withAgeGate(OnrampScreen)
 
 export const TabBarStackNavigator = () => {
     const insets = useSafeAreaInsets()
@@ -129,7 +130,7 @@ export const TabBarStackNavigator = () => {
             <TabBarStack.Screen
                 name='Fund'
                 layout={headeredLayout}
-                component={GatedFundScreen}
+                component={GatedOnrampScreen}
                 listeners={{ tabPress: () => trackEvent(TabbarEvent.Fund) }}
             />
             <TabBarStack.Screen

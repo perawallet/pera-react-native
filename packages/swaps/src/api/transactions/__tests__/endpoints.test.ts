@@ -59,7 +59,7 @@ describe('prepareTransactions', () => {
                 data: { quote: 'serialized-quote' },
             }),
         )
-        expect(result.swapId).toBe(42)
+        expect(result.swapId).toBe('42')
         expect(result.swapIdStr).toBe('42')
         expect(result.swapVersion).toBe('v2')
         expect(result.transactionGroups?.[0]).toEqual({

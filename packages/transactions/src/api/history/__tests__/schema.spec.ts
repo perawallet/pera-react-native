@@ -43,13 +43,13 @@ describe('transactionSwapGroupDetailSchema', () => {
 
         const result = transactionSwapGroupDetailSchema.parse(input)
 
-        expect(result.asset_in_id).toBe(31566704)
+        expect(result.asset_in_id).toBe('31566704')
         expect(result.asset_in_unit_name).toBe('USDC')
-        expect(result.asset_out_id).toBe(0)
+        expect(result.asset_out_id).toBe('0')
         expect(result.amount_in).toBe('1000000')
     })
 
-    it('coerces string asset IDs to numbers', () => {
+    it('normalizes asset IDs to decimal strings', () => {
         const input = {
             asset_in_id: '31566704',
             asset_out_id: '0',
@@ -57,8 +57,17 @@ describe('transactionSwapGroupDetailSchema', () => {
 
         const result = transactionSwapGroupDetailSchema.parse(input)
 
-        expect(result.asset_in_id).toBe(31566704)
-        expect(result.asset_out_id).toBe(0)
+        expect(result.asset_in_id).toBe('31566704')
+        expect(result.asset_out_id).toBe('0')
+    })
+
+    it('preserves asset IDs above 2^53 without precision loss', () => {
+        const bigId = '18446744073709551615' // 2^64 - 1
+        const result = transactionSwapGroupDetailSchema.parse({
+            asset_in_id: bigId,
+        })
+
+        expect(result.asset_in_id).toBe(bigId)
     })
 
     it('applies defaults for missing optional fields', () => {
@@ -82,18 +91,27 @@ describe('transactionAssetSummarySchema', () => {
 
         const result = transactionAssetSummarySchema.parse(input)
 
-        expect(result.asset_id).toBe(31566704)
+        expect(result.asset_id).toBe('31566704')
         expect(result.name).toBe('USD Coin')
         expect(result.unit_name).toBe('USDC')
         expect(result.decimals).toBe(6)
     })
 
-    it('coerces string asset_id to number', () => {
+    it('normalizes asset_id to a decimal string', () => {
         const input = { asset_id: '31566704' }
 
         const result = transactionAssetSummarySchema.parse(input)
 
-        expect(result.asset_id).toBe(31566704)
+        expect(result.asset_id).toBe('31566704')
+    })
+
+    it('preserves an asset_id above 2^53 without precision loss', () => {
+        const bigId = '18446744073709551615' // 2^64 - 1
+        const result = transactionAssetSummarySchema.parse({
+            asset_id: bigId,
+        })
+
+        expect(result.asset_id).toBe(bigId)
     })
 
     it('applies defaults for missing optional fields', () => {
@@ -210,12 +228,12 @@ describe('transactionHistoryItemResponseSchema', () => {
         ).toThrow()
     })
 
-    it('coerces string application_id to number', () => {
+    it('normalizes application_id to a decimal string', () => {
         const result = transactionHistoryItemResponseSchema.parse(
-            makeValidItem({ application_id: '456' }),
+            makeValidItem({ application_id: 456 }),
         )
 
-        expect(result.application_id).toBe(456)
+        expect(result.application_id).toBe('456')
     })
 
     it('coerces string inner_transaction_count to number', () => {

@@ -147,7 +147,7 @@ const makePrepareResult = (
             transactions: ['dHhuMQ==', 'dHhuMg=='], // base64 for 'txn1', 'txn2'
         },
     ],
-    swapId: 12_345,
+    swapId: '12345',
     swapIdStr: '12345',
     swapVersion: 'v2',
     ...overrides,
