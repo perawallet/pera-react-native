@@ -51,6 +51,7 @@ export const useDevice = () => {
             push_token: pushToken ?? undefined,
             model: deviceInfoService.getDeviceModel(),
             locale: deviceInfoService.getDeviceLocale(),
+            application: 'pera' as const,
         }),
         [deviceInfoService, pushToken],
     )
@@ -63,7 +64,7 @@ export const useDevice = () => {
         ) => {
             const payload = await buildPayload(addresses)
             const result = await createDevice({
-                data: { ...payload, application: 'pera' },
+                data: payload,
             })
             if (inFlightIdRef.current === attemptId) {
                 setDeviceID(targetNetwork, result.id ?? null)

@@ -131,7 +131,22 @@ describe('notificationResponseSchema', () => {
         expect(result.icon).toBeNull()
     })
 
-    test('rejects missing required fields', () => {
+    test('parses rekey-style rows with null url, account_address and type', () => {
+        const input = {
+            id: '3',
+            type: null,
+            account_address: null,
+            message: 'Your account was rekeyed',
+            url: null,
+            creation_datetime: '2025-01-01T00:00:00Z',
+        }
+        const result = notificationResponseSchema.parse(input)
+        expect(result.url).toBeNull()
+        expect(result.account_address).toBeNull()
+        expect(result.type).toBeNull()
+    })
+
+    test('rejects rows without creation_datetime', () => {
         expect(() => notificationResponseSchema.parse({ id: '1' })).toThrow()
     })
 

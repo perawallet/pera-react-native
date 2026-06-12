@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import {
     MULTISIG_DECLINED_NOTIFICATION_TYPE,
     MULTISIG_EXPIRED_NOTIFICATION_TYPE,
@@ -50,8 +51,9 @@ const getMultisigIntentKind = (
 export const findInboxItemForNotification = (
     items: InboxItem[],
     kind: MultisigIntentKind,
-    address: string,
+    address: Maybe<string>,
 ): InboxItem | undefined => {
+    if (!address) return undefined
     const matches = items.filter(item => {
         if (kind === 'sign' && item.type === 'multisig_sign') {
             return item.data.multisigAccount.address === address
@@ -72,7 +74,8 @@ export const useNotificationPress = (): UseNotificationPressResult => {
     const handleNotificationPress = useCallback(
         (notification: PeraNotification) => {
             trackEvent(NotificationsEvent.Open, {
-                [AnalyticsMetadataKey.NotificationUrl]: notification.url,
+                [AnalyticsMetadataKey.NotificationUrl]:
+                    notification.url ?? undefined,
             })
             const intentKind = getMultisigIntentKind(notification.type)
             if (intentKind) {

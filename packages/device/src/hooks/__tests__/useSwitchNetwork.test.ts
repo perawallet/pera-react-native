@@ -148,6 +148,7 @@ describe('useSwitchNetwork', () => {
                 platform: 'ios',
                 push_token: 'fcm-token',
                 model: 'iPhone 14',
+                application: 'pera',
                 locale: 'en-US',
             },
         )

@@ -86,6 +86,45 @@ describe('useNotificationsListQuery', () => {
         ])
     })
 
+    it('preserves null wire fields so the UI can handle absence explicitly', async () => {
+        const mockResponse = {
+            count: 1,
+            next: null,
+            previous: null,
+            results: [
+                {
+                    id: '5',
+                    type: null,
+                    account_address: null,
+                    message: null,
+                    url: null,
+                    creation_datetime: '2023-01-01T00:00:00Z',
+                    is_unread: null,
+                },
+            ],
+        }
+        vi.mocked(fetchNotificationList).mockResolvedValue(mockResponse)
+
+        const { result } = renderHook(() => useNotificationsListQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data).toEqual([
+            {
+                id: '5',
+                type: null,
+                accountAddress: null,
+                message: null,
+                url: null,
+                createdAt: new Date('2023-01-01T00:00:00Z'),
+                isUnread: null,
+                icon: null,
+            },
+        ])
+    })
+
     it('maps a response with no icon to icon: null', async () => {
         const mockResponse = {
             count: 1,

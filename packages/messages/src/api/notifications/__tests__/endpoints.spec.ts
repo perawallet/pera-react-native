@@ -131,6 +131,39 @@ describe('fetchNotificationList', () => {
             fetchNotificationList('testnet', DEVICE_ID),
         ).rejects.toThrow()
     })
+
+    test('keeps rekey-style notifications with null url, account_address and type', async () => {
+        const rekeyRow = {
+            id: 2,
+            type: null,
+            account_address: null,
+            message: 'Your account was rekeyed',
+            url: null,
+            creation_datetime: '2025-01-02T00:00:00Z',
+        }
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { ...validResponse, results: [rekeyRow] },
+        })
+
+        const result = await fetchNotificationList('testnet', DEVICE_ID)
+
+        expect(result.results).toHaveLength(1)
+        expect(result.results[0]).toEqual({ ...rekeyRow, id: '2' })
+    })
+
+    test('drops a malformed row but keeps the rest of the page', async () => {
+        const malformedRow = { message: 'no id or datetime' }
+        ;(queryClient as Mock).mockResolvedValue({
+            data: {
+                ...validResponse,
+                results: [malformedRow, ...validResponse.results],
+            },
+        })
+
+        const result = await fetchNotificationList('testnet', DEVICE_ID)
+
+        expect(result.results).toEqual(validResponse.results)
+    })
 })
 
 describe('updateNotificationEnabled', () => {
