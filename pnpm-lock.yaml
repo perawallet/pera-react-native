@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@algorandfoundation/algokit-utils':
-      specifier: 10.0.0-beta.2
-      version: 10.0.0-beta.2
+      specifier: 10.0.0-beta.4
+      version: 10.0.0-beta.4
     '@algorandfoundation/react-native-keystore':
       specifier: 1.0.0-canary.12
       version: 1.0.0-canary.12
@@ -205,10 +205,10 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/react-native-passkey-autofill':
-        specifier: 1.0.0-canary.17
-        version: 1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
+        specifier: 1.0.0-canary.21
+        version: 1.0.0-canary.21(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -429,8 +429,8 @@ importers:
         specifier: ^56.0.15
         version: 56.0.15(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       expo-audio:
-        specifier: 56.0.11
-        version: 56.0.11(expo-asset@56.0.15(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
+        specifier: 56.0.12
+        version: 56.0.12(expo-asset@56.0.15(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
       expo-build-properties:
         specifier: ~56.0.15
         version: 56.0.15(expo@56.0.5)
@@ -456,8 +456,8 @@ importers:
         specifier: ^56.0.9
         version: 56.0.9(expo@56.0.5)(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
       expo-image-picker:
-        specifier: 56.0.14
-        version: 56.0.14(expo@56.0.5)
+        specifier: 56.0.17
+        version: 56.0.17(expo@56.0.5)
       expo-intent-launcher:
         specifier: ^56.0.4
         version: 56.0.4(expo@56.0.5)
@@ -489,8 +489,8 @@ importers:
         specifier: ~56.0.4
         version: 56.0.4(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
       expo-video:
-        specifier: 56.1.2
-        version: 56.1.2(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
+        specifier: 56.1.3
+        version: 56.1.3(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
       fast-text-encoding:
         specifier: ^1.0.6
         version: 1.0.6
@@ -631,8 +631,8 @@ importers:
         specifier: 0.85.3
         version: 0.85.3
       '@tanstack/query-core':
-        specifier: ^5.100.14
-        version: 5.100.14
+        specifier: ^5.101.0
+        version: 5.101.0
       '@testing-library/dom':
         specifier: ^10.4.1
         version: 10.4.1
@@ -786,8 +786,8 @@ importers:
         specifier: 1.0.0-canary.16
         version: 1.0.0-canary.16(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
       '@algorandfoundation/react-native-passkey-autofill':
-        specifier: 1.0.0-canary.17
-        version: 1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
+        specifier: 1.0.0-canary.21
+        version: 1.0.0-canary.21(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
         version: 1.0.0-canary.5
@@ -1062,7 +1062,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1309,7 +1309,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -1343,7 +1343,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-client-generator':
         specifier: 7.0.0-beta.4
-        version: 7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.2)
+        version: 7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.4)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -1449,7 +1449,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -1510,7 +1510,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -1641,7 +1641,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -2168,7 +2168,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/keystore':
         specifier: 1.0.0-canary.16
         version: 1.0.0-canary.16(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
@@ -2351,7 +2351,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -2558,7 +2558,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -3004,7 +3004,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -3095,7 +3095,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -3348,7 +3348,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -3462,9 +3462,9 @@ packages:
     peerDependencies:
       '@algorandfoundation/algokit-utils': ^10.0.0-beta.2
 
-  '@algorandfoundation/algokit-utils@10.0.0-beta.2':
-    resolution: {integrity: sha512-V1aYu6Xuj3mxbRVmzkYgDvbObs3BgZVBrp3r5Ro4Pf0GyTOQmZU8DZ2ZH/ye8hREZk5eGeSyVDkj6bVbR4SQxQ==}
-    engines: {node: '>=24.0'}
+  '@algorandfoundation/algokit-utils@10.0.0-beta.4':
+    resolution: {integrity: sha512-+X06PW7w2zWJWPp91pHoLMQizrq7E33Y1Mj/Hz/hkLiASXWwMKVX5QsQCbvsMYk+guqayCwB6782VngLR8d1RA==}
+    engines: {node: '>=22.0'}
 
   '@algorandfoundation/dp256@1.1.0':
     resolution: {integrity: sha512-s+ZQG3WK6eWskfmjh0bbMImyO+SIR297s+7vQoercbM0hYvilzTBT/rEcvs4ZQxU6TxkTXLq4BRj1USjGFpsCA==}
@@ -3482,16 +3482,6 @@ packages:
   '@algorandfoundation/ledger-algorand-js@1.4.3':
     resolution: {integrity: sha512-cypHJx5Jdwvhix93NIdfbHXT+dj7nSY4wZpGt/7YmYR/X5sIGmEEaKB8rrkRk14H/mdpFjz1Z35KfE08C5T8LA==}
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.11':
-    resolution: {integrity: sha512-3LpZ1EaKOm0HimnEMNclmrRIrgGEAYChPZ+eM2bAaf3nsTcKj/67Rbwe0K+eaLwYXbuN2+guozrAGRM94Lq9aw==}
-    peerDependencies:
-      '@algorandfoundation/log-store': 1.0.0-canary.3
-      '@tanstack/store': 0.9.3
-      before-after-hook: 4.0.0
-    peerDependenciesMeta:
-      '@algorandfoundation/log-store':
-        optional: true
-
   '@algorandfoundation/react-native-keystore@1.0.0-canary.12':
     resolution: {integrity: sha512-imCpcdI09mUE17jr/T7g0NhHzg4c23OHOF/kCl1medi2hRSCJ9HjdnW6IVQGNZj8c8NMjVF72GHBV5Z2Dz0ddw==}
     peerDependencies:
@@ -3502,8 +3492,8 @@ packages:
       '@algorandfoundation/log-store':
         optional: true
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.17':
-    resolution: {integrity: sha512-eIhmrIyEA/K2GI2hJ3swUhmu1dHjshpWHNPhETGR6qN0bP311ny6JYu+inoj9ut3rIEYUqJ+xfR5m5FdlkhCCA==}
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.21':
+    resolution: {integrity: sha512-mPG2uwxccQ/iwm6FrfnLPYmF72Wg7Mr4uc8BtKMIb5hzaB7EtB1S2QMBseyyqMZf0O/Iuaoi+Pd7CrudINuVSg==}
     engines: {node: '>=22'}
     peerDependencies:
       expo: '*'
@@ -6626,8 +6616,8 @@ packages:
   '@tanstack/query-core@5.100.10':
     resolution: {integrity: sha512-8UR0yJR+GiQ40m3lPhUr0xbfAupe6GSQiksSBSa9SM2NjezFyxXCIA69/lz8cSoNKZLrw1/PktIyQBJcVeMi3w==}
 
-  '@tanstack/query-core@5.100.14':
-    resolution: {integrity: sha512-5X41dGpxgeaHISCRW2oYwcSycZeULZzAunaudXT9ov1KOTj9xwt0CH6hbwqP1/z74ZWF7rYFnDpyYH07XFcZew==}
+  '@tanstack/query-core@5.101.0':
+    resolution: {integrity: sha512-cQetA74EB+seWySv1TTKr828TnP0u39m6LykwDXIo84SNortpDkp30TMEjkqtYCNP9c40uT/iwl6MLiufEt0Ow==}
 
   '@tanstack/query-core@5.99.0':
     resolution: {integrity: sha512-3Jv3WQG0BCcH7G+7lf/bP8QyBfJOXeY+T08Rin3GZ1bshvwlbPt7NrDHMEzGdKIOmOzvIQmxjk28YEQX60k7pQ==}
@@ -7792,8 +7782,8 @@ packages:
       react: 19.2.3
       react-native: 0.85.3
 
-  expo-audio@56.0.11:
-    resolution: {integrity: sha512-naionxilr49IpEjmMqCj5gXHCSfOsgu3nZ/KXndexR05Tv6dET7dmespyZkcMrADJN07gA5hyqPUC5WqWuaFLw==}
+  expo-audio@56.0.12:
+    resolution: {integrity: sha512-ne2UIO/HsQoBL9e+tGs5N9Sf3NyW5sJMm4sDkexbSJRc2IchLDG+9Msu/+l5N4RlZ8SiF42wRyWsh/Usg+SwOw==}
     peerDependencies:
       expo: '*'
       expo-asset: '*'
@@ -7868,8 +7858,8 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-image-picker@56.0.14:
-    resolution: {integrity: sha512-OKirR7XcJC3awoSGYDzFIdPibTEzw9FL1KHoTSxf86ZmssBiFbJvJhb1JQAVe2Y/U0sQ4e9gMoOrCKwqJnGDEQ==}
+  expo-image-picker@56.0.17:
+    resolution: {integrity: sha512-/RojW1ptyQNV89hEeDdaoHCkn38+546MqakMyB0acFf0HLh5ZI7wxQCHkxr16qjuQMy11M+96GlX9Z6vgXF7Nw==}
     peerDependencies:
       expo: '*'
 
@@ -7986,8 +7976,8 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-video@56.1.2:
-    resolution: {integrity: sha512-NPdbwcPfPd7lgOcgTFi7m7Dqp1+3OSXJHrUDU4tXA/Ly4vuNpe35eZNA21F/OJtJqk/nw3r6PDZnSqw5XY0p6w==}
+  expo-video@56.1.3:
+    resolution: {integrity: sha512-Ht2BMdx11RnGKxILL/P4t/hl4kqWXq1vLaoOrLZlDed+IXgf8hdDI9jmtEEgsIHwf3jaHFXblJCRVuS9mIxKAw==}
     peerDependencies:
       expo: '*'
       react: 19.2.3
@@ -10605,20 +10595,21 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@algorandfoundation/algokit-client-generator@7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.2)':
+  '@algorandfoundation/algokit-client-generator@7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.4)':
     dependencies:
-      '@algorandfoundation/algokit-utils': 10.0.0-beta.2
+      '@algorandfoundation/algokit-utils': 10.0.0-beta.4
       chalk: 5.6.2
       change-case: 5.4.4
       commander: 14.0.3
       jsonschema: 1.5.0
 
-  '@algorandfoundation/algokit-utils@10.0.0-beta.2':
+  '@algorandfoundation/algokit-utils@10.0.0-beta.4':
     dependencies:
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@noble/curves': 2.0.1
       '@noble/ed25519': 3.0.0
       '@noble/hashes': 2.2.0
+      '@scure/bip39': 2.2.0
       algorand-msgpack: 1.1.0
       buffer: 6.0.3
       dotenv: 16.6.1
@@ -10649,48 +10640,6 @@ snapshots:
       '@ledgerhq/hw-transport': 6.35.2
       '@zondax/ledger-js': 1.3.1
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.11(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore': 1.0.0-canary.16(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.5
-      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
-      '@scure/base': 2.0.0
-      '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
-      before-after-hook: 4.0.0
-      react-native-keychain: 10.0.0
-      react-native-mmkv: 4.1.2(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
-      react-native-quick-crypto: 1.1.5(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
-    transitivePeerDependencies:
-      - expo
-      - expo-build-properties
-      - react
-      - react-native
-      - react-native-nitro-modules
-      - react-native-quick-base64
-
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.11(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)':
-    dependencies:
-      '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore': 1.0.0-canary.16(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.5
-      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
-      '@scure/base': 2.0.0
-      '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
-      before-after-hook: 4.0.0
-      react-native-keychain: 10.0.0
-      react-native-mmkv: 4.1.2(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
-      react-native-quick-crypto: 1.1.5(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
-    transitivePeerDependencies:
-      - expo
-      - expo-build-properties
-      - react
-      - react-native
-      - react-native-nitro-modules
-      - react-native-quick-base64
-
   '@algorandfoundation/react-native-keystore@1.0.0-canary.12(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
@@ -10712,9 +10661,30 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)':
+  '@algorandfoundation/react-native-keystore@1.0.0-canary.12(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)':
     dependencies:
-      '@algorandfoundation/react-native-keystore': 1.0.0-canary.11(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
+      '@algorandfoundation/dp256': 1.1.0
+      '@algorandfoundation/keystore': 1.0.0-canary.16(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
+      '@algorandfoundation/wallet-provider': 1.0.0-canary.5
+      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
+      '@scure/base': 2.0.0
+      '@scure/bip39': 1.6.0
+      '@tanstack/store': 0.11.0
+      before-after-hook: 4.0.0
+      react-native-keychain: 10.0.0
+      react-native-mmkv: 4.1.2(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
+      react-native-quick-crypto: 1.1.5(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
+    transitivePeerDependencies:
+      - expo
+      - expo-build-properties
+      - react
+      - react-native
+      - react-native-nitro-modules
+      - react-native-quick-base64
+
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.21(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      '@algorandfoundation/react-native-keystore': 1.0.0-canary.12(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
       expo: 56.0.5(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react: 19.2.3
       react-native: 0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3)
@@ -10726,9 +10696,9 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)':
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.21(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)':
     dependencies:
-      '@algorandfoundation/react-native-keystore': 1.0.0-canary.11(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
+      '@algorandfoundation/react-native-keystore': 1.0.0-canary.12(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)
       expo: 56.0.5(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.6))(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.6))(react@19.2.6))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6))(react@19.2.6)(typescript@5.9.3)
       react: 19.2.6
       react-native: 0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.6)
@@ -14347,7 +14317,7 @@ snapshots:
 
   '@tanstack/query-core@5.100.10': {}
 
-  '@tanstack/query-core@5.100.14': {}
+  '@tanstack/query-core@5.101.0': {}
 
   '@tanstack/query-core@5.99.0': {}
 
@@ -15647,7 +15617,7 @@ snapshots:
       - supports-color
       - typescript
 
-  expo-audio@56.0.11(expo-asset@56.0.15(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3):
+  expo-audio@56.0.12(expo-asset@56.0.15(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3):
     dependencies:
       expo: 56.0.5(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       expo-asset: 56.0.15(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
@@ -15749,7 +15719,7 @@ snapshots:
     dependencies:
       expo: 56.0.5(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
 
-  expo-image-picker@56.0.14(expo@56.0.5):
+  expo-image-picker@56.0.17(expo@56.0.5):
     dependencies:
       expo: 56.0.5(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       expo-image-loader: 56.0.3(expo@56.0.5)
@@ -15892,7 +15862,7 @@ snapshots:
     dependencies:
       expo: 56.0.5(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
 
-  expo-video@56.1.2(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3):
+  expo-video@56.1.3(expo@56.0.5)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3):
     dependencies:
       expo: 56.0.5(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(encoding@0.1.13)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react: 19.2.3
