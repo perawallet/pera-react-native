@@ -22,6 +22,10 @@ import {
 import { migratePreferences } from './migratePreferences'
 import { migrateStashed, type StashedMigrationResult } from './migrateStashed'
 import { migrateSwaps } from './migrateSwaps'
+import {
+    migrateWalletConnect,
+    type WalletConnectMigrationResult,
+} from './migrateWalletConnect'
 
 export type ExtrasMigrationResult = {
     preferences: boolean
@@ -30,6 +34,7 @@ export type ExtrasMigrationResult = {
     contacts: ContactMigrationResult
     notifications: NotificationsMigrationResult
     auth: AuthMigrationResult
+    walletConnect: WalletConnectMigrationResult
     stashed: StashedMigrationResult
     failed: ExtrasMigrationStepFailure[]
 }
@@ -46,6 +51,7 @@ export type ExtrasMigrationStepName =
     | 'contacts'
     | 'notifications'
     | 'auth'
+    | 'walletConnect'
     | 'stashed'
 
 export const runExtrasMigration = async (
@@ -62,6 +68,7 @@ export const runExtrasMigration = async (
             biometricMigrated: false,
             lockoutMigrated: false,
         },
+        walletConnect: { imported: 0, skipped: 0 },
         stashed: { passkeysStashed: 0 },
         failed: [],
     }
@@ -93,6 +100,10 @@ export const runExtrasMigration = async (
 
     await runAsyncStep(result, 'auth', async () => {
         result.auth = await migrateAuth(data.auth, data.preferences)
+    })
+
+    runStep(result, 'walletConnect', () => {
+        result.walletConnect = migrateWalletConnect(data.walletConnectV1)
     })
 
     runStep(result, 'stashed', () => {

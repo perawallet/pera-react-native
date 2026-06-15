@@ -136,10 +136,6 @@ enum FixtureIdentities {
         ),
     ]
 
-    // MARK: - WalletConnect history blob (Core Data `ZWCSESSIONHISTORY`)
-
-    static let walletConnectHistoryBlob = Data("ios-sim-wc-session-history-archive".utf8)
-
     // MARK: - Helpers
 
     static func hexToData(_ hex: String) -> Data {

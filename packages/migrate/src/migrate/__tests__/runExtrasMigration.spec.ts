@@ -57,6 +57,10 @@ vi.mock('../migrateSwaps', () => ({
     migrateSwaps: vi.fn(),
 }))
 
+vi.mock('../migrateWalletConnect', () => ({
+    migrateWalletConnect: vi.fn(() => ({ imported: 0, skipped: 0 })),
+}))
+
 import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
 import { runExtrasMigration } from '../runExtrasMigration'
 import { migrateAuth } from '../migrateAuth'
@@ -66,6 +70,7 @@ import { migrateNotificationMutes } from '../migrateNotifications'
 import { migratePreferences } from '../migratePreferences'
 import { migrateStashed } from '../migrateStashed'
 import { migrateSwaps } from '../migrateSwaps'
+import { migrateWalletConnect } from '../migrateWalletConnect'
 
 const buildData = (
     overrides: Partial<LegacyMigrationData> = {},
@@ -97,6 +102,7 @@ beforeEach(() => {
     vi.mocked(migratePreferences).mockClear()
     vi.mocked(migrateStashed).mockClear()
     vi.mocked(migrateSwaps).mockClear()
+    vi.mocked(migrateWalletConnect).mockClear()
     loggerMock.error.mockReset()
 
     vi.mocked(migrateAuth).mockResolvedValue({
@@ -107,6 +113,7 @@ beforeEach(() => {
     vi.mocked(migrateContacts).mockReturnValue({ imported: 2, skipped: 1 })
     vi.mocked(migrateNotificationMutes).mockReturnValue({ muted: 3 })
     vi.mocked(migrateStashed).mockReturnValue({ passkeysStashed: 4 })
+    vi.mocked(migrateWalletConnect).mockReturnValue({ imported: 0, skipped: 0 })
 })
 
 describe('runExtrasMigration > happy path', () => {
@@ -126,6 +133,7 @@ describe('runExtrasMigration > happy path', () => {
                 biometricMigrated: true,
                 lockoutMigrated: false,
             },
+            walletConnect: { imported: 0, skipped: 0 },
             stashed: { passkeysStashed: 4 },
             failed: [],
         })
@@ -224,5 +232,61 @@ describe('runExtrasMigration > step failures', () => {
             'preferences',
             'contacts',
         ])
+    })
+})
+
+describe('runExtrasMigration > walletConnect step', () => {
+    it('runs the walletConnect step and propagates counts', async () => {
+        vi.mocked(migrateWalletConnect).mockReturnValue({
+            imported: 2,
+            skipped: 1,
+        })
+
+        const sessions: LegacyMigrationData['walletConnectV1'] = [
+            {
+                id: '42',
+                peerMeta: {
+                    name: 'Test dApp',
+                    url: 'https://example.com',
+                    icons: ['https://example.com/icon.png'],
+                    description: 'A dApp',
+                },
+                isConnected: true,
+                isSubscribed: true,
+                dateTimestampMs: 1_700_000_000_000,
+                fallbackBrowserGroupResponse: null,
+                connectedAccounts: ['CONNECTED_ADDR'],
+                sessionMetaJson: JSON.stringify({
+                    bridge: 'https://bridge.walletconnect.org',
+                    key: 'handshake-key',
+                    topic: 'topic-1',
+                    version: '1',
+                }),
+                clientId: 'client-1',
+                peerId: 'peer-1',
+                handshakeId: 1_690_000_000_000_001,
+                currentKey: 'current-key',
+                approvedAccounts: ['APPROVED_ADDR'],
+                chainId: 416_002,
+            },
+        ]
+        const data = buildData({ walletConnectV1: sessions })
+        const result = await runExtrasMigration(data)
+
+        expect(vi.mocked(migrateWalletConnect)).toHaveBeenCalledWith(sessions)
+        expect(result.walletConnect).toEqual({ imported: 2, skipped: 1 })
+        expect(result.failed).toEqual([])
+    })
+
+    it('records a walletConnect failure without breaking other steps', async () => {
+        vi.mocked(migrateWalletConnect).mockImplementation(() => {
+            throw new Error('boom')
+        })
+
+        const result = await runExtrasMigration(buildData())
+
+        expect(result.walletConnect).toEqual({ imported: 0, skipped: 0 })
+        expect(result.failed.map(f => f.step)).toContain('walletConnect')
+        expect(vi.mocked(migrateStashed)).toHaveBeenCalled()
     })
 })

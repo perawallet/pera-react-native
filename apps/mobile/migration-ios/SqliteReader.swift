@@ -188,6 +188,70 @@ final class SqliteReader {
         let length = Int(sqlite3_column_bytes(statement, 0))
         return Data(bytes: blob, count: length)
     }
+
+    // MARK: - WalletConnect v1 live sessions
+
+    struct WCSessionBlob: Decodable {
+        struct URLMeta: Decodable {
+            let topic: String
+            let version: String
+            let bridge: String
+            let key: String
+        }
+        struct PeerMeta: Decodable {
+            let id: String?
+            let name: String?
+            let description: String?
+            let icons: [String]?
+            let url: String?
+        }
+        struct WalletMeta: Decodable {
+            let accounts: [String]?
+            let chainId: Int?
+            let peerId: String?
+        }
+        let urlMeta: URLMeta
+        let peerMeta: PeerMeta?
+        let walletMeta: WalletMeta?
+        /// Seconds since 2001-01-01 (Apple reference date), NOT Unix epoch.
+        let date: Double?
+        let isSubscribed: Bool?
+    }
+
+    struct WCSessionListEntry {
+        let topic: String
+        let session: WCSessionBlob
+    }
+
+    func readWalletConnectV1Sessions() -> [WCSessionListEntry] {
+        guard let db = try? connection() else { return [] }
+        let sql = "SELECT ZSESSIONS FROM ZWCSESSIONLIST LIMIT 1;"
+        var statement: OpaquePointer?
+        defer { sqlite3_finalize(statement) }
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            return []
+        }
+        guard sqlite3_step(statement) == SQLITE_ROW,
+              sqlite3_column_type(statement, 0) != SQLITE_NULL,
+              let blob = sqlite3_column_blob(statement, 0) else {
+            return []
+        }
+        let length = Int(sqlite3_column_bytes(statement, 0))
+        let data = Data(bytes: blob, count: length)
+        guard let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+            return []
+        }
+        var entries: [WCSessionListEntry] = []
+        for (topic, value) in root.sorted(by: { $0.key < $1.key }) {
+            guard JSONSerialization.isValidJSONObject(value),
+                  let valueData = try? JSONSerialization.data(withJSONObject: value),
+                  let session = try? JSONDecoder().decode(WCSessionBlob.self, from: valueData) else {
+                continue
+            }
+            entries.append(WCSessionListEntry(topic: topic, session: session))
+        }
+        return entries
+    }
 }
 
 enum LegacyMigrationError: Error, LocalizedError {

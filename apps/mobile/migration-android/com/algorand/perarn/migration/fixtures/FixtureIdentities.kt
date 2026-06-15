@@ -30,7 +30,4 @@ internal object FixtureIdentities {
     const val EXTERNAL_PARTICIPANT_ADDRESS = FixtureCrypto.EXTERNAL_PARTICIPANT_ADDRESS
 
     const val SEED_1_ID = 1
-
-    const val WC_V1_SESSION_VALID_ID = 42L
-    const val WC_V1_SESSION_DISCONNECTED_ID = 44L
 }
