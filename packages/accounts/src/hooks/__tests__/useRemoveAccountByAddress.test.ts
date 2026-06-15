@@ -10,11 +10,15 @@
  limitations under the License
  */
 
+import { createElement, type ReactNode } from 'react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useRemoveAccountByAddress } from '../useRemoveAccountByAddress'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
+import { cleanupRemovedAccountData } from '../../cleanup'
+import { logger } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -42,6 +46,22 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         removeKeyAndChildren: removeKeyAndChildrenSpy,
     }),
 }))
+
+vi.mock('../../cleanup', () => ({
+    cleanupRemovedAccountData: vi.fn().mockResolvedValue({
+        networksAffected: [],
+        prunedAssetIdsByNetwork: {},
+    }),
+}))
+
+const renderWithClient = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    })
+    const wrapper = ({ children }: { children: ReactNode }) =>
+        createElement(QueryClientProvider, { client: queryClient }, children)
+    return renderHook(() => useRemoveAccountByAddress(), { wrapper })
+}
 
 const ledgerAccount = (
     address: string,
@@ -76,7 +96,7 @@ describe('useRemoveAccountByAddress', () => {
             ],
         })
 
-        const { result } = renderHook(() => useRemoveAccountByAddress())
+        const { result } = renderWithClient()
 
         await act(async () => {
             await result.current('LEDGER2')
@@ -101,7 +121,7 @@ describe('useRemoveAccountByAddress', () => {
         }
         useAccountsStore.setState({ accounts: [a] })
 
-        const { result } = renderHook(() => useRemoveAccountByAddress())
+        const { result } = renderWithClient()
 
         await act(async () => {
             await result.current('ALICE')
@@ -129,7 +149,7 @@ describe('useRemoveAccountByAddress', () => {
         }
         useAccountsStore.setState({ accounts: [a] })
 
-        const { result } = renderHook(() => useRemoveAccountByAddress())
+        const { result } = renderWithClient()
 
         await act(async () => {
             await result.current('BOB')
@@ -173,7 +193,7 @@ describe('useRemoveAccountByAddress', () => {
         ]
         useAccountsStore.setState({ accounts })
 
-        const { result } = renderHook(() => useRemoveAccountByAddress())
+        const { result } = renderWithClient()
 
         await act(async () => {
             await result.current('ADDR1')
@@ -205,7 +225,7 @@ describe('useRemoveAccountByAddress', () => {
         ]
         useAccountsStore.setState({ accounts })
 
-        const { result } = renderHook(() => useRemoveAccountByAddress())
+        const { result } = renderWithClient()
 
         await act(async () => {
             await result.current('ADDR1')
@@ -214,5 +234,146 @@ describe('useRemoveAccountByAddress', () => {
         expect(useAccountsStore.getState().accounts).toEqual([])
         expect(deleteKeySpy).toHaveBeenCalledWith('hd-1-acc0-idx0-dt9')
         expect(removeKeyAndChildrenSpy).toHaveBeenCalledWith('hd-1')
+    })
+
+    test('fires the cleanup job with the removed address', async () => {
+        useAccountsStore.setState({
+            accounts: [
+                ledgerAccount('LEDGER1', 0),
+                ledgerAccount('LEDGER2', 1),
+            ],
+        })
+
+        const { result } = renderWithClient()
+
+        await act(async () => {
+            await result.current('LEDGER2')
+        })
+
+        expect(cleanupRemovedAccountData).toHaveBeenCalledWith({
+            accountAddress: 'LEDGER2',
+        })
+    })
+
+    test('invalidates account and asset caches after cleanup resolves', async () => {
+        useAccountsStore.setState({
+            accounts: [
+                ledgerAccount('LEDGER1', 0),
+                ledgerAccount('LEDGER2', 1),
+            ],
+        })
+        const invalidateSpy = vi.spyOn(
+            QueryClient.prototype,
+            'invalidateQueries',
+        )
+
+        const { result } = renderWithClient()
+
+        await act(async () => {
+            await result.current('LEDGER2')
+        })
+
+        // The cleanup .then() runs on a microtask after removal resolves.
+        await waitFor(() => expect(invalidateSpy).toHaveBeenCalled())
+
+        // Collect the predicates passed to invalidateQueries and confirm one
+        // targets 'accounts' queries and one targets 'assets' queries.
+        const predicates = invalidateSpy.mock.calls
+            .map(
+                ([arg]) =>
+                    (arg as { predicate?: (q: unknown) => boolean })?.predicate,
+            )
+            .filter(
+                (p): p is (q: unknown) => boolean => typeof p === 'function',
+            )
+
+        const matches = (queryKey: unknown[]) =>
+            predicates.some(p => p({ queryKey } as never))
+
+        expect(
+            matches(['accounts', 'owned-asset-ids', { network: 'mainnet' }]),
+        ).toBe(true)
+        expect(matches(['assets', { assetIDs: [], network: 'mainnet' }])).toBe(
+            true,
+        )
+
+        invalidateSpy.mockRestore()
+    })
+
+    test('evicts the removed account cached queries after cleanup resolves', async () => {
+        useAccountsStore.setState({
+            accounts: [
+                ledgerAccount('LEDGER1', 0),
+                ledgerAccount('LEDGER2', 1),
+            ],
+        })
+        const removeSpy = vi.spyOn(QueryClient.prototype, 'removeQueries')
+
+        const { result } = renderWithClient()
+
+        await act(async () => {
+            await result.current('LEDGER2')
+        })
+
+        await waitFor(() => expect(removeSpy).toHaveBeenCalled())
+
+        // The eviction predicate targets the removed address only — sibling
+        // accounts' cached queries are left untouched.
+        const predicates = removeSpy.mock.calls
+            .map(
+                ([arg]) =>
+                    (arg as { predicate?: (q: unknown) => boolean })?.predicate,
+            )
+            .filter(
+                (p): p is (q: unknown) => boolean => typeof p === 'function',
+            )
+        const matches = (queryKey: unknown[]) =>
+            predicates.some(p => p({ queryKey } as never))
+
+        expect(
+            matches([
+                'accounts',
+                'balance',
+                { address: 'LEDGER2', network: 'mainnet' },
+            ]),
+        ).toBe(true)
+        expect(
+            matches([
+                'accounts',
+                'balance',
+                { address: 'LEDGER1', network: 'mainnet' },
+            ]),
+        ).toBe(false)
+
+        removeSpy.mockRestore()
+    })
+
+    test('does not surface cleanup failures to the removal flow', async () => {
+        useAccountsStore.setState({
+            accounts: [
+                ledgerAccount('LEDGER1', 0),
+                ledgerAccount('LEDGER2', 1),
+            ],
+        })
+        vi.mocked(cleanupRemovedAccountData).mockRejectedValueOnce(
+            new Error('cleanup boom'),
+        )
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderWithClient()
+
+        // Removal itself must resolve even though cleanup rejects.
+        await act(async () => {
+            await expect(result.current('LEDGER2')).resolves.toBeUndefined()
+        })
+
+        await waitFor(() => expect(errorSpy).toHaveBeenCalled())
+
+        // The account was still removed.
+        expect(
+            useAccountsStore.getState().accounts.map(a => a.address),
+        ).toEqual(['LEDGER1'])
+
+        errorSpy.mockRestore()
     })
 })

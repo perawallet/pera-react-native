@@ -28,7 +28,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
     upsertAccountBalance: vi.fn(() => Promise.resolve()),
     refreshAccountHoldings: vi.fn(() => Promise.resolve(true)),
-    getAllAssetIdsForNetwork: vi.fn(() => Promise.resolve(['123', '456'])),
+    getAllHeldAssetIdsForNetwork: vi.fn(() => Promise.resolve(['123', '456'])),
     invalidateAccountQueries: vi.fn(),
     invalidateAccountQueriesForAddresses: vi.fn(),
     fetchAndPersistAccount: vi.fn(() =>

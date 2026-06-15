@@ -20,6 +20,7 @@ export * from './utils'
 export * from './bip44'
 export * from './account-discovery'
 export * from './db'
+export * from './cleanup'
 export * from './import-session'
 
 export { useAccountsStore } from './store'

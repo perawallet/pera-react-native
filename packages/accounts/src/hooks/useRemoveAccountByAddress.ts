@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '../store'
+import { useQueryClient } from '@tanstack/react-query'
+import { logger } from '@perawallet/wallet-core-shared'
+import { invalidateAssetQueries } from '@perawallet/wallet-core-assets'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { useAccountsStore } from '../store'
+import { cleanupRemovedAccountData } from '../cleanup'
+import {
+    invalidateAccountQueries,
+    removeAccountQueriesForAddresses,
+} from './querykeys'
 
 // Removal is keyed by address (the store's unique key) rather than `id`:
 // hardware accounts imported via the Ledger pairing flow carry no `id`.
@@ -19,6 +27,7 @@ export const useRemoveAccountByAddress = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const { deleteKey, seedIdOf, removeKeyAndChildren } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
+    const queryClient = useQueryClient()
 
     return async (address: string) => {
         const account = accounts.find(a => a.address === address)
@@ -45,5 +54,27 @@ export const useRemoveAccountByAddress = () => {
         }
 
         setAccounts([...remaining])
+
+        // Async, non-blocking: drop the account's holdings + balance and prune
+        // any now-orphaned assets/prices, then refresh caches so search stops
+        // showing the removed account's assets. Failures must not surface to
+        // the removal flow.
+        void cleanupRemovedAccountData({ accountAddress: address })
+            .then(() => {
+                // Evict the gone account's own queries (e.g. its large holdings
+                // page) so they don't linger in cache until gcTime. Then refresh
+                // the rest: network-scoped owned-asset-ids (search), multi-account
+                // aggregates, and asset metadata/prices.
+                removeAccountQueriesForAddresses(queryClient, [address])
+                invalidateAccountQueries(queryClient)
+                invalidateAssetQueries(queryClient)
+            })
+            .catch(error => {
+                logger.error(
+                    error instanceof Error
+                        ? error
+                        : new Error('Account removal cleanup failed'),
+                )
+            })
     }
 }

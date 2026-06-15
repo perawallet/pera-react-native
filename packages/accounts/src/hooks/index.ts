@@ -56,6 +56,7 @@ export * from './useHDImportSession'
 export {
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
+    removeAccountQueriesForAddresses,
     isAccountQuery,
 } from './querykeys'
 export * from './useAccountSummaryQuery'

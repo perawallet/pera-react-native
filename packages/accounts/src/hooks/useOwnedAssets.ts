@@ -19,7 +19,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { getAllAssetIdsForNetwork } from '../db'
+import { getAllHeldAssetIdsForNetwork } from '../db'
 import { getOwnedAssetIdsQueryKey } from './querykeys'
 
 const OWNED_ASSET_IDS_STALE_TIME_MS = 60_000
@@ -45,7 +45,7 @@ export const useOwnedAssets = (
 
     const { data: ownedAssetIds = [], isLoading: isIdsLoading } = useQuery({
         queryKey: getOwnedAssetIdsQueryKey(network),
-        queryFn: () => getAllAssetIdsForNetwork({ network }),
+        queryFn: () => getAllHeldAssetIdsForNetwork({ network }),
         enabled,
         staleTime: OWNED_ASSET_IDS_STALE_TIME_MS,
     })
