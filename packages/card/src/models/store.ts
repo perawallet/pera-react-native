@@ -23,10 +23,16 @@ export type CardUxState = BaseStoreState & {
     /** ISO 3166-1 alpha-2 country of residence picked on the first step. */
     countryIso: Nullable<string>
     /**
-     * The verification code the user typed. Transient OTP — held in memory only
-     * and never persisted (excluded from `partialize`).
+     * The email verification code the user typed. Transient OTP — held in
+     * memory only and never persisted (excluded from `partialize`).
      */
     verificationCode: Nullable<string>
+    /**
+     * The phone verification code, stashed until the password step fires the
+     * deferred phone/verify call (it needs the onboardingId email/verify
+     * returns). Transient OTP — never persisted (excluded from `partialize`).
+     */
+    phoneVerificationCode: Nullable<string>
     /** Phone dialing code (no leading '+') entered on the phone/send step. */
     phoneCountryCode: Nullable<string>
     /** National phone number entered on the phone/send step. */
@@ -50,6 +56,7 @@ export type CardUxState = BaseStoreState & {
     setEmail: (email: Nullable<string>) => void
     setCountryIso: (countryIso: Nullable<string>) => void
     setVerificationCode: (verificationCode: Nullable<string>) => void
+    setPhoneVerificationCode: (phoneVerificationCode: Nullable<string>) => void
     setPhone: (phone: { phoneCountryCode: string; phoneNumber: string }) => void
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void

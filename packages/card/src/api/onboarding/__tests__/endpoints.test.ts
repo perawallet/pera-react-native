@@ -20,9 +20,12 @@ import {
     verifyEmail,
     sendPhoneVerification,
     verifyPhone,
+    startRegisterVerification,
+    fetchOnboardingDetails,
     submitAddress,
     fetchRegistrationSettings,
 } from '../endpoints'
+import { VerificationState } from '../../../models'
 
 describe('onboarding endpoints', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -119,10 +122,67 @@ describe('onboarding endpoints', () => {
         )
     })
 
-    it('submits address with onboardingId + isSameMailingAddress', async () => {
-        request.mockResolvedValue({ data: { success: true } })
+    it('starts onboarding KYC with the onboarding id and returns the session url', async () => {
+        request.mockResolvedValue({
+            data: { sessionUrl: 'https://veriff/session' },
+        })
 
-        await submitAddress({
+        const result = await startRegisterVerification({
+            onboardingId: 'ob_1',
+            network: 'mainnet',
+        })
+
+        expect(result).toEqual({ sessionUrl: 'https://veriff/session' })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/register/verification',
+                data: { onboardingId: 'ob_1' },
+            }),
+        )
+    })
+
+    it('fetches onboarding details and maps the verification state', async () => {
+        request.mockResolvedValue({
+            data: { id: 'ob_1', verificationState: 'PENDING' },
+        })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            network: 'mainnet',
+        })
+
+        expect(result).toEqual({
+            verificationState: VerificationState.Pending,
+        })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'GET',
+                path: '/v1/auth/register',
+                params: { onboardingId: 'ob_1' },
+            }),
+        )
+    })
+
+    it('falls back to UNVERIFIED for an unknown verification state', async () => {
+        request.mockResolvedValue({
+            data: { verificationState: 'SOMETHING_NEW' },
+        })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            network: 'mainnet',
+        })
+
+        expect(result.verificationState).toBe(VerificationState.Unverified)
+    })
+
+    it('submits address and returns the issued access token + onboarding id', async () => {
+        request.mockResolvedValue({
+            data: { accessToken: 'tok', onboardingId: 'ob_1' },
+        })
+
+        const result = await submitAddress({
             address: {
                 onboardingId: 'ob_1',
                 addressLine1: '23 Werrington Bridge Rd',
@@ -133,6 +193,7 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
+        expect(result).toEqual({ accessToken: 'tok', onboardingId: 'ob_1' })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 path: '/v1/auth/register/address',

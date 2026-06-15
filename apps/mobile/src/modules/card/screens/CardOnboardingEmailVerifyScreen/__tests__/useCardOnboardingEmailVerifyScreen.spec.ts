@@ -113,7 +113,7 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('stores the code and navigates to the password screen on the valid code', () => {
+    it('stores the code and navigates to the phone screen on the valid code', () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
@@ -123,7 +123,7 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         expect(mockSetVerificationCode).toHaveBeenCalledWith(
             MOCK_VALID_VERIFICATION_CODE,
         )
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
     })
 
     it('clears the wrong-code error as the user edits', () => {

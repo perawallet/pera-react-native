@@ -12,22 +12,32 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { fetchVerificationSession } from '../api/user'
+import { startRegisterVerification } from '../api/onboarding'
 import type { VeriffSession } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
+export type StartVerificationParams = {
+    /** From email/verify — the pre-auth onboarding KYC start only needs this. */
+    onboardingId: string
+}
+
 export type UseStartVerificationMutationResult = CardMutationResult<
-    void,
+    StartVerificationParams,
     VeriffSession
 >
 
-/** Starts KYC and returns the Veriff session URL for the caller to open. */
+/** Starts onboarding KYC and returns the Veriff session URL for the caller to open. */
 export const useStartVerificationMutation =
     (): UseStartVerificationMutationResult => {
         const { network } = useNetwork()
 
-        const mutation = useMutation<VeriffSession, Error, void>({
-            mutationFn: () => fetchVerificationSession({ network }),
+        const mutation = useMutation<
+            VeriffSession,
+            Error,
+            StartVerificationParams
+        >({
+            mutationFn: ({ onboardingId }) =>
+                startRegisterVerification({ onboardingId, network }),
             throwOnError: false,
         })
 

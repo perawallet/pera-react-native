@@ -11,45 +11,41 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     content: {
-        paddingTop: theme.spacing.xl,
+        paddingTop: theme.spacing.sm,
         gap: theme.spacing.xxl,
     },
-    fields: {
+    checklist: {
         gap: theme.spacing.xl,
     },
-    label: {
-        ...getTypography(theme, 'footnoteMedium'),
-        color: theme.colors.textGrayLighter,
-    },
-    // City + ZIP sit side by side.
     row: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: theme.spacing.xl,
+        gap: theme.spacing.lg,
     },
-    rowItem: {
+    rowTexts: {
         flex: 1,
+        gap: theme.spacing.xs,
     },
-    checkboxes: {
-        gap: theme.spacing.md,
-    },
-    checkboxRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    checkboxLabel: {
-        flex: 1,
+    rowBody: {
         color: theme.colors.textGray,
     },
-    completedTitle: {
-        color: theme.colors.textGray,
+    pendingLabel: {
+        color: theme.colors.warning,
     },
-    completedBody: {
+    inactiveTitle: {
+        color: theme.colors.textGrayLighter,
+    },
+    detailsButton: {
+        marginTop: theme.spacing.md,
+    },
+    footer: {
+        gap: theme.spacing.md,
+    },
+    contactText: {
+        textAlign: 'center',
         color: theme.colors.textGrayLighter,
     },
 }))

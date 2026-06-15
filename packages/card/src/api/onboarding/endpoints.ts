@@ -10,14 +10,19 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import { toEnumValue, type Network } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
+import { VerificationState } from '../../models'
 import type {
     AddressInput,
     PersonalDetailsInput,
     RegistrationSettings,
+    VeriffSession,
 } from '../../models'
 import {
+    addressResponseSchema,
+    onboardingDetailsResponseSchema,
+    registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     sendEmailVerificationResponseSchema,
     verifyEmailResponseSchema,
@@ -120,11 +125,92 @@ export const submitPersonalDetails = async (
     )
 }
 
+export type StartRegisterVerificationParams = NetworkParams & {
+    onboardingId: string
+}
+/**
+ * Starts the onboarding KYC session (step 3 of registration, after phone
+ * verification). Pre-auth — only the client key is required. The caller opens
+ * the returned Veriff `sessionUrl`, then polls `fetchOnboardingDetails` for the
+ * `verificationState` to transition.
+ */
+export const startRegisterVerification = async (
+    params: StartRegisterVerificationParams,
+): Promise<VeriffSession> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/auth/register/verification',
+        data: { onboardingId: params.onboardingId },
+        signal: params.signal,
+    })
+    return registerVerificationResponseSchema.parse(response.data)
+}
+
+export type FetchOnboardingDetailsParams = NetworkParams & {
+    onboardingId: string
+}
+export type OnboardingDetails = { verificationState: VerificationState }
+/** Pre-auth onboarding status — polled to detect KYC completion. */
+export const fetchOnboardingDetails = async (
+    params: FetchOnboardingDetailsParams,
+): Promise<OnboardingDetails> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'GET',
+        path: '/v1/auth/register',
+        params: { onboardingId: params.onboardingId },
+        signal: params.signal,
+    })
+    const parsed = onboardingDetailsResponseSchema.parse(response.data)
+    return {
+        // Unknown/missing state falls back to Unverified — never report KYC
+        // progress on a state we don't recognise.
+        verificationState: toEnumValue(
+            VerificationState,
+            parsed.verificationState,
+            VerificationState.Unverified,
+        ),
+    }
+}
+
 export type SubmitAddressParams = NetworkParams & { address: AddressInput }
+// The final registration step. Unlike the other register steps its response
+// matters: it carries the `accessToken` that authenticates the post-onboarding
+// user endpoints, so we parse and return it rather than discarding the body
+// via `postRegisterStep`.
+export type SubmitAddressResult = {
+    accessToken: string | null
+    onboardingId: string
+}
 export const submitAddress = async (
     params: SubmitAddressParams,
+): Promise<SubmitAddressResult> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/auth/register/address',
+        data: params.address,
+        signal: params.signal,
+    })
+    return addressResponseSchema.parse(response.data)
+}
+
+// Records the user's onboarding consents (T&C acceptances + marketing opt-in)
+// collected on the final address step. The Baanx sandbox is unavailable, so the
+// exact request shape is an assumption pending the live /v2/consent/onboarding
+// contract — it's mocked in installCardDevMocks for now.
+export type SubmitOnboardingConsentParams = NetworkParams & {
+    onboardingId: string
+    allowMarketing: boolean
+    cardTermsAccepted: boolean
+    platformTermsAccepted: boolean
+}
+export const submitOnboardingConsent = async (
+    params: SubmitOnboardingConsentParams,
 ): Promise<void> => {
-    await postRegisterStep('/v1/auth/register/address', params.address, params)
+    const { network, signal, ...body } = params
+    await postRegisterStep('/v2/consent/onboarding', body, { network, signal })
 }
 
 export const fetchRegistrationSettings = async (

@@ -28,6 +28,9 @@ declare module '@rneui/themed' {
         layerGrayLighter: string
         layerGrayLightest: string
 
+        // Warning surface (gold attention callout)
+        warningSurface: string
+
         // Link
         linkPrimary: string
         linkIcon: string

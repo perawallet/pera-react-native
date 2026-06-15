@@ -84,6 +84,7 @@ import SaveIcon from '@assets/icons/save.svg'
 import ScanIcon from '@assets/icons/scan.svg'
 import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
+import ShieldWarningIcon from '@assets/icons/shield-warning.svg'
 import SlidersIcon from '@assets/icons/sliders.svg'
 import SnowflakeIcon from '@assets/icons/snowflake.svg'
 import SparkleIcon from '@assets/icons/sparkle.svg'
@@ -238,6 +239,7 @@ export const ICON_LIBRARY = {
     scan: ScanIcon,
     share: ShareIcon,
     'shield-check': ShieldCheckIcon,
+    'shield-warning': ShieldWarningIcon,
     sliders: SlidersIcon,
     snowflake: SnowflakeIcon,
     sparkle: SparkleIcon,

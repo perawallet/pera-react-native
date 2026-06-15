@@ -40,10 +40,16 @@ export const useAddAccountScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    // TODO(card): this only checks for a Baanx session, not actual card ownership —
-    // an authenticated-but-cardless user wrongly loses the entry. Swap to a real
-    // hasCard check (useCardStatusQuery, gated on isAuthenticated) once onboarding lands.
-    const { isAuthenticated: hasCardSession } = useCardSession()
+    // TODO(card): TEMP — while the Baanx onboarding still runs on mocked data
+    // (dev + staging, see installCardDevMocks), a completed mock run persists
+    // `isAuthenticated`, which hides this entry with no in-app way to clear it.
+    // Force the entry visible wherever the flow is mocked so it stays testable;
+    // production keeps the real gating. Drop this override — and swap to a real
+    // hasCard check (useCardStatusQuery gated on isAuthenticated) instead of this
+    // session proxy — once onboarding talks to a live backend.
+    const { isAuthenticated } = useCardSession()
+    const hasCardSession =
+        __DEV__ || config.appEnvironment === 'staging' ? false : isAuthenticated
 
     const {
         isOpen: isCreatingAccount,

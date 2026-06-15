@@ -23,12 +23,18 @@ import {
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { OnboardingStep, useCardStore } from '@perawallet/wallet-core-card'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
+
+// The final registration step returns the access token + onboarding id.
+const ADDRESS_RESPONSE = {
+    accessToken: 'mock-access-token',
+    onboardingId: 'mock-onboarding-id',
+}
 
 const SETTINGS_RESPONSE = {
     countries: [
@@ -109,19 +115,29 @@ describe('Flow: Card onboarding — residential address', () => {
             http.get('*/v1/auth/settings', () =>
                 HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
             ),
+            // Consent (T&Cs + marketing) posts just before the address on the
+            // final step; default it to success.
+            http.post('*/v2/consent/onboarding', () =>
+                HttpResponse.json({ success: true }, { status: 200 }),
+            ),
         )
     })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true', async () => {
+    it('Given a complete UK address and accepted terms, when Continue is pressed, then the address posts with isSameMailingAddress true and registration completes', async () => {
         let body: Record<string, unknown> | undefined
+        let consentBody: Record<string, unknown> | undefined
         const submitSpy = vi.fn()
         server.use(
+            http.post('*/v2/consent/onboarding', async ({ request }) => {
+                consentBody = (await request.json()) as Record<string, unknown>
+                return HttpResponse.json({ success: true }, { status: 200 })
+            }),
             http.post('*/v1/auth/register/address', async ({ request }) => {
                 body = (await request.json()) as Record<string, unknown>
                 submitSpy()
-                return HttpResponse.json({}, { status: 200 })
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
             }),
         )
 
@@ -143,9 +159,22 @@ describe('Flow: Card onboarding — residential address', () => {
         })
         // No US residence, so no state is sent.
         expect(body?.usState).toBeUndefined()
-        // The address step is the terminus for now — a success toast confirms it.
+        // Consent (T&Cs + marketing) is recorded before the address submit.
+        expect(consentBody).toMatchObject({
+            onboardingId: 'mock-onboarding-id',
+            allowMarketing: true,
+            cardTermsAccepted: true,
+            platformTermsAccepted: true,
+        })
+        // Address is the final step: the screen swaps to its completion state
+        // and onboarding is marked done.
         await waitFor(() =>
-            expect(Notifier.showNotification).toHaveBeenCalled(),
+            expect(
+                screen.getByTestId('card-onboarding-address-success'),
+            ).toBeTruthy(),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
         )
     })
 
@@ -169,7 +198,7 @@ describe('Flow: Card onboarding — residential address', () => {
             http.post('*/v1/auth/register/address', async ({ request }) => {
                 body = (await request.json()) as Record<string, unknown>
                 submitSpy()
-                return HttpResponse.json({}, { status: 200 })
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
             }),
         )
 
@@ -222,13 +251,43 @@ describe('Flow: Card onboarding — residential address', () => {
         expect(screen.queryByTestId('card-onboarding-email-verify')).toBeNull()
     })
 
+    it('Given the consent call fails, when Continue is pressed, then an error toast shows and the address is not submitted', async () => {
+        const addressSpy = vi.fn()
+        server.use(
+            http.post('*/v2/consent/onboarding', () =>
+                HttpResponse.json({ message: 'nope' }, { status: 500 }),
+            ),
+            http.post('*/v1/auth/register/address', () => {
+                addressSpy()
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
+            }),
+        )
+
+        renderFlow()
+        fillAddressFields()
+        acceptBothTerms()
+
+        const confirm = screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        await waitFor(() =>
+            expect(Notifier.showNotification).toHaveBeenCalled(),
+        )
+        // Consent gates the finalize: a failed consent must not submit the address.
+        expect(addressSpy).not.toHaveBeenCalled()
+        expect(
+            screen.queryByTestId('card-onboarding-address-success'),
+        ).toBeNull()
+    })
+
     it('Given the onboarding id is missing, when Continue is pressed, then it routes back to email verification', async () => {
         useCardStore.getState().setOnboardingId(null)
         const submitSpy = vi.fn()
         server.use(
             http.post('*/v1/auth/register/address', () => {
                 submitSpy()
-                return HttpResponse.json({}, { status: 200 })
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
             }),
         )
 

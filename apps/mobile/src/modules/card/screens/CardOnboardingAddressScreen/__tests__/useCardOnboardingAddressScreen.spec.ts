@@ -13,15 +13,18 @@
 import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type {
-    SupportedCountry,
-    SupportedUsState,
+import {
+    OnboardingStep,
+    type SupportedCountry,
+    type SupportedUsState,
 } from '@perawallet/wallet-core-card'
 
 const mockMutateAsync = vi.fn()
+const mockConsentMutateAsync = vi.fn()
 const mockSetCountryIso = vi.fn()
 const mockSetAllowMarketing = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
+let mockOnboardingStep: OnboardingStep = OnboardingStep.EmailSend
 let mockCountryIso: string | null = 'GB'
 let mockSettings:
     | { countries: SupportedCountry[]; usStates: SupportedUsState[] }
@@ -43,6 +46,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
+        useSubmitConsentMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mockConsentMutateAsync,
+            isPending: false,
+            isError: false,
+            isSuccess: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
+        }),
         useRegistrationSettingsQuery: () => ({
             data: mockSettings,
             isLoading: false,
@@ -52,6 +65,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardStore: (
             selector: (state: {
                 onboardingId: string | null
+                onboardingStep: OnboardingStep
                 countryIso: string | null
                 allowMarketing: boolean
                 setCountryIso: (iso: string) => void
@@ -60,6 +74,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         ) =>
             selector({
                 onboardingId: mockOnboardingId,
+                onboardingStep: mockOnboardingStep,
                 countryIso: mockCountryIso,
                 allowMarketing: true,
                 setCountryIso: mockSetCountryIso,
@@ -129,9 +144,11 @@ describe('useCardOnboardingAddressScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockOnboardingId = 'mock-onboarding-id'
+        mockOnboardingStep = OnboardingStep.EmailSend
         mockCountryIso = 'GB'
         mockSettings = { countries: [gb, us], usStates: [california] }
         mockMutateAsync.mockResolvedValue(undefined)
+        mockConsentMutateAsync.mockResolvedValue(undefined)
     })
 
     it('starts with an invalid form and is not submitting', () => {
@@ -139,7 +156,25 @@ describe('useCardOnboardingAddressScreen', () => {
 
         expect(result.current.isValid).toBe(false)
         expect(result.current.isSubmitting).toBe(false)
+        expect(result.current.isCompleted).toBe(false)
         expect(result.current.isUsResident).toBe(false)
+    })
+
+    it('derives completion from the persisted onboarding step', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        expect(result.current.isCompleted).toBe(true)
+    })
+
+    it('leaves onboarding from the completion state', () => {
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        act(() => {
+            result.current.handleDone()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCardIntro')
     })
 
     it('prefills the residence country', async () => {

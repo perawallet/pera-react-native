@@ -13,36 +13,52 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const mockVerifyMutateAsync = vi.fn()
+const mockVerifyEmailMutateAsync = vi.fn()
+const mockVerifyPhoneMutateAsync = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
     >('@perawallet/wallet-core-card')
+    const mutationShell = {
+        mutate: vi.fn(),
+        isPending: false,
+        isError: false,
+        isSuccess: false,
+        error: null,
+        data: null,
+        reset: vi.fn(),
+    }
     return {
         ...actual,
         useVerifyEmailMutation: () => ({
-            mutate: vi.fn(),
-            mutateAsync: mockVerifyMutateAsync,
-            isPending: false,
-            isError: false,
-            isSuccess: false,
-            error: null,
-            data: null,
-            reset: vi.fn(),
+            ...mutationShell,
+            mutateAsync: mockVerifyEmailMutateAsync,
+        }),
+        useVerifyPhoneMutation: () => ({
+            ...mutationShell,
+            mutateAsync: mockVerifyPhoneMutateAsync,
         }),
         useCardStore: (
             selector: (state: {
                 email: string | null
                 countryIso: string | null
                 verificationCode: string | null
+                phoneVerificationCode: string | null
+                phoneCountryCode: string | null
+                phoneNumber: string | null
                 contactVerificationId: string | null
+                onboardingId: string | null
             }) => unknown,
         ) =>
             selector({
                 email: 'john@example.com',
                 countryIso: 'GB',
                 verificationCode: '123456',
+                phoneVerificationCode: '654321',
+                phoneCountryCode: '44',
+                phoneNumber: '7400846282',
                 contactVerificationId: 'mock-contact-id',
+                onboardingId: null,
             }),
     }
 })
@@ -73,9 +89,10 @@ const renderPasswordHook = () =>
 describe('useCardOnboardingPasswordScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockVerifyMutateAsync.mockResolvedValue({
+        mockVerifyEmailMutateAsync.mockResolvedValue({
             onboardingId: 'mock-onboarding-id',
         })
+        mockVerifyPhoneMutateAsync.mockResolvedValue(undefined)
     })
 
     it('starts invalid and not submitting', () => {
@@ -85,13 +102,14 @@ describe('useCardOnboardingPasswordScreen', () => {
         expect(result.current.isSubmitting).toBe(false)
     })
 
-    it('does not call verify while the form is invalid', async () => {
+    it('does not call either verify while the form is invalid', async () => {
         const { result } = renderPasswordHook()
 
         await act(async () => {
             await result.current.handleConfirm()
         })
 
-        expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
+        expect(mockVerifyEmailMutateAsync).not.toHaveBeenCalled()
+        expect(mockVerifyPhoneMutateAsync).not.toHaveBeenCalled()
     })
 })

@@ -66,6 +66,33 @@ describe('useCardStore', () => {
         expect(result.current.phoneNumber).toBe('7400846282')
     })
 
+    test('the verification codes are transient — never persisted', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setVerificationCode('123456')
+            result.current.setPhoneVerificationCode('654321')
+        })
+
+        expect(result.current.verificationCode).toBe('123456')
+        expect(result.current.phoneVerificationCode).toBe('654321')
+        // The persisted snapshot must exclude both OTPs.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).not.toHaveProperty('verificationCode')
+        expect(persisted).not.toHaveProperty('phoneVerificationCode')
+    })
+
     test('resetState clears the onboarding contact inputs', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())

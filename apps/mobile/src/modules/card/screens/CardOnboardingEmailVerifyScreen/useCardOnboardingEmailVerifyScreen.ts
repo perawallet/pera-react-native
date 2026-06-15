@@ -92,8 +92,8 @@ export const useCardOnboardingEmailVerifyScreen =
 
         // Local pre-check only — a wrong code is caught here for fast feedback.
         // The real email/verify (which sets the password and completes
-        // verification) runs on the password screen, so a valid code just
-        // stores itself and carries forward to it.
+        // verification) runs later on the password screen, so a valid code just
+        // stores itself and the flow continues with the phone steps.
         const handleConfirm = useCallback(
             (submittedCode?: string) => {
                 const value = (submittedCode ?? code).trim()
@@ -103,7 +103,7 @@ export const useCardOnboardingEmailVerifyScreen =
                     return
                 }
                 setVerificationCode(value)
-                navigation.navigate('CardOnboardingPassword')
+                navigation.navigate('CardOnboardingPhone')
             },
             [code, navigation, setVerificationCode],
         )

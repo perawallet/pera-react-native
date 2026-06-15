@@ -34,6 +34,7 @@ export const CardOnboardingAddressScreen = () => {
         control,
         isValid,
         isSubmitting,
+        isCompleted,
         selectedCountry,
         isUsResident,
         selectedUsState,
@@ -48,7 +49,42 @@ export const CardOnboardingAddressScreen = () => {
         handleOpenCardTerms,
         handleOpenPlatformTerms,
         handleConfirm,
+        handleDone,
     } = useCardOnboardingAddressScreen()
+
+    // Address is the final registration step; once it lands the screen swaps
+    // to a completion state in place.
+    if (isCompleted) {
+        return (
+            <PWScreen
+                testID='card-onboarding-address-success'
+                footer={
+                    <PWButton
+                        variant='primary'
+                        title={t('peraCard.address.done_button')}
+                        onPress={handleDone}
+                        testID='card-onboarding-address-done'
+                    />
+                }
+            >
+                <PWView style={styles.content}>
+                    <PWText
+                        variant='h1'
+                        style={styles.completedTitle}
+                    >
+                        {t('peraCard.address.completed_title')}
+                    </PWText>
+                    <PWText
+                        variant='bodyLarge'
+                        weight={400}
+                        style={styles.completedBody}
+                    >
+                        {t('peraCard.address.completed_body')}
+                    </PWText>
+                </PWView>
+            </PWScreen>
+        )
+    }
 
     return (
         <PWScreen testID='card-onboarding-address'>

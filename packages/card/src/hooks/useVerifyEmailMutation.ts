@@ -17,7 +17,6 @@ import {
     type VerifyEmailParams,
     type VerifyEmailResult,
 } from '../api/onboarding'
-import { OnboardingStep } from '../models'
 import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
@@ -37,12 +36,12 @@ export const useVerifyEmailMutation = (): UseVerifyEmailMutationResult => {
         VerifyEmailVariables
     >({
         mutationFn: variables => verifyEmail({ ...variables, network }),
-        // Verification completed: store the onboarding id and advance the flow.
+        // Store the onboarding id every later step requires. The step does NOT
+        // advance here: the phone screens already ran (UI order is phone →
+        // password), and the deferred phone/verify that follows this call at
+        // the password step advances to Verification.
         onSuccess: ({ onboardingId }) => {
-            const { setOnboardingId, setOnboardingStep } =
-                useCardStore.getState()
-            setOnboardingId(onboardingId)
-            setOnboardingStep(OnboardingStep.PhoneSend)
+            useCardStore.getState().setOnboardingId(onboardingId)
         },
         throwOnError: false,
     })
