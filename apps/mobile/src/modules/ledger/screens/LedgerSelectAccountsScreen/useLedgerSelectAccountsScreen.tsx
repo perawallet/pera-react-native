@@ -39,6 +39,7 @@ import { useAddressSelection } from '@hooks/useAddressSelection'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccountInfoContent'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import { getLedgerErrorPreset } from '@modules/ledger/utils'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
@@ -83,6 +84,7 @@ export const useLedgerSelectAccountsScreen =
         const algokit = useAlgorandClient()
         const { network } = useNetwork()
         const { request } = useBottomSheet()
+        const { exitAccountFlow } = useExitAccountFlow()
 
         const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
@@ -166,6 +168,8 @@ export const useLedgerSelectAccountsScreen =
             )
         }, [selectableAccounts, alreadyImportedAddresses])
 
+        const areAllImported = newAccounts.length === 0
+
         const selectableAddresses = useMemo(
             () =>
                 newAccounts.map(s =>
@@ -184,6 +188,14 @@ export const useLedgerSelectAccountsScreen =
         })
 
         const handleContinue = useCallback(() => {
+            // Re-pairing a device whose accounts are all already imported
+            // leaves nothing to select. Finish the flow instead of
+            // dead-ending on an enabled-but-inert button.
+            if (areAllImported) {
+                exitAccountFlow()
+                return
+            }
+
             const selected = selectableAccounts.filter(s =>
                 selectedAddresses.has(
                     s.kind === 'derived' ? s.account.address : s.address,
@@ -215,6 +227,8 @@ export const useLedgerSelectAccountsScreen =
                 selectedAccounts: result,
             })
         }, [
+            areAllImported,
+            exitAccountFlow,
             selectableAccounts,
             selectedAddresses,
             deviceId,
@@ -290,7 +304,6 @@ export const useLedgerSelectAccountsScreen =
             [request, selectableByAddress, t],
         )
 
-        const areAllImported = newAccounts.length === 0
         const canContinue =
             !isFetchingMore && (areAllImported || selectedAddresses.size > 0)
 

@@ -25,7 +25,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { useStyles } from './styles'
 import { useLedgerSelectAccountsScreen } from './useLedgerSelectAccountsScreen'
-import { FindAnotherWalletRow } from './FindAnotherWalletRow'
+import { FindAnotherAccountRow } from './FindAnotherAccountRow'
 import { LedgerAccountSelectionRow } from './LedgerAccountSelectionRow'
 
 export const LedgerSelectAccountsScreen = () => {
@@ -83,10 +83,10 @@ export const LedgerSelectAccountsScreen = () => {
                     {t('ledger.select_accounts.scanning_rekeyed')}
                 </PWText>
             )}
-            <FindAnotherWalletRow
+            <FindAnotherAccountRow
                 onPress={() => void handleFindAnother()}
                 isLoading={isFetchingMore}
-                label={t('ledger.select_accounts.find_another_wallet')}
+                label={t('ledger.select_accounts.find_another_account')}
                 testID='ledger_select_accounts_find_another'
             />
         </>
@@ -98,9 +98,13 @@ export const LedgerSelectAccountsScreen = () => {
             footer={
                 <PWButton
                     testID='ledger_select_accounts_continue_button'
-                    title={t('ledger.select_accounts.cta', {
-                        count: selectedAddresses.size,
-                    })}
+                    title={
+                        areAllImported
+                            ? t('ledger.select_accounts.cta_done')
+                            : t('ledger.select_accounts.cta', {
+                                  count: selectedAddresses.size,
+                              })
+                    }
                     onPress={handleContinue}
                     variant='primary'
                     isDisabled={!canContinue}

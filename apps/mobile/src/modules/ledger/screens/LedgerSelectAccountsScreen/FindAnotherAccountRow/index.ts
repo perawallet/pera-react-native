@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { FindAnotherWalletRow } from './FindAnotherWalletRow'
-export type { FindAnotherWalletRowProps } from './FindAnotherWalletRow'
+export { FindAnotherAccountRow } from './FindAnotherAccountRow'
+export type { FindAnotherAccountRowProps } from './FindAnotherAccountRow'

@@ -23,6 +23,7 @@ const mockDisconnectTransport = vi.fn()
 const mockConnect = vi.fn()
 const mockGetProviderRegistry = vi.fn()
 const mockErrorToast = vi.fn()
+const mockExitAccountFlow = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -78,14 +79,26 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan } =
-    vi.hoisted(() => {
-        const mockPrefetch = vi.fn().mockResolvedValue(undefined)
-        const mockRequest = vi.fn().mockResolvedValue(undefined)
-        const mockQueryClient = {}
-        const mockRekeyedScan = vi.fn()
-        return { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan }
-    })
+const {
+    mockPrefetch,
+    mockRequest,
+    mockQueryClient,
+    mockRekeyedScan,
+    mockAllAccounts,
+} = vi.hoisted(() => {
+    const mockPrefetch = vi.fn().mockResolvedValue(undefined)
+    const mockRequest = vi.fn().mockResolvedValue(undefined)
+    const mockQueryClient = {}
+    const mockRekeyedScan = vi.fn()
+    const mockAllAccounts = vi.fn<() => { address: string }[]>(() => [])
+    return {
+        mockPrefetch,
+        mockRequest,
+        mockQueryClient,
+        mockRekeyedScan,
+        mockAllAccounts,
+    }
+})
 
 // useLedgerAccountPreview is included because the screen hook imports
 // LedgerAccountInfoContent (whose hook chain references it) at module load;
@@ -94,7 +107,7 @@ const { mockPrefetch, mockRequest, mockQueryClient, mockRekeyedScan } =
 // useLedgerAccountInfoContent → AccountDisplay → useAccountTypeLabel pulls
 // these in at module evaluation time.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: () => [],
+    useAllAccounts: () => mockAllAccounts(),
     prefetchLedgerAccountPreview: mockPrefetch,
     useLedgerAccountPreview: vi.fn(),
     useLedgerRekeyedScan: mockRekeyedScan,
@@ -110,6 +123,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequest }),
+}))
+
+vi.mock('@modules/onboarding/hooks', () => ({
+    useExitAccountFlow: () => ({ exitAccountFlow: mockExitAccountFlow }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -154,8 +171,11 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockConnect.mockReset()
         mockGetProviderRegistry.mockReset()
         mockErrorToast.mockReset()
+        mockExitAccountFlow.mockReset()
         mockPrefetch.mockClear()
         mockRequest.mockClear()
+        mockAllAccounts.mockReset()
+        mockAllAccounts.mockReturnValue([])
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
@@ -510,6 +530,28 @@ describe('useLedgerSelectAccountsScreen', () => {
                 },
             ],
         })
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+    })
+
+    it('reports areAllImported and exits the flow on continue when every discovered account is already imported', () => {
+        mockAllAccounts.mockReturnValue([
+            { address: 'AAA111' },
+            { address: 'BBB222' },
+        ])
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        expect(result.current.areAllImported).toBe(true)
+        // The button stays actionable so the user is not stuck on a screen
+        // with nothing left to select.
+        expect(result.current.canContinue).toBe(true)
+
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        expect(mockExitAccountFlow).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('exposes derived + scanned rekeyed as selectableAccounts', () => {

@@ -2424,7 +2424,8 @@
             "already_imported": "Already imported",
             "cta_one": "Verify selected account",
             "cta_other": "Verify selected accounts",
-            "find_another_wallet": "Find another account",
+            "cta_done": "Done",
+            "find_another_account": "Find another account",
             "rekeyed_label": "Rekeyed",
             "rekeyed_account_title": "Rekeyed account",
             "scanning_rekeyed": "Scanning for rekeyed accounts…"
