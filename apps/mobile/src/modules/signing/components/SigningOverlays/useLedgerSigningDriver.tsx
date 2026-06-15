@@ -74,7 +74,14 @@ export const useLedgerSigningDriver = (): void => {
                     size: 'auto',
                     enablePanDownToClose: false,
                     enableCloseOnBackdropPress: false,
-                    autoCreateContainer: false,
+                    // Must auto-create the gorhom BottomSheetView container:
+                    // a `size: 'auto'` sheet derives its snap point from the
+                    // measured content height, and gorhom only measures through
+                    // a BottomSheetView. With `autoCreateContainer: false` the
+                    // content rendered in a plain view, leaving the dynamic
+                    // sheet with no height — present() then no-ops and the
+                    // overlay never appears on top of the send/claim sheet.
+                    autoCreateContainer: true,
                 },
             })
             if (cancelled) return

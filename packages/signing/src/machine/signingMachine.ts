@@ -207,6 +207,15 @@ export const signingMachine = setup({
             },
             failedDuringState: () => 'signing' as const,
         }),
+        // Bump a domain-agnostic counter so the parent re-emits whenever an
+        // invoked signer child transitions. XState v5 parents stay silent on
+        // child-only sub-state changes; the signing UI subscribes to the parent
+        // snapshot and reads live signer state from `resolved.activeChild`, so
+        // we only need to nudge the parent to re-broadcast — no signer-specific
+        // data is copied up.
+        bumpSignerSnapshotTick: assign({
+            signerSnapshotTick: ({ context }) => context.signerSnapshotTick + 1,
+        }),
         appendMultisigResults: assign({
             // event.output is the resolved value of the multisigSignerActor Promise
             signingResults: ({ context, event }) => [
@@ -417,6 +426,13 @@ export const signingMachine = setup({
                                         : ('transaction' as const),
                             }
                         },
+                        // Forces the parent to re-emit on every hardware child
+                        // transition (searching → awaiting_approval → signing
+                        // and each progress tick). Without this the parent stays
+                        // silent during the device session and the overlay never
+                        // advances past its first-seen phase. See
+                        // `bumpSignerSnapshotTick`.
+                        onSnapshot: { actions: 'bumpSignerSnapshotTick' },
                         onDone: [
                             {
                                 guard: ({ event }) =>

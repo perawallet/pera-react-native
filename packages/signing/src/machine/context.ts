@@ -166,6 +166,21 @@ export type SigningMachineContext = {
     failedDuringState: Nullable<'validating' | 'signing' | 'transporting'>
 
     /**
+     * Monotonic counter bumped whenever an invoked signer child (currently the
+     * hardware-signing child) emits a new snapshot — see the `onSnapshot`
+     * handler on the `signing.hardware` invoke.
+     *
+     * XState v5 parents do NOT re-emit when only an invoked child's sub-state
+     * changes, so without this nudge the signing UI — which subscribes to the
+     * parent snapshot — never re-rendered while the Ledger device advanced
+     * through its phases (the overlay froze on the "connecting" screen). This
+     * is deliberately domain-agnostic: it carries no signer-specific data, it
+     * only forces the parent to re-broadcast. The UI reads the live signer
+     * state from the child snapshot (`resolved.activeChild`).
+     */
+    signerSnapshotTick: number
+
+    /**
      * Runtime dependencies (KMS functions, AlgoKit client, etc).
      * Stored in context so actor `input` functions can pass them to invoked actors.
      */

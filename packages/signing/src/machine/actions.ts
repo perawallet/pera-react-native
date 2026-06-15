@@ -387,6 +387,7 @@ export const resolveInitialContext = (
         transportResult: null,
         error: null,
         failedDuringState: null,
+        signerSnapshotTick: 0,
         deps: extractDeps(input),
     }
 }
@@ -410,5 +411,6 @@ export const makeFailedContext = (
     transportResult: null,
     error,
     failedDuringState: null,
+    signerSnapshotTick: 0,
     deps: extractDeps(input),
 })
