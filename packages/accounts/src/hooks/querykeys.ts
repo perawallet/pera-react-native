@@ -130,3 +130,30 @@ export function invalidateAccountQueriesForAddresses(
         },
     })
 }
+
+/**
+ * Evicts (not just invalidates) the cached account queries for the given
+ * addresses. Used on account removal: invalidate would leave the gone account's
+ * datasets (e.g. a 5k-row holdings page) sitting in cache until gcTime, where
+ * the periodic sync's broad invalidations keep re-marking them stale. Removing
+ * them frees the memory and stops that churn. Network-scoped keys without an
+ * `address` payload (e.g. owned-asset-ids) are left for the caller to refresh.
+ */
+export function removeAccountQueriesForAddresses(
+    queryClient: QueryClient,
+    addresses: string[],
+): void {
+    if (addresses.length === 0) return
+    const targets = new Set(addresses)
+    queryClient.removeQueries({
+        predicate: query => {
+            if (query.queryKey[0] !== MODULE_PREFIX) return false
+            const payload = query.queryKey[2] as
+                | { address?: string }
+                | undefined
+            return (
+                payload?.address !== undefined && targets.has(payload.address)
+            )
+        },
+    })
+}

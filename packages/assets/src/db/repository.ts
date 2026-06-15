@@ -515,3 +515,70 @@ export async function getStaleOrMissingAssetIds({
     const freshSet = new Set(freshRows.map(r => r.assetId.toString()))
     return assetIds.filter(id => !freshSet.has(id))
 }
+
+type DeleteAssetsParams = {
+    db?: Database
+    assetIds: string[]
+    network: string
+}
+
+/** Hard-deletes node + pera metadata rows for the given asset IDs on a network. */
+export async function deleteAssets({
+    db = getDatabase(),
+    assetIds,
+    network,
+}: DeleteAssetsParams): Promise<void> {
+    if (assetIds.length === 0) return
+
+    const decimalIds = assetIds.map(id => new Decimal(id))
+
+    for (const chunk of partition(decimalIds, ASSET_WRITE_CHUNK_SIZE)) {
+        await db
+            .delete(AssetsNodeSchema)
+            .where(
+                and(
+                    inArray(AssetsNodeSchema.assetId, chunk),
+                    eq(AssetsNodeSchema.network, network),
+                ),
+            )
+            .run()
+        await db
+            .delete(AssetsPeraSchema)
+            .where(
+                and(
+                    inArray(AssetsPeraSchema.assetId, chunk),
+                    eq(AssetsPeraSchema.network, network),
+                ),
+            )
+            .run()
+    }
+}
+
+type DeleteAssetPricesParams = {
+    db?: Database
+    assetIds: string[]
+    network: string
+}
+
+/** Hard-deletes price rows for the given asset IDs on a network. */
+export async function deleteAssetPrices({
+    db = getDatabase(),
+    assetIds,
+    network,
+}: DeleteAssetPricesParams): Promise<void> {
+    if (assetIds.length === 0) return
+
+    const decimalIds = assetIds.map(id => new Decimal(id))
+
+    for (const chunk of partition(decimalIds, ASSET_WRITE_CHUNK_SIZE)) {
+        await db
+            .delete(AssetPricesSchema)
+            .where(
+                and(
+                    inArray(AssetPricesSchema.assetId, chunk),
+                    eq(AssetPricesSchema.network, network),
+                ),
+            )
+            .run()
+    }
+}

@@ -12,7 +12,7 @@
 
 import {
     useAccountsStore,
-    getAllAssetIdsForNetwork,
+    getAllHeldAssetIdsForNetwork,
     invalidateAccountQueries,
     invalidateAccountQueriesForAddresses,
     fetchAndPersistAccount,
@@ -323,7 +323,7 @@ export class SyncService {
                 // Prices are always fetched from mainnet (inside
                 // fetchAndPersistPrices) but stored under the active network so
                 // DB JOINs line up.
-                const assetIds = await getAllAssetIdsForNetwork({ network })
+                const assetIds = await getAllHeldAssetIdsForNetwork({ network })
                 const tasks: Array<{
                     kind: 'assets' | 'prices'
                     run: () => Promise<void>

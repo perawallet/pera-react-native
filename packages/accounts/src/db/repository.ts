@@ -879,15 +879,15 @@ export async function deleteAssetHoldings({
         .run()
 }
 
-type GetAllHoldingsForNetworkParams = {
+type GetAllHeldAssetIdsForNetworkParams = {
     db?: Database
     network: string
 }
 
-export async function getAllAssetIdsForNetwork({
+export async function getAllHeldAssetIdsForNetwork({
     db = getDatabase(),
     network,
-}: GetAllHoldingsForNetworkParams): Promise<string[]> {
+}: GetAllHeldAssetIdsForNetworkParams): Promise<string[]> {
     const rows = await db
         .selectDistinct({
             assetId: AccountAssetHoldingsSchema.assetId,
@@ -897,4 +897,66 @@ export async function getAllAssetIdsForNetwork({
         .all()
 
     return rows.map(r => r.assetId.toString())
+}
+
+export type HeldAssetRef = {
+    assetId: string
+    network: string
+}
+
+type GetHeldAssetIdsByAccountParams = {
+    db?: Database
+    accountAddress: string
+}
+
+/** All (assetId, network) pairs the account holds or is opted into, across every network. */
+export async function getHeldAssetIdsByAccount({
+    db = getDatabase(),
+    accountAddress,
+}: GetHeldAssetIdsByAccountParams): Promise<HeldAssetRef[]> {
+    const rows = await db
+        .selectDistinct({
+            assetId: AccountAssetHoldingsSchema.assetId,
+            network: AccountAssetHoldingsSchema.network,
+        })
+        .from(AccountAssetHoldingsSchema)
+        .where(eq(AccountAssetHoldingsSchema.accountAddress, accountAddress))
+        .all()
+
+    return rows.map(r => ({
+        assetId: r.assetId.toString(),
+        network: r.network,
+    }))
+}
+
+type DeleteAllAssetHoldingsForAccountParams = {
+    db?: Database
+    accountAddress: string
+}
+
+/** Deletes every holdings row for an account, across all networks. */
+export async function deleteAllAssetHoldingsForAccount({
+    db = getDatabase(),
+    accountAddress,
+}: DeleteAllAssetHoldingsForAccountParams): Promise<void> {
+    await db
+        .delete(AccountAssetHoldingsSchema)
+        .where(eq(AccountAssetHoldingsSchema.accountAddress, accountAddress))
+        .run()
+}
+
+type DeleteAccountBalanceParams = {
+    db?: Database
+    accountAddress: string
+}
+
+/** Deletes every balance row for an account, across all networks. */
+export async function deleteAccountBalance({
+    db = getDatabase(),
+    accountAddress,
+}: DeleteAccountBalanceParams): Promise<void> {
+    await db
+        .delete(AccountBalancesSchema)
+        .where(eq(AccountBalancesSchema.accountAddress, accountAddress))
+        .run()
 }
