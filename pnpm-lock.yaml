@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@algorandfoundation/algokit-utils':
-      specifier: 10.0.0-beta.2
-      version: 10.0.0-beta.2
+      specifier: 10.0.0-beta.4
+      version: 10.0.0-beta.4
     '@algorandfoundation/react-native-keystore':
       specifier: 1.0.0-canary.12
       version: 1.0.0-canary.12
@@ -205,7 +205,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 1.0.0-canary.17
         version: 1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
@@ -1062,7 +1062,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1309,7 +1309,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -1343,7 +1343,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-client-generator':
         specifier: 7.0.0-beta.4
-        version: 7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.2)
+        version: 7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.4)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -1449,7 +1449,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -1510,7 +1510,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -1641,7 +1641,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -2168,7 +2168,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/keystore':
         specifier: 1.0.0-canary.16
         version: 1.0.0-canary.16(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
@@ -2351,7 +2351,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -2558,7 +2558,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -3004,7 +3004,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -3095,7 +3095,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -3348,7 +3348,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 10.0.0-beta.2
+        version: 10.0.0-beta.4
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -3462,9 +3462,9 @@ packages:
     peerDependencies:
       '@algorandfoundation/algokit-utils': ^10.0.0-beta.2
 
-  '@algorandfoundation/algokit-utils@10.0.0-beta.2':
-    resolution: {integrity: sha512-V1aYu6Xuj3mxbRVmzkYgDvbObs3BgZVBrp3r5Ro4Pf0GyTOQmZU8DZ2ZH/ye8hREZk5eGeSyVDkj6bVbR4SQxQ==}
-    engines: {node: '>=24.0'}
+  '@algorandfoundation/algokit-utils@10.0.0-beta.4':
+    resolution: {integrity: sha512-+X06PW7w2zWJWPp91pHoLMQizrq7E33Y1Mj/Hz/hkLiASXWwMKVX5QsQCbvsMYk+guqayCwB6782VngLR8d1RA==}
+    engines: {node: '>=22.0'}
 
   '@algorandfoundation/dp256@1.1.0':
     resolution: {integrity: sha512-s+ZQG3WK6eWskfmjh0bbMImyO+SIR297s+7vQoercbM0hYvilzTBT/rEcvs4ZQxU6TxkTXLq4BRj1USjGFpsCA==}
@@ -10605,20 +10605,21 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@algorandfoundation/algokit-client-generator@7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.2)':
+  '@algorandfoundation/algokit-client-generator@7.0.0-beta.4(@algorandfoundation/algokit-utils@10.0.0-beta.4)':
     dependencies:
-      '@algorandfoundation/algokit-utils': 10.0.0-beta.2
+      '@algorandfoundation/algokit-utils': 10.0.0-beta.4
       chalk: 5.6.2
       change-case: 5.4.4
       commander: 14.0.3
       jsonschema: 1.5.0
 
-  '@algorandfoundation/algokit-utils@10.0.0-beta.2':
+  '@algorandfoundation/algokit-utils@10.0.0-beta.4':
     dependencies:
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@noble/curves': 2.0.1
       '@noble/ed25519': 3.0.0
       '@noble/hashes': 2.2.0
+      '@scure/bip39': 2.2.0
       algorand-msgpack: 1.1.0
       buffer: 6.0.3
       dotenv: 16.6.1
@@ -13865,7 +13866,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
