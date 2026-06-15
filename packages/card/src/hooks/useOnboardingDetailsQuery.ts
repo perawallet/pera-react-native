@@ -14,7 +14,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchOnboardingDetails } from '../api/onboarding'
-import type { VerificationState } from '../models'
 import { cardQueryKeys } from './querykeys'
 
 export type UseOnboardingDetailsQueryOptions = {
@@ -25,21 +24,15 @@ export type UseOnboardingDetailsQueryOptions = {
     refetchInterval?: number | false
 }
 
-export type UseOnboardingDetailsQueryResult = {
-    verificationState: Nullable<VerificationState>
-    isLoading: boolean
-    refetch: () => void
-}
-
 /** Pre-auth onboarding status (GET /v1/auth/register) — polls the KYC state. */
 export const useOnboardingDetailsQuery = ({
     onboardingId,
     enabled,
     refetchInterval,
-}: UseOnboardingDetailsQueryOptions): UseOnboardingDetailsQueryResult => {
+}: UseOnboardingDetailsQueryOptions) => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: cardQueryKeys.onboardingDetails(network, onboardingId),
         queryFn: ({ signal }) =>
             fetchOnboardingDetails({
@@ -51,10 +44,4 @@ export const useOnboardingDetailsQuery = ({
         enabled: Boolean(onboardingId) && (enabled ?? true),
         refetchInterval,
     })
-
-    return {
-        verificationState: query.data?.verificationState ?? null,
-        isLoading: query.isLoading,
-        refetch: () => void query.refetch(),
-    }
 }

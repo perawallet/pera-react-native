@@ -70,18 +70,21 @@ export const useCardOnboardingVerificationScreen =
             }
             // The session URL is single-use/time-limited, so every tap fetches
             // a fresh one rather than reopening the old.
-            startVerification
-                .mutateAsync({ onboardingId })
-                .then(({ sessionUrl }) => {
+            const startKyc = async () => {
+                try {
+                    const { sessionUrl } = await startVerification.mutateAsync({
+                        onboardingId,
+                    })
                     setHasStarted(true)
                     void Linking.openURL(sessionUrl)
-                })
-                .catch(() => {
+                } catch {
                     errorToast(
                         t('peraCard.verification.error_title'),
                         t('peraCard.verification.error_body'),
                     )
-                })
+                }
+            }
+            void startKyc()
         }, [startVerification, onboardingId, errorToast, navigation, t])
 
         const handleOpenSupport = useCallback(() => {
@@ -91,7 +94,8 @@ export const useCardOnboardingVerificationScreen =
         // Veriff reported back (submitted/decided): continue on the setup
         // status checklist. Abandoning the browser leaves the state UNVERIFIED
         // and the user here, with the button still re-tappable.
-        const { verificationState } = onboardingDetails
+        const verificationState =
+            onboardingDetails.data?.verificationState ?? null
         useEffect(() => {
             if (!hasStarted || !verificationState) return
             if (verificationState !== VerificationState.Unverified) {
@@ -121,7 +125,7 @@ export const useCardOnboardingVerificationScreen =
                     )
                     previousAppState.current = nextAppState
                     if (isPollingRef.current && wasForeground) {
-                        refetchRef.current()
+                        void refetchRef.current()
                     }
                 },
             )

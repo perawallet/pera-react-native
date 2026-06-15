@@ -14,38 +14,45 @@ import React from 'react'
 import { Trans } from 'react-i18next'
 import {
     PWButton,
-    PWIcon,
     PWScreen,
     PWText,
     PWView,
     type IconName,
+    type PWIconVariant,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useCardOnboardingStatusScreen,
     type DocumentsState,
 } from './useCardOnboardingStatusScreen'
+import { StatusChecklistRow } from './StatusChecklistRow'
 import { useStyles } from './styles'
 
-// The "Submit Your Documents" row per KYC state. The pending icon is the
-// closest available to the design's hourglass.
-// TODO(card): swap to an hourglass icon when the asset is exported.
+// Icon, color, and copy for the "Submit Your Documents" row per KYC state.
 const DOCUMENTS_ROW: Record<
     DocumentsState,
-    { icon: IconName; bodyKey: string; showsPendingLabel: boolean }
+    {
+        icon: IconName
+        variant: PWIconVariant
+        bodyKey: string
+        showsPendingLabel: boolean
+    }
 > = {
     pending: {
-        icon: 'reload',
+        icon: 'pending',
+        variant: 'secondary',
         bodyKey: 'peraCard.setup_status.documents_pending_body',
         showsPendingLabel: true,
     },
     verified: {
         icon: 'check',
+        variant: 'positive',
         bodyKey: 'peraCard.setup_status.documents_verified_body',
         showsPendingLabel: false,
     },
     rejected: {
         icon: 'cross',
+        variant: 'error',
         bodyKey: 'peraCard.setup_status.documents_rejected_body',
         showsPendingLabel: false,
     },
@@ -99,105 +106,54 @@ export const CardOnboardingStatusScreen = () => {
 
                 <PWView style={styles.checklist}>
                     {/* 1 — Submit Your Documents (driven by the KYC state) */}
-                    <PWView
-                        style={styles.row}
+                    <StatusChecklistRow
+                        icon={documentsRow.icon}
+                        iconVariant={documentsRow.variant}
+                        pendingLabel={
+                            documentsRow.showsPendingLabel
+                                ? t(
+                                      'peraCard.setup_status.documents_pending_label',
+                                  )
+                                : undefined
+                        }
+                        title={t('peraCard.setup_status.documents_title')}
+                        body={t(documentsRow.bodyKey)}
                         testID='card-onboarding-status-documents'
-                    >
-                        <PWIcon
-                            name={documentsRow.icon}
-                            variant={
-                                documentsState === 'verified'
-                                    ? 'positive'
-                                    : documentsState === 'rejected'
-                                      ? 'error'
-                                      : 'secondary'
-                            }
-                        />
-                        <PWView style={styles.rowTexts}>
-                            {documentsRow.showsPendingLabel ? (
-                                <PWText
-                                    variant='footnoteMedium'
-                                    style={styles.pendingLabel}
-                                    testID='card-onboarding-status-pending-label'
-                                >
-                                    {t(
-                                        'peraCard.setup_status.documents_pending_label',
-                                    )}
-                                </PWText>
-                            ) : null}
-                            <PWText variant='bodyLarge'>
-                                {t('peraCard.setup_status.documents_title')}
-                            </PWText>
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                style={styles.rowBody}
-                            >
-                                {t(documentsRow.bodyKey)}
-                            </PWText>
-                        </PWView>
-                    </PWView>
+                    />
 
                     {/* 2 — Enter Your Details (actionable unless rejected) */}
-                    <PWView style={styles.row}>
-                        <PWIcon
-                            name='person'
-                            variant='primary'
-                        />
-                        <PWView style={styles.rowTexts}>
-                            <PWText variant='bodyLarge'>
-                                {t('peraCard.setup_status.details_title')}
-                            </PWText>
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                style={styles.rowBody}
-                            >
-                                {t('peraCard.setup_status.details_body')}
-                            </PWText>
-                            {documentsState !== 'rejected' ? (
-                                <PWButton
-                                    variant='primary'
-                                    title={t(
-                                        'peraCard.setup_status.details_button',
-                                    )}
-                                    onPress={handleEnterDetails}
-                                    style={styles.detailsButton}
-                                    testID='card-onboarding-status-details-cta'
-                                />
-                            ) : null}
-                        </PWView>
-                    </PWView>
+                    <StatusChecklistRow
+                        icon='person'
+                        iconVariant='primary'
+                        title={t('peraCard.setup_status.details_title')}
+                        body={t('peraCard.setup_status.details_body')}
+                    >
+                        {documentsState !== 'rejected' ? (
+                            <PWButton
+                                variant='primary'
+                                title={t(
+                                    'peraCard.setup_status.details_button',
+                                )}
+                                onPress={handleEnterDetails}
+                                style={styles.detailsButton}
+                                testID='card-onboarding-status-details-cta'
+                            />
+                        ) : null}
+                    </StatusChecklistRow>
 
                     {/* 3 + 4 — future slices, rendered as inactive steps */}
-                    <PWView style={styles.row}>
-                        <PWIcon
-                            name='wallet'
-                            variant='secondary'
-                        />
-                        <PWView style={styles.rowTexts}>
-                            <PWText
-                                variant='bodyLarge'
-                                style={styles.inactiveTitle}
-                            >
-                                {t('peraCard.setup_status.connect_funds_title')}
-                            </PWText>
-                        </PWView>
-                    </PWView>
-                    <PWView style={styles.row}>
-                        <PWIcon
-                            name='fund'
-                            variant='secondary'
-                        />
-                        <PWView style={styles.rowTexts}>
-                            <PWText
-                                variant='bodyLarge'
-                                style={styles.inactiveTitle}
-                            >
-                                {t('peraCard.setup_status.funding_type_title')}
-                            </PWText>
-                        </PWView>
-                    </PWView>
+                    <StatusChecklistRow
+                        icon='wallet'
+                        iconVariant='secondary'
+                        isInactive
+                        title={t('peraCard.setup_status.connect_funds_title')}
+                    />
+                    <StatusChecklistRow
+                        icon='fund'
+                        iconVariant='secondary'
+                        isInactive
+                        title={t('peraCard.setup_status.funding_type_title')}
+                    />
                 </PWView>
             </PWView>
         </PWScreen>

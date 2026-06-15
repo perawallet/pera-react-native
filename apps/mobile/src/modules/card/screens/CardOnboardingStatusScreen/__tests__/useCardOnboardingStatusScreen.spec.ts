@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         }) => {
             mockQueryOptions = options
             return {
-                verificationState: mockVerificationState,
+                data: { verificationState: mockVerificationState },
                 isLoading: false,
                 refetch: vi.fn(),
             }

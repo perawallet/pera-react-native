@@ -57,7 +57,7 @@ describe('useOnboardingDetailsQuery', () => {
         )
 
         await waitFor(() =>
-            expect(result.current.verificationState).toBe(
+            expect(result.current.data?.verificationState).toBe(
                 VerificationState.Pending,
             ),
         )
@@ -77,7 +77,7 @@ describe('useOnboardingDetailsQuery', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(fetchOnboardingDetails).not.toHaveBeenCalled()
-        expect(result.current.verificationState).toBeNull()
+        expect(result.current.data?.verificationState).toBeUndefined()
     })
 
     it('does not fetch when disabled', async () => {

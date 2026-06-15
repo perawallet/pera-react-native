@@ -47,10 +47,11 @@ export const useCardOnboardingStatusScreen =
         // Poll while the review is still running so the row flips to
         // verified/rejected live; UNVERIFIED (cold resume) renders as pending.
         const [isReviewing, setIsReviewing] = useState(true)
-        const { verificationState } = useOnboardingDetailsQuery({
+        const { data } = useOnboardingDetailsQuery({
             onboardingId,
             refetchInterval: isReviewing ? POLL_INTERVAL_MS : false,
         })
+        const verificationState = data?.verificationState ?? null
 
         const documentsState: DocumentsState =
             verificationState === VerificationState.Verified

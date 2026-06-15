@@ -15,6 +15,7 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     addressSchema,
+    OnboardingStep,
     useCardStore,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
@@ -89,7 +90,12 @@ export const useCardOnboardingAddressScreen =
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
-        const [isCompleted, setIsCompleted] = useState(false)
+        // Derived from the persisted onboarding step (set by the address
+        // mutation's onSuccess) rather than local state, so a cold resume or
+        // re-entry still renders the correct completion status.
+        const isCompleted = useCardStore(
+            state => state.onboardingStep === OnboardingStep.Completed,
+        )
         const hasPreselected = useRef(false)
 
         const {
@@ -225,10 +231,9 @@ export const useCardOnboardingAddressScreen =
                     platformTermsAccepted,
                 })
                 await submitAddress.mutateAsync(address)
-                // Registration finalized (the mutation committed the session
-                // and marked onboarding complete) — swap to the completion
-                // state in place.
-                setIsCompleted(true)
+                // The mutation's onSuccess commits the session and marks the
+                // onboarding step Completed, which flips `isCompleted` and swaps
+                // this screen to its completion state in place.
             } catch {
                 errorToast(
                     t('peraCard.address.error_title'),
