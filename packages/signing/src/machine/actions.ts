@@ -387,6 +387,7 @@ export const resolveInitialContext = (
         transportResult: null,
         error: null,
         failedDuringState: null,
+        hardwareSigning: null,
         deps: extractDeps(input),
     }
 }
@@ -410,5 +411,6 @@ export const makeFailedContext = (
     transportResult: null,
     error,
     failedDuringState: null,
+    hardwareSigning: null,
     deps: extractDeps(input),
 })

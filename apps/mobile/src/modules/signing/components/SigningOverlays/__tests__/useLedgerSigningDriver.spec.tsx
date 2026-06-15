@@ -130,6 +130,23 @@ describe('useLedgerSigningDriver', () => {
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
     })
 
+    it('requests the auto-sized sheet with a measurable container so gorhom can present it', () => {
+        // A `size: 'auto'` sheet relies on gorhom measuring its content through
+        // a BottomSheetView to compute its snap point. `autoCreateContainer:
+        // false` wraps the content in a plain view gorhom can't measure, so the
+        // dynamic sheet gets no height, present() no-ops, and the overlay never
+        // appears over the (fixed-size) send/claim sheet. Guard the combo.
+        mockPendingRequests(['req-1'])
+        mockPipelineWithChild(
+            buildChildSnapshot({ active: 'awaiting_approval' }),
+        )
+        renderHook(() => useLedgerSigningDriver())
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        const options = requestBottomSheetMock.mock.calls[0][0].options
+        expect(options.size).toBe('auto')
+        expect(options.autoCreateContainer).not.toBe(false)
+    })
+
     it('dismisses the sheet when the hardware child tears down', () => {
         mockPendingRequests(['req-1'])
         mockPipelineWithChild(

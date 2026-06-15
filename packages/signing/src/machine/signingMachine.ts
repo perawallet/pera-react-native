@@ -207,6 +207,44 @@ export const signingMachine = setup({
             },
             failedDuringState: () => 'signing' as const,
         }),
+        // Mirror the hardware child's live phase + progress into parent context.
+        // XState v5 parents do NOT re-emit when only an invoked child's
+        // sub-state changes, so the `hardware` invoke's `onSnapshot` runs this
+        // on every child transition to force a parent emission — which the
+        // Ledger overlay (useSigningPipeline) tracks. The assigned value is a
+        // fresh object each time, guaranteeing the parent re-emits even when
+        // the derived phase is unchanged (e.g. per-transaction PROGRESS ticks).
+        mirrorHardwareProgress: assign({
+            hardwareSigning: ({ context, event }) => {
+                const snapshot = (
+                    event as {
+                        snapshot?: {
+                            matches?: (value: unknown) => boolean
+                            context?: {
+                                currentTx?: number
+                                totalTxs?: number
+                            }
+                        }
+                    }
+                ).snapshot
+                // Only the real hardwareSigningMachine exposes a state-value
+                // `matches`; guard so non-machine child snapshots (e.g. a
+                // fromPromise stand-in) leave the prior mirror untouched.
+                if (!snapshot || typeof snapshot.matches !== 'function') {
+                    return context.hardwareSigning
+                }
+                const phase = snapshot.matches({ active: 'awaiting_approval' })
+                    ? ('awaiting_approval' as const)
+                    : snapshot.matches({ active: 'signing' })
+                      ? ('signing' as const)
+                      : ('searching' as const)
+                return {
+                    phase,
+                    currentTx: snapshot.context?.currentTx ?? 0,
+                    totalTxs: snapshot.context?.totalTxs ?? 0,
+                }
+            },
+        }),
         appendMultisigResults: assign({
             // event.output is the resolved value of the multisigSignerActor Promise
             signingResults: ({ context, event }) => [
@@ -417,6 +455,13 @@ export const signingMachine = setup({
                                         : ('transaction' as const),
                             }
                         },
+                        // Forces the parent to re-emit on every hardware child
+                        // transition (searching → awaiting_approval → signing
+                        // and each PROGRESS tick). Without this the parent stays
+                        // silent during the device session and the overlay never
+                        // advances past its first-seen phase. See
+                        // `mirrorHardwareProgress`.
+                        onSnapshot: { actions: 'mirrorHardwareProgress' },
                         onDone: [
                             {
                                 guard: ({ event }) =>

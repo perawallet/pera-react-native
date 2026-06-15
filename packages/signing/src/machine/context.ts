@@ -166,6 +166,25 @@ export type SigningMachineContext = {
     failedDuringState: Nullable<'validating' | 'signing' | 'transporting'>
 
     /**
+     * Live hardware-signing phase + progress, mirrored from the hardware child
+     * machine via the `hardware` invoke's `onSnapshot`.
+     *
+     * XState v5 parents do NOT re-emit a snapshot when only an invoked child's
+     * sub-state changes. Without this mirror the parent stayed silent for the
+     * whole device session, so the Ledger overlay froze on the first phase it
+     * observed (the "connecting" screen) for headless internal flows (send /
+     * claim) and never advanced to "awaiting approval". Writing the child's
+     * phase/progress here forces the parent to re-emit on every child
+     * transition, which the UI subscription (useSigningPipeline) already
+     * tracks — refreshing the overlay end-to-end.
+     */
+    hardwareSigning: Nullable<{
+        phase: 'searching' | 'awaiting_approval' | 'signing'
+        currentTx: number
+        totalTxs: number
+    }>
+
+    /**
      * Runtime dependencies (KMS functions, AlgoKit client, etc).
      * Stored in context so actor `input` functions can pass them to invoked actors.
      */

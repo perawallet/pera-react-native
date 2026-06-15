@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createActor, fromPromise, waitFor } from 'xstate'
+import { createActor, fromPromise, waitFor, setup, assign } from 'xstate'
 import { signingMachine } from '../signingMachine'
 import type { SigningMachineInput } from '../context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -647,6 +647,97 @@ describe('signingMachine', () => {
                 hardwareWalletRegistry: {} as never,
                 encodeTransaction: vi.fn() as never,
             })
+
+        // A controllable stand-in for hardwareSigningMachine that mirrors the
+        // real child's state shape (active.{searching,awaiting_approval,signing}
+        // + currentTx/totalTxs in context) so the parent's onSnapshot reads the
+        // same fields it would in production. The test drives it event-by-event
+        // to simulate the real BLE phase progression that the device exhibits.
+        const makeControllableHardwareChild = () =>
+            setup({
+                types: {
+                    context: {} as { currentTx: number; totalTxs: number },
+                },
+            }).createMachine({
+                id: 'mockHardwareChild',
+                initial: 'active',
+                context: { currentTx: 0, totalTxs: 3 },
+                states: {
+                    active: {
+                        initial: 'searching',
+                        states: {
+                            searching: {
+                                on: { AWAITING_APPROVAL: 'awaiting_approval' },
+                            },
+                            awaiting_approval: {
+                                on: { SIGNING_STARTED: 'signing' },
+                            },
+                            signing: {},
+                        },
+                        on: {
+                            PROGRESS: {
+                                actions: assign({
+                                    currentTx: ({ event }) =>
+                                        (
+                                            event as unknown as {
+                                                current: number
+                                            }
+                                        ).current,
+                                }),
+                            },
+                        },
+                    },
+                },
+            })
+
+        it('mirrors hardware child phase + progress into parent context as the child advances', async () => {
+            const machine = signingMachine.provide({
+                actors: {
+                    analyzerActor: fromPromise(
+                        async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                    ),
+                    hardwareSigningMachine:
+                        makeControllableHardwareChild() as never,
+                    transportActor: fromPromise(
+                        async (): Promise<TransportResult> =>
+                            mockTransportResult,
+                    ),
+                },
+            })
+
+            const actor = createActor(machine, { input: inputForHardware() })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+
+            // Wait until the hardware child has been invoked.
+            type WithChildren = {
+                children: Record<string, { send: (e: unknown) => void }>
+            }
+            await waitFor(actor, s =>
+                Boolean((s as unknown as WithChildren).children?.hardwareChild),
+            )
+
+            // The child starts in `searching` (silent BLE-scan / connecting).
+            expect(actor.getSnapshot().context.hardwareSigning?.phase).toBe(
+                'searching',
+            )
+
+            const child = (actor.getSnapshot() as unknown as WithChildren)
+                .children.hardwareChild
+
+            // The device responds: now awaiting the user's approval, signing
+            // transaction 2 of 3. This is the transition that was previously
+            // lost — the parent must re-emit so the overlay can surface it.
+            child.send({ type: 'AWAITING_APPROVAL' })
+            child.send({ type: 'PROGRESS', current: 2, total: 3 })
+
+            expect(actor.getSnapshot().context.hardwareSigning).toEqual({
+                phase: 'awaiting_approval',
+                currentTx: 2,
+                totalTxs: 3,
+            })
+        })
 
         it('hardware child success → results accumulated, machine completes', async () => {
             const machine = signingMachine.provide({
