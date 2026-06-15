@@ -12,6 +12,7 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import {
+    CHART_QUERY_TIMEOUT_MS,
     queryClient,
     type HistoryPeriod,
     type Network,
@@ -45,6 +46,7 @@ export const fetchAccountsBalanceHistory = async (
             account_addresses: addresses,
             period,
         },
+        timeout: CHART_QUERY_TIMEOUT_MS,
     })
     return response.data
 }
@@ -74,6 +76,7 @@ export const fetchAccountAssetBalanceHistory = async (
             period,
             currency,
         },
+        timeout: CHART_QUERY_TIMEOUT_MS,
     })
     return response.data
 }

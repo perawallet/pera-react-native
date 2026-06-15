@@ -30,6 +30,8 @@ export type RequestConfiguration<TData = unknown> = {
         | 'stream'
     signal?: AbortSignal
     headers?: HeadersInit
+    /** Per-attempt timeout in ms. Overrides ky's 10s default; `false` disables it. */
+    timeout?: number | false
 }
 
 export type ResponseConfiguration<TData = unknown> = {

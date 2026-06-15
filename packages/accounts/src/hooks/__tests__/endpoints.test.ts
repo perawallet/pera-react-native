@@ -11,7 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import {
+    CHART_QUERY_TIMEOUT_MS,
+    queryClient,
+} from '@perawallet/wallet-core-shared'
 import {
     fetchOnChainAccountInformation,
     getAccountsBalanceHistoryEndpointPath,
@@ -22,6 +25,7 @@ import {
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: vi.fn(),
+    CHART_QUERY_TIMEOUT_MS: 30_000,
 }))
 
 describe('endpoints', () => {
@@ -76,6 +80,7 @@ describe('endpoints', () => {
                     account_addresses: ['A', 'B'],
                     period: '1W',
                 },
+                timeout: CHART_QUERY_TIMEOUT_MS,
             })
             expect(result).toBe(payload)
         })
@@ -113,6 +118,7 @@ describe('endpoints', () => {
                     period: '1M',
                     currency: 'USD',
                 },
+                timeout: CHART_QUERY_TIMEOUT_MS,
             })
             expect(result).toBe(payload)
         })

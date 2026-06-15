@@ -13,3 +13,9 @@
 export const DEFAULT_PAGE_SIZE = 50
 export const DEFAULT_PRECISION = 2
 export const DEFAULT_PRISM_IMAGE_QUALITY = 70
+
+/**
+ * Per-attempt request timeout (ms) for chart/history endpoints. These hit slow
+ * aggregation queries on the backend and routinely exceed ky's 10s default.
+ */
+export const CHART_QUERY_TIMEOUT_MS = 30_000

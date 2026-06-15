@@ -320,6 +320,39 @@ describe('queryClient', () => {
         )
     })
 
+    it('forwards a per-request timeout to ky when provided', async () => {
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ success: true })
+
+        await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/chart',
+            method: 'GET',
+            timeout: 30_000,
+        })
+
+        expect(mockKy).toHaveBeenCalledWith(
+            'chart',
+            expect.objectContaining({ timeout: 30_000 }),
+        )
+    })
+
+    it('omits timeout so ky uses its default when none is provided', async () => {
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ success: true })
+
+        await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/test',
+            method: 'GET',
+        })
+
+        const options = mockKy.mock.calls.at(-1)?.[1]
+        expect(options).not.toHaveProperty('timeout')
+    })
+
     it('should call updateBackendHeaders to extend clients', async () => {
         const { updateBackendHeaders, queryClient } =
             await import('../query-client')
