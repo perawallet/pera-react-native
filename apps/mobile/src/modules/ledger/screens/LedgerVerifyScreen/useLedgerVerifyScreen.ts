@@ -170,6 +170,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             if (existing.has(acc.address) || added.has(acc.address)) return
             added.add(acc.address)
             batch.push({
+                id: generateOrderedUniqueId(),
                 type: AccountTypes.hardware,
                 address: acc.address,
                 hardwareDetails: {
@@ -197,12 +198,9 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     !added.has(sel.address)
                 ) {
                     added.add(sel.address)
-                    // Watch entries carry an explicit `id` to match the
-                    // existing rekeyed-watch precedent in account-discovery
-                    // (`fetchRekeyedAddresses` consumers). Hardware accounts
-                    // are deduped by `address` (see `addHardware` above and
-                    // every other hardware-creation site), so they
-                    // deliberately leave `id` unset.
+                    // Every account carries a unique `id`; dedup within this
+                    // import still keys on `address` (see `addHardware` above)
+                    // because all account kinds today are on-chain.
                     batch.push({
                         id: generateOrderedUniqueId(),
                         type: AccountTypes.watch,

@@ -64,6 +64,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 const hdAccount: HDWalletAccount = {
+    id: 'hd-account',
     type: 'hdWallet',
     address: 'HD_ADDR',
     keyPairId: 'key-1',
@@ -76,6 +77,7 @@ const hdAccount: HDWalletAccount = {
 }
 
 const ledgerAccount: HardwareWalletAccount = {
+    id: 'ledger-account',
     type: 'hardware',
     address: 'LEDGER_ADDR',
     hardwareDetails: {
@@ -88,11 +90,13 @@ const ledgerAccount: HardwareWalletAccount = {
 }
 
 const watchAccount: WalletAccount = {
+    id: 'watch-account',
     type: 'watch',
     address: 'WATCH_ADDR',
 }
 
 const multisigAccount: MultiSigAccount = {
+    id: 'multisig-account',
     type: 'multisig',
     address: 'MULTISIG_ADDR',
     multisigDetails: {
@@ -160,6 +164,7 @@ describe('useAccountInfoCard', () => {
 
     test('Ledger account with sub-addresses: structureMainAddress is the firstAccount address', () => {
         const subLedgerAccount: HardwareWalletAccount = {
+            id: 'ledger-sub-account',
             type: 'hardware',
             address: 'LEDGER_SUB_ADDR',
             hardwareDetails: {

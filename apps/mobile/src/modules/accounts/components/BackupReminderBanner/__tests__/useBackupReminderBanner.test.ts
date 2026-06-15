@@ -45,6 +45,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 import { useBackupReminderBanner } from '../useBackupReminderBanner'
 
 const accountHD: WalletAccount = {
+    id: 'hd-account',
     type: AccountTypes.hdWallet,
     address: 'HD1',
     keyPairId: 'kp',
