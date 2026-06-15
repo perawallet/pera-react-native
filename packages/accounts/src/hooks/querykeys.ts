@@ -96,6 +96,33 @@ export const getInvalidateAccountBalancesPredicate = (query: Query) =>
     query.queryKey.at(0) === MODULE_PREFIX &&
     query.queryKey.at(1) === 'balance'
 
+// Object-payload fields naming a single account. Scalar only: the plural
+// `addresses` aggregate (balance-history) is deliberately excluded so
+// multi-account keys keep being invalidated, not evicted.
+const SINGLE_ACCOUNT_FIELDS = ['address', 'account_address'] as const
+
+/**
+ * True when any element of the key names a target account. Scans every element
+ * rather than assuming a fixed shape: most keys hold the address in an object
+ * payload at index 2 (`address`), the asset balance-history key at index 3
+ * (`account_address`), and a bare address segment (`[..., address]`) is matched
+ * too. The `MODULE_PREFIX` gate at the call sites scopes this to account keys,
+ * and a 58-char address won't collide with a literal path segment.
+ */
+const queryKeyTargetsAccount = (
+    queryKey: QueryKey,
+    targets: Set<string>,
+): boolean =>
+    queryKey.some(part => {
+        if (typeof part === 'string') return targets.has(part)
+        if (typeof part !== 'object' || part === null) return false
+        const payload = part as Record<string, unknown>
+        return SINGLE_ACCOUNT_FIELDS.some(field => {
+            const value = payload[field]
+            return typeof value === 'string' && targets.has(value)
+        })
+    })
+
 export function invalidateAccountQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,
@@ -106,11 +133,12 @@ export function invalidateAccountQueries(queryClient: QueryClient): void {
  * Scoped variant of {@link invalidateAccountQueries}: invalidates only the
  * account queries whose key payload targets one of the given addresses.
  *
- * The per-address query keys all carry `{ address }` as their third element
- * (balance, summary, holdings-page, …), so the sync service can refresh just
- * the accounts that actually changed this tick instead of fanning a wide DB
- * re-read across every mounted account query. Keys without an `address`
- * payload (e.g. network-scoped owned-asset-ids) are intentionally left alone.
+ * The per-address query keys carry a single-account address in their object
+ * payload (`{ address }` for balance/summary/holdings-page/…, `account_address`
+ * for asset balance-history), so the sync service can refresh just the accounts
+ * that actually changed this tick instead of fanning a wide DB re-read across
+ * every mounted account query. Keys without a single-account payload (e.g.
+ * network-scoped owned-asset-ids, multi-account balance-history) are left alone.
  */
 export function invalidateAccountQueriesForAddresses(
     queryClient: QueryClient,
@@ -119,15 +147,9 @@ export function invalidateAccountQueriesForAddresses(
     if (addresses.length === 0) return
     const targets = new Set(addresses)
     void queryClient.invalidateQueries({
-        predicate: query => {
-            if (query.queryKey[0] !== MODULE_PREFIX) return false
-            const payload = query.queryKey[2] as
-                | { address?: string }
-                | undefined
-            return (
-                payload?.address !== undefined && targets.has(payload.address)
-            )
-        },
+        predicate: query =>
+            query.queryKey[0] === MODULE_PREFIX &&
+            queryKeyTargetsAccount(query.queryKey, targets),
     })
 }
 
@@ -136,8 +158,9 @@ export function invalidateAccountQueriesForAddresses(
  * addresses. Used on account removal: invalidate would leave the gone account's
  * datasets (e.g. a 5k-row holdings page) sitting in cache until gcTime, where
  * the periodic sync's broad invalidations keep re-marking them stale. Removing
- * them frees the memory and stops that churn. Network-scoped keys without an
- * `address` payload (e.g. owned-asset-ids) are left for the caller to refresh.
+ * them frees the memory and stops that churn. Keys without a single-account
+ * payload (e.g. network-scoped owned-asset-ids, multi-account balance-history)
+ * are left for the caller to refresh.
  */
 export function removeAccountQueriesForAddresses(
     queryClient: QueryClient,
@@ -146,14 +169,8 @@ export function removeAccountQueriesForAddresses(
     if (addresses.length === 0) return
     const targets = new Set(addresses)
     queryClient.removeQueries({
-        predicate: query => {
-            if (query.queryKey[0] !== MODULE_PREFIX) return false
-            const payload = query.queryKey[2] as
-                | { address?: string }
-                | undefined
-            return (
-                payload?.address !== undefined && targets.has(payload.address)
-            )
-        },
+        predicate: query =>
+            query.queryKey[0] === MODULE_PREFIX &&
+            queryKeyTargetsAccount(query.queryKey, targets),
     })
 }

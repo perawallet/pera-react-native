@@ -15,6 +15,8 @@ import { QueryClient } from '@tanstack/react-query'
 import {
     removeAccountQueriesForAddresses,
     getAccountBalancesQueryKey,
+    getAccountAssetBalanceHistoryQueryKey,
+    getAccountBalancesHistoryQueryKey,
     getOwnedAssetIdsQueryKey,
 } from '../querykeys'
 
@@ -43,6 +45,46 @@ describe('removeAccountQueriesForAddresses', () => {
                 getAccountBalancesQueryKey('ADDR2', 'mainnet'),
             ),
         ).toEqual({ value: 2 })
+    })
+
+    test('evicts the asset balance-history key (account_address, deeper payload index)', () => {
+        const queryClient = new QueryClient()
+        const key = getAccountAssetBalanceHistoryQueryKey(
+            'mainnet',
+            'ADDR1',
+            '123',
+            'one-day',
+            'USD',
+        )
+        queryClient.setQueryData(key, { value: 1 })
+
+        removeAccountQueriesForAddresses(queryClient, ['ADDR1'])
+
+        expect(queryClient.getQueryData(key)).toBeUndefined()
+    })
+
+    test('evicts a key carrying the address as a bare path segment', () => {
+        const queryClient = new QueryClient()
+        const key = ['accounts', 'some-future-key', 'ADDR1']
+        queryClient.setQueryData(key, { value: 1 })
+
+        removeAccountQueriesForAddresses(queryClient, ['ADDR1'])
+
+        expect(queryClient.getQueryData(key)).toBeUndefined()
+    })
+
+    test('leaves multi-account balance-history aggregates intact', () => {
+        const queryClient = new QueryClient()
+        const key = getAccountBalancesHistoryQueryKey(
+            ['ADDR1', 'ADDR2'],
+            'one-day',
+            'mainnet',
+        )
+        queryClient.setQueryData(key, { value: 1 })
+
+        removeAccountQueriesForAddresses(queryClient, ['ADDR1'])
+
+        expect(queryClient.getQueryData(key)).toEqual({ value: 1 })
     })
 
     test('leaves network-scoped owned-asset-ids intact (search still works)', () => {
