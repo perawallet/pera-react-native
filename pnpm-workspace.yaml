@@ -4,7 +4,7 @@ packages:
   - extensions/*
 
 catalog:
-  "@algorandfoundation/algokit-utils": 10.0.0-beta.2
+  "@algorandfoundation/algokit-utils": 10.0.0-beta.4
   "@algorandfoundation/keystore": 1.0.0-canary.16
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.12
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
