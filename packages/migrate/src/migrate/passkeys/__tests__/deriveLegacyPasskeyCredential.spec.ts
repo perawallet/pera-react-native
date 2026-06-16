@@ -14,7 +14,7 @@
 import { createPublicKey } from 'node:crypto'
 import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import {
     credentialIdBytesToStandardBase64,
     decodeCredentialIdToBytes,
@@ -29,6 +29,14 @@ const TEST_MNEMONIC =
 
 const b64UrlToBytes = (b64url: string): Uint8Array =>
     Uint8Array.from(Buffer.from(b64url, 'base64url'))
+
+// deriveMainKey runs a 210k-iteration PBKDF2 (seconds of CPU); derive it once
+// and share it across tests rather than paying per test.
+let sharedMainKey: Uint8Array
+
+beforeAll(async () => {
+    sharedMainKey = await deriveMainKey(TEST_MNEMONIC)
+})
 
 describe('p256RawPublicKeyToSpkiDer', () => {
     it('wraps a raw 64-byte point into a 91-byte SPKI that Node can parse', () => {
@@ -46,7 +54,7 @@ describe('p256RawPublicKeyToSpkiDer', () => {
 
     it('encodes the exact curve point (round-trips through Node SPKI import)', async () => {
         // Use a real derived public point so x/y are valid curve coordinates.
-        const derivedMainKey = await deriveMainKey(TEST_MNEMONIC)
+        const derivedMainKey = sharedMainKey
         const { publicKeySpkiDer } =
             await deriveLegacyPasskeyCredentialFromMainKey({
                 derivedMainKey,
@@ -69,27 +77,30 @@ describe('p256RawPublicKeyToSpkiDer', () => {
         const x = b64UrlToBytes(jwk.x)
         const y = b64UrlToBytes(jwk.y)
         // The DER's embedded point (bytes after 0x04) is x||y.
-        expect(Array.from(publicKeySpkiDer.slice(27, 59))).toEqual(Array.from(x))
-        expect(Array.from(publicKeySpkiDer.slice(59, 91))).toEqual(Array.from(y))
+        expect(Array.from(publicKeySpkiDer.slice(27, 59))).toEqual(
+            Array.from(x),
+        )
+        expect(Array.from(publicKeySpkiDer.slice(59, 91))).toEqual(
+            Array.from(y),
+        )
     })
 })
 
 describe('deriveMainKey', () => {
     it('matches dp256 genDerivedMainKeyWithBIP39 byte-for-byte (off-thread path)', async () => {
-        const viaOffThread = await deriveMainKey(TEST_MNEMONIC)
         const viaDp256 =
             await new DeterministicP256().genDerivedMainKeyWithBIP39(
                 TEST_MNEMONIC,
             )
 
-        expect(Array.from(viaOffThread)).toEqual(Array.from(viaDp256))
-        expect(viaOffThread).toHaveLength(64)
+        expect(Array.from(sharedMainKey)).toEqual(Array.from(viaDp256))
+        expect(sharedMainKey).toHaveLength(64)
     })
 })
 
 describe('deriveLegacyPasskeyCredentialFromMainKey', () => {
     it('produces a 32-byte private scalar, 91-byte SPKI and SHA256-based id', async () => {
-        const derivedMainKey = await deriveMainKey(TEST_MNEMONIC)
+        const derivedMainKey = sharedMainKey
 
         const result = await deriveLegacyPasskeyCredentialFromMainKey({
             derivedMainKey,
@@ -110,12 +121,12 @@ describe('deriveLegacyPasskeyCredentialFromMainKey', () => {
 
     it('is deterministic for the same inputs', async () => {
         const a = await deriveLegacyPasskeyCredentialFromMainKey({
-            derivedMainKey: await deriveMainKey(TEST_MNEMONIC),
+            derivedMainKey: sharedMainKey,
             origin: 'webauthn.io',
             userName: 'qwe',
         })
         const b = await deriveLegacyPasskeyCredentialFromMainKey({
-            derivedMainKey: await deriveMainKey(TEST_MNEMONIC),
+            derivedMainKey: sharedMainKey,
             origin: 'webauthn.io',
             userName: 'qwe',
         })
@@ -125,7 +136,7 @@ describe('deriveLegacyPasskeyCredentialFromMainKey', () => {
     })
 
     it('derives a different credential per origin and per userName', async () => {
-        const derivedMainKey = await deriveMainKey(TEST_MNEMONIC)
+        const derivedMainKey = sharedMainKey
         const base = await deriveLegacyPasskeyCredentialFromMainKey({
             derivedMainKey,
             origin: 'webauthn.io',
