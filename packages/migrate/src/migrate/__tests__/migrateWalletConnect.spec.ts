@@ -115,12 +115,11 @@ describe('migrateWalletConnect', () => {
         })
     })
 
-    it('maps an iOS-shaped session: handshake key fallback, handshakeId 0, mainnet chainId default', () => {
+    it('maps an iOS-shaped session: handshake key fallback, handshakeId 0', () => {
         const result = migrateWalletConnect([
             buildSession({
                 currentKey: null,
                 handshakeId: null,
-                chainId: null,
             }),
         ])
 
@@ -128,7 +127,20 @@ describe('migrateWalletConnect', () => {
         const written = writtenConnections()
         expect(written[0].session?.key).toBe('handshake-key')
         expect(written[0].session?.handshakeId).toBe(0)
-        expect(written[0].session?.chainId).toBe(416_001)
+    })
+
+    it('preserves the legacy chainId', () => {
+        migrateWalletConnect([buildSession({ chainId: 416_002 })])
+
+        const written = writtenConnections()
+        expect(written[0].session?.chainId).toBe(416_002)
+    })
+
+    it('skips a session whose chainId is unknown rather than guessing the network', () => {
+        const result = migrateWalletConnect([buildSession({ chainId: null })])
+
+        expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(setWalletConnectConnectionsMock).not.toHaveBeenCalled()
     })
 
     it('falls back to connectedAccounts when approvedAccounts is null or empty', () => {

@@ -12,7 +12,6 @@
 
 import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
 import {
-    AlgorandChainId,
     PERA_CLIENT_META,
     useWalletConnectStore,
     type WalletConnectConnection,
@@ -58,28 +57,54 @@ type ImportableConnection = WalletConnectConnection & {
     session: NonNullable<WalletConnectConnection['session']>
 }
 
+type ResolvedSessionFields = {
+    bridge: string | null
+    topic: string | null
+    key: string | null
+    clientId: string | null
+    peerId: string | null
+    chainId: number | null
+    accounts: string[]
+}
+
+type ValidSessionFields = {
+    [K in keyof ResolvedSessionFields]: NonNullable<ResolvedSessionFields[K]>
+}
+
+const isSessionValid = (
+    fields: ResolvedSessionFields,
+): fields is ValidSessionFields =>
+    Boolean(
+        fields.bridge &&
+            fields.topic &&
+            fields.key &&
+            fields.clientId &&
+            fields.peerId &&
+            fields.chainId != null &&
+            fields.accounts.length > 0,
+    )
+
 const toConnection = (
     legacy: LegacyWalletConnectV1Session,
 ): ImportableConnection | null => {
     const meta = parseSessionMeta(legacy.sessionMetaJson)
-    const bridge = meta.bridge
-    const topic = meta.topic
-    const key = legacy.currentKey ?? meta.key
-    const { clientId, peerId } = legacy
-    const accounts = legacy.approvedAccounts?.length
-        ? legacy.approvedAccounts
-        : legacy.connectedAccounts
+    const fields: ResolvedSessionFields = {
+        bridge: meta.bridge,
+        topic: meta.topic,
+        key: legacy.currentKey ?? meta.key,
+        clientId: legacy.clientId,
+        peerId: legacy.peerId,
+        chainId: legacy.chainId,
+        accounts: legacy.approvedAccounts?.length
+            ? legacy.approvedAccounts
+            : legacy.connectedAccounts,
+    }
 
-    if (
-        !bridge ||
-        !topic ||
-        !clientId ||
-        !peerId ||
-        !key ||
-        accounts.length === 0
-    ) {
+    if (!isSessionValid(fields)) {
         return null
     }
+
+    const { bridge, topic, key, clientId, peerId, chainId, accounts } = fields
 
     return {
         clientId,
@@ -90,7 +115,7 @@ const toConnection = (
         session: {
             connected: true,
             accounts,
-            chainId: legacy.chainId ?? AlgorandChainId.mainnet,
+            chainId,
             bridge,
             key,
             clientId,
