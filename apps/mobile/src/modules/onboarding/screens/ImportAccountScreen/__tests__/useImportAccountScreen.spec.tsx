@@ -12,7 +12,11 @@
 
 import { renderHook, act } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
-import { useImportAccount } from '@perawallet/wallet-core-accounts'
+import { useRoute } from '@react-navigation/native'
+import {
+    consumePendingImportMnemonic,
+    useImportAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { useImportAccountScreen } from '../useImportAccountScreen'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
@@ -53,6 +57,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useImportAccount: vi.fn(),
+    consumePendingImportMnemonic: vi.fn(),
     MNEMONIC_WORD_COUNT: {
         hdWallet: 24,
         algo25: 25,
@@ -124,10 +129,17 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useImportAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        // Re-establish the default route params so a per-test override (e.g.
+        // prefilledMnemonic) can't leak into the next test.
+        vi.mocked(useRoute).mockReturnValue({
+            params: { accountType: 'hdWallet' },
+        } as never)
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
         )
+        // Default: nothing pending, so the screen starts with empty word slots.
+        vi.mocked(consumePendingImportMnemonic).mockReturnValue(null)
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
@@ -135,6 +147,17 @@ describe('useImportAccountScreen', () => {
         const { result } = renderHook(() => useImportAccountScreen())
         expect(result.current.words).toHaveLength(24)
         expect(result.current.words.every(w => w === '')).toBe(true)
+    })
+
+    it('pre-fills the passphrase words on mount from the pending-import store', () => {
+        const mnemonic = new Array(24).fill('word').join(' ')
+        vi.mocked(consumePendingImportMnemonic).mockReturnValue(mnemonic)
+
+        const { result } = renderHook(() => useImportAccountScreen())
+
+        expect(consumePendingImportMnemonic).toHaveBeenCalledTimes(1)
+        expect(result.current.words.every(w => w === 'word')).toBe(true)
+        expect(result.current.canImport).toBe(true)
     })
 
     it('updates a single word at a specific index', () => {

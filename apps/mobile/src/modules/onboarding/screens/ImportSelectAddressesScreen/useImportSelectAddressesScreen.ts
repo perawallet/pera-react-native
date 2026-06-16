@@ -184,7 +184,17 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 }
 
                 if (discoveredRekeyedAccounts.length === 0) {
-                    exitAccountFlow()
+                    // A single freshly-imported account gets a naming step so
+                    // the user can confirm a custom name; NameAccount renames
+                    // the committed account and exits the flow on confirm.
+                    // Multi-address imports keep their auto-generated names.
+                    if (isImportMode && accountsToAdd.length === 1) {
+                        navigation.replace('NameAccount', {
+                            account: accountsToAdd[0],
+                        })
+                    } else {
+                        exitAccountFlow()
+                    }
                 } else {
                     navigation.replace('ImportRekeyedAddresses', {
                         accounts: discoveredRekeyedAccounts,

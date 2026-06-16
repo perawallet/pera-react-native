@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import { Linking } from 'react-native'
 
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { type OnboardingStackParamList } from '../../routes/types'
 import {
+    consumePendingImportMnemonic,
     DuplicateAccountError,
     MNEMONIC_WORD_COUNT,
     useImportAccount,
@@ -93,6 +94,21 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     } = useModalState()
 
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
+
+    // Pre-populate the passphrase from a scanned QR / recover-address deeplink
+    // so the user reviews and confirms the words before importing. The mnemonic
+    // is handed off via an in-memory store rather than a navigation route param
+    // so the secret never enters the navigation state tree; consuming it here
+    // reads and clears it in one step. Runs once on mount; `updateWord`
+    // distributes a full space-separated mnemonic across the word fields
+    // starting at index 0.
+    useEffect(() => {
+        const pendingMnemonic = consumePendingImportMnemonic()
+        if (pendingMnemonic) {
+            updateWord(pendingMnemonic, 0)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const handleImportAccount = useCallback(() => {
         setProcessing(true)

@@ -12,13 +12,9 @@
 
 import { useCallback } from 'react'
 import {
-    DuplicateAccountError,
     resolveImportAccountType,
-    useImportAccount,
-    type WalletAccount,
+    setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
-import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
 import { navigateToScreen } from '../navigateToScreen'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 
@@ -43,19 +39,18 @@ const normalizeMnemonic = (raw: string): string =>
     raw.replace(/[,\s]+/g, ' ').trim()
 
 /**
- * QR-only: scanning a recover-address mnemonic kicks off the import flow and
- * lands the user on SearchAccounts so they can finish onboarding the new
- * account. Pasted/typed deeplinks intentionally don't trigger this — guards
- * against a malicious URL stealing keys.
+ * QR-only: scanning a recover-address mnemonic opens the Import screen with the
+ * passphrase pre-filled so the user reviews/confirms the words (and later names
+ * the account) before importing — it no longer imports silently. Pasted/typed
+ * deeplinks intentionally don't trigger this — guards against a malicious URL
+ * stealing keys.
  */
 export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
-    const importAccount = useImportAccount()
-    const markBackupComplete = useMarkMnemonicBackupComplete()
     const showError = useDeeplinkErrorHandler()
 
     return useCallback(
-        async ({ mnemonic, source, replaceCurrentScreen, sourceUrl }) => {
-            if (source !== 'qr') return
+        ({ mnemonic, source, replaceCurrentScreen, sourceUrl }) => {
+            if (source !== 'qr') return Promise.resolve()
 
             const normalized = normalizeMnemonic(mnemonic)
             const resolved = resolveImportAccountType(normalized)
@@ -66,44 +61,22 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
                     parsedType: 'RECOVER_ADDRESS',
                     error: 'Invalid mnemonic length (need 24 or 25 words)',
                 })
-                return
+                return Promise.resolve()
             }
 
-            try {
-                const result = await importAccount({
-                    mnemonic: normalized,
-                    type: resolved.accountType,
-                })
+            // Hand the mnemonic to the Import screen via an in-memory store
+            // rather than a navigation route param, so the secret never enters
+            // the navigation state tree.
+            setPendingImportMnemonic(normalized)
+            navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                screen: 'ImportAccount',
+                params: {
+                    accountType: resolved.accountType,
+                },
+            })
 
-                if (result.type === 'hdWallet' && 'walletKeyId' in result) {
-                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                        screen: 'SearchAccounts',
-                        params: {
-                            mode: 'import',
-                            walletKeyId: result.walletKeyId,
-                            derivationType: result.derivationType,
-                        },
-                    })
-                } else {
-                    markBackupComplete(result as WalletAccount)
-                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
-                        screen: 'SearchAccounts',
-                        params: {
-                            account: result as WalletAccount,
-                        },
-                    })
-                }
-            } catch (error) {
-                logger.error('[deeplink/recover] import failed', { error })
-                const isDuplicate = error instanceof DuplicateAccountError
-                showError({
-                    variant: isDuplicate ? 'recover_duplicate' : 'recover',
-                    sourceUrl,
-                    parsedType: 'RECOVER_ADDRESS',
-                    error,
-                })
-            }
+            return Promise.resolve()
         },
-        [importAccount, markBackupComplete, showError],
+        [showError],
     )
 }

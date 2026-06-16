@@ -29,7 +29,7 @@ import {
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { type OnboardingStackParamList } from '../../routes/types'
-import { useExitAccountFlow, useShouldPlayConfetti } from '../../hooks'
+import { useExitAccountFlow } from '../../hooks'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
@@ -52,7 +52,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
     const { discoverImportAccounts, cancelImport } = useHDImportSession()
     const { exitAccountFlow } = useExitAccountFlow()
-    const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { buildHdWalletAccount } = useCreateAccount()
     const allAccounts = useAllAccounts()
@@ -217,9 +216,10 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 if (!discoveredRekeyedAccounts) return
 
                 if (discoveredRekeyedAccounts.length === 0) {
-                    setSelectedAccountAddress(account.address)
-                    setShouldPlayConfetti(true)
-                    exitAccountFlow()
+                    // Let the user name the imported account before finishing;
+                    // NameAccount selects it, plays the confetti and exits the
+                    // flow on confirm.
+                    navigation.replace('NameAccount', { account })
                 } else {
                     setSelectedAccountAddress(account.address)
                     navigation.replace('ImportRekeyedAddresses', {
@@ -252,7 +252,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         t,
         showToast,
         exitAccountFlow,
-        setShouldPlayConfetti,
         setSelectedAccountAddress,
         buildHdWalletAccount,
         allAccounts,
