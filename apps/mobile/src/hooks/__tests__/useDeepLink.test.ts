@@ -21,12 +21,18 @@ import {
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeepLink } from '../useDeepLink'
-import { useDeeplinkListener } from '../useDeeplinkListener'
+import {
+    useDeeplinkListener,
+    resetDeeplinkListenerStateForTesting,
+} from '../useDeeplinkListener'
 import { StackActions } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
 import { DeeplinkType } from '../deeplink/types'
 import { Linking } from 'react-native'
-import { useImportAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useImportAccount,
+    setPendingImportMnemonic,
+} from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 
 const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
@@ -87,6 +93,14 @@ const { mockAddSignRequest } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
+    UserRejectedSigningError: class UserRejectedSigningError extends Error {},
+}))
+
+// The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
+// the real transactions package (whose api/history schema imports from the
+// mocked shared package) isn't loaded into this unit test's import graph.
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetOptInMutation: () => ({ optIn: vi.fn() }),
 }))
 
 const { mockOnlineKeyRegistration, mockOfflineKeyRegistration } = vi.hoisted(
@@ -149,6 +163,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
+    // The recover-address handler stashes the scanned mnemonic here before
+    // navigating to the pre-filled Import screen (kept out of route params).
+    setPendingImportMnemonic: vi.fn(),
     DuplicateAccountError: class DuplicateAccountError extends Error {},
 }))
 
@@ -272,6 +289,10 @@ vi.mock('react-native', () => ({
 describe('useDeepLink', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        // The listener's cold-start guard is module-level (shared across all
+        // layout-mounted instances); reset it so one test's initial-URL
+        // handling doesn't suppress the next test's.
+        resetDeeplinkListenerStateForTesting()
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
             mockMarkBackupComplete,
@@ -456,7 +477,7 @@ describe('useDeepLink', () => {
         expect(mockSetPendingAmountBaseUnits).toHaveBeenCalledWith('100')
     })
 
-    it('should handle ASSET_OPT_IN deeplink', async () => {
+    it('should handle ASSET_OPT_IN deeplink by prompting account selection', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ASSET_OPT_IN,
             assetId: '123',
@@ -471,7 +492,13 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case
+        // Bare assetId (no address) → the handler opens the account-selection
+        // sheet first.
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'asset-opt-in-account-selection',
+            {},
+            expect.anything(),
+        )
     })
 
     it('should handle ASSET_DETAIL deeplink', async () => {
@@ -861,16 +888,12 @@ describe('useDeepLink', () => {
         )
     })
 
-    it('should handle RECOVER_ADDRESS deeplink and import as HD wallet from QR', async () => {
+    it('should handle RECOVER_ADDRESS deeplink and open the pre-filled Import screen (HD) from QR', async () => {
+        const mnemonic =
+            'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24'
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic:
-                'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24',
-        })
-        mockImportAccount.mockResolvedValue({
-            type: 'hdWallet',
-            walletKeyId: 'test-wallet-key-id',
-            derivationType: 9,
+            mnemonic,
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -882,34 +905,25 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockImportAccount).toHaveBeenCalledWith({
-            mnemonic:
-                'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24',
-            type: 'hdWallet',
-        })
+        // Mnemonic is handed off via the in-memory store, never imported
+        // straight or carried in route params.
+        expect(vi.mocked(setPendingImportMnemonic)).toHaveBeenCalledWith(
+            mnemonic,
+        )
+        expect(mockImportAccount).not.toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
-            screen: 'SearchAccounts',
-            params: {
-                mode: 'import',
-                walletKeyId: 'test-wallet-key-id',
-                derivationType: 9,
-            },
+            screen: 'ImportAccount',
+            params: { accountType: 'hdWallet' },
         })
     })
 
-    it('should handle RECOVER_ADDRESS deeplink and import as algo25 from QR', async () => {
-        const algo25Account = {
-            id: 'algo25-id',
-            address: 'TEST_ADDRESS',
-            type: 'algo25' as const,
-            keyPairId: 'algo25-keypair-id',
-        }
+    it('should handle RECOVER_ADDRESS deeplink and open the pre-filled Import screen (algo25) from QR', async () => {
+        const mnemonic =
+            'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25'
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic:
-                'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25',
+            mnemonic,
         })
-        mockImportAccount.mockResolvedValue(algo25Account)
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
@@ -920,17 +934,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockImportAccount).toHaveBeenCalledWith({
-            mnemonic:
-                'word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12 word13 word14 word15 word16 word17 word18 word19 word20 word21 word22 word23 word24 word25',
-            type: 'algo25',
-        })
-        expect(mockMarkBackupComplete).toHaveBeenCalledWith(algo25Account)
+        expect(vi.mocked(setPendingImportMnemonic)).toHaveBeenCalledWith(
+            mnemonic,
+        )
         expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
-            screen: 'SearchAccounts',
-            params: {
-                account: algo25Account,
-            },
+            screen: 'ImportAccount',
+            params: { accountType: 'algo25' },
         })
     })
 
@@ -1304,6 +1313,10 @@ describe('useDeepLink', () => {
 describe('useDeeplinkListener', () => {
     beforeEach(() => {
         vi.useFakeTimers()
+        // Cold-start guard is module-level and shared across instances; reset
+        // it between cases so a prior test's initial URL doesn't suppress this
+        // one's handling.
+        resetDeeplinkListenerStateForTesting()
     })
 
     afterEach(() => {
