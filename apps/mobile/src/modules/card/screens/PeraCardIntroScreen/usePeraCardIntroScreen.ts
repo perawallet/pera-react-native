@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { config } from '@perawallet/wallet-core-config'
+import { useCardStore } from '@perawallet/wallet-core-card'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -30,6 +31,9 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
     const navigation = useAppNavigation()
 
     const handleCreateAccount = useCallback(() => {
+        // Starting a new sign-up: clear any leftover onboarding progress from a
+        // prior run so the setup checklist re-locks until this run completes.
+        useCardStore.getState().resetOnboardingProgress()
         navigation.navigate('PeraCard', {
             screen: 'CardOnboarding',
             params: { screen: 'CardOnboardingEmail' },

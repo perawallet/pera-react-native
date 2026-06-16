@@ -21,6 +21,7 @@ import type {
 } from '../../models'
 import {
     addressResponseSchema,
+    connectFundingSourceResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
@@ -210,6 +211,25 @@ export const submitOnboardingConsent = async (
 ): Promise<void> => {
     const { network, signal, ...body } = params
     await postRegisterStep('/v2/consent/onboarding', body, { network, signal })
+}
+
+// Connects a Pera (Algorand) account as the card's funding source on the setup
+// checklist's Connect Funds step. Authenticated (the transport attaches the
+// bearer issued by the address step). ASSUMPTION: the exact contract is pending
+// the live Baanx API (sandbox down) — it's mocked in installCardDevMocks for now.
+export type ConnectFundingSourceParams = NetworkParams & { address: string }
+export type ConnectFundingSourceResult = { fundingSourceId: string }
+export const connectFundingSource = async (
+    params: ConnectFundingSourceParams,
+): Promise<ConnectFundingSourceResult> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/card/funding-source',
+        data: { address: params.address },
+        signal: params.signal,
+    })
+    return connectFundingSourceResponseSchema.parse(response.data)
 }
 
 export const fetchRegistrationSettings = async (

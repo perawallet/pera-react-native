@@ -16,6 +16,7 @@ import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import { type ReactNode } from 'react'
 import { useStyles } from './styles'
 
@@ -30,6 +31,8 @@ export type AccountMenuContentProps = {
     hideDefaultHeader?: boolean
     showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
+    /** Controlled highlight forwarded to AccountMenu (see its `selectedAddress`). */
+    selectedAddress?: Nullable<string>
 }
 
 export const AccountMenuContent = ({
@@ -37,6 +40,7 @@ export const AccountMenuContent = ({
     hideDefaultHeader = false,
     showSearch = false,
     accountFilter,
+    selectedAddress,
 }: AccountMenuContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -69,6 +73,7 @@ export const AccountMenuContent = ({
                 headerContent={headerContent}
                 hideDefaultHeader={hideDefaultHeader}
                 accountFilter={accountFilter}
+                selectedAddress={selectedAddress}
             />
         </PWView>
     )

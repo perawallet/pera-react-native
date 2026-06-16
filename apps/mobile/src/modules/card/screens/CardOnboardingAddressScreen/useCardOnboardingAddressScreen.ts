@@ -15,7 +15,6 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     addressSchema,
-    OnboardingStep,
     useCardStore,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
@@ -45,8 +44,6 @@ export type UseCardOnboardingAddressScreenResult = {
     /** True when the address form is valid AND both T&C boxes are accepted. */
     isValid: boolean
     isSubmitting: boolean
-    /** Registration finalized — the screen swaps to its completion state. */
-    isCompleted: boolean
     selectedCountry: Optional<SupportedCountry>
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
@@ -61,8 +58,6 @@ export type UseCardOnboardingAddressScreenResult = {
     handleOpenCardTerms: () => void
     handleOpenPlatformTerms: () => void
     handleConfirm: () => void
-    /** Leaves onboarding from the completion state. */
-    handleDone: () => void
 }
 
 export const useCardOnboardingAddressScreen =
@@ -90,12 +85,6 @@ export const useCardOnboardingAddressScreen =
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
-        // Derived from the persisted onboarding step (set by the address
-        // mutation's onSuccess) rather than local state, so a cold resume or
-        // re-entry still renders the correct completion status.
-        const isCompleted = useCardStore(
-            state => state.onboardingStep === OnboardingStep.Completed,
-        )
         const hasPreselected = useRef(false)
 
         const {
@@ -232,8 +221,9 @@ export const useCardOnboardingAddressScreen =
                 })
                 await submitAddress.mutateAsync(address)
                 // The mutation's onSuccess commits the session and marks the
-                // onboarding step Completed, which flips `isCompleted` and swaps
-                // this screen to its completion state in place.
+                // onboarding step Completed. Registration is done — hand back to
+                // the setup checklist, where Connect Funds is now the live step.
+                navigation.navigate('CardOnboardingStatus')
             } catch {
                 errorToast(
                     t('peraCard.address.error_title'),
@@ -246,17 +236,11 @@ export const useCardOnboardingAddressScreen =
             void submitAddressForm()
         }
 
-        const handleDone = useCallback(() => {
-            // TODO(card): route into card creation once that slice lands.
-            navigation.navigate('PeraCardIntro')
-        }, [navigation])
-
         return {
             control,
             errors,
             isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
             isSubmitting: submitAddress.isPending || submitConsent.isPending,
-            isCompleted,
             selectedCountry,
             isUsResident,
             selectedUsState,
@@ -271,6 +255,5 @@ export const useCardOnboardingAddressScreen =
             handleOpenCardTerms,
             handleOpenPlatformTerms,
             handleConfirm,
-            handleDone,
         }
     }

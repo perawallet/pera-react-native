@@ -39,6 +39,9 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         seedIdOf: (childId?: string) =>
             childId ? parentMap.get(childId) : undefined,
     }),
+    // Real (pure) inverse of hdDerivedKeyId — the robustness fallback.
+    seedKeyIdFromDerivedKeyId: (id?: string) =>
+        id ? /^(.+)-acc\d+-idx\d+-dt\d+$/.exec(id)?.[1] : undefined,
 }))
 
 const HD_ACCOUNT = {
@@ -129,6 +132,30 @@ describe('useCreateNextHDAccount', () => {
     })
 
     test('createNextHDAccount uses walletId from first HD account', async () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+        mockCreateAccount.createHdWalletAccount.mockResolvedValue({
+            id: 'new',
+            address: 'NEW',
+            type: 'hdWallet',
+        })
+
+        const { result } = renderHook(() => useCreateNextHDAccount())
+
+        await act(async () => {
+            await result.current.createNextHDAccount()
+        })
+
+        expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
+            walletId: 'wallet-1',
+            account: 1,
+            keyIndex: 0,
+        })
+    })
+
+    test('createNextHDAccount resolves the seed by parsing keyPairId when seedIdOf is undefined', async () => {
+        // No parentMap entry → seedIdOf returns undefined; the parse fallback
+        // must still recover the seed id from the keyPairId format.
+        parentMap.clear()
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
         mockCreateAccount.createHdWalletAccount.mockResolvedValue({
             id: 'new',

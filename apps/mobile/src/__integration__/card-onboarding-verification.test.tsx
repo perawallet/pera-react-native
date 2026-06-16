@@ -52,6 +52,10 @@ const renderFlow = () =>
         },
     )
 
+// The setup checklist on its own, for the Connect Funds states.
+const renderStatus = () =>
+    renderWithNavigation(CardOnboardingStatusScreen, 'CardOnboardingStatus')
+
 const mockStartVerification = () =>
     server.use(
         http.post('*/v1/auth/register/verification', () =>
@@ -148,5 +152,57 @@ describe('Flow: Card onboarding — identity verification', () => {
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.PersonalDetails,
         )
+    })
+
+    it('Given registration is incomplete, then the Connect Funds row stays inactive', () => {
+        mockOnboardingDetails('VERIFIED')
+
+        renderStatus()
+
+        // Before registration completes there's no connect CTA — just the stub.
+        expect(
+            screen.getByTestId('card-onboarding-status-connect-funds'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByTestId('card-onboarding-status-connect-cta'),
+        ).toBeNull()
+    })
+
+    it('Given registration is complete, then the Connect a Pera Account button shows', async () => {
+        mockOnboardingDetails('VERIFIED')
+        useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
+
+        renderStatus()
+
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-status-connect-cta'),
+            ).toBeTruthy(),
+        )
+    })
+
+    it('Given a funding source is already connected, then the row shows it as done', async () => {
+        mockOnboardingDetails('VERIFIED')
+        useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
+        useCardStore
+            .getState()
+            .setConnectedFundingSourceAddress(
+                'GD64YIY3TWGDMCNPP553DZPPR6LDUSFQOIJVFDPPXWEG3FVOJCCDBBHU5A',
+            )
+
+        renderStatus()
+
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-status-connected-account'),
+            ).toBeTruthy(),
+        )
+        // Connected: the CTA is replaced by the connected account + a Change link.
+        expect(
+            screen.queryByTestId('card-onboarding-status-connect-cta'),
+        ).toBeNull()
+        expect(
+            screen.getByTestId('card-onboarding-status-change-account'),
+        ).toBeTruthy()
     })
 })

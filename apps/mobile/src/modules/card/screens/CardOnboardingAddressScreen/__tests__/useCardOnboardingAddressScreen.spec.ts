@@ -156,25 +156,7 @@ describe('useCardOnboardingAddressScreen', () => {
 
         expect(result.current.isValid).toBe(false)
         expect(result.current.isSubmitting).toBe(false)
-        expect(result.current.isCompleted).toBe(false)
         expect(result.current.isUsResident).toBe(false)
-    })
-
-    it('derives completion from the persisted onboarding step', () => {
-        mockOnboardingStep = OnboardingStep.Completed
-        const { result } = renderHook(() => useCardOnboardingAddressScreen())
-
-        expect(result.current.isCompleted).toBe(true)
-    })
-
-    it('leaves onboarding from the completion state', () => {
-        const { result } = renderHook(() => useCardOnboardingAddressScreen())
-
-        act(() => {
-            result.current.handleDone()
-        })
-
-        expect(mockNavigate).toHaveBeenCalledWith('PeraCardIntro')
     })
 
     it('prefills the residence country', async () => {

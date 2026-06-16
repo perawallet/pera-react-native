@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { Trans } from 'react-i18next'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
     PWScreen,
@@ -20,6 +21,7 @@ import {
     type IconName,
     type PWIconVariant,
 } from '@components/core'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useCardOnboardingStatusScreen,
@@ -63,7 +65,13 @@ export const CardOnboardingStatusScreen = () => {
     const styles = useStyles()
     const {
         documentsState,
+        isRegistrationComplete,
+        isFundsConnected,
+        connectedAccount,
+        connectedAddress,
+        isConnecting,
         handleEnterDetails,
+        handleConnectAccount,
         handleLogout,
         handleOpenSupport,
     } = useCardOnboardingStatusScreen()
@@ -121,14 +129,22 @@ export const CardOnboardingStatusScreen = () => {
                         testID='card-onboarding-status-documents'
                     />
 
-                    {/* 2 — Enter Your Details (actionable unless rejected) */}
+                    {/* 2 — Enter Your Details (done once registration completes) */}
                     <StatusChecklistRow
-                        icon='person'
-                        iconVariant='primary'
+                        icon={isRegistrationComplete ? 'check' : 'person'}
+                        iconVariant={
+                            isRegistrationComplete ? 'positive' : 'primary'
+                        }
                         title={t('peraCard.setup_status.details_title')}
-                        body={t('peraCard.setup_status.details_body')}
+                        body={
+                            isRegistrationComplete
+                                ? undefined
+                                : t('peraCard.setup_status.details_body')
+                        }
+                        testID='card-onboarding-status-details'
                     >
-                        {documentsState !== 'rejected' ? (
+                        {!isRegistrationComplete &&
+                        documentsState !== 'rejected' ? (
                             <PWButton
                                 variant='primary'
                                 title={t(
@@ -141,13 +157,82 @@ export const CardOnboardingStatusScreen = () => {
                         ) : null}
                     </StatusChecklistRow>
 
-                    {/* 3 + 4 — future slices, rendered as inactive steps */}
-                    <StatusChecklistRow
-                        icon='wallet'
-                        iconVariant='secondary'
-                        isInactive
-                        title={t('peraCard.setup_status.connect_funds_title')}
-                    />
+                    {/* 3 — Connect Funds (inactive → active → connected) */}
+                    {isFundsConnected ? (
+                        <StatusChecklistRow
+                            icon='check'
+                            iconVariant='positive'
+                            title={t(
+                                'peraCard.setup_status.connect_funds_title',
+                            )}
+                            testID='card-onboarding-status-connect-funds'
+                        >
+                            <PWView style={styles.connectedCard}>
+                                {connectedAccount ? (
+                                    <AccountDisplay
+                                        account={connectedAccount}
+                                        showChevron={false}
+                                        noBorder
+                                        iconProps={{ size: 'sm' }}
+                                        style={styles.connectedAccountInfo}
+                                        testID='card-onboarding-status-connected-account'
+                                    />
+                                ) : (
+                                    <PWText
+                                        variant='body'
+                                        weight={400}
+                                        style={styles.connectedAccountInfo}
+                                        testID='card-onboarding-status-connected-account'
+                                    >
+                                        {truncateAlgorandAddress(
+                                            connectedAddress ?? '',
+                                        )}
+                                    </PWText>
+                                )}
+                                <PWText
+                                    variant='linkPositive'
+                                    onPress={handleConnectAccount}
+                                    testID='card-onboarding-status-change-account'
+                                >
+                                    {t('peraCard.connect_account.change')}
+                                </PWText>
+                            </PWView>
+                        </StatusChecklistRow>
+                    ) : isRegistrationComplete ? (
+                        <StatusChecklistRow
+                            icon='wallet'
+                            iconVariant='primary'
+                            title={t(
+                                'peraCard.setup_status.connect_funds_title',
+                            )}
+                            body={t('peraCard.setup_status.connect_funds_body')}
+                            testID='card-onboarding-status-connect-funds'
+                        >
+                            <PWButton
+                                variant='primary'
+                                title={t(
+                                    'peraCard.setup_status.connect_funds_button',
+                                )}
+                                onPress={handleConnectAccount}
+                                isLoading={isConnecting}
+                                isDisabled={isConnecting}
+                                style={styles.detailsButton}
+                                testID='card-onboarding-status-connect-cta'
+                            />
+                        </StatusChecklistRow>
+                    ) : (
+                        <StatusChecklistRow
+                            icon='wallet'
+                            iconVariant='secondary'
+                            isInactive
+                            title={t(
+                                'peraCard.setup_status.connect_funds_title',
+                            )}
+                            testID='card-onboarding-status-connect-funds'
+                        />
+                    )}
+
+                    {/* 4 — Select Funding Type (deferred future slice) */}
                     <StatusChecklistRow
                         icon='fund'
                         iconVariant='secondary'

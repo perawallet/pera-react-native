@@ -65,7 +65,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import { useHDWallet, type HDWalletKeyResult } from '../useHDWallet'
+import {
+    useHDWallet,
+    seedKeyIdFromDerivedKeyId,
+    type HDWalletKeyResult,
+} from '../useHDWallet'
 import { SeedScheme } from '../../constants'
 
 describe('useHDWallet', () => {
@@ -223,5 +227,23 @@ describe('useHDWallet', () => {
                 }),
             ).rejects.toThrow()
         })
+    })
+})
+
+describe('seedKeyIdFromDerivedKeyId', () => {
+    test('recovers the seed id from a derived child id', () => {
+        expect(seedKeyIdFromDerivedKeyId('hd-1-acc7-idx3-dt9')).toBe('hd-1')
+    })
+
+    test('handles a UUIDv7 seed id containing hyphens', () => {
+        const seed = '0190abcd-1234-7abc-89ef-0123456789ab'
+        expect(seedKeyIdFromDerivedKeyId(`${seed}-acc0-idx0-dt9`)).toBe(seed)
+    })
+
+    test('returns undefined for non-HD-derived ids', () => {
+        expect(
+            seedKeyIdFromDerivedKeyId('algo25-key-1-ed25519'),
+        ).toBeUndefined()
+        expect(seedKeyIdFromDerivedKeyId('hd-1')).toBeUndefined()
     })
 })

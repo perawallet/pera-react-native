@@ -47,6 +47,12 @@ export type CardUxState = BaseStoreState & {
      * accepts `allowMarketing`, but it fires before this consent is collected.
      */
     allowMarketing: boolean
+    /**
+     * Address of the Pera account connected as the card's funding source on the
+     * setup checklist's Connect Funds step. Persisted so the row stays "done"
+     * across a cold resume.
+     */
+    connectedFundingSourceAddress: Nullable<string>
     cardId: Nullable<string>
     lastKnownStatus: Nullable<CardStatus>
     /** PCI-safe render hint shown before the status query resolves. */
@@ -61,12 +67,18 @@ export type CardUxState = BaseStoreState & {
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void
     setAllowMarketing: (allowMarketing: boolean) => void
+    setConnectedFundingSourceAddress: (address: Nullable<string>) => void
     setCardSnapshot: (snapshot: {
         cardId: string
         status: CardStatus
         panLast4: string
     }) => void
     setTransactionFilters: (filters: CardTransactionFilters) => void
+    /**
+     * Clears the onboarding-flow fields when a new sign-up begins. Leaves
+     * card-snapshot/transaction state intact (unlike `resetState`).
+     */
+    resetOnboardingProgress: () => void
 }
 
 /**

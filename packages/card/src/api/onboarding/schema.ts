@@ -75,3 +75,13 @@ export const addressResponseSchema = z.object({
     onboardingId: z.string(),
 })
 export type AddressApiResponse = z.infer<typeof addressResponseSchema>
+
+// POST /v1/card/funding-source — connects a Pera (Algorand) account as the
+// card's funding source on the setup checklist. ASSUMPTION: the request/response
+// shape is unverified (Baanx sandbox down), so it's mocked for now.
+export const connectFundingSourceResponseSchema = z.object({
+    fundingSourceId: z.string(),
+})
+export type ConnectFundingSourceApiResponse = z.infer<
+    typeof connectFundingSourceResponseSchema
+>

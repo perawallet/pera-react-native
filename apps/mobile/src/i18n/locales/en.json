@@ -794,9 +794,6 @@
             "card_terms": "I have read and understood the Card Issue <0>Terms & Conditions</0> and accept them.",
             "platform_terms": "I have read and understood the Platform <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
-            "completed_title": "Registration complete",
-            "completed_body": "Your Pera Card account has been created. We'll let you know as soon as your card is ready.",
-            "done_button": "Done",
             "error_title": "Something went wrong",
             "error_body": "We couldn't save your address. Please try again."
         },
@@ -821,7 +818,16 @@
             "details_body": "Verify your details and enter your address to proceed.",
             "details_button": "Verify your Account",
             "connect_funds_title": "Connect Funds",
+            "connect_funds_body": "Connect one of your Pera accounts as a funding source to start using your Pera Card.",
+            "connect_funds_button": "Connect a Pera Account",
+            "connect_error_title": "Something went wrong",
+            "connect_error_body": "We couldn't connect your account. Please try again.",
             "funding_type_title": "Select Funding Type"
+        },
+        "connect_account": {
+            "title": "Choose Card account",
+            "subtitle": "To get started, connect the wallet you would like to use to set up your account.",
+            "change": "Change"
         }
     },
     "notifications": {

@@ -28,6 +28,7 @@ const api = vi.hoisted(() => ({
     submitPersonalDetails: vi.fn(),
     submitAddress: vi.fn(),
     submitOnboardingConsent: vi.fn(),
+    connectFundingSource: vi.fn(),
 }))
 vi.mock('../../api/onboarding', () => api)
 
@@ -41,6 +42,7 @@ import { useVerifyPhoneMutation } from '../useVerifyPhoneMutation'
 import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMutation'
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
+import { useConnectFundingSourceMutation } from '../useConnectFundingSourceMutation'
 import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 
@@ -278,5 +280,37 @@ describe('onboarding mutation hooks', () => {
         // Consent is part of the final address step — it must not advance the
         // onboarding step on its own.
         expect(useCardStore.getState().onboardingStep).toBe(stepBefore)
+    })
+
+    it('useConnectFundingSourceMutation links the account and stores its address', async () => {
+        api.connectFundingSource.mockResolvedValue({
+            fundingSourceId: 'fs_1',
+        })
+        const { result } = renderHook(() => useConnectFundingSourceMutation(), {
+            wrapper,
+        })
+        result.current.mutate({ address: 'ALGO_ADDRESS' })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.connectFundingSource).toHaveBeenCalledWith({
+            address: 'ALGO_ADDRESS',
+            network: 'mainnet',
+        })
+        // The connected account address (not the fabricated id) is persisted so
+        // the checklist's Connect Funds row renders its done state.
+        expect(useCardStore.getState().connectedFundingSourceAddress).toBe(
+            'ALGO_ADDRESS',
+        )
+    })
+
+    it('useConnectFundingSourceMutation leaves the store untouched on failure', async () => {
+        api.connectFundingSource.mockRejectedValue(new Error('nope'))
+        const { result } = renderHook(() => useConnectFundingSourceMutation(), {
+            wrapper,
+        })
+        result.current.mutate({ address: 'ALGO_ADDRESS' })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(useCardStore.getState().connectedFundingSourceAddress).toBeNull()
     })
 })

@@ -29,6 +29,7 @@ import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
+import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
 
 // The final registration step returns the access token + onboarding id.
 const ADDRESS_RESPONSE = {
@@ -77,6 +78,10 @@ const renderFlow = () =>
                 name: 'CardOnboardingEmailVerify',
                 component: CardOnboardingEmailVerifyScreen,
             },
+            {
+                name: 'CardOnboardingStatus',
+                component: CardOnboardingStatusScreen,
+            },
         ],
     })
 
@@ -119,6 +124,17 @@ describe('Flow: Card onboarding — residential address', () => {
             // final step; default it to success.
             http.post('*/v2/consent/onboarding', () =>
                 HttpResponse.json({ success: true }, { status: 200 }),
+            ),
+            // Submitting the address hands back to the setup checklist, which
+            // polls the onboarding KYC state on mount.
+            http.get('*/v1/auth/register', () =>
+                HttpResponse.json(
+                    {
+                        id: 'mock-onboarding-id',
+                        verificationState: 'VERIFIED',
+                    },
+                    { status: 200 },
+                ),
             ),
         )
     })
@@ -166,12 +182,10 @@ describe('Flow: Card onboarding — residential address', () => {
             cardTermsAccepted: true,
             platformTermsAccepted: true,
         })
-        // Address is the final step: the screen swaps to its completion state
-        // and onboarding is marked done.
+        // Registration is finalized, so the flow hands back to the setup
+        // checklist (where Connect Funds takes over) and marks onboarding done.
         await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-address-success'),
-            ).toBeTruthy(),
+            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
         )
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Completed,
@@ -276,9 +290,8 @@ describe('Flow: Card onboarding — residential address', () => {
         )
         // Consent gates the finalize: a failed consent must not submit the address.
         expect(addressSpy).not.toHaveBeenCalled()
-        expect(
-            screen.queryByTestId('card-onboarding-address-success'),
-        ).toBeNull()
+        // The flow stays on the address screen — it never advances to the checklist.
+        expect(screen.queryByTestId('card-onboarding-status')).toBeNull()
     })
 
     it('Given the onboarding id is missing, when Continue is pressed, then it routes back to email verification', async () => {

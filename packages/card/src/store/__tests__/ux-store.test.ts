@@ -158,6 +158,40 @@ describe('useCardStore', () => {
         expect(result.current.cardId).toBeNull()
     })
 
+    test('resetOnboardingProgress clears onboarding fields but keeps card snapshot/filters', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setOnboardingStep(OnboardingStep.Completed)
+            result.current.setEmail('john@example.com')
+            result.current.setOnboardingId('onb_1')
+            result.current.setConnectedFundingSourceAddress('ADDR1')
+            result.current.setAllowMarketing(false)
+            // Card-snapshot / filters should survive a fresh sign-up.
+            result.current.setCardSnapshot({
+                cardId: 'card_1',
+                status: CardStatus.Active,
+                panLast4: '1234',
+            })
+            result.current.setTransactionFilters({ searchKey: 'coffee' })
+        })
+        act(() => result.current.resetOnboardingProgress())
+
+        // Onboarding progress reset → setup checklist re-locks.
+        expect(result.current.onboardingStep).toBe(OnboardingStep.EmailSend)
+        expect(result.current.email).toBeNull()
+        expect(result.current.onboardingId).toBeNull()
+        expect(result.current.connectedFundingSourceAddress).toBeNull()
+        expect(result.current.allowMarketing).toBe(true)
+        // Card snapshot / filters preserved.
+        expect(result.current.cardId).toBe('card_1')
+        expect(result.current.lastKnownStatus).toBe(CardStatus.Active)
+        expect(result.current.transactionFilters).toEqual({
+            searchKey: 'coffee',
+        })
+    })
+
     test('registers clearStorage and resetState under card-store', async () => {
         await import('../ux-store')
 

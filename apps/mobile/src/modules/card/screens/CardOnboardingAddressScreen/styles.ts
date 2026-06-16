@@ -46,10 +46,4 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         color: theme.colors.textGray,
     },
-    completedTitle: {
-        color: theme.colors.textGray,
-    },
-    completedBody: {
-        color: theme.colors.textGrayLighter,
-    },
 }))

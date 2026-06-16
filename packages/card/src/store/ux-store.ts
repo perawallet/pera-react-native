@@ -32,6 +32,7 @@ const initialState = {
     onboardingId: null,
     // Defaults to opted-in, matching the address screen's pre-checked box.
     allowMarketing: true,
+    connectedFundingSourceAddress: null,
     cardId: null,
     lastKnownStatus: null,
     lastKnownPanLast4: null,
@@ -55,6 +56,8 @@ export const useCardStore: UseBoundStore<
             setContactVerificationId: id => set({ contactVerificationId: id }),
             setOnboardingId: id => set({ onboardingId: id }),
             setAllowMarketing: allowMarketing => set({ allowMarketing }),
+            setConnectedFundingSourceAddress: address =>
+                set({ connectedFundingSourceAddress: address }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({
                     cardId,
@@ -63,6 +66,23 @@ export const useCardStore: UseBoundStore<
                 }),
             setTransactionFilters: filters =>
                 set({ transactionFilters: filters }),
+            // Reset only the onboarding-flow fields (so a fresh sign-up
+            // re-locks the setup checklist); card-snapshot/filters stay intact.
+            resetOnboardingProgress: () =>
+                set({
+                    onboardingStep: initialState.onboardingStep,
+                    email: initialState.email,
+                    countryIso: initialState.countryIso,
+                    verificationCode: initialState.verificationCode,
+                    phoneVerificationCode: initialState.phoneVerificationCode,
+                    phoneCountryCode: initialState.phoneCountryCode,
+                    phoneNumber: initialState.phoneNumber,
+                    contactVerificationId: initialState.contactVerificationId,
+                    onboardingId: initialState.onboardingId,
+                    allowMarketing: initialState.allowMarketing,
+                    connectedFundingSourceAddress:
+                        initialState.connectedFundingSourceAddress,
+                }),
             resetState: () => set(initialState),
         }),
         {
@@ -80,6 +100,8 @@ export const useCardStore: UseBoundStore<
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
                 allowMarketing: state.allowMarketing,
+                connectedFundingSourceAddress:
+                    state.connectedFundingSourceAddress,
                 cardId: state.cardId,
                 lastKnownStatus: state.lastKnownStatus,
                 lastKnownPanLast4: state.lastKnownPanLast4,

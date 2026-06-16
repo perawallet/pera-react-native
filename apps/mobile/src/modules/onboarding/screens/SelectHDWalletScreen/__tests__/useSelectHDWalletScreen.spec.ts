@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@test-utils/render'
+import { renderHook, act, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSelectHDWalletScreen } from '../useSelectHDWalletScreen'
 import type { HDWalletGroup } from '@perawallet/wallet-core-accounts'
+
+// Mutable so individual tests can switch between one and many wallet groups.
+const groupsState = vi.hoisted(() => ({ groups: [] as HDWalletGroup[] }))
 
 const mockPush = vi.fn()
 const mockReplace = vi.fn()
@@ -26,6 +29,15 @@ vi.mock('@hooks/useAppNavigation', () => ({
         goBack: mockGoBack,
     }),
 }))
+
+let mockRouteParams: { returnTo?: unknown } | undefined
+vi.mock('@react-navigation/native', async () => {
+    const actual = await vi.importActual<object>('@react-navigation/native')
+    return {
+        ...actual,
+        useRoute: () => ({ params: mockRouteParams }),
+    }
+})
 
 const mockShowToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
@@ -108,8 +120,8 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useHDWalletGroups: () => ({
-            hdWalletGroups: mockHDWalletGroups,
-            hasMultipleHDWallets: true,
+            hdWalletGroups: groupsState.groups,
+            hasMultipleHDWallets: groupsState.groups.length > 1,
         }),
         useAllAccounts: () => [],
         useCreateAccount: () => ({
@@ -139,6 +151,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 describe('useSelectHDWalletScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRouteParams = undefined
+        // Default to the two-wallet picker; auto-skip tests override this.
+        groupsState.groups = mockHDWalletGroups
     })
 
     it('returns HD wallet groups', () => {
@@ -172,8 +187,37 @@ describe('useSelectHDWalletScreen', () => {
             result.current.handleSelectWallet(mockHDWalletGroups[0])
         })
 
+        expect(mockReplace).toHaveBeenCalledWith(
+            'NameAccount',
+            expect.objectContaining({ account: mockNewAccount }),
+        )
+    })
+
+    it('forwards the returnTo target to NameAccount when selecting an existing wallet', async () => {
+        const returnTo = {
+            name: 'PeraCard',
+            params: {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingStatus' },
+            },
+        }
+        mockRouteParams = { returnTo }
+        const newAccount = {
+            id: 'hd-new',
+            address: 'HD_NEW',
+            type: 'hdWallet' as const,
+        }
+        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
+
+        const { result } = renderHook(() => useSelectHDWalletScreen())
+
+        await act(async () => {
+            result.current.handleSelectWallet(mockHDWalletGroups[0])
+        })
+
         expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
-            account: mockNewAccount,
+            account: newAccount,
+            returnTo,
         })
     })
 
@@ -244,8 +288,37 @@ describe('useSelectHDWalletScreen', () => {
             result.current.handleCreateNewWallet()
         })
 
+        expect(mockPush).toHaveBeenCalledWith(
+            'NameAccount',
+            expect.objectContaining({ account: newAccount }),
+        )
+    })
+
+    it('forwards the returnTo target to NameAccount', async () => {
+        const returnTo = {
+            name: 'PeraCard',
+            params: {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingStatus' },
+            },
+        }
+        mockRouteParams = { returnTo }
+        const newAccount = {
+            id: 'new-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+        }
+        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
+
+        const { result } = renderHook(() => useSelectHDWalletScreen())
+
+        await act(async () => {
+            result.current.handleCreateNewWallet()
+        })
+
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
+            returnTo,
         })
     })
 
@@ -285,5 +358,85 @@ describe('useSelectHDWalletScreen', () => {
         })
 
         expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    describe('single-wallet auto-select', () => {
+        it('auto-selects the only wallet and skips the picker', async () => {
+            groupsState.groups = [mockHDWalletGroups[0]]
+            const newAccount = {
+                id: 'x',
+                address: 'X',
+                type: 'hdWallet' as const,
+            }
+            mockBuildHdWalletAccount.mockResolvedValue(newAccount)
+
+            const { result } = renderHook(() => useSelectHDWalletScreen())
+
+            expect(result.current.isAutoSelecting).toBe(true)
+
+            await waitFor(() =>
+                expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
+                    walletId: 'wallet-1',
+                    account: 0,
+                    keyIndex: 1,
+                }),
+            )
+            expect(mockReplace).toHaveBeenCalledWith(
+                'NameAccount',
+                expect.objectContaining({ account: newAccount }),
+            )
+        })
+
+        it('forwards the returnTo target through the auto-select path', async () => {
+            groupsState.groups = [mockHDWalletGroups[0]]
+            const returnTo = {
+                name: 'PeraCard',
+                params: {
+                    screen: 'CardOnboarding',
+                    params: { screen: 'CardOnboardingStatus' },
+                },
+            }
+            mockRouteParams = { returnTo }
+            const newAccount = {
+                id: 'x',
+                address: 'X',
+                type: 'hdWallet' as const,
+            }
+            mockBuildHdWalletAccount.mockResolvedValue(newAccount)
+
+            renderHook(() => useSelectHDWalletScreen())
+
+            await waitFor(() =>
+                expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                    account: newAccount,
+                    returnTo,
+                }),
+            )
+        })
+
+        it('does not auto-select when multiple wallets exist', async () => {
+            groupsState.groups = mockHDWalletGroups
+
+            const { result } = renderHook(() => useSelectHDWalletScreen())
+
+            expect(result.current.isAutoSelecting).toBe(false)
+            await act(async () => {})
+            expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
+        })
+
+        it('reveals the picker (and toasts) when auto-select fails', async () => {
+            groupsState.groups = [mockHDWalletGroups[0]]
+            mockBuildHdWalletAccount.mockRejectedValue(new Error('boom'))
+
+            const { result } = renderHook(() => useSelectHDWalletScreen())
+
+            await waitFor(() =>
+                expect(mockShowToast).toHaveBeenCalledWith(
+                    expect.objectContaining({ type: 'error' }),
+                ),
+            )
+            expect(result.current.isAutoSelecting).toBe(false)
+            expect(mockReplace).not.toHaveBeenCalled()
+        })
     })
 })

@@ -55,6 +55,13 @@ export const useAccountMenu = (
         useSelectedAccountAddress()
     const { accountBalances } = useAccountBalancesQuery(accounts, true)
 
+    // Controlled mode: when `selectedAddress` is passed (even `null`), the caller
+    // owns the highlight and tapping won't mutate the global account.
+    const isControlled = props.selectedAddress !== undefined
+    const effectiveSelectedAddress: Nullable<string> = isControlled
+        ? (props.selectedAddress ?? null)
+        : selectedAccountAddress
+
     const filteredAccounts = useMemo(
         () =>
             props.accountFilter
@@ -70,10 +77,10 @@ export const useAccountMenu = (
 
     const handleTap = useCallback(
         (acct: WalletAccount) => {
-            setSelectedAccountAddress(acct.address)
+            if (!isControlled) setSelectedAccountAddress(acct.address)
             props?.onSelected?.(acct)
         },
-        [props, setSelectedAccountAddress],
+        [props, isControlled, setSelectedAccountAddress],
     )
 
     const [isChartCollapsed, setIsChartCollapsed] = useState(false)
@@ -91,7 +98,7 @@ export const useAccountMenu = (
 
     return {
         sortedAccounts,
-        selectedAccountAddress,
+        selectedAccountAddress: effectiveSelectedAddress,
         sortMode,
         handleTap,
         isChartCollapsed,
