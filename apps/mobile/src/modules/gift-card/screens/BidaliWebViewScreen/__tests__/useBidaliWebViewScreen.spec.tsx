@@ -16,6 +16,14 @@ import { useBidaliWebViewScreen } from '../useBidaliWebViewScreen'
 import { useBidali } from '../../../hooks/useBidali'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
+// useBidaliClose dismisses the host sheet via useBottomSheetResult, which needs
+// a bottom-sheet context this hook-only render doesn't provide — mock it to a
+// stable spy so the screen hook can resolve its close handler.
+const { mockBidaliClose } = vi.hoisted(() => ({ mockBidaliClose: vi.fn() }))
+vi.mock('../../../hooks/useBidaliClose', () => ({
+    useBidaliClose: () => mockBidaliClose,
+}))
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -111,13 +119,9 @@ describe('useBidaliWebViewScreen', () => {
     })
 
     describe('onClose', () => {
-        it('reflects the store onClose value', () => {
-            const closeFn = vi.fn()
-            const { result: store } = renderHook(() => useBidali())
-            act(() => store.current.setOnClose(closeFn))
-
+        it('exposes the Bidali close handler', () => {
             const { result } = renderHook(() => useBidaliWebViewScreen())
-            expect(result.current.onClose).toBe(closeFn)
+            expect(result.current.onClose).toBe(mockBidaliClose)
         })
     })
 

@@ -65,6 +65,10 @@
             "success_body": "{{assetName}} was successfully opted-in and added to your account",
             "success_body_generic": "Asset successfully opted-in and added to your account"
         },
+        "select_account": {
+            "title": "Select an account",
+            "empty": "No accounts available to opt in"
+        },
         "confirmation": {
             "title": "Adding Asset",
             "account_label": "Account",
@@ -594,9 +598,7 @@
         },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
-            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
-            "title": "Could not open link",
-            "no_account": "No account is selected. Choose an account first, then try the link again."
+            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
         },
         "general": {
             "title": "An error occurred",

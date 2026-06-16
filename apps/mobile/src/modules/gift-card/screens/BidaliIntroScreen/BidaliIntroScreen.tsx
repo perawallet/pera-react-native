@@ -24,7 +24,7 @@ import {
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
 import bidaliBackground from '@assets/images/bidali-background.png'
-import { useBidali } from '../../hooks/useBidali'
+import { useBidaliClose } from '../../hooks/useBidaliClose'
 import { useStyles } from './styles'
 
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -36,7 +36,7 @@ export const BidaliIntroScreen = () => {
     const { width } = useWindowDimensions()
     const styles = useStyles()
     const { t } = useLanguage()
-    const { onClose } = useBidali()
+    const handleClose = useBidaliClose()
     const navigation =
         useNavigation<StackNavigationProp<BidaliStackParamList>>()
 
@@ -53,7 +53,7 @@ export const BidaliIntroScreen = () => {
                         <PWIcon
                             name='cross'
                             variant='primary'
-                            onPress={onClose}
+                            onPress={handleClose}
                         />
                     }
                     center={

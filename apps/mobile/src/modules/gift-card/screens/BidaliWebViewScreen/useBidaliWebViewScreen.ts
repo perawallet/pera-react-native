@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 import { useBidali } from '../../hooks/useBidali'
+import { useBidaliClose } from '../../hooks/useBidaliClose'
 import { useBidaliTransport } from '../../hooks/useBidaliTransport'
 import type WebView from 'react-native-webview'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -22,13 +23,14 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 type UseBidaliWebViewScreenResult = {
     url: string
     bidaliProviderJS: string
-    onClose?: () => void
+    onClose: () => void
     handleMessage: (data: unknown) => void
     webviewRef: React.RefObject<Nullable<WebView>>
 }
 
 export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
-    const { selectedAccount, onClose } = useBidali()
+    const { selectedAccount } = useBidali()
+    const onClose = useBidaliClose()
     const { network } = useNetwork()
 
     const { accountBalances } = useAccountBalancesQuery(
