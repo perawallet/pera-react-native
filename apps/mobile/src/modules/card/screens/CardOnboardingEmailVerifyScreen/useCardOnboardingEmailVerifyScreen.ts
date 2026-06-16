@@ -19,10 +19,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    CARD_VERIFICATION_CODE_LENGTH,
-    MOCK_VALID_VERIFICATION_CODE,
-} from '../cardVerificationConstants'
+import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 
 /** Seconds the user must wait before the verification email can be re-sent. */
 const RESEND_COOLDOWN_SECONDS = 60
@@ -33,7 +30,6 @@ export type UseCardOnboardingEmailVerifyScreenResult = {
     email: string
     onChangeCode: (text: string) => void
     isValid: boolean
-    isWrongCode: boolean
     secondsRemaining: number
     canResend: boolean
     handleResend: () => void
@@ -57,7 +53,6 @@ export const useCardOnboardingEmailVerifyScreen =
         )
 
         const [code, setCode] = useState('')
-        const [isWrongCode, setIsWrongCode] = useState(false)
         const { secondsRemaining, isActive, restart } = useCountdown(
             RESEND_COOLDOWN_SECONDS,
         )
@@ -66,7 +61,6 @@ export const useCardOnboardingEmailVerifyScreen =
 
         const onChangeCode = useCallback((text: string) => {
             setCode(text)
-            setIsWrongCode(false)
         }, [])
 
         const handleResend = useCallback(() => {
@@ -79,7 +73,6 @@ export const useCardOnboardingEmailVerifyScreen =
                         email: email ?? '',
                     })
                     restart()
-                    setIsWrongCode(false)
                 } catch {
                     errorToast(
                         t('peraCard.create_account.error_title'),
@@ -90,20 +83,16 @@ export const useCardOnboardingEmailVerifyScreen =
             void resend()
         }, [sendEmailVerification, email, restart, errorToast, t])
 
-        // Local pre-check only — a wrong code is caught here for fast feedback.
-        // The real email/verify (which sets the password and completes
-        // verification) runs on the password screen, so a valid code just
-        // stores itself and carries forward to it.
+        // This screen can't validate the code itself: the real email/verify
+        // (which also sets the password) only fires on the password screen. So a
+        // full code is just stashed and the flow continues with the phone steps;
+        // a wrong code surfaces later when email/verify runs.
         const handleConfirm = useCallback(
             (submittedCode?: string) => {
                 const value = (submittedCode ?? code).trim()
-                if (!value) return
-                if (value.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
-                    setIsWrongCode(true)
-                    return
-                }
+                if (value.length !== CARD_VERIFICATION_CODE_LENGTH) return
                 setVerificationCode(value)
-                navigation.navigate('CardOnboardingPassword')
+                navigation.navigate('CardOnboardingPhone')
             },
             [code, navigation, setVerificationCode],
         )
@@ -113,7 +102,6 @@ export const useCardOnboardingEmailVerifyScreen =
             email: email ?? '',
             onChangeCode,
             isValid: trimmedCode.length === CARD_VERIFICATION_CODE_LENGTH,
-            isWrongCode,
             secondsRemaining,
             canResend: !isActive,
             handleResend,

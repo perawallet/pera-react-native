@@ -18,10 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    CARD_VERIFICATION_CODE_LENGTH,
-    MOCK_VALID_VERIFICATION_CODE,
-} from '../cardVerificationConstants'
+import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import { useCardOnboardingEmailVerifyScreen } from './useCardOnboardingEmailVerifyScreen'
 import { useStyles } from './styles'
 
@@ -33,7 +30,6 @@ export const CardOnboardingEmailVerifyScreen = () => {
         email,
         onChangeCode,
         isValid,
-        isWrongCode,
         secondsRemaining,
         canResend,
         handleResend,
@@ -59,11 +55,6 @@ export const CardOnboardingEmailVerifyScreen = () => {
                             onComplete={handleConfirm}
                             onSubmitEditing={() => handleConfirm()}
                             autoFocus
-                            errorMessage={
-                                isWrongCode
-                                    ? t('peraCard.verify_email.code_wrong')
-                                    : undefined
-                            }
                             accessibilityLabel={t(
                                 'peraCard.verify_email.navigation_title',
                             )}
@@ -98,17 +89,6 @@ export const CardOnboardingEmailVerifyScreen = () => {
                         testID='card-onboarding-verify-confirm'
                     />
                 </PWView>
-
-                {/* TODO(card): remove this testing hint once the real verify
-                    API is wired up. */}
-                <PWText
-                    variant='footnoteMedium'
-                    style={styles.devHint}
-                >
-                    {t('peraCard.verify_email.dev_hint', {
-                        code: MOCK_VALID_VERIFICATION_CODE,
-                    })}
-                </PWText>
             </PWView>
         </PWScreen>
     )

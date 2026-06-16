@@ -23,6 +23,8 @@ import { CardOnboardingPhoneScreen } from '../../screens/CardOnboardingPhoneScre
 import { CardOnboardingPhoneVerifyScreen } from '../../screens/CardOnboardingPhoneVerifyScreen'
 import { CardOnboardingPersonalDetailsScreen } from '../../screens/CardOnboardingPersonalDetailsScreen'
 import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddressScreen'
+import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVerificationScreen'
+import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusScreen'
 import { type CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
@@ -50,11 +52,6 @@ export const CardOnboardingStackNavigator = () => {
                 options={{ title: 'peraCard.verify_email.navigation_title' }}
             />
             <Stack.Screen
-                name='CardOnboardingPassword'
-                component={CardOnboardingPasswordScreen}
-                options={{ title: 'peraCard.create_password.navigation_title' }}
-            />
-            <Stack.Screen
                 name='CardOnboardingPhone'
                 component={CardOnboardingPhoneScreen}
                 options={{
@@ -65,6 +62,21 @@ export const CardOnboardingStackNavigator = () => {
                 name='CardOnboardingPhoneVerify'
                 component={CardOnboardingPhoneVerifyScreen}
                 options={{ title: 'peraCard.verify_phone.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingPassword'
+                component={CardOnboardingPasswordScreen}
+                options={{ title: 'peraCard.create_password.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingVerification'
+                component={CardOnboardingVerificationScreen}
+                options={{ title: 'peraCard.intro.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingStatus'
+                component={CardOnboardingStatusScreen}
+                options={{ title: '' }}
             />
             <Stack.Screen
                 name='CardOnboardingPersonalDetails'

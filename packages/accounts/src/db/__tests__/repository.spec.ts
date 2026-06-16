@@ -34,7 +34,10 @@ import {
     upsertAccountBalance,
     getAccountBalance,
     getAllAccountBalances,
-    getAllAssetIdsForNetwork,
+    getAllHeldAssetIdsForNetwork,
+    getHeldAssetIdsByAccount,
+    deleteAllAssetHoldingsForAccount,
+    deleteAccountBalance,
 } from '../repository'
 import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 
@@ -818,7 +821,128 @@ describe('account repository', () => {
         })
     })
 
-    describe('getAllAssetIdsForNetwork', () => {
+    describe('per-account cleanup helpers', () => {
+        const balanceArgs = (accountAddress: string, network: string) => ({
+            db,
+            accountAddress,
+            network,
+            algoBalance: new Decimal('1'),
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal('0.1'),
+            status: 'Offline',
+            authAddress: null,
+        })
+
+        it('getHeldAssetIdsByAccount returns the account holdings across networks', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: 5n },
+                    { assetId: '200', amount: 0n },
+                ],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '300', amount: 7n }],
+                network: 'testnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                holdings: [{ assetId: '999', amount: 1n }],
+                network: 'mainnet',
+            })
+
+            const held = await getHeldAssetIdsByAccount({
+                db,
+                accountAddress: 'ADDR1',
+            })
+
+            expect(
+                [...held].sort((a, b) =>
+                    `${a.network}:${a.assetId}`.localeCompare(
+                        `${b.network}:${b.assetId}`,
+                    ),
+                ),
+            ).toEqual([
+                { assetId: '100', network: 'mainnet' },
+                { assetId: '200', network: 'mainnet' },
+                { assetId: '300', network: 'testnet' },
+            ])
+        })
+
+        it('deleteAllAssetHoldingsForAccount removes only that account holdings on all networks', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 5n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '300', amount: 7n }],
+                network: 'testnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                holdings: [{ assetId: '100', amount: 9n }],
+                network: 'mainnet',
+            })
+
+            await deleteAllAssetHoldingsForAccount({
+                db,
+                accountAddress: 'ADDR1',
+            })
+
+            expect(
+                await getHeldAssetIdsByAccount({ db, accountAddress: 'ADDR1' }),
+            ).toEqual([])
+            const addr2 = await getHeldAssetIdsByAccount({
+                db,
+                accountAddress: 'ADDR2',
+            })
+            expect(addr2).toEqual([{ assetId: '100', network: 'mainnet' }])
+        })
+
+        it('deleteAccountBalance removes the account balance row(s)', async () => {
+            await upsertAccountBalance(balanceArgs('ADDR1', 'mainnet'))
+            await upsertAccountBalance(balanceArgs('ADDR1', 'testnet'))
+            await upsertAccountBalance(balanceArgs('ADDR2', 'mainnet'))
+
+            await deleteAccountBalance({ db, accountAddress: 'ADDR1' })
+
+            expect(
+                await getAccountBalance({
+                    db,
+                    accountAddress: 'ADDR1',
+                    network: 'mainnet',
+                }),
+            ).toBeUndefined()
+            expect(
+                await getAccountBalance({
+                    db,
+                    accountAddress: 'ADDR1',
+                    network: 'testnet',
+                }),
+            ).toBeUndefined()
+            expect(
+                await getAccountBalance({
+                    db,
+                    accountAddress: 'ADDR2',
+                    network: 'mainnet',
+                }),
+            ).toBeDefined()
+        })
+    })
+
+    describe('getAllHeldAssetIdsForNetwork', () => {
         it('returns distinct asset IDs across accounts', async () => {
             await refreshAccountHoldings({
                 db,
@@ -839,7 +963,7 @@ describe('account repository', () => {
                 network: 'mainnet',
             })
 
-            const result = await getAllAssetIdsForNetwork({
+            const result = await getAllHeldAssetIdsForNetwork({
                 db,
                 network: 'mainnet',
             })

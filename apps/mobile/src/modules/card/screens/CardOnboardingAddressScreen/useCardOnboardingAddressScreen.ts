@@ -15,9 +15,11 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     addressSchema,
+    OnboardingStep,
     useCardStore,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
+    useSubmitConsentMutation,
     type AddressFormValues,
     type AddressInput,
     type SupportedCountry,
@@ -43,6 +45,8 @@ export type UseCardOnboardingAddressScreenResult = {
     /** True when the address form is valid AND both T&C boxes are accepted. */
     isValid: boolean
     isSubmitting: boolean
+    /** Registration finalized — the screen swaps to its completion state. */
+    isCompleted: boolean
     selectedCountry: Optional<SupportedCountry>
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
@@ -57,13 +61,15 @@ export type UseCardOnboardingAddressScreenResult = {
     handleOpenCardTerms: () => void
     handleOpenPlatformTerms: () => void
     handleConfirm: () => void
+    /** Leaves onboarding from the completion state. */
+    handleDone: () => void
 }
 
 export const useCardOnboardingAddressScreen =
     (): UseCardOnboardingAddressScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { successToast, errorToast } = useToast()
+        const { errorToast } = useToast()
         const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -74,6 +80,7 @@ export const useCardOnboardingAddressScreen =
         // opt-out survives remounts and failed submits.
         const allowMarketing = useCardStore(state => state.allowMarketing)
         const submitAddress = useSubmitAddressMutation()
+        const submitConsent = useSubmitConsentMutation()
         const { data: settings } = useRegistrationSettingsQuery()
 
         const [selectedCountry, setSelectedCountry] =
@@ -83,6 +90,12 @@ export const useCardOnboardingAddressScreen =
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
+        // Derived from the persisted onboarding step (set by the address
+        // mutation's onSuccess) rather than local state, so a cold resume or
+        // re-entry still renders the correct completion status.
+        const isCompleted = useCardStore(
+            state => state.onboardingStep === OnboardingStep.Completed,
+        )
         const hasPreselected = useRef(false)
 
         const {
@@ -208,12 +221,19 @@ export const useCardOnboardingAddressScreen =
                     : {}),
             }
             try {
+                // Record the user's consents (T&Cs + marketing) first, then
+                // finalize registration with the address. Both T&Cs are
+                // guaranteed accepted here — the Continue button gates on them.
+                await submitConsent.mutateAsync({
+                    onboardingId,
+                    allowMarketing,
+                    cardTermsAccepted,
+                    platformTermsAccepted,
+                })
                 await submitAddress.mutateAsync(address)
-                // TODO(card): navigate to CardOnboardingVerification once it exists.
-                successToast(
-                    t('peraCard.address.success_title'),
-                    t('peraCard.address.success_body'),
-                )
+                // The mutation's onSuccess commits the session and marks the
+                // onboarding step Completed, which flips `isCompleted` and swaps
+                // this screen to its completion state in place.
             } catch {
                 errorToast(
                     t('peraCard.address.error_title'),
@@ -226,11 +246,17 @@ export const useCardOnboardingAddressScreen =
             void submitAddressForm()
         }
 
+        const handleDone = useCallback(() => {
+            // TODO(card): route into card creation once that slice lands.
+            navigation.navigate('PeraCardIntro')
+        }, [navigation])
+
         return {
             control,
             errors,
             isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
-            isSubmitting: submitAddress.isPending,
+            isSubmitting: submitAddress.isPending || submitConsent.isPending,
+            isCompleted,
             selectedCountry,
             isUsResident,
             selectedUsState,
@@ -245,5 +271,6 @@ export const useCardOnboardingAddressScreen =
             handleOpenCardTerms,
             handleOpenPlatformTerms,
             handleConfirm,
+            handleDone,
         }
     }

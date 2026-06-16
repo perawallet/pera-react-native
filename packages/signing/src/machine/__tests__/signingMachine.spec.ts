@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createActor, fromPromise, waitFor } from 'xstate'
+import { createActor, fromPromise, waitFor, setup } from 'xstate'
 import { signingMachine } from '../signingMachine'
 import type { SigningMachineInput } from '../context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -647,6 +647,96 @@ describe('signingMachine', () => {
                 hardwareWalletRegistry: {} as never,
                 encodeTransaction: vi.fn() as never,
             })
+
+        // A controllable stand-in for hardwareSigningMachine that mirrors the
+        // real child's state-value shape (active.{searching,awaiting_approval,
+        // signing}). The test drives it event-by-event to simulate the real BLE
+        // phase progression the device exhibits.
+        const makeControllableHardwareChild = () =>
+            setup({}).createMachine({
+                id: 'mockHardwareChild',
+                initial: 'active',
+                states: {
+                    active: {
+                        initial: 'searching',
+                        states: {
+                            searching: {
+                                on: { AWAITING_APPROVAL: 'awaiting_approval' },
+                            },
+                            awaiting_approval: {
+                                on: { SIGNING_STARTED: 'signing' },
+                            },
+                            signing: {},
+                        },
+                    },
+                },
+            })
+
+        type WithHardwareChild = {
+            children: Record<
+                string,
+                {
+                    send: (event: unknown) => void
+                    getSnapshot: () => { value: unknown }
+                }
+            >
+        }
+
+        it('re-emits a parent snapshot when the hardware child transitions, so the overlay can update', async () => {
+            const machine = signingMachine.provide({
+                actors: {
+                    analyzerActor: fromPromise(
+                        async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                    ),
+                    hardwareSigningMachine:
+                        makeControllableHardwareChild() as never,
+                    transportActor: fromPromise(
+                        async (): Promise<TransportResult> =>
+                            mockTransportResult,
+                    ),
+                },
+            })
+
+            const actor = createActor(machine, { input: inputForHardware() })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+
+            // Wait until the hardware child has been invoked.
+            await waitFor(actor, s =>
+                Boolean(
+                    (s as unknown as WithHardwareChild).children?.hardwareChild,
+                ),
+            )
+
+            const child = (actor.getSnapshot() as unknown as WithHardwareChild)
+                .children.hardwareChild
+
+            // The parent stays in `signing.hardware` while the child advances
+            // searching → awaiting_approval. XState v5 would NOT re-emit for
+            // that child-only sub-state change on its own; the `onSnapshot`
+            // nudge must force the parent to re-broadcast so the overlay's
+            // parent subscription observes the new child phase. Capture every
+            // parent emission and assert one of them reflects the child's new
+            // phase.
+            const observedChildPhases: unknown[] = []
+            const subscription = actor.subscribe(snapshot => {
+                observedChildPhases.push(
+                    (
+                        snapshot as unknown as WithHardwareChild
+                    ).children?.hardwareChild?.getSnapshot?.()?.value,
+                )
+            })
+            child.send({ type: 'AWAITING_APPROVAL' })
+            subscription.unsubscribe()
+
+            expect(observedChildPhases).toContainEqual({
+                active: 'awaiting_approval',
+            })
+            // The re-emit surfaced the child change without altering the
+            // parent's own state.
+            expect(actor.getSnapshot().value).toEqual({ signing: 'hardware' })
+        })
 
         it('hardware child success → results accumulated, machine completes', async () => {
             const machine = signingMachine.provide({

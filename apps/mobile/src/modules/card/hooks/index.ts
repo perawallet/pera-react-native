@@ -10,5 +10,7 @@
  limitations under the License
  */
 
-export { FindAnotherWalletRow } from './FindAnotherWalletRow'
-export type { FindAnotherWalletRowProps } from './FindAnotherWalletRow'
+export {
+    useCardOnboardingLogout,
+    type UseCardOnboardingLogoutResult,
+} from './useCardOnboardingLogout'

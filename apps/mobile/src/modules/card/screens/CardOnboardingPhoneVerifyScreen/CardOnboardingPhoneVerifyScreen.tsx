@@ -18,10 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    CARD_VERIFICATION_CODE_LENGTH,
-    MOCK_VALID_VERIFICATION_CODE,
-} from '../cardVerificationConstants'
+import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import { useCardOnboardingPhoneVerifyScreen } from './useCardOnboardingPhoneVerifyScreen'
 import { useStyles } from './styles'
 
@@ -32,7 +29,6 @@ export const CardOnboardingPhoneVerifyScreen = () => {
         code,
         onChangeCode,
         isValid,
-        isWrongCode,
         isSubmitting,
         phoneDisplay,
         secondsRemaining,
@@ -60,11 +56,6 @@ export const CardOnboardingPhoneVerifyScreen = () => {
                             onComplete={handleConfirm}
                             onSubmitEditing={() => handleConfirm()}
                             autoFocus
-                            errorMessage={
-                                isWrongCode
-                                    ? t('peraCard.verify_phone.code_wrong')
-                                    : undefined
-                            }
                             accessibilityLabel={t(
                                 'peraCard.verify_phone.navigation_title',
                             )}
@@ -100,16 +91,6 @@ export const CardOnboardingPhoneVerifyScreen = () => {
                         testID='card-onboarding-phone-verify-confirm'
                     />
                 </PWView>
-
-                {/* TODO(card): remove this dev hint once the real verify API is wired. */}
-                <PWText
-                    variant='footnoteMedium'
-                    style={styles.devHint}
-                >
-                    {t('peraCard.verify_phone.dev_hint', {
-                        code: MOCK_VALID_VERIFICATION_CODE,
-                    })}
-                </PWText>
             </PWView>
         </PWScreen>
     )

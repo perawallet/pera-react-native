@@ -21,6 +21,7 @@ let mockPhoneCountryCode: string | null = '44'
 let mockPhoneNumber: string | null = '7400846282'
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockContactVerificationId: string | null = 'mock-contact-id'
+const mockSetPhoneVerificationCode = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -54,6 +55,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: string | null
                 onboardingId: string | null
                 contactVerificationId: string | null
+                setPhoneVerificationCode: (code: string | null) => void
             }) => unknown,
         ) =>
             selector({
@@ -61,6 +63,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: mockPhoneNumber,
                 onboardingId: mockOnboardingId,
                 contactVerificationId: mockContactVerificationId,
+                setPhoneVerificationCode: mockSetPhoneVerificationCode,
             }),
     }
 })
@@ -85,8 +88,10 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { MOCK_VALID_VERIFICATION_CODE } from '../../cardVerificationConstants'
 import { useCardOnboardingPhoneVerifyScreen } from '../useCardOnboardingPhoneVerifyScreen'
+
+/** A full-length (6-digit) code — the screen only checks the length now. */
+const VALID_CODE = '123456'
 
 const renderVerifyHook = () =>
     renderHook(() => useCardOnboardingPhoneVerifyScreen())
@@ -119,31 +124,10 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(result.current.phoneDisplay).toBe('+44 7400846282')
     })
 
-    it('flags a wrong code without calling verify', () => {
+    it('verifies with the stored ids on the valid code and goes to identity verification', async () => {
         const { result } = renderVerifyHook()
 
-        act(() => result.current.onChangeCode('NOPE'))
-        act(() => result.current.handleConfirm())
-
-        expect(result.current.isWrongCode).toBe(true)
-        expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
-    })
-
-    it('clears the wrong-code error as the user edits', () => {
-        const { result } = renderVerifyHook()
-
-        act(() => result.current.onChangeCode('NOPE'))
-        act(() => result.current.handleConfirm())
-        expect(result.current.isWrongCode).toBe(true)
-
-        act(() => result.current.onChangeCode('NOPE2'))
-        expect(result.current.isWrongCode).toBe(false)
-    })
-
-    it('verifies with the stored ids on the valid code and goes to personal details', async () => {
-        const { result } = renderVerifyHook()
-
-        act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
+        act(() => result.current.onChangeCode(VALID_CODE))
         await act(async () => {
             result.current.handleConfirm()
         })
@@ -153,18 +137,16 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
             phoneCountryCode: '44',
             phoneNumber: '7400846282',
             contactVerificationId: 'mock-contact-id',
-            verificationCode: MOCK_VALID_VERIFICATION_CODE,
+            verificationCode: VALID_CODE,
         })
-        expect(mockNavigate).toHaveBeenCalledWith(
-            'CardOnboardingPersonalDetails',
-        )
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
     })
 
     it('shows an error toast and stays put when verification fails', async () => {
         mockVerifyMutateAsync.mockRejectedValue(new Error('nope'))
         const { result } = renderVerifyHook()
 
-        act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
+        act(() => result.current.onChangeCode(VALID_CODE))
         await act(async () => {
             result.current.handleConfirm()
         })
@@ -173,28 +155,45 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('routes back to verify when the onboarding id is missing', async () => {
+    it('stashes the code for the password step when there is no onboarding id yet', async () => {
+        // First pass: email/verify (which returns the onboardingId the real
+        // phone/verify needs) only fires at the password step, so the code is
+        // stashed and the flow continues there.
         mockOnboardingId = null
         const { result } = renderVerifyHook()
 
-        act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
+        act(() => result.current.onChangeCode(VALID_CODE))
         await act(async () => {
             result.current.handleConfirm()
         })
 
         expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingEmailVerify')
+        expect(mockSetPhoneVerificationCode).toHaveBeenCalledWith(VALID_CODE)
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
     })
 
-    it('ignores an empty or whitespace-only code on confirm', () => {
+    it('routes back to the phone screen when the phone inputs are missing', async () => {
+        mockPhoneNumber = null
         const { result } = renderVerifyHook()
 
-        act(() => result.current.onChangeCode('   '))
+        act(() => result.current.onChangeCode(VALID_CODE))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
+    })
+
+    it('ignores an incomplete code on confirm', () => {
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode('123'))
         act(() => result.current.handleConfirm())
 
         expect(result.current.isValid).toBe(false)
-        expect(result.current.isWrongCode).toBe(false)
         expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('re-sends the code and restarts the cooldown once it elapses', async () => {

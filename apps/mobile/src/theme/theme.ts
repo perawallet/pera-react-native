@@ -62,6 +62,9 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             layerGrayLighter: palette.gray[100],
             layerGrayLightest: palette.gray[50],
 
+            // Warning surface — gold #EDB21C tint for the attention callout
+            warningSurface: 'rgba(237, 178, 28, 0.06)',
+
             // Link
             linkPrimary: palette.turquoise[700],
             linkIcon: palette.turquoise[600],
@@ -265,6 +268,9 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             layerGray: palette.gray[700],
             layerGrayLighter: palette.gray[800],
             layerGrayLightest: palette.gray[800],
+
+            // Warning surface — gold #EDB21C tint for the attention callout
+            warningSurface: 'rgba(237, 178, 28, 0.1)',
 
             // Link
             linkPrimary: palette.yellow[400],

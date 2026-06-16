@@ -31,26 +31,17 @@ describe('card onboarding — email verify', () => {
         store.setEmail('john@example.com')
     })
 
-    it('auto-submits a full code and surfaces a wrong-code error, cleared on edit', async () => {
+    it('auto-submits a full code, stashing it for the password step', async () => {
         renderVerify()
 
         const input = screen.getByTestId('card-onboarding-verify-input')
 
-        // A full but wrong 6-digit code auto-submits and surfaces the inline
-        // error (no button tap needed).
+        // This screen can't validate the code (the real email/verify runs at
+        // the password step), so a full 6-digit code auto-submits and is just
+        // stashed for that step.
         fireEvent.change(input, { target: { value: '654321' } })
         await waitFor(() =>
-            expect(
-                screen.queryByTestId('card-onboarding-verify-input-error'),
-            ).toBeTruthy(),
-        )
-
-        // Editing to a shorter value clears the error (and doesn't re-submit).
-        fireEvent.change(input, { target: { value: '65432' } })
-        await waitFor(() =>
-            expect(
-                screen.queryByTestId('card-onboarding-verify-input-error'),
-            ).toBeNull(),
+            expect(useCardStore.getState().verificationCode).toBe('654321'),
         )
     })
 })

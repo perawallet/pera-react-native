@@ -23,6 +23,8 @@ export {
     upsertAssetPrices,
     getAssetPricesByIds,
     getStaleOrMissingAssetIds,
+    deleteAssets,
+    deleteAssetPrices,
     type AssetPriceRow,
 } from './repository'
 export { seedAlgoAsset } from './seed'

@@ -720,12 +720,10 @@
         "verify_email": {
             "navigation_title": "Confirm your Email",
             "body": "Use the verification code we just sent to {{email}} to confirm your email address.",
-            "code_wrong": "The code is wrong",
             "send_again_in_one": "Send it again in {{count}} second",
             "send_again_in_other": "Send it again in {{count}} seconds",
             "send_again": "Send it again",
-            "confirm_button": "Continue",
-            "dev_hint": "Testing only — use code {{code}}"
+            "confirm_button": "Continue"
         },
         "waitlist": {
             "join_button": "Sign up for waitlist",
@@ -756,12 +754,10 @@
             "send_error_title": "Something went wrong",
             "send_error_body": "We couldn't send your verification code. Please try again.",
             "body": "Use the verification code we just sent to {{phone}} to confirm your phone number.",
-            "code_wrong": "The code is wrong",
             "send_again_in_one": "Send it again in {{count}} second",
             "send_again_in_other": "Send it again in {{count}} seconds",
             "send_again": "Send it again",
             "confirm_button": "Continue",
-            "dev_hint": "Testing only — use code {{code}}",
             "verify_error_title": "Something went wrong",
             "verify_error_body": "We couldn't verify your phone number. Please try again."
         },
@@ -798,10 +794,34 @@
             "card_terms": "I have read and understood the Card Issue <0>Terms & Conditions</0> and accept them.",
             "platform_terms": "I have read and understood the Platform <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
-            "success_title": "Address saved",
-            "success_body": "Your residential address has been saved.",
+            "completed_title": "Registration complete",
+            "completed_body": "Your Pera Card account has been created. We'll let you know as soon as your card is ready.",
+            "done_button": "Done",
             "error_title": "Something went wrong",
             "error_body": "We couldn't save your address. Please try again."
+        },
+        "verification": {
+            "title": "Begin spending\non-chain",
+            "callout_title": "Submit your documents",
+            "callout_body": "Please verify your account to begin spending on-chain.",
+            "verify_button": "Verify your Account",
+            "logout_button": "Logout",
+            "contact_us": "If you have any questions, please do not hesitate to <0>contact us</0>",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't start verification. Please try again."
+        },
+        "setup_status": {
+            "title": "Finish setup and start spending on-chain",
+            "documents_title": "Submit Your Documents",
+            "documents_pending_label": "Pending",
+            "documents_pending_body": "Your verification has been submitted. We'll email you once it's complete.",
+            "documents_verified_body": "Your identity has been verified.",
+            "documents_rejected_body": "We couldn't verify your identity. Please contact support for help.",
+            "details_title": "Enter Your Details",
+            "details_body": "Verify your details and enter your address to proceed.",
+            "details_button": "Verify your Account",
+            "connect_funds_title": "Connect Funds",
+            "funding_type_title": "Select Funding Type"
         }
     },
     "notifications": {
@@ -2400,7 +2420,8 @@
             "already_imported": "Already imported",
             "cta_one": "Verify selected account",
             "cta_other": "Verify selected accounts",
-            "find_another_wallet": "Find another account",
+            "cta_done": "Done",
+            "find_another_account": "Find another account",
             "rekeyed_label": "Rekeyed",
             "rekeyed_account_title": "Rekeyed account",
             "scanning_rekeyed": "Scanning for rekeyed accounts…"

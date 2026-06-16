@@ -14,19 +14,19 @@ import { ActivityIndicator } from 'react-native'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
-export type FindAnotherWalletRowProps = {
+export type FindAnotherAccountRowProps = {
     onPress: () => void
     isLoading: boolean
     label: string
     testID?: string
 }
 
-export const FindAnotherWalletRow = ({
+export const FindAnotherAccountRow = ({
     onPress,
     isLoading,
     label,
     testID,
-}: FindAnotherWalletRowProps) => {
+}: FindAnotherAccountRowProps) => {
     const styles = useStyles({ isLoading })
 
     return (

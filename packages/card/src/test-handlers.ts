@@ -60,6 +60,7 @@ export {
     mockVerifyPhone,
     mockSubmitPersonalDetails,
     mockSubmitAddress,
+    mockSubmitOnboardingConsent,
     mockGetRegistrationSettings,
 } from './api/onboarding/msw-handlers'
 export type { MockGetRegistrationSettingsParams } from './api/onboarding/msw-handlers'

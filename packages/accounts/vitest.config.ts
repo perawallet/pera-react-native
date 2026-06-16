@@ -56,6 +56,10 @@ export default defineConfig({
                 __dirname,
                 '../database/src/index.ts',
             ),
+            '@perawallet/wallet-core-assets': path.resolve(
+                __dirname,
+                '../assets/src/index.ts',
+            ),
             '@perawallet/wallet-core-hardware-wallet': path.resolve(
                 __dirname,
                 '../hardware-wallet/src/index.ts',

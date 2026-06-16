@@ -40,10 +40,14 @@ export const useAddAccountScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    // TODO(card): this only checks for a Baanx session, not actual card ownership —
-    // an authenticated-but-cardless user wrongly loses the entry. Swap to a real
-    // hasCard check (useCardStatusQuery, gated on isAuthenticated) once onboarding lands.
-    const { isAuthenticated: hasCardSession } = useCardSession()
+    // TODO(card): TEMP — a completed Baanx onboarding persists `isAuthenticated`,
+    // which hides this entry with no in-app way to clear it. Force it visible in
+    // dev + staging so the sandbox flow stays re-testable; production keeps the
+    // real gating. Swap this session proxy for a real hasCard check
+    // (useCardStatusQuery gated on isAuthenticated) once that's wired.
+    const { isAuthenticated } = useCardSession()
+    const hasCardSession =
+        __DEV__ || config.appEnvironment === 'staging' ? false : isAuthenticated
 
     const {
         isOpen: isCreatingAccount,

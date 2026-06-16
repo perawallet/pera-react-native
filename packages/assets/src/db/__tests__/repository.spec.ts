@@ -26,6 +26,8 @@ import {
     getAssetPricesByIds,
     updateAssetPeraMetadata,
     getStaleOrMissingAssetIds,
+    deleteAssets,
+    deleteAssetPrices,
 } from '../repository'
 
 describe('asset repository', () => {
@@ -489,6 +491,97 @@ describe('asset repository', () => {
             })
 
             expect(result).toEqual(['1'])
+        })
+    })
+
+    describe('deleteAssets / deleteAssetPrices', () => {
+        it('deletes node + pera rows for the given ids on the given network', async () => {
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({ assetId: '100' }),
+                    makeAsset({ assetId: '200' }),
+                ],
+                network: 'mainnet',
+            })
+
+            await deleteAssets({ db, assetIds: ['100'], network: 'mainnet' })
+
+            const remaining = await getAssetsByIds({
+                db,
+                assetIds: ['100', '200'],
+                network: 'mainnet',
+            })
+            expect(remaining.map(a => a.assetId)).toEqual(['200'])
+        })
+
+        it('does not touch assets on a different network', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '100' })],
+                network: 'mainnet',
+            })
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '100' })],
+                network: 'testnet',
+            })
+
+            await deleteAssets({ db, assetIds: ['100'], network: 'mainnet' })
+
+            const mainnet = await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
+            const testnet = await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                network: 'testnet',
+            })
+            expect(mainnet).toHaveLength(0)
+            expect(testnet).toHaveLength(1)
+        })
+
+        it('is a no-op for an empty id list', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '100' })],
+                network: 'mainnet',
+            })
+
+            await deleteAssets({ db, assetIds: [], network: 'mainnet' })
+
+            const remaining = await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
+            expect(remaining).toHaveLength(1)
+        })
+
+        it('deletes prices for the given ids on the given network', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [
+                    { assetId: '100', usdPrice: new Decimal('1.5') },
+                    { assetId: '200', usdPrice: new Decimal('2.5') },
+                ],
+                network: 'mainnet',
+            })
+
+            await deleteAssetPrices({
+                db,
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
+
+            const remaining = await getAssetPricesByIds({
+                db,
+                assetIds: ['100', '200'],
+                network: 'mainnet',
+            })
+            expect(remaining.map(p => p.assetId)).toEqual(['200'])
         })
     })
 })

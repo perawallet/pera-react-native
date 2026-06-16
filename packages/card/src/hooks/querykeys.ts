@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { type QueryClient, type QueryKey } from '@tanstack/react-query'
 import type { CardTransactionFilters } from '../models'
 
@@ -23,6 +23,12 @@ export const cardQueryKeys = {
     status: (network: Network) =>
         [MODULE_PREFIX, 'status', { network }] as const,
     user: (network: Network) => [MODULE_PREFIX, 'user', { network }] as const,
+    onboardingDetails: (network: Network, onboardingId: Nullable<string>) =>
+        [
+            MODULE_PREFIX,
+            'onboarding-details',
+            { network, onboardingId },
+        ] as const,
     registrationSettings: (network: Network) =>
         [MODULE_PREFIX, 'registration-settings', { network }] as const,
     currentRegion: (network: Network) =>

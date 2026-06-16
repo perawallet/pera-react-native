@@ -67,9 +67,6 @@ import { RootComponent } from '@components/RootComponent'
 // safely call useBottomSheetStore.getState().requestByType(...) from the
 // moment the app boots.
 import '@modules/bottom-sheet/registrations'
-// Install canned Baanx responses until sandbox credentials exist. Runs in
-// development + staging builds; no-op in production (guarded inside the module).
-import './dev/installCardDevMocks'
 import * as SplashScreen from 'expo-splash-screen'
 
 // Keep the splash screen visible while we fetch resources

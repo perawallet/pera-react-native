@@ -28,7 +28,8 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
-import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
+import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
+import { CardOnboardingPasswordScreen } from '@modules/card/screens/CardOnboardingPasswordScreen'
 
 const VALID_CODE = '123456'
 
@@ -40,8 +41,12 @@ const renderVerify = () =>
         {
             additionalScreens: [
                 {
-                    name: 'CardOnboardingPersonalDetails',
-                    component: CardOnboardingPersonalDetailsScreen,
+                    name: 'CardOnboardingPassword',
+                    component: CardOnboardingPasswordScreen,
+                },
+                {
+                    name: 'CardOnboardingVerification',
+                    component: CardOnboardingVerificationScreen,
                 },
             ],
         },
@@ -54,40 +59,12 @@ describe('card onboarding — phone verify', () => {
         const store = useCardStore.getState()
         store.resetState()
         store.setPhone({ phoneCountryCode: '44', phoneNumber: '7400846282' })
-        store.setOnboardingId('mock-onboarding-id')
         store.setContactVerificationId('mock-contact-id')
     })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('surfaces a wrong-code error on auto-submit and clears it when the code is edited', async () => {
-        renderVerify()
-
-        const input = screen.getByTestId('card-onboarding-phone-verify-input')
-
-        // A full but wrong 6-digit code auto-submits; the local pre-check
-        // surfaces the inline error without hitting the API.
-        fireEvent.change(input, { target: { value: '654321' } })
-        await waitFor(() =>
-            expect(
-                screen.queryByTestId(
-                    'card-onboarding-phone-verify-input-error',
-                ),
-            ).toBeTruthy(),
-        )
-
-        // Editing to a shorter value clears the error (and doesn't re-submit).
-        fireEvent.change(input, { target: { value: '65432' } })
-        await waitFor(() =>
-            expect(
-                screen.queryByTestId(
-                    'card-onboarding-phone-verify-input-error',
-                ),
-            ).toBeNull(),
-        )
-    })
-
-    it('verifies the phone with the valid code (auto-submit) and advances to personal details', async () => {
+    it('stashes the valid code (auto-submit) and advances to the password step', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
         server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
 
@@ -99,11 +76,35 @@ describe('card onboarding — phone verify', () => {
             { target: { value: VALID_CODE } },
         )
 
-        await waitFor(() => expect(verifySpy).toHaveBeenCalled())
-        // A successful verify advances the flow to the personal-details step.
+        // The real phone/verify is deferred to the password step (it needs the
+        // onboardingId email/verify returns), so the code is stashed instead.
         await waitFor(() =>
             expect(
-                screen.getByTestId('card-onboarding-personal-details'),
+                screen.getByTestId('card-onboarding-password-input'),
+            ).toBeTruthy(),
+        )
+        expect(verifySpy).not.toHaveBeenCalled()
+        expect(useCardStore.getState().phoneVerificationCode).toBe(VALID_CODE)
+    })
+
+    it('verifies directly and advances to identity verification on the retry path', async () => {
+        // After the password step the onboardingId exists; a re-entered code
+        // (e.g. the deferred verify failed) fires the real call from here.
+        useCardStore.getState().setOnboardingId('mock-onboarding-id')
+        const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
+        server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
+
+        renderVerify()
+
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-phone-verify-input'),
+            { target: { value: VALID_CODE } },
+        )
+
+        await waitFor(() => expect(verifySpy).toHaveBeenCalled())
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-verification'),
             ).toBeTruthy(),
         )
     })
