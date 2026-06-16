@@ -11,10 +11,13 @@
  */
 
 import { Buffer } from 'buffer'
-import { Platform, PermissionsAndroid } from 'react-native'
+import { Platform, PermissionsAndroid, NativeModules } from 'react-native'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import { type Nullable } from '@perawallet/wallet-core-shared'
-import type { HardwareWalletArbitrarySignRequest } from '@perawallet/wallet-core-hardware-wallet'
+import type {
+    HardwareWalletAdapterState,
+    HardwareWalletArbitrarySignRequest,
+} from '@perawallet/wallet-core-hardware-wallet'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
@@ -30,6 +33,73 @@ import {
     LedgerSigningError,
 } from './errors'
 import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
+
+/**
+ * Map the underlying ble-plx / CoreBluetooth state string emitted by
+ * `TransportBLE.observeState` onto our platform-agnostic adapter state.
+ * Unrecognized values fall back to `unknown`.
+ */
+const BLE_STATE_MAP: Record<string, HardwareWalletAdapterState> = {
+    PoweredOn: 'poweredOn',
+    PoweredOff: 'poweredOff',
+    Unauthorized: 'unauthorized',
+    Unsupported: 'unsupported',
+    Resetting: 'resetting',
+}
+
+const mapBluetoothState = (type: string): HardwareWalletAdapterState =>
+    BLE_STATE_MAP[type] ?? 'unknown'
+
+type BluetoothStateListener = (state: HardwareWalletAdapterState) => void
+
+/**
+ * Hand-written native module (see `apps/mobile/bluetooth-{ios,android}` +
+ * `withBluetoothEnable` config plugin) that surfaces the OS "turn on
+ * Bluetooth" prompt. Absent in unit tests and any build where the module
+ * isn't linked, so all access is guarded.
+ */
+interface NativePeraBluetooth {
+    requestEnable(): Promise<boolean>
+}
+
+const getNativeBluetoothModule = (): NativePeraBluetooth | null => {
+    const module = (
+        NativeModules as Record<string, NativePeraBluetooth | undefined>
+    ).PeraBluetooth
+    return module ?? null
+}
+
+/**
+ * Shared Bluetooth adapter-state observer.
+ *
+ * `TransportBLE.observeState` registers a state listener on the underlying
+ * BLE manager but returns a no-op `unsubscribe` (the lib never detaches it).
+ * To avoid leaking a fresh, un-removable listener on every screen mount, we
+ * attach exactly one underlying observer at module scope and fan its updates
+ * out to our own set of subscribers. Subscribers add/remove freely; the
+ * underlying observer is created lazily on first use and then lives for the
+ * process lifetime (matching the lib's behavior anyway).
+ */
+let bluetoothStateListeners: Nullable<Set<BluetoothStateListener>> = null
+let latestBluetoothState: HardwareWalletAdapterState = 'unknown'
+
+const ensureBluetoothObserver = (): Set<BluetoothStateListener> => {
+    if (bluetoothStateListeners) return bluetoothStateListeners
+
+    const listeners = new Set<BluetoothStateListener>()
+    bluetoothStateListeners = listeners
+
+    TransportBLE.observeState({
+        next: ({ type }: { type: string; available: boolean }) => {
+            latestBluetoothState = mapBluetoothState(type)
+            for (const listener of listeners) listener(latestBluetoothState)
+        },
+        error: () => {},
+        complete: () => {},
+    })
+
+    return listeners
+}
 
 /**
  * Pre-flight check that BLE scan + connect permissions are granted at sign time
@@ -257,6 +327,31 @@ export class RNLedgerService implements HardwareWalletService {
                     // initialize on environments where Bluetooth is
                     // disabled at the OS level. Treat as unsupported
                     // rather than letting the rejection bubble up.
+                    return false
+                }
+            },
+
+            observeBluetoothState(
+                onChange: (state: HardwareWalletAdapterState) => void,
+            ): () => void {
+                const listeners = ensureBluetoothObserver()
+                // Emit the latest known state synchronously so the subscriber
+                // doesn't have to wait for the next change to render.
+                onChange(latestBluetoothState)
+                listeners.add(onChange)
+                return () => {
+                    listeners.delete(onChange)
+                }
+            },
+
+            async requestBluetoothEnable(): Promise<boolean> {
+                const module = getNativeBluetoothModule()
+                if (!module) return false
+                try {
+                    return await module.requestEnable()
+                } catch {
+                    // Native rejection (missing permission, no activity, etc.)
+                    // — fall back to the in-app warning rather than throwing.
                     return false
                 }
             },

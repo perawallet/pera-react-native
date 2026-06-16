@@ -99,6 +99,28 @@ export type HardwareWalletConnectionStatus =
     | 'ready'
 
 /**
+ * Bluetooth adapter (radio) state, independent of any specific device.
+ * Mirrors the platform BLE manager states (CoreBluetooth `CBManagerState`
+ * on iOS, `BluetoothAdapter`/ble-plx `State` on Android) so the UI can warn
+ * proactively when Bluetooth is unusable — e.g. show "Bluetooth is off"
+ * before a scan silently finds nothing.
+ *
+ * - `poweredOn`    — ready to scan/connect
+ * - `poweredOff`   — Bluetooth is turned off
+ * - `unauthorized` — the app lacks Bluetooth permission (iOS)
+ * - `unsupported`  — the device has no BLE hardware
+ * - `resetting`    — the adapter is transitioning (transient)
+ * - `unknown`      — not yet determined (transient, during init)
+ */
+export type HardwareWalletAdapterState =
+    | 'poweredOn'
+    | 'poweredOff'
+    | 'unauthorized'
+    | 'unsupported'
+    | 'resetting'
+    | 'unknown'
+
+/**
  * Platform-agnostic transport interface for communicating with a connected hardware wallet.
  * Implemented by manufacturer-specific extensions (e.g. Ledger BLE transport).
  */
@@ -176,4 +198,28 @@ export type HardwareWalletTransportProvider = {
 
     /** Check if this transport type is supported on the current platform. */
     isSupported: () => Promise<boolean>
+
+    /**
+     * Observe the Bluetooth adapter state (radio on/off, permission, etc.).
+     * Emits the current state immediately on subscribe, then on every change.
+     * Only meaningful for radio-based transports (BLE); transports without a
+     * radio (e.g. USB) leave this undefined.
+     *
+     * @param onChange - Called with the current adapter state and on changes
+     * @returns An unsubscribe function
+     */
+    observeBluetoothState?: (
+        onChange: (state: HardwareWalletAdapterState) => void,
+    ) => () => void
+
+    /**
+     * Surface the OS-level "turn on Bluetooth" prompt (iOS CoreBluetooth power
+     * alert / Android system enable dialog). iOS can only inform + deep-link to
+     * Settings; Android can actually enable the radio on consent.
+     * Only meaningful for radio-based transports (BLE).
+     *
+     * @returns Resolves `true` when Bluetooth ends up enabled (Android) or the
+     *   prompt was surfaced (iOS); `false` when unavailable or declined.
+     */
+    requestBluetoothEnable?: () => Promise<boolean>
 }

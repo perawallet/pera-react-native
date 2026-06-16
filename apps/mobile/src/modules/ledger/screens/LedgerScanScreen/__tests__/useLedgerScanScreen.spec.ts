@@ -19,17 +19,31 @@ const {
     mockStopScan,
     mockRequestPermissions,
     mockOpenSettings,
+    mockErrorToast,
+    mockRequestEnable,
     blePermissionsState,
+    bluetoothState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockStartScan: vi.fn(),
     mockStopScan: vi.fn(),
     mockRequestPermissions: vi.fn(),
     mockOpenSettings: vi.fn(),
+    mockErrorToast: vi.fn(),
+    mockRequestEnable: vi.fn(),
     blePermissionsState: {
         hasPermissions: true,
         isChecking: false,
         isBlocked: false,
+    },
+    bluetoothState: {
+        adapterState: 'poweredOn' as
+            | 'poweredOn'
+            | 'poweredOff'
+            | 'unauthorized'
+            | 'unsupported'
+            | 'resetting'
+            | 'unknown',
     },
 }))
 
@@ -39,6 +53,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 vi.mock('../../../hooks', () => ({
@@ -55,6 +73,16 @@ vi.mock('../../../hooks', () => ({
         isBlocked: blePermissionsState.isBlocked,
         requestPermissions: mockRequestPermissions,
         openSettings: mockOpenSettings,
+    }),
+    useBluetoothState: () => ({
+        adapterState: bluetoothState.adapterState,
+        isBluetoothReady: bluetoothState.adapterState === 'poweredOn',
+        isBluetoothUnavailable: [
+            'poweredOff',
+            'unauthorized',
+            'unsupported',
+        ].includes(bluetoothState.adapterState),
+        requestEnable: mockRequestEnable,
     }),
 }))
 
@@ -77,6 +105,7 @@ describe('useLedgerScanScreen', () => {
         blePermissionsState.hasPermissions = true
         blePermissionsState.isChecking = false
         blePermissionsState.isBlocked = false
+        bluetoothState.adapterState = 'poweredOn'
         mockRequestPermissions.mockResolvedValue(true)
     })
 
@@ -202,5 +231,80 @@ describe('useLedgerScanScreen', () => {
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('LedgerTroubleshooting')
+    })
+
+    it('shows a Bluetooth-off error toast when the adapter is powered off', () => {
+        bluetoothState.adapterState = 'poweredOff'
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'ledger.scan.bluetooth.off_title',
+            'ledger.scan.bluetooth.off',
+        )
+    })
+
+    it('uses the unauthorized copy when Bluetooth permission is denied at the adapter', () => {
+        bluetoothState.adapterState = 'unauthorized'
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'ledger.scan.bluetooth.unauthorized_title',
+            'ledger.scan.bluetooth.unauthorized',
+        )
+    })
+
+    it('surfaces the OS enable prompt when Bluetooth is powered off', () => {
+        bluetoothState.adapterState = 'poweredOff'
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockRequestEnable).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not surface the OS enable prompt for unauthorized or unsupported', () => {
+        bluetoothState.adapterState = 'unauthorized'
+
+        renderHook(() => useLedgerScanScreen())
+
+        // The OS "turn on Bluetooth" prompt can't resolve a permission or
+        // hardware problem — only the toast should show.
+        expect(mockRequestEnable).not.toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalled()
+    })
+
+    it('does not warn for transient adapter states', () => {
+        bluetoothState.adapterState = 'unknown'
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('does not warn when Bluetooth is powered on', () => {
+        bluetoothState.adapterState = 'poweredOn'
+
+        renderHook(() => useLedgerScanScreen())
+
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('restarts the scan when Bluetooth recovers from off to on', () => {
+        bluetoothState.adapterState = 'poweredOff'
+        const { rerender } = renderHook(() => useLedgerScanScreen())
+
+        mockStartScan.mockClear()
+        mockStopScan.mockClear()
+
+        bluetoothState.adapterState = 'poweredOn'
+        act(() => {
+            rerender()
+        })
+
+        // The main scan effect re-runs on readiness change: stop the
+        // (timed-out) scan, then start fresh.
+        expect(mockStopScan).toHaveBeenCalled()
+        expect(mockStartScan).toHaveBeenCalled()
     })
 })

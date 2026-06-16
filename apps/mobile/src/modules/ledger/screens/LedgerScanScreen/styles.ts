@@ -12,7 +12,17 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// Preserves the source aspect ratio of the Ledger searching animation
+// (~137×39) while rendering it at a legible size in the header.
+const ANIMATION_WIDTH = 160
+const ANIMATION_HEIGHT = 46
+
 export const useStyles = makeStyles(theme => ({
+    headerAnimation: {
+        width: ANIMATION_WIDTH,
+        height: ANIMATION_HEIGHT,
+        marginBottom: theme.spacing.md,
+    },
     listContent: {
         paddingTop: theme.spacing.md,
     },
