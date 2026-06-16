@@ -1,0 +1,181 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// @vitest-environment node
+import { createPublicKey } from 'node:crypto'
+import { DeterministicP256 } from '@algorandfoundation/dp256'
+import { sha256 } from '@noble/hashes/sha2'
+import { describe, it, expect } from 'vitest'
+import {
+    credentialIdBytesToStandardBase64,
+    decodeCredentialIdToBytes,
+    deriveLegacyPasskeyCredentialFromMainKey,
+    deriveMainKey,
+    p256RawPublicKeyToSpkiDer,
+} from '../deriveLegacyPasskeyCredential'
+
+// Canonical all-zero-entropy BIP39 mnemonic — valid, so dp256 accepts it.
+const TEST_MNEMONIC =
+    'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+
+const b64UrlToBytes = (b64url: string): Uint8Array =>
+    Uint8Array.from(Buffer.from(b64url, 'base64url'))
+
+describe('p256RawPublicKeyToSpkiDer', () => {
+    it('wraps a raw 64-byte point into a 91-byte SPKI that Node can parse', () => {
+        const pubRaw = new Uint8Array(64)
+        for (let i = 0; i < 64; i += 1) pubRaw[i] = (i * 7 + 1) & 0xff
+
+        const der = p256RawPublicKeyToSpkiDer(pubRaw)
+
+        expect(der).toHaveLength(91)
+        // 0x04 uncompressed-point indicator sits right after the 26-byte prefix.
+        expect(der[26]).toBe(0x04)
+        expect(Array.from(der.slice(0, 4))).toEqual([0x30, 0x59, 0x30, 0x13])
+        expect(Array.from(der.slice(27))).toEqual(Array.from(pubRaw))
+    })
+
+    it('encodes the exact curve point (round-trips through Node SPKI import)', async () => {
+        // Use a real derived public point so x/y are valid curve coordinates.
+        const derivedMainKey = await deriveMainKey(TEST_MNEMONIC)
+        const { publicKeySpkiDer } =
+            await deriveLegacyPasskeyCredentialFromMainKey({
+                derivedMainKey,
+                origin: 'webauthn.io',
+                userName: 'qwe',
+            })
+
+        const key = createPublicKey({
+            key: Buffer.from(publicKeySpkiDer),
+            format: 'der',
+            type: 'spki',
+        })
+        const jwk = key.export({ format: 'jwk' }) as {
+            crv: string
+            x: string
+            y: string
+        }
+
+        expect(jwk.crv).toBe('P-256')
+        const x = b64UrlToBytes(jwk.x)
+        const y = b64UrlToBytes(jwk.y)
+        // The DER's embedded point (bytes after 0x04) is x||y.
+        expect(Array.from(publicKeySpkiDer.slice(27, 59))).toEqual(Array.from(x))
+        expect(Array.from(publicKeySpkiDer.slice(59, 91))).toEqual(Array.from(y))
+    })
+})
+
+describe('deriveMainKey', () => {
+    it('matches dp256 genDerivedMainKeyWithBIP39 byte-for-byte (off-thread path)', async () => {
+        const viaOffThread = await deriveMainKey(TEST_MNEMONIC)
+        const viaDp256 =
+            await new DeterministicP256().genDerivedMainKeyWithBIP39(
+                TEST_MNEMONIC,
+            )
+
+        expect(Array.from(viaOffThread)).toEqual(Array.from(viaDp256))
+        expect(viaOffThread).toHaveLength(64)
+    })
+})
+
+describe('deriveLegacyPasskeyCredentialFromMainKey', () => {
+    it('produces a 32-byte private scalar, 91-byte SPKI and SHA256-based id', async () => {
+        const derivedMainKey = await deriveMainKey(TEST_MNEMONIC)
+
+        const result = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey,
+            origin: 'webauthn.io',
+            userName: 'qwe',
+        })
+
+        expect(result.privateKey).toHaveLength(32)
+        expect(result.publicKeySpkiDer).toHaveLength(91)
+        // credentialId is the standard-base64 SHA256 of the SPKI DER.
+        expect(result.credentialIdBytes).toEqual(
+            sha256(result.publicKeySpkiDer),
+        )
+        expect(result.credentialId).toBe(
+            Buffer.from(result.credentialIdBytes).toString('base64'),
+        )
+    })
+
+    it('is deterministic for the same inputs', async () => {
+        const a = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey: await deriveMainKey(TEST_MNEMONIC),
+            origin: 'webauthn.io',
+            userName: 'qwe',
+        })
+        const b = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey: await deriveMainKey(TEST_MNEMONIC),
+            origin: 'webauthn.io',
+            userName: 'qwe',
+        })
+
+        expect(a.credentialId).toBe(b.credentialId)
+        expect(Array.from(a.privateKey)).toEqual(Array.from(b.privateKey))
+    })
+
+    it('derives a different credential per origin and per userName', async () => {
+        const derivedMainKey = await deriveMainKey(TEST_MNEMONIC)
+        const base = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey,
+            origin: 'webauthn.io',
+            userName: 'qwe',
+        })
+        const otherOrigin = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey,
+            origin: 'example.com',
+            userName: 'qwe',
+        })
+        const otherUser = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey,
+            origin: 'webauthn.io',
+            userName: 'asd',
+        })
+
+        expect(base.credentialId).not.toBe(otherOrigin.credentialId)
+        expect(base.credentialId).not.toBe(otherUser.credentialId)
+    })
+})
+
+describe('decodeCredentialIdToBytes', () => {
+    const digest = sha256(new Uint8Array([1, 2, 3]))
+
+    it('decodes standard base64', () => {
+        const encoded = Buffer.from(digest).toString('base64')
+        expect(decodeCredentialIdToBytes(encoded)).toEqual(digest)
+    })
+
+    it('decodes url-safe base64', () => {
+        const encoded = Buffer.from(digest).toString('base64url')
+        expect(decodeCredentialIdToBytes(encoded)).toEqual(digest)
+    })
+
+    it('decodes lowercase hex', () => {
+        const encoded = Buffer.from(digest).toString('hex')
+        expect(decodeCredentialIdToBytes(encoded)).toEqual(digest)
+    })
+
+    it('returns null for input that is not a 32-byte digest', () => {
+        expect(decodeCredentialIdToBytes('not-a-real-id')).toBeNull()
+        expect(decodeCredentialIdToBytes('')).toBeNull()
+    })
+})
+
+describe('helpers', () => {
+    it('credentialIdBytesToStandardBase64 emits padded standard base64', () => {
+        const bytes = new Uint8Array(32).fill(0xab)
+        const encoded = credentialIdBytesToStandardBase64(bytes)
+        expect(encoded).toBe(Buffer.from(bytes).toString('base64'))
+        expect(encoded.endsWith('=')).toBe(true)
+    })
+})

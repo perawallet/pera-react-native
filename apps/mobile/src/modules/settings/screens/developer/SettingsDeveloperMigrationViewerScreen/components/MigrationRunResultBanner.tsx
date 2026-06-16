@@ -144,6 +144,14 @@ const ExtrasResultRows = ({ extras }: { extras: ExtrasMigrationResult }) => (
             value={extras.auth.lockoutMigrated}
         />
         <MigrationDataRow
+            label='passkeys imported'
+            value={extras.passkeys.imported}
+        />
+        <MigrationDataRow
+            label='passkeys skipped'
+            value={extras.passkeys.skipped}
+        />
+        <MigrationDataRow
             label='passkeys stashed'
             value={extras.stashed.passkeysStashed}
         />

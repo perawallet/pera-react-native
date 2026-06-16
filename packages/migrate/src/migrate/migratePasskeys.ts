@@ -1,0 +1,286 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { entropyToMnemonic } from '@perawallet/wallet-core-kms'
+import {
+    bytesEqual,
+    bytesToHex,
+    hexToBytes,
+    logger,
+} from '@perawallet/wallet-core-shared'
+import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { LegacyPasskey } from '@perawallet/wallet-extension-platform'
+import {
+    credentialIdBytesToStandardBase64,
+    decodeCredentialIdToBytes,
+    type DerivedLegacyPasskeyCredential,
+    deriveLegacyPasskeyCredentialFromMainKey,
+    deriveMainKey,
+} from './passkeys/deriveLegacyPasskeyCredential'
+import {
+    nativePasskeyEntryExists,
+    writeNativePasskeyEntry,
+} from './passkeys/writeNativePasskeyEntry'
+
+export type PasskeysMigrationResult = {
+    imported: number
+    skipped: number
+}
+
+type DerivationInputs = {
+    origin: string
+    userName: string
+    /** Standard-base64 credentialId; the MMKV key the native provider looks up by. */
+    credentialId: string
+    legacyIdBytes: Uint8Array
+}
+
+type PasskeyDerivation = {
+    passkey: LegacyPasskey
+    inputs: DerivationInputs
+    derived: DerivedLegacyPasskeyCredential
+}
+
+/**
+ * Reconstructs the WebAuthn origin dp256 derived against. Legacy stores the
+ * relying party as a bare host (`webauthn.io`), but the derivation — and the
+ * credentialId the RP trusts — used the full origin (`https://webauthn.io`),
+ * confirmed on-device (PERA-4391). WebAuthn origins are always `https` (except
+ * localhost), so prepend the scheme when absent; leave an already-qualified
+ * origin untouched.
+ */
+const toWebAuthnOrigin = (siteUrl: string): string =>
+    /^[a-z][a-z0-9+.-]*:\/\//i.test(siteUrl) ? siteUrl : `https://${siteUrl}`
+
+/**
+ * Validates a legacy row and resolves the inputs derivation needs. Returns
+ * `null` for rows we can't migrate (missing fields, or an unreadable
+ * credentialId — logged); the caller treats `null` as a skip.
+ *
+ * `userName` is the WebAuthn `user.name` — both legacy apps feed this exact
+ * value into the derivation (confirmed on-device: not `user.id`).
+ */
+const resolveDerivationInputs = (
+    passkey: LegacyPasskey,
+): DerivationInputs | null => {
+    const origin = passkey.siteUrl ? toWebAuthnOrigin(passkey.siteUrl) : ''
+    const userName = passkey.userName
+    if (!passkey.credentialId || !origin || !userName) return null
+
+    const legacyIdBytes = decodeCredentialIdToBytes(passkey.credentialId)
+    if (!legacyIdBytes) {
+        logger.warn('[Migration] passkey skipped: unreadable id', {
+            credentialId: passkey.credentialId,
+        })
+        return null
+    }
+
+    return {
+        origin,
+        userName,
+        credentialId: credentialIdBytesToStandardBase64(legacyIdBytes),
+        legacyIdBytes,
+    }
+}
+
+type MigrationContext = {
+    /** Walk address → account → derived key → the HD seed that owns it. */
+    resolveSeedKeyId: (address: string) => string | undefined
+    /** Recover a seed's BIP39 mnemonic from its hex-encoded `metadata.entropy`. */
+    resolveMnemonic: (seedKeyId: string) => string | undefined
+    /** Derived main key per seed; PBKDF2 (210k) runs once and is reused. */
+    getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
+}
+
+const createMigrationContext = (): MigrationContext => {
+    const keyById = new Map(
+        getKeystoreStore().state.keys.map(key => [key.id, key]),
+    )
+    const accountByAddress = new Map(
+        useAccountsStore.getState().accounts.map(acc => [acc.address, acc]),
+    )
+    const mainKeyBySeed = new Map<string, Promise<Uint8Array>>()
+
+    return {
+        resolveSeedKeyId: address => {
+            const keyPairId = accountByAddress.get(address)?.keyPairId
+            if (!keyPairId) return undefined
+            const parentKeyId = (
+                keyById.get(keyPairId)?.metadata as
+                    | Record<string, unknown>
+                    | undefined
+            )?.parentKeyId
+            return typeof parentKeyId === 'string' ? parentKeyId : undefined
+        },
+        resolveMnemonic: seedKeyId => {
+            const entropyHex = (
+                keyById.get(seedKeyId)?.metadata as
+                    | { entropy?: string }
+                    | undefined
+            )?.entropy
+            return entropyHex
+                ? entropyToMnemonic(hexToBytes(entropyHex))
+                : undefined
+        },
+        getMainKey: (seedKeyId, mnemonic) => {
+            let pending = mainKeyBySeed.get(seedKeyId)
+            if (!pending) {
+                pending = deriveMainKey(mnemonic)
+                mainKeyBySeed.set(seedKeyId, pending)
+            }
+            return pending
+        },
+    }
+}
+
+const logDerivationMismatch = ({
+    passkey,
+    inputs,
+    derived,
+}: PasskeyDerivation): void => {
+    logger.warn('[Migration] passkey skipped: derived credentialId mismatch', {
+        credentialId: inputs.credentialId,
+        address: passkey.address,
+        legacyCredentialId: passkey.credentialId,
+        legacyCredentialIdHex: bytesToHex(inputs.legacyIdBytes),
+        derivedFromUserName: derived.credentialId,
+        siteUrl: passkey.siteUrl,
+        userName: inputs.userName,
+        hasUserHandle: passkey.userHandle != null,
+    })
+}
+
+const persistMigratedPasskey = async ({
+    passkey,
+    inputs,
+    derived,
+}: PasskeyDerivation): Promise<void> => {
+    // The WebAuthn `user.id` is what the RP gets back as the assertion
+    // userHandle. It's required at registration, so a missing one means the
+    // legacy row lost it — the credential is still written (it can sign in at
+    // RPs that don't match on userHandle) but flagged.
+    if (passkey.userHandle == null) {
+        logger.warn(
+            '[Migration] passkey has no WebAuthn user.id; assertion userHandle will be empty',
+            { credentialId: inputs.credentialId, address: passkey.address },
+        )
+    }
+
+    await writeNativePasskeyEntry({
+        credentialId: inputs.credentialId,
+        origin: inputs.origin,
+        userId: passkey.userHandle ?? '',
+        userName: inputs.userName,
+        displayName: passkey.userDisplayName ?? undefined,
+        publicKeySpkiDer: derived.publicKeySpkiDer,
+        privateKey: derived.privateKey,
+        lastUsedAtMs: passkey.lastUsedAtMs,
+    })
+}
+
+type PasskeyMigrationOutcome = 'imported' | 'skipped'
+
+/**
+ * Validate → dedup → resolve seed → re-derive → verify credentialId → persist.
+ * Persists only when re-derivation reproduces the RP's credentialId exactly, so
+ * we never write an unsignable entry.
+ */
+const migrateSinglePasskey = async (
+    passkey: LegacyPasskey,
+    ctx: MigrationContext,
+    writtenIds: Set<string>,
+): Promise<PasskeyMigrationOutcome> => {
+    const inputs = resolveDerivationInputs(passkey)
+    if (!inputs) return 'skipped'
+
+    // Idempotency + the existence check key off the legacy credentialId bytes
+    // alone, so they don't require the expensive derivation.
+    if (
+        writtenIds.has(inputs.credentialId) ||
+        nativePasskeyEntryExists(inputs.credentialId)
+    ) {
+        return 'skipped'
+    }
+
+    const seedKeyId = ctx.resolveSeedKeyId(passkey.address)
+    if (!seedKeyId) {
+        logger.warn('[Migration] passkey skipped: unresolved HD seed', {
+            credentialId: inputs.credentialId,
+            address: passkey.address,
+        })
+        return 'skipped'
+    }
+
+    const mnemonic = ctx.resolveMnemonic(seedKeyId)
+    if (!mnemonic) {
+        logger.warn('[Migration] passkey skipped: seed has no entropy', {
+            credentialId: inputs.credentialId,
+            address: passkey.address,
+        })
+        return 'skipped'
+    }
+
+    const derivedMainKey = await ctx.getMainKey(seedKeyId, mnemonic)
+    const derived = await deriveLegacyPasskeyCredentialFromMainKey({
+        derivedMainKey,
+        origin: inputs.origin,
+        userName: inputs.userName,
+    })
+    const derivation: PasskeyDerivation = { passkey, inputs, derived }
+
+    // The decisive correctness gate: only persist if our independent
+    // re-derivation reproduces the relying party's credentialId exactly.
+    if (!bytesEqual(derived.credentialIdBytes, inputs.legacyIdBytes)) {
+        logDerivationMismatch(derivation)
+        return 'skipped'
+    }
+
+    await persistMigratedPasskey(derivation)
+    writtenIds.add(inputs.credentialId)
+    return 'imported'
+}
+
+/**
+ * Migrates legacy passkeys so they keep *signing in* after the move from the
+ * native (iOS/Android) apps — without re-registering with each relying party.
+ * A passkey is re-derived, not transferred; see {@link migrateSinglePasskey}
+ * for the per-passkey flow and {@link ./passkeys/deriveLegacyPasskeyCredential}
+ * for the crypto.
+ *
+ * Idempotent: a credential already present in the keystore is skipped without
+ * re-deriving (PBKDF2 is expensive).
+ */
+export const migratePasskeys = async (
+    passkeys: LegacyPasskey[],
+): Promise<PasskeysMigrationResult> => {
+    const result: PasskeysMigrationResult = { imported: 0, skipped: 0 }
+    if (passkeys.length === 0) return result
+
+    const ctx = createMigrationContext()
+    const writtenIds = new Set<string>()
+
+    for (const passkey of passkeys) {
+        try {
+            const outcome = await migrateSinglePasskey(passkey, ctx, writtenIds)
+            result[outcome] += 1
+        } catch (err) {
+            logger.error('[Migration] passkey import failed', {
+                credentialId: passkey.credentialId,
+                error: err,
+            })
+            result.skipped += 1
+        }
+    }
+
+    return result
+}

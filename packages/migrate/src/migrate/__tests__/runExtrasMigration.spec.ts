@@ -49,6 +49,10 @@ vi.mock('../migratePreferences', () => ({
     migratePreferences: vi.fn(),
 }))
 
+vi.mock('../migratePasskeys', () => ({
+    migratePasskeys: vi.fn(async () => ({ imported: 0, skipped: 0 })),
+}))
+
 vi.mock('../migrateStashed', () => ({
     migrateStashed: vi.fn(() => ({ passkeysStashed: 4 })),
 }))
@@ -67,6 +71,7 @@ import { migrateAuth } from '../migrateAuth'
 import { migrateContacts } from '../migrateContacts'
 import { migrateDeviceIdentifiers } from '../migrateDevice'
 import { migrateNotificationMutes } from '../migrateNotifications'
+import { migratePasskeys } from '../migratePasskeys'
 import { migratePreferences } from '../migratePreferences'
 import { migrateStashed } from '../migrateStashed'
 import { migrateSwaps } from '../migrateSwaps'
@@ -99,6 +104,7 @@ beforeEach(() => {
     vi.mocked(migrateContacts).mockClear()
     vi.mocked(migrateDeviceIdentifiers).mockClear()
     vi.mocked(migrateNotificationMutes).mockClear()
+    vi.mocked(migratePasskeys).mockClear()
     vi.mocked(migratePreferences).mockClear()
     vi.mocked(migrateStashed).mockClear()
     vi.mocked(migrateSwaps).mockClear()
@@ -112,6 +118,7 @@ beforeEach(() => {
     })
     vi.mocked(migrateContacts).mockReturnValue({ imported: 2, skipped: 1 })
     vi.mocked(migrateNotificationMutes).mockReturnValue({ muted: 3 })
+    vi.mocked(migratePasskeys).mockResolvedValue({ imported: 0, skipped: 0 })
     vi.mocked(migrateStashed).mockReturnValue({ passkeysStashed: 4 })
     vi.mocked(migrateWalletConnect).mockReturnValue({ imported: 0, skipped: 0 })
 })
@@ -134,6 +141,7 @@ describe('runExtrasMigration > happy path', () => {
                 lockoutMigrated: false,
             },
             walletConnect: { imported: 0, skipped: 0 },
+            passkeys: { imported: 0, skipped: 0 },
             stashed: { passkeysStashed: 4 },
             failed: [],
         })
@@ -159,6 +167,7 @@ describe('runExtrasMigration > happy path', () => {
             data.notificationFilters,
         )
         expect(migrateAuth).toHaveBeenCalledWith(data.auth, data.preferences)
+        expect(migratePasskeys).toHaveBeenCalledWith(data.passkeys)
         expect(migrateStashed).toHaveBeenCalledWith({
             passkeys: data.passkeys,
             walletConnectHistoryBlob: data.walletConnectHistoryBlob,
@@ -287,6 +296,30 @@ describe('runExtrasMigration > walletConnect step', () => {
 
         expect(result.walletConnect).toEqual({ imported: 0, skipped: 0 })
         expect(result.failed.map(f => f.step)).toContain('walletConnect')
+        expect(vi.mocked(migrateStashed)).toHaveBeenCalled()
+    })
+})
+
+describe('runExtrasMigration > passkeys step', () => {
+    it('runs the passkeys step and propagates counts', async () => {
+        vi.mocked(migratePasskeys).mockResolvedValue({
+            imported: 3,
+            skipped: 1,
+        })
+
+        const result = await runExtrasMigration(buildData())
+
+        expect(result.passkeys).toEqual({ imported: 3, skipped: 1 })
+        expect(result.failed).toEqual([])
+    })
+
+    it('records a passkeys failure without breaking later steps', async () => {
+        vi.mocked(migratePasskeys).mockRejectedValueOnce(new Error('boom'))
+
+        const result = await runExtrasMigration(buildData())
+
+        expect(result.passkeys).toEqual({ imported: 0, skipped: 0 })
+        expect(result.failed.map(f => f.step)).toContain('passkeys')
         expect(vi.mocked(migrateStashed)).toHaveBeenCalled()
     })
 })
