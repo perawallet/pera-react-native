@@ -48,15 +48,6 @@ export const MigrationSplashScreen = () => {
                         testID='migration_splash_indicator'
                     />
                 )}
-                {status === 'success' && (
-                    <PWText
-                        variant='body'
-                        style={styles.footerMessage}
-                        testID='migration_splash_success'
-                    >
-                        Migration completed successfully
-                    </PWText>
-                )}
                 {status === 'failure' && (
                     <>
                         <PWText
