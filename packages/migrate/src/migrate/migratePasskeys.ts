@@ -94,6 +94,8 @@ const resolveDerivationInputs = (
 }
 
 type MigrationContext = {
+    /** Whether the passkey's owning account migrated (is present in the store). */
+    hasAccount: (address: string) => boolean
     /** Walk address → account → derived key → the HD seed that owns it. */
     resolveSeedKeyId: (address: string) => string | undefined
     /** Recover a seed's BIP39 mnemonic from its hex-encoded `metadata.entropy`. */
@@ -112,6 +114,7 @@ const createMigrationContext = (): MigrationContext => {
     const mainKeyBySeed = new Map<string, Promise<Uint8Array>>()
 
     return {
+        hasAccount: address => accountByAddress.has(address),
         resolveSeedKeyId: address => {
             const keyPairId = accountByAddress.get(address)?.keyPairId
             if (!keyPairId) return undefined
@@ -209,6 +212,14 @@ const migrateSinglePasskey = async (
         writtenIds.has(inputs.credentialId) ||
         nativePasskeyEntryExists(inputs.credentialId)
     ) {
+        return 'skipped'
+    }
+
+    if (!ctx.hasAccount(passkey.address)) {
+        logger.warn('[Migration] passkey skipped: account not migrated', {
+            credentialId: inputs.credentialId,
+            address: passkey.address,
+        })
         return 'skipped'
     }
 

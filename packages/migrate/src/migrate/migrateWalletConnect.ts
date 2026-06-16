@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
 import {
     PERA_CLIENT_META,
@@ -141,6 +142,10 @@ export const migrateWalletConnect = (
         return result
     }
 
+    const migratedAddresses = new Set(
+        useAccountsStore.getState().accounts.map(account => account.address),
+    )
+
     const store = useWalletConnectStore.getState()
     const existing = store.walletConnectConnections
     const seenClientIds = new Set(
@@ -160,6 +165,14 @@ export const migrateWalletConnect = (
                 !connection ||
                 seenClientIds.has(connection.clientId) ||
                 seenTopics.has(connection.session.handshakeTopic)
+            ) {
+                result.skipped += 1
+                continue
+            }
+            if (
+                !connection.session.accounts.every(address =>
+                    migratedAddresses.has(address),
+                )
             ) {
                 result.skipped += 1
                 continue

@@ -198,14 +198,34 @@ describe('migratePasskeys', () => {
         expect(loggerMock.warn).toHaveBeenCalled()
     })
 
-    it('skips a passkey whose address has no migrated HD seed', async () => {
+    it('skips (without deriving) a passkey whose account did not migrate', async () => {
         const result = await migratePasskeys([
             buildPasskey({ address: 'UNKNOWN_ADDR' }),
         ])
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(deriveCredentialMock).not.toHaveBeenCalled()
         expect(writeEntryMock).not.toHaveBeenCalled()
-        expect(loggerMock.warn).toHaveBeenCalled()
+        expect(loggerMock.warn).toHaveBeenCalledWith(
+            expect.stringContaining('account not migrated'),
+            expect.objectContaining({ address: 'UNKNOWN_ADDR' }),
+        )
+    })
+
+    it('skips a passkey whose migrated account has no resolvable HD seed', async () => {
+        keystoreState.keys = [
+            { id: DERIVED_KEY_ID, type: 'private-key', metadata: {} },
+        ]
+
+        const result = await migratePasskeys([buildPasskey()])
+
+        expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(deriveCredentialMock).not.toHaveBeenCalled()
+        expect(writeEntryMock).not.toHaveBeenCalled()
+        expect(loggerMock.warn).toHaveBeenCalledWith(
+            expect.stringContaining('unresolved HD seed'),
+            expect.anything(),
+        )
     })
 
     it('skips a passkey whose seed has no BIP39 entropy', async () => {

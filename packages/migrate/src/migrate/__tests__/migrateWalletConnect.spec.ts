@@ -15,14 +15,24 @@ import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-
 import type { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { migrateWalletConnect } from '../migrateWalletConnect'
 
-const { storeState, setWalletConnectConnectionsMock } = vi.hoisted(() => {
-    const setWalletConnectConnectionsMock = vi.fn()
-    const storeState = {
-        walletConnectConnections: [] as unknown[],
-        setWalletConnectConnections: setWalletConnectConnectionsMock,
-    }
-    return { storeState, setWalletConnectConnectionsMock }
-})
+const { storeState, setWalletConnectConnectionsMock, accountsState } =
+    vi.hoisted(() => {
+        const setWalletConnectConnectionsMock = vi.fn()
+        const storeState = {
+            walletConnectConnections: [] as unknown[],
+            setWalletConnectConnections: setWalletConnectConnectionsMock,
+        }
+        const accountsState = {
+            accounts: [] as { address: string }[],
+        }
+        return { storeState, setWalletConnectConnectionsMock, accountsState }
+    })
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAccountsStore: {
+        getState: () => accountsState,
+    },
+}))
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     AlgorandChainId: { mainnet: 416_001 },
@@ -74,6 +84,10 @@ describe('migrateWalletConnect', () => {
     beforeEach(() => {
         setWalletConnectConnectionsMock.mockReset()
         storeState.walletConnectConnections = []
+        accountsState.accounts = [
+            { address: 'APPROVED_ADDR' },
+            { address: 'CONNECTED_ADDR' },
+        ]
     })
 
     it('maps an Android-shaped session field-by-field, preferring currentKey and approvedAccounts', () => {
@@ -283,6 +297,38 @@ describe('migrateWalletConnect', () => {
         expect(written).toHaveLength(2)
         expect(written[0]).toBe(existing)
         expect(written[1].clientId).toBe('client-1')
+    })
+
+    it('skips a session whose account did not migrate', () => {
+        accountsState.accounts = []
+
+        const result = migrateWalletConnect([buildSession()])
+
+        expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(setWalletConnectConnectionsMock).not.toHaveBeenCalled()
+    })
+
+    it('skips the un-migrated session but imports the migrated one', () => {
+        accountsState.accounts = [{ address: 'APPROVED_ADDR' }]
+
+        const result = migrateWalletConnect([
+            buildSession({
+                clientId: 'client-missing',
+                approvedAccounts: ['NOT_MIGRATED_ADDR'],
+                sessionMetaJson: JSON.stringify({
+                    bridge: 'https://bridge.walletconnect.org',
+                    key: 'k',
+                    topic: 'topic-missing',
+                    version: '1',
+                }),
+            }),
+            buildSession(),
+        ])
+
+        expect(result).toEqual({ imported: 1, skipped: 1 })
+        const written = writtenConnections()
+        expect(written).toHaveLength(1)
+        expect(written[0].clientId).toBe('client-1')
     })
 
     it('returns zeros and writes nothing for an empty input', () => {
