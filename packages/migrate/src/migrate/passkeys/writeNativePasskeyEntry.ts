@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Platform } from 'react-native'
 import {
     encode,
     encryptData,
@@ -27,15 +28,12 @@ export type WriteNativePasskeyEntryParams = {
     origin: string
     /**
      * WebAuthn `user.id` (base64). Returned to the relying party as the
-     * assertion userHandle. Written to BOTH `metadata.userHandle` (read by iOS)
-     * and `metadata.userId` (read by Android) so the assertion is correct on
-     * both platforms.
+     * assertion userHandle. See {@link buildKeystoreKeyData} for the
+     * platform-specific metadata mapping.
      */
     userId: string
     /**
-     * WebAuthn `user.name`. Surfaced as `metadata.userName` — the display title
-     * source for iOS and the JS passkey list. Display-only; never returned to
-     * the RP.
+     * WebAuthn `user.name`. The display title; never returned to the RP.
      */
     userName?: string
     /**
@@ -64,8 +62,13 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
     publicKey: params.publicKeySpkiDer,
     metadata: {
         origin: params.origin,
-        // user.id in both: iOS assertion reads `userHandle`, Android reads `userId`.
-        userHandle: params.userId,
+        // userHandle is platform-overloaded: Android's picker renders it as the
+        // label (assertion reads userId) so it must be user.name; iOS uses it as
+        // the assertion id (display reads userName).
+        userHandle:
+            Platform.OS === 'android'
+                ? (params.userName ?? params.userId)
+                : params.userId,
         userId: params.userId,
         ...(params.userName != null ? { userName: params.userName } : {}),
         ...(params.displayName != null
@@ -99,4 +102,7 @@ const commitEncryptedKeystoreEntry = async (
 export const writeNativePasskeyEntry = (
     params: WriteNativePasskeyEntryParams,
 ): Promise<void> =>
-    commitEncryptedKeystoreEntry(params.credentialId, buildKeystoreKeyData(params))
+    commitEncryptedKeystoreEntry(
+        params.credentialId,
+        buildKeystoreKeyData(params),
+    )

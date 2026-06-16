@@ -2358,9 +2358,18 @@ importers:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
         version: 10.0.0-beta.4
+      '@algorandfoundation/dp256':
+        specifier: 1.1.0
+        version: 1.1.0
+      '@algorandfoundation/react-native-keystore':
+        specifier: 'catalog:'
+        version: 1.0.0-canary.12(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@56.0.15(expo@56.0.5))(expo@56.0.5)(react-native-nitro-modules@0.35.7(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.14)(react@19.2.3))(react@19.2.3)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@noble/hashes':
+        specifier: 'catalog:'
+        version: 1.8.0
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
@@ -2420,7 +2429,7 @@ importers:
         version: 19.2.3
       react-native:
         specifier: 0.85.3
-        version: 0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
+        version: 0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@react-native/metro-config@0.85.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
       zustand:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
@@ -2451,7 +2460,7 @@ importers:
         version: 5.0.2(esbuild@0.28.0)(rolldown@1.0.3)(typescript@5.9.3)(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.8(@types/node@25.9.2)(@vitest/coverage-v8@4.1.8)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.14.6(@types/node@25.9.2)(typescript@5.9.3))(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
+        version: 4.1.8(@types/node@25.9.2)(@vitest/coverage-v8@4.1.8)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.14.6(@types/node@25.9.2)(typescript@5.9.3))(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
 
   packages/multisig:
     dependencies:
