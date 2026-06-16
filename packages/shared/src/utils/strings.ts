@@ -13,6 +13,7 @@
 import { toByteArray, fromByteArray } from 'base64-js'
 import { Decimal } from './decimal-config'
 import { logger } from './logging'
+import { isAlgoAssetName } from './algo'
 
 export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)
@@ -203,7 +204,7 @@ export const formatCurrency = (
         minPrecision,
     )
     const currencySymbol =
-        !showSymbol || currency === 'ALGO'
+        !showSymbol || isAlgoAssetName(currency)
             ? undefined
             : (currencySymbols[currency] ?? currency)
 

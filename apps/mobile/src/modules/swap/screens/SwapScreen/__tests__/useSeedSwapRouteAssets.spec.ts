@@ -12,11 +12,11 @@
 
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useSeedSwapRouteAssets } from '../useSeedSwapRouteAssets'
 
 const OUT_ID = '31566704'
 const IN_ID = '887406851'
-const ALGO_ID = '0'
 
 const mockOutAsset = { assetId: OUT_ID, unitName: 'USDC', decimals: 6 }
 const mockInAsset = { assetId: IN_ID, unitName: 'wSOL', decimals: 8 }
@@ -25,7 +25,6 @@ const mockUseAssetByIdQuery = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     getAssetsQueryKey: (assetIDs: string[], network: string) => [
         'assets',
         { assetIDs, network },
@@ -84,10 +83,10 @@ describe('useSeedSwapRouteAssets', () => {
     })
 
     it('does not fetch or seed when the output asset is ALGO', () => {
-        renderHook(() => useSeedSwapRouteAssets({ assetOutId: ALGO_ID }))
+        renderHook(() => useSeedSwapRouteAssets({ assetOutId: ALGO_ASSET_ID }))
 
         expect(mockUseAssetByIdQuery).toHaveBeenCalledWith(
-            ALGO_ID,
+            ALGO_ASSET_ID,
             expect.objectContaining({ enabled: false }),
         )
         expect(mockSetQueryData).not.toHaveBeenCalled()

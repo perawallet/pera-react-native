@@ -21,7 +21,11 @@ import {
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     OnrampCountryInfoContent,
@@ -32,7 +36,7 @@ import { trackEvent, OnrampEvent } from '@analytics'
 import { type OnrampScreenParams } from '@modules/onramp/routes/types'
 import { useOnrampIntroduction } from './useOnrampIntroduction'
 
-const DEFAULT_DESTINATION_TOKEN_ID = 'ALGO'
+const DEFAULT_DESTINATION_TOKEN_ID = ALGO_ASSET_NAME
 
 type UseOnrampScreenResult = {
     isReady: boolean

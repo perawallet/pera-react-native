@@ -15,7 +15,6 @@ import { Decimal } from 'decimal.js'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
-    ALGO_ASSET_ID,
     ALGO_ASSET,
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
@@ -23,6 +22,7 @@ import {
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,
 } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_ID, ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
@@ -62,7 +62,7 @@ export const useLedgerAccountPreview = (
         previewAssets.push({
             assetId: ALGO_ASSET_ID,
             name: ALGO_ASSET.name ?? 'Algo',
-            unitName: ALGO_ASSET.unitName ?? 'ALGO',
+            unitName: ALGO_ASSET.unitName ?? ALGO_ASSET_NAME,
             decimals: ALGO_ASSET.decimals,
             amount: algoBalance,
             fiatValue: usdToPreferred(algoBalance.times(algoUsdPrice)),

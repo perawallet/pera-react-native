@@ -13,11 +13,8 @@
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
-import {
-    DEFAULT_PRECISION,
-    formatDatetime,
-} from '@perawallet/wallet-core-shared'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { AssetAmount } from '@components/AssetAmount'
 import { Decimal } from 'decimal.js'
 import { WealthChart } from '@components/WealthChart'
 import { ButtonPanel } from '../ButtonPanel'
@@ -30,7 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
 import { AccountOverviewHeaderSkeleton } from './AccountOverviewHeaderSkeleton'
@@ -75,16 +72,14 @@ export const AccountOverviewHeader = ({
                         style={styles.valueBarContainer}
                     >
                         <PWView style={styles.valueBar}>
-                            <CurrencyDisplay
+                            <AssetAmount
                                 variant='h1'
                                 value={
                                     selectedPoint
                                         ? new Decimal(selectedPoint.algoValue)
                                         : portfolioAlgoValue
                                 }
-                                currency='ALGO'
-                                precision={ALGO_ASSET.decimals}
-                                minPrecision={DEFAULT_PRECISION}
+                                asset={ALGO_ASSET}
                                 style={styles.primaryCurrency}
                                 isLoading={isPending}
                             />
@@ -101,7 +96,7 @@ export const AccountOverviewHeader = ({
                                 )}
                         </PWView>
                         <PWView style={styles.secondaryValueBar}>
-                            <PreferredCurrencyDisplay
+                            <PreferredAmount
                                 variant='h4'
                                 style={styles.valueTitle}
                                 sourceAmount={
@@ -110,7 +105,7 @@ export const AccountOverviewHeader = ({
                                         : portfolioAlgoValue
                                 }
                                 sourceAssetId={ALGO_ASSET.assetId}
-                                precision={2}
+                                density='compact'
                                 showSymbol
                                 prefix='≈ '
                                 isLoading={isPending}

@@ -29,7 +29,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     ALGO_ASSET: { assetId: '0', decimals: 6 },
 }))
 

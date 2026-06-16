@@ -68,6 +68,9 @@ vi.mock('../deeplink/parser', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_ID: '0',
+    isAlgoAssetId: (assetId: string | number | bigint) =>
+        String(assetId) === '0',
     logger: {
         debug: vi.fn(),
         warn: vi.fn(),

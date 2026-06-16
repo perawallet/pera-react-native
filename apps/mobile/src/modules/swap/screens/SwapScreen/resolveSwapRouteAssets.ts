@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, getKnownAssetId } from '@perawallet/wallet-core-assets'
+import { getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
+    ALGO_ASSET_ID,
     type Network,
     type Nullable,
     type Optional,

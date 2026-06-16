@@ -16,6 +16,7 @@ import {
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { isAlgoAssetName } from '@perawallet/wallet-core-shared'
 import { trackEvent, SwapEvent } from '@analytics'
 import {
     MAX_BALANCE_PERCENT,
@@ -64,7 +65,7 @@ export const useSwapConfigurationContent = ({
 }: UseSwapConfigurationContentParams): UseSwapConfigurationContentResult => {
     const { slippage } = useSwaps()
     const { preferredCurrency } = useCurrency()
-    const isAlgoPreferred = preferredCurrency === 'ALGO'
+    const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
 
     const [balanceText, setBalanceTextState] = useState('')
     const [slippageText, setSlippageTextState] = useState(slippage ?? '')

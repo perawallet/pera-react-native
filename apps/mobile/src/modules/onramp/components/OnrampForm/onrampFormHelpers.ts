@@ -22,7 +22,12 @@ import {
     type XoOrder,
     type XoQuote,
 } from '@perawallet/wallet-core-onramp'
-import { type Network, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    isAlgoAssetName,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /** Payment-method ids excluded on the given platform (matches the web filter). */
 export const getExcludedPaymentMethodIds = (
@@ -44,11 +49,12 @@ export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
 export const resolveDestinationAssetId = (
     pair: RampPair,
     network: Network,
-): bigint | 'ALGO' => {
+): bigint | typeof ALGO_ASSET_NAME => {
     const { destinationToken } = pair
     const isAlgo =
-        destinationToken.id === 'ALGO' || destinationToken.symbol === 'ALGO'
-    return isAlgo ? 'ALGO' : BigInt(getKnownAssetId('USDC', network))
+        isAlgoAssetName(destinationToken.id) ||
+        isAlgoAssetName(destinationToken.symbol)
+    return isAlgo ? ALGO_ASSET_NAME : BigInt(getKnownAssetId('USDC', network))
 }
 
 /** An XO source amount that falls outside the quote's min/max window. */

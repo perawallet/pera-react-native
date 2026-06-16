@@ -29,6 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
+    ALGO_ASSET_NAME,
     DEFAULT_PRECISION,
     formatCurrency,
     type Nullable,
@@ -106,7 +107,7 @@ export const useAssetClaimDetailScreen =
                     ALGO_ASSET.decimals,
                 ),
                 ALGO_ASSET.decimals,
-                'ALGO',
+                ALGO_ASSET_NAME,
                 deviceInfo.getDeviceLocale(),
                 false,
                 false,

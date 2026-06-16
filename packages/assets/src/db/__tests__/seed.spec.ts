@@ -11,13 +11,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     runMigrations,
     migrations,
     type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
-import { ALGO_ASSET_ID } from '../../models'
+
 import { getAssetsByIds } from '../repository'
 import { seedAlgoAsset } from '../seed'
 

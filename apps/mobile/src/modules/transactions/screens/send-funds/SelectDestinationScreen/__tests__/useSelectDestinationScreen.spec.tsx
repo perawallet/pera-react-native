@@ -47,7 +47,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     useAssetsQuery: vi.fn(() => ({
         data: new Map([['123', { assetId: '123', name: 'TestToken' }]]),
     })),

@@ -11,8 +11,8 @@
  */
 
 import { type Decimal } from 'decimal.js'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import {
     type PWIconSize,
     type PWTouchableOpacityProps,
@@ -94,21 +94,19 @@ export const AccountAssetItemView = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
-            <CurrencyDisplay
-                currency={asset.unitName ?? ''}
+            <AssetAmount
+                asset={asset}
                 value={accountBalance.amount}
-                precision={asset.decimals}
-                minPrecision={2}
+                density='compact'
                 showSymbol
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
-            <PreferredCurrencyDisplay
+            <PreferredAmount
                 sourceAmount={accountBalance.amount}
                 sourceAssetId={accountBalance.assetId}
                 usdPrice={usdPrice}
-                precision={2}
-                minPrecision={2}
+                density='compact'
                 showSymbol
                 style={styles.secondaryAmount}
             />

@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useFeeDelegation } from '@perawallet/wallet-core-fee-delegation'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 
 export type ConfirmOptInContext = {
     assetId: bigint
@@ -28,7 +29,7 @@ export type ConfirmOptInContext = {
 export type EnsureDestinationOptInParams = {
     address: string
     /** The destination asset: 'ALGO' means no opt-in needed; otherwise the ASA id. */
-    destinationAssetId: bigint | 'ALGO'
+    destinationAssetId: bigint | typeof ALGO_ASSET_NAME
     /**
      * Asks the user to confirm an opt-in before it is performed (the UI layer
      * shows the opt-in confirmation sheet). Resolve false to cancel — then
@@ -78,7 +79,7 @@ export const useEnsureDestinationOptIn =
                 confirmOptIn,
             }: EnsureDestinationOptInParams): Promise<boolean> => {
                 // 1. ALGO never requires an opt-in.
-                if (destinationAssetId === 'ALGO') {
+                if (destinationAssetId === ALGO_ASSET_NAME) {
                     return true
                 }
                 const assetId = destinationAssetId

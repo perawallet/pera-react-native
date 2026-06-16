@@ -12,12 +12,11 @@
 
 import { PWButton, PWText, PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useFeeWarning } from './useFeeWarning'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -49,10 +48,8 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
                     {label ?? t('transactions.common.tx_fee')}
                 </PWText>
                 <PWView style={styles.feeValueContainer}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={fee.mul(-1)}
                         showSymbol
                         ignorePrivacyMode

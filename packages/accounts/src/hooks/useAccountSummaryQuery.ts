@@ -11,12 +11,10 @@
  */
 
 import { useMemo } from 'react'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import {
-    ALGO_ASSET_ID,
-    useAssetPricesQuery,
-} from '@perawallet/wallet-core-assets'
+import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'

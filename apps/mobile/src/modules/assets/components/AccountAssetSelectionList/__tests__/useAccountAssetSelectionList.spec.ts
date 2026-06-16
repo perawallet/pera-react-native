@@ -23,9 +23,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: mockUseAccountBalancesQuery,
 }))
 
-vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
-}))
+vi.mock('@perawallet/wallet-core-assets', () => ({}))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(

@@ -37,6 +37,8 @@ import {
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
+    ALGO_ASSET_NAME,
+    isAlgoAssetName,
     isDecimalEqual,
     uint64IdToNumber,
     useDebouncedValue,
@@ -475,11 +477,11 @@ export const useSwapForm = (): UseSwapFormResult => {
 
         setSlippage(result.slippageTolerance)
 
-        const isAlgoPreferred = preferredCurrency === 'ALGO'
+        const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
         if (result.useLocalCurrency && isAlgoPreferred) {
             setPreferredCurrency(fallbackCurrency)
         } else if (!result.useLocalCurrency && !isAlgoPreferred) {
-            setPreferredCurrency('ALGO')
+            setPreferredCurrency(ALGO_ASSET_NAME)
         }
 
         if (result.balancePercentage !== null) {

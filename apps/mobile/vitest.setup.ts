@@ -2236,6 +2236,11 @@ vi.mock('@react-native-clipboard/clipboard', () => ({
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', async () => ({
+    ALGO_ASSET_ID: '0',
+    ALGO_ASSET_NAME: 'ALGO',
+    isAlgoAssetId: (assetId: string | number | bigint) =>
+        String(assetId) === '0',
+    isAlgoAssetName: (value: string) => value === 'ALGO',
     logger: {
         debug: vi.fn(),
         info: vi.fn(),
@@ -2265,7 +2270,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     },
     truncateAlgorandAddress: vi.fn(a => a),
     stripUrlScheme: vi.fn(url => url),
-    DEFAULT_PRECISION: 6,
+    // Must mirror the real constant (packages/shared/src/models/constants.ts).
+    // The precision policy reads this, so a wrong value silently invalidates
+    // every precision/formatting assertion.
+    DEFAULT_PRECISION: 2,
     ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
     ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
@@ -2453,8 +2461,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         Number(value) / Math.pow(10, asset.decimals),
-    isAlgoAsset: (assetId: string | number) => String(assetId) === '0',
-    ALGO_ASSET_ID: '0',
     KNOWN_ASSET_IDS: {
         USDC: { mainnet: '31566704', testnet: '10458941' },
     },
@@ -2750,6 +2756,7 @@ vi.mock('react-native-rate-app', () => ({
 vi.mock('@perawallet/wallet-core-currencies', async () => {
     const { Decimal } = await import('decimal.js')
     return {
+        USD_CURRENCY_ID: 'USD',
         useCurrency: vi.fn(() => ({
             preferredCurrency: 'USD',
             fallbackCurrency: 'USD',

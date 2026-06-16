@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { buildPrismUrl, getInitials } from '@perawallet/wallet-core-shared'
 import {
-    isAlgoAsset,
-    type DisplayableAsset,
-} from '@perawallet/wallet-core-assets'
+    buildPrismUrl,
+    getInitials,
+    isAlgoAssetId,
+} from '@perawallet/wallet-core-shared'
+import { type DisplayableAsset } from '@perawallet/wallet-core-assets'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type SvgProps } from 'react-native-svg'
@@ -77,7 +78,7 @@ export const AssetIcon = (props: AssetIconProps) => {
 
     const icon = useMemo(() => {
         if (!asset) return <></>
-        if (isAlgoAsset(asset.assetId))
+        if (isAlgoAssetId(asset.assetId))
             return (
                 <AlgoAssetIcon
                     {...rest}

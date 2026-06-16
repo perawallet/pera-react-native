@@ -17,13 +17,14 @@
 // touch the on-device DB should rely on this scaffold.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     resetTestDatabase,
     seedAlgoAsset,
     setupTestDatabase,
     teardownTestDatabase,
 } from '@test-utils/database-setup'
-import { ALGO_ASSET_ID, getAssetsByIds } from '@perawallet/wallet-core-assets'
+import { getAssetsByIds } from '@perawallet/wallet-core-assets'
 
 describe('Integration test plumbing: SQLite database', () => {
     beforeAll(setupTestDatabase)

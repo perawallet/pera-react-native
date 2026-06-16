@@ -31,7 +31,6 @@ const mockFetchAndPersistAssets = vi.fn(() => Promise.resolve())
 const mockFetchAndPersistPrices = vi.fn(() => Promise.resolve())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     fetchAndPersistAssets: (...args: unknown[]) =>
         mockFetchAndPersistAssets(...args),
     fetchAndPersistPrices: (...args: unknown[]) =>

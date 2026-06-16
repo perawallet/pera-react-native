@@ -81,7 +81,6 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
-    ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
     isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
         asset?.peraMetadata?.type === 'collectible',
@@ -108,6 +107,9 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_ID: '0',
+    isAlgoAssetId: (assetId: string | number | bigint) =>
+        String(assetId) === '0',
     DEFAULT_PRECISION: 2,
     formatCurrency: vi.fn(() => '10.00'),
 }))

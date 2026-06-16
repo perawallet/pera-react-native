@@ -13,7 +13,6 @@
 import { useQuery } from '@tanstack/react-query'
 import {
     ALGO_ASSET,
-    ALGO_ASSET_ID,
     DEFAULT_ASSET_METADATA,
     DEFAULT_ASSET_VALUES,
     type PeraAsset,
@@ -27,7 +26,11 @@ import {
     fetchPublicAssetDetails,
 } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
-import { stripNulls, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    stripNulls,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetById } from '../db'
 
@@ -83,7 +86,7 @@ export const useSingleAssetDetailsQuery = (
             }
 
             // ALGO is seeded at startup — if not in DB yet, return in-memory constant
-            if (assetId === ALGO_ASSET_ID) {
+            if (isAlgoAssetId(assetId)) {
                 return ALGO_ASSET
             }
 

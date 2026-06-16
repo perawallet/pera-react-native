@@ -16,6 +16,7 @@ import { eq, and } from 'drizzle-orm'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { decimalColumn, getDatabase } from '@perawallet/wallet-core-database'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { currencyQueryKeys } from './querykeys'
 
 const AssetPricesTable = sqliteTable('asset_prices', {
@@ -24,7 +25,7 @@ const AssetPricesTable = sqliteTable('asset_prices', {
     usdPrice: decimalColumn('usd_price').notNull(),
 })
 
-const ALGO_ASSET_ID = new Decimal(0)
+const algoAssetIdDecimal = new Decimal(ALGO_ASSET_ID)
 
 async function getAlgoPriceFromDb(network: string): Promise<Decimal> {
     const db = getDatabase()
@@ -33,7 +34,7 @@ async function getAlgoPriceFromDb(network: string): Promise<Decimal> {
         .from(AssetPricesTable)
         .where(
             and(
-                eq(AssetPricesTable.assetId, ALGO_ASSET_ID),
+                eq(AssetPricesTable.assetId, algoAssetIdDecimal),
                 eq(AssetPricesTable.network, network),
             ),
         )

@@ -28,6 +28,7 @@ import {
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import {
+    ALGO_ASSET_NAME,
     formatCurrency,
     generateOrderedUniqueId,
     type Nullable,
@@ -100,7 +101,7 @@ export const useARC59SendSummaryScreen =
                     requiredBalance: formatCurrency(
                         requiredAlgo,
                         ALGO_ASSET.decimals,
-                        'ALGO',
+                        ALGO_ASSET_NAME,
                     ),
                 })
             }

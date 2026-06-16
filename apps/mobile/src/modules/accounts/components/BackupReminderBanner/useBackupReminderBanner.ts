@@ -11,12 +11,13 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import {
     useAccountBalancesQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
 import { useRequiresMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useBackupFlowLauncher } from '@modules/backup'
 
@@ -35,7 +36,7 @@ export const useBackupReminderBanner = (
 
     const balanceEntry = accountBalances.get(account.address)
     const algoBalance: Decimal =
-        balanceEntry?.assetBalances.find(b => b.assetId === ALGO_ASSET_ID)
+        balanceEntry?.assetBalances.find(b => isAlgoAssetId(b.assetId))
             ?.amount ?? new Decimal(0)
 
     const isVisible = requiresBackup && algoBalance.gt(0)

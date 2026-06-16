@@ -11,11 +11,14 @@
  */
 
 import { useStyles } from './styles'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    generateOrderedUniqueId,
+} from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { ALGO_ASSET_ID, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview/hooks'
 import { useClipboard } from '@hooks/useClipboard'
@@ -63,24 +66,23 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 })}
             </PWText>
 
-            {!!assetDetails.assetId &&
-                assetDetails.assetId !== ALGO_ASSET_ID && (
-                    <KeyValueRow
-                        title={t('asset_details.about.asa_id')}
-                        verticalAlignment='center'
-                    >
-                        <PWButton
-                            title={assetDetails.assetId.toString()}
-                            onPress={() =>
-                                void copyToClipboard(
-                                    assetDetails.assetId.toString(),
-                                )
-                            }
-                            variant='linkPositive'
-                            paddingStyle='none'
-                        />
-                    </KeyValueRow>
-                )}
+            {!!assetDetails.assetId && !isAlgoAssetId(assetDetails.assetId) && (
+                <KeyValueRow
+                    title={t('asset_details.about.asa_id')}
+                    verticalAlignment='center'
+                >
+                    <PWButton
+                        title={assetDetails.assetId.toString()}
+                        onPress={() =>
+                            void copyToClipboard(
+                                assetDetails.assetId.toString(),
+                            )
+                        }
+                        variant='linkPositive'
+                        paddingStyle='none'
+                    />
+                </KeyValueRow>
+            )}
 
             {!!assetDetails.creator?.address && (
                 <KeyValueRow
@@ -101,7 +103,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
             {!!assetDetails.url?.length && (
                 <KeyValueRow
                     title={
-                        assetDetails.assetId === ALGO_ASSET_ID
+                        isAlgoAssetId(assetDetails.assetId)
                             ? t('asset_details.about.url')
                             : t('asset_details.about.asa_url')
                     }
@@ -127,7 +129,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                             openLink(assetDetails.peraMetadata?.explorerUrl)
                         }
                         title={
-                            assetDetails.assetId === ALGO_ASSET_ID
+                            isAlgoAssetId(assetDetails.assetId)
                                 ? 'Algoscan'
                                 : 'Pera Explorer'
                         }

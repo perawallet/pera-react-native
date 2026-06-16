@@ -20,6 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
@@ -40,7 +41,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
 import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'

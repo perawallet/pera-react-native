@@ -59,7 +59,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     ALGO_ASSET: { assetId: '0', decimals: 6 },
 }))
 

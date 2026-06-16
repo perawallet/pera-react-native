@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { encodeToBase64, isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import type { DataSource } from '../types'
 import { createLocalSource } from './factories'
 import type { PaymentSourceParams, SourceDependencies } from './types'
@@ -48,7 +48,7 @@ export const createPaymentSource = (
             params
 
         // Determine if this is an ALGO payment or ASA transfer
-        const isAlgoPayment = !assetId || assetId === 0n
+        const isAlgoPayment = !assetId || isAlgoAssetId(assetId)
 
         let transaction
 

@@ -11,7 +11,7 @@
  */
 
 import { PWListItemLayout, PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useStyles } from './styles'
@@ -58,13 +58,11 @@ export const TransactionListItem = ({
             right={
                 <PWView style={styles.amountContainer}>
                     {amounts.map((amount, index) => (
-                        <CurrencyDisplay
+                        <CurrencyAmount
                             key={index}
                             value={amount.value}
                             currency={amount.currency}
-                            precision={amount.precision}
-                            maxPrecision={2}
-                            minPrecision={0}
+                            precision='compact'
                             prefix={amount.prefix}
                             showSymbol
                             symbolPosition='end'

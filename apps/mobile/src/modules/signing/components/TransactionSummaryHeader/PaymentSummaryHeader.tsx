@@ -14,11 +14,11 @@ import {
     type PeraDisplayableTransaction,
     microAlgosToAlgos,
 } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
@@ -55,10 +55,8 @@ export const PaymentSummaryHeader = ({
                 />
             </PWView>
             <PWView style={styles.amountContainer}>
-                <CurrencyDisplay
-                    currency='ALGO'
-                    precision={ALGO_ASSET.decimals}
-                    minPrecision={DEFAULT_PRECISION}
+                <AssetAmount
+                    asset={ALGO_ASSET}
                     value={microAlgosToAlgos(
                         transaction.paymentTransaction?.amount ?? 0n,
                     )}
@@ -67,13 +65,11 @@ export const PaymentSummaryHeader = ({
                     style={styles.amountValue}
                     ignorePrivacyMode
                 />
-                <PreferredCurrencyDisplay
+                <PreferredAmount
                     sourceAmount={amount}
                     sourceAssetId={ALGO_ASSET_ID}
                     variant='h4'
                     style={styles.secondaryAmountValue}
-                    precision={ALGO_ASSET.decimals}
-                    minPrecision={DEFAULT_PRECISION}
                     ignorePrivacyMode
                 />
             </PWView>

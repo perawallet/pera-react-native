@@ -11,11 +11,9 @@
  */
 
 import { useMemo } from 'react'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
-import {
-    useAssetPricesQuery,
-    ALGO_ASSET_ID,
-} from '@perawallet/wallet-core-assets'
+import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import {
     useRemoteConfig,
     RemoteConfigKeys,

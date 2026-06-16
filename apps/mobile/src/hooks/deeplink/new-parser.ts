@@ -45,7 +45,11 @@ import {
     parseQueryParams,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    ALGO_ASSET_ID,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params
@@ -132,9 +136,9 @@ export function parsePerawalletAppUri(
     if (cleanPath === 'asset-transfer') {
         if (!params.receiverAddress) return null
 
-        const assetId = params.assetId || '0'
+        const assetId = params.assetId || ALGO_ASSET_ID
 
-        if (assetId === '0') {
+        if (isAlgoAssetId(assetId)) {
             return {
                 type: DeeplinkType.ALGO_TRANSFER,
                 sourceUrl: url,

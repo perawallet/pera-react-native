@@ -13,7 +13,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { usePreferredCurrencyDisplay } from '../usePreferredCurrencyDisplay'
+import { usePreferredAmount } from '../usePreferredAmount'
 
 const mockUseCurrency = vi.hoisted(() => vi.fn())
 const mockUsePreferredCurrencyPriceQuery = vi.hoisted(() => vi.fn())
@@ -26,11 +26,10 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: mockUseAssetPricesQuery,
-    ALGO_ASSET_ID: '0',
     ALGO_ASSET: { unitName: 'ALGO' },
 }))
 
-describe('usePreferredCurrencyDisplay', () => {
+describe('usePreferredAmount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
@@ -67,7 +66,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(new Decimal(10), '0'),
+            usePreferredAmount(new Decimal(10), '0'),
         )
 
         expect(result.current.displayCurrency).toBe('EUR')
@@ -99,7 +98,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(new Decimal(100), '0'),
+            usePreferredAmount(new Decimal(100), '0'),
         )
 
         expect(result.current.displayCurrency).toBe('USD')
@@ -126,7 +125,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(new Decimal(5), '123'),
+            usePreferredAmount(new Decimal(5), '123'),
         )
 
         expect(result.current.displayCurrency).toBe('ALGO')
@@ -156,7 +155,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(new Decimal(5), '123', true),
+            usePreferredAmount(new Decimal(5), '123', true),
         )
 
         expect(result.current.displayCurrency).toBe('EUR')
@@ -177,7 +176,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(new Decimal(10), '0'),
+            usePreferredAmount(new Decimal(10), '0'),
         )
 
         expect(result.current.isPending).toBe(true)
@@ -185,18 +184,14 @@ describe('usePreferredCurrencyDisplay', () => {
     })
 
     it('passes null through when sourceAmount is null', () => {
-        const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(null, '0'),
-        )
+        const { result } = renderHook(() => usePreferredAmount(null, '0'))
 
         expect(result.current.convertedValue).toBeNull()
         expect(result.current.isPending).toBe(false)
     })
 
     it('passes undefined through when sourceAmount is undefined', () => {
-        const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(undefined, '0'),
-        )
+        const { result } = renderHook(() => usePreferredAmount(undefined, '0'))
 
         expect(result.current.convertedValue).toBeNull()
     })
@@ -219,7 +214,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(new Decimal(100), '0'),
+            usePreferredAmount(new Decimal(100), '0'),
         )
 
         expect(result.current.isPending).toBe(true)
@@ -240,7 +235,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(
+            usePreferredAmount(
                 new Decimal(10),
                 '123',
                 false,
@@ -253,7 +248,6 @@ describe('usePreferredCurrencyDisplay', () => {
         expect(result.current.convertedValue).toEqual(new Decimal(12.75))
         expect(result.current.isPending).toBe(false)
 
-        // Verify it was called with empty array (no per-item fetch)
-        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith([])
+        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith([], false)
     })
 })

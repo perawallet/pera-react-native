@@ -19,11 +19,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 import { KeyValueRow } from '@components/KeyValueRow'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -88,22 +87,18 @@ export const TransactionConfirmationScreen = () => {
         >
             <PWView style={styles.scrollContent}>
                 <KeyValueRow title={t('send_funds.confirmation.amount')}>
-                    <CurrencyDisplay
+                    <AssetAmount
                         variant='h3'
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? DEFAULT_PRECISION}
-                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                        asset={asset}
                         showSymbol
                         ignorePrivacyMode
                         value={amount ?? new Decimal(0)}
                     />
                     {!isCollectible && (
-                        <PreferredCurrencyDisplay
+                        <PreferredAmount
                             style={styles.secondaryAmount}
                             sourceAmount={amount}
                             sourceAssetId={selectedAssetId ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={DEFAULT_PRECISION}
                             showSymbol
                             ignorePrivacyMode
                         />
@@ -127,10 +122,8 @@ export const TransactionConfirmationScreen = () => {
                     </KeyValueRow>
                 )}
                 <KeyValueRow title={t('send_funds.confirmation.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         showSymbol
                         ignorePrivacyMode
                         value={
@@ -146,20 +139,16 @@ export const TransactionConfirmationScreen = () => {
                     <KeyValueRow
                         title={t('send_funds.confirmation.current_balance')}
                     >
-                        <CurrencyDisplay
-                            currency={asset?.unitName ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                        <AssetAmount
+                            asset={asset}
                             showSymbol
                             value={currentBalance.amount}
                             isLoading={currentBalancePending}
                         />
                         {!isCollectible && (
-                            <PreferredCurrencyDisplay
+                            <PreferredAmount
                                 sourceAmount={currentBalance.amount}
                                 sourceAssetId={selectedAssetId ?? ''}
-                                precision={asset?.decimals ?? DEFAULT_PRECISION}
-                                minPrecision={DEFAULT_PRECISION}
                                 showSymbol
                                 style={styles.secondaryAmount}
                             />

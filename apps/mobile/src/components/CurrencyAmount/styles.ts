@@ -14,11 +14,11 @@ import { makeStyles } from '@rneui/themed'
 import { StyleSheet } from 'react-native'
 import { getTypography } from '@theme/typography'
 
-import type { CurrencyDisplayProps } from './CurrencyDisplay'
+import type { CurrencyAmountProps } from './CurrencyAmount'
 
 const SKELETON_MAX_WIDTH = 150
 
-export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
+export const useStyles = makeStyles((theme, props: CurrencyAmountProps) => {
     // Sizes the skeleton bar to match the rendered text.
     const fontSize =
         StyleSheet.flatten(props.style)?.fontSize ??
@@ -29,7 +29,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
         container: {
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'flex-start',
+            justifyContent: props.alignRight ? 'flex-end' : 'flex-start',
             gap: theme.spacing.xs,
             backgroundColor: 'transparent',
             flexShrink: 1,

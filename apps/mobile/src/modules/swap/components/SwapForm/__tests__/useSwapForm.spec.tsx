@@ -143,6 +143,8 @@ vi.mock('../../SwapProviderContent', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_NAME: 'ALGO',
+    isAlgoAssetName: (value: string) => value === 'ALGO',
     isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
         if (a === b) return true
         if (a === null || b === null) return false

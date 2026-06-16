@@ -13,15 +13,16 @@
 import { useCallback, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import {
-    ALGO_ASSET,
-    useSingleAssetDetailsQuery,
-} from '@perawallet/wallet-core-assets'
+import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import {
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
-import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    formatNumber,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
@@ -32,12 +33,10 @@ import type { TransactionIconType } from '@modules/transactions/components/Trans
 type TFunction = ReturnType<typeof useLanguage>['t']
 
 export type AmountDisplay = {
-    /** Raw amount value for CurrencyDisplay */
+    /** Raw amount value for CurrencyAmount */
     value: Decimal
     /** Currency code (e.g., 'ALGO', 'USDC') */
     currency: string
-    /** Number of decimal places for this currency */
-    precision: number
     /** Prefix to show (e.g., '+', '-'). Also determines styling: '+' = positive (green), '-' = negative (red). Undefined for zero values. */
     prefix?: '+' | '-'
 }
@@ -67,8 +66,7 @@ const createAlgoAmount = (
 
     return {
         value: absValue,
-        currency: 'ALGO',
-        precision: ALGO_ASSET.decimals,
+        currency: ALGO_ASSET_NAME,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }
 }
@@ -91,7 +89,6 @@ const createAssetAmount = (
     return {
         value: absValue,
         currency: unitName,
-        precision: safeDecimals,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }
 }
@@ -239,7 +236,6 @@ export const useTransactionListItem = ({
             result.push({
                 value: absValue,
                 currency: assetOutUnitName,
-                precision: 6,
                 prefix: absValue.isZero() ? undefined : '+',
             })
             return result

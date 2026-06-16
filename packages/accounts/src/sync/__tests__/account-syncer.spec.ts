@@ -38,7 +38,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 // package graph on every test — under full-suite parallel load that import
 // alone can blow the test timeout.
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))

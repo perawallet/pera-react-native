@@ -80,7 +80,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     transformAssetResponse: vi.fn(x => x),
     upsertAssets: vi.fn(() => Promise.resolve()),
     upsertAssetPrices: vi.fn(() => Promise.resolve()),
-    ALGO_ASSET_ID: '0',
     invalidateAssetQueries: vi.fn(),
     fetchAndPersistAssets: vi.fn(() => Promise.resolve()),
     fetchAndPersistPrices: vi.fn(() => Promise.resolve()),

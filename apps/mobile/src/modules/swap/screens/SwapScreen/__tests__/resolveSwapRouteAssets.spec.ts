@@ -18,7 +18,6 @@ const USDC_TESTNET = '10458941'
 const TOKEN = '887406851'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     getKnownAssetId: (_key: string, network: string) =>
         network === 'testnet' ? '10458941' : '31566704',
 }))

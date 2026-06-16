@@ -17,8 +17,8 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { type RampToken } from '@perawallet/wallet-core-onramp'
+import { isAlgoAssetName, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Verification tier mapping for known onramp tokens, keyed on token.id.
 // RampToken has no tier field; we map the known-safe tokens to a real
@@ -38,7 +38,7 @@ export const buildAccountBalanceFromRampToken = (
     token: RampToken,
     balance: Nullable<Decimal>,
 ): AssetWithAccountBalance => {
-    const isAlgo = token.id === 'ALGO' || token.symbol === 'ALGO'
+    const isAlgo = isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
     const assetId = isAlgo ? '0' : token.id
 
     const asset: PeraAsset = {

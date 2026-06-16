@@ -28,7 +28,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))

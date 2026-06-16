@@ -11,13 +11,12 @@
  */
 
 import {
-    isAlgoAsset,
     PeraAssetType,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetItemViewResult = {
     isCollectible: boolean
@@ -34,7 +33,7 @@ export const useAssetItemView = (
     asset: DisplayableAsset,
 ): UseAssetItemViewResult => {
     const meta = asset.peraMetadata
-    const isAlgo = isAlgoAsset(asset.assetId)
+    const isAlgo = isAlgoAssetId(asset.assetId)
     const isCollectible = meta?.type === PeraAssetType.collectible
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'
