@@ -522,8 +522,7 @@ describe('RNLedgerService', () => {
         test('delegates to the native PeraBluetooth module', async () => {
             peraBluetoothRequestEnableMock.mockResolvedValue(true)
 
-            const result = await new RNLedgerService()
-                .createTransportProvider()
+            const result = await new RNLedgerService().createTransportProvider()
                 .requestBluetoothEnable!()
 
             expect(peraBluetoothRequestEnableMock).toHaveBeenCalledTimes(1)
@@ -535,8 +534,7 @@ describe('RNLedgerService', () => {
                 new Error('no activity'),
             )
 
-            const result = await new RNLedgerService()
-                .createTransportProvider()
+            const result = await new RNLedgerService().createTransportProvider()
                 .requestBluetoothEnable!()
 
             expect(result).toBe(false)

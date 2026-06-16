@@ -13,7 +13,8 @@
 import { describe, expect, it } from 'vitest'
 import { patchMainApplication } from '../withBluetoothEnable'
 
-const IMPORT_LINE = 'import com.algorand.perarn.perabluetooth.PeraBluetoothPackage'
+const IMPORT_LINE =
+    'import com.algorand.perarn.perabluetooth.PeraBluetoothPackage'
 const REGISTER_CALL = 'add(PeraBluetoothPackage())'
 
 // Expo / RN template: getPackages() returns the autolinked list via `.apply { }`.
