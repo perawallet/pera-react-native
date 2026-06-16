@@ -79,7 +79,8 @@ overrides:
   happy-dom@<20.0.0: ">=20.0.0"
   happy-dom@>=19.0.0 <20.0.2: ">=20.0.2"
   js-yaml@<3.14.2: ">=3.14.2"
-  js-yaml@>=4.0.0 <4.1.1: ">=4.1.1"
+  # GHSA-h67p-54hq-rp68 (quadratic-complexity DoS); 4.1.1 is now vulnerable too.
+  js-yaml@>=4.0.0 <4.2.0: ">=4.2.0"
   lodash@4: 4.18.1
   nanoid@<3.3.8: ">=3.3.8"
   node-fetch@<2.6.7: ">=2.6.7"
@@ -88,7 +89,9 @@ overrides:
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   postcss@<8.5.10: ">=8.5.10"
-  protobufjs@7: 7.5.8
+  # GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7 (DoS / property shadowing).
+  # Was 7.5.8, now vulnerable. Pinned exact to the verified lowest patched 7.x.
+  protobufjs@7: 7.6.3
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.85.3
@@ -97,7 +100,9 @@ overrides:
   react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^3.0.0
   uuid@<14: 14.0.0
-  ws@>=7.0.0 <7.5.10: 7.5.10
+  # GHSA-96hv-2xvq-fx4p (memory-exhaustion DoS); 7.5.10 is now vulnerable.
+  # Pinned exact (NOT ">="), since 7.5.11 is the last 7.x and ">=" would jump to 8.x.
+  ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: ">=8.20.1"
   yaml@1: 1.10.3
   yaml@2: 2.8.3
@@ -115,10 +120,15 @@ minimumReleaseAge: 10080
 #   expo / expo-* / @expo/* / babel-preset-expo
 #     — tail of the SDK 56 upgrade; baseline expo 56.0.5 ages out 2026-06-03.
 #       Remove once it has aged past the window.
+#   protobufjs
+#     — security pin to 7.6.3 (GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7);
+#       7.6.3 ages out 2026-06-16. Maintainer continuity + SLSA provenance verified.
+#       Remove once it has aged past the window.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
+  - protobufjs
   - expo
   - "expo-*"
   - "@expo/*"
