@@ -20,10 +20,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    CARD_VERIFICATION_CODE_LENGTH,
-    MOCK_VALID_VERIFICATION_CODE,
-} from '../cardVerificationConstants'
+import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 
 /** Seconds the user must wait before the SMS code can be re-sent. */
 const RESEND_COOLDOWN_SECONDS = 60
@@ -32,7 +29,6 @@ export type UseCardOnboardingPhoneVerifyScreenResult = {
     code: string
     onChangeCode: (text: string) => void
     isValid: boolean
-    isWrongCode: boolean
     isSubmitting: boolean
     /** The phone the code was sent to, formatted as `+44 7400846282`. */
     phoneDisplay: string
@@ -65,7 +61,6 @@ export const useCardOnboardingPhoneVerifyScreen =
         const verifyPhone = useVerifyPhoneMutation()
 
         const [code, setCode] = useState('')
-        const [isWrongCode, setIsWrongCode] = useState(false)
         const { secondsRemaining, isActive, restart } = useCountdown(
             RESEND_COOLDOWN_SECONDS,
         )
@@ -78,7 +73,6 @@ export const useCardOnboardingPhoneVerifyScreen =
 
         const onChangeCode = useCallback((text: string) => {
             setCode(text)
-            setIsWrongCode(false)
         }, [])
 
         const handleResend = useCallback(() => {
@@ -99,7 +93,6 @@ export const useCardOnboardingPhoneVerifyScreen =
                         contactVerificationId,
                     })
                     restart()
-                    setIsWrongCode(false)
                 } catch {
                     errorToast(
                         t('peraCard.verify_phone.send_error_title'),
@@ -118,20 +111,15 @@ export const useCardOnboardingPhoneVerifyScreen =
             t,
         ])
 
-        // Local pre-check for fast feedback. The real phone/verify call needs
-        // the onboardingId email/verify returns, and email/verify fires at the
-        // PASSWORD step (it carries the password) — so on the first pass the
-        // code is stashed for the password screen to verify. After the password
-        // step (retry path: the deferred verify failed), onboardingId exists
-        // and the call fires here directly.
+        // The real phone/verify call needs the onboardingId email/verify
+        // returns, and email/verify fires at the PASSWORD step (it carries the
+        // password) — so on the first pass the code is stashed for the password
+        // screen to verify. After the password step (retry path: the deferred
+        // verify failed), onboardingId exists and the call fires here directly.
         const handleConfirm = useCallback(
             (submittedCode?: string) => {
                 const value = (submittedCode ?? code).trim()
-                if (!value) return
-                if (value.toUpperCase() !== MOCK_VALID_VERIFICATION_CODE) {
-                    setIsWrongCode(true)
-                    return
-                }
+                if (value.length !== CARD_VERIFICATION_CODE_LENGTH) return
                 if (
                     phoneCountryCode === null ||
                     phoneNumber === null ||
@@ -188,7 +176,6 @@ export const useCardOnboardingPhoneVerifyScreen =
             code,
             onChangeCode,
             isValid: trimmedCode.length === CARD_VERIFICATION_CODE_LENGTH,
-            isWrongCode,
             isSubmitting: verifyPhone.isPending,
             phoneDisplay,
             secondsRemaining,

@@ -65,8 +65,10 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { MOCK_VALID_VERIFICATION_CODE } from '../../cardVerificationConstants'
 import { useCardOnboardingEmailVerifyScreen } from '../useCardOnboardingEmailVerifyScreen'
+
+/** A full-length (6-digit) code — the screen only checks the length now. */
+const VALID_CODE = '123456'
 
 const renderVerifyHook = () =>
     renderHook(() => useCardOnboardingEmailVerifyScreen())
@@ -99,42 +101,28 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         act(() => result.current.onChangeCode('123'))
         expect(result.current.isValid).toBe(false)
 
-        act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
+        act(() => result.current.onChangeCode(VALID_CODE))
         expect(result.current.isValid).toBe(true)
     })
 
-    it('flags a wrong code without navigating onward', () => {
+    it('stashes a full code and navigates to the phone screen', () => {
         const { result } = renderVerifyHook()
 
-        act(() => result.current.onChangeCode('NOPE'))
+        act(() => result.current.onChangeCode(VALID_CODE))
         act(() => result.current.handleConfirm())
 
-        expect(result.current.isWrongCode).toBe(true)
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
-
-    it('stores the code and navigates to the phone screen on the valid code', () => {
-        const { result } = renderVerifyHook()
-
-        act(() => result.current.onChangeCode(MOCK_VALID_VERIFICATION_CODE))
-        act(() => result.current.handleConfirm())
-
-        expect(result.current.isWrongCode).toBe(false)
-        expect(mockSetVerificationCode).toHaveBeenCalledWith(
-            MOCK_VALID_VERIFICATION_CODE,
-        )
+        expect(mockSetVerificationCode).toHaveBeenCalledWith(VALID_CODE)
         expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
     })
 
-    it('clears the wrong-code error as the user edits', () => {
+    it('does not navigate on an incomplete code', () => {
         const { result } = renderVerifyHook()
 
-        act(() => result.current.onChangeCode('NOPE'))
+        act(() => result.current.onChangeCode('123'))
         act(() => result.current.handleConfirm())
-        expect(result.current.isWrongCode).toBe(true)
 
-        act(() => result.current.onChangeCode('NOPE2'))
-        expect(result.current.isWrongCode).toBe(false)
+        expect(mockSetVerificationCode).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('enables resend after the cooldown, then re-sends and restarts it', async () => {
@@ -162,7 +150,6 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         act(() => result.current.handleConfirm())
 
         expect(result.current.isValid).toBe(false)
-        expect(result.current.isWrongCode).toBe(false)
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
