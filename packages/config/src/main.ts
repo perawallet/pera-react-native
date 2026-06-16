@@ -204,6 +204,8 @@ const productionConfig = {
 
     mainnetBaanxBaseUrl: 'https://api.baanx.com',
     testnetBaanxBaseUrl: 'https://dev.api.baanx.com',
+    // PUBLIC client keys (x-client-key) are injected at build time from env
+    // vars (bitrise secrets in CI, .env locally) via tools/generate-config.sh.
     mainnetBaanxClientKey: '',
     testnetBaanxClientKey: '',
 

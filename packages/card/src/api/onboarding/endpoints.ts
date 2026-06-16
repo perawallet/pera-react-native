@@ -197,9 +197,8 @@ export const submitAddress = async (
 }
 
 // Records the user's onboarding consents (T&C acceptances + marketing opt-in)
-// collected on the final address step. The Baanx sandbox is unavailable, so the
-// exact request shape is an assumption pending the live /v2/consent/onboarding
-// contract — it's mocked in installCardDevMocks for now.
+// collected on the final address step. The exact request shape is an assumption
+// pending confirmation against the live /v2/consent/onboarding contract.
 export type SubmitOnboardingConsentParams = NetworkParams & {
     onboardingId: string
     allowMarketing: boolean

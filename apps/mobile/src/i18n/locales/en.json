@@ -720,12 +720,10 @@
         "verify_email": {
             "navigation_title": "Confirm your Email",
             "body": "Use the verification code we just sent to {{email}} to confirm your email address.",
-            "code_wrong": "The code is wrong",
             "send_again_in_one": "Send it again in {{count}} second",
             "send_again_in_other": "Send it again in {{count}} seconds",
             "send_again": "Send it again",
-            "confirm_button": "Continue",
-            "dev_hint": "Testing only — use code {{code}}"
+            "confirm_button": "Continue"
         },
         "waitlist": {
             "join_button": "Sign up for waitlist",
@@ -756,12 +754,10 @@
             "send_error_title": "Something went wrong",
             "send_error_body": "We couldn't send your verification code. Please try again.",
             "body": "Use the verification code we just sent to {{phone}} to confirm your phone number.",
-            "code_wrong": "The code is wrong",
             "send_again_in_one": "Send it again in {{count}} second",
             "send_again_in_other": "Send it again in {{count}} seconds",
             "send_again": "Send it again",
             "confirm_button": "Continue",
-            "dev_hint": "Testing only — use code {{code}}",
             "verify_error_title": "Something went wrong",
             "verify_error_body": "We couldn't verify your phone number. Please try again."
         },

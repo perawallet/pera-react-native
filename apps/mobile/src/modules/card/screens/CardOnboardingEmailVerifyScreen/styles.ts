@@ -29,9 +29,4 @@ export const useStyles = makeStyles(theme => ({
     countdownText: {
         color: theme.colors.textGrayLighter,
     },
-    // TODO(card): remove alongside the dev-only testing hint in the screen.
-    devHint: {
-        color: theme.colors.textGrayLighter,
-        textAlign: 'center',
-    },
 }))

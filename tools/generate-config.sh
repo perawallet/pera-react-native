@@ -103,6 +103,14 @@ append_config "TESTNET_BIDALI_API_KEY" "testnetBidaliApiKey" "string"
 append_config "MAINNET_BIDALI_BASE_URL" "mainnetBidaliBaseUrl" "string"
 append_config "TESTNET_BIDALI_BASE_URL" "testnetBidaliBaseUrl" "string"
 
+# Baanx card integration. The x-client-key is a PUBLIC client identifier;
+# inject the sandbox key via TESTNET_BAANX_CLIENT_KEY (bitrise secret / .env).
+# The server-only x-secret-key MUST NEVER be added here.
+append_config "MAINNET_BAANX_BASE_URL" "mainnetBaanxBaseUrl" "string"
+append_config "TESTNET_BAANX_BASE_URL" "testnetBaanxBaseUrl" "string"
+append_config "MAINNET_BAANX_CLIENT_KEY" "mainnetBaanxClientKey" "string"
+append_config "TESTNET_BAANX_CLIENT_KEY" "testnetBaanxClientKey" "string"
+
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then
   DEFAULT_NETWORK="$PERA_DEFAULT_NETWORK"

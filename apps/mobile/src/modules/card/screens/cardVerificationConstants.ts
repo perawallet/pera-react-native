@@ -11,17 +11,8 @@
  */
 
 /**
- * Number of digits in the Baanx email/SMS verification code. Baanx's real
- * length is still unconfirmed (sandbox down) — this single constant drives the
+ * Number of digits in the Baanx email/SMS verification code. Drives the
  * `PWCodeInput` cell count and the `isValid` length check on both verify
- * screens, so it's a one-line change once known.
+ * screens, so it's a one-line change if Baanx ever changes the length.
  */
 export const CARD_VERIFICATION_CODE_LENGTH = 6
-
-/**
- * Dev-only stand-in for the real verification code while the mock transport is
- * active. A code matching this is accepted; anything else surfaces the "wrong
- * code" error. Must be `CARD_VERIFICATION_CODE_LENGTH` digits (numeric, to fit
- * the segmented digit boxes). Remove with the dev mock once the sandbox works.
- */
-export const MOCK_VALID_VERIFICATION_CODE = '123456'
