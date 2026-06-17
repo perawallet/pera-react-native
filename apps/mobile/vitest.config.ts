@@ -53,14 +53,15 @@ export default defineConfig({
                 ),
             },
             {
-                // `@walletconnect/client` (v1) opens a relay socket on
-                // construction — no good in jsdom. Route every consumer
-                // (including the deep `@perawallet/wallet-core-walletconnect`
-                // hooks) through a stub class that captures `on()` handlers
-                // and `approveSession()` calls so integration tests can
-                // drive the pairing flow end-to-end. The stub also exports
+                // `@perawallet/walletconnect` (WC v1 fork) opens a relay
+                // socket on construction — no good in jsdom. Route every
+                // consumer (including the deep
+                // `@perawallet/wallet-core-walletconnect` hooks) through a
+                // stub class that captures `on()` handlers and
+                // `approveSession()` calls so integration tests can drive the
+                // pairing flow end-to-end. The stub also exports
                 // `walletConnectClientStub` for tests to inspect instances.
-                find: '@walletconnect/client',
+                find: '@perawallet/walletconnect',
                 replacement: path.resolve(
                     __dirname,
                     './src/test-utils/walletconnect-client-stub.ts',

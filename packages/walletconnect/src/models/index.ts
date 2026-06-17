@@ -13,7 +13,7 @@
 import {
     type IClientMeta,
     type IWalletConnectSession,
-} from '@walletconnect/types'
+} from '@perawallet/walletconnect/types'
 import {
     type BaseStoreState,
     type Nullable,

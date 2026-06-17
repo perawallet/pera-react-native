@@ -17,7 +17,7 @@ import { __resetRegistryForTests } from '../../connection'
 import { useWalletConnectStore } from '../../store'
 import { useWalletConnectSessionRequests } from '../useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
-import WalletConnect from '@walletconnect/client'
+import WalletConnect from '@perawallet/walletconnect'
 import { PERA_CLIENT_META } from '../../constants'
 import { WalletConnectInvalidNetworkError } from '../../errors'
 import { AlgorandChainId } from '../../models'
@@ -61,7 +61,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
-vi.mock('@walletconnect/client', () => {
+vi.mock('@perawallet/walletconnect', () => {
     return {
         default: vi.fn().mockImplementation(function (options) {
             return {

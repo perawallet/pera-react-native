@@ -12,13 +12,13 @@
 
 // Integration coverage for the WalletConnect v1 pairing flow:
 //
-//   dApp → @walletconnect/client → useWalletConnect connect()
+//   dApp → @perawallet/walletconnect → useWalletConnect connect()
 //        → session_request handler → wallet store
 //        → WalletConnectProvider → ConnectionView (bottom sheet)
 //        → user picks accounts + taps Connect
 //        → approveSession on the underlying connector
 //
-// The only thing replaced here is the bottom-level `@walletconnect/client`
+// The only thing replaced here is the bottom-level `@perawallet/walletconnect`
 // transport — vitest's resolve.alias swaps it for
 // `walletconnect-client-stub.ts` across the whole integration project,
 // so consumers (including the real `@perawallet/wallet-core-walletconnect`

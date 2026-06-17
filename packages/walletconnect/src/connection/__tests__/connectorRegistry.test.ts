@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import WalletConnect from '@walletconnect/client'
+import WalletConnect from '@perawallet/walletconnect'
 import { isRetryableError } from '@perawallet/wallet-core-shared'
 import {
     __resetRegistryForTests,
@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 // A recreated connector starts with a closed socket; `_transport.connected`
 // is the field the registry reads (and tests flip) to simulate it opening.
-vi.mock('@walletconnect/client', () => ({
+vi.mock('@perawallet/walletconnect', () => ({
     default: vi.fn(function (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         opts: any,

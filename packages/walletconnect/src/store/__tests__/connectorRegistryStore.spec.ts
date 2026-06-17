@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach } from 'vitest'
-import type WalletConnect from '@walletconnect/client'
+import type WalletConnect from '@perawallet/walletconnect'
 import { useConnectorRegistryStore } from '../connectorRegistryStore'
 
 const fakeConnector = (clientId: string): WalletConnect =>
