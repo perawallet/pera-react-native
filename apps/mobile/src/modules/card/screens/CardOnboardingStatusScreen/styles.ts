@@ -38,6 +38,11 @@ export const useStyles = makeStyles(theme => ({
     inactiveTitle: {
         color: theme.colors.textGrayLighter,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     detailsButton: {
         marginTop: theme.spacing.md,
     },
@@ -66,6 +71,36 @@ export const useStyles = makeStyles(theme => ({
     },
     connectedAccountInfo: {
         flex: 1,
+    },
+    optionsList: {
+        marginTop: theme.spacing.sm,
+        gap: theme.spacing.md,
+    },
+    // Radio sits on the left (row-reverse flips PWRadioButton's default layout).
+    optionCard: {
+        flexDirection: 'row-reverse',
+        padding: theme.spacing.md,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.sm,
+    },
+    optionCardSelected: {
+        borderColor: theme.colors.positive,
+    },
+    optionText: {
+        gap: theme.spacing.xs,
+    },
+    optionDescription: {
+        color: theme.colors.textGray,
+    },
+    infoContent: {
+        gap: theme.spacing.lg,
+    },
+    infoSection: {
+        gap: theme.spacing.xs,
+    },
+    infoText: {
+        color: theme.colors.textGray,
     },
     footer: {
         gap: theme.spacing.md,

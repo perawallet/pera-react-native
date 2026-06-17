@@ -12,7 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { CardStatus, OnboardingStep } from '../../models'
+import { CardStatus, FundingType, OnboardingStep } from '../../models'
 
 const registerStoreMock = vi.fn()
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -126,6 +126,30 @@ describe('useCardStore', () => {
         expect(result.current.allowMarketing).toBe(false)
     })
 
+    test('setSelectedFundingType stores (and persists) the chosen funding type', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        expect(result.current.selectedFundingType).toBeNull()
+
+        act(() => result.current.setSelectedFundingType(FundingType.Manual))
+
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
+        // Persisted so the later card-creation step can read it on a cold resume.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted?.selectedFundingType).toBe(FundingType.Manual)
+    })
+
     test('setCardSnapshot stores the non-sensitive card hint', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
@@ -167,6 +191,7 @@ describe('useCardStore', () => {
             result.current.setEmail('john@example.com')
             result.current.setOnboardingId('onb_1')
             result.current.setConnectedFundingSourceAddress('ADDR1')
+            result.current.setSelectedFundingType(FundingType.Auto)
             result.current.setAllowMarketing(false)
             // Card-snapshot / filters should survive a fresh sign-up.
             result.current.setCardSnapshot({
@@ -183,6 +208,7 @@ describe('useCardStore', () => {
         expect(result.current.email).toBeNull()
         expect(result.current.onboardingId).toBeNull()
         expect(result.current.connectedFundingSourceAddress).toBeNull()
+        expect(result.current.selectedFundingType).toBeNull()
         expect(result.current.allowMarketing).toBe(true)
         // Card snapshot / filters preserved.
         expect(result.current.cardId).toBe('card_1')

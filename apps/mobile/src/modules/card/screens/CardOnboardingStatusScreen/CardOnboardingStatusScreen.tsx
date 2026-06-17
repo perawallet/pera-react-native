@@ -13,6 +13,7 @@
 import React from 'react'
 import { Trans } from 'react-i18next'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { FundingType } from '@perawallet/wallet-core-card'
 import {
     PWButton,
     PWScreen,
@@ -22,13 +23,37 @@ import {
     type PWIconVariant,
 } from '@components/core'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useCardOnboardingStatusScreen,
     type DocumentsState,
 } from './useCardOnboardingStatusScreen'
 import { StatusChecklistRow } from './StatusChecklistRow'
+import { FundingTypeOption } from './FundingTypeOption'
+import { FundingTypeInfoContent } from './FundingTypeInfoContent'
 import { useStyles } from './styles'
+
+// The funding-type options shown inline once funds are connected.
+const FUNDING_TYPE_OPTIONS: {
+    type: FundingType
+    titleKey: string
+    descriptionKey: string
+    testID: string
+}[] = [
+    {
+        type: FundingType.Auto,
+        titleKey: 'peraCard.setup_status.funding_type_auto_title',
+        descriptionKey: 'peraCard.setup_status.funding_type_auto_description',
+        testID: 'card-onboarding-status-funding-type-auto',
+    },
+    {
+        type: FundingType.Manual,
+        titleKey: 'peraCard.setup_status.funding_type_manual_title',
+        descriptionKey: 'peraCard.setup_status.funding_type_manual_description',
+        testID: 'card-onboarding-status-funding-type-manual',
+    },
+]
 
 // Icon, color, and copy for the "Submit Your Documents" row per KYC state.
 const DOCUMENTS_ROW: Record<
@@ -70,6 +95,9 @@ export const CardOnboardingStatusScreen = () => {
         connectedAccount,
         connectedAddress,
         isConnecting,
+        selectedFundingType,
+        handleSelectFundingType,
+        handleCreatePeraCard,
         handleEnterDetails,
         handleConnectAccount,
         handleLogout,
@@ -82,31 +110,40 @@ export const CardOnboardingStatusScreen = () => {
         <PWScreen
             testID='card-onboarding-status'
             footer={
-                <PWView style={styles.footer}>
+                isFundsConnected ? (
                     <PWButton
-                        variant='secondary'
-                        title={t('peraCard.verification.logout_button')}
-                        onPress={handleLogout}
-                        testID='card-onboarding-status-logout'
+                        variant='primary'
+                        title={t('peraCard.setup_status.funding_type_button')}
+                        onPress={handleCreatePeraCard}
+                        testID='card-onboarding-status-create-card'
                     />
-                    <PWText
-                        variant='footnoteMedium'
-                        weight={400}
-                        style={styles.contactText}
-                    >
-                        <Trans
-                            i18nKey='peraCard.verification.contact_us'
-                            components={[
-                                <PWText
-                                    key='link'
-                                    variant='linkPositive'
-                                    onPress={handleOpenSupport}
-                                    testID='card-onboarding-status-contact-link'
-                                />,
-                            ]}
+                ) : (
+                    <PWView style={styles.footer}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('peraCard.verification.logout_button')}
+                            onPress={handleLogout}
+                            testID='card-onboarding-status-logout'
                         />
-                    </PWText>
-                </PWView>
+                        <PWText
+                            variant='footnoteMedium'
+                            weight={400}
+                            style={styles.contactText}
+                        >
+                            <Trans
+                                i18nKey='peraCard.verification.contact_us'
+                                components={[
+                                    <PWText
+                                        key='link'
+                                        variant='linkPositive'
+                                        onPress={handleOpenSupport}
+                                        testID='card-onboarding-status-contact-link'
+                                    />,
+                                ]}
+                            />
+                        </PWText>
+                    </PWView>
+                )
             }
         >
             <PWView style={styles.content}>
@@ -232,13 +269,53 @@ export const CardOnboardingStatusScreen = () => {
                         />
                     )}
 
-                    {/* 4 — Select Funding Type (deferred future slice) */}
-                    <StatusChecklistRow
-                        icon='fund'
-                        iconVariant='secondary'
-                        isInactive
-                        title={t('peraCard.setup_status.funding_type_title')}
-                    />
+                    {/* 4 — Select Funding Type (active once funds are connected) */}
+                    {isFundsConnected ? (
+                        <StatusChecklistRow
+                            icon='buy-sell'
+                            iconVariant='primary'
+                            title={t(
+                                'peraCard.setup_status.funding_type_title',
+                            )}
+                            titleAccessory={
+                                <InfoButton
+                                    title={t(
+                                        'peraCard.setup_status.funding_type_info_title',
+                                    )}
+                                >
+                                    <FundingTypeInfoContent />
+                                </InfoButton>
+                            }
+                            testID='card-onboarding-status-funding-type'
+                        >
+                            <PWView style={styles.optionsList}>
+                                {FUNDING_TYPE_OPTIONS.map(option => (
+                                    <FundingTypeOption
+                                        key={option.type}
+                                        title={t(option.titleKey)}
+                                        description={t(option.descriptionKey)}
+                                        isSelected={
+                                            selectedFundingType === option.type
+                                        }
+                                        onPress={() =>
+                                            handleSelectFundingType(option.type)
+                                        }
+                                        testID={option.testID}
+                                    />
+                                ))}
+                            </PWView>
+                        </StatusChecklistRow>
+                    ) : (
+                        <StatusChecklistRow
+                            icon='buy-sell'
+                            iconVariant='secondary'
+                            isInactive
+                            title={t(
+                                'peraCard.setup_status.funding_type_title',
+                            )}
+                            testID='card-onboarding-status-funding-type'
+                        />
+                    )}
                 </PWView>
             </PWView>
         </PWScreen>

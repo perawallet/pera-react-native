@@ -13,6 +13,17 @@
 import type { Decimal } from 'decimal.js'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 
+/**
+ * How the card is topped up, chosen on the onboarding setup checklist's
+ * "Select Funding Type" step. `Auto` tops the card up from the connected Pera
+ * account automatically; `Manual` leaves the user to add funds themselves.
+ */
+export const FundingType = {
+    Auto: 'AUTO',
+    Manual: 'MANUAL',
+} as const
+export type FundingType = (typeof FundingType)[keyof typeof FundingType]
+
 /** ASA id, or 'ALGO' for the native asset. */
 export type FundingAssetId = string
 

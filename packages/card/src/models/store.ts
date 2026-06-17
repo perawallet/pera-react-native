@@ -14,6 +14,7 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { OnboardingStep } from './onboarding'
 import type { CardStatus } from './card'
 import type { CardTransactionFilters } from './transaction'
+import type { FundingType } from './funding'
 
 /** Client-only UX/navigation state. No tokens, no PAN/CVV/PIN. */
 export type CardUxState = BaseStoreState & {
@@ -53,6 +54,11 @@ export type CardUxState = BaseStoreState & {
      * across a cold resume.
      */
     connectedFundingSourceAddress: Nullable<string>
+    /**
+     * Funding type (Auto vs Manual) chosen on the setup checklist's "Select
+     * Funding Type" step. Persisted so the card-creation step can read it.
+     */
+    selectedFundingType: Nullable<FundingType>
     cardId: Nullable<string>
     lastKnownStatus: Nullable<CardStatus>
     /** PCI-safe render hint shown before the status query resolves. */
@@ -68,6 +74,7 @@ export type CardUxState = BaseStoreState & {
     setOnboardingId: (id: Nullable<string>) => void
     setAllowMarketing: (allowMarketing: boolean) => void
     setConnectedFundingSourceAddress: (address: Nullable<string>) => void
+    setSelectedFundingType: (type: Nullable<FundingType>) => void
     setCardSnapshot: (snapshot: {
         cardId: string
         status: CardStatus

@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+    createElement,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 import {
     useNavigation,
     useRoute,
@@ -18,6 +25,7 @@ import {
 } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    FundingType,
     OnboardingStep,
     useCardStore,
     useConnectFundingSourceMutation,
@@ -78,6 +86,12 @@ export type UseCardOnboardingStatusScreenResult = {
     connectedAddress: Nullable<string>
     /** True while the connect-funding-source request is in flight. */
     isConnecting: boolean
+    /** The funding type chosen on the final step (defaults to Auto). */
+    selectedFundingType: FundingType
+    /** Selects a funding type — local state until "Create Pera Card" commits it. */
+    handleSelectFundingType: (type: FundingType) => void
+    /** Persists the funding type and finishes onboarding (card creation deferred). */
+    handleCreatePeraCard: () => void
     /** Continues to the personal-details step (allowed while Baanx reviews). */
     handleEnterDetails: () => void
     /** Opens the account picker and links the chosen account as funding source. */
@@ -90,7 +104,7 @@ export const useCardOnboardingStatusScreen =
     (): UseCardOnboardingStatusScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { errorToast } = useToast()
+        const { successToast, errorToast } = useToast()
         const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
@@ -140,6 +154,19 @@ export const useCardOnboardingStatusScreen =
             isPending: isConnecting,
         } = useConnectFundingSourceMutation()
         const { handleCreateAccount } = useCardAddAccount()
+
+        // Funding type is chosen locally and committed by "Create Pera Card".
+        // Seed from the persisted choice (so a prior selection survives a
+        // re-entry/cold resume); default to Auto to match the design.
+        const [selectedFundingType, setSelectedFundingType] =
+            useState<FundingType>(
+                () =>
+                    useCardStore.getState().selectedFundingType ??
+                    FundingType.Auto,
+            )
+        const handleSelectFundingType = useCallback((type: FundingType) => {
+            setSelectedFundingType(type)
+        }, [])
 
         // After the add-account flow finishes it returns here with this one-shot
         // flag; the new account is the globally selected one, so link it as the
@@ -267,6 +294,22 @@ export const useCardOnboardingStatusScreen =
             t,
         ])
 
+        // One-shot guard so a fast double-tap can't fire the toast + navigation
+        // twice before the screen unmounts.
+        const hasCreatedRef = useRef(false)
+        const handleCreatePeraCard = useCallback(() => {
+            if (hasCreatedRef.current) return
+            hasCreatedRef.current = true
+            useCardStore.getState().setSelectedFundingType(selectedFundingType)
+            successToast(
+                t('peraCard.setup_status.create_card_success_title'),
+                t('peraCard.setup_status.create_card_success_body'),
+            )
+            // TODO(card): call the Baanx card-creation API and route to the card
+            // dashboard once that slice lands; for now Home is the terminus.
+            navigation.navigate('TabBar', { screen: 'Home' })
+        }, [selectedFundingType, successToast, navigation, t])
+
         const handleOpenSupport = useCallback(() => {
             pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
         }, [pushWebView])
@@ -278,6 +321,9 @@ export const useCardOnboardingStatusScreen =
             connectedAccount,
             connectedAddress,
             isConnecting,
+            selectedFundingType,
+            handleSelectFundingType,
+            handleCreatePeraCard,
             handleEnterDetails,
             handleConnectAccount,
             handleLogout,

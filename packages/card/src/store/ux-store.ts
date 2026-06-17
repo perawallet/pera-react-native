@@ -33,6 +33,7 @@ const initialState = {
     // Defaults to opted-in, matching the address screen's pre-checked box.
     allowMarketing: true,
     connectedFundingSourceAddress: null,
+    selectedFundingType: null,
     cardId: null,
     lastKnownStatus: null,
     lastKnownPanLast4: null,
@@ -58,6 +59,7 @@ export const useCardStore: UseBoundStore<
             setAllowMarketing: allowMarketing => set({ allowMarketing }),
             setConnectedFundingSourceAddress: address =>
                 set({ connectedFundingSourceAddress: address }),
+            setSelectedFundingType: type => set({ selectedFundingType: type }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({
                     cardId,
@@ -82,6 +84,7 @@ export const useCardStore: UseBoundStore<
                     allowMarketing: initialState.allowMarketing,
                     connectedFundingSourceAddress:
                         initialState.connectedFundingSourceAddress,
+                    selectedFundingType: initialState.selectedFundingType,
                 }),
             resetState: () => set(initialState),
         }),
@@ -102,6 +105,7 @@ export const useCardStore: UseBoundStore<
                 allowMarketing: state.allowMarketing,
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,
+                selectedFundingType: state.selectedFundingType,
                 cardId: state.cardId,
                 lastKnownStatus: state.lastKnownStatus,
                 lastKnownPanLast4: state.lastKnownPanLast4,

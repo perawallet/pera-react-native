@@ -13,16 +13,18 @@
 import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { OnboardingStep } from '@perawallet/wallet-core-card'
+import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockSetOnboardingStep = vi.fn()
+const mockSetSelectedFundingType = vi.fn()
 const mockConnectAsync = vi.fn()
 const mockHandleCreateAccount = vi.fn()
 let mockVerificationState: string | null = null
 let mockQueryOptions: { refetchInterval?: number | false } | undefined
 let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
+let mockStoredFundingType: FundingType | null = null
 let mockIsConnecting = false
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -66,8 +68,10 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 }),
             {
                 getState: () => ({
+                    selectedFundingType: mockStoredFundingType,
                     setOnboardingStep: mockSetOnboardingStep,
                     setConnectedFundingSourceAddress: vi.fn(),
+                    setSelectedFundingType: mockSetSelectedFundingType,
                 }),
             },
         ),
@@ -141,10 +145,11 @@ vi.mock('@react-navigation/native', async () => {
     }
 })
 
+const mockSuccessToast = vi.fn()
 const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        successToast: vi.fn(),
+        successToast: mockSuccessToast,
         errorToast: mockErrorToast,
         infoToast: vi.fn(),
         showToast: vi.fn(),
@@ -170,6 +175,7 @@ beforeEach(() => {
     mockQueryOptions = undefined
     mockOnboardingStep = OnboardingStep.Verification
     mockConnectedAddress = null
+    mockStoredFundingType = null
     mockIsConnecting = false
     mockAccounts = []
     mockRouteParams = undefined
@@ -354,6 +360,42 @@ describe('useCardOnboardingStatusScreen', () => {
         )
         expect(mockConnectAsync).not.toHaveBeenCalled()
         expect(mockHandleCreateAccount).not.toHaveBeenCalled()
+    })
+
+    it('seeds the funding type from the persisted store on mount', () => {
+        mockStoredFundingType = FundingType.Manual
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
+    })
+
+    it('defaults the funding type to Auto and lets the user change it', () => {
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.selectedFundingType).toBe(FundingType.Auto)
+
+        act(() => {
+            result.current.handleSelectFundingType(FundingType.Manual)
+        })
+
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
+    })
+
+    it('persists the funding type and finishes onboarding on Create Pera Card', () => {
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleSelectFundingType(FundingType.Manual)
+        })
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
+            FundingType.Manual,
+        )
+        expect(mockSuccessToast).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
     })
 
     it('wires logout and the support link', () => {
