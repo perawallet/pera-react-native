@@ -66,7 +66,7 @@ const successfulExtrasResult = {
         biometricMigrated: false,
         lockoutMigrated: false,
     },
-    stashed: { passkeysStashed: 0 },
+    stashed: { walletConnectHistoryBlobStashed: false },
     walletConnect: { imported: 0, skipped: 0 },
     failed: [],
 }

@@ -54,7 +54,7 @@ vi.mock('../migratePasskeys', () => ({
 }))
 
 vi.mock('../migrateStashed', () => ({
-    migrateStashed: vi.fn(() => ({ passkeysStashed: 4 })),
+    migrateStashed: vi.fn(() => ({ walletConnectHistoryBlobStashed: true })),
 }))
 
 vi.mock('../migrateSwaps', () => ({
@@ -119,7 +119,9 @@ beforeEach(() => {
     vi.mocked(migrateContacts).mockReturnValue({ imported: 2, skipped: 1 })
     vi.mocked(migrateNotificationMutes).mockReturnValue({ muted: 3 })
     vi.mocked(migratePasskeys).mockResolvedValue({ imported: 0, skipped: 0 })
-    vi.mocked(migrateStashed).mockReturnValue({ passkeysStashed: 4 })
+    vi.mocked(migrateStashed).mockReturnValue({
+        walletConnectHistoryBlobStashed: true,
+    })
     vi.mocked(migrateWalletConnect).mockReturnValue({ imported: 0, skipped: 0 })
 })
 
@@ -142,7 +144,7 @@ describe('runExtrasMigration > happy path', () => {
             },
             walletConnect: { imported: 0, skipped: 0 },
             passkeys: { imported: 0, skipped: 0 },
-            stashed: { passkeysStashed: 4 },
+            stashed: { walletConnectHistoryBlobStashed: true },
             failed: [],
         })
     })
@@ -169,7 +171,6 @@ describe('runExtrasMigration > happy path', () => {
         expect(migrateAuth).toHaveBeenCalledWith(data.auth, data.preferences)
         expect(migratePasskeys).toHaveBeenCalledWith(data.passkeys)
         expect(migrateStashed).toHaveBeenCalledWith({
-            passkeys: data.passkeys,
             walletConnectHistoryBlob: data.walletConnectHistoryBlob,
         })
     })

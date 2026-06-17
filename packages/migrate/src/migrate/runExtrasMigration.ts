@@ -76,7 +76,7 @@ export const runExtrasMigration = async (
         },
         walletConnect: { imported: 0, skipped: 0 },
         passkeys: { imported: 0, skipped: 0 },
-        stashed: { passkeysStashed: 0 },
+        stashed: { walletConnectHistoryBlobStashed: false },
         failed: [],
     }
 
@@ -119,7 +119,6 @@ export const runExtrasMigration = async (
 
     runStep(result, 'stashed', () => {
         result.stashed = migrateStashed({
-            passkeys: data.passkeys,
             walletConnectHistoryBlob: data.walletConnectHistoryBlob,
         })
     })
