@@ -119,6 +119,58 @@ describe('deriveLegacyPasskeyCredentialFromMainKey', () => {
         )
     })
 
+    it('hashes the raw 64-byte point for the iOS "raw-point" basis', async () => {
+        const result = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey: sharedMainKey,
+            origin: 'webauthn.io',
+            userName: 'qwe',
+            credentialIdBasis: 'raw-point',
+        })
+
+        const rawPoint = result.publicKeySpkiDer.slice(27)
+        expect(rawPoint).toHaveLength(64)
+        expect(result.credentialIdBytes).toEqual(sha256(rawPoint))
+        expect(Array.from(result.credentialIdBytes)).not.toEqual(
+            Array.from(sha256(result.publicKeySpkiDer)),
+        )
+    })
+
+    it('reproduces a real Swift dp256 + CryptoKit iOS credentialId (golden vector)', async () => {
+        // Golden vector from deterministicP256-swift + CryptoKit (the exact path
+        // legacy pera-ios `PassKeyService.dp256KeyPair` uses): TEST_MNEMONIC,
+        // origin "webauthn.io", userHandle "qwe", id = SHA256(rawRepresentation).
+        const SWIFT_RAW_POINT_HEX =
+            'e6936523f4e06bc4025f6ffed4cc5a235e885b65b512033cc203f14ccb686216' +
+            '135e988b680806ec76b4dd973fc38148455c55f99ef01dd493319a90407b0680'
+        const SWIFT_IOS_CREDENTIAL_ID =
+            'fhcC2I3h6VU84rIJg1eZjn8evvexMPiuoDQkxq/XruM='
+
+        const result = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey: sharedMainKey,
+            origin: 'webauthn.io',
+            userName: 'qwe',
+            credentialIdBasis: 'raw-point',
+        })
+
+        // The raw point (CryptoKit rawRepresentation) is the 64 bytes after 0x04.
+        expect(Buffer.from(result.publicKeySpkiDer.slice(27)).toString('hex')).toBe(
+            SWIFT_RAW_POINT_HEX,
+        )
+        expect(result.credentialId).toBe(SWIFT_IOS_CREDENTIAL_ID)
+    })
+
+    it('defaults to the Android SPKI-DER basis when none is given', async () => {
+        const result = await deriveLegacyPasskeyCredentialFromMainKey({
+            derivedMainKey: sharedMainKey,
+            origin: 'webauthn.io',
+            userName: 'qwe',
+        })
+
+        expect(result.credentialIdBytes).toEqual(
+            sha256(result.publicKeySpkiDer),
+        )
+    })
+
     it('is deterministic for the same inputs', async () => {
         const a = await deriveLegacyPasskeyCredentialFromMainKey({
             derivedMainKey: sharedMainKey,

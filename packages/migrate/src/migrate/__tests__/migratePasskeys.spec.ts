@@ -21,6 +21,7 @@ const {
     entryExistsMock,
     writeEntryMock,
     entropyToMnemonicMock,
+    platformMock,
 } = vi.hoisted(() => ({
     keystoreState: { keys: [] as Array<Record<string, unknown>> },
     accountsState: { accounts: [] as Array<Record<string, unknown>> },
@@ -30,7 +31,10 @@ const {
     entryExistsMock: vi.fn(),
     writeEntryMock: vi.fn(),
     entropyToMnemonicMock: vi.fn(),
+    platformMock: { OS: 'android' as 'android' | 'ios' },
 }))
+
+vi.mock('react-native', () => ({ Platform: platformMock }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => ({ state: keystoreState }),
@@ -112,6 +116,7 @@ const derivedFor = (idBytes: Uint8Array) => ({
 })
 
 beforeEach(() => {
+    platformMock.OS = 'android'
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
     deriveMainKeyMock.mockReset().mockResolvedValue(new Uint8Array(64))
@@ -164,6 +169,31 @@ describe('migratePasskeys', () => {
 
         expect(deriveCredentialMock).toHaveBeenCalledWith(
             expect.objectContaining({ origin: 'https://webauthn.io' }),
+        )
+    })
+
+    it('Android: derives with the https origin and the spki-der id basis', async () => {
+        await migratePasskeys([buildPasskey({ siteUrl: 'webauthn.io' })])
+
+        expect(deriveCredentialMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                origin: 'https://webauthn.io',
+                credentialIdBasis: 'spki-der',
+            }),
+        )
+    })
+
+    it('iOS: derives with the verbatim origin and the raw-point id basis', async () => {
+        platformMock.OS = 'ios'
+
+        await migratePasskeys([buildPasskey({ siteUrl: 'webauthn.io' })])
+
+        expect(deriveCredentialMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                origin: 'webauthn.io',
+                userName: 'qwe',
+                credentialIdBasis: 'raw-point',
+            }),
         )
     })
 

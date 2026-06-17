@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Platform } from 'react-native'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { entropyToMnemonic } from '@perawallet/wallet-core-kms'
 import {
@@ -26,6 +27,7 @@ import {
     type DerivedLegacyPasskeyCredential,
     deriveLegacyPasskeyCredentialFromMainKey,
     deriveMainKey,
+    type PasskeyCredentialIdBasis,
 } from './passkeys/deriveLegacyPasskeyCredential'
 import {
     createNativePasskeyWriter,
@@ -53,15 +55,31 @@ type PasskeyDerivation = {
 }
 
 /**
- * Reconstructs the WebAuthn origin dp256 derived against. Legacy stores the
- * relying party as a bare host (`webauthn.io`), but the derivation — and the
- * credentialId the RP trusts — used the full origin (`https://webauthn.io`),
- * confirmed on-device (PERA-4391). WebAuthn origins are always `https` (except
- * localhost), so prepend the scheme when absent; leave an already-qualified
- * origin untouched.
+ * Reconstructs the WebAuthn origin dp256 derived against, for legacy Android.
+ * Android stores the relying party as a bare host (`webauthn.io`), but the
+ * derivation — and the credentialId the RP trusts — used the full origin
+ * (`https://webauthn.io`), confirmed on-device (PERA-4391). WebAuthn origins are
+ * always `https` (except localhost), so prepend the scheme when absent; leave an
+ * already-qualified origin untouched. (Legacy iOS derives with the origin
+ * verbatim — see {@link resolvePlatformConvention}.)
  */
 const toWebAuthnOrigin = (siteUrl: string): string =>
     /^[a-z][a-z0-9+.-]*:\/\//i.test(siteUrl) ? siteUrl : `https://${siteUrl}`
+
+/**
+ * Per-platform legacy derivation convention. Migration always reads the
+ * same-platform legacy DB (in-place upgrade), so `Platform.OS` selects it; a
+ * wrong guess only causes a safe skip (credentialId is verified before write).
+ */
+type PlatformPasskeyConvention = {
+    resolveOrigin: (siteUrl: string) => string
+    credentialIdBasis: PasskeyCredentialIdBasis
+}
+
+const resolvePlatformConvention = (): PlatformPasskeyConvention =>
+    Platform.OS === 'ios'
+        ? { resolveOrigin: siteUrl => siteUrl, credentialIdBasis: 'raw-point' }
+        : { resolveOrigin: toWebAuthnOrigin, credentialIdBasis: 'spki-der' }
 
 /**
  * Validates a legacy row and resolves the inputs derivation needs. Returns
@@ -73,8 +91,9 @@ const toWebAuthnOrigin = (siteUrl: string): string =>
  */
 const resolveDerivationInputs = (
     passkey: LegacyPasskey,
+    resolveOrigin: (siteUrl: string) => string,
 ): DerivationInputs | null => {
-    const origin = passkey.siteUrl ? toWebAuthnOrigin(passkey.siteUrl) : ''
+    const origin = passkey.siteUrl ? resolveOrigin(passkey.siteUrl) : ''
     const userName = passkey.userName
     if (!passkey.credentialId || !origin || !userName) return null
 
@@ -105,6 +124,8 @@ type MigrationContext = {
     getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
     /** Native passkey writer; the keystore master key is fetched once and reused. */
     writePasskey: NativePasskeyWriter
+    /** Per-platform legacy derivation convention (origin shape + id basis). */
+    convention: PlatformPasskeyConvention
 }
 
 const createMigrationContext = (): MigrationContext => {
@@ -147,6 +168,7 @@ const createMigrationContext = (): MigrationContext => {
             return pending
         },
         writePasskey: createNativePasskeyWriter(),
+        convention: resolvePlatformConvention(),
     }
 }
 
@@ -206,7 +228,7 @@ const migrateSinglePasskey = async (
     ctx: MigrationContext,
     writtenIds: Set<string>,
 ): Promise<PasskeyMigrationOutcome> => {
-    const inputs = resolveDerivationInputs(passkey)
+    const inputs = resolveDerivationInputs(passkey, ctx.convention.resolveOrigin)
     if (!inputs) return 'skipped'
 
     // Idempotency + the existence check key off the legacy credentialId bytes
@@ -249,6 +271,7 @@ const migrateSinglePasskey = async (
         derivedMainKey,
         origin: inputs.origin,
         userName: inputs.userName,
+        credentialIdBasis: ctx.convention.credentialIdBasis,
     })
     const derivation: PasskeyDerivation = { passkey, inputs, derived }
 

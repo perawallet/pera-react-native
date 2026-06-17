@@ -32,9 +32,8 @@ import {
  *   2. `privateKey = genDomainSpecificKeyPair(derivedMainKey, origin, userName)`
  *        — `userName` is the WebAuthn `user.name`, used verbatim (NOT lowercased;
  *          the native RN module lowercases it, legacy does not — we match legacy).
- *   3. `credentialId = SHA256(publicKey.encoded)` where `publicKey.encoded` is the
- *        X.509 / SubjectPublicKeyInfo DER (this is what Java's `KeyPair.public.encoded`
- *        produces and what the native `generateCredentialId` hashes).
+ *   3. `credentialId = SHA256(publicKey)` — Android hashes the SPKI DER encoding,
+ *        iOS the raw 64-byte point (see {@link PasskeyCredentialIdBasis}).
  *
  * For a migrated passkey to *sign in* (rather than re-register), the keystore
  * must hold this exact keypair under this exact `credentialId`. We reproduce it
@@ -109,6 +108,15 @@ export const credentialIdBytesToStandardBase64 = (bytes: Uint8Array): string =>
 export const deriveMainKey = (mnemonic: string): Promise<Uint8Array> =>
     deriveLiquidAuthMainKey(mnemonic)
 
+/**
+ * Which encoding of the P-256 public key the legacy platform hashed to form the
+ * `credentialId`. Same keypair, different digest:
+ *   • `'spki-der'` — Android: SHA256 of the 91-byte X.509/SPKI DER.
+ *   • `'raw-point'` — iOS: SHA256 of the raw 64-byte point `X || Y`
+ *     (CryptoKit `publicKey.rawRepresentation`).
+ */
+export type PasskeyCredentialIdBasis = 'spki-der' | 'raw-point'
+
 export type DerivedLegacyPasskeyCredential = {
     /** Standard-base64 SHA-256 of the SPKI DER — the keystore/MMKV credential id. */
     credentialId: string
@@ -130,8 +138,15 @@ export const deriveLegacyPasskeyCredentialFromMainKey = async (params: {
     origin: string
     userName: string
     counter?: number
+    credentialIdBasis?: PasskeyCredentialIdBasis
 }): Promise<DerivedLegacyPasskeyCredential> => {
-    const { derivedMainKey, origin, userName, counter = 0 } = params
+    const {
+        derivedMainKey,
+        origin,
+        userName,
+        counter = 0,
+        credentialIdBasis = 'spki-der',
+    } = params
     const privateKey = await dp256.genDomainSpecificKeyPair(
         derivedMainKey,
         origin,
@@ -140,7 +155,9 @@ export const deriveLegacyPasskeyCredentialFromMainKey = async (params: {
     )
     const pubRaw = dp256.getPurePKBytes(privateKey)
     const publicKeySpkiDer = p256RawPublicKeyToSpkiDer(pubRaw)
-    const credentialIdBytes = sha256(publicKeySpkiDer)
+    const credentialIdBytes = sha256(
+        credentialIdBasis === 'raw-point' ? pubRaw : publicKeySpkiDer,
+    )
     return {
         credentialId: credentialIdBytesToStandardBase64(credentialIdBytes),
         credentialIdBytes,
