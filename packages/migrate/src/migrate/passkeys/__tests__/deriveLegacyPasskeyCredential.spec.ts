@@ -153,9 +153,9 @@ describe('deriveLegacyPasskeyCredentialFromMainKey', () => {
         })
 
         // The raw point (CryptoKit rawRepresentation) is the 64 bytes after 0x04.
-        expect(Buffer.from(result.publicKeySpkiDer.slice(27)).toString('hex')).toBe(
-            SWIFT_RAW_POINT_HEX,
-        )
+        expect(
+            Buffer.from(result.publicKeySpkiDer.slice(27)).toString('hex'),
+        ).toBe(SWIFT_RAW_POINT_HEX)
         expect(result.credentialId).toBe(SWIFT_IOS_CREDENTIAL_ID)
     })
 

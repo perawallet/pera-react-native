@@ -228,7 +228,10 @@ const migrateSinglePasskey = async (
     ctx: MigrationContext,
     writtenIds: Set<string>,
 ): Promise<PasskeyMigrationOutcome> => {
-    const inputs = resolveDerivationInputs(passkey, ctx.convention.resolveOrigin)
+    const inputs = resolveDerivationInputs(
+        passkey,
+        ctx.convention.resolveOrigin,
+    )
     if (!inputs) return 'skipped'
 
     // Idempotency + the existence check key off the legacy credentialId bytes
