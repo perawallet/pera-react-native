@@ -2404,7 +2404,15 @@
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
             "grant_permission": "Grant Permission",
-            "open_settings": "Open Settings"
+            "open_settings": "Open Settings",
+            "bluetooth": {
+                "off_title": "Bluetooth Error",
+                "off": "Bluetooth must be enabled on your device in order to search for nearby Ledger devices.",
+                "unauthorized_title": "Search Error",
+                "unauthorized": "Bluetooth permission needs to be granted in order to search nearby Ledgers.",
+                "unsupported_title": "Unsupported Device",
+                "unsupported": "The device you are trying to connect to is not supported with the Pera Wallet."
+            }
         },
         "fetch_accounts": {
             "connecting": "Connecting to {{deviceName}}...",

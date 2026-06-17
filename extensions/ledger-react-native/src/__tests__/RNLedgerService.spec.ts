@@ -15,18 +15,21 @@ import { describe, test, it, expect, vi, beforeEach } from 'vitest'
 const transportListenMock = vi.hoisted(() => vi.fn())
 const transportOpenMock = vi.hoisted(() => vi.fn())
 const transportIsSupportedMock = vi.hoisted(() => vi.fn())
+const transportObserveStateMock = vi.hoisted(() => vi.fn())
 const transportCloseMock = vi.hoisted(() => vi.fn())
 const algorandGetAddressMock = vi.hoisted(() => vi.fn())
 const algorandSignMock = vi.hoisted(() => vi.fn())
 const algorandGetVersionMock = vi.hoisted(() => vi.fn())
 const algorandSignDataMock = vi.hoisted(() => vi.fn())
 const permissionsCheckMock = vi.hoisted(() => vi.fn())
+const peraBluetoothRequestEnableMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@ledgerhq/react-native-hw-transport-ble', () => ({
     default: {
         listen: transportListenMock,
         open: transportOpenMock,
         isSupported: transportIsSupportedMock,
+        observeState: transportObserveStateMock,
     },
 }))
 
@@ -49,6 +52,9 @@ vi.mock('react-native', () => ({
             BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
             ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
         },
+    },
+    NativeModules: {
+        PeraBluetooth: { requestEnable: peraBluetoothRequestEnableMock },
     },
 }))
 
@@ -465,6 +471,74 @@ describe('RNLedgerService', () => {
             .isSupported()
 
         expect(result).toBe(true)
+    })
+
+    // A single test exercises the whole observer because the underlying
+    // TransportBLE.observeState listener is attached once at module scope and
+    // shared across subscribers (the lib's unsubscribe is a no-op).
+    test('observeBluetoothState maps ble-plx states and fans out to subscribers', () => {
+        let observer: {
+            next: (e: { type: string; available: boolean }) => void
+        } = { next: () => {} }
+        transportObserveStateMock.mockImplementation((o: typeof observer) => {
+            observer = o
+            return { unsubscribe: () => {} }
+        })
+
+        const provider = new RNLedgerService().createTransportProvider()
+        const received: string[] = []
+        const unsubscribe = provider.observeBluetoothState!(s =>
+            received.push(s),
+        )
+
+        // The shared observer is registered, and the latest known state is
+        // delivered synchronously on subscribe.
+        expect(transportObserveStateMock).toHaveBeenCalled()
+        expect(received[0]).toBe('unknown')
+
+        observer.next({ type: 'PoweredOff', available: false })
+        observer.next({ type: 'PoweredOn', available: true })
+        observer.next({ type: 'Unauthorized', available: false })
+        observer.next({ type: 'Unsupported', available: false })
+        observer.next({ type: 'Resetting', available: false })
+        observer.next({ type: 'SomethingElse', available: false })
+
+        expect(received).toContain('poweredOff')
+        expect(received).toContain('poweredOn')
+        expect(received).toContain('unauthorized')
+        expect(received).toContain('unsupported')
+        expect(received).toContain('resetting')
+        // Unrecognized states fall back to 'unknown'.
+        expect(received.filter(s => s === 'unknown').length).toBeGreaterThan(1)
+
+        // After unsubscribe the listener stops receiving updates.
+        unsubscribe()
+        const before = received.length
+        observer.next({ type: 'PoweredOff', available: false })
+        expect(received.length).toBe(before)
+    })
+
+    describe('requestBluetoothEnable', () => {
+        test('delegates to the native PeraBluetooth module', async () => {
+            peraBluetoothRequestEnableMock.mockResolvedValue(true)
+
+            const result = await new RNLedgerService().createTransportProvider()
+                .requestBluetoothEnable!()
+
+            expect(peraBluetoothRequestEnableMock).toHaveBeenCalledTimes(1)
+            expect(result).toBe(true)
+        })
+
+        test('resolves false when the native module rejects', async () => {
+            peraBluetoothRequestEnableMock.mockRejectedValue(
+                new Error('no activity'),
+            )
+
+            const result = await new RNLedgerService().createTransportProvider()
+                .requestBluetoothEnable!()
+
+            expect(result).toBe(false)
+        })
     })
 
     describe('classifyLedgerError', () => {

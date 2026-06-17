@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-export { useBlePermissions } from './useBlePermissions'
-export { useBluetoothState } from './useBluetoothState'
-export { useLedgerAccounts } from '@perawallet/wallet-core-ledger'
-export { useLedgerConnection } from './useLedgerConnectionProvider'
+#import <React/RCTBridgeModule.h>
+
+@interface RCT_EXTERN_MODULE(PeraBluetooth, NSObject)
+
+RCT_EXTERN_METHOD(requestEnable:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+
+@end

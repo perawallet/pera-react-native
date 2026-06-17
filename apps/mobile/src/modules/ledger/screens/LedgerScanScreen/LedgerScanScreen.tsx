@@ -16,6 +16,7 @@ import {
     PWButton,
     PWFlatList,
     PWIcon,
+    PWLottie,
     PWScreen,
     PWText,
     PWTouchableOpacity,
@@ -23,6 +24,9 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import animationSourceLight from '@assets/animations/ledger-searching.json'
+import animationSourceDark from '@assets/animations/ledger-searching.dark.json'
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
 import { useStyles } from './styles'
 import { useLedgerScanScreen } from './useLedgerScanScreen'
@@ -32,6 +36,10 @@ import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wall
 export const LedgerScanScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation()
+    const isDarkMode = useIsDarkMode()
+    const animationSource = isDarkMode
+        ? animationSourceDark
+        : animationSourceLight
     const {
         devices,
         error,
@@ -90,8 +98,14 @@ export const LedgerScanScreen = () => {
 
     return (
         <PWScreen scroll='never'>
+            <PWLottie
+                autoPlay
+                loop
+                source={animationSource}
+                style={styles.headerAnimation}
+                testID='ledger_scan_animation'
+            />
             <ScreenHeader
-                icon='ledger'
                 title={t('ledger.scan.title')}
                 description={t('ledger.scan.description')}
             />

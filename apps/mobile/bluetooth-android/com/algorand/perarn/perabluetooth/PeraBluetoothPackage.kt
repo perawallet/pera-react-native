@@ -10,7 +10,19 @@
  limitations under the License
  */
 
-export { useBlePermissions } from './useBlePermissions'
-export { useBluetoothState } from './useBluetoothState'
-export { useLedgerAccounts } from '@perawallet/wallet-core-ledger'
-export { useLedgerConnection } from './useLedgerConnectionProvider'
+package com.algorand.perarn.perabluetooth
+
+import com.facebook.react.ReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.uimanager.ViewManager
+
+class PeraBluetoothPackage : ReactPackage {
+    override fun createNativeModules(
+        reactContext: ReactApplicationContext,
+    ): List<NativeModule> = listOf(PeraBluetoothModule(reactContext))
+
+    override fun createViewManagers(
+        reactContext: ReactApplicationContext,
+    ): List<ViewManager<*, *>> = emptyList()
+}
