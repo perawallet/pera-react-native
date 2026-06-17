@@ -44,16 +44,6 @@ const bundleIdentifiers = {
   },
 };
 
-// Firebase iOS config per environment. Unlike Android's google-services.json
-// (which holds every package in one file), an iOS GoogleService-Info.plist is
-// single-app, so each variant points at its own committed plist. All target the
-// pera-wallet-public Firebase project (dev shares the staging app registration).
-const iosGoogleServicesFiles = {
-  dev: './config/GoogleService-Info.staging.plist',
-  staging: './config/GoogleService-Info.staging.plist',
-  production: './config/GoogleService-Info.prod.plist',
-};
-
 // App names per environment
 const appNames = {
   dev: 'Pera 7 Dev',
@@ -138,7 +128,7 @@ module.exports = {
       'com.apple.developer.declared-age-range': true,
     },
     // Firebase config - stored in config/ directory (not in native folder)
-    googleServicesFile: iosGoogleServicesFiles[variant],
+    googleServicesFile: './config/GoogleService-Info.plist',
   },
 
   // Android-specific configuration
