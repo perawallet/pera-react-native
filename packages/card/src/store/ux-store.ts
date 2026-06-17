@@ -26,6 +26,7 @@ const initialState = {
     countryIso: null,
     verificationCode: null,
     phoneVerificationCode: null,
+    codeVerificationError: null,
     phoneCountryCode: null,
     phoneNumber: null,
     contactVerificationId: null,
@@ -52,6 +53,8 @@ export const useCardStore: UseBoundStore<
             setVerificationCode: verificationCode => set({ verificationCode }),
             setPhoneVerificationCode: phoneVerificationCode =>
                 set({ phoneVerificationCode }),
+            setCodeVerificationError: target =>
+                set({ codeVerificationError: target }),
             setPhone: ({ phoneCountryCode, phoneNumber }) =>
                 set({ phoneCountryCode, phoneNumber }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
@@ -77,6 +80,7 @@ export const useCardStore: UseBoundStore<
                     countryIso: initialState.countryIso,
                     verificationCode: initialState.verificationCode,
                     phoneVerificationCode: initialState.phoneVerificationCode,
+                    codeVerificationError: initialState.codeVerificationError,
                     phoneCountryCode: initialState.phoneCountryCode,
                     phoneNumber: initialState.phoneNumber,
                     contactVerificationId: initialState.contactVerificationId,

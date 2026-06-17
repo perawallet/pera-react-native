@@ -123,19 +123,47 @@ export type PhoneSendFormValues = z.infer<typeof phoneSendSchema>
 const PASSWORD_SPECIAL_CHARACTER_REGEX = /[^A-Za-z0-9]/
 
 /**
- * Validation for the password the user sets during email verification. Mirrors
- * Baanx's rules: at least 8 chars with an uppercase, a lowercase, a number, and
- * a special character; `confirmPassword` must match.
+ * The individual password rules, in display order. Exported so the Create
+ * Password screen's live checklist and the schema below stay in lockstep — a
+ * single source of truth for "what makes a valid password". Mirrors Baanx's
+ * rules: at least 8 chars with an uppercase, a lowercase, a number, and a
+ * special character. (Baanx also advises avoiding common passwords; that's
+ * surfaced as guidance on the screen but not enforced here.)
+ */
+export const PASSWORD_RULES = [
+    { id: 'length', test: (value: string): boolean => value.length >= 8 },
+    { id: 'uppercase', test: (value: string): boolean => /[A-Z]/.test(value) },
+    { id: 'lowercase', test: (value: string): boolean => /[a-z]/.test(value) },
+    { id: 'number', test: (value: string): boolean => /[0-9]/.test(value) },
+    {
+        id: 'special',
+        test: (value: string): boolean =>
+            PASSWORD_SPECIAL_CHARACTER_REGEX.test(value),
+    },
+] as const
+
+export type PasswordRuleId = (typeof PASSWORD_RULES)[number]['id']
+
+/** Password field schema, derived from {@link PASSWORD_RULES} so the two agree. */
+const passwordFieldSchema = z.string().superRefine((value, ctx) => {
+    for (const rule of PASSWORD_RULES) {
+        if (!rule.test(value)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `password-${rule.id}`,
+            })
+        }
+    }
+})
+
+/**
+ * Validation for the password the user sets during email verification.
+ * `password` must satisfy every {@link PASSWORD_RULES} entry and
+ * `confirmPassword` must match.
  */
 export const passwordSetSchema = z
     .object({
-        password: z
-            .string()
-            .min(8)
-            .regex(/[A-Z]/)
-            .regex(/[a-z]/)
-            .regex(/[0-9]/)
-            .regex(PASSWORD_SPECIAL_CHARACTER_REGEX),
+        password: passwordFieldSchema,
         confirmPassword: z.string(),
     })
     .refine(values => values.password === values.confirmPassword, {

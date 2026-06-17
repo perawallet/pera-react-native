@@ -23,6 +23,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
     const styles = useStyles()
     const {
         control,
+        errors,
         isValid,
         isSubmitting,
         selectedNationality,
@@ -37,7 +38,10 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                     <Controller
                         control={control}
                         name='firstName'
-                        render={({ field: { onChange, onBlur, value } }) => (
+                        render={({
+                            field: { onChange, onBlur, value },
+                            fieldState: { error },
+                        }) => (
                             <PWInput
                                 label={t(
                                     'peraCard.personal_details.first_name_label',
@@ -49,7 +53,16 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 autoCapitalize='words'
                                 autoCorrect={false}
                                 returnKeyType='next'
-                                renderErrorMessage={false}
+                                showErrorOnBlur
+                                renderErrorMessage
+                                errorStyle={styles.errorMessage}
+                                errorMessage={
+                                    error && value
+                                        ? t(
+                                              'peraCard.personal_details.first_name_invalid',
+                                          )
+                                        : undefined
+                                }
                                 testID='card-onboarding-first-name-input'
                             />
                         )}
@@ -58,7 +71,10 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                     <Controller
                         control={control}
                         name='lastName'
-                        render={({ field: { onChange, onBlur, value } }) => (
+                        render={({
+                            field: { onChange, onBlur, value },
+                            fieldState: { error },
+                        }) => (
                             <PWInput
                                 label={t(
                                     'peraCard.personal_details.last_name_label',
@@ -70,7 +86,16 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 autoCapitalize='words'
                                 autoCorrect={false}
                                 returnKeyType='next'
-                                renderErrorMessage={false}
+                                showErrorOnBlur
+                                renderErrorMessage
+                                errorStyle={styles.errorMessage}
+                                errorMessage={
+                                    error && value
+                                        ? t(
+                                              'peraCard.personal_details.last_name_invalid',
+                                          )
+                                        : undefined
+                                }
                                 testID='card-onboarding-last-name-input'
                             />
                         )}
@@ -116,6 +141,13 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                         )}
                         country={selectedNationality}
                         onPress={handleSelectNationality}
+                        errorMessage={
+                            errors.countryOfNationality
+                                ? t(
+                                      'peraCard.personal_details.nationality_required',
+                                  )
+                                : undefined
+                        }
                         testID='card-onboarding-nationality-field'
                     />
                 </PWView>

@@ -12,6 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import {
+    PASSWORD_RULES,
     addressSchema,
     dobToIsoDate,
     formatDobInput,
@@ -44,6 +45,32 @@ describe('passwordSetSchema', () => {
         if (!result.success) {
             expect(result.error.issues[0]?.path).toEqual(['confirmPassword'])
         }
+    })
+})
+
+describe('PASSWORD_RULES', () => {
+    it('every rule passes for a fully valid password', () => {
+        expect(PASSWORD_RULES.every(rule => rule.test('Passw0rd!'))).toBe(true)
+    })
+
+    it.each([
+        ['length', 'Pa0!'],
+        ['uppercase', 'passw0rd!'],
+        ['lowercase', 'PASSW0RD!'],
+        ['number', 'Password!'],
+        ['special', 'Passw0rd'],
+    ])('the %s rule fails its targeted password', (id, password) => {
+        const rule = PASSWORD_RULES.find(candidate => candidate.id === id)
+
+        expect(rule).toBeDefined()
+        expect(rule?.test(password)).toBe(false)
+    })
+
+    it('stays in lockstep with passwordSetSchema', () => {
+        // A password that satisfies every rule must parse, and one that fails a
+        // rule must not — guarding the derived-schema parity.
+        expect(parse('Passw0rd!').success).toBe(true)
+        expect(parse('passw0rd!').success).toBe(false)
     })
 })
 

@@ -244,6 +244,31 @@ describe('Flow: Card onboarding — residential address', () => {
         })
     })
 
+    it('Given a US residence with no state picked, the state field shows a required error and Continue stays gated', async () => {
+        useCardStore.getState().setCountryIso('US')
+
+        renderFlow()
+        // The US state field appears once the residence preselects to US.
+        await screen.findByTestId('card-onboarding-address-state-field')
+        fillAddressFields()
+        acceptBothTerms()
+
+        // No state picked → the field shows the required error inline and the
+        // Continue button stays disabled even with everything else satisfied.
+        await waitFor(() =>
+            expect(
+                screen
+                    .getByTestId('card-onboarding-address-state-input')
+                    .getAttribute('errormessage'),
+            ).toBe('peraCard.address.us_state_required'),
+        )
+        expect(
+            screen
+                .getByTestId('card-onboarding-address-confirm')
+                .getAttribute('disabled'),
+        ).not.toBeNull()
+    })
+
     it('Given the submit fails, when Continue is pressed, then an error toast shows and the flow stays put', async () => {
         server.use(
             http.post('*/v1/auth/register/address', () =>

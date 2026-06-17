@@ -21,6 +21,8 @@ export type CountrySelectorFieldProps = {
     placeholder: string
     country: Optional<SupportedCountry>
     onPress: () => void
+    /** When set, shown below the field as a validation error. */
+    errorMessage?: string
     testID?: string
 }
 
@@ -34,6 +36,7 @@ export const CountrySelectorField = ({
     placeholder,
     country,
     onPress,
+    errorMessage,
     testID,
 }: CountrySelectorFieldProps) => {
     const styles = useStyles()
@@ -60,7 +63,9 @@ export const CountrySelectorField = ({
                     value={value}
                     placeholder={placeholder}
                     editable={false}
-                    renderErrorMessage={false}
+                    renderErrorMessage={!!errorMessage}
+                    errorMessage={errorMessage}
+                    errorStyle={styles.errorMessage}
                     rightIcon={
                         <PWIcon
                             name='chevron-down'

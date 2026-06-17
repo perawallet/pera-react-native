@@ -92,6 +92,7 @@ export const useCardOnboardingAddressScreen =
             handleSubmit,
             setValue,
             watch,
+            trigger,
             formState: { isValid: isFormValid, errors },
         } = useForm<AddressFormValues>({
             resolver: zodResolver(addressSchema),
@@ -124,6 +125,13 @@ export const useCardOnboardingAddressScreen =
             })
         }, [residenceCountryIso, settings, selectedCountry, setValue])
 
+        // Surface the "state required" error as soon as a US residence is in
+        // effect (preselected or picked) — validating only `countryIso` wouldn't
+        // populate the cross-field `usState` issue. Picking a state clears it.
+        useEffect(() => {
+            if (isUsResident) void trigger('usState')
+        }, [isUsResident, trigger])
+
         // TODO(card): confirm whether residence is editable here — Baanx already
         // received the country at email/verify, and this pick (even a
         // canSignUp:false country) only updates local state.
@@ -131,7 +139,9 @@ export const useCardOnboardingAddressScreen =
             const openPicker = async () => {
                 const country = await request<SupportedCountry>({
                     contents: createElement(CardCountryPickerContent),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (!country) return
                 setSelectedCountry(country)
@@ -151,7 +161,9 @@ export const useCardOnboardingAddressScreen =
             const openPicker = async () => {
                 const usState = await request<SupportedUsState>({
                     contents: createElement(CardUsStatePickerContent),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (!usState) return
                 setSelectedUsState(usState)

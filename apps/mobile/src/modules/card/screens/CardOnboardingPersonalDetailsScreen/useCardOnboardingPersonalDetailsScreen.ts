@@ -96,7 +96,9 @@ export const useCardOnboardingPersonalDetailsScreen =
                             'peraCard.personal_details.nationality_picker_title',
                         ),
                     }),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (country) {
                     setSelectedNationality(country)

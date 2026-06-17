@@ -15,6 +15,8 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     emailSendSchema,
+    getCardApiError,
+    isConflictError,
     useCardStore,
     useCurrentRegionQuery,
     useRegistrationSettingsQuery,
@@ -72,6 +74,7 @@ export const useCardOnboardingEmailScreen =
             control,
             handleSubmit,
             setValue,
+            setError,
             formState: { isValid, errors },
         } = useForm<EmailSendFormValues>({
             resolver: zodResolver(emailSendSchema),
@@ -104,7 +107,9 @@ export const useCardOnboardingEmailScreen =
             const openPicker = async () => {
                 const country = await request<SupportedCountry>({
                     contents: createElement(CardCountryPickerContent),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (country) {
                     setSelectedCountry(country)
@@ -124,7 +129,21 @@ export const useCardOnboardingEmailScreen =
                 setEmail(email)
                 setCountryIso(countryIso)
                 navigation.navigate('CardOnboardingEmailVerify')
-            } catch {
+            } catch (error) {
+                // A conflict means the email is rejected (e.g. already
+                // registered) — attribute it to the field. Prefer Baanx's own
+                // message so the real reason shows; fall back to a localized
+                // string when the response carries none.
+                const apiError = await getCardApiError(error)
+                if (isConflictError(apiError)) {
+                    setError('email', {
+                        type: 'server',
+                        message:
+                            apiError.message ??
+                            t('peraCard.create_account.email_taken'),
+                    })
+                    return
+                }
                 errorToast(
                     t('peraCard.create_account.error_title'),
                     t('peraCard.create_account.error_body'),

@@ -154,9 +154,13 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         await waitFor(() =>
             expect(result.current.selectedNationality).toEqual(france),
         )
-        // Opens full-size with the nationality-specific sheet title.
+        // Opens full-size with the nationality-specific sheet title. The
+        // picker manages its own scroll, so the sheet must not auto-wrap it.
         const requestArg = mockRequest.mock.calls[0]?.[0]
-        expect(requestArg?.options).toEqual({ size: 'full' })
+        expect(requestArg?.options).toEqual({
+            size: 'full',
+            autoCreateContainer: false,
+        })
         expect(requestArg?.contents?.props?.title).toBe(
             'peraCard.personal_details.nationality_picker_title',
         )

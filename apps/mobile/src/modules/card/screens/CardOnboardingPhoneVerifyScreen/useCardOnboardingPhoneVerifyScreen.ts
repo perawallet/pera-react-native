@@ -12,6 +12,8 @@
 
 import { useCallback, useState } from 'react'
 import {
+    getCardApiError,
+    isInvalidInputError,
     useCardStore,
     useSendPhoneVerificationMutation,
     useVerifyPhoneMutation,
@@ -30,6 +32,8 @@ export type UseCardOnboardingPhoneVerifyScreenResult = {
     onChangeCode: (text: string) => void
     isValid: boolean
     isSubmitting: boolean
+    /** Set when a prior attempt rejected the code; shown inline on the input. */
+    codeError?: string
     /** The phone the code was sent to, formatted as `+44 7400846282`. */
     phoneDisplay: string
     secondsRemaining: number
@@ -57,6 +61,12 @@ export const useCardOnboardingPhoneVerifyScreen =
         const setPhoneVerificationCode = useCardStore(
             state => state.setPhoneVerificationCode,
         )
+        const codeVerificationError = useCardStore(
+            state => state.codeVerificationError,
+        )
+        const setCodeVerificationError = useCardStore(
+            state => state.setCodeVerificationError,
+        )
         const sendPhoneVerification = useSendPhoneVerificationMutation()
         const verifyPhone = useVerifyPhoneMutation()
 
@@ -66,14 +76,23 @@ export const useCardOnboardingPhoneVerifyScreen =
         )
 
         const trimmedCode = code.trim()
+        const codeError =
+            codeVerificationError === 'phone'
+                ? t('peraCard.verify_phone.code_invalid')
+                : undefined
         const phoneDisplay =
             phoneCountryCode && phoneNumber
                 ? `+${phoneCountryCode} ${phoneNumber}`
                 : ''
 
-        const onChangeCode = useCallback((text: string) => {
-            setCode(text)
-        }, [])
+        const onChangeCode = useCallback(
+            (text: string) => {
+                setCode(text)
+                // Editing clears the "code invalid" flag from a failed attempt.
+                if (codeVerificationError) setCodeVerificationError(null)
+            },
+            [codeVerificationError, setCodeVerificationError],
+        )
 
         const handleResend = useCallback(() => {
             // Guard against duplicate sends from a double-tap while in flight.
@@ -149,11 +168,20 @@ export const useCardOnboardingPhoneVerifyScreen =
                         })
                         // Phone verified: KYC (identity verification) is next.
                         navigation.navigate('CardOnboardingVerification')
-                    } catch {
-                        errorToast(
-                            t('peraCard.verify_phone.verify_error_title'),
-                            t('peraCard.verify_phone.verify_error_body'),
-                        )
+                    } catch (error) {
+                        // A 400/422 means the code itself was wrong/expired —
+                        // surface it inline. Anything else (network, 5xx) isn't
+                        // the code's fault, so show the generic toast rather
+                        // than mislabeling it as a bad code.
+                        const apiError = await getCardApiError(error)
+                        if (isInvalidInputError(apiError)) {
+                            setCodeVerificationError('phone')
+                        } else {
+                            errorToast(
+                                t('peraCard.verify_phone.verify_error_title'),
+                                t('peraCard.verify_phone.verify_error_body'),
+                            )
+                        }
                     }
                 }
                 void confirm()
@@ -165,6 +193,7 @@ export const useCardOnboardingPhoneVerifyScreen =
                 phoneNumber,
                 contactVerificationId,
                 setPhoneVerificationCode,
+                setCodeVerificationError,
                 verifyPhone,
                 errorToast,
                 navigation,
@@ -177,6 +206,7 @@ export const useCardOnboardingPhoneVerifyScreen =
             onChangeCode,
             isValid: trimmedCode.length === CARD_VERIFICATION_CODE_LENGTH,
             isSubmitting: verifyPhone.isPending,
+            codeError,
             phoneDisplay,
             secondsRemaining,
             canResend: !isActive,

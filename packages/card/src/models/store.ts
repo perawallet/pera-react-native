@@ -16,6 +16,9 @@ import type { CardStatus } from './card'
 import type { CardTransactionFilters } from './transaction'
 import type { FundingType } from './funding'
 
+/** Which verification code Baanx rejected, surfaced on the matching verify screen. */
+export type CodeVerificationTarget = 'email' | 'phone'
+
 /** Client-only UX/navigation state. No tokens, no PAN/CVV/PIN. */
 export type CardUxState = BaseStoreState & {
     onboardingStep: OnboardingStep
@@ -34,6 +37,12 @@ export type CardUxState = BaseStoreState & {
      * returns). Transient OTP — never persisted (excluded from `partialize`).
      */
     phoneVerificationCode: Nullable<string>
+    /**
+     * Set when a deferred email/phone code is rejected at the password step, so
+     * the matching verify screen can show an inline "code invalid" error.
+     * Transient — never persisted; cleared once the user edits the code.
+     */
+    codeVerificationError: Nullable<CodeVerificationTarget>
     /** Phone dialing code (no leading '+') entered on the phone/send step. */
     phoneCountryCode: Nullable<string>
     /** National phone number entered on the phone/send step. */
@@ -69,6 +78,7 @@ export type CardUxState = BaseStoreState & {
     setCountryIso: (countryIso: Nullable<string>) => void
     setVerificationCode: (verificationCode: Nullable<string>) => void
     setPhoneVerificationCode: (phoneVerificationCode: Nullable<string>) => void
+    setCodeVerificationError: (target: Nullable<CodeVerificationTarget>) => void
     setPhone: (phone: { phoneCountryCode: string; phoneNumber: string }) => void
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void

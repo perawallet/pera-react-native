@@ -93,6 +93,31 @@ describe('useCardStore', () => {
         expect(persisted).not.toHaveProperty('phoneVerificationCode')
     })
 
+    test('setCodeVerificationError is transient and clears on reset', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => result.current.setCodeVerificationError('phone'))
+        expect(result.current.codeVerificationError).toBe('phone')
+
+        // It's a transient UI signal — excluded from the persisted snapshot.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).not.toHaveProperty('codeVerificationError')
+
+        act(() => result.current.resetOnboardingProgress())
+        expect(result.current.codeVerificationError).toBeNull()
+    })
+
     test('resetState clears the onboarding contact inputs', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
