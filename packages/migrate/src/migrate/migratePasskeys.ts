@@ -12,7 +12,7 @@
 
 import { Platform } from 'react-native'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { entropyToMnemonic } from '@perawallet/wallet-core-kms'
+import { entropyToMnemonic, zeroBytes } from '@perawallet/wallet-core-kms'
 import {
     bytesEqual,
     bytesToHex,
@@ -126,6 +126,8 @@ type MigrationContext = {
     writePasskey: NativePasskeyWriter
     /** Per-platform legacy derivation convention (origin shape + id basis). */
     convention: PlatformPasskeyConvention
+    /** Zeroes the secret buffers held for the batch (per-seed main keys + master key). */
+    dispose: () => Promise<void>
 }
 
 const createMigrationContext = (): MigrationContext => {
@@ -136,6 +138,7 @@ const createMigrationContext = (): MigrationContext => {
         useAccountsStore.getState().accounts.map(acc => [acc.address, acc]),
     )
     const mainKeyBySeed = new Map<string, Promise<Uint8Array>>()
+    const writePasskey = createNativePasskeyWriter()
 
     return {
         hasAccount: address => accountByAddress.has(address),
@@ -167,8 +170,15 @@ const createMigrationContext = (): MigrationContext => {
             }
             return pending
         },
-        writePasskey: createNativePasskeyWriter(),
+        writePasskey,
         convention: resolvePlatformConvention(),
+        dispose: async () => {
+            const mainKeyWipes = Array.from(mainKeyBySeed.values(), pending =>
+                pending.then(zeroBytes, () => {}),
+            )
+            await Promise.all([...mainKeyWipes, writePasskey.dispose()])
+            mainKeyBySeed.clear()
+        },
     }
 }
 
@@ -276,18 +286,22 @@ const migrateSinglePasskey = async (
         userName: inputs.userName,
         credentialIdBasis: ctx.convention.credentialIdBasis,
     })
-    const derivation: PasskeyDerivation = { passkey, inputs, derived }
+    try {
+        const derivation: PasskeyDerivation = { passkey, inputs, derived }
 
-    // The decisive correctness gate: only persist if our independent
-    // re-derivation reproduces the relying party's credentialId exactly.
-    if (!bytesEqual(derived.credentialIdBytes, inputs.legacyIdBytes)) {
-        logDerivationMismatch(derivation)
-        return 'skipped'
+        // The decisive correctness gate: only persist if our independent
+        // re-derivation reproduces the relying party's credentialId exactly.
+        if (!bytesEqual(derived.credentialIdBytes, inputs.legacyIdBytes)) {
+            logDerivationMismatch(derivation)
+            return 'skipped'
+        }
+
+        await persistMigratedPasskey(derivation, ctx.writePasskey)
+        writtenIds.add(inputs.credentialId)
+        return 'imported'
+    } finally {
+        zeroBytes(derived.privateKey)
     }
-
-    await persistMigratedPasskey(derivation, ctx.writePasskey)
-    writtenIds.add(inputs.credentialId)
-    return 'imported'
 }
 
 /**
@@ -309,18 +323,26 @@ export const migratePasskeys = async (
     const ctx = createMigrationContext()
     const writtenIds = new Set<string>()
 
-    for (const passkey of passkeys) {
-        try {
-            const outcome = await migrateSinglePasskey(passkey, ctx, writtenIds)
-            result[outcome] += 1
-        } catch (err) {
-            logger.error('[Migration] passkey import failed', {
-                credentialId: passkey.credentialId,
-                error: err,
-            })
-            result.skipped += 1
+    try {
+        for (const passkey of passkeys) {
+            try {
+                const outcome = await migrateSinglePasskey(
+                    passkey,
+                    ctx,
+                    writtenIds,
+                )
+                result[outcome] += 1
+            } catch (err) {
+                logger.error('[Migration] passkey import failed', {
+                    credentialId: passkey.credentialId,
+                    error: err,
+                })
+                result.skipped += 1
+            }
         }
-    }
 
-    return result
+        return result
+    } finally {
+        await ctx.dispose()
+    }
 }

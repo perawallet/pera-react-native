@@ -30,6 +30,12 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: storageMock,
 }))
 
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    zeroBytes: (...buffers: Array<Uint8Array | null | undefined>) => {
+        for (const buf of buffers) if (buf) buf.fill(0)
+    },
+}))
+
 import {
     createNativePasskeyWriter,
     writeNativePasskeyEntry,
@@ -113,5 +119,23 @@ describe('createNativePasskeyWriter master-key reuse', () => {
 
         expect(masterKeyMock).toHaveBeenCalledTimes(2)
         expect(storageMock.set).toHaveBeenCalledTimes(1)
+    })
+
+    it('dispose zeroes the cached master key', async () => {
+        const masterKey = new Uint8Array(32).fill(7)
+        masterKeyMock.mockResolvedValue(masterKey)
+        const write = createNativePasskeyWriter()
+
+        await write(entryParams('cred-1'))
+        await write.dispose()
+
+        expect(masterKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('dispose resolves as a no-op when no master key was fetched', async () => {
+        const write = createNativePasskeyWriter()
+
+        await expect(write.dispose()).resolves.toBeUndefined()
+        expect(masterKeyMock).not.toHaveBeenCalled()
     })
 })

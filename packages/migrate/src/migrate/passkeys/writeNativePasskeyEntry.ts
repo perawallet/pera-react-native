@@ -17,6 +17,7 @@ import {
     getMasterKey,
     storage,
 } from '@algorandfoundation/react-native-keystore'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
     storage.getString(credentialId) != null
@@ -81,9 +82,12 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
     },
 })
 
-export type NativePasskeyWriter = (
+export type NativePasskeyWriter = ((
     params: WriteNativePasskeyEntryParams,
-) => Promise<void>
+) => Promise<void>) & {
+    /** Zeroes the cached master key (reused across the batch); await after the last write. */
+    dispose: () => Promise<void>
+}
 
 /**
  * Creates a writer that fetches and decrypts the keystore master key once and
@@ -114,7 +118,7 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
         return masterKeyPromise
     }
 
-    return async params => {
+    const write: NativePasskeyWriter = async params => {
         const masterKey = await resolveMasterKey()
         storage.set(
             params.credentialId,
@@ -128,12 +132,27 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
             ),
         )
     }
+
+    write.dispose = (): Promise<void> => {
+        const pending = masterKeyPromise
+        masterKeyPromise = undefined
+        return pending ? pending.then(zeroBytes, () => {}) : Promise.resolve()
+    }
+
+    return write
 }
 
 /**
  * One-off write that fetches the master key for this single entry. Prefer
  * {@link createNativePasskeyWriter} when writing many entries in a batch.
  */
-export const writeNativePasskeyEntry = (
+export const writeNativePasskeyEntry = async (
     params: WriteNativePasskeyEntryParams,
-): Promise<void> => createNativePasskeyWriter()(params)
+): Promise<void> => {
+    const write = createNativePasskeyWriter()
+    try {
+        await write(params)
+    } finally {
+        await write.dispose()
+    }
+}

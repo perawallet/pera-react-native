@@ -20,6 +20,7 @@ const {
     deriveCredentialMock,
     entryExistsMock,
     writeEntryMock,
+    disposeMock,
     entropyToMnemonicMock,
     platformMock,
 } = vi.hoisted(() => ({
@@ -30,6 +31,7 @@ const {
     deriveCredentialMock: vi.fn(),
     entryExistsMock: vi.fn(),
     writeEntryMock: vi.fn(),
+    disposeMock: vi.fn(),
     entropyToMnemonicMock: vi.fn(),
     platformMock: { OS: 'android' as 'android' | 'ios' },
 }))
@@ -46,6 +48,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     entropyToMnemonic: entropyToMnemonicMock,
+    zeroBytes: (...buffers: Array<Uint8Array | null | undefined>) => {
+        for (const buf of buffers) if (buf) buf.fill(0)
+    },
 }))
 
 // Real encoding helpers (the pure deriveLegacyPasskeyCredential module, loaded
@@ -77,10 +82,12 @@ vi.mock('../passkeys/deriveLegacyPasskeyCredential', async importActual => ({
 }))
 
 // Fully mocked — the real module imports react-native-keystore (native MMKV).
-// createNativePasskeyWriter returns the per-write spy so the batch shares one writer.
+// createNativePasskeyWriter returns the per-write spy (with a dispose spy
+// attached) so the batch shares one writer.
 vi.mock('../passkeys/writeNativePasskeyEntry', () => ({
     nativePasskeyEntryExists: entryExistsMock,
-    createNativePasskeyWriter: () => writeEntryMock,
+    createNativePasskeyWriter: () =>
+        Object.assign(writeEntryMock, { dispose: disposeMock }),
 }))
 
 import type { LegacyPasskey } from '@perawallet/wallet-extension-platform'
@@ -123,6 +130,7 @@ beforeEach(() => {
     deriveCredentialMock.mockReset().mockResolvedValue(derivedFor(ID_BYTES))
     entryExistsMock.mockReset().mockReturnValue(false)
     writeEntryMock.mockReset().mockResolvedValue(undefined)
+    disposeMock.mockReset()
     entropyToMnemonicMock.mockReset().mockReturnValue('test mnemonic phrase')
 
     accountsState.accounts = [{ address: ADDRESS, keyPairId: DERIVED_KEY_ID }]
@@ -160,6 +168,52 @@ describe('migratePasskeys', () => {
                 lastUsedAtMs: 1_700_000_000_000,
             }),
         )
+    })
+
+    it('zeroes the derived private key once the credential is written', async () => {
+        const derived = derivedFor(ID_BYTES)
+        deriveCredentialMock.mockResolvedValueOnce(derived)
+
+        await migratePasskeys([buildPasskey()])
+
+        expect(derived.privateKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('zeroes the derived private key even when the credentialId mismatches (skip path)', async () => {
+        // Derived id differs from the legacy id → the gate fails and the passkey
+        // is skipped, but the freshly-derived private key must still be wiped.
+        const derived = derivedFor(new Uint8Array(32).fill(0xaa))
+        deriveCredentialMock.mockResolvedValueOnce(derived)
+
+        const result = await migratePasskeys([buildPasskey()])
+
+        expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(writeEntryMock).not.toHaveBeenCalled()
+        expect(derived.privateKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('disposes the writer (wiping the master key) after the batch', async () => {
+        await migratePasskeys([buildPasskey()])
+
+        expect(disposeMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('zeroes the cached derived main key after the batch', async () => {
+        const mainKey = new Uint8Array(64).fill(9)
+        deriveMainKeyMock.mockResolvedValueOnce(mainKey)
+
+        await migratePasskeys([buildPasskey()])
+
+        expect(mainKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('disposes the writer even when a write throws', async () => {
+        writeEntryMock.mockRejectedValueOnce(new Error('mmkv write failed'))
+
+        const result = await migratePasskeys([buildPasskey()])
+
+        expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(disposeMock).toHaveBeenCalledTimes(1)
     })
 
     it('does not double-prefix a siteUrl that already has a scheme', async () => {
