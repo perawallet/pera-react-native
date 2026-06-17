@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import {
-    canSignWith,
-    useAccountsStore,
+    useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PWSheetLayout } from '@components/core'
@@ -37,12 +36,7 @@ export const OptInAccountSelectionContent = ({
 }: OptInAccountSelectionContentProps) => {
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<string>()
-    const accounts = useAccountsStore(state => state.accounts)
-
-    const signableAccounts = useMemo(
-        () => accounts.filter(account => canSignWith(account, accounts)),
-        [accounts],
-    )
+    const signableAccounts = useSigningAccounts()
 
     const handleSelect = useCallback(
         (account: WalletAccount) => resolve(account.address),

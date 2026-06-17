@@ -27,19 +27,23 @@ describe('pendingImportMnemonic store', () => {
 
     it('starts empty', () => {
         expect(
-            usePendingImportMnemonicStore.getState().pendingMnemonic,
+            usePendingImportMnemonicStore.getState().pendingMnemonicBytes,
         ).toBeNull()
     })
 
-    it('set stores the mnemonic', () => {
+    it('set stores the mnemonic as UTF-8 bytes', () => {
         setPendingImportMnemonic(MNEMONIC)
 
-        expect(usePendingImportMnemonicStore.getState().pendingMnemonic).toBe(
-            MNEMONIC,
-        )
+        const bytes =
+            usePendingImportMnemonicStore.getState().pendingMnemonicBytes
+        // `instanceof Uint8Array` is unreliable here — TextEncoder may return a
+        // Uint8Array from a different realm than the test global — so assert on
+        // the byte-view-ness and the decoded contents instead.
+        expect(ArrayBuffer.isView(bytes!)).toBe(true)
+        expect(new TextDecoder().decode(bytes!)).toBe(MNEMONIC)
     })
 
-    it('consume returns the mnemonic and clears it in the same call', () => {
+    it('consume returns the mnemonic and clears the store in the same call', () => {
         setPendingImportMnemonic(MNEMONIC)
 
         const consumed = consumePendingImportMnemonic()
@@ -47,8 +51,20 @@ describe('pendingImportMnemonic store', () => {
         expect(consumed).toBe(MNEMONIC)
         // Cleared immediately so the secret does not linger in the store.
         expect(
-            usePendingImportMnemonicStore.getState().pendingMnemonic,
+            usePendingImportMnemonicStore.getState().pendingMnemonicBytes,
         ).toBeNull()
+    })
+
+    it('consume zeroes the buffer the store held (not just drops the reference)', () => {
+        setPendingImportMnemonic(MNEMONIC)
+        // Hold a reference to the very buffer the store retains.
+        const retained =
+            usePendingImportMnemonicStore.getState().pendingMnemonicBytes!
+
+        consumePendingImportMnemonic()
+
+        // The decoded value was handed back, but the retained bytes are wiped.
+        expect(retained.every(b => b === 0)).toBe(true)
     })
 
     it('consume returns null and stays cleared when nothing is pending', () => {
@@ -56,13 +72,16 @@ describe('pendingImportMnemonic store', () => {
         expect(consumePendingImportMnemonic()).toBeNull()
     })
 
-    it('clear removes a pending mnemonic without returning it', () => {
+    it('clear zeroes and removes a pending mnemonic without returning it', () => {
         setPendingImportMnemonic(MNEMONIC)
+        const retained =
+            usePendingImportMnemonicStore.getState().pendingMnemonicBytes!
 
         clearPendingImportMnemonic()
 
+        expect(retained.every(b => b === 0)).toBe(true)
         expect(
-            usePendingImportMnemonicStore.getState().pendingMnemonic,
+            usePendingImportMnemonicStore.getState().pendingMnemonicBytes,
         ).toBeNull()
     })
 })

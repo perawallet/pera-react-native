@@ -97,11 +97,11 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     // Pre-populate the passphrase from a scanned QR / recover-address deeplink
     // so the user reviews and confirms the words before importing. The mnemonic
-    // is handed off via an in-memory store rather than a navigation route param
-    // so the secret never enters the navigation state tree; consuming it here
-    // reads and clears it in one step. Runs once on mount; `updateWord`
-    // distributes a full space-separated mnemonic across the word fields
-    // starting at index 0.
+    // is handed off via an in-memory store (as scrubbable bytes, not a route
+    // param) so the secret never enters the navigation state tree; consuming it
+    // here reads and scrubs the store in one step. Runs once on mount;
+    // `updateWord` distributes a full space-separated mnemonic across the word
+    // fields starting at index 0.
     useEffect(() => {
         const pendingMnemonic = consumePendingImportMnemonic()
         if (pendingMnemonic) {
