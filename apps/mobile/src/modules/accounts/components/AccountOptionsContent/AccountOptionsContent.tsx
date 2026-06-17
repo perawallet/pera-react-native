@@ -18,8 +18,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { isWatchAccount, type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { useLanguage } from '@hooks/useLanguage'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useStyles } from './styles'
 import { type AccountOption, useAccountOptions } from './useAccountOptions'
 import { AccountInfoCard } from '../AccountInfoCard'
@@ -74,6 +76,7 @@ export const AccountOptionsContent = ({
     account,
 }: AccountOptionsContentProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
         options,
@@ -82,7 +85,50 @@ export const AccountOptionsContent = ({
         authAccount,
         authAddress,
         handleUndoRekey,
+        removeConfirmView,
+        handleConfirmBackupWarning,
+        handleConfirmRemove,
+        handleCancelRemove,
     } = useAccountOptions({ account, onClose: dismiss, onShowAddress })
+
+    if (removeConfirmView === 'backup-warning') {
+        return (
+            <ConfirmActionContent
+                icon='trash'
+                iconVariant='error'
+                title={t('account_options.backup_warning_title')}
+                message={t('account_options.backup_warning_message')}
+                confirmLabel={t('account_options.backup_warning_continue')}
+                cancelLabel={t('account_options.backup_warning_cancel')}
+                confirmVariant='destructive'
+                buttonPaddingStyle='dense'
+                onConfirm={handleConfirmBackupWarning}
+                onCancel={handleCancelRemove}
+            />
+        )
+    }
+
+    if (removeConfirmView === 'remove-confirm') {
+        return (
+            <ConfirmActionContent
+                icon='trash'
+                iconVariant='error'
+                title={t('account_options.remove_title')}
+                message={t(
+                    isWatchAccount(account)
+                        ? 'account_options.remove_watch_message'
+                        : 'account_options.remove_message',
+                )}
+                confirmLabel={t('account_options.remove_confirm')}
+                cancelLabel={t('account_options.remove_cancel')}
+                confirmVariant='destructive'
+                buttonPaddingStyle='dense'
+                confirmTestID='remove_account_confirm_button'
+                onConfirm={handleConfirmRemove}
+                onCancel={handleCancelRemove}
+            />
+        )
+    }
 
     const generalOptions = options.filter(
         o =>
