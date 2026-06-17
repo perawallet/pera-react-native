@@ -143,6 +143,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         return { success: false, wordCount }
     },
     useImportAccount: vi.fn(),
+    // The recover-address handler stashes the scanned mnemonic here before
+    // navigating to the pre-filled Import screen (kept out of route params).
+    setPendingImportMnemonic: vi.fn(),
     DuplicateAccountError: class DuplicateAccountError extends Error {},
 }))
 
@@ -179,6 +182,14 @@ vi.mock('@modules/onboarding/hooks', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
+    UserRejectedSigningError: class UserRejectedSigningError extends Error {},
+}))
+
+// The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
+// the real transactions package (and its api/history schema, which imports
+// from the mocked shared package) isn't loaded into this unit test's graph.
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetOptInMutation: () => ({ optIn: vi.fn() }),
 }))
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
@@ -488,14 +499,14 @@ const cases: Case[] = [
     ...newPair(
         'Asset Opt-In',
         `asset-opt-in/?assetId=${ASSET_ID}`,
-        { kind: 'requestByType', type: 'asset-opt-in' },
+        // A bare assetId link carries no account, so the handler first opens
+        // the account-selection sheet (which, unanswered in this test, aborts
+        // before the confirmation sheet).
+        { kind: 'requestByType', type: 'asset-opt-in-account-selection' },
         () => {
             expect(mockRequestByType).toHaveBeenCalledWith(
-                'asset-opt-in',
-                {
-                    assetId: ASSET_ID,
-                    accountAddress: 'fallback-addr',
-                },
+                'asset-opt-in-account-selection',
+                {},
                 // PWSheetLayout only scrolls with autoCreateContainer:false + bounded auto size.
                 {
                     size: 'auto',
@@ -703,11 +714,17 @@ const cases: Case[] = [
     {
         name: 'Old: Asset opt-in (perawallet://?amount=0&asset=…)',
         url: `perawallet://?amount=0&asset=${ASSET_ID}`,
-        expect: { kind: 'requestByType', type: 'asset-opt-in' },
+        // Bare assetId (no account) → account-selection sheet first.
+        expect: {
+            kind: 'requestByType',
+            type: 'asset-opt-in-account-selection',
+        },
     },
     {
         name: 'Old: Asset opt-in (perawallet://asset/opt-in?asset=…&account=…)',
         url: `perawallet://asset/opt-in?asset=${ASSET_ID}&account=${ADDRESS}`,
+        // Account carried by the link → skip the picker, go straight to the
+        // opt-in confirmation sheet.
         expect: { kind: 'requestByType', type: 'asset-opt-in' },
     },
     {

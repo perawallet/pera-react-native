@@ -15,19 +15,16 @@ import {
     type StackHeaderProps,
 } from '@react-navigation/stack'
 
-import { PWIcon } from '@components/core'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { BidaliIntroScreen } from '../screens/BidaliIntroScreen'
 import { BidaliAccountSelectionScreen } from '../screens/BidaliAccountSelectionScreen'
 import { BidaliWebViewScreen } from '../screens/BidaliWebViewScreen'
-import { useBidali } from '../hooks/useBidali'
 import { useStyles } from './styles'
 import type { BidaliStackParamList } from './types'
 
 const Stack = createStackNavigator<BidaliStackParamList>()
 
 export const BidaliRoutes = () => {
-    const { onClose } = useBidali()
     const styles = useStyles()
 
     return (
@@ -63,15 +60,7 @@ export const BidaliRoutes = () => {
             <Stack.Screen
                 name='BidaliWebView'
                 component={BidaliWebViewScreen}
-                options={{
-                    headerShown: false,
-                    headerLeft: () => (
-                        <PWIcon
-                            name='cross'
-                            onPress={onClose}
-                        />
-                    ),
-                }}
+                options={{ headerShown: false }}
             />
         </Stack.Navigator>
     )

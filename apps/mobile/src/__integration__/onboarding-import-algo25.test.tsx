@@ -32,6 +32,7 @@ import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen/I
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen/ImportAccountScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
+import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import {
     AccountTypes,
     useAccountsStore,
@@ -74,6 +75,7 @@ const renderAlgo25ImportFromOnboarding = () =>
                 name: 'ImportRekeyedAddresses',
                 component: ImportRekeyedAddressesScreen,
             },
+            { name: 'NameAccount', component: NameAccountScreen },
         ],
     })
 
@@ -170,7 +172,13 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
             // Algo25 differs from HD: useImportAccount creates the account
             // immediately (not session-pending), so it lands in the store before
             // SearchAccounts even runs. SearchAccounts then checks for rekeyed
-            // accounts and, finding none, calls exitAccountFlow.
+            // accounts and, finding none, routes to NameAccount for the user to
+            // confirm/customize the name before finishing.
+            await waitFor(() =>
+                screen.getByTestId('name_account_finish_button'),
+            )
+            fireEvent.click(screen.getByTestId('name_account_finish_button'))
+
             await waitFor(
                 () => {
                     expect(useOnboardingStore.getState().isOnboarding).toBe(

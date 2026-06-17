@@ -25,3 +25,8 @@ export { useDiscoverPathDeeplink } from './useDiscoverPathDeeplink'
 export type { DiscoverPathDeeplinkHandler } from './useDiscoverPathDeeplink'
 export { usePeraWebImportDeeplink } from './usePeraWebImportDeeplink'
 export type { PeraWebImportDeeplinkHandler } from './usePeraWebImportDeeplink'
+export { useAssetOptInDeeplink } from './useAssetOptInDeeplink'
+export type {
+    AssetOptInDeeplinkHandler,
+    AssetOptInDeeplinkParams,
+} from './useAssetOptInDeeplink'

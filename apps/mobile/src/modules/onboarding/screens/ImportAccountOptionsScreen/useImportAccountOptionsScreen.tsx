@@ -14,11 +14,8 @@ import React, { useCallback, useMemo } from 'react'
 import { Platform } from 'react-native'
 import {
     resolveImportAccountType,
-    useImportAccount,
-    type WalletAccount,
+    setPendingImportMnemonic,
 } from '@perawallet/wallet-core-accounts'
-import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { type IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -38,11 +35,7 @@ export type UseImportAccountOptionsScreenResult = {
     options: AccountOption[]
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
-    handleQRScannerSuccess: (
-        url: string,
-        restartScanning?: () => void,
-    ) => Promise<void>
-    isImporting: boolean
+    handleQRScannerSuccess: (url: string, restartScanning?: () => void) => void
 }
 
 export const useImportAccountOptionsScreen =
@@ -52,19 +45,11 @@ export const useImportAccountOptionsScreen =
         const { t } = useLanguage()
         const { parseDeeplink } = useDeepLink()
         const { request: requestBottomSheet } = useBottomSheet()
-        const importAccount = useImportAccount()
-        const markBackupComplete = useMarkMnemonicBackupComplete()
 
         const {
             isOpen: isQRScannerVisible,
             open: openQRScanner,
             close: closeQRScanner,
-        } = useModalState()
-
-        const {
-            isOpen: isImporting,
-            open: openImporting,
-            close: closeImporting,
         } = useModalState()
 
         const handleOpenImportOptions = useCallback(async () => {
@@ -99,7 +84,7 @@ export const useImportAccountOptionsScreen =
         )
 
         const handleQRScannerSuccess = useCallback(
-            async (url: string, restartScanning?: () => void) => {
+            (url: string, restartScanning?: () => void) => {
                 closeQRScanner()
 
                 const parsedDeeplink = parseDeeplink(url)
@@ -129,48 +114,17 @@ export const useImportAccountOptionsScreen =
                     return
                 }
 
-                openImporting()
-                try {
-                    const result = await importAccount({
-                        mnemonic: parsedDeeplink.mnemonic,
-                        type: resolved.accountType,
-                    })
-
-                    if (result.type === 'hdWallet' && 'walletKeyId' in result) {
-                        navigation.push('SearchAccounts', {
-                            mode: 'import',
-                            walletKeyId: result.walletKeyId,
-                            derivationType: result.derivationType,
-                        })
-                    } else {
-                        markBackupComplete(result as WalletAccount)
-                        navigation.push('SearchAccounts', {
-                            account: result as WalletAccount,
-                        })
-                    }
-                } catch (error) {
-                    logger.error('QR import failed', { error })
-                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
-                    errorToast(
-                        t('onboarding.import_account.failed_title'),
-                        t('onboarding.import_account.failed_body'),
-                    )
-                    restartScanning?.()
-                } finally {
-                    closeImporting()
-                }
+                // Don't import straight from the scan: hand the parsed words to
+                // the Import screen so the user confirms the passphrase (and
+                // later names the account) before importing. The mnemonic is
+                // passed via an in-memory store, not a route param, so the
+                // secret never enters the navigation state tree.
+                setPendingImportMnemonic(parsedDeeplink.mnemonic)
+                navigation.push('ImportAccount', {
+                    accountType: resolved.accountType,
+                })
             },
-            [
-                closeQRScanner,
-                parseDeeplink,
-                navigation,
-                errorToast,
-                t,
-                importAccount,
-                markBackupComplete,
-                openImporting,
-                closeImporting,
-            ],
+            [closeQRScanner, parseDeeplink, navigation, errorToast, t],
         )
 
         const handleImportAsb = useCallback(() => {
@@ -259,6 +213,5 @@ export const useImportAccountOptionsScreen =
             isQRScannerVisible,
             handleCloseQRScanner: closeQRScanner,
             handleQRScannerSuccess,
-            isImporting,
         }
     }

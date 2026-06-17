@@ -33,6 +33,7 @@ import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountSc
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen/ImportRekeyedAddressesScreen'
+import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import {
     AccountTypes,
     DerivationTypes,
@@ -74,6 +75,13 @@ const advanceThroughImportInfo = async () => {
     fireEvent.click(screen.getByTestId('import_info_recover_button'))
 }
 
+// A single-account import lands on NameAccount; confirm the default name to
+// finish onboarding. (Multi-address imports keep auto-names and skip this.)
+const advanceThroughNameAccount = async () => {
+    await waitFor(() => screen.getByTestId('name_account_finish_button'))
+    fireEvent.click(screen.getByTestId('name_account_finish_button'))
+}
+
 const renderHDImportFromOnboarding = () =>
     renderWithNavigation(OnboardingScreen, 'Onboarding', {
         additionalScreens: [
@@ -92,6 +100,7 @@ const renderHDImportFromOnboarding = () =>
                 name: 'ImportRekeyedAddresses',
                 component: ImportRekeyedAddressesScreen,
             },
+            { name: 'NameAccount', component: NameAccountScreen },
         ],
     })
 
@@ -221,6 +230,9 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             fireEvent.click(
                 screen.getByTestId('import_select_addresses_continue_button'),
             )
+
+            // Single committed account → name it before finishing.
+            await advanceThroughNameAccount()
 
             await waitFor(
                 () => {
@@ -425,6 +437,9 @@ describe('Flow: Onboarding → Import HD wallet', () => {
                 screen.getByTestId('import_select_addresses_continue_button'),
             )
 
+            // Single committed account → name it before finishing.
+            await advanceThroughNameAccount()
+
             await waitFor(
                 () => {
                     expect(useOnboardingStore.getState().isOnboarding).toBe(
@@ -505,6 +520,9 @@ describe('Flow: Onboarding → Import HD wallet', () => {
             fireEvent.click(
                 screen.getByTestId('import_select_addresses_continue_button'),
             )
+
+            // Single committed account → name it before finishing.
+            await advanceThroughNameAccount()
 
             await waitFor(
                 () => {

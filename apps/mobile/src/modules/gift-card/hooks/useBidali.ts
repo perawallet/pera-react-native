@@ -15,12 +15,10 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 type BidaliState = {
     selectedAccount?: WalletAccount
-    onClose?: () => void
 }
 
 type BidaliActions = {
     setSelectedAccount: (account: WalletAccount) => void
-    setOnClose: (fn: () => void) => void
     reset: () => void
 }
 
@@ -28,30 +26,24 @@ type BidaliStore = BidaliState & BidaliActions
 
 const initialState: BidaliState = {
     selectedAccount: undefined,
-    onClose: undefined,
 }
 
 const useBidaliStore = create<BidaliStore>()(set => ({
     ...initialState,
     setSelectedAccount: account => set({ selectedAccount: account }),
-    setOnClose: fn => set({ onClose: fn }),
     reset: () => set(initialState),
 }))
 
 type UseBidaliResult = {
     selectedAccount?: WalletAccount
-    onClose?: () => void
     setSelectedAccount: (account: WalletAccount) => void
-    setOnClose: (fn: () => void) => void
     reset: () => void
 }
 
 export const useBidali = (): UseBidaliResult => {
     const selectedAccount = useBidaliStore(state => state.selectedAccount)
-    const onClose = useBidaliStore(state => state.onClose)
     const setSelectedAccount = useBidaliStore(state => state.setSelectedAccount)
-    const setOnClose = useBidaliStore(state => state.setOnClose)
     const reset = useBidaliStore(state => state.reset)
 
-    return { selectedAccount, onClose, setSelectedAccount, setOnClose, reset }
+    return { selectedAccount, setSelectedAccount, reset }
 }

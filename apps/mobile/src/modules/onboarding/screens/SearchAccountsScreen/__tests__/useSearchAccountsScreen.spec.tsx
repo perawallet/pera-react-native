@@ -487,7 +487,7 @@ describe('useSearchAccountsScreen', () => {
         })
     })
 
-    it('algo25 account with no rekeyed: selects the imported account and exits', async () => {
+    it('algo25 account with no rekeyed: navigates to NameAccount to let the user name the import', async () => {
         const algo25Account = {
             id: '1',
             address: 'PARENT_ADDRESS',
@@ -503,13 +503,13 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-                'PARENT_ADDRESS',
-            )
-            expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
-            expect(mockExitAccountFlow).toHaveBeenCalled()
-            expect(mockReplace).not.toHaveBeenCalled()
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: algo25Account,
+            })
         })
+        // Naming, confetti and exit are deferred to NameAccount on confirm.
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        expect(mockSetShouldPlayConfetti).not.toHaveBeenCalled()
     })
 
     it('algo25 account with rekeyed: selects the parent before navigating to ImportRekeyedAddresses', async () => {

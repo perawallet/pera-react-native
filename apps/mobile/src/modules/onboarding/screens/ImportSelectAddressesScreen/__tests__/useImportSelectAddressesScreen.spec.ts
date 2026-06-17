@@ -153,6 +153,39 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ADDR-A')
     })
 
+    test('single imported account navigates to NameAccount for naming', async () => {
+        // Default selection is the first discovered account only.
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+            account: sampleDiscovered[0],
+        })
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+    })
+
+    test('multiple imported accounts keep auto-names and exit without NameAccount', async () => {
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        // Select the second address too so two accounts are committed.
+        act(() => {
+            result.current.toggleSelection('ADDR-B')
+        })
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockExitAccountFlow).toHaveBeenCalled()
+        expect(mockReplace).not.toHaveBeenCalledWith(
+            'NameAccount',
+            expect.anything(),
+        )
+    })
+
     test('Continue without any selection does not commit (button is gated)', async () => {
         mockRouteParams.current = {
             mode: 'import',

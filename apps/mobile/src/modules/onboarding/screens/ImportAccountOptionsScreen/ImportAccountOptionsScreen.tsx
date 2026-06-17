@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWLoadingOverlay, PWScreen, PWView } from '@components/core'
+import { PWScreen, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { QRScannerView } from '@components/QRScannerView'
@@ -27,7 +27,6 @@ export const ImportAccountOptionsScreen = () => {
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,
-        isImporting,
     } = useImportAccountOptionsScreen()
 
     return (
@@ -54,16 +53,9 @@ export const ImportAccountOptionsScreen = () => {
             <QRScannerView
                 isVisible={isQRScannerVisible}
                 onClose={handleCloseQRScanner}
-                onSuccess={(url, restartScanning) =>
-                    void handleQRScannerSuccess(url, restartScanning)
-                }
+                onSuccess={handleQRScannerSuccess}
                 animationType='slide'
                 skipDeepLinkHandler
-            />
-
-            <PWLoadingOverlay
-                isVisible={isImporting}
-                title={t('onboarding.create_account.processing')}
             />
         </>
     )

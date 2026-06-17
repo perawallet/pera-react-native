@@ -10,26 +10,23 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect } from 'react'
+import { useCallback } from 'react'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useBidali } from '../../hooks/useBidali'
+import { useBidali } from './useBidali'
 
 /**
- * Wires the Bidali internal store's `onClose` to the host bottom sheet so
- * inner screens (intro/account-selection/webview) can dismiss the sheet
- * via `useBidali().onClose?.()`. Also resets the Bidali store when the
- * sheet is dismissed.
+ * Close handler for the Bidali sheet's screens. Dismisses *this* sheet directly
+ * through its own bottom-sheet context rather than a shared store callback, so
+ * the close button always dismisses the sheet the user is looking at — even if
+ * more than one Bidali sheet is ever open at once. Also clears the Bidali store
+ * so the next open starts fresh.
  */
-export const useBidaliContent = (): void => {
-    const { setOnClose, reset } = useBidali()
+export const useBidaliClose = (): (() => void) => {
+    const { reset } = useBidali()
     const { dismiss } = useBottomSheetResult<void>()
 
-    const handleClose = useCallback(() => {
+    return useCallback(() => {
         reset()
         dismiss()
     }, [reset, dismiss])
-
-    useLayoutEffect(() => {
-        setOnClose(handleClose)
-    }, [handleClose, setOnClose])
 }

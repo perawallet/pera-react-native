@@ -31,7 +31,6 @@ describe('useBidali', () => {
     it('returns initial state', () => {
         const { result } = renderHook(() => useBidali())
         expect(result.current.selectedAccount).toBeUndefined()
-        expect(result.current.onClose).toBeUndefined()
     })
 
     it('sets selected account', () => {
@@ -40,29 +39,14 @@ describe('useBidali', () => {
         expect(result.current.selectedAccount).toEqual(mockAccount)
     })
 
-    it('sets onClose callback', () => {
+    it('resets state', () => {
         const { result } = renderHook(() => useBidali())
-        const callback = () => {}
-        act(() => result.current.setOnClose(callback))
-        expect(result.current.onClose).toBe(callback)
-    })
 
-    it('resets all state', () => {
-        const { result } = renderHook(() => useBidali())
-        const callback = () => {}
-
-        act(() => {
-            result.current.setSelectedAccount(mockAccount)
-            result.current.setOnClose(callback)
-        })
-
+        act(() => result.current.setSelectedAccount(mockAccount))
         expect(result.current.selectedAccount).toEqual(mockAccount)
-        expect(result.current.onClose).toBe(callback)
 
         act(() => result.current.reset())
-
         expect(result.current.selectedAccount).toBeUndefined()
-        expect(result.current.onClose).toBeUndefined()
     })
 
     it('shares state across hook instances', () => {

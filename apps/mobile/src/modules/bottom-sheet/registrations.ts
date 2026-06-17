@@ -29,6 +29,7 @@
 
 import { registerBottomSheet } from './registry/registry'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
+import { OptInAccountSelectionContent } from '@modules/assets/components/OptInAccountSelectionContent'
 import { AccountActionsContent } from '@modules/accounts/components/AccountActionsContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
@@ -36,6 +37,10 @@ import { PasskeyBiometricRequiredContent } from '@modules/settings/components/Pa
 import { PasskeyHDWalletRequiredContent } from '@modules/settings/components/PasskeyHDWalletRequiredContent'
 
 registerBottomSheet('asset-opt-in', OptInConfirmationContent)
+registerBottomSheet(
+    'asset-opt-in-account-selection',
+    OptInAccountSelectionContent,
+)
 registerBottomSheet('account-actions', AccountActionsContent)
 registerBottomSheet('send-funds', SendFundsContent)
 registerBottomSheet('bidali', BidaliContent)
@@ -53,6 +58,9 @@ declare module '@modules/bottom-sheet' {
         'asset-opt-in': {
             assetId: string
             accountAddress: string
+        }
+        'asset-opt-in-account-selection': {
+            highlightedAddress?: string
         }
         'account-actions': {
             address: string

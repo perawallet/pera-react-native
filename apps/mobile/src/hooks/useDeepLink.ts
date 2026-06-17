@@ -42,6 +42,7 @@ import {
     type BuildDeeplinkInput,
 } from './deeplink/builders'
 import {
+    useAssetOptInDeeplink,
     useBrowserDeeplink,
     useDiscoverPathDeeplink,
     useKeyregDeeplink,
@@ -111,6 +112,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const openBrowser = useBrowserDeeplink()
     const openDiscoverPath = useDiscoverPathDeeplink()
     const handlePeraWebImport = usePeraWebImportDeeplink()
+    const optInAsset = useAssetOptInDeeplink()
     const showError = useDeeplinkErrorHandler()
 
     const isValidDeepLink = (url: string): boolean => {
@@ -284,33 +286,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.ASSET_OPT_IN: {
-                    // Prefer the address explicitly carried by the deep link;
-                    // fall back to the currently selected account so a bare
-                    // `assetId` link still has somewhere to opt in.
-                    const accountAddress =
-                        parsedData.address ??
-                        useAccountsStore.getState().selectedAccountAddress
-                    if (!accountAddress) {
-                        errorToast(
-                            t('errors.deeplink.title'),
-                            t('errors.deeplink.no_account'),
-                        )
-                        break
-                    }
-                    void requestByType(
-                        'asset-opt-in',
-                        {
-                            assetId: parsedData.assetId,
-                            accountAddress,
-                        },
-                        // PWSheetLayout only scrolls when it owns the
-                        // container: needs autoCreateContainer:false + bounded auto size.
-                        {
-                            size: 'auto',
-                            enablePanDownToClose: true,
-                            autoCreateContainer: false,
-                        },
-                    )
+                    // A bare `assetId` link carries no account, so the handler
+                    // prompts the user to pick one; if the link names an
+                    // address it's used directly. The handler also confirms,
+                    // executes the opt-in, and surfaces already-opted-in /
+                    // insufficient-balance as readable errors.
+                    await optInAsset({
+                        assetId: parsedData.assetId,
+                        address: parsedData.address,
+                    })
                     break
                 }
 

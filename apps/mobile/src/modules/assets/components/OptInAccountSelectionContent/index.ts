@@ -10,25 +10,5 @@
  limitations under the License
  */
 
-import {
-    NavigationContainer,
-    NavigationIndependentTree,
-} from '@react-navigation/native'
-
-import { PWView } from '@components/core'
-import { BidaliRoutes } from '../../routes'
-import { useStyles } from './styles'
-
-export const BidaliContent = () => {
-    const styles = useStyles()
-
-    return (
-        <PWView style={styles.container}>
-            <NavigationIndependentTree>
-                <NavigationContainer>
-                    <BidaliRoutes />
-                </NavigationContainer>
-            </NavigationIndependentTree>
-        </PWView>
-    )
-}
+export { OptInAccountSelectionContent } from './OptInAccountSelectionContent'
+export type { OptInAccountSelectionContentProps } from './OptInAccountSelectionContent'
