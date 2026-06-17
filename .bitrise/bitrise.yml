@@ -404,7 +404,16 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/config/GoogleService-Info.plist
+                # The repo ships open-source GoogleService-Info plists; CW
+                # release/QA builds overwrite the variant's plist with the real
+                # one from the (env-aliased) secret. Target the per-variant file
+                # that app.config.js selects for this APP_ENV.
+                if [ "$ENVIRONMENT" == "production" ]; then
+                  TARGET="apps/mobile/config/GoogleService-Info.prod.plist"
+                else
+                  TARGET="apps/mobile/config/GoogleService-Info.staging.plist"
+                fi
+                echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > "$TARGET"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Expo Prebuild
