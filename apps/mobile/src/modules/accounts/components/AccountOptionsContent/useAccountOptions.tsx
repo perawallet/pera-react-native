@@ -307,6 +307,7 @@ export const useAccountOptions = ({
                     cancelLabel={t('account_options.remove_cancel')}
                     confirmVariant='destructive'
                     buttonPaddingStyle='dense'
+                    confirmTestID='remove_account_confirm_button'
                 />
             ),
             options: { size: 'auto', enablePanDownToClose: true },
