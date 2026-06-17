@@ -73,9 +73,10 @@ vi.mock('../passkeys/deriveLegacyPasskeyCredential', async importActual => ({
 }))
 
 // Fully mocked — the real module imports react-native-keystore (native MMKV).
+// createNativePasskeyWriter returns the per-write spy so the batch shares one writer.
 vi.mock('../passkeys/writeNativePasskeyEntry', () => ({
     nativePasskeyEntryExists: entryExistsMock,
-    writeNativePasskeyEntry: writeEntryMock,
+    createNativePasskeyWriter: () => writeEntryMock,
 }))
 
 import type { LegacyPasskey } from '@perawallet/wallet-extension-platform'

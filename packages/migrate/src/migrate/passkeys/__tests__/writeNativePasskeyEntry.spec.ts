@@ -30,7 +30,11 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: storageMock,
 }))
 
-import { writeNativePasskeyEntry } from '../writeNativePasskeyEntry'
+import {
+    createNativePasskeyWriter,
+    writeNativePasskeyEntry,
+    type WriteNativePasskeyEntryParams,
+} from '../writeNativePasskeyEntry'
 
 const OPAQUE_USER_ID = 'dXNlci1pZA' // WebAuthn user.id (base64, opaque)
 const HUMAN_USER_NAME = 'alice@example.com' // WebAuthn user.name (display)
@@ -52,10 +56,21 @@ const writeFor = async (os: 'android' | 'ios') => {
     return keyData.metadata
 }
 
+const entryParams = (credentialId: string): WriteNativePasskeyEntryParams => ({
+    credentialId,
+    origin: 'https://webauthn.io',
+    userId: OPAQUE_USER_ID,
+    userName: HUMAN_USER_NAME,
+    publicKeySpkiDer: new Uint8Array(91),
+    privateKey: new Uint8Array(32),
+})
+
 beforeEach(() => {
     encodeMock.mockClear()
     encryptMock.mockClear()
     storageMock.set.mockClear()
+    masterKeyMock.mockClear()
+    masterKeyMock.mockImplementation(async () => new Uint8Array(32))
 })
 
 describe('writeNativePasskeyEntry metadata mapping', () => {
@@ -72,5 +87,31 @@ describe('writeNativePasskeyEntry metadata mapping', () => {
         expect(metadata.userHandle).toBe(OPAQUE_USER_ID)
         expect(metadata.userId).toBe(OPAQUE_USER_ID)
         expect(metadata.userName).toBe(HUMAN_USER_NAME)
+    })
+})
+
+describe('createNativePasskeyWriter master-key reuse', () => {
+    it('fetches the master key once and reuses it across writes', async () => {
+        const write = createNativePasskeyWriter()
+
+        await write(entryParams('cred-1'))
+        await write(entryParams('cred-2'))
+        await write(entryParams('cred-3'))
+
+        expect(masterKeyMock).toHaveBeenCalledTimes(1)
+        expect(storageMock.set).toHaveBeenCalledTimes(3)
+    })
+
+    it('does not cache a failed fetch, so a later write retries', async () => {
+        masterKeyMock.mockRejectedValueOnce(new Error('keychain locked'))
+        const write = createNativePasskeyWriter()
+
+        await expect(write(entryParams('cred-1'))).rejects.toThrow(
+            'keychain locked',
+        )
+        await write(entryParams('cred-2'))
+
+        expect(masterKeyMock).toHaveBeenCalledTimes(2)
+        expect(storageMock.set).toHaveBeenCalledTimes(1)
     })
 })

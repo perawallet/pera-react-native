@@ -81,28 +81,59 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
     },
 })
 
-const commitEncryptedKeystoreEntry = async (
-    credentialId: string,
-    keyData: ReturnType<typeof buildKeystoreKeyData>,
-): Promise<void> => {
-    const masterKey = await getMasterKey()
-    storage.set(
-        credentialId,
-        encryptData(masterKey, encode(keyData as Parameters<typeof encode>[0])),
-    )
-}
+export type NativePasskeyWriter = (
+    params: WriteNativePasskeyEntryParams,
+) => Promise<void>
 
 /**
- * Persists a credential into the native autofill module's own encrypted MMKV
+ * Creates a writer that fetches and decrypts the keystore master key once and
+ * reuses it for every passkey written through the returned function. Migration
+ * runs on the splash screen while the user waits, so collapsing the per-passkey
+ * secure-storage round-trips into a single fetch keeps that wait short when a
+ * user has many passkeys.
+ *
+ * Persists each credential into the native autofill module's own encrypted MMKV
  * envelope — the module has no JS create-bridge, but its `CredentialRepository`
  * reads the same envelope back under the credentialId key. We bypass the
  * keystore's `importKey`/`generate` helpers: both force a random key id and
  * re-derive a different keypair instead of persisting the one we supply.
+ *
+ * A failed fetch isn't cached, so a later write retries rather than inheriting a
+ * poisoned key.
+ */
+export const createNativePasskeyWriter = (): NativePasskeyWriter => {
+    let masterKeyPromise: ReturnType<typeof getMasterKey> | undefined
+
+    const resolveMasterKey = (): ReturnType<typeof getMasterKey> => {
+        if (!masterKeyPromise) {
+            masterKeyPromise = getMasterKey().catch(err => {
+                masterKeyPromise = undefined
+                throw err
+            })
+        }
+        return masterKeyPromise
+    }
+
+    return async params => {
+        const masterKey = await resolveMasterKey()
+        storage.set(
+            params.credentialId,
+            encryptData(
+                masterKey,
+                encode(
+                    buildKeystoreKeyData(
+                        params,
+                    ) as Parameters<typeof encode>[0],
+                ),
+            ),
+        )
+    }
+}
+
+/**
+ * One-off write that fetches the master key for this single entry. Prefer
+ * {@link createNativePasskeyWriter} when writing many entries in a batch.
  */
 export const writeNativePasskeyEntry = (
     params: WriteNativePasskeyEntryParams,
-): Promise<void> =>
-    commitEncryptedKeystoreEntry(
-        params.credentialId,
-        buildKeystoreKeyData(params),
-    )
+): Promise<void> => createNativePasskeyWriter()(params)

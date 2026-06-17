@@ -28,8 +28,9 @@ import {
     deriveMainKey,
 } from './passkeys/deriveLegacyPasskeyCredential'
 import {
+    createNativePasskeyWriter,
     nativePasskeyEntryExists,
-    writeNativePasskeyEntry,
+    type NativePasskeyWriter,
 } from './passkeys/writeNativePasskeyEntry'
 
 export type PasskeysMigrationResult = {
@@ -102,6 +103,8 @@ type MigrationContext = {
     resolveMnemonic: (seedKeyId: string) => string | undefined
     /** Derived main key per seed; PBKDF2 (210k) runs once and is reused. */
     getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
+    /** Native passkey writer; the keystore master key is fetched once and reused. */
+    writePasskey: NativePasskeyWriter
 }
 
 const createMigrationContext = (): MigrationContext => {
@@ -143,6 +146,7 @@ const createMigrationContext = (): MigrationContext => {
             }
             return pending
         },
+        writePasskey: createNativePasskeyWriter(),
     }
 }
 
@@ -163,11 +167,10 @@ const logDerivationMismatch = ({
     })
 }
 
-const persistMigratedPasskey = async ({
-    passkey,
-    inputs,
-    derived,
-}: PasskeyDerivation): Promise<void> => {
+const persistMigratedPasskey = async (
+    { passkey, inputs, derived }: PasskeyDerivation,
+    writePasskey: NativePasskeyWriter,
+): Promise<void> => {
     // The WebAuthn `user.id` is what the RP gets back as the assertion
     // userHandle. It's required at registration, so a missing one means the
     // legacy row lost it — the credential is still written (it can sign in at
@@ -179,7 +182,7 @@ const persistMigratedPasskey = async ({
         )
     }
 
-    await writeNativePasskeyEntry({
+    await writePasskey({
         credentialId: inputs.credentialId,
         origin: inputs.origin,
         userId: passkey.userHandle ?? '',
@@ -256,7 +259,7 @@ const migrateSinglePasskey = async (
         return 'skipped'
     }
 
-    await persistMigratedPasskey(derivation)
+    await persistMigratedPasskey(derivation, ctx.writePasskey)
     writtenIds.add(inputs.credentialId)
     return 'imported'
 }
