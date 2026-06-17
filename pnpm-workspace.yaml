@@ -29,8 +29,8 @@ catalog:
   eslint-plugin-unused-imports: 4.4.1
   fast-glob: ^3.3.2
   oxfmt: ^0.45.0
-  react: 19.2.3
-  react-dom: 19.2.3
+  react: 19.2.7
+  react-dom: 19.2.7
   tsx: ^4.22.3
   typescript: ^5.9.3
   util: ^0.12.5
@@ -92,11 +92,13 @@ overrides:
   # GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7 (DoS / property shadowing).
   # Was 7.5.8, now vulnerable. Pinned exact to the verified lowest patched 7.x.
   protobufjs@7: 7.6.3
-  react: 19.2.3
-  react-dom: 19.2.3
+  react: 19.2.7
+  react-dom: 19.2.7
   react-native: 0.85.3
   "@react-native/metro-config": 0.85.3
-  react-native-nitro-modules: 0.35.7
+  # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera)
+  # to one native ABI version — leaving it at 0.35.7 splits the tree into 0.35.7 + 0.35.9.
+  react-native-nitro-modules: 0.35.9
   react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^3.0.0
   uuid@<14: 14.0.0
