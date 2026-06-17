@@ -18,7 +18,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { isWatchAccount, type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isWatchAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
