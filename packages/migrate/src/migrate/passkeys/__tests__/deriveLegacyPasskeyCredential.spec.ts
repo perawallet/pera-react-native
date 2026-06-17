@@ -12,7 +12,6 @@
 
 // @vitest-environment node
 import { createPublicKey } from 'node:crypto'
-import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2'
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
@@ -87,13 +86,18 @@ describe('p256RawPublicKeyToSpkiDer', () => {
 })
 
 describe('deriveMainKey', () => {
-    it('matches dp256 genDerivedMainKeyWithBIP39 byte-for-byte (off-thread path)', async () => {
-        const viaDp256 =
-            await new DeterministicP256().genDerivedMainKeyWithBIP39(
-                TEST_MNEMONIC,
-            )
+    it('matches dp256 genDerivedMainKeyWithBIP39 byte-for-byte (off-thread path)', () => {
+        // Frozen output of `dp256.genDerivedMainKeyWithBIP39(TEST_MNEMONIC)` —
+        // dp256's reference path is a synchronous 210k-iteration PBKDF2 in pure JS
+        // (slow), so we assert the off-thread deriveMainKey against its captured
+        // result instead of re-running it every test.
+        const DP256_MAIN_KEY_HEX =
+            '80ec8c0fc085095e052d18e461bd46d792d37c4d4e0e4b25f3a9b49650bf8af7' +
+            'e3760656b3ca62ad50c9a2b64115a205e16bc27712ba76db014d06ed4ac31670'
 
-        expect(Array.from(sharedMainKey)).toEqual(Array.from(viaDp256))
+        expect(Buffer.from(sharedMainKey).toString('hex')).toBe(
+            DP256_MAIN_KEY_HEX,
+        )
         expect(sharedMainKey).toHaveLength(64)
     })
 })
