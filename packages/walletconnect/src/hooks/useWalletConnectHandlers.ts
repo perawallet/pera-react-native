@@ -39,7 +39,7 @@ import {
     useEnqueueArc0001SignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import type WalletConnect from '@walletconnect/client'
+import type WalletConnect from '@perawallet/walletconnect'
 import { useCallback } from 'react'
 import {
     AlgorandChainId,

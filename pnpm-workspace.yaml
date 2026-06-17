@@ -130,11 +130,16 @@ minimumReleaseAge: 10080
 #     — security pin to 7.6.3 (GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7);
 #       7.6.3 ages out 2026-06-16. Maintainer continuity + SLSA provenance verified.
 #       Remove once it has aged past the window.
+#   @perawallet/walletconnect
+#     — first-party WC v1 fork pinned to 1.0.0 (published 2026-06-12, replaces the
+#       unmaintained @walletconnect/* v1.8.0 packages). Maintainer continuity verified
+#       (Pera/Hipo team), no install scripts. Ages out 2026-06-19; remove after.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
   - protobufjs
+  - "@perawallet/walletconnect"
   - expo
   - "expo-*"
   - "@expo/*"

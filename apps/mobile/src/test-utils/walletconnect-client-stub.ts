@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// In-memory replacement for `@walletconnect/client` (WC v1).
+// In-memory replacement for `@perawallet/walletconnect` (WC v1 fork).
 //
 // The real package opens a relay socket which jsdom can't service. The
 // integration tests need only the surface that
@@ -29,7 +29,7 @@
 // `approveSession` / `rejectSession` calls.
 //
 // Aliased into the test build via `apps/mobile/vitest.config.ts`, so
-// every consumer that imports `@walletconnect/client` ends up with
+// every consumer that imports `@perawallet/walletconnect` ends up with
 // this class instead of the production transport.
 
 import { type Optional } from '@perawallet/wallet-core-shared'
@@ -133,5 +133,5 @@ class StubWalletConnect {
     }
 }
 
-// Mirror @walletconnect/client's default-export shape.
+// Mirror @perawallet/walletconnect's default-export shape.
 export default StubWalletConnect

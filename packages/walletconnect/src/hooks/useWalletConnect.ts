@@ -27,7 +27,7 @@ import {
     registerConnector,
     setConnectorHandlerBinder,
 } from '../connection'
-import WalletConnect from '@walletconnect/client'
+import WalletConnect from '@perawallet/walletconnect'
 import { useCallback, useEffect, useRef } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from './useWalletConnectHandlers'

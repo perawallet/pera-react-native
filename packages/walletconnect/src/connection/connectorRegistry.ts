@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import WalletConnect from '@walletconnect/client'
+import WalletConnect from '@perawallet/walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
 import { PERA_CLIENT_META, WC_DELIVERY_TIMEOUT_MS } from '../constants'
 import {
@@ -59,14 +59,14 @@ let handlerBinder: HandlerBinder | null = null
 /**
  * Whether a connector's bridge WebSocket is currently OPEN.
  *
- * WalletConnect v1.8.0 exposes no public socket-state API, and the
+ * The WC v1 protocol exposes no public socket-state API, and the
  * `transport_open` / `transport_close` events `Connector._initTransport`
- * subscribes to are never emitted — `@walletconnect/socket-transport`'s
- * `SocketTransport` only fires `message` and `error`. The one real-time
- * signal is the connector's private `_transport`: a `SocketTransport`
- * whose public `connected` getter is `readyState === 1`.
+ * subscribes to are never emitted — the bundled `SocketTransport` only
+ * fires `message` and `error`. The one real-time signal is the connector's
+ * private `_transport`: a `SocketTransport` whose public `connected` getter
+ * is `readyState === 1`.
  *
- * `@walletconnect/client@1.8.0` is pinned to an exact version, so this
+ * `@perawallet/walletconnect` is pinned to an exact version, so this
  * internal field is stable.
  */
 const isSocketOpen = (connector: WalletConnect): boolean =>

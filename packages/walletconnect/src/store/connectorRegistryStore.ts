@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import type WalletConnect from '@walletconnect/client'
+import type WalletConnect from '@perawallet/walletconnect'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 /**
