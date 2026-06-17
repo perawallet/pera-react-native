@@ -121,9 +121,9 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
             encryptData(
                 masterKey,
                 encode(
-                    buildKeystoreKeyData(
-                        params,
-                    ) as Parameters<typeof encode>[0],
+                    buildKeystoreKeyData(params) as Parameters<
+                        typeof encode
+                    >[0],
                 ),
             ),
         )

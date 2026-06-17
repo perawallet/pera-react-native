@@ -77,12 +77,12 @@ const isSessionValid = (
 ): fields is ValidSessionFields =>
     Boolean(
         fields.bridge &&
-            fields.topic &&
-            fields.key &&
-            fields.clientId &&
-            fields.peerId &&
-            fields.chainId != null &&
-            fields.accounts.length > 0,
+        fields.topic &&
+        fields.key &&
+        fields.clientId &&
+        fields.peerId &&
+        fields.chainId != null &&
+        fields.accounts.length > 0,
     )
 
 const toConnection = (

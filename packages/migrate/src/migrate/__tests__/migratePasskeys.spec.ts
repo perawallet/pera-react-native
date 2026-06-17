@@ -158,7 +158,9 @@ describe('migratePasskeys', () => {
     })
 
     it('does not double-prefix a siteUrl that already has a scheme', async () => {
-        await migratePasskeys([buildPasskey({ siteUrl: 'https://webauthn.io' })])
+        await migratePasskeys([
+            buildPasskey({ siteUrl: 'https://webauthn.io' }),
+        ])
 
         expect(deriveCredentialMock).toHaveBeenCalledWith(
             expect.objectContaining({ origin: 'https://webauthn.io' }),
