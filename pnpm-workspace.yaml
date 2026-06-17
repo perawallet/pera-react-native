@@ -29,8 +29,11 @@ catalog:
   eslint-plugin-unused-imports: 4.4.1
   fast-glob: ^3.3.2
   oxfmt: ^0.45.0
-  react: 19.2.7
-  react-dom: 19.2.7
+  # Must equal react-native 0.85.3's bundled renderer version. RN does an exact
+  # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
+  # "Incompatible React versions". Keep in lockstep with the override below.
+  react: 19.2.3
+  react-dom: 19.2.3
   tsx: ^4.22.3
   typescript: ^5.9.3
   util: ^0.12.5
@@ -92,8 +95,9 @@ overrides:
   # GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7 (DoS / property shadowing).
   # Was 7.5.8, now vulnerable. Pinned exact to the verified lowest patched 7.x.
   protobufjs@7: 7.6.3
-  react: 19.2.7
-  react-dom: 19.2.7
+  # Pinned to react-native 0.85.3's bundled renderer (19.2.3); see catalog note.
+  react: 19.2.3
+  react-dom: 19.2.3
   react-native: 0.85.3
   "@react-native/metro-config": 0.85.3
   # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera)
