@@ -262,14 +262,9 @@ module.exports = {
     // Firebase - reads config from googleServicesFile paths above
     '@react-native-firebase/app',
     '@react-native-firebase/crashlytics',
-    // Vision Camera for QR code scanning
-    [
-      'react-native-vision-camera',
-      {
-        cameraPermissionText: 'Pera needs access to your camera to scan QR codes.',
-        enableCodeScanner: true,
-      },
-    ],
+    // react-native-vision-camera v5 ships no Expo config plugin (v4 did).
+    // Camera permission is declared directly: ios.infoPlist.NSCameraUsageDescription
+    // + android.permissions 'android.permission.CAMERA' above.
     // Image picker for contact photos
     [
       'expo-image-picker',

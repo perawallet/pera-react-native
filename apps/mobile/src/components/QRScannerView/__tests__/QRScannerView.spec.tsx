@@ -22,7 +22,10 @@ vi.mock('react-native-vision-camera', () => ({
         requestPermission: vi.fn(),
     }),
     Camera: () => <div data-testid='camera'>Camera</div>,
-    useCodeScanner: vi.fn(() => ({})),
+}))
+
+vi.mock('react-native-vision-camera-barcode-scanner', () => ({
+    useBarcodeScannerOutput: vi.fn(() => ({})),
 }))
 
 vi.mock('@assets/images/camera-overlay.svg', () => {
