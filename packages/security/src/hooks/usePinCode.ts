@@ -224,7 +224,21 @@ export const usePinCode = (): UsePinCodeResult => {
             // Check regular PIN first. If it matches, the duress record is not
             // even loaded — preserves the fast path for the common case.
             const record = await loadRecord()
-            if (record && (await verifyPinAgainstRecord(pin, record))) {
+            // Enforce lockout from the authoritative record itself, not just
+            // the async-hydrated store flag — closes the startup race where a
+            // guess slips through before the in-memory lockout state loads.
+            // Fail closed: when the record says locked, the regular PIN cannot
+            // succeed (and we skip the hash to avoid a timing signal). The
+            // duress path below stays reachable on purpose.
+            const lockedByRecord =
+                record !== null &&
+                record.lockoutEndTime !== null &&
+                Date.now() < record.lockoutEndTime
+            if (
+                !lockedByRecord &&
+                record &&
+                (await verifyPinAgainstRecord(pin, record))
+            ) {
                 return { kind: 'ok' }
             }
 

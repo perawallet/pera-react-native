@@ -132,6 +132,7 @@ describe('usePinCode', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         kmsMocks.pinBytes = null
+        kmsMocks.duressPinBytes = null
         kmsMocks.biometricBytes = null
         wireBlobMocks()
     })
@@ -328,6 +329,53 @@ describe('usePinCode', () => {
             outcome = await result.current.verifyPin('654321')
         })
         expect(outcome).toEqual({ kind: 'fail' })
+    }, 30_000)
+
+    test('verifyPin fails closed for the correct PIN when the record itself is locked', async () => {
+        // Store flag deliberately NOT set (simulates the startup race) — the
+        // lockout must be honored from the persisted record, not the store.
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+
+        const base = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord({
+            ...base,
+            failedAttempts: 5,
+            lockoutEndTime: Date.now() + 60_000,
+        })
+
+        const { result } = renderHook(() => usePinCode())
+
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
+        await act(async () => {
+            outcome = await result.current.verifyPin('123456')
+        })
+        expect(outcome).toEqual({ kind: 'fail' })
+    }, 30_000)
+
+    test('verifyPin still returns `duress` when the record is locked (escape hatch preserved)', async () => {
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+
+        const base = await createPinRecord('123456')
+        kmsMocks.pinBytes = serializePinRecord({
+            ...base,
+            failedAttempts: 5,
+            lockoutEndTime: Date.now() + 60_000,
+        })
+        kmsMocks.duressPinBytes = serializePinRecord(
+            await createPinRecord('111111'),
+        )
+
+        const { result } = renderHook(() => usePinCode())
+
+        let outcome: Awaited<
+            ReturnType<typeof result.current.verifyPin>
+        > | null = null
+        await act(async () => {
+            outcome = await result.current.verifyPin('111111')
+        })
+        expect(outcome).toEqual({ kind: 'duress' })
     }, 30_000)
 
     test('verifyPin returns `fail` when no PIN stored', async () => {
