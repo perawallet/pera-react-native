@@ -12,7 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = {
+    bottomInset: number
+}
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
     return {
         container: {
             flex: 1,
@@ -77,7 +81,10 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: theme.spacing.md,
-            marginVertical: theme.spacing.lg,
+            // Footer sits outside the PWFlatList, so it doesn't get the list's
+            // sheet bottom inset — add the safe-area inset here so the buttons
+            // clear the home indicator / gesture bar.
+            marginBottom: theme.spacing.lg + bottomInset,
             marginHorizontal: theme.spacing.xl,
         },
         cancelButton: {

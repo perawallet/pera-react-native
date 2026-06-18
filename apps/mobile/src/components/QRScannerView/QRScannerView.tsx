@@ -36,7 +36,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
 
     const {
         device,
-        codeScanner,
+        scannerOutput,
         scanningEnabled,
         permissionDenied,
         hasPermission,
@@ -78,7 +78,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                     />
                     <Camera
                         style={styles.camera}
-                        codeScanner={codeScanner}
+                        outputs={[scannerOutput]}
                         device={device}
                         isActive={scanningEnabled}
                     />

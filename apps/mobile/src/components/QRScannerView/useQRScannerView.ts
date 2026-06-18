@@ -16,8 +16,16 @@ import { useEffect, useRef, useState } from 'react'
 import {
     useCameraDevice,
     useCameraPermission,
-    useCodeScanner,
 } from 'react-native-vision-camera'
+import {
+    useBarcodeScannerOutput,
+    type TargetBarcodeFormat,
+} from 'react-native-vision-camera-barcode-scanner'
+
+// Hoisted to a stable reference: useBarcodeScannerOutput memoizes the native
+// output on this array's identity, so an inline literal would recreate the
+// output every render.
+const BARCODE_FORMATS: TargetBarcodeFormat[] = ['qr-code', 'ean-13']
 
 export type UseQRScannerViewProps = {
     isVisible: boolean
@@ -46,8 +54,8 @@ export const useQRScannerView = ({
 
     const { handleDeepLink, isValidDeepLink } = useDeepLink()
 
-    // Synchronous guard against double-fire. Vision Camera's
-    // `onCodeScanned` is invoked from the native camera frame loop and
+    // Synchronous guard against double-fire. The barcode scanner's
+    // `onBarcodeScanned` is invoked from the native camera frame loop and
     // can fire multiple times in the same tick — a `setScanningEnabled`
     // (React state) update doesn't propagate to the `isActive` prop fast
     // enough to suppress the second call. Without this ref we end up
@@ -67,12 +75,12 @@ export const useQRScannerView = ({
         }
     }, [isVisible])
 
-    const codeScanner = useCodeScanner({
-        codeTypes: ['qr', 'ean-13'],
-        onCodeScanned: codes => {
+    const scannerOutput = useBarcodeScannerOutput({
+        barcodeFormats: BARCODE_FORMATS,
+        onBarcodeScanned: barcodes => {
             try {
                 if (handlingRef.current) return
-                const url = codes.at(0)?.value
+                const url = barcodes.at(0)?.rawValue
                 if (!url) return
                 if (!isValidDeepLink(url)) {
                     // Unrecognized code — leave the scanner armed so the
@@ -122,6 +130,9 @@ export const useQRScannerView = ({
                 logger.error('QRScannerView: QR scanner error:', { error })
             }
         },
+        onError: error => {
+            logger.error('QRScannerView: barcode scanner failed:', { error })
+        },
     })
 
     useEffect(() => {
@@ -144,7 +155,7 @@ export const useQRScannerView = ({
 
     return {
         hasPermission,
-        codeScanner,
+        scannerOutput,
         scanningEnabled,
         permissionDenied,
         device,
