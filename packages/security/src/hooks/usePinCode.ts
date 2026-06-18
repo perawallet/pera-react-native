@@ -287,6 +287,15 @@ export const usePinCode = (): UsePinCodeResult => {
     const checkAutoLock = useCallback(async () => {
         if (!(await checkPinEnabled())) return false
         if (autoLockStartedAt == null) return false
+        // Fail closed on a tampered/corrupted persisted timestamp: a non-finite
+        // (e.g. NaN) or future value would otherwise make the elapsed check
+        // false and silently skip the lock. Treat anything but a valid past
+        // timestamp as "should lock".
+        if (
+            !Number.isFinite(autoLockStartedAt) ||
+            autoLockStartedAt > Date.now()
+        )
+            return true
         const elapsed = Date.now() - autoLockStartedAt
         return elapsed > AUTO_LOCK_TIMEOUT_MS
     }, [autoLockStartedAt, checkPinEnabled])
