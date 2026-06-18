@@ -13,92 +13,94 @@
 import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
-    bottomInset: number
+    bottomInset?: number
 }
 
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
-    return {
-        container: {
-            flex: 1,
-            padding: theme.spacing.xl,
-        },
-        contentContainer: {
-            paddingBottom: theme.spacing.xl,
-        },
-        icon: {
-            width: theme.spacing['4xl'],
-            height: theme.spacing['4xl'],
-            borderRadius: theme.spacing['4xl'],
-            marginVertical: theme.spacing.md,
-        },
-        iconContainer: {
-            width: theme.spacing['4xl'],
-            height: theme.spacing['4xl'],
-            borderRadius: theme.spacing['4xl'],
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: theme.colors.layerGrayLighter,
-        },
-        headerContainer: {
-            alignItems: 'center',
-            gap: theme.spacing.xl,
-        },
-        titleContainer: {
-            alignItems: 'center',
-        },
-        title: {
-            textAlign: 'center',
-        },
-        networksContainer: {
-            alignItems: 'center',
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-        },
-        permissionsContainer: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.lg,
-            paddingBottom: theme.spacing.lg,
-            width: '100%',
-        },
-        permissionsContent: {
-            gap: theme.spacing.md,
-            paddingTop: theme.spacing.md,
-        },
-        panelTitle: {
-            color: theme.colors.textGray,
-        },
-        accountSelectionContainer: {
-            marginTop: theme.spacing.lg,
-            alignSelf: 'flex-start',
-        },
-        permissionsTitle: {
-            color: theme.colors.textGray,
-            marginBottom: theme.spacing.md,
-        },
-        buttonContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: theme.spacing.md,
-            // Footer sits outside the PWFlatList, so it doesn't get the list's
-            // sheet bottom inset — add the safe-area inset here so the buttons
-            // clear the home indicator / gesture bar.
-            marginBottom: theme.spacing.lg + bottomInset,
-            marginHorizontal: theme.spacing.xl,
-        },
-        cancelButton: {
-            flexGrow: 1,
-        },
-        connectButton: {
-            flexGrow: 2,
-        },
-        accountItem: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: theme.spacing.sm,
-            paddingVertical: theme.spacing.sm,
-        },
-    }
-})
+export const useStyles = makeStyles(
+    (theme, { bottomInset = 0 }: StyleProps = {}) => {
+        return {
+            container: {
+                flex: 1,
+                padding: theme.spacing.xl,
+            },
+            contentContainer: {
+                paddingBottom: theme.spacing.xl,
+            },
+            icon: {
+                width: theme.spacing['4xl'],
+                height: theme.spacing['4xl'],
+                borderRadius: theme.spacing['4xl'],
+                marginVertical: theme.spacing.md,
+            },
+            iconContainer: {
+                width: theme.spacing['4xl'],
+                height: theme.spacing['4xl'],
+                borderRadius: theme.spacing['4xl'],
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: theme.colors.layerGrayLighter,
+            },
+            headerContainer: {
+                alignItems: 'center',
+                gap: theme.spacing.xl,
+            },
+            titleContainer: {
+                alignItems: 'center',
+            },
+            title: {
+                textAlign: 'center',
+            },
+            networksContainer: {
+                alignItems: 'center',
+                flexDirection: 'row',
+                gap: theme.spacing.sm,
+            },
+            permissionsContainer: {
+                backgroundColor: theme.colors.layerGrayLighter,
+                borderRadius: theme.spacing.lg,
+                paddingHorizontal: theme.spacing.lg,
+                paddingBottom: theme.spacing.lg,
+                width: '100%',
+            },
+            permissionsContent: {
+                gap: theme.spacing.md,
+                paddingTop: theme.spacing.md,
+            },
+            panelTitle: {
+                color: theme.colors.textGray,
+            },
+            accountSelectionContainer: {
+                marginTop: theme.spacing.lg,
+                alignSelf: 'flex-start',
+            },
+            permissionsTitle: {
+                color: theme.colors.textGray,
+                marginBottom: theme.spacing.md,
+            },
+            buttonContainer: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: theme.spacing.md,
+                // Footer sits outside the PWFlatList, so it doesn't get the list's
+                // sheet bottom inset — add the safe-area inset here so the buttons
+                // clear the home indicator / gesture bar.
+                marginBottom: theme.spacing.lg + bottomInset,
+                marginHorizontal: theme.spacing.xl,
+            },
+            cancelButton: {
+                flexGrow: 1,
+            },
+            connectButton: {
+                flexGrow: 2,
+            },
+            accountItem: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: theme.spacing.sm,
+                paddingVertical: theme.spacing.sm,
+            },
+        }
+    },
+)
