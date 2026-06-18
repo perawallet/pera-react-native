@@ -337,6 +337,15 @@ describe('logging', () => {
             ).toContain('[REDACTED]')
         })
 
+        test('redacts exact `txn`/`stxn` query params but preserves `txnGroup`', () => {
+            const out = redactSensitiveUrl(
+                'foo://x?txn=AAID&stxn=BBIE&txnGroup=g1',
+            )
+            expect(out).toContain('txn=[REDACTED]')
+            expect(out).toContain('stxn=[REDACTED]')
+            expect(out).toContain('txnGroup=g1')
+        })
+
         test('redacts JSON-embedded sensitive values', () => {
             // The Pera Web QR deeplink is a raw JSON string, not a URL.
             // Without JSON-aware redaction the 32-byte cipher key would
@@ -380,6 +389,65 @@ describe('logging', () => {
             }) as { payload: { mnemonic: string; type: string } }
             expect(out.payload.mnemonic).toBe('[REDACTED]')
             expect(out.payload.type).toBe('RECOVER_ADDRESS')
+        })
+
+        test('redacts WalletConnect transaction blobs (txn) but keeps signer addresses', () => {
+            const out = redactSensitiveContext({
+                payload: {
+                    params: [{ txn: 'AAIDAAEAAQAABQ==', signers: ['ADDR1'] }],
+                },
+            }) as {
+                payload: { params: Array<{ txn: string; signers: string[] }> }
+            }
+            expect(out.payload.params[0].txn).toBe('[REDACTED]')
+            expect(out.payload.params[0].signers).toEqual(['ADDR1'])
+        })
+
+        test('only the exact `txn` key is redacted — txnGroup/txns/txnBytes are preserved', () => {
+            const out = redactSensitiveContext({
+                txn: 'AAIDAAEAAQAABQ==',
+                txnGroup: 'group-id-1',
+                txns: ['t1', 't2'],
+                txnBytes: 1234,
+            }) as {
+                txn: string
+                txnGroup: string
+                txns: string[]
+                txnBytes: number
+            }
+            expect(out.txn).toBe('[REDACTED]')
+            expect(out.txnGroup).toBe('group-id-1')
+            expect(out.txns).toEqual(['t1', 't2'])
+            expect(out.txnBytes).toBe(1234)
+        })
+
+        test('redacts other raw transaction-payload keys (stxn, signed/raw/unsigned txn) but keeps diagnostic txn* fields', () => {
+            const out = redactSensitiveContext({
+                stxn: 'gqNzaWfEQ==',
+                signedTxns: ['blob1', 'blob2'],
+                rawTxns: ['raw1'],
+                unsignedTxn: 'unsigned-blob',
+                // diagnostic siblings must survive
+                txnGroup: 'group-id-1',
+                txns: ['t1', 't2'],
+                txnBytes: 1234,
+            }) as Record<string, unknown>
+
+            expect(out.stxn).toBe('[REDACTED]')
+            expect(out.signedTxns).toBe('[REDACTED]')
+            expect(out.rawTxns).toBe('[REDACTED]')
+            expect(out.unsignedTxn).toBe('[REDACTED]')
+            expect(out.txnGroup).toBe('group-id-1')
+            expect(out.txns).toEqual(['t1', 't2'])
+            expect(out.txnBytes).toBe(1234)
+        })
+
+        test('redacts a stringified `txn` field but preserves `txnGroup` in JSON strings', () => {
+            const out = redactSensitiveContext({
+                raw: '{"txn":"AAID","txnGroup":"g1"}',
+            }) as { raw: string }
+            expect(out.raw).toContain('"txn":"[REDACTED]"')
+            expect(out.raw).toContain('"txnGroup":"g1"')
         })
 
         test('redacts URL strings in non-sensitive keys', () => {
