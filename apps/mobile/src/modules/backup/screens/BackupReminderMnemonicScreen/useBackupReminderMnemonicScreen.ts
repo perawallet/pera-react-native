@@ -18,6 +18,7 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { indicesToMnemonicWords } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '../../hooks'
@@ -80,8 +81,8 @@ export const useBackupReminderMnemonicScreen =
             let cancelled = false
             setIsLoading(true)
             setError(null)
-            executeWithMnemonic(resolvedWords => {
-                if (!cancelled) setWords(resolvedWords)
+            executeWithMnemonic(indices => {
+                if (!cancelled) setWords(indicesToMnemonicWords(indices))
             })
                 .catch(err => {
                     logger.error(

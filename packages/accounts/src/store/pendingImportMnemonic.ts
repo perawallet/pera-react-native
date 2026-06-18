@@ -12,7 +12,11 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { registerStore } from '@perawallet/wallet-core-shared'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
+import {
+    indicesToMnemonicWords,
+    mnemonicWordsToIndices,
+    zeroBytes,
+} from '@perawallet/wallet-core-kms'
 
 /**
  * Transient, in-memory handoff for a recovery passphrase scanned from a QR /
@@ -25,26 +29,41 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
  * reporters, navigation devtools, or future state persistence. This store is
  * plain (no `persist` middleware) so it never touches disk.
  *
- * It is held as UTF-8 `Uint8Array` bytes rather than a `string` so the retained
- * secret can actually be wiped: JS strings are immutable and we have no control
- * over the React Native heap/GC, so a stored string can't be zeroed and may
- * linger. This mirrors how other in-memory secrets are handled in the repo —
- * PIN (`packages/security/src/pinRecord.ts`), card tokens, and seed/key
- * material all encode to bytes and scrub with `zeroBytes`. `clear`/`consume`/
- * `reset` overwrite the buffer with zeros via `zeroBytes`. (The transient
- * strings at the boundaries — the scanned URL going in, and the decoded value
- * handed to the Import screen — are still unwipeable, but the value the store
- * retains between set and consume is.)
+ * The retained value is held as a scrubbable typed array, never a `string`: JS
+ * strings are immutable and we have no control over the React Native heap/GC,
+ * so a stored string can't be zeroed and may linger. Whenever every token is a
+ * wordlist word (the normal case for a recovery phrase) we store a
+ * `Uint16Array` of wordlist indices: it is zeroable AND, unlike UTF-8 bytes, it
+ * holds opaque numbers rather than the dictionary words a memory scanner could
+ * grep for. Input is not guaranteed valid (the deeplink only checks word
+ * count), so a phrase containing a non-wordlist token falls back to UTF-8
+ * `Uint8Array` bytes — still scrubbable, just not obfuscated.
+ *
+ * `clear`/`consume`/`reset` overwrite whichever buffer is held with zeros via
+ * `zeroBytes`. (The transient strings at the boundaries — the scanned URL going
+ * in, and the decoded value handed to the Import screen — are still unwipeable,
+ * but the value the store retains between set and consume is.)
  */
 type PendingImportMnemonicState = {
-    pendingMnemonicBytes: Uint8Array | null
+    /** Wordlist indices for a phrase whose every token is a wordlist word. */
+    pendingIndices: Uint16Array | null
+    /** UTF-8 fallback for a phrase containing a non-wordlist token. */
+    pendingRawBytes: Uint8Array | null
     resetState: () => void
 }
 
 const STORE_NAME = 'pending-import-mnemonic-store'
 
 const initialState = {
-    pendingMnemonicBytes: null as Uint8Array | null,
+    pendingIndices: null as Uint16Array | null,
+    pendingRawBytes: null as Uint8Array | null,
+}
+
+const wipe = (state: {
+    pendingIndices: Uint16Array | null
+    pendingRawBytes: Uint8Array | null
+}): void => {
+    zeroBytes(state.pendingIndices, state.pendingRawBytes)
 }
 
 export const usePendingImportMnemonicStore: UseBoundStore<
@@ -52,34 +71,58 @@ export const usePendingImportMnemonicStore: UseBoundStore<
 > = create<PendingImportMnemonicState>((set, get) => ({
     ...initialState,
     resetState: () => {
-        zeroBytes(get().pendingMnemonicBytes)
+        wipe(get())
         set(initialState)
     },
 }))
 
 export const setPendingImportMnemonic = (mnemonic: string): void => {
-    usePendingImportMnemonicStore.setState({
-        pendingMnemonicBytes: new TextEncoder().encode(mnemonic.trim()),
-    })
+    const words = mnemonic.trim().split(/\s+/).filter(Boolean)
+    const indices = mnemonicWordsToIndices(words)
+    // Zero any buffer already held (e.g. a previous scan) before it is
+    // overwritten and left to GC — including the cross-type case where an
+    // indexed phrase replaces raw bytes, or vice-versa.
+    wipe(usePendingImportMnemonicStore.getState())
+    usePendingImportMnemonicStore.setState(
+        indices
+            ? { pendingIndices: indices, pendingRawBytes: null }
+            : {
+                  pendingIndices: null,
+                  pendingRawBytes: new TextEncoder().encode(words.join(' ')),
+              },
+    )
 }
 
 export const clearPendingImportMnemonic = (): void => {
-    zeroBytes(usePendingImportMnemonicStore.getState().pendingMnemonicBytes)
-    usePendingImportMnemonicStore.setState({ pendingMnemonicBytes: null })
+    wipe(usePendingImportMnemonicStore.getState())
+    usePendingImportMnemonicStore.setState({
+        pendingIndices: null,
+        pendingRawBytes: null,
+    })
 }
 
 /**
  * Returns the pending mnemonic (if any) and clears it in the same call: the
- * decoded string is handed back, then the buffer the store held is zeroed and
- * dropped, so the secret does not linger in the store after the Import screen
- * has read it.
+ * decoded string is rebuilt from whichever buffer the store held, then that
+ * buffer is zeroed and dropped, so the secret does not linger in the store
+ * after the Import screen has read it.
  */
 export const consumePendingImportMnemonic = (): string | null => {
-    const bytes = usePendingImportMnemonicStore.getState().pendingMnemonicBytes
-    if (!bytes) return null
-    const mnemonic = new TextDecoder().decode(bytes)
-    zeroBytes(bytes)
-    usePendingImportMnemonicStore.setState({ pendingMnemonicBytes: null })
+    const { pendingIndices, pendingRawBytes } =
+        usePendingImportMnemonicStore.getState()
+
+    let mnemonic: string | null = null
+    if (pendingIndices) {
+        mnemonic = indicesToMnemonicWords(pendingIndices).join(' ')
+    } else if (pendingRawBytes) {
+        mnemonic = new TextDecoder().decode(pendingRawBytes)
+    }
+
+    zeroBytes(pendingIndices, pendingRawBytes)
+    usePendingImportMnemonicStore.setState({
+        pendingIndices: null,
+        pendingRawBytes: null,
+    })
     return mnemonic
 }
 

@@ -16,6 +16,7 @@ import type { Key } from '@algorandfoundation/keystore'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { InvalidKeyError, KeyNotFoundError } from '../../errors'
 import { SeedScheme } from '../../constants'
+import { indicesToMnemonicWords } from '../../crypto/mnemonic-indices'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -278,7 +279,7 @@ describe('useKMS', () => {
     it('executeWithMnemonic for a bip39 seed exports + decodes via entropyToMnemonic', async () => {
         seedBip39Root('hd-1', 'abcdef01')
         const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
-        mockEntropyToMnemonic.mockReturnValue('alpha bravo charlie')
+        mockEntropyToMnemonic.mockReturnValue('ability able about')
         mockKeyStoreExport.mockResolvedValueOnce({
             metadata: { scheme: SeedScheme.Bip39, entropy: 'abcdef01' },
         })
@@ -289,17 +290,17 @@ describe('useKMS', () => {
             received = await result.current.executeWithMnemonic(
                 child.id,
                 'backup',
-                words => [...words],
+                indices => indicesToMnemonicWords(indices),
             )
         })
         expect(mockKeyStoreExport).toHaveBeenCalledWith('hd-1')
-        expect(received).toEqual(['alpha', 'bravo', 'charlie'])
+        expect(received).toEqual(['ability', 'able', 'about'])
     })
 
     it('executeWithMnemonic for an algo25 seed exports + decodes via mnemonicFromSeed', async () => {
         seedAlgo25Root('algo-1')
         const child = childOf('algo-1-ed25519', 'algo-1', 'ed25519')
-        mockMnemonicFromSeed.mockReturnValue('one two three')
+        mockMnemonicFromSeed.mockReturnValue('above absent absorb')
         mockKeyStoreExport.mockResolvedValueOnce({
             privateKey: new Uint8Array(32).fill(7),
         })
@@ -310,11 +311,38 @@ describe('useKMS', () => {
             received = await result.current.executeWithMnemonic(
                 child.id,
                 'backup',
-                words => [...words],
+                indices => indicesToMnemonicWords(indices),
             )
         })
         expect(mockKeyStoreExport).toHaveBeenCalledWith('algo-1')
-        expect(received).toEqual(['one', 'two', 'three'])
+        expect(received).toEqual(['above', 'absent', 'absorb'])
+    })
+
+    it('executeWithMnemonic zeroes the index buffer after the handler returns', async () => {
+        seedBip39Root('hd-1', 'abcdef01')
+        const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+        mockEntropyToMnemonic.mockReturnValue('ability able about')
+        mockKeyStoreExport.mockResolvedValueOnce({
+            metadata: { scheme: SeedScheme.Bip39, entropy: 'abcdef01' },
+        })
+
+        const { result } = renderHook(() => useKMS())
+        let captured: Optional<Uint16Array>
+        await act(async () => {
+            await result.current.executeWithMnemonic(
+                child.id,
+                'backup',
+                indices => {
+                    captured = indices
+                    // [ability, able, about] → non-zero indices, so a wipe is
+                    // unambiguous.
+                    expect(Array.from(indices)).toEqual([1, 2, 3])
+                    return indicesToMnemonicWords(indices)
+                },
+            )
+        })
+        // Scrubbed once the session ends, not left for GC.
+        expect(captured && Array.from(captured)).toEqual([0, 0, 0])
     })
 
     it('getKey returns null and triggers async keystore.remove when expiresAt is in the past', () => {

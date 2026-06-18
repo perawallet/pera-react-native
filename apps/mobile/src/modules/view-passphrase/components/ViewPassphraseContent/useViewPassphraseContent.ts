@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { indicesToMnemonicWords } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '@modules/backup'
 
@@ -49,8 +50,8 @@ export const useViewPassphraseContent = ({
         let cancelled = false
         setIsLoading(true)
         setError(null)
-        executeWithMnemonic((resolvedWords: string[]) => {
-            if (!cancelled) setWords(resolvedWords)
+        executeWithMnemonic(indices => {
+            if (!cancelled) setWords(indicesToMnemonicWords(indices))
         })
             .catch(err => {
                 logger.error('ViewPassphrase: failed to retrieve mnemonic', {

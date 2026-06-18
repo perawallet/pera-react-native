@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
+    indicesToMnemonicWords,
     pickDistinctIndexes,
     type MnemonicWordAtPosition,
 } from '@perawallet/wallet-core-kms'
@@ -59,7 +60,8 @@ export const useRandomMnemonicForAddress = (
         let cancelled = false
         setState({ picks: null, error: null, isLoading: true })
 
-        executeWithMnemonic(words => {
+        executeWithMnemonic(indices => {
+            const words = indicesToMnemonicWords(indices)
             const indexes = pickDistinctIndexes(count, words.length).sort(
                 (a, b) => a - b,
             )
