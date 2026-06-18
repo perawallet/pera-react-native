@@ -53,12 +53,22 @@ describe('registerVerificationResponseSchema', () => {
 })
 
 describe('onboardingDetailsResponseSchema', () => {
-    it('keeps the verification state and strips the profile fields', () => {
+    it('keeps the verification state and the modeled profile fields, stripping the rest', () => {
         const parsed = onboardingDetailsResponseSchema.parse({
-            id: 'ob_1',
+            id: 'ob_1', // unmodeled → stripped
             firstName: 'John',
+            lastName: 'Doe',
+            dateOfBirth: '1990-01-02T00:00:00.000Z',
+            countryOfNationality: 'GB',
+            contactVerificationId: 'cv_1', // unmodeled → stripped
             verificationState: 'VERIFIED',
         })
-        expect(parsed).toEqual({ verificationState: 'VERIFIED' })
+        expect(parsed).toEqual({
+            verificationState: 'VERIFIED',
+            firstName: 'John',
+            lastName: 'Doe',
+            dateOfBirth: '1990-01-02T00:00:00.000Z',
+            countryOfNationality: 'GB',
+        })
     })
 })

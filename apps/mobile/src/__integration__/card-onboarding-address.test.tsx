@@ -68,6 +68,10 @@ const SETTINGS_RESPONSE = {
             canSignUp: true,
         },
     ],
+    links: {
+        us: { termsAndConditions: 'https://baanx/us-terms.pdf' },
+        intl: { termsAndConditions: 'https://baanx/intl-terms.pdf' },
+    },
 }
 
 // The screen reads the onboarding id + residence country from the store, so seed it.

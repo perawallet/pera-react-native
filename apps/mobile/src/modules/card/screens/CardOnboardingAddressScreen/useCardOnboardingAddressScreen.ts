@@ -109,6 +109,14 @@ export const useCardOnboardingAddressScreen =
 
         const isUsResident = watch('countryIso') === US_ISO
 
+        // Baanx Card-Issue T&C URL for the resident's jurisdiction (from
+        // GET /v1/auth/settings); Pera's terms page is the fallback. Fully
+        // optional-chained so a settings shape without the links block can't
+        // crash the render.
+        const cardTermsUrl =
+            settings?.termsAndConditionsUrls?.[isUsResident ? 'us' : 'intl'] ??
+            config.termsOfServiceUrl
+
         // Prefill the residence country chosen earlier in the flow, once settings
         // load. One-shot; matches it against the supported list for the flag/name.
         useEffect(() => {
@@ -188,11 +196,10 @@ export const useCardOnboardingAddressScreen =
         )
 
         const handleOpenCardTerms = useCallback(() => {
-            // TODO(card): use the real Baanx Card-Issue T&C URL once provided.
-            pushWebView({ url: config.termsOfServiceUrl, id: 'card-terms' })
-        }, [pushWebView])
+            pushWebView({ url: cardTermsUrl, id: 'card-terms' })
+        }, [pushWebView, cardTermsUrl])
         const handleOpenPlatformTerms = useCallback(() => {
-            // TODO(card): use the real Baanx Platform T&C URL once provided.
+            // Checkbox 2 is Pera's own Terms & Conditions.
             pushWebView({ url: config.termsOfServiceUrl, id: 'platform-terms' })
         }, [pushWebView])
 

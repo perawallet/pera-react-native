@@ -152,8 +152,13 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
+        // Profile fields are null when the record has none yet.
         expect(result).toEqual({
             verificationState: VerificationState.Pending,
+            firstName: null,
+            lastName: null,
+            dateOfBirth: null,
+            countryOfNationality: null,
         })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -162,6 +167,32 @@ describe('onboarding endpoints', () => {
                 params: { onboardingId: 'ob_1' },
             }),
         )
+    })
+
+    it('passes through the profile fields used to prefill the form', async () => {
+        request.mockResolvedValue({
+            data: {
+                id: 'ob_1',
+                verificationState: 'VERIFIED',
+                firstName: 'YASIN',
+                lastName: 'ÇALIŞKAN',
+                dateOfBirth: '1997-11-08T00:00:00.000Z',
+                countryOfNationality: null,
+            },
+        })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            network: 'mainnet',
+        })
+
+        expect(result).toEqual({
+            verificationState: VerificationState.Verified,
+            firstName: 'YASIN',
+            lastName: 'ÇALIŞKAN',
+            dateOfBirth: '1997-11-08T00:00:00.000Z',
+            countryOfNationality: null,
+        })
     })
 
     it('falls back to UNVERIFIED for an unknown verification state', async () => {
@@ -205,7 +236,7 @@ describe('onboarding endpoints', () => {
         )
     })
 
-    it('fetches and maps registration settings', async () => {
+    it('fetches and maps registration settings, including the T&C links', async () => {
         request.mockResolvedValue({
             data: {
                 countries: [
@@ -218,6 +249,12 @@ describe('onboarding endpoints', () => {
                     },
                 ],
                 usStates: [],
+                links: {
+                    us: { termsAndConditions: 'https://baanx/us-terms.pdf' },
+                    intl: {
+                        termsAndConditions: 'https://baanx/intl-terms.pdf',
+                    },
+                },
             },
         })
 
@@ -230,5 +267,8 @@ describe('onboarding endpoints', () => {
             }),
         )
         expect(settings.countries[0].name).toBe('United Kingdom')
+        expect(settings.termsAndConditionsUrls.intl).toBe(
+            'https://baanx/intl-terms.pdf',
+        )
     })
 })

@@ -33,7 +33,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     pendingLabel: {
-        color: theme.colors.warning,
+        color: theme.colors.warningText,
     },
     inactiveTitle: {
         color: theme.colors.textGrayLighter,

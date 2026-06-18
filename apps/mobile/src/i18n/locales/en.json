@@ -695,9 +695,26 @@
             "powered_by": "Powered by",
             "learn_more": "Learn more",
             "create_account": "Create a Baanx Account",
-            "already_have_account": "I already have an account",
+            "already_have_account": "I already have an account"
+        },
+        "sign_in": {
+            "navigation_title": "Sign In",
+            "email_placeholder": "Enter your email address",
+            "email_invalid": "Enter a valid email address",
+            "password_placeholder": "Enter your password",
+            "forgot_password": "Forgot Password?",
+            "submit_button": "Sign In",
+            "invalid_credentials": "Incorrect email or password",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't sign you in. Please try again.",
+            "success_title": "Signed in",
+            "success_body": "You're signed in to your Pera Card account.",
+            "otp_body": "Enter the verification code we sent you to finish signing in.",
+            "otp_invalid": "That code isn't correct. Please try again.",
+            "send_again": "Send again",
+            "send_again_in": "Send again in {{count}}s",
             "coming_soon_title": "Coming soon",
-            "coming_soon_body": "Pera Card onboarding isn't available just yet. Check back soon."
+            "coming_soon_body": "Password reset isn't available just yet. Check back soon."
         },
         "create_account": {
             "navigation_title": "Create Baanx Account",
@@ -810,7 +827,7 @@
             "us_state_retry": "Try again",
             "marketing_opt_in": "Untick this box if you do not wish to receive additional communication on updates.",
             "card_terms": "I have read and understood the Card Issue <0>Terms & Conditions</0> and accept them.",
-            "platform_terms": "I have read and understood the Platform <0>Terms & Conditions</0> and accept them.",
+            "platform_terms": "I have read and understood Pera's <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
             "error_title": "Something went wrong",
             "error_body": "We couldn't save your address. Please try again."

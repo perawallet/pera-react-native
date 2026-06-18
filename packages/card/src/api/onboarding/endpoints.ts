@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { toEnumValue, type Network } from '@perawallet/wallet-core-shared'
+import {
+    toEnumValue,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
 import { VerificationState } from '../../models'
 import type {
@@ -151,8 +155,17 @@ export const startRegisterVerification = async (
 export type FetchOnboardingDetailsParams = NetworkParams & {
     onboardingId: string
 }
-export type OnboardingDetails = { verificationState: VerificationState }
-/** Pre-auth onboarding status — polled to detect KYC completion. */
+export type OnboardingDetails = {
+    verificationState: VerificationState
+    /** Profile fields prefilled into the personal-details form when present. */
+    firstName: Nullable<string>
+    lastName: Nullable<string>
+    /** ISO datetime as returned by Baanx; the date part is the birth date. */
+    dateOfBirth: Nullable<string>
+    /** ISO 3166-1 alpha-2; null until the user provides it. */
+    countryOfNationality: Nullable<string>
+}
+/** Pre-auth onboarding status — polled for KYC and read to prefill the form. */
 export const fetchOnboardingDetails = async (
     params: FetchOnboardingDetailsParams,
 ): Promise<OnboardingDetails> => {
@@ -172,6 +185,10 @@ export const fetchOnboardingDetails = async (
             parsed.verificationState,
             VerificationState.Unverified,
         ),
+        firstName: parsed.firstName ?? null,
+        lastName: parsed.lastName ?? null,
+        dateOfBirth: parsed.dateOfBirth ?? null,
+        countryOfNationality: parsed.countryOfNationality ?? null,
     }
 }
 

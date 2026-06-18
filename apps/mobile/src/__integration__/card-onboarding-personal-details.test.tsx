@@ -104,6 +104,21 @@ describe('Flow: Card onboarding — personal details', () => {
             http.get('*/v1/auth/settings', () =>
                 HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
             ),
+            // Default: a fresh onboarding record with no profile data, so the
+            // form stays empty + editable. Prefill tests override this.
+            http.get('*/v1/auth/register', () =>
+                HttpResponse.json(
+                    {
+                        id: 'mock-onboarding-id',
+                        verificationState: 'UNVERIFIED',
+                        firstName: null,
+                        lastName: null,
+                        dateOfBirth: null,
+                        countryOfNationality: null,
+                    },
+                    { status: 200 },
+                ),
+            ),
         )
     })
     afterEach(() => server.resetHandlers())
@@ -173,6 +188,68 @@ describe('Flow: Card onboarding — personal details', () => {
 
         await waitFor(() => expect(submitSpy).toHaveBeenCalled())
         expect(body).toMatchObject({ countryOfNationality: 'GB' })
+    })
+
+    it('Given the onboarding record already has the details, when the screen opens, then the fields prefill read-only and submit without typing', async () => {
+        let body: Record<string, unknown> | undefined
+        const submitSpy = vi.fn()
+        server.use(
+            http.get('*/v1/auth/register', () =>
+                HttpResponse.json(
+                    {
+                        id: 'mock-onboarding-id',
+                        firstName: 'YASIN',
+                        lastName: 'ÇALIŞKAN',
+                        dateOfBirth: '1997-11-08T00:00:00.000Z',
+                        verificationState: 'VERIFIED',
+                        countryOfNationality: null,
+                    },
+                    { status: 200 },
+                ),
+            ),
+            http.post(
+                '*/v1/auth/register/personal-details',
+                async ({ request }) => {
+                    body = (await request.json()) as Record<string, unknown>
+                    submitSpy()
+                    return HttpResponse.json({}, { status: 200 })
+                },
+            ),
+        )
+
+        renderFlow()
+
+        // The server-confirmed identity fields are populated from the record.
+        await waitFor(() =>
+            expect(
+                screen
+                    .getByTestId('card-onboarding-first-name-input')
+                    .getAttribute('value'),
+            ).toBe('YASIN'),
+        )
+        expect(
+            screen
+                .getByTestId('card-onboarding-dob-input')
+                .getAttribute('value'),
+            // Server ISO datetime is shown in the masked DD/MM/YYYY format.
+        ).toBe('08/11/1997')
+
+        // Prefill alone makes the form valid — no typing needed.
+        const confirm = screen.getByTestId(
+            'card-onboarding-personal-details-confirm',
+        )
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        await waitFor(() => expect(submitSpy).toHaveBeenCalled())
+        expect(body).toMatchObject({
+            firstName: 'YASIN',
+            lastName: 'ÇALIŞKAN',
+            // Server ISO datetime -> DD/MM/YYYY display -> ISO date on submit.
+            dateOfBirth: '1997-11-08',
+            // Nationality wasn't on the record, so the residence guess (GB) fills it.
+            countryOfNationality: 'GB',
+        })
     })
 
     it('Given an impossible date of birth, when the field is blurred, then the inline error shows', async () => {

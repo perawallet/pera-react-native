@@ -18,6 +18,7 @@ import {
     type SupportedCountry,
     type SupportedUsState,
 } from '@perawallet/wallet-core-card'
+import { config } from '@perawallet/wallet-core-config'
 
 const mockMutateAsync = vi.fn()
 const mockConsentMutateAsync = vi.fn()
@@ -27,7 +28,13 @@ let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockOnboardingStep: OnboardingStep = OnboardingStep.EmailSend
 let mockCountryIso: string | null = 'GB'
 let mockSettings:
-    | { countries: SupportedCountry[]; usStates: SupportedUsState[] }
+    | {
+          countries: SupportedCountry[]
+          usStates: SupportedUsState[]
+          // Optional so a test can simulate a settings shape missing the links
+          // block (e.g. a stale bundle) and assert the render doesn't crash.
+          termsAndConditionsUrls?: { us: string | null; intl: string | null }
+      }
     | undefined
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -146,7 +153,14 @@ describe('useCardOnboardingAddressScreen', () => {
         mockOnboardingId = 'mock-onboarding-id'
         mockOnboardingStep = OnboardingStep.EmailSend
         mockCountryIso = 'GB'
-        mockSettings = { countries: [gb, us], usStates: [california] }
+        mockSettings = {
+            countries: [gb, us],
+            usStates: [california],
+            termsAndConditionsUrls: {
+                us: 'https://baanx/us-terms.pdf',
+                intl: 'https://baanx/intl-terms.pdf',
+            },
+        }
         mockMutateAsync.mockResolvedValue(undefined)
         mockConsentMutateAsync.mockResolvedValue(undefined)
     })
@@ -216,17 +230,63 @@ describe('useCardOnboardingAddressScreen', () => {
         expect(result.current.isValid).toBe(false)
     })
 
-    it('opens the card and platform T&C links in the webview', () => {
+    it('opens the intl Baanx card T&C and Pera platform T&C links', () => {
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        // Default residence (GB) is non-US → the intl Baanx T&C URL.
+        act(() => result.current.handleOpenCardTerms())
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://baanx/intl-terms.pdf',
+            id: 'card-terms',
+        })
+
+        // The second checkbox is Pera's own T&C.
+        act(() => result.current.handleOpenPlatformTerms())
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: config.termsOfServiceUrl,
+            id: 'platform-terms',
+        })
+    })
+
+    it('opens the US Baanx card T&C once the resident is in the US', async () => {
+        mockRequest.mockResolvedValueOnce(us)
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        act(() => result.current.handleSelectCountry())
+        await waitFor(() => expect(result.current.isUsResident).toBe(true))
+
+        act(() => result.current.handleOpenCardTerms())
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://baanx/us-terms.pdf',
+            id: 'card-terms',
+        })
+    })
+
+    it('falls back to Pera terms for the card T&C when settings have no link', () => {
+        mockSettings = {
+            countries: [gb, us],
+            usStates: [california],
+            termsAndConditionsUrls: { us: null, intl: null },
+        }
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
 
         act(() => result.current.handleOpenCardTerms())
-        act(() => result.current.handleOpenPlatformTerms())
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: config.termsOfServiceUrl,
+            id: 'card-terms',
+        })
+    })
 
-        expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'card-terms' }),
-        )
-        expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'platform-terms' }),
-        )
+    it('renders and falls back when settings lack the links block entirely', () => {
+        // A settings shape without `termsAndConditionsUrls` (e.g. a stale
+        // package bundle) must not crash the render via an index on undefined.
+        mockSettings = { countries: [gb, us], usStates: [california] }
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        act(() => result.current.handleOpenCardTerms())
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: config.termsOfServiceUrl,
+            id: 'card-terms',
+        })
     })
 })
