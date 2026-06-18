@@ -30,9 +30,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         seedIdOf: (childId?: string) =>
             childId ? parentMap.get(childId) : undefined,
     }),
-    // Real (pure) inverse of hdDerivedKeyId — the robustness fallback.
-    seedKeyIdFromDerivedKeyId: (id?: string) =>
-        id ? /^(.+)-acc\d+-idx\d+-dt\d+$/.exec(id)?.[1] : undefined,
 }))
 
 const HD_ACCOUNT_WALLET_1 = {
@@ -187,21 +184,5 @@ describe('useHDWalletGroups', () => {
         expect(result.current.hdWalletGroups[0].firstAccount.address).toBe(
             'HD_ADDRESS_1',
         )
-    })
-
-    test('still groups an HD wallet when seedIdOf is undefined (parse fallback)', () => {
-        // Simulate a stale keystore snapshot: seedIdOf resolves nothing, so
-        // grouping must fall back to parsing the keyPairId.
-        parentMap.clear()
-        mockUseAllAccounts.mockReturnValue([
-            HD_ACCOUNT_WALLET_1,
-            HD_ACCOUNT_WALLET_1_B,
-        ])
-
-        const { result } = renderHook(() => useHDWalletGroups())
-
-        expect(result.current.hdWalletGroups).toHaveLength(1)
-        expect(result.current.hdWalletGroups[0].seedKeyId).toBe('wallet-1')
-        expect(result.current.hdWalletGroups[0].accountCount).toBe(2)
     })
 })

@@ -35,7 +35,7 @@ export {
     isSeedKey,
     seedSchemeOf,
 } from './utils'
-export { hdDerivedKeyId, seedKeyIdFromDerivedKeyId } from './hooks/useHDWallet'
+export { hdDerivedKeyId } from './hooks/useHDWallet'
 export {
     commitSecret,
     hasSecret,

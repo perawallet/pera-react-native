@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { seedKeyIdFromDerivedKeyId, useKMS } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAllAccounts } from './useAllAccounts'
 import { useCreateAccount } from './useCreateAccount'
 import {
@@ -42,25 +42,17 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
 
     const hasHDWallet = hdWalletAccounts.length > 0
 
-    // Resolve a derived child's seed id, falling back to parsing the keyPairId
-    // when the keystore snapshot is stale (so the build can't break).
-    const resolveSeedId = useCallback(
-        (keyPairId: string) =>
-            seedIdOf(keyPairId) ?? seedKeyIdFromDerivedKeyId(keyPairId),
-        [seedIdOf],
-    )
-
     const createNextHDAccount = useCallback(async () => {
         if (hdWalletAccounts.length === 0) return null
 
         const firstHDAccount = hdWalletAccounts[0]
         // Account.keyPairId is the derived child id; the seed (i.e. the
         // wallet identifier) is its parent.
-        const walletId = resolveSeedId(firstHDAccount.keyPairId)
+        const walletId = seedIdOf(firstHDAccount.keyPairId)
         if (!walletId) return null
 
         const sameWalletAccounts = hdWalletAccounts.filter(
-            a => resolveSeedId(a.keyPairId) === walletId,
+            a => seedIdOf(a.keyPairId) === walletId,
         )
         const nextAccountIndex =
             Math.max(
@@ -72,17 +64,17 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
             account: nextAccountIndex,
             keyIndex: 0,
         })
-    }, [hdWalletAccounts, createHdWalletAccount, resolveSeedId])
+    }, [hdWalletAccounts, createHdWalletAccount, seedIdOf])
 
     const buildNextHDAccount = useCallback(async () => {
         if (hdWalletAccounts.length === 0) return null
 
         const firstHDAccount = hdWalletAccounts[0]
-        const walletId = resolveSeedId(firstHDAccount.keyPairId)
+        const walletId = seedIdOf(firstHDAccount.keyPairId)
         if (!walletId) return null
 
         const sameWalletAccounts = hdWalletAccounts.filter(
-            a => resolveSeedId(a.keyPairId) === walletId,
+            a => seedIdOf(a.keyPairId) === walletId,
         )
         const nextAccountIndex =
             Math.max(
@@ -94,7 +86,7 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
             account: nextAccountIndex,
             keyIndex: 0,
         })
-    }, [hdWalletAccounts, buildHdWalletAccount, resolveSeedId])
+    }, [hdWalletAccounts, buildHdWalletAccount, seedIdOf])
 
     return { createNextHDAccount, buildNextHDAccount, hasHDWallet }
 }

@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { seedKeyIdFromDerivedKeyId, useKMS } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAllAccounts } from './useAllAccounts'
 import { type HDWalletAccount } from '../models'
 import { isHDWalletAccount } from '../utils'
@@ -42,11 +42,7 @@ export const useHDWalletGroups = (): UseHDWalletGroupsResult => {
         // the same wallet land together.
         const groupMap = new Map<string, HDWalletAccount[]>()
         for (const account of hdAccounts) {
-            // Fall back to parsing the keyPairId so a stale `seedIdOf` snapshot
-            // can't drop a wallet (mis-classifying single-vs-multiple).
-            const seedKeyId =
-                seedIdOf(account.keyPairId) ??
-                seedKeyIdFromDerivedKeyId(account.keyPairId)
+            const seedKeyId = seedIdOf(account.keyPairId)
             if (!seedKeyId) continue
             const existing = groupMap.get(seedKeyId) ?? []
             existing.push(account)

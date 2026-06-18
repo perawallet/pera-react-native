@@ -192,12 +192,3 @@ export const hdDerivedKeyId = (
     keyIndex: number,
     derivationType: BIP32DerivationType,
 ): string => `${seedKeyId}-acc${account}-idx${keyIndex}-dt${derivationType}`
-
-/**
- * Inverse of {@link hdDerivedKeyId}: parses the seed id from a derived child id
- * — a keystore-free fallback for when `seedIdOf` can't resolve it. Returns
- * `undefined` for non-HD-derived ids (a bare seed id, an algo25 key).
- */
-export const seedKeyIdFromDerivedKeyId = (
-    derivedKeyId: string,
-): string | undefined => /^(.+)-acc\d+-idx\d+-dt\d+$/.exec(derivedKeyId)?.[1]
