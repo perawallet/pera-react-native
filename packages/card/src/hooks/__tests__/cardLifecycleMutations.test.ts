@@ -80,4 +80,32 @@ describe('card lifecycle mutation hooks', () => {
             }),
         )
     })
+
+    it('useFreezeCardMutation surfaces the error and skips status invalidation on failure', async () => {
+        api.freezeCard.mockRejectedValue(new Error('freeze failed'))
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(() => useFreezeCardMutation(), {
+            wrapper,
+        })
+
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('freeze failed')
+        expect(invalidate).not.toHaveBeenCalled()
+    })
+
+    it('useUnfreezeCardMutation surfaces the error and skips status invalidation on failure', async () => {
+        api.unfreezeCard.mockRejectedValue(new Error('unfreeze failed'))
+        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(() => useUnfreezeCardMutation(), {
+            wrapper,
+        })
+
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('unfreeze failed')
+        expect(invalidate).not.toHaveBeenCalled()
+    })
 })
