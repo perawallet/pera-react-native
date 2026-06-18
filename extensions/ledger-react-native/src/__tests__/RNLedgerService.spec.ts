@@ -43,6 +43,13 @@ vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
     ScopeType: { UNKNOWN: -1, AUTH: 1 },
 }))
 
+vi.mock('expo', () => ({
+    requireOptionalNativeModule: (name: string) =>
+        name === 'PeraBluetooth'
+            ? { requestEnable: peraBluetoothRequestEnableMock }
+            : null,
+}))
+
 vi.mock('react-native', () => ({
     Platform: { OS: 'ios', Version: 17 },
     PermissionsAndroid: {
@@ -52,9 +59,6 @@ vi.mock('react-native', () => ({
             BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
             ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
         },
-    },
-    NativeModules: {
-        PeraBluetooth: { requestEnable: peraBluetoothRequestEnableMock },
     },
 }))
 

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { NativeModules, Platform } from 'react-native'
+import { Platform } from 'react-native'
+import { requireOptionalNativeModule } from 'expo'
 import {
     decodeFromBase64,
     decodeLongString,
@@ -234,12 +235,8 @@ interface NativeLegacyMigrationModule {
     resetLegacyData?(): Promise<void>
 }
 
-const getNativeModule = (): NativeLegacyMigrationModule | null => {
-    const module = (
-        NativeModules as Record<string, NativeLegacyMigrationModule | undefined>
-    ).LegacyMigration
-    return module ?? null
-}
+const getNativeModule = (): NativeLegacyMigrationModule | null =>
+    requireOptionalNativeModule<NativeLegacyMigrationModule>('LegacyMigration')
 
 const decodeBase64 = (value: unknown): Uint8Array | null => {
     if (value == null) return null
