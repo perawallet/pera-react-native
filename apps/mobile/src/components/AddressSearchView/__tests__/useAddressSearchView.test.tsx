@@ -118,6 +118,33 @@ describe('useAddressSearchView', () => {
         expect(result.current.hasResults).toBe(true)
     })
 
+    it('matches an account by its custom name, not just its address', () => {
+        const accounts = [
+            { address: 'ABC123', name: 'Savings' },
+            { address: 'DEF456', name: 'Spending' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+
+        const { result } = renderHook(() => useAddressSearchView())
+
+        act(() => {
+            result.current.setValue('Savings')
+        })
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({ address: 'ABC123' }),
+            }),
+        )
+    })
+
     it('excludes account matching excludeAddress', () => {
         const accounts = [
             { address: 'ABC123', name: 'Account 1' },
