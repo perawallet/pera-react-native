@@ -57,6 +57,7 @@ export const AccountSelection = ({
     triggerChevronProps,
     triggerTextProps,
     hideDefaultHeader,
+    showSearch = false,
     accountFilter,
     ...props
 }: AccountSelectionProps) => {
@@ -72,7 +73,7 @@ export const AccountSelection = ({
                 <AccountMenuContent
                     headerContent={headerContent}
                     hideDefaultHeader={hideDefaultHeader}
-                    showSearch
+                    showSearch={showSearch}
                     accountFilter={accountFilter}
                 />
             ),
@@ -120,6 +121,7 @@ export const AccountSelection = ({
         requestBottomSheet,
         headerContent,
         hideDefaultHeader,
+        showSearch,
         accountFilter,
         onSelected,
         navigation,

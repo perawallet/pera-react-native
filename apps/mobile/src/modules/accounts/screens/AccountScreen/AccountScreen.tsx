@@ -84,6 +84,7 @@ export const AccountScreen = () => {
                     style={styles.iconBar}
                     left={
                         <AccountSelection
+                            showSearch
                             style={styles.accountSelectionToolbar}
                         />
                     }
