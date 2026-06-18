@@ -35,10 +35,6 @@ enum CoreDataStoreFixture {
             ZDISPLAYNAME VARCHAR, ZORIGIN VARCHAR, ZUSERHANDLE VARCHAR,
             ZUSERNAME VARCHAR
         );
-        CREATE TABLE ZWCSESSIONHISTORY (
-            Z_PK INTEGER PRIMARY KEY, Z_ENT INTEGER, Z_OPT INTEGER,
-            ZSESSIONHISTORY BLOB
-        );
         """
 
     static func write(to storeURL: URL, includeUnroutable: Bool) throws {
@@ -60,7 +56,6 @@ enum CoreDataStoreFixture {
         try insertUserBlob(db, includeUnroutable: includeUnroutable)
         try insertContacts(db)
         try insertPasskeys(db)
-        try insertWalletConnectHistory(db)
     }
 
     // MARK: - Inserts
@@ -114,16 +109,6 @@ enum CoreDataStoreFixture {
             bindText(stmt, 7, passkey.username)
             try step(db, stmt)
         }
-    }
-
-    private static func insertWalletConnectHistory(_ db: OpaquePointer) throws {
-        let stmt = try prepare(
-            db,
-            "INSERT INTO ZWCSESSIONHISTORY (Z_ENT, Z_OPT, ZSESSIONHISTORY) VALUES (1, 1, ?);"
-        )
-        defer { sqlite3_finalize(stmt) }
-        bindBlob(stmt, 1, FixtureIdentities.walletConnectHistoryBlob)
-        try step(db, stmt)
     }
 
     // MARK: - sqlite helpers

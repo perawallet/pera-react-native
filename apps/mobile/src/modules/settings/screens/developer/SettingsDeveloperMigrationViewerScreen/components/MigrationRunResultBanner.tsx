@@ -144,8 +144,16 @@ const ExtrasResultRows = ({ extras }: { extras: ExtrasMigrationResult }) => (
             value={extras.auth.lockoutMigrated}
         />
         <MigrationDataRow
-            label='passkeys stashed'
-            value={extras.stashed.passkeysStashed}
+            label='passkeys imported'
+            value={extras.passkeys.imported}
+        />
+        <MigrationDataRow
+            label='passkeys skipped'
+            value={extras.passkeys.skipped}
+        />
+        <MigrationDataRow
+            label='wc history blob stashed'
+            value={extras.stashed.walletConnectHistoryBlobStashed}
         />
         <MigrationDataRow
             label='extras steps failed'

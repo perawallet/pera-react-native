@@ -32,6 +32,7 @@ internal object LegacyMigrationConstants {
 
     const val ALGORAND_DB_NAME = "algorand-db"
     const val WALLET_CONNECT_V2_DB_NAME = "pera-wc-v2-db"
+    const val WC_SESSION_STORE_FILE_NAME = "session_store.json"
     const val ADDRESS_DB_NAME = "address_database"
     const val PASSKEY_DB_NAME = "passkey_db"
     const val PERA_DB_NAME = "pera_database"

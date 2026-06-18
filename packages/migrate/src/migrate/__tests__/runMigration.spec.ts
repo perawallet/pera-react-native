@@ -66,7 +66,7 @@ const successfulExtrasResult = {
         biometricMigrated: false,
         lockoutMigrated: false,
     },
-    stashed: { passkeysStashed: 0 },
+    stashed: { walletConnectHistoryBlobStashed: false },
     walletConnect: { imported: 0, skipped: 0 },
     failed: [],
 }
@@ -123,7 +123,7 @@ describe('runMigration', () => {
         expect(migration.markMigrationComplete).not.toHaveBeenCalled()
     })
 
-    it('aborts before extras when account migration reports any failure', async () => {
+    it('still runs extras (for migrated accounts) but reports incomplete when an account fails', async () => {
         mockedRunMigrationLoop.mockResolvedValue({
             imported: 4,
             skipped: 0,
@@ -136,9 +136,12 @@ describe('runMigration', () => {
         expect(result.completed).toBe(false)
         expect(result.incompleteReason).toBe('accounts-failed')
         expect(result.accounts?.failed).toHaveLength(1)
-        expect(result.extras).toBeNull()
+        // Extras run so the accounts that DID migrate get their passkeys/dApp
+        // sessions; account-bound steps guard themselves against the failed one.
+        expect(result.extras).toEqual(successfulExtrasResult)
         expect(mockedRunMigrationLoop).toHaveBeenCalledTimes(1)
-        expect(mockedRunExtrasMigration).not.toHaveBeenCalled()
+        expect(mockedRunExtrasMigration).toHaveBeenCalledTimes(1)
+        // Sentinel withheld so the failed account is retried next launch.
         expect(migration.markMigrationComplete).not.toHaveBeenCalled()
     })
 

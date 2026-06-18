@@ -50,14 +50,17 @@ final class LegacyDataBuilder {
         let contactRows: [SqliteReader.ContactRow]
         let passkeyRows: [SqliteReader.PasskeyRow]
         let wcHistoryBlob: Data?
+        let wcSessionEntries: [SqliteReader.WCSessionListEntry]
         if let reader = sqliteReader {
             contactRows = (try? reader.readContacts()) ?? []
             passkeyRows = (try? reader.readPasskeys()) ?? []
             wcHistoryBlob = try? reader.readWalletConnectHistoryBlob()
+            wcSessionEntries = reader.readWalletConnectV1Sessions()
         } else {
             contactRows = []
             passkeyRows = []
             wcHistoryBlob = nil
+            wcSessionEntries = []
         }
 
         var out = BridgeMap()
@@ -76,7 +79,7 @@ final class LegacyDataBuilder {
         ))
         out.putRaw("contacts", ContactsBuilder.compose(rows: contactRows))
         out.putRaw("notificationFilters", NotificationsBuilder.compose(accounts: accounts))
-        out.putRaw("walletConnectV1", [Any]())
+        out.putRaw("walletConnectV1", WalletConnectBuilder.composeV1Sessions(wcSessionEntries))
         out.putRaw("walletConnectV2", [Any]())
         out.putRaw("passkeys", PasskeysBuilder.compose(rows: passkeyRows))
         out.putRaw("walletConnectHistoryBlob", WalletConnectBuilder.composeHistoryBlob(wcHistoryBlob))
