@@ -571,6 +571,74 @@ describe('SyncService', () => {
                 Promise.resolve(),
             )
         })
+
+        it('enriches asset metadata and prices when holdings changed (e.g. swap into a not-opted-in asset)', async () => {
+            const { getAllHeldAssetIdsForNetwork } =
+                await import('@perawallet/wallet-core-accounts')
+            const {
+                fetchAndPersistAssets,
+                fetchAndPersistPrices,
+                invalidateAssetQueries,
+            } = await import('@perawallet/wallet-core-assets')
+
+            // Default mock: fetchAndPersistAccount returns holdingsChanged: true.
+            await service.refreshAccounts(['ADDR1'], 'mainnet')
+
+            expect(getAllHeldAssetIdsForNetwork).toHaveBeenCalledWith({
+                network: 'mainnet',
+            })
+            expect(fetchAndPersistAssets).toHaveBeenCalledWith(
+                ['123', '456'],
+                'mainnet',
+            )
+            expect(fetchAndPersistPrices).toHaveBeenCalledWith(
+                ['123', '456'],
+                'mainnet',
+            )
+            expect(invalidateAssetQueries).toHaveBeenCalledWith(queryClient)
+        })
+
+        it('does not enrich asset metadata when no holdings changed', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            const { fetchAndPersistAssets, invalidateAssetQueries } =
+                await import('@perawallet/wallet-core-assets')
+
+            vi.mocked(fetchAndPersistAccount).mockResolvedValue({
+                changed: true,
+                holdingsChanged: false,
+                observedRound: null,
+            })
+
+            await service.refreshAccounts(['ADDR1'], 'mainnet')
+
+            expect(fetchAndPersistAssets).not.toHaveBeenCalled()
+            expect(invalidateAssetQueries).not.toHaveBeenCalled()
+
+            vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+                Promise.resolve({ changed: true, holdingsChanged: true }),
+            )
+        })
+
+        it('never throws and still invalidates account/tx queries when asset enrichment fails', async () => {
+            const { getAllHeldAssetIdsForNetwork, invalidateAccountQueries } =
+                await import('@perawallet/wallet-core-accounts')
+            const { invalidateTransactionQueries } =
+                await import('@perawallet/wallet-core-transactions')
+
+            vi.mocked(getAllHeldAssetIdsForNetwork).mockRejectedValueOnce(
+                new Error('db read blew up'),
+            )
+
+            await expect(
+                service.refreshAccounts(['ADDR1'], 'mainnet'),
+            ).resolves.toBeUndefined()
+
+            expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
+            expect(invalidateTransactionQueries).toHaveBeenCalledWith(
+                queryClient,
+            )
+        })
     })
 
     it('logs non-429 failures for assets and transactions phases', async () => {
