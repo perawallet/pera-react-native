@@ -179,13 +179,21 @@ describe('Flow: Card onboarding — residential address', () => {
         })
         // No US residence, so no state is sent.
         expect(body?.usState).toBeUndefined()
-        // Consent (T&Cs + marketing) is recorded before the address submit.
+        // Consent (T&Cs + marketing) is recorded before the address submit,
+        // in Baanx's policy/consents shape. UK residence → the `global` policy.
         expect(consentBody).toMatchObject({
             onboardingId: 'mock-onboarding-id',
-            allowMarketing: true,
-            cardTermsAccepted: true,
-            platformTermsAccepted: true,
+            policyType: 'global',
         })
+        expect(consentBody?.consents).toEqual(
+            expect.arrayContaining([
+                { consentType: 'termsAndPrivacy', consentStatus: 'granted' },
+                {
+                    consentType: 'marketingNotifications',
+                    consentStatus: 'granted',
+                },
+            ]),
+        )
         // Registration is finalized, so the flow hands back to the setup
         // checklist (where Connect Funds takes over) and marks onboarding done.
         await waitFor(() =>
@@ -321,6 +329,50 @@ describe('Flow: Card onboarding — residential address', () => {
         expect(addressSpy).not.toHaveBeenCalled()
         // The flow stays on the address screen — it never advances to the checklist.
         expect(screen.queryByTestId('card-onboarding-status')).toBeNull()
+    })
+
+    it('Given consent was already recorded (duplicate), when Continue is pressed, then it is treated as success and the address still submits', async () => {
+        // Recovery path: a previous attempt recorded the consent set, so Baanx
+        // now rejects the re-submit with "Duplicate onboardingId". The consent
+        // already exists, so this must not block the address finalize.
+        const addressSpy = vi.fn()
+        server.use(
+            http.post('*/v2/consent/onboarding', () =>
+                HttpResponse.json(
+                    {
+                        message: JSON.stringify({
+                            error: 'Duplicate onboardingId',
+                            details: [
+                                "A consent set with onboardingId 'mock-onboarding-id' already exists",
+                            ],
+                        }),
+                    },
+                    { status: 409 },
+                ),
+            ),
+            http.post('*/v1/auth/register/address', () => {
+                addressSpy()
+                return HttpResponse.json(ADDRESS_RESPONSE, { status: 200 })
+            }),
+        )
+
+        renderFlow()
+        fillAddressFields()
+        acceptBothTerms()
+
+        const confirm = screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        // The duplicate consent is swallowed, so the finalize still runs...
+        await waitFor(() => expect(addressSpy).toHaveBeenCalled())
+        // ...and registration completes (hands back to the setup checklist).
+        await waitFor(() =>
+            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
+        )
     })
 
     it('Given the onboarding id is missing, when Continue is pressed, then it routes back to email verification', async () => {

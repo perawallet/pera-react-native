@@ -23,9 +23,78 @@ import {
     startRegisterVerification,
     fetchOnboardingDetails,
     submitAddress,
+    submitOnboardingConsent,
     fetchRegistrationSettings,
+    buildOnboardingConsentBody,
 } from '../endpoints'
 import { VerificationState } from '../../../models'
+
+describe('buildOnboardingConsentBody', () => {
+    const base = {
+        onboardingId: 'ob_1',
+        tenantId: 'tenant_1',
+        termsAccepted: true,
+    }
+
+    it('builds the global policy consents (no eSignAct) with marketing granted', () => {
+        const body = buildOnboardingConsentBody({
+            ...base,
+            policyType: 'global',
+            allowMarketing: true,
+        })
+
+        expect(body).toEqual({
+            onboardingId: 'ob_1',
+            tenantId: 'tenant_1',
+            policyType: 'global',
+            consents: [
+                { consentType: 'termsAndPrivacy', consentStatus: 'granted' },
+                {
+                    consentType: 'marketingNotifications',
+                    consentStatus: 'granted',
+                },
+                { consentType: 'smsNotifications', consentStatus: 'granted' },
+                { consentType: 'emailNotifications', consentStatus: 'granted' },
+            ],
+        })
+    })
+
+    it('denies every notification channel when marketing is off', () => {
+        const body = buildOnboardingConsentBody({
+            ...base,
+            policyType: 'global',
+            allowMarketing: false,
+        })
+
+        const denied = body.consents.filter(
+            consent => consent.consentStatus === 'denied',
+        )
+        expect(denied.map(consent => consent.consentType)).toEqual([
+            'marketingNotifications',
+            'smsNotifications',
+            'emailNotifications',
+        ])
+        // Terms is still granted.
+        expect(body.consents[0]).toEqual({
+            consentType: 'termsAndPrivacy',
+            consentStatus: 'granted',
+        })
+    })
+
+    it('adds the eSignAct consent for the US policy', () => {
+        const body = buildOnboardingConsentBody({
+            ...base,
+            policyType: 'us',
+            allowMarketing: false,
+        })
+
+        expect(body.consents).toContainEqual({
+            consentType: 'eSignAct',
+            consentStatus: 'granted',
+        })
+        expect(body.consents).toHaveLength(5)
+    })
+})
 
 describe('onboarding endpoints', () => {
     beforeEach(() => vi.clearAllMocks())
@@ -234,6 +303,67 @@ describe('onboarding endpoints', () => {
                 }),
             }),
         )
+    })
+
+    it('posts the consent set to /v2/consent/onboarding', async () => {
+        request.mockResolvedValue({ data: { success: true } })
+
+        await submitOnboardingConsent({
+            onboardingId: 'ob_1',
+            policyType: 'global',
+            termsAccepted: true,
+            allowMarketing: false,
+            network: 'mainnet',
+        })
+
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v2/consent/onboarding',
+                data: expect.objectContaining({ onboardingId: 'ob_1' }),
+            }),
+        )
+    })
+
+    it('treats a duplicate-onboardingId consent error as success', async () => {
+        // Baanx rejects a re-submitted consent set (e.g. after the address step
+        // failed and the user retries). The consent already exists, so this must
+        // resolve and let the address step proceed.
+        request.mockRejectedValue({
+            data: {
+                message: JSON.stringify({
+                    error: 'Duplicate onboardingId',
+                    details: [
+                        "A consent set with onboardingId 'ob_1' already exists",
+                    ],
+                }),
+            },
+        })
+
+        await expect(
+            submitOnboardingConsent({
+                onboardingId: 'ob_1',
+                policyType: 'global',
+                termsAccepted: true,
+                allowMarketing: false,
+                network: 'mainnet',
+            }),
+        ).resolves.toBeUndefined()
+    })
+
+    it('rethrows a non-duplicate consent failure', async () => {
+        const failure = { response: { status: 500 }, data: { message: 'boom' } }
+        request.mockRejectedValue(failure)
+
+        await expect(
+            submitOnboardingConsent({
+                onboardingId: 'ob_1',
+                policyType: 'global',
+                termsAccepted: true,
+                allowMarketing: false,
+                network: 'mainnet',
+            }),
+        ).rejects.toBe(failure)
     })
 
     it('fetches and maps registration settings, including the T&C links', async () => {

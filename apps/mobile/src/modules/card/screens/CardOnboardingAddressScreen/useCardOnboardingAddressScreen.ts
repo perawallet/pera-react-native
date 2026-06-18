@@ -234,9 +234,10 @@ export const useCardOnboardingAddressScreen =
                 // guaranteed accepted here — the Continue button gates on them.
                 await submitConsent.mutateAsync({
                     onboardingId,
+                    policyType: isUsResident ? 'us' : 'global',
+                    // Both T&C boxes gate Continue, so they're accepted here.
+                    termsAccepted: cardTermsAccepted && platformTermsAccepted,
                     allowMarketing,
-                    cardTermsAccepted,
-                    platformTermsAccepted,
                 })
                 await submitAddress.mutateAsync(address)
                 // The mutation's onSuccess commits the session and marks the

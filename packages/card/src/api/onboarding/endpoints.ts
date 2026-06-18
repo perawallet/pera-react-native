@@ -15,6 +15,8 @@ import {
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getCardApiError, isDuplicateError } from '../errors'
 import { getCardTransport } from '../transport'
 import { VerificationState } from '../../models'
 import type {
@@ -214,20 +216,101 @@ export const submitAddress = async (
     return addressResponseSchema.parse(response.data)
 }
 
-// Records the user's onboarding consents (T&C acceptances + marketing opt-in)
-// collected on the final address step. The exact request shape is an assumption
-// pending confirmation against the live /v2/consent/onboarding contract.
-export type SubmitOnboardingConsentParams = NetworkParams & {
-    onboardingId: string
-    allowMarketing: boolean
-    cardTermsAccepted: boolean
-    platformTermsAccepted: boolean
+// POST /v2/consent/onboarding. Jurisdiction policy: US residents use 'us',
+// everyone else 'global'.
+export type ConsentPolicyType = 'us' | 'global'
+
+type ConsentType =
+    | 'termsAndPrivacy'
+    | 'marketingNotifications'
+    | 'smsNotifications'
+    | 'emailNotifications'
+    | 'eSignAct'
+type Consent = {
+    consentType: ConsentType
+    consentStatus: 'granted' | 'denied'
 }
+
+export type OnboardingConsentInput = {
+    onboardingId: string
+    tenantId: string
+    policyType: ConsentPolicyType
+    /** Both T&C boxes accepted (they gate the Continue button). */
+    termsAccepted: boolean
+    /** The single marketing checkbox; drives all notification consents. */
+    allowMarketing: boolean
+}
+
+/**
+ * Maps the address-step checkboxes to Baanx's required consent set. Both
+ * policies require terms + the three notification channels; `us` additionally
+ * requires the e-sign consent.
+ */
+export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
+    const {
+        onboardingId,
+        tenantId,
+        policyType,
+        termsAccepted,
+        allowMarketing,
+    } = input
+    const status = (granted: boolean): Consent['consentStatus'] =>
+        granted ? 'granted' : 'denied'
+    const consents: Consent[] = [
+        {
+            consentType: 'termsAndPrivacy',
+            consentStatus: status(termsAccepted),
+        },
+        {
+            consentType: 'marketingNotifications',
+            consentStatus: status(allowMarketing),
+        },
+        {
+            consentType: 'smsNotifications',
+            consentStatus: status(allowMarketing),
+        },
+        {
+            consentType: 'emailNotifications',
+            consentStatus: status(allowMarketing),
+        },
+        ...(policyType === 'us'
+            ? [
+                  {
+                      consentType: 'eSignAct' as const,
+                      consentStatus: status(termsAccepted),
+                  },
+              ]
+            : []),
+    ]
+    return { onboardingId, tenantId, policyType, consents }
+}
+
+// Records the user's onboarding consents on the final address step. The tenant
+// id is build-time config (per network), like the Baanx client key.
+export type SubmitOnboardingConsentParams = NetworkParams &
+    Omit<OnboardingConsentInput, 'tenantId'>
 export const submitOnboardingConsent = async (
     params: SubmitOnboardingConsentParams,
 ): Promise<void> => {
-    const { network, signal, ...body } = params
-    await postRegisterStep('/v2/consent/onboarding', body, { network, signal })
+    const { network, signal, ...rest } = params
+    const body = buildOnboardingConsentBody({
+        ...rest,
+        tenantId: getNetworkConfig(network).baanxTenantId,
+    })
+    try {
+        await postRegisterStep('/v2/consent/onboarding', body, {
+            network,
+            signal,
+        })
+    } catch (error) {
+        // Consent is non-idempotent on Baanx: a retried submit (e.g. after the
+        // address step failed and the user taps Continue again) returns
+        // "Duplicate onboardingId". The consent set already exists — the desired
+        // end state — so treat it as success and let the address step proceed.
+        const apiError = await getCardApiError(error)
+        if (isDuplicateError(apiError)) return
+        throw error
+    }
 }
 
 // Connects a Pera (Algorand) account as the card's funding source on the setup

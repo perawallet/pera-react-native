@@ -35,6 +35,8 @@ export {
     type SubmitAddressParams,
     type SubmitAddressResult,
     type SubmitOnboardingConsentParams,
+    type OnboardingConsentInput,
+    type ConsentPolicyType,
     type ConnectFundingSourceParams,
     type ConnectFundingSourceResult,
 } from './endpoints'

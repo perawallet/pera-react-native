@@ -12,10 +12,12 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     submitOnboardingConsent,
     type SubmitOnboardingConsentParams,
 } from '../api/onboarding'
+import { getCardApiError } from '../api/errors'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type SubmitConsentVariables = Omit<
@@ -35,6 +37,12 @@ export const useSubmitConsentMutation = (): UseSubmitConsentMutationResult => {
         // onboarding.
         mutationFn: variables =>
             submitOnboardingConsent({ ...variables, network }),
+        // Duplicate consents are swallowed in the endpoint; anything that still
+        // throws here is a real failure worth surfacing for diagnosis.
+        onError: async error => {
+            const apiError = await getCardApiError(error)
+            logger.warn('Card consent submission failed', { error: apiError })
+        },
         throwOnError: false,
     })
 

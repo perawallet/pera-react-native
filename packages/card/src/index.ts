@@ -35,5 +35,6 @@ export {
     getCardApiError,
     isConflictError,
     isInvalidInputError,
+    isDuplicateError,
 } from './api/errors'
 export type { CardApiError } from './api/errors'
