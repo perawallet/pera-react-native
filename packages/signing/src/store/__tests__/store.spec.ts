@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningStore } from '../index'
+import { isResumableRehydratedRequest } from '../store'
 import { SignRequest } from '../../models'
 
 const { mockStorage } = vi.hoisted(() => ({
@@ -199,5 +200,56 @@ describe('SigningStore', () => {
         )
         await useSigningStore.persist.rehydrate()
         expect(useSigningStore.getState().pendingSignRequests).toEqual([])
+    })
+})
+
+describe('isResumableRehydratedRequest', () => {
+    const base = { id: '1', type: 'transactions', transport: 'algod' }
+
+    test('keeps a well-formed interactive (multisig-cosign) request', () => {
+        expect(
+            isResumableRehydratedRequest({
+                ...base,
+                sourceType: 'multisig-cosign',
+            }),
+        ).toBe(true)
+    })
+
+    test('drops a headless request (sourceType "local") so it cannot auto-sign on cold start', () => {
+        expect(
+            isResumableRehydratedRequest({ ...base, sourceType: 'local' }),
+        ).toBe(false)
+    })
+
+    test('drops a request with no sourceType (headless by default)', () => {
+        expect(isResumableRehydratedRequest({ ...base })).toBe(false)
+    })
+
+    test('drops an ephemeral deeplink request', () => {
+        expect(
+            isResumableRehydratedRequest({ ...base, sourceType: 'deeplink' }),
+        ).toBe(false)
+    })
+
+    test('drops a crafted callback-transport request (callbacks cannot survive serialization)', () => {
+        expect(
+            isResumableRehydratedRequest({
+                ...base,
+                transport: 'callback',
+                sourceType: 'walletconnect',
+            }),
+        ).toBe(false)
+    })
+
+    test('drops malformed entries (missing id / wrong shape)', () => {
+        expect(
+            isResumableRehydratedRequest({
+                type: 'transactions',
+                transport: 'algod',
+                sourceType: 'multisig-cosign',
+            }),
+        ).toBe(false)
+        expect(isResumableRehydratedRequest(null)).toBe(false)
+        expect(isResumableRehydratedRequest('nope')).toBe(false)
     })
 })

@@ -118,8 +118,7 @@ export const createWalletConnectTransactionSource =
                     indicesToSign: request.indicesToSign,
                 }
 
-                const metadata: Partial<SourceMetadata> = {
-                    type: 'walletconnect',
+                const metadata: Partial<Omit<SourceMetadata, 'type'>> = {
                     peerMetadata: request.peerMetadata,
                     requestId: String(request.requestId),
                     callbacks: {
@@ -157,8 +156,7 @@ export const createWalletConnectDataSource =
                 })),
             }
 
-            const metadata: Partial<SourceMetadata> = {
-                type: 'walletconnect',
+            const metadata: Partial<Omit<SourceMetadata, 'type'>> = {
                 peerMetadata: request.peerMetadata,
                 requestId: String(request.requestId),
                 callbacks: {
