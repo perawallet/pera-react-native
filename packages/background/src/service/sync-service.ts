@@ -494,6 +494,46 @@ export class SyncService {
             i => addresses[i],
         )
 
+        // New holdings (e.g. a swap into a not-opted-in asset) land here without
+        // asset metadata or prices, so the asset-list row has no
+        // decimals/totalSupply and renders a skeleton until the next coarse
+        // asset-resync tick. Enrich immediately when holdings changed, mirroring
+        // syncAll's holdingsChanged branch — otherwise the periodic tick sees the
+        // holding already persisted (holdingsChanged === false) and won't fetch
+        // metadata until the 10-minute interval elapses.
+        const anyHoldingsChanged = accountResults.some(
+            r => r.status === 'fulfilled' && r.value?.holdingsChanged,
+        )
+        if (anyHoldingsChanged) {
+            // Kept self-contained so a DB/read failure here can't skip the
+            // account/transaction invalidations below — refreshAccounts logs
+            // but never throws (the periodic tick is the safety net).
+            try {
+                const assetIds = await getAllHeldAssetIdsForNetwork({ network })
+                const assetResults = await Promise.allSettled([
+                    fetchAndPersistAssets(assetIds, network),
+                    fetchAndPersistPrices(assetIds, network),
+                ])
+                this.logFailures(
+                    'refresh-asset-metadata-or-prices',
+                    assetResults,
+                    network,
+                    i => (i === 0 ? 'assets' : 'prices'),
+                )
+                if (assetResults.some(r => r.status === 'fulfilled')) {
+                    invalidateAssetQueries(this.deps.queryClient)
+                }
+            } catch (error) {
+                logger.warn('Refresh asset enrichment failed', {
+                    network,
+                    error:
+                        error instanceof Error
+                            ? { message: error.message, stack: error.stack }
+                            : error,
+                })
+            }
+        }
+
         invalidateAccountQueries(this.deps.queryClient)
         invalidateTransactionQueries(this.deps.queryClient)
     }
