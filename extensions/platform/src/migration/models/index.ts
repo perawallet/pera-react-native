@@ -244,6 +244,12 @@ export interface LegacyWalletConnectV1Session {
     fallbackBrowserGroupResponse: string | null
     connectedAccounts: string[]
     sessionMetaJson: string
+    clientId: string | null
+    peerId: string | null
+    handshakeId: number | null
+    currentKey: string | null
+    approvedAccounts: string[] | null
+    chainId: number | null
 }
 
 export interface LegacyWalletConnectV2Session {

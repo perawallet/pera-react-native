@@ -23,7 +23,10 @@ export {
     prepareHDMasterKey,
     type PreparedHDMasterKey,
 } from './crypto/prepare-hd-master-key'
-export { entropyToMnemonic } from './crypto/hdwallet-utils'
+export {
+    entropyToMnemonic,
+    deriveLiquidAuthMainKey,
+} from './crypto/hdwallet-utils'
 export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
 export { SeedScheme, ALGO25_SEED_LENGTH } from './constants'
 export {

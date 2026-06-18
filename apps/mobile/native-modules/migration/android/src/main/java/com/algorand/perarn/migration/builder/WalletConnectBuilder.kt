@@ -11,6 +11,8 @@
  */
 package com.algorand.perarn.migration.builder
 
+import com.algorand.perarn.migration.bridge.putIntOrNull
+import com.algorand.perarn.migration.bridge.putLongStringOrNull
 import com.algorand.perarn.migration.bridge.putStringOrNull
 import com.algorand.perarn.migration.database.WalletConnectV1SessionRow
 import com.algorand.perarn.migration.database.WalletConnectV2SessionRow
@@ -33,6 +35,18 @@ internal fun List<WalletConnectV1SessionRow>.toWalletConnectV1Array(): WritableA
         for (a in row.connectedAccounts) accounts.pushString(a)
         map.putArray("connectedAccounts", accounts)
         map.putString("sessionMetaJson", row.sessionMetaJson)
+        map.putStringOrNull("clientId", row.clientId)
+        map.putStringOrNull("peerId", row.peerId)
+        map.putLongStringOrNull("handshakeId", row.handshakeId)
+        map.putStringOrNull("currentKey", row.currentKey)
+        if (row.approvedAccounts == null) {
+            map.putNull("approvedAccounts")
+        } else {
+            val approved = Arguments.createArray()
+            for (a in row.approvedAccounts) approved.pushString(a)
+            map.putArray("approvedAccounts", approved)
+        }
+        map.putIntOrNull("chainId", row.chainId)
         out.pushMap(map)
     }
     return out

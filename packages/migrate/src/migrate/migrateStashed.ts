@@ -11,22 +11,17 @@
  */
 
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
-import type { LegacyPasskey } from '@perawallet/wallet-extension-platform'
 
 export type StashedMigrationResult = {
-    passkeysStashed: number
+    walletConnectHistoryBlobStashed: boolean
 }
 
 export const migrateStashed = (args: {
-    passkeys: LegacyPasskey[]
     walletConnectHistoryBlob?: string | null
 }): StashedMigrationResult => {
     const settings = useSettingsStore.getState()
-    const result: StashedMigrationResult = { passkeysStashed: 0 }
-
-    if (args.passkeys.length > 0) {
-        settings.setPreference('legacy.passkeys', JSON.stringify(args.passkeys))
-        result.passkeysStashed = args.passkeys.length
+    const result: StashedMigrationResult = {
+        walletConnectHistoryBlobStashed: false,
     }
 
     if (args.walletConnectHistoryBlob != null) {
@@ -34,6 +29,7 @@ export const migrateStashed = (args: {
             'legacy.walletConnectHistoryBlob',
             args.walletConnectHistoryBlob,
         )
+        result.walletConnectHistoryBlobStashed = true
     }
 
     return result

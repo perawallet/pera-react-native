@@ -13,7 +13,10 @@ package com.algorand.perarn.migration.database
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import android.util.Log
 import com.algorand.perarn.migration.bridge.LegacyMigrationConstants
+import java.io.File
+import org.json.JSONObject
 
 internal data class WalletConnectV1SessionRow(
     val id: String,
@@ -24,6 +27,12 @@ internal data class WalletConnectV1SessionRow(
     val isSubscribed: Boolean,
     val fallbackBrowserGroupResponse: String?,
     val connectedAccounts: List<String>,
+    val clientId: String? = null,
+    val peerId: String? = null,
+    val handshakeId: Long? = null,
+    val currentKey: String? = null,
+    val approvedAccounts: List<String>? = null,
+    val chainId: Int? = null,
 )
 
 internal data class WalletConnectV2SessionRow(
@@ -32,6 +41,55 @@ internal data class WalletConnectV2SessionRow(
     val isSubscribed: Boolean,
     val fallbackBrowserGroupResponse: String?,
 )
+
+internal data class WcSessionStoreState(
+    val clientId: String?,
+    val peerId: String?,
+    val handshakeId: Long?,
+    val currentKey: String?,
+    val approvedAccounts: List<String>?,
+    val chainId: Int?,
+)
+
+private fun JSONObject.optNonEmptyString(key: String): String? =
+    if (isNull(key)) null else optString(key).takeIf { it.isNotEmpty() && it != "null" }
+
+private fun readSessionStore(context: Context): Map<String, WcSessionStoreState> {
+    val file = File(context.cacheDir, LegacyMigrationConstants.WC_SESSION_STORE_FILE_NAME)
+    if (!file.exists()) return emptyMap()
+    return try {
+        val root = JSONObject(file.readText())
+        val out = HashMap<String, WcSessionStoreState>()
+        for (topic in root.keys()) {
+            val state = root.optJSONObject(topic) ?: continue
+            val clientData = state.optJSONObject("clientData")
+            val peerData = state.optJSONObject("peerData")
+            val approved = state.optJSONArray("approvedAccounts")?.let { arr ->
+                (0 until arr.length()).mapNotNull { i ->
+                    if (arr.isNull(i)) null else arr.optString(i).takeIf { it.isNotEmpty() && it != "null" }
+                }
+            }
+            out[topic] = WcSessionStoreState(
+                clientId = clientData?.optNonEmptyString("id"),
+                peerId = peerData?.optNonEmptyString("id"),
+                handshakeId = if (state.isNull("handshakeId")) null else state.optLong("handshakeId"),
+                currentKey = state.optNonEmptyString("currentKey"),
+                approvedAccounts = approved,
+                chainId = if (state.isNull("chainId")) null else state.optInt("chainId"),
+            )
+        }
+        out
+    } catch (t: Throwable) {
+        Log.w(LegacyMigrationConstants.LOG_TAG, "Failed to read ${LegacyMigrationConstants.WC_SESSION_STORE_FILE_NAME}", t)
+        emptyMap()
+    }
+}
+
+private fun parseHandshakeTopic(sessionMetaJson: String): String? = try {
+    JSONObject(sessionMetaJson).optString("topic").takeIf { it.isNotEmpty() }
+} catch (_: Throwable) {
+    null
+}
 
 internal class WalletConnectReader(
     private val context: Context,
@@ -60,8 +118,18 @@ internal class WalletConnectReader(
                     )
                 }
             }
+            val states = readSessionStore(context)
             sessions.map { session ->
-                session.copy(connectedAccounts = readConnectedAccounts(db, session.id))
+                val state = parseHandshakeTopic(session.sessionMetaJson)?.let { states[it] }
+                session.copy(
+                    connectedAccounts = readConnectedAccounts(db, session.id),
+                    clientId = state?.clientId,
+                    peerId = state?.peerId,
+                    handshakeId = state?.handshakeId,
+                    currentKey = state?.currentKey,
+                    approvedAccounts = state?.approvedAccounts,
+                    chainId = state?.chainId,
+                )
             }
         }.orEmpty()
 

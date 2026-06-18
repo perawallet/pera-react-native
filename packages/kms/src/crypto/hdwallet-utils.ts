@@ -45,6 +45,36 @@ const deriveBip39Seed = (mnemonic: string): Promise<Buffer> => {
     })
 }
 
+// Byte-identical to `@algorandfoundation/dp256`'s `genDerivedMainKeyWithBIP39`
+// (equivalence guard in `__tests__/hdwallet-utils.test.ts`).
+const LIQUID_AUTH_PBKDF2_ITERATIONS = 210_000
+const LIQUID_AUTH_MAIN_KEY_LENGTH = 64
+const LIQUID_AUTH_PBKDF2_DIGEST = 'sha512'
+const LIQUID_AUTH_SALT = 'liquid'
+
+/**
+ * Derives the DeterministicP256 (Liquid Auth) main key (the root for passkey
+ * keypairs) from a BIP39 mnemonic. Uses `crypto.pbkdf2` — native/off-thread via
+ * quick-crypto — NOT dp256's synchronous `genDerivedMainKeyWithBIP39`, which
+ * freezes the JS thread. Mnemonic encoded as-is (no NFKD) to stay byte-identical.
+ */
+export const deriveLiquidAuthMainKey = (
+    mnemonic: string,
+): Promise<Uint8Array> =>
+    new Promise<Uint8Array>((resolve, reject) => {
+        pbkdf2(
+            Buffer.from(mnemonic, 'utf8'),
+            Buffer.from(LIQUID_AUTH_SALT, 'utf8'),
+            LIQUID_AUTH_PBKDF2_ITERATIONS,
+            LIQUID_AUTH_MAIN_KEY_LENGTH,
+            LIQUID_AUTH_PBKDF2_DIGEST,
+            (err, derivedKey) => {
+                if (err) reject(err)
+                else resolve(new Uint8Array(derivedKey))
+            },
+        )
+    })
+
 export const entropyToMnemonic = (entropy: Uint8Array): string => {
     return entropyToMnemonicLib(entropy, wordlist)
 }

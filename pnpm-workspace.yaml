@@ -100,8 +100,9 @@ overrides:
   react-dom: 19.2.3
   react-native: 0.85.3
   "@react-native/metro-config": 0.85.3
-  # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera)
-  # to one native ABI version — leaving it at 0.35.7 splits the tree into 0.35.7 + 0.35.9.
+  # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera +
+  # its nitro-image peer) to one native ABI version — leaving it at 0.35.7 splits the
+  # tree into 0.35.7 + 0.35.9. nitro-image 0.15.1 is built against 0.35.9.
   react-native-nitro-modules: 0.35.9
   react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^3.0.0

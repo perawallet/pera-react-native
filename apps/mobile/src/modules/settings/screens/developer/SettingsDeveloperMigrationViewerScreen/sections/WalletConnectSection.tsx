@@ -81,6 +81,30 @@ export const WalletConnectV1Section = ({
                             label='sessionMetaJson'
                             value={s.sessionMetaJson}
                         />
+                        <MigrationDataRow
+                            label='clientId'
+                            value={s.clientId}
+                        />
+                        <MigrationDataRow
+                            label='peerId'
+                            value={s.peerId}
+                        />
+                        <MigrationDataRow
+                            label='handshakeId'
+                            value={s.handshakeId}
+                        />
+                        <MigrationDataRow
+                            label='currentKey'
+                            value={s.currentKey}
+                        />
+                        <MigrationDataRow
+                            label='approvedAccounts'
+                            value={s.approvedAccounts}
+                        />
+                        <MigrationDataRow
+                            label='chainId'
+                            value={s.chainId}
+                        />
                     </MigrationDataSubBlock>
                 ))
             )}
