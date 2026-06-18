@@ -127,14 +127,29 @@ describe('useKMSService', () => {
             )
         })
 
-        test('allows access when key has no ACL metadata', () => {
+        test('fails closed for a foreign domain when key has no ACL metadata', () => {
             const key = makeKey()
-            expect(() => checkAccess(key, 'test-domain')).not.toThrow()
+            expect(() => checkAccess(key, 'test-domain')).toThrow(
+                KeyAccessError,
+            )
         })
 
-        test('allows access when key has empty ACL', () => {
+        test('fails closed for a foreign domain when key has empty ACL', () => {
             const key = makeKey([])
-            expect(() => checkAccess(key, 'test-domain')).not.toThrow()
+            expect(() => checkAccess(key, 'test-domain')).toThrow(
+                KeyAccessError,
+            )
+        })
+
+        test('grants the wallet own-origin domains by default when no ACL is set', () => {
+            // Existing seeds (empty/absent ACL) must keep working for the
+            // wallet's own signing + backup flows.
+            const noAclKey = makeKey()
+            const emptyAclKey = makeKey([])
+            for (const key of [noAclKey, emptyAclKey]) {
+                expect(() => checkAccess(key, 'pera.accounts')).not.toThrow()
+                expect(() => checkAccess(key, 'backup-flow')).not.toThrow()
+            }
         })
 
         test('is returned from useKMSService hook', () => {

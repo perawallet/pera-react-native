@@ -154,8 +154,15 @@ describe('aclOf / createdAtOf / expiresAtOf', () => {
         expect(expiresAtOf(key)?.toISOString()).toBe(expiresAt.toISOString())
     })
 
-    test('aclOf defaults to [] when pera metadata is absent', () => {
-        expect(aclOf(seedKey())).toEqual([])
+    test('aclOf defaults to the wallet own-origin ACL when pera metadata is absent', () => {
+        // Fail-closed default: no explicit ACL means "scoped to the wallet's
+        // own signing/backup origins", not allow-all.
+        expect(aclOf(seedKey())).toEqual([
+            {
+                domains: ['pera.accounts', 'backup-flow'],
+                permissions: ['read-private'],
+            },
+        ])
     })
 
     test('createdAtOf defaults to "now" when pera metadata is absent', () => {

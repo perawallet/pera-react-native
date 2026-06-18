@@ -14,7 +14,7 @@ import type { Key } from '@algorandfoundation/keystore'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 import nacl from 'tweetnacl'
-import type { AccessControl } from './models'
+import { AccessControlPermission, type AccessControl } from './models'
 import { SeedScheme } from './constants'
 
 /**
@@ -96,8 +96,28 @@ export const algo25AddressOf = (key: Key): string => {
     return ''
 }
 
-export const aclOf = (key: Key): AccessControl[] =>
-    seedMetadata(key).pera?.acl ?? []
+// The wallet's own signing origins. These MUST match SIGNING_KEY_DOMAIN
+// ('pera.accounts', packages/signing) and the backup-flow DOMAIN
+// ('backup-flow', apps/mobile backup). They live here as literals because kms
+// is a lower-level package that cannot import from its consumers — if either
+// consumer constant changes, this list must change with it or signing/backup
+// will fail closed.
+const DEFAULT_SEED_ACL: AccessControl[] = [
+    {
+        domains: ['pera.accounts', 'backup-flow'],
+        permissions: [AccessControlPermission.ReadPrivate],
+    },
+]
+
+export const aclOf = (key: Key): AccessControl[] => {
+    const stored = seedMetadata(key).pera?.acl
+    // Fail closed: a seed with no/empty ACL is treated as scoped to the
+    // wallet's own origins, not allow-all. `checkAccess` then denies any other
+    // domain instead of silently permitting it. Existing seeds (which all have
+    // empty ACLs) keep working because every real caller passes one of the
+    // default domains.
+    return stored && stored.length > 0 ? stored : DEFAULT_SEED_ACL
+}
 
 export const createdAtOf = (key: Key): Date => {
     const iso = seedMetadata(key).pera?.createdAt
