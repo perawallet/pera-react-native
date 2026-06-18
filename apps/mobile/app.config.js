@@ -329,18 +329,7 @@ module.exports = {
     // the autofill plugin. Remove once the fixes land upstream.
     './plugins/withPasskeyAutofillFixes',
 
-    './plugins/withMigrationModule.js',
-
-    './plugins/withAndroidMigrationDependencies.js',
-    './plugins/withAndroidMigrationSources.js',
-    './plugins/withMainApplicationLegacyMigration.js',
-
     './plugins/withAgeGate',
-
-    // Hand-written PeraBluetooth native module: surfaces the OS "turn on
-    // Bluetooth" prompt (iOS CoreBluetooth power alert / Android
-    // ACTION_REQUEST_ENABLE) when the Ledger scan screen needs Bluetooth.
-    './plugins/withBluetoothEnable',
   ],
 
   // Experiments (for bleeding edge features)

@@ -31,8 +31,12 @@ const loggerMock = vi.hoisted(() => ({
     error: vi.fn(),
 }))
 
+vi.mock('expo', () => ({
+    requireOptionalNativeModule: (name: string) =>
+        name === 'LegacyMigration' ? nativeModulesMock.LegacyMigration : null,
+}))
+
 vi.mock('react-native', () => ({
-    NativeModules: nativeModulesMock,
     Platform: platformMock,
 }))
 

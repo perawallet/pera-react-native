@@ -53,6 +53,7 @@ export default defineConfig({
                 '@notifee/react-native',
                 '@expo/app-integrity',
                 '@noble/hashes/sha256',
+                'expo',
                 'expo-application',
                 'expo-device',
                 'expo-local-authentication',

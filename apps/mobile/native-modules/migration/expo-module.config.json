@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["LegacyMigrationModule"]
+  },
+  "android": {
+    "modules": ["com.algorand.perarn.migration.bridge.LegacyMigrationModule"]
+  }
+}

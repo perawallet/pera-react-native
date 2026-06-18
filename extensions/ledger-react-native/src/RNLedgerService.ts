@@ -11,7 +11,8 @@
  */
 
 import { Buffer } from 'buffer'
-import { Platform, PermissionsAndroid, NativeModules } from 'react-native'
+import { requireOptionalNativeModule } from 'expo'
+import { Platform, PermissionsAndroid } from 'react-native'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import type {
@@ -53,21 +54,17 @@ const mapBluetoothState = (type: string): HardwareWalletAdapterState =>
 type BluetoothStateListener = (state: HardwareWalletAdapterState) => void
 
 /**
- * Hand-written native module (see `apps/mobile/bluetooth-{ios,android}` +
- * `withBluetoothEnable` config plugin) that surfaces the OS "turn on
- * Bluetooth" prompt. Absent in unit tests and any build where the module
- * isn't linked, so all access is guarded.
+ * Expo local module (`apps/mobile/native-modules/bluetooth`) that surfaces the OS
+ * "turn on Bluetooth" prompt. Absent in unit tests and any build where the
+ * module isn't linked, so access is guarded (`requireOptionalNativeModule`
+ * returns null when unlinked).
  */
 interface NativePeraBluetooth {
     requestEnable(): Promise<boolean>
 }
 
-const getNativeBluetoothModule = (): NativePeraBluetooth | null => {
-    const module = (
-        NativeModules as Record<string, NativePeraBluetooth | undefined>
-    ).PeraBluetooth
-    return module ?? null
-}
+const getNativeBluetoothModule = (): NativePeraBluetooth | null =>
+    requireOptionalNativeModule<NativePeraBluetooth>('PeraBluetooth')
 
 /**
  * Shared Bluetooth adapter-state observer.
