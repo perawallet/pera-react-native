@@ -34,7 +34,10 @@ export const fetchPeraWebBackup = async (
         backend: 'pera',
         network,
         method: 'GET',
-        url: `/v1/backups/${backupId}/`,
+        // `backupId` originates from a scanned QR, so encode it before
+        // interpolating: a raw `../`, `?` or `#` would otherwise retarget the
+        // request to a different backend path.
+        url: `/v1/backups/${encodeURIComponent(backupId)}/`,
     })
     return response.data
 }
