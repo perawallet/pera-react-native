@@ -39,9 +39,7 @@ export const ParticipantCount = ({
                 variant={size}
                 style={styles.value}
                 testID={testID}
-                accessibilityLabel={
-                    testID !== undefined ? String(count) : undefined
-                }
+                accessibilityLabel={testID !== undefined ? String(count) : undefined}
             >
                 {count}
             </PWText>
