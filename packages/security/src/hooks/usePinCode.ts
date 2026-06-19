@@ -199,6 +199,7 @@ export const usePinCode = (): UsePinCodeResult => {
                 await refreshBiometricsBinding()
             } else {
                 await removeSecret(PIN_RECORD_KEY_ID)
+                await removeSecret(DURESS_PIN_RECORD_KEY_ID)
                 setFailedAttemptsInStore(0)
                 setLockoutEndTimeInStore(null)
                 if (await checkBiometricsEnabled()) {
