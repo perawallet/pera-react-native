@@ -31,5 +31,11 @@ export const useStyles = makeStyles(theme => {
             flexWrap: 'wrap',
             overflow: 'hidden',
         },
+        messageValue: {
+            gap: theme.spacing.xs,
+        },
+        untrustedNote: {
+            color: theme.colors.textGray,
+        },
     }
 })

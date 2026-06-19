@@ -175,10 +175,15 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
         const dataApprove = request.approve
         approveCallback = async (result: SigningResult) => {
             if (result.signedData.type === 'arbitrary-data') {
+                // Every item shares one signer (enforced at build time) and is
+                // signed by that single resolved account, so attribute all
+                // signatures to it — not signers[i], which is undefined past
+                // the first item.
+                const signer = result.signers[0]?.address ?? ''
                 await dataApprove(
-                    result.signedData.signatures.map((signature, i) => ({
+                    result.signedData.signatures.map(signature => ({
                         signature,
-                        signer: result.signers[i]?.address ?? '',
+                        signer,
                     })),
                 )
             } else if (result.signedData.type === 'arc60') {
@@ -287,6 +292,15 @@ const buildSignableGroups = (
         const firstData = request.data[0]
         if (!firstData) {
             throw new Error('No data in request')
+        }
+        // The whole group is bound to firstData.signer and signed with that one
+        // account. Reject requests whose items claim different signers rather
+        // than silently signing them with the first signer's key.
+        if (request.data.some(item => item.signer !== firstData.signer)) {
+            throw new CannotSignError(
+                firstData.signer,
+                'Arbitrary-data items must all share the same signer',
+            )
         }
         return [
             {

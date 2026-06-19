@@ -85,10 +85,24 @@ export const ArbitraryDataSigningDetailsView = ({
             <PWView style={styles.section}>
                 <KeyValueRow
                     title={t('signing.arbitrary_data_details.message')}
+                    verticalAlignment='top'
                 >
-                    <PWText>{dataMessage.message}</PWText>
+                    <PWView style={styles.messageValue}>
+                        <PWText>{dataMessage.message}</PWText>
+                        <PWText
+                            variant='captionMedium'
+                            style={styles.untrustedNote}
+                        >
+                            {t(
+                                'signing.arbitrary_data_details.message_untrusted_note',
+                            )}
+                        </PWText>
+                    </PWView>
                 </KeyValueRow>
-                <KeyValueRow title={t('signing.arbitrary_data_details.data')}>
+                <KeyValueRow
+                    title={t('signing.arbitrary_data_details.data')}
+                    verticalAlignment='top'
+                >
                     <PWText style={styles.data}>
                         {Buffer.from(dataMessage.data, 'base64').toString(
                             'utf-8',
