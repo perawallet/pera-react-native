@@ -11,6 +11,13 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import { GenesisHashMismatchError } from '../../errors'
+
+const assertTransactionsMatchNetworkMock = vi.fn()
+vi.mock('../../../utils/assertTransactionsMatchNetwork', () => ({
+    assertTransactionsMatchNetwork: (...args: unknown[]) =>
+        assertTransactionsMatchNetworkMock(...args),
+}))
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const original =
@@ -363,5 +370,30 @@ describe('createStandardAnalyzer', () => {
         await expect(
             analyzer.analyze(group, makeContext([ACCOUNT_A])),
         ).resolves.toBeDefined()
+    })
+
+    test('rethrows GenesisHashMismatchError without wrapping it as AnalysisError', async () => {
+        assertTransactionsMatchNetworkMock.mockImplementationOnce(() => {
+            throw new GenesisHashMismatchError(
+                'testnet',
+                0,
+                'EXPECTED',
+                'ACTUAL',
+            )
+        })
+
+        const analyzer = createStandardAnalyzer()
+        const group = {
+            data: {
+                type: 'transactions',
+                transactions: [makeTx({ sender: ACCOUNT_A })],
+            },
+            source: {},
+            signerAddress: ACCOUNT_A,
+        } as unknown as SignableGroup
+
+        await expect(
+            analyzer.analyze(group, makeContext()),
+        ).rejects.toBeInstanceOf(GenesisHashMismatchError)
     })
 })

@@ -36,6 +36,7 @@ describe('network-config', () => {
             backendUrl: config.mainnetBackendUrl,
             algodUrl: config.mainnetAlgodUrl,
             indexerUrl: config.mainnetIndexerUrl,
+            genesisHash: config.mainnetGenesisHash,
             explorerUrl: config.mainnetExplorerUrl,
             bidaliBaseUrl: config.mainnetBidaliBaseUrl,
             bidaliApiKey: config.mainnetBidaliApiKey,
@@ -54,11 +55,26 @@ describe('network-config', () => {
             backendUrl: config.testnetBackendUrl,
             algodUrl: config.testnetAlgodUrl,
             indexerUrl: config.testnetIndexerUrl,
+            genesisHash: config.testnetGenesisHash,
             explorerUrl: config.testnetExplorerUrl,
             bidaliBaseUrl: config.testnetBidaliBaseUrl,
             bidaliApiKey: config.testnetBidaliApiKey,
             baanxBaseUrl: config.testnetBaanxBaseUrl,
             baanxClientKey: config.testnetBaanxClientKey,
         })
+    })
+})
+
+describe('getNetworkConfig genesisHash', () => {
+    test('returns the canonical mainnet genesis hash', () => {
+        expect(getNetworkConfig('mainnet').genesisHash).toBe(
+            'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+        )
+    })
+
+    test('returns the canonical testnet genesis hash', () => {
+        expect(getNetworkConfig('testnet').genesisHash).toBe(
+            'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
+        )
     })
 })

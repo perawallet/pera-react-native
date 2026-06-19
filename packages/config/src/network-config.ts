@@ -18,6 +18,7 @@ export type NetworkConfig = {
     backendUrl: string
     algodUrl: string
     indexerUrl: string
+    genesisHash: string
     explorerUrl: string
     bidaliBaseUrl: string
     bidaliApiKey: string
@@ -44,6 +45,9 @@ export const getNetworkConfig = (network: Network): NetworkConfig => {
         indexerUrl: isMain
             ? config.mainnetIndexerUrl
             : config.testnetIndexerUrl,
+        genesisHash: isMain
+            ? config.mainnetGenesisHash
+            : config.testnetGenesisHash,
         explorerUrl: isMain
             ? config.mainnetExplorerUrl
             : config.testnetExplorerUrl,

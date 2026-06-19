@@ -31,6 +31,8 @@ export const configSchema = z.object({
     backendAPIKey: z.string(),
     algodApiKey: z.string(),
     indexerApiKey: z.string(),
+    mainnetGenesisHash: z.string(),
+    testnetGenesisHash: z.string(),
 
     mainnetExplorerUrl: z.url(),
     testnetExplorerUrl: z.url(),
@@ -129,6 +131,8 @@ const productionConfig = {
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
     mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
     testnetIndexerUrl: 'https://testnet-idx.algonode.cloud',
+    mainnetGenesisHash: 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+    testnetGenesisHash: 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
     //Dev API Key only - not suitable for production use
@@ -232,6 +236,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetAlgodUrl: 'TESTNET_ALGOD_URL',
     mainnetIndexerUrl: 'MAINNET_INDEXER_URL',
     testnetIndexerUrl: 'TESTNET_INDEXER_URL',
+    mainnetGenesisHash: 'MAINNET_GENESIS_HASH',
+    testnetGenesisHash: 'TESTNET_GENESIS_HASH',
     mainnetBackendUrl: 'MAINNET_BACKEND_URL',
     testnetBackendUrl: 'TESTNET_BACKEND_URL',
 
