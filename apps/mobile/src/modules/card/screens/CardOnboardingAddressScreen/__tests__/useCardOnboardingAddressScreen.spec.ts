@@ -22,6 +22,7 @@ import { config } from '@perawallet/wallet-core-config'
 
 const mockMutateAsync = vi.fn()
 const mockConsentMutateAsync = vi.fn()
+const mockLinkMutateAsync = vi.fn()
 const mockSetCountryIso = vi.fn()
 const mockSetAllowMarketing = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
@@ -56,6 +57,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useSubmitConsentMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockConsentMutateAsync,
+            isPending: false,
+            isError: false,
+            isSuccess: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
+        }),
+        useLinkConsentMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mockLinkMutateAsync,
             isPending: false,
             isError: false,
             isSuccess: false,
@@ -161,8 +172,13 @@ describe('useCardOnboardingAddressScreen', () => {
                 intl: 'https://baanx/intl-terms.pdf',
             },
         }
-        mockMutateAsync.mockResolvedValue(undefined)
-        mockConsentMutateAsync.mockResolvedValue(undefined)
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'tok',
+            onboardingId: 'mock-onboarding-id',
+            userId: 'mock-user-id',
+        })
+        mockConsentMutateAsync.mockResolvedValue({ consentSetId: 'cs_1' })
+        mockLinkMutateAsync.mockResolvedValue(undefined)
     })
 
     it('starts with an invalid form and is not submitting', () => {
