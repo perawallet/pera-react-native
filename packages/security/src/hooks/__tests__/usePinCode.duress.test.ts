@@ -145,6 +145,22 @@ describe('usePinCode — duress branch', () => {
         expect(await result.current.checkDuressPinEnabled()).toBe(false)
     }, 60_000)
 
+    test('savePin(null) clears the duress record so it cannot be orphaned', async () => {
+        const { result } = renderHook(() => usePinCode())
+        await act(async () => {
+            await result.current.savePin('123456')
+            await result.current.saveDuressPin('111111')
+        })
+        expect(await result.current.checkDuressPinEnabled()).toBe(true)
+
+        await act(async () => {
+            await result.current.savePin(null)
+        })
+
+        expect(kmsMocks.duressPinBytes).toBeNull()
+        expect(await result.current.checkDuressPinEnabled()).toBe(false)
+    }, 60_000)
+
     test('verifyPin returns `ok` for the regular PIN even when duress is set', async () => {
         const { result } = renderHook(() => usePinCode())
         await act(async () => {
