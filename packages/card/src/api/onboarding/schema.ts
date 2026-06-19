@@ -90,12 +90,21 @@ export type OnboardingDetailsApiResponse = z.infer<
 // POST /v1/auth/register/address — the final registration step; issues the
 // bearer token the authenticated user endpoints require. `accessToken` is null
 // only when US AND isSameMailingAddress=false (a mailing address is still
-// owed). The response also carries a `user` block we don't model yet.
+// owed). `user.id` is the permanent userId the consent-link (PATCH) step needs;
+// we model just that field of the larger `user` block.
 export const addressResponseSchema = z.object({
     accessToken: z.string().nullable(),
     onboardingId: z.string(),
+    user: z.object({ id: z.string() }).optional().nullable(),
 })
 export type AddressApiResponse = z.infer<typeof addressResponseSchema>
+
+// POST /v2/consent/onboarding — returns the created consent set's id, which the
+// link (PATCH) step binds to the user once the address step issues the userId.
+export const consentResponseSchema = z.object({
+    consentSetId: z.string(),
+})
+export type ConsentApiResponse = z.infer<typeof consentResponseSchema>
 
 // POST /v1/card/funding-source — connects a Pera (Algorand) account as the
 // card's funding source on the setup checklist. ASSUMPTION: the request/response

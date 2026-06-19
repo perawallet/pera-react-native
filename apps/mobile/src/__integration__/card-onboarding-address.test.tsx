@@ -375,6 +375,88 @@ describe('Flow: Card onboarding — residential address', () => {
         )
     })
 
+    it('Given consent and address succeed, when Continue is pressed, then the consent set is linked to the user via PATCH', async () => {
+        // Baanx's two-step consent: create returns a consentSetId, the address
+        // step returns the permanent userId, and the link binds them together.
+        let linkBody: Record<string, unknown> | undefined
+        let linkPath: string | undefined
+        const linkSpy = vi.fn()
+        server.use(
+            http.post('*/v2/consent/onboarding', () =>
+                HttpResponse.json({ consentSetId: 'cs_123' }, { status: 200 }),
+            ),
+            http.post('*/v1/auth/register/address', () =>
+                HttpResponse.json(
+                    { ...ADDRESS_RESPONSE, user: { id: 'user_123' } },
+                    { status: 200 },
+                ),
+            ),
+            http.patch(
+                '*/v2/consent/onboarding/:consentSetId',
+                async ({ request, params }) => {
+                    linkPath = params.consentSetId as string
+                    linkBody = (await request.json()) as Record<string, unknown>
+                    linkSpy()
+                    return HttpResponse.json({ success: true }, { status: 200 })
+                },
+            ),
+        )
+
+        renderFlow()
+        fillAddressFields()
+        acceptBothTerms()
+
+        const confirm = screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        // The link fires with the consentSetId in the path and the userId in body.
+        await waitFor(() => expect(linkSpy).toHaveBeenCalled())
+        expect(linkPath).toBe('cs_123')
+        expect(linkBody).toEqual({ userId: 'user_123' })
+        // Registration still completes (the link is best-effort, not a gate).
+        await waitFor(() =>
+            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
+        )
+    })
+
+    it('Given the consent link fails, when Continue is pressed, then registration still completes', async () => {
+        // The address step already finalized registration, so a link failure
+        // must not strand the user — it is logged and the flow proceeds.
+        const linkSpy = vi.fn()
+        server.use(
+            http.post('*/v2/consent/onboarding', () =>
+                HttpResponse.json({ consentSetId: 'cs_123' }, { status: 200 }),
+            ),
+            http.post('*/v1/auth/register/address', () =>
+                HttpResponse.json(
+                    { ...ADDRESS_RESPONSE, user: { id: 'user_123' } },
+                    { status: 200 },
+                ),
+            ),
+            http.patch('*/v2/consent/onboarding/:consentSetId', () => {
+                linkSpy()
+                return HttpResponse.json({ message: 'boom' }, { status: 500 })
+            }),
+        )
+
+        renderFlow()
+        fillAddressFields()
+        acceptBothTerms()
+
+        const confirm = screen.getByTestId('card-onboarding-address-confirm')
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        await waitFor(() => expect(linkSpy).toHaveBeenCalled())
+        await waitFor(() =>
+            expect(screen.getByTestId('card-onboarding-status')).toBeTruthy(),
+        )
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
+        )
+    })
+
     it('Given the onboarding id is missing, when Continue is pressed, then it routes back to email verification', async () => {
         useCardStore.getState().setOnboardingId(null)
         const submitSpy = vi.fn()

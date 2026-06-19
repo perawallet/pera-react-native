@@ -15,11 +15,13 @@ import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     addressResponseSchema,
     connectFundingSourceResponseSchema,
+    consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     type AddressApiResponse,
     type ConnectFundingSourceApiResponse,
+    type ConsentApiResponse,
     type OnboardingDetailsApiResponse,
     type RegisterVerificationApiResponse,
     type RegistrationSettingsApiResponse,
@@ -38,8 +40,36 @@ export const mockVerifyPhone = (): HttpHandler =>
     successPost('*/v1/auth/register/phone/verify')
 export const mockSubmitPersonalDetails = (): HttpHandler =>
     successPost('*/v1/auth/register/personal-details')
-export const mockSubmitOnboardingConsent = (): HttpHandler =>
-    successPost('*/v2/consent/onboarding')
+
+// Consent create (step 1) returns the consent set id the link step binds; the
+// body is zod-parsed leniently, so the mock returns a realistic id by default.
+export type MockSubmitOnboardingConsentParams = {
+    response?: ConsentApiResponse
+    status?: number
+}
+export const mockSubmitOnboardingConsent = ({
+    response = { consentSetId: 'mock-consent-set-id' },
+    status = 200,
+}: MockSubmitOnboardingConsentParams = {}): HttpHandler => {
+    validateMockResponse(
+        consentResponseSchema,
+        response,
+        'mockSubmitOnboardingConsent',
+    )
+    return http.post('*/v2/consent/onboarding', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+// Consent link (step 2): PATCH /v2/consent/onboarding/{consentSetId}. No body of
+// our own is consumed, so default to a generic success.
+export type MockLinkOnboardingConsentParams = { status?: number }
+export const mockLinkOnboardingConsent = ({
+    status = 200,
+}: MockLinkOnboardingConsentParams = {}): HttpHandler =>
+    http.patch('*/v2/consent/onboarding/*', () =>
+        HttpResponse.json({ success: true }, { status }),
+    )
 
 // Onboarding KYC: pre-auth start (returns the Veriff session URL) + the status
 // poll the verification screen watches.
@@ -90,6 +120,7 @@ export const mockSubmitAddress = ({
     response = {
         accessToken: 'mock-access-token',
         onboardingId: 'mock-onboarding-id',
+        user: { id: 'mock-user-id' },
     },
     status = 200,
 }: MockSubmitAddressParams = {}): HttpHandler => {

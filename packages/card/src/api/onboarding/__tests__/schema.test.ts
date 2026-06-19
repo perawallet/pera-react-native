@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import {
     addressResponseSchema,
+    consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
 } from '../schema'
@@ -38,6 +39,26 @@ describe('addressResponseSchema', () => {
         expect(() =>
             addressResponseSchema.parse({ accessToken: 'tok' }),
         ).toThrow()
+    })
+
+    it('parses the user id from the user block when present', () => {
+        const parsed = addressResponseSchema.parse({
+            accessToken: 'tok',
+            onboardingId: 'ob_1',
+            user: { id: 'user_1' },
+        })
+        expect(parsed.user?.id).toBe('user_1')
+    })
+})
+
+describe('consentResponseSchema', () => {
+    it('parses the consent set id', () => {
+        const parsed = consentResponseSchema.parse({ consentSetId: 'cs_1' })
+        expect(parsed).toEqual({ consentSetId: 'cs_1' })
+    })
+
+    it('rejects a response missing the consent set id', () => {
+        expect(() => consentResponseSchema.parse({ success: true })).toThrow()
     })
 })
 

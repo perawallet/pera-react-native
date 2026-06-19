@@ -24,6 +24,7 @@ import {
     fetchOnboardingDetails,
     submitAddress,
     submitOnboardingConsent,
+    linkOnboardingConsent,
     fetchRegistrationSettings,
     buildOnboardingConsentBody,
 } from '../endpoints'
@@ -277,9 +278,13 @@ describe('onboarding endpoints', () => {
         expect(result.verificationState).toBe(VerificationState.Unverified)
     })
 
-    it('submits address and returns the issued access token + onboarding id', async () => {
+    it('submits address and returns the access token, onboarding id, and user id', async () => {
         request.mockResolvedValue({
-            data: { accessToken: 'tok', onboardingId: 'ob_1' },
+            data: {
+                accessToken: 'tok',
+                onboardingId: 'ob_1',
+                user: { id: 'user_1' },
+            },
         })
 
         const result = await submitAddress({
@@ -293,7 +298,11 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
-        expect(result).toEqual({ accessToken: 'tok', onboardingId: 'ob_1' })
+        expect(result).toEqual({
+            accessToken: 'tok',
+            onboardingId: 'ob_1',
+            userId: 'user_1',
+        })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 path: '/v1/auth/register/address',
@@ -305,10 +314,29 @@ describe('onboarding endpoints', () => {
         )
     })
 
-    it('posts the consent set to /v2/consent/onboarding', async () => {
-        request.mockResolvedValue({ data: { success: true } })
+    it('returns a null userId when the address response omits the user block', async () => {
+        request.mockResolvedValue({
+            data: { accessToken: 'tok', onboardingId: 'ob_1' },
+        })
 
-        await submitOnboardingConsent({
+        const result = await submitAddress({
+            address: {
+                onboardingId: 'ob_1',
+                addressLine1: '1 A St',
+                city: 'Town',
+                zip: 'Z1',
+                isSameMailingAddress: true,
+            },
+            network: 'mainnet',
+        })
+
+        expect(result.userId).toBeNull()
+    })
+
+    it('posts the consent set to /v2/consent/onboarding and returns the consentSetId', async () => {
+        request.mockResolvedValue({ data: { consentSetId: 'cs_1' } })
+
+        const result = await submitOnboardingConsent({
             onboardingId: 'ob_1',
             policyType: 'global',
             termsAccepted: true,
@@ -316,6 +344,7 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
+        expect(result).toEqual({ consentSetId: 'cs_1' })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'POST',
@@ -325,10 +354,24 @@ describe('onboarding endpoints', () => {
         )
     })
 
-    it('treats a duplicate-onboardingId consent error as success', async () => {
+    it('returns a null consentSetId when the consent response shape is unexpected', async () => {
+        request.mockResolvedValue({ data: { success: true } })
+
+        const result = await submitOnboardingConsent({
+            onboardingId: 'ob_1',
+            policyType: 'global',
+            termsAccepted: true,
+            allowMarketing: false,
+            network: 'mainnet',
+        })
+
+        expect(result).toEqual({ consentSetId: null })
+    })
+
+    it('treats a duplicate-onboardingId consent error as success (no id to return)', async () => {
         // Baanx rejects a re-submitted consent set (e.g. after the address step
         // failed and the user retries). The consent already exists, so this must
-        // resolve and let the address step proceed.
+        // resolve; the link step falls back to the id stashed on the first create.
         request.mockRejectedValue({
             data: {
                 message: JSON.stringify({
@@ -348,7 +391,7 @@ describe('onboarding endpoints', () => {
                 allowMarketing: false,
                 network: 'mainnet',
             }),
-        ).resolves.toBeUndefined()
+        ).resolves.toEqual({ consentSetId: null })
     })
 
     it('rethrows a non-duplicate consent failure', async () => {
@@ -361,6 +404,51 @@ describe('onboarding endpoints', () => {
                 policyType: 'global',
                 termsAccepted: true,
                 allowMarketing: false,
+                network: 'mainnet',
+            }),
+        ).rejects.toBe(failure)
+    })
+
+    it('links the consent set to the user via PATCH', async () => {
+        request.mockResolvedValue({ data: { success: true } })
+
+        await linkOnboardingConsent({
+            consentSetId: 'cs_1',
+            userId: 'user_1',
+            network: 'mainnet',
+        })
+
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'PATCH',
+                path: '/v2/consent/onboarding/cs_1',
+                data: { userId: 'user_1' },
+            }),
+        )
+    })
+
+    it('treats an already-linked (409 Conflict) consent link as success', async () => {
+        // Linking a set that is already bound returns 409; the desired end state
+        // is reached, so this must resolve rather than throw.
+        request.mockRejectedValue({ response: { status: 409 } })
+
+        await expect(
+            linkOnboardingConsent({
+                consentSetId: 'cs_1',
+                userId: 'user_1',
+                network: 'mainnet',
+            }),
+        ).resolves.toBeUndefined()
+    })
+
+    it('rethrows a non-conflict consent link failure', async () => {
+        const failure = { response: { status: 500 }, data: { message: 'boom' } }
+        request.mockRejectedValue(failure)
+
+        await expect(
+            linkOnboardingConsent({
+                consentSetId: 'cs_1',
+                userId: 'user_1',
                 network: 'mainnet',
             }),
         ).rejects.toBe(failure)

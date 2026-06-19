@@ -52,6 +52,12 @@ export type CardUxState = BaseStoreState & {
     /** Returned by email/verify; required by every later registration step. */
     onboardingId: Nullable<string>
     /**
+     * Returned by the consent-create step (`POST /v2/consent/onboarding`).
+     * Persisted so the consent-link step can still bind it to the user after a
+     * cross-reload retry (where re-creating returns "Duplicate" with no id).
+     */
+    consentSetId: Nullable<string>
+    /**
      * Marketing-communication opt-in captured on the address step.
      * TODO(card): confirm with backend how to transmit it — `email/verify`
      * accepts `allowMarketing`, but it fires before this consent is collected.
@@ -82,6 +88,7 @@ export type CardUxState = BaseStoreState & {
     setPhone: (phone: { phoneCountryCode: string; phoneNumber: string }) => void
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void
+    setConsentSetId: (id: Nullable<string>) => void
     setAllowMarketing: (allowMarketing: boolean) => void
     setConnectedFundingSourceAddress: (address: Nullable<string>) => void
     setSelectedFundingType: (type: Nullable<FundingType>) => void

@@ -16,6 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
     addressSchema,
     useCardStore,
+    useLinkConsentMutation,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
     useSubmitConsentMutation,
@@ -76,6 +77,7 @@ export const useCardOnboardingAddressScreen =
         const allowMarketing = useCardStore(state => state.allowMarketing)
         const submitAddress = useSubmitAddressMutation()
         const submitConsent = useSubmitConsentMutation()
+        const linkConsent = useLinkConsentMutation()
         const { data: settings } = useRegistrationSettingsQuery()
 
         const [selectedCountry, setSelectedCountry] =
@@ -229,20 +231,35 @@ export const useCardOnboardingAddressScreen =
                     : {}),
             }
             try {
-                // Record the user's consents (T&Cs + marketing) first, then
-                // finalize registration with the address. Both T&Cs are
-                // guaranteed accepted here — the Continue button gates on them.
-                await submitConsent.mutateAsync({
+                // Baanx's two-step consent: (1) create the consent set (T&Cs +
+                // marketing) before the address, (2) link it to the user once
+                // the address step issues the userId. Both T&Cs are guaranteed
+                // accepted here — the Continue button gates on them.
+                const { consentSetId } = await submitConsent.mutateAsync({
                     onboardingId,
                     policyType: isUsResident ? 'us' : 'global',
                     // Both T&C boxes gate Continue, so they're accepted here.
                     termsAccepted: cardTermsAccepted && platformTermsAccepted,
                     allowMarketing,
                 })
-                await submitAddress.mutateAsync(address)
-                // The mutation's onSuccess commits the session and marks the
-                // onboarding step Completed. Registration is done — hand back to
-                // the setup checklist, where Connect Funds is now the live step.
+                const { userId } = await submitAddress.mutateAsync(address)
+                // Link best-effort: registration is already finalized (the
+                // address mutation committed the session + marked the step
+                // Completed), so a link hiccup must not strand a registered user
+                // here. Falls back to the id stashed on the first create when a
+                // duplicate retry returned none; failures are logged, not thrown.
+                const consentSetIdToLink =
+                    consentSetId ?? useCardStore.getState().consentSetId
+                if (consentSetIdToLink !== null && userId !== null) {
+                    await linkConsent
+                        .mutateAsync({
+                            consentSetId: consentSetIdToLink,
+                            userId,
+                        })
+                        .catch(() => undefined)
+                }
+                // Registration is done — hand back to the setup checklist, where
+                // Connect Funds is now the live step.
                 navigation.navigate('CardOnboardingStatus')
             } catch {
                 errorToast(
@@ -260,7 +277,10 @@ export const useCardOnboardingAddressScreen =
             control,
             errors,
             isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
-            isSubmitting: submitAddress.isPending || submitConsent.isPending,
+            isSubmitting:
+                submitAddress.isPending ||
+                submitConsent.isPending ||
+                linkConsent.isPending,
             selectedCountry,
             isUsResident,
             selectedUsState,

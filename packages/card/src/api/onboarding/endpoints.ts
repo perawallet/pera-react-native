@@ -16,7 +16,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
-import { getCardApiError, isDuplicateError } from '../errors'
+import { getCardApiError, isConflictError, isDuplicateError } from '../errors'
 import { getCardTransport } from '../transport'
 import { VerificationState } from '../../models'
 import type {
@@ -28,6 +28,7 @@ import type {
 import {
     addressResponseSchema,
     connectFundingSourceResponseSchema,
+    consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
@@ -197,11 +198,13 @@ export const fetchOnboardingDetails = async (
 export type SubmitAddressParams = NetworkParams & { address: AddressInput }
 // The final registration step. Unlike the other register steps its response
 // matters: it carries the `accessToken` that authenticates the post-onboarding
-// user endpoints, so we parse and return it rather than discarding the body
-// via `postRegisterStep`.
+// user endpoints plus the permanent `userId` the consent-link step binds to, so
+// we parse and return them rather than discarding the body via `postRegisterStep`.
 export type SubmitAddressResult = {
     accessToken: string | null
     onboardingId: string
+    /** Permanent user id (`user.id`); null until Baanx returns the user block. */
+    userId: string | null
 }
 export const submitAddress = async (
     params: SubmitAddressParams,
@@ -213,7 +216,12 @@ export const submitAddress = async (
         data: params.address,
         signal: params.signal,
     })
-    return addressResponseSchema.parse(response.data)
+    const parsed = addressResponseSchema.parse(response.data)
+    return {
+        accessToken: parsed.accessToken,
+        onboardingId: parsed.onboardingId,
+        userId: parsed.user?.id ?? null,
+    }
 }
 
 // POST /v2/consent/onboarding. Jurisdiction policy: US residents use 'us',
@@ -285,30 +293,72 @@ export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
     return { onboardingId, tenantId, policyType, consents }
 }
 
-// Records the user's onboarding consents on the final address step. The tenant
-// id is build-time config (per network), like the Baanx client key.
+// Step 1 of Baanx's two-step consent flow: create the consent set during
+// registration (before the address step). The tenant id is build-time config
+// (per network), like the Baanx client key. Returns the `consentSetId` the link
+// step (below) binds to the user once the address step issues the userId.
 export type SubmitOnboardingConsentParams = NetworkParams &
     Omit<OnboardingConsentInput, 'tenantId'>
+export type SubmitOnboardingConsentResult = {
+    /** Null when Baanx omitted it (e.g. a duplicate-onboardingId retry). */
+    consentSetId: string | null
+}
 export const submitOnboardingConsent = async (
     params: SubmitOnboardingConsentParams,
-): Promise<void> => {
+): Promise<SubmitOnboardingConsentResult> => {
     const { network, signal, ...rest } = params
     const body = buildOnboardingConsentBody({
         ...rest,
         tenantId: getNetworkConfig(network).baanxTenantId,
     })
     try {
-        await postRegisterStep('/v2/consent/onboarding', body, {
+        const response = await postRegisterStep(
+            '/v2/consent/onboarding',
+            body,
+            { network, signal },
+        )
+        // Lenient: the consentSetId is best-effort (the link step skips when it's
+        // absent), so an unexpected body shape must not fail the address finalize.
+        const parsed = consentResponseSchema.safeParse(
+            (response as { data?: unknown }).data,
+        )
+        return {
+            consentSetId: parsed.success ? parsed.data.consentSetId : null,
+        }
+    } catch (error) {
+        // Consent creation is non-idempotent on Baanx: a retried submit (e.g.
+        // after the address step failed and the user taps Continue again)
+        // returns "Duplicate onboardingId". The consent set already exists — the
+        // desired end state — so treat it as success. We have no id to return
+        // here; the link step falls back to the one stashed on the first create.
+        const apiError = await getCardApiError(error)
+        if (isDuplicateError(apiError)) return { consentSetId: null }
+        throw error
+    }
+}
+
+// Step 2 of Baanx's two-step consent flow: link the consent set created above to
+// the permanent user id the address step issues. Idempotent — Baanx returns 409
+// Conflict if the set is already linked (the desired end state), which we swallow.
+export type LinkOnboardingConsentParams = NetworkParams & {
+    consentSetId: string
+    userId: string
+}
+export const linkOnboardingConsent = async (
+    params: LinkOnboardingConsentParams,
+): Promise<void> => {
+    const { network, signal, consentSetId, userId } = params
+    try {
+        await getCardTransport().request({
             network,
+            method: 'PATCH',
+            path: `/v2/consent/onboarding/${consentSetId}`,
+            data: { userId },
             signal,
         })
     } catch (error) {
-        // Consent is non-idempotent on Baanx: a retried submit (e.g. after the
-        // address step failed and the user taps Continue again) returns
-        // "Duplicate onboardingId". The consent set already exists — the desired
-        // end state — so treat it as success and let the address step proceed.
         const apiError = await getCardApiError(error)
-        if (isDuplicateError(apiError)) return
+        if (isConflictError(apiError)) return
         throw error
     }
 }
