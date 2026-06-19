@@ -23,7 +23,11 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
-import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatDatetime,
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useCallback, useMemo } from 'react'
@@ -103,6 +107,16 @@ export const PortfolioView = ({
         return [lastDp.minus(firstDp), percentChange(firstDp, lastDp)]
     }, [historyDataPoints])
 
+    const trendPeriodLabel = useMemo<Record<HistoryPeriod, string>>(
+        () => ({
+            'one-day': t('portfolio.last_24_hours'),
+            'one-week': t('portfolio.last_7_days'),
+            'one-month': t('portfolio.last_30_days'),
+            'one-year': t('portfolio.last_year'),
+        }),
+        [t],
+    )
+
     const chartSelectionChanged = useCallback(
         (selected: Nullable<AccountBalanceHistoryItem>) => {
             setSelectedPoint(selected)
@@ -171,7 +185,7 @@ export const PortfolioView = ({
                             style={styles.trendTitle}
                             truncate
                         >
-                            {t('portfolio.last_7_days')}
+                            {trendPeriodLabel[period]}
                         </PWText>
 
                         <TrendIndicator
