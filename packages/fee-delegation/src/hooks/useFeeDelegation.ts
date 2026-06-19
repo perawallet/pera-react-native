@@ -34,7 +34,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import { requestFeeDelegation } from '../api'
-import { FeeDelegationAttestationRequiredError } from '../errors'
+import {
+    FeeDelegationAttestationRequiredError,
+    FeeDelegationResponseMismatchError,
+} from '../errors'
+import { returnedTransactionsMatchSent } from '../utils'
 
 export type FeeDelegatedSubmitParams = {
     /** The wallet account whose transactions are being sponsored. */
@@ -194,6 +198,24 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     unsignedTxs.push(unsignedTxn)
                     groupContext.push(unsignedTxn)
                 }
+            }
+
+            // Trust-anchor check: a non-custodial wallet must never sign a
+            // transaction it did not build. The backend legitimately re-groups
+            // (so the group id changes), but every to-sign slot it hands back
+            // must otherwise be byte-identical to a transaction the wallet sent,
+            // in order, and sent by `account`. Reject the whole group otherwise
+            // — a compromised backend or TLS MITM must not be able to substitute
+            // an attacker-favorable transaction into the wallet's slot.
+            if (
+                !returnedTransactionsMatchSent({
+                    sent: transactions,
+                    returnedToSign: unsignedTxs,
+                    account,
+                    encodeTransaction,
+                })
+            ) {
+                throw new FeeDelegationResponseMismatchError()
             }
 
             const signableIndices = slots.reduce<number[]>(
