@@ -132,7 +132,16 @@ export const useWalletConnect = (network: Network) => {
         })
 
         connections.forEach(connection => {
-            void connect({ connection })
+            // Fire-and-forget, but never unguarded: a stored connection with a
+            // missing/empty bridge makes the WC v1 `Connector` constructor throw
+            // synchronously, which would otherwise surface as an uncaught promise
+            // rejection on cold start. Log and skip the bad session instead.
+            connect({ connection }).catch(error => {
+                logger.error(
+                    '[WC] Failed to reconnect stored session — skipping',
+                    { clientId: connection.clientId, error },
+                )
+            })
         })
 
         // Only push a new array if at least one connection's `connected`

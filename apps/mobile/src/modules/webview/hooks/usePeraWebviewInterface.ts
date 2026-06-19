@@ -758,10 +758,18 @@ export const usePeraWebviewInterface = (
             // had scanned the QR themselves. The bridge never auto-approves a
             // WC session (which would expose account addresses with no UI),
             // regardless of origin trust.
-            void connect({
+            // Fire-and-forget, but guarded: connect() constructs the WC client
+            // synchronously, which throws on a malformed URI. Without a catch
+            // that throw surfaces as an uncaught promise rejection.
+            connect({
                 connection: {
                     uri: parsed.uri,
                 },
+            }).catch(error => {
+                logger.error('[webview/wc] connect failed', {
+                    error,
+                    uri: parsed.uri,
+                })
             })
         },
         [connect, hadRequiredParams, webview],
