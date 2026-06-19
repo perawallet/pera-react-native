@@ -28,6 +28,7 @@ import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
+import { useRekeyProposeHandoff } from '../../../hooks/useRekeyProposeHandoff'
 import { PreviousRekeyWarningSheet } from '../../../components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
@@ -71,6 +72,13 @@ export const useUndoRekeyConfirmScreen =
             sourceAddress,
         )
 
+        // Undoing the rekey of a shared account is a multisig propose whose
+        // signing Promise never resolves — hand off to the pending-signatures
+        // sheet on the 'proposed' event instead of leaving the CTA spinning.
+        const { markSubmitted, hasHandedOff } = useRekeyProposeHandoff(() =>
+            navigation.navigate('TabBar', { screen: 'Home' }),
+        )
+
         const submit = useCallback(async () => {
             if (!source) {
                 // The CTA is disabled in this state, but guard anyway — a
@@ -82,19 +90,33 @@ export const useUndoRekeyConfirmScreen =
                 return
             }
 
+            markSubmitted()
             try {
                 await submitAsync({
                     sourceAddress: source.address,
                     rekeyToAddress: source.address,
                 })
+                // A multisig propose already handed off via the 'proposed'
+                // event; don't also show the success screen.
+                if (hasHandedOff()) return
                 navigation.navigate('UndoRekey', {
                     screen: 'UndoRekeySuccess',
                     params: { sourceAddress: source.address },
                 })
             } catch (error) {
+                // After a propose handoff the signing Promise eventually
+                // rejects on timeout — expected, not a failure to surface.
+                if (hasHandedOff()) return
                 handleRekeyError(error)
             }
-        }, [submitAsync, navigation, handleRekeyError, source])
+        }, [
+            submitAsync,
+            navigation,
+            handleRekeyError,
+            source,
+            markSubmitted,
+            hasHandedOff,
+        ])
 
         const handleLearnMore = useCallback(() => {
             pushWebView({ url: config.rekeyToStandardSupportUrl })

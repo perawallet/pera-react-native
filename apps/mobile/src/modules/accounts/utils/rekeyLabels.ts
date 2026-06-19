@@ -37,6 +37,9 @@ export type RekeyLabelI18n = {
 
 const descriptionKeyFor = (transition: RekeyTransition): string => {
     const { from, to } = transition
+    if (to === AccountTypes.multisig) {
+        return 'account_type_info.rekeyed_shared_description'
+    }
     if (from === AccountTypes.hardware && to === AccountTypes.hardware) {
         return 'account_type_info.rekeyed_ledger_to_ledger_description'
     }

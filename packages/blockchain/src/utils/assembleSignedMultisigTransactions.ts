@@ -12,12 +12,17 @@
 
 import { Address } from '@algorandfoundation/algokit-utils'
 import {
+    decodeMsgpack,
     encodeMsgpack,
     PUBLIC_KEY_BYTE_LENGTH,
     SIGNATURE_BYTE_LENGTH,
 } from '@algorandfoundation/algokit-utils/common'
 import nacl from 'tweetnacl'
-import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    bytesEqual,
+    concatBytes,
+    decodeFromBase64,
+} from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { addTxPrefix } from './rawTransactions'
 
@@ -44,6 +49,14 @@ export type AssembleSignedMultisigParams = {
     threshold: number
     /** Per-participant responses; only entries with `response: 'signed'` contribute sigs. */
     responses: ParticipantResponse[]
+    /**
+     * Address of the multisig that authorizes these transactions (the joint
+     * account being signed). When a transaction's sender differs from it — i.e.
+     * the sender is rekeyed to this multisig — the assembled signed transaction
+     * carries an `sgnr` (auth-address) field. Omit for plain multisig spends
+     * where the sender is the multisig itself.
+     */
+    multisigAddress?: string
 }
 
 export type AssembleSignedMultisigResult =
@@ -57,6 +70,44 @@ export type AssembleSignedMultisigResult =
  * bytes go in verbatim as the final value, never decoded and re-encoded.
  */
 const SIGNED_TXN_MAP_HEADER = new Uint8Array([0x82])
+
+/**
+ * msgpack `fixmap` header for a 3-entry map — the signed-transaction envelope
+ * `{ "msig": ..., "sgnr": ..., "txn": ... }` used when the sender is rekeyed to
+ * the signing multisig. Keys stay in canonical (alphabetical) order: msig <
+ * sgnr < txn.
+ */
+const SIGNED_TXN_MAP_HEADER_WITH_SIGNER = new Uint8Array([0x83])
+
+/** The transaction `snd` field key, as its raw UTF-8 bytes. */
+const SND_FIELD_KEY = new Uint8Array([0x73, 0x6e, 0x64]) // "snd"
+
+/**
+ * Reads the 32-byte sender public key (`snd`) from raw transaction msgpack
+ * bytes. Decodes only to inspect the sender — the raw bytes are still embedded
+ * verbatim in the envelope, never re-encoded. `decodeMsgpack` returns a Map
+ * keyed by the raw field-name bytes (Algorand's canonical decode), so we match
+ * the key bytes directly. Returns `null` when the field is absent or the bytes
+ * can't be decoded. Mirrors pera-android's
+ * `MultisigTransactionAssembler.extractSenderPublicKey`.
+ */
+const extractSenderPublicKey = (rawTxBytes: Uint8Array): Uint8Array | null => {
+    try {
+        const decoded = decodeMsgpack(rawTxBytes)
+        for (const [key, value] of decoded) {
+            if (
+                key instanceof Uint8Array &&
+                bytesEqual(key, SND_FIELD_KEY) &&
+                value instanceof Uint8Array
+            ) {
+                return value
+            }
+        }
+        return null
+    } catch {
+        return null
+    }
+}
 
 const isAllZero = (bytes: Uint8Array): boolean => {
     for (const b of bytes) if (b !== 0) return false
@@ -148,7 +199,21 @@ export const assembleSignedMultisigTransactions = (
         version,
         threshold,
         responses,
+        multisigAddress,
     } = params
+
+    // Public key (raw 32 bytes) of the signing multisig address, used to decide
+    // whether a transaction's sender is rekeyed to it. Null when no multisig
+    // address was supplied or it can't be parsed — in which case no `sgnr` is
+    // written (the legacy, non-rekey behavior).
+    let multisigPublicKey: Uint8Array | null = null
+    if (multisigAddress) {
+        try {
+            multisigPublicKey = Address.fromString(multisigAddress).publicKey
+        } catch {
+            multisigPublicKey = null
+        }
+    }
 
     if (rawTransactionsBase64.length === 0) {
         return { kind: 'success', signedTransactionsBytes: [] }
@@ -246,28 +311,42 @@ export const assembleSignedMultisigTransactions = (
             return sig ? { pk, s: sig } : { pk }
         })
 
-        // SignedTransaction envelope: a 2-entry map { msig, txn }. encodeMsgpack
-        // canonically encodes the `msig` map (sorted keys); the raw transaction
-        // bytes are appended verbatim as the final value — never decoded and
-        // re-encoded, so the exact bytes each participant signed reach algod.
-        //
-        // TODO(rekey-to-multisig): pera-android's MultisigTransactionAssembler.kt
-        // writes a 3rd alphabetical field "sgnr" (32-byte multisig pubkey) when
-        // the txn's `snd` differs from the multisig address — i.e. a regular
-        // account rekeyed to a multisig. This is omitted here because the
-        // signing pipeline doesn't yet route such accounts into this assembler:
-        // packages/signing/src/pipeline/signing/getSigningStrategy.ts and
-        // packages/signing/src/pipeline/transports/getTransport.ts both check
-        // isMultisigAccount() directly without following auth-addr. The `sgnr`
-        // field and the routing changes should land together in a follow-up.
+        // When the transaction's sender differs from the signing multisig
+        // address, the sender is rekeyed to this multisig and the envelope must
+        // carry the auth address in `sgnr` (the multisig's 32-byte pubkey).
+        // Otherwise the sender authorizes itself and no `sgnr` is written.
+        // Mirrors pera-android's MultisigTransactionAssembler.kt.
+        const senderPublicKey = extractSenderPublicKey(rawTxBytes)
+        const authAddrPublicKey =
+            multisigPublicKey &&
+            senderPublicKey &&
+            !bytesEqual(multisigPublicKey, senderPublicKey)
+                ? multisigPublicKey
+                : null
+
+        // SignedTransaction envelope: a 2-entry map { msig, txn } (or a 3-entry
+        // map { msig, sgnr, txn } when rekeyed). encodeMsgpack canonically
+        // encodes the `msig` map (sorted keys); the raw transaction bytes are
+        // appended verbatim as the final value — never decoded and re-encoded,
+        // so the exact bytes each participant signed reach algod.
         signedList.push(
-            concatBytes(
-                SIGNED_TXN_MAP_HEADER,
-                encodeMsgpack('msig'),
-                encodeMsgpack({ subsig, thr: threshold, v: version }),
-                encodeMsgpack('txn'),
-                rawTxBytes,
-            ),
+            authAddrPublicKey
+                ? concatBytes(
+                      SIGNED_TXN_MAP_HEADER_WITH_SIGNER,
+                      encodeMsgpack('msig'),
+                      encodeMsgpack({ subsig, thr: threshold, v: version }),
+                      encodeMsgpack('sgnr'),
+                      encodeMsgpack(authAddrPublicKey),
+                      encodeMsgpack('txn'),
+                      rawTxBytes,
+                  )
+                : concatBytes(
+                      SIGNED_TXN_MAP_HEADER,
+                      encodeMsgpack('msig'),
+                      encodeMsgpack({ subsig, thr: threshold, v: version }),
+                      encodeMsgpack('txn'),
+                      rawTxBytes,
+                  ),
         )
     }
 

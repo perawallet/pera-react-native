@@ -59,6 +59,17 @@ describe('getRekeyLabelI18n', () => {
             descriptionKey: 'account_type_info.rekeyed_standard_description',
         })
     })
+
+    it('maps a rekey to a shared auth account to the shared description', () => {
+        expect(getRekeyLabelI18n({ from: 'multisig', to: 'multisig' })).toEqual(
+            {
+                labelKey: 'account_info.type_rekeyed_transition',
+                fromKey: 'account_info.rekey_part_shared',
+                toKey: 'account_info.rekey_part_shared',
+                descriptionKey: 'account_type_info.rekeyed_shared_description',
+            },
+        )
+    })
 })
 
 describe('splitAccountTypeLabel', () => {

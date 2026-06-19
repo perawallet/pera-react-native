@@ -356,6 +356,7 @@
         "no_auth_description": "Your account is rekeyed to an Algorand account that is not in your wallet. You can't send assets or sign transactions.",
         "rekeyed_standard_title": "Rekeyed account",
         "rekeyed_standard_description": "Your account is rekeyed to another standard Algorand account. Transactions for this account will be authorized by the other account.",
+        "rekeyed_shared_description": "Your account is rekeyed to a shared account. Transactions for this account will be authorized by the shared account.",
         "rekeyed_ledger_description": "Your account is rekeyed to an account on a Ledger hardware device. Transactions for this account must be authorized on the Ledger device.",
         "rekeyed_ledger_to_ledger_description": "Your Ledger account is rekeyed to an account on another Ledger hardware device. Transactions for this account will be authorized by the other Ledger device.",
         "hd_wallet_title": "Universal Wallet",

@@ -27,6 +27,7 @@ import { trackEvent, OnboardingEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from './useHandleRekeyError'
+import { useRekeyProposeHandoff } from './useRekeyProposeHandoff'
 import { PreviousRekeyWarningSheet } from '../components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
@@ -42,6 +43,15 @@ export type RekeyConfirmConfig = {
     warningTestID: string
     /** Navigate to the variant's success screen after a confirmed rekey. */
     onSubmitSuccess: (sourceAddress: string) => void
+    /**
+     * Called when the rekey is a multisig (shared-account) transaction that
+     * gets proposed for cosigning instead of broadcast immediately. The signing
+     * Promise never resolves in that case — the propose surfaces via a
+     * `'proposed'` signing event — so the flow hands off here (exiting to the
+     * pending-signatures sheet) rather than showing the success screen. Omit
+     * for variants whose source is never a shared account.
+     */
+    onProposed?: (sourceAddress: string) => void
 }
 
 export type UseRekeyConfirmScreenResult = {
@@ -62,12 +72,20 @@ export const useRekeyConfirmScreen = ({
     warningI18nPrefix,
     warningTestID,
     onSubmitSuccess,
+    onProposed,
 }: RekeyConfirmConfig): UseRekeyConfirmScreenResult => {
     const navigation = useAppNavigation()
 
     const source = useFindAccountByAddress(sourceAddress)
     const target = useFindAccountByAddress(targetAddress)
     const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
+
+    // A shared-account rekey is signed via the multisig propose flow, whose
+    // signing Promise never resolves — hand off to the pending-signatures
+    // sheet on the 'proposed' event instead of leaving the CTA spinning.
+    const { markSubmitted, hasHandedOff } = useRekeyProposeHandoff(() =>
+        onProposed?.(sourceAddress),
+    )
 
     const { t } = useLanguage()
     const handleRekeyError = useHandleRekeyError()
@@ -97,14 +115,21 @@ export const useRekeyConfirmScreen = ({
             return
         }
 
+        markSubmitted()
         try {
             await submitAsync({
                 sourceAddress: source.address,
                 rekeyToAddress: target.address,
             })
+            // A multisig propose already handed off via the 'proposed' event;
+            // don't also show the success screen.
+            if (hasHandedOff()) return
             trackEvent(OnboardingEvent.RekeyAccount)
             onSubmitSuccess(source.address)
         } catch (error) {
+            // After a propose handoff the signing Promise eventually rejects on
+            // timeout — that's expected, not a failure to surface.
+            if (hasHandedOff()) return
             handleRekeyError(error)
         }
     }, [
@@ -114,6 +139,8 @@ export const useRekeyConfirmScreen = ({
         source,
         target,
         onSubmitSuccess,
+        markSubmitted,
+        hasHandedOff,
     ])
 
     const handleLearnMore = useCallback(() => {

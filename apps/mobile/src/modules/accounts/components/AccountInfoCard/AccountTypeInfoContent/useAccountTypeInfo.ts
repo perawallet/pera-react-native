@@ -129,12 +129,20 @@ export const useAccountTypeInfo = ({
     }, [account, canSign, rekeyTransition, t])
 
     const handleLearnMore = useCallback(() => {
-        const url =
-            account.type === AccountTypes.hardware
-                ? config.ledgerAccountSupportUrl
-                : config.accountTypeSupportUrl
+        // Send shared accounts — and accounts rekeyed to a shared account — to
+        // the shared-accounts article rather than the generic account-types
+        // page, matching the info sheet's copy.
+        const isShared =
+            account.type === AccountTypes.multisig ||
+            rekeyTransition?.to === AccountTypes.multisig
+        let url = config.accountTypeSupportUrl
+        if (account.type === AccountTypes.hardware) {
+            url = config.ledgerAccountSupportUrl
+        } else if (isShared) {
+            url = config.multisigSupportUrl
+        }
         pushWebView({ url })
-    }, [pushWebView, account.type])
+    }, [pushWebView, account.type, rekeyTransition])
 
     return {
         title,
