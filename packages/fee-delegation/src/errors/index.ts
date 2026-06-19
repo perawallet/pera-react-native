@@ -23,3 +23,20 @@ export class FeeDelegationAttestationRequiredError extends Error {
         this.name = 'FeeDelegationAttestationRequiredError'
     }
 }
+
+/**
+ * Thrown when the fee-delegation backend returns a to-sign slot that is not
+ * byte-identical (modulo the re-assigned group field) to a transaction the
+ * wallet actually sent, or whose sender is not the requesting account. A
+ * non-custodial wallet must never sign a transaction it did not build, so the
+ * whole group is rejected rather than signed — this is the substitution
+ * trust-anchor for fee delegation.
+ */
+export class FeeDelegationResponseMismatchError extends Error {
+    constructor(
+        message = 'The fee-delegation server returned transactions that do not match the ones the wallet sent.',
+    ) {
+        super(message)
+        this.name = 'FeeDelegationResponseMismatchError'
+    }
+}

@@ -12,10 +12,11 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import type { PostCreateReturnTarget } from '@modules/onboarding/routes/types'
 import { useIsOnboarding } from './useOnboardingStore'
 
 type UseExitAccountFlowResult = {
-    exitAccountFlow: () => void
+    exitAccountFlow: (returnTo?: PostCreateReturnTarget) => void
 }
 
 /**
@@ -26,21 +27,32 @@ type UseExitAccountFlowResult = {
  *
  * In the AddAccount flow (mid-app), `isOnboarding` is already false so we
  * navigate explicitly to TabBar.
+ *
+ * A `returnTo` target (threaded from the route) overrides both, so a caller
+ * flow (e.g. Pera Card's Connect Funds) can resume itself instead of Home.
  */
 export const useExitAccountFlow = (): UseExitAccountFlowResult => {
     const navigation = useAppNavigation()
     const { isOnboarding, setIsOnboarding } = useIsOnboarding()
 
-    const exitAccountFlow = useCallback(() => {
-        if (isOnboarding) {
-            setIsOnboarding(false)
-        } else {
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
-            })
-        }
-    }, [isOnboarding, setIsOnboarding, navigation])
+    const exitAccountFlow = useCallback(
+        (returnTo?: PostCreateReturnTarget) => {
+            if (returnTo) {
+                navigation.navigate(
+                    returnTo.name as never,
+                    returnTo.params as never,
+                )
+            } else if (isOnboarding) {
+                setIsOnboarding(false)
+            } else {
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'TabBar', params: { screen: 'Home' } }],
+                })
+            }
+        },
+        [isOnboarding, setIsOnboarding, navigation],
+    )
 
     return { exitAccountFlow }
 }

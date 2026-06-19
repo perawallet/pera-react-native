@@ -29,6 +29,8 @@ type StatusChecklistRowProps = {
     pendingLabel?: string
     /** Dims the title for steps that aren't reachable yet. */
     isInactive?: boolean
+    /** Inline element shown next to the title, e.g. an info icon. */
+    titleAccessory?: ReactNode
     testID?: string
     /** Row-specific content rendered below the body, e.g. the details CTA. */
     children?: ReactNode
@@ -42,10 +44,20 @@ export const StatusChecklistRow = ({
     body,
     pendingLabel,
     isInactive = false,
+    titleAccessory,
     testID,
     children,
 }: StatusChecklistRowProps) => {
     const styles = useStyles()
+
+    const titleText = (
+        <PWText
+            variant='bodyLarge'
+            style={isInactive ? styles.inactiveTitle : undefined}
+        >
+            {title}
+        </PWText>
+    )
 
     return (
         <PWView
@@ -66,12 +78,14 @@ export const StatusChecklistRow = ({
                         {pendingLabel}
                     </PWText>
                 ) : null}
-                <PWText
-                    variant='bodyLarge'
-                    style={isInactive ? styles.inactiveTitle : undefined}
-                >
-                    {title}
-                </PWText>
+                {titleAccessory ? (
+                    <PWView style={styles.titleRow}>
+                        {titleText}
+                        {titleAccessory}
+                    </PWView>
+                ) : (
+                    titleText
+                )}
                 {body ? (
                     <PWText
                         variant='footnoteMedium'

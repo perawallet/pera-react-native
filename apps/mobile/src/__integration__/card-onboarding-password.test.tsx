@@ -165,12 +165,62 @@ describe('card onboarding — password', () => {
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
 
         // The password is set, but the stashed phone code was rejected — the
-        // user fixes it on the phone code screen (which then verifies directly).
+        // user fixes it on the phone code screen (which then verifies directly),
+        // where the rejection is surfaced inline on the code input.
         await waitFor(() =>
             expect(
                 screen.getByTestId('card-onboarding-phone-verify-input'),
             ).toBeTruthy(),
         )
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-phone-verify-input-error'),
+            ).toBeTruthy(),
+        )
+    })
+
+    it('routes back to the email code screen, with an inline error, when email/verify rejects the code', async () => {
+        const verifySpy = vi.fn(() =>
+            HttpResponse.json({ message: 'invalid code' }, { status: 422 }),
+        )
+        server.use(http.post('*/v1/auth/register/email/verify', verifySpy))
+
+        renderPassword()
+        const password = screen.getByTestId('card-onboarding-password-input')
+        const confirm = screen.getByTestId(
+            'card-onboarding-confirm-password-input',
+        )
+        fireEvent.change(password, { target: { value: VALID_PASSWORD } })
+        fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
+        await waitFor(() =>
+            expect(confirm.getAttribute('errormessage')).toBeFalsy(),
+        )
+        fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
+
+        await waitFor(() => expect(verifySpy).toHaveBeenCalled())
+        // A rejected (deferred) email code sends the user back to the email code
+        // screen with the failure surfaced inline rather than leaving them stuck.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-email-verify'),
+            ).toBeTruthy(),
+        )
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-verify-input-error'),
+            ).toBeTruthy(),
+        )
+    })
+
+    it('shows the live password requirements checklist', () => {
+        renderPassword()
+
+        expect(
+            screen.getByTestId('card-onboarding-password-rule-length'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('card-onboarding-password-rule-special'),
+        ).toBeTruthy()
     })
 
     it('skips email/verify and re-runs only phone/verify when an onboarding id already exists', async () => {

@@ -99,6 +99,9 @@ export const configSchema = z.object({
     testnetBaanxBaseUrl: z.url(),
     mainnetBaanxClientKey: z.string(),
     testnetBaanxClientKey: z.string(),
+    // Baanx tenant id sent in the consent payload (POST /v2/consent/onboarding).
+    mainnetBaanxTenantId: z.string(),
+    testnetBaanxTenantId: z.string(),
 
     arc59: z.object({
         testnet: z.object({
@@ -208,6 +211,10 @@ const productionConfig = {
     // vars (bitrise secrets in CI, .env locally) via tools/generate-config.sh.
     mainnetBaanxClientKey: '',
     testnetBaanxClientKey: '',
+    // TODO(card): set the real Baanx tenant id for production via the
+    // MAINNET_BAANX_TENANT_ID env/secret before shipping the card to mainnet.
+    mainnetBaanxTenantId: '',
+    testnetBaanxTenantId: 'perawallet',
 
     arc59: {
         testnet: {
@@ -284,6 +291,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetBaanxBaseUrl: 'TESTNET_BAANX_BASE_URL',
     mainnetBaanxClientKey: 'MAINNET_BAANX_CLIENT_KEY',
     testnetBaanxClientKey: 'TESTNET_BAANX_CLIENT_KEY',
+    mainnetBaanxTenantId: 'MAINNET_BAANX_TENANT_ID',
+    testnetBaanxTenantId: 'TESTNET_BAANX_TENANT_ID',
 
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',

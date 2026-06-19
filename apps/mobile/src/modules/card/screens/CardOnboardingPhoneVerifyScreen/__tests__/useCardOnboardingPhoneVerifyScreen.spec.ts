@@ -21,7 +21,9 @@ let mockPhoneCountryCode: string | null = '44'
 let mockPhoneNumber: string | null = '7400846282'
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockContactVerificationId: string | null = 'mock-contact-id'
+let mockCodeVerificationError: 'email' | 'phone' | null = null
 const mockSetPhoneVerificationCode = vi.fn()
+const mockSetCodeVerificationError = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -55,7 +57,11 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: string | null
                 onboardingId: string | null
                 contactVerificationId: string | null
+                codeVerificationError: 'email' | 'phone' | null
                 setPhoneVerificationCode: (code: string | null) => void
+                setCodeVerificationError: (
+                    target: 'email' | 'phone' | null,
+                ) => void
             }) => unknown,
         ) =>
             selector({
@@ -63,7 +69,9 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: mockPhoneNumber,
                 onboardingId: mockOnboardingId,
                 contactVerificationId: mockContactVerificationId,
+                codeVerificationError: mockCodeVerificationError,
                 setPhoneVerificationCode: mockSetPhoneVerificationCode,
+                setCodeVerificationError: mockSetCodeVerificationError,
             }),
     }
 })
@@ -107,6 +115,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         mockPhoneNumber = '7400846282'
         mockOnboardingId = 'mock-onboarding-id'
         mockContactVerificationId = 'mock-contact-id'
+        mockCodeVerificationError = null
         vi.useFakeTimers()
     })
 
@@ -142,8 +151,25 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
     })
 
-    it('shows an error toast and stays put when verification fails', async () => {
-        mockVerifyMutateAsync.mockRejectedValue(new Error('nope'))
+    it('flags the code as invalid (no toast) when verification rejects it (422)', async () => {
+        mockVerifyMutateAsync.mockRejectedValue({ response: { status: 422 } })
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode(VALID_CODE))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        // A rejected code is surfaced inline on the input rather than via a
+        // transient toast, and the user stays on the screen to retry.
+        expect(mockSetCodeVerificationError).toHaveBeenCalledWith('phone')
+        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('shows a generic toast (not a code error) when verification fails for a non-code reason', async () => {
+        // A network/5xx failure isn't the code's fault — don't mislabel it.
+        mockVerifyMutateAsync.mockRejectedValue(new Error('network down'))
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(VALID_CODE))
@@ -152,7 +178,26 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         })
 
         expect(mockErrorToast).toHaveBeenCalled()
+        expect(mockSetCodeVerificationError).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('exposes the inline code error when a prior attempt was rejected', () => {
+        mockCodeVerificationError = 'phone'
+        const { result } = renderVerifyHook()
+
+        expect(result.current.codeError).toBe(
+            'peraCard.verify_phone.code_invalid',
+        )
+    })
+
+    it('clears the code-error flag as soon as the user edits the code', () => {
+        mockCodeVerificationError = 'phone'
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode('1'))
+
+        expect(mockSetCodeVerificationError).toHaveBeenCalledWith(null)
     })
 
     it('stashes the code for the password step when there is no onboarding id yet', async () => {

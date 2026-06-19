@@ -29,3 +29,12 @@ export type {
     CardTransportRequest,
     CardTransportResponse,
 } from './api/transport/types'
+
+// API error normalization — lets screens attribute a Baanx failure to a field.
+export {
+    getCardApiError,
+    isConflictError,
+    isInvalidInputError,
+    isDuplicateError,
+} from './api/errors'
+export type { CardApiError } from './api/errors'

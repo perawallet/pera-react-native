@@ -18,4 +18,8 @@ export const transformRegistrationSettings = (
 ): RegistrationSettings => ({
     countries: response.countries ?? [],
     usStates: response.usStates ?? [],
+    termsAndConditionsUrls: {
+        us: response.links?.us?.termsAndConditions ?? null,
+        intl: response.links?.intl?.termsAndConditions ?? null,
+    },
 })

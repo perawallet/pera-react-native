@@ -97,10 +97,28 @@ const computeDisplayData = (
 
     const totalFee = calculateTotalFee(allTransactions, signableAddresses)
 
+    // Gate warnings on the authorizing entity, not the raw sender: a dApp
+    // can set a foreign `sender` it never imported while signing with an
+    // account the wallet holds via `signerOverrides`. Keyed by position in
+    // `txs` (the signable subset), so translate into `allTransactions`'
+    // index space — `signableIndices` maps that position to its slot in
+    // `groupContext` when the full group is shown. [PERA-4417]
+    const authorizerByIndex = new Map<number, string>()
+    if (txRequest.signerOverrides) {
+        const usingGroupContext = !!txRequest.groupContext
+        for (const [subsetIndex, authorizer] of txRequest.signerOverrides) {
+            const displayIndex = usingGroupContext
+                ? (txRequest.signableIndices?.[subsetIndex] ?? subsetIndex)
+                : subsetIndex
+            authorizerByIndex.set(displayIndex, authorizer)
+        }
+    }
+
     const addressWarnings = aggregateTransactionWarnings(
         allTransactions,
         userAccountAddresses,
         signableAddresses,
+        authorizerByIndex,
     )
 
     // High fee is a group-level concern ("what's being signed"), so it
@@ -159,6 +177,7 @@ let displayDataCache: {
     txs: unknown
     groupContext: unknown
     signableIndices: unknown
+    signerOverrides: unknown
     accounts: unknown
     result: DisplayData
 } | null = null
@@ -173,6 +192,7 @@ const getSharedDisplayData = (
         displayDataCache.txs === txRequest.txs &&
         displayDataCache.groupContext === txRequest.groupContext &&
         displayDataCache.signableIndices === txRequest.signableIndices &&
+        displayDataCache.signerOverrides === txRequest.signerOverrides &&
         displayDataCache.accounts === accounts
     ) {
         return displayDataCache.result
@@ -183,6 +203,7 @@ const getSharedDisplayData = (
         txs: txRequest.txs,
         groupContext: txRequest.groupContext,
         signableIndices: txRequest.signableIndices,
+        signerOverrides: txRequest.signerOverrides,
         accounts,
         result,
     }

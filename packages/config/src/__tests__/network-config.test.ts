@@ -41,6 +41,7 @@ describe('network-config', () => {
             bidaliApiKey: config.mainnetBidaliApiKey,
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
             baanxClientKey: config.mainnetBaanxClientKey,
+            baanxTenantId: config.mainnetBaanxTenantId,
         })
     })
 
@@ -59,6 +60,7 @@ describe('network-config', () => {
             bidaliApiKey: config.testnetBidaliApiKey,
             baanxBaseUrl: config.testnetBaanxBaseUrl,
             baanxClientKey: config.testnetBaanxClientKey,
+            baanxTenantId: config.testnetBaanxTenantId,
         })
     })
 })

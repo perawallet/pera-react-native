@@ -254,6 +254,69 @@ describe('useSigningPipeline', () => {
         expect(result.current.signableIndices).toEqual(new Set([0, 1]))
     })
 
+    // PERA-4417: a dApp can set a foreign `sender` it never imported while
+    // signing with a wallet-held account via `signerOverrides`. The rekey/close
+    // warning (and its blocking gate) must follow the authorizing entity, and
+    // the override is keyed by position in `txs` (the signable subset) — so the
+    // pipeline must translate it into the full-group display index space via
+    // `signableIndices` before gating.
+    test('gates warnings on signerOverrides, translating subset index via signableIndices', () => {
+        mockAllAccounts.mockReturnValue([{ address: 'ADDR_O', type: 'algo25' }])
+
+        const otherPartyTx = { sender: 'OTHER', fee: 1000n }
+        const foreignRekeyTx = {
+            sender: 'FOREIGN_E',
+            fee: 1000n,
+            rekeyTo: { publicKey: new Uint8Array(32) },
+        }
+        const request: TransactionSignRequest = {
+            id: 'req-override',
+            type: 'transactions',
+            transport: 'callback',
+            // Wallet signs only the foreign-sender tx, authorized by ADDR_O.
+            txs: [foreignRekeyTx as never],
+            groupContext: [otherPartyTx as never, foreignRekeyTx as never],
+            // foreignRekeyTx sits at group index 1; override is keyed by its
+            // subset index 0.
+            signableIndices: [1],
+            signerOverrides: new Map([[0, 'ADDR_O']]),
+        }
+        mockSigningRequest.currentRequest = request
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        const rekeyWarnings = result.current.warnings.filter(
+            w => w.type === 'rekey',
+        )
+        expect(rekeyWarnings).toHaveLength(1)
+        expect(
+            (rekeyWarnings[0] as { senderAddress: string }).senderAddress,
+        ).toBe('FOREIGN_E')
+    })
+
+    test('does not warn for a foreign sender when no signerOverride authorizes it', () => {
+        mockAllAccounts.mockReturnValue([{ address: 'ADDR_O', type: 'algo25' }])
+
+        const foreignRekeyTx = {
+            sender: 'FOREIGN_E',
+            fee: 1000n,
+            rekeyTo: { publicKey: new Uint8Array(32) },
+        }
+        const request: TransactionSignRequest = {
+            id: 'req-no-override',
+            type: 'transactions',
+            transport: 'callback',
+            txs: [foreignRekeyTx as never],
+        }
+        mockSigningRequest.currentRequest = request
+
+        const { result } = renderHook(() => useSigningPipeline())
+
+        expect(
+            result.current.warnings.filter(w => w.type === 'rekey'),
+        ).toHaveLength(0)
+    })
+
     test('subscribes to actor ref and derives stage from snapshot', () => {
         const subscriberCalls: Array<(s: unknown) => void> = []
         const actorRef = {

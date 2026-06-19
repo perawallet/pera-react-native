@@ -22,6 +22,7 @@ export const CardOnboardingEmailScreen = () => {
     const styles = useStyles()
     const {
         control,
+        errors,
         isValid,
         isSubmitting,
         selectedCountry,
@@ -60,11 +61,13 @@ export const CardOnboardingEmailScreen = () => {
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
                                 errorMessage={
-                                    error && value
-                                        ? t(
-                                              'peraCard.create_account.email_invalid',
-                                          )
-                                        : undefined
+                                    error?.type === 'server'
+                                        ? error.message
+                                        : error && value
+                                          ? t(
+                                                'peraCard.create_account.email_invalid',
+                                            )
+                                          : undefined
                                 }
                                 testID='card-onboarding-email-input'
                             />
@@ -78,6 +81,11 @@ export const CardOnboardingEmailScreen = () => {
                         )}
                         country={selectedCountry}
                         onPress={handleSelectCountry}
+                        errorMessage={
+                            errors.countryIso
+                                ? t('peraCard.create_account.country_required')
+                                : undefined
+                        }
                         testID='card-onboarding-country-field'
                     />
                 </PWView>

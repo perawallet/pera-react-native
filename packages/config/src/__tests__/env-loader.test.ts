@@ -287,6 +287,8 @@ describe('env-loader', () => {
             testnetBaanxBaseUrl: 'https://dev.api.baanx.example.com',
             mainnetBaanxClientKey: 'test-mainnet-baanx-key',
             testnetBaanxClientKey: 'test-testnet-baanx-key',
+            mainnetBaanxTenantId: 'test-mainnet-baanx-tenant',
+            testnetBaanxTenantId: 'test-testnet-baanx-tenant',
             termsOfServiceUrl: 'https://terms.example.com',
             privacyPolicyUrl: 'https://privacy.example.com',
             peraDemoDappUrl: 'https://demo.example.com',
