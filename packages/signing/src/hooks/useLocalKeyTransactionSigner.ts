@@ -25,7 +25,19 @@ import {
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../constants'
+
+/**
+ * How many transactions to encode + sign per chunk before yielding back to
+ * the event loop. HD signing re-derives the child key and runs Ed25519 per
+ * transaction synchronously, so signing a large batch (up to 1000) in one
+ * burst starves the JS thread — the slide-to-confirm loading state never
+ * paints and the whole UI freezes until it finishes (PERA-3353). Yielding
+ * between chunks lets React commit the loading state and gives the UI thread
+ * frames. Lower = smoother UI but more total overhead; tune as needed.
+ */
+export const SIGN_BATCH_SIZE = 16
 
 export type UseLocalKeyTransactionSignerResult = {
     /**
@@ -70,26 +82,45 @@ export const useLocalKeyTransactionSigner =
                     )
                 }
 
-                const encoded = txns.map(txn => encodeTransaction(txn))
-                const signatures = await signTransactionsWithKey(
-                    account.keyPairId,
-                    SIGNING_KEY_DOMAIN,
-                    encoded,
-                )
+                const signed: PeraSignedTransaction[] = []
 
-                return txns.map((txn, idx) => {
-                    const senderPublicKey = encodeAlgorandAddress(
-                        txn.sender.publicKey,
-                    )
-                    return {
-                        txn,
-                        sig: signatures[idx],
-                        authAddress:
-                            account.address !== senderPublicKey
-                                ? Address.fromString(account.address)
-                                : undefined,
+                for (
+                    let start = 0;
+                    start < txns.length;
+                    start += SIGN_BATCH_SIZE
+                ) {
+                    // Yield between chunks so the UI thread gets a frame and
+                    // React can paint the signing state. Skipped before the
+                    // first chunk so small/single signs keep their snappy,
+                    // single-tick path.
+                    if (start > 0) {
+                        await deferToNextCycle()
                     }
-                })
+
+                    const batch = txns.slice(start, start + SIGN_BATCH_SIZE)
+                    const encoded = batch.map(txn => encodeTransaction(txn))
+                    const signatures = await signTransactionsWithKey(
+                        account.keyPairId,
+                        SIGNING_KEY_DOMAIN,
+                        encoded,
+                    )
+
+                    batch.forEach((txn, idx) => {
+                        const senderPublicKey = encodeAlgorandAddress(
+                            txn.sender.publicKey,
+                        )
+                        signed.push({
+                            txn,
+                            sig: signatures[idx],
+                            authAddress:
+                                account.address !== senderPublicKey
+                                    ? Address.fromString(account.address)
+                                    : undefined,
+                        })
+                    })
+                }
+
+                return signed
             },
             [signTransactionsWithKey, encodeTransaction],
         )
