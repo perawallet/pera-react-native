@@ -130,6 +130,21 @@ export const createLocalKeyStrategy = (
                     }
 
                     case 'arbitrary-data': {
+                        // Defense in depth: never sign an item whose claimed
+                        // signer differs from the account producing the
+                        // signature (the build step already rejects mixed
+                        // signers, but the signing key must never be applied to
+                        // data attributed to another account).
+                        const mismatched = group.data.data.find(
+                            m => m.signer !== account.address,
+                        )
+                        if (mismatched) {
+                            throw new CannotSignError(
+                                account.address,
+                                `Arbitrary-data item claims signer ${mismatched.signer} but is being signed by ${account.address}`,
+                            )
+                        }
+
                         callbacks?.onSigningStart?.()
                         const payloads = group.data.data.map(m => m.data)
                         const signatures = await signArbitraryData(

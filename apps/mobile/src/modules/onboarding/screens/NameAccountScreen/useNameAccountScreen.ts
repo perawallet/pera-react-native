@@ -141,7 +141,9 @@ export const useNameAccountScreen = () => {
             setShouldPlayConfetti(true)
 
             didFinishRef.current = true
-            exitAccountFlow()
+            // Resume the caller's flow if one asked to be returned to (e.g. the
+            // Pera Card Connect Funds picker); otherwise exit to Home as usual.
+            exitAccountFlow(route.params?.returnTo)
         } catch (error) {
             // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
             showToast({

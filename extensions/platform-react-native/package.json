@@ -39,7 +39,8 @@
     "expo-device": "^56.0.4",
     "expo-local-authentication": "^56.0.4",
     "expo-localization": "^56.0.6",
-    "zustand": "catalog:"
+    "zustand": "catalog:",
+    "expo": "^56.0.5"
   },
   "devDependencies": {
     "typescript": "catalog:",

@@ -13,6 +13,8 @@
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
+    getCardApiError,
+    isInvalidInputError,
     passwordSetSchema,
     useCardStore,
     useVerifyEmailMutation,
@@ -26,6 +28,8 @@ import { useLanguage } from '@hooks/useLanguage'
 export type UseCardOnboardingPasswordScreenResult = {
     control: Control<PasswordSetFormValues>
     errors: FieldErrors<PasswordSetFormValues>
+    /** Current password value, used to drive the live requirements checklist. */
+    password: string
     isValid: boolean
     isSubmitting: boolean
     handleConfirm: () => void
@@ -48,18 +52,24 @@ export const useCardOnboardingPasswordScreen =
             state => state.contactVerificationId,
         )
         const existingOnboardingId = useCardStore(state => state.onboardingId)
+        const setCodeVerificationError = useCardStore(
+            state => state.setCodeVerificationError,
+        )
         const verifyEmail = useVerifyEmailMutation()
         const verifyPhone = useVerifyPhoneMutation()
 
         const {
             control,
             handleSubmit,
+            watch,
             formState: { isValid, errors },
         } = useForm<PasswordSetFormValues>({
             resolver: zodResolver(passwordSetSchema),
             mode: 'onChange',
             defaultValues: { password: '', confirmPassword: '' },
         })
+
+        const password = watch('password')
 
         // The password step fires the two deferred Baanx calls back to back:
         // email/verify (completes email verification, sets the password, and
@@ -127,7 +137,18 @@ export const useCardOnboardingPasswordScreen =
                         countryOfResidence: countryIso,
                     })
                     onboardingId = result.onboardingId
-                } catch {
+                } catch (error) {
+                    // A rejected submission here most plausibly means the
+                    // deferred email code was wrong/expired (the password
+                    // passed client rules and the ids are server-issued), so
+                    // route back to re-enter it with an inline error. Other
+                    // failures keep the generic toast.
+                    const apiError = await getCardApiError(error)
+                    if (isInvalidInputError(apiError)) {
+                        setCodeVerificationError('email')
+                        navigation.navigate('CardOnboardingEmailVerify')
+                        return
+                    }
                     errorToast(
                         t('peraCard.create_account.error_title'),
                         t('peraCard.create_account.error_body'),
@@ -145,10 +166,16 @@ export const useCardOnboardingPasswordScreen =
                 })
                 // Both verifications done: KYC (identity verification) is next.
                 navigation.navigate('CardOnboardingVerification')
-            } catch {
-                // The deferred phone code was wrong/expired. The password is
-                // already set, so retrying there verifies directly (the
-                // onboardingId now exists in the store).
+            } catch (error) {
+                // Route back to the phone code screen so the user can retry
+                // (the onboardingId now exists, so the retry verifies
+                // directly). Only flag it as a bad code for a 400/422 — other
+                // failures (network, 5xx) keep just the generic toast rather
+                // than mislabeling them as an incorrect code.
+                const apiError = await getCardApiError(error)
+                if (isInvalidInputError(apiError)) {
+                    setCodeVerificationError('phone')
+                }
                 errorToast(
                     t('peraCard.verify_phone.verify_error_title'),
                     t('peraCard.verify_phone.verify_error_body'),
@@ -164,6 +191,7 @@ export const useCardOnboardingPasswordScreen =
         return {
             control,
             errors,
+            password,
             isValid,
             isSubmitting: verifyEmail.isPending || verifyPhone.isPending,
             handleConfirm,

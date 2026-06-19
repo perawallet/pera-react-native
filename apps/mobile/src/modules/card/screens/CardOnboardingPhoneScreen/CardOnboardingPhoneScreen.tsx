@@ -110,11 +110,13 @@ export const CardOnboardingPhoneScreen = () => {
                                     renderErrorMessage
                                     errorStyle={styles.errorMessage}
                                     errorMessage={
-                                        error && value
-                                            ? t(
-                                                  'peraCard.verify_phone.phone_invalid',
-                                              )
-                                            : undefined
+                                        error?.type === 'server'
+                                            ? error.message
+                                            : error && value
+                                              ? t(
+                                                    'peraCard.verify_phone.phone_invalid',
+                                                )
+                                              : undefined
                                     }
                                     testID='card-onboarding-phone-input'
                                 />

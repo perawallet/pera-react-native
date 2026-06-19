@@ -39,6 +39,18 @@ const HD_ROOT_KEY_TYPES = new Set<string>([
     'seed',
 ])
 
+/**
+ * iOS reports a disabled AutoFill credential store as
+ * `ASCredentialIdentityStoreError.storeDisabled` — domain
+ * `ASCredentialIdentityStoreErrorDomain`, code 1. This is the expected state
+ * when the user hasn't enabled Pera as their AutoFill provider, not a fault.
+ * Note the distinct `ReactNativePasskeyAutofill` domain code 1 ("App Group is
+ * not configured") is a real bug and intentionally does NOT match here.
+ */
+const isStoreDisabledError = (err: unknown): boolean =>
+    err instanceof Error &&
+    err.message.includes('ASCredentialIdentityStoreErrorDomain error 1')
+
 let activeBootstrap: Promise<void> | null = null
 
 /**
@@ -96,11 +108,36 @@ const runBootstrap = async (
                 logger.error(err as Error, { step: 'configureIntentActions' }),
             )
 
-        await service.refreshCredentialIdentities().catch(err =>
-            logger.error(err as Error, {
-                step: 'refreshCredentialIdentities',
-            }),
-        )
+        // Refreshing the iOS AutoFill identity store only makes sense when
+        // Pera is the active credential provider. When the user hasn't enabled
+        // it (the default), the store is disabled and iOS rejects with
+        // ASCredentialIdentityStoreError.storeDisabled — a benign, expected
+        // state, not a fault. Gating on isProviderActive() keeps that from
+        // surfacing as an error toast on every launch/foreground, and skips an
+        // unnecessary native round-trip. (No-op on Android, where
+        // isProviderActive resolves false.)
+        const providerActive = await service
+            .isProviderActive()
+            .catch(() => false)
+
+        if (providerActive) {
+            await service.refreshCredentialIdentities().catch(err => {
+                // Tolerate the check→enable race: the store may have been
+                // disabled between getState() and the write. A genuinely
+                // different failure (e.g. App Group misconfiguration, a
+                // different error domain) still surfaces as an error.
+                if (isStoreDisabledError(err)) {
+                    logger.warn(
+                        'AutoFill identity store disabled; skipping refresh',
+                        { step: 'refreshCredentialIdentities' },
+                    )
+                    return
+                }
+                logger.error(err as Error, {
+                    step: 'refreshCredentialIdentities',
+                })
+            })
+        }
     } catch (err) {
         // Surface the actual error object (with stack) instead of string-
         // interpolating it — `${err}` discards the stack and leaves the

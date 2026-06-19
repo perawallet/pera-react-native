@@ -12,6 +12,7 @@
 
 import { PWFlatList, PWTouchableOpacity, PWView } from '@components/core'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { AccountMenuHeader } from './AccountMenuHeader'
@@ -25,6 +26,11 @@ export type AccountMenuProps = {
     headerContent?: ReactNode
     hideDefaultHeader?: boolean
     accountFilter?: (account: WalletAccount) => boolean
+    /**
+     * Controlled highlight: when provided (even `null`), highlights this address
+     * instead of the global selection, and tapping won't change the global account.
+     */
+    selectedAddress?: Nullable<string>
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {

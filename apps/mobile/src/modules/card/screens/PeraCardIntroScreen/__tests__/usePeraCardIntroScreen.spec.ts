@@ -36,6 +36,15 @@ vi.mock('@modules/webview', () => ({
     }),
 }))
 
+const mockResetOnboardingProgress = vi.fn()
+vi.mock('@perawallet/wallet-core-card', () => ({
+    useCardStore: Object.assign(() => {}, {
+        getState: () => ({
+            resetOnboardingProgress: mockResetOnboardingProgress,
+        }),
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-config', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-config',
@@ -67,30 +76,34 @@ describe('usePeraCardIntroScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('handleCreateAccount navigates into the card onboarding flow', () => {
+    it('handleCreateAccount resets stale onboarding progress then navigates', () => {
         const { result } = renderHook(() => usePeraCardIntroScreen())
 
         act(() => {
             result.current.handleCreateAccount()
         })
 
+        expect(mockResetOnboardingProgress).toHaveBeenCalledTimes(1)
         expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
             screen: 'CardOnboarding',
             params: { screen: 'CardOnboardingEmail' },
         })
+        // Reset must happen before navigation so the next run starts clean.
+        expect(
+            mockResetOnboardingProgress.mock.invocationCallOrder[0],
+        ).toBeLessThan(mockNavigate.mock.invocationCallOrder[0])
     })
 
-    it('handleAlreadyHaveAccount surfaces the coming-soon info toast', () => {
+    it('handleAlreadyHaveAccount navigates to the sign-in screen', () => {
         const { result } = renderHook(() => usePeraCardIntroScreen())
 
         act(() => {
             result.current.handleAlreadyHaveAccount()
         })
 
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.intro.coming_soon_title',
-            'peraCard.intro.coming_soon_body',
-        )
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'CardSignIn',
+        })
     })
 
     it('handleLearnMore opens the Pera Card learn-more url in a webview', () => {

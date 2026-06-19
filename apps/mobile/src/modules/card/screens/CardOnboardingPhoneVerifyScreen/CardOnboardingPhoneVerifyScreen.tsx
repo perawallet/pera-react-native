@@ -30,6 +30,7 @@ export const CardOnboardingPhoneVerifyScreen = () => {
         onChangeCode,
         isValid,
         isSubmitting,
+        codeError,
         phoneDisplay,
         secondsRemaining,
         canResend,
@@ -55,6 +56,7 @@ export const CardOnboardingPhoneVerifyScreen = () => {
                             length={CARD_VERIFICATION_CODE_LENGTH}
                             onComplete={handleConfirm}
                             onSubmitEditing={() => handleConfirm()}
+                            errorMessage={codeError}
                             autoFocus
                             accessibilityLabel={t(
                                 'peraCard.verify_phone.navigation_title',

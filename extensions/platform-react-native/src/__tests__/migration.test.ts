@@ -31,8 +31,12 @@ const loggerMock = vi.hoisted(() => ({
     error: vi.fn(),
 }))
 
+vi.mock('expo', () => ({
+    requireOptionalNativeModule: (name: string) =>
+        name === 'LegacyMigration' ? nativeModulesMock.LegacyMigration : null,
+}))
+
 vi.mock('react-native', () => ({
-    NativeModules: nativeModulesMock,
     Platform: platformMock,
 }))
 
@@ -288,6 +292,13 @@ describe('RNMigrationService', () => {
                         fallbackBrowserGroupResponse: null,
                         connectedAccounts: [],
                         sessionMetaJson: '{}',
+                        clientId: 'client-1',
+                        peerId: 'peer-1',
+                        // LongString form
+                        handshakeId: '1690000000000001',
+                        currentKey: 'ffff0000',
+                        approvedAccounts: ['ADDR1'],
+                        chainId: 416001,
                     },
                 ],
                 walletConnectV2: [
@@ -336,6 +347,12 @@ describe('RNMigrationService', () => {
                 new Uint8Array([1, 2, 3]),
             )
             expect(data.walletConnectV1[0].dateTimestampMs).toBe(1700000000000)
+            expect(data.walletConnectV1[0].clientId).toBe('client-1')
+            expect(data.walletConnectV1[0].peerId).toBe('peer-1')
+            expect(data.walletConnectV1[0].handshakeId).toBe(1690000000000001)
+            expect(data.walletConnectV1[0].currentKey).toBe('ffff0000')
+            expect(data.walletConnectV1[0].approvedAccounts).toEqual(['ADDR1'])
+            expect(data.walletConnectV1[0].chainId).toBe(416001)
             expect(data.walletConnectV2[0].dateTimestampMs).toBe(1700000000001)
             expect(data.passkeys[0].lastUsedAtMs).toBeNull()
             expect(data.deviceIdentifiers.lastSeenNotificationId).toBe(42)
@@ -416,7 +433,7 @@ describe('RNMigrationService', () => {
             expect(data.preferences.notificationRefreshTimestampMs).toBeNull()
         })
 
-        test('walletConnect dateTimestampMs falls back to 0 when undecodable', async () => {
+        test('walletConnect dateTimestampMs falls back to 0 and v1 enrichment fields default to null when absent', async () => {
             const raw = buildRawPayload({
                 walletConnectV1: [
                     {
@@ -451,6 +468,12 @@ describe('RNMigrationService', () => {
             const data = await service.getLegacyData()
 
             expect(data.walletConnectV1[0].dateTimestampMs).toBe(0)
+            expect(data.walletConnectV1[0].clientId).toBeNull()
+            expect(data.walletConnectV1[0].peerId).toBeNull()
+            expect(data.walletConnectV1[0].handshakeId).toBeNull()
+            expect(data.walletConnectV1[0].currentKey).toBeNull()
+            expect(data.walletConnectV1[0].approvedAccounts).toBeNull()
+            expect(data.walletConnectV1[0].chainId).toBeNull()
             expect(data.walletConnectV2[0].dateTimestampMs).toBe(0)
         })
 

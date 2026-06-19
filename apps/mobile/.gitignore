@@ -77,6 +77,9 @@ yarn-error.log
 # Keep these ignored since they can be regenerated on demand
 ios/
 android/
+# Local Expo modules (native-modules/) are source-controlled — un-ignore them
+!native-modules/**/ios/
+!native-modules/**/android/
 
 # Expo cache and logs
 .expo/

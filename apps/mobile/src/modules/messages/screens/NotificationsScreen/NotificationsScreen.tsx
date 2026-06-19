@@ -38,6 +38,8 @@ export const NotificationsScreen = () => {
         isFetchingNextPage,
         keyExtractor,
         handleNotificationPress,
+        listRef,
+        handleScroll,
     } = useNotificationsScreen()
 
     const renderItem = useCallback(
@@ -53,8 +55,11 @@ export const NotificationsScreen = () => {
     return (
         <PWScreen scroll='never'>
             <PWFlatList
+                ref={listRef}
                 data={notifications}
                 renderItem={renderItem}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 onEndReached={() => void loadMoreItems()}
                 onEndReachedThreshold={0.1}
                 keyExtractor={keyExtractor}

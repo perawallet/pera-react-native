@@ -11,15 +11,16 @@
  */
 
 import { Controller } from 'react-hook-form'
-import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { PasswordRequirements } from './PasswordRequirements'
 import { useCardOnboardingPasswordScreen } from './useCardOnboardingPasswordScreen'
 import { useStyles } from './styles'
 
 export const CardOnboardingPasswordScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { control, errors, isValid, isSubmitting, handleConfirm } =
+    const { control, errors, password, isValid, isSubmitting, handleConfirm } =
         useCardOnboardingPasswordScreen()
 
     return (
@@ -77,12 +78,7 @@ export const CardOnboardingPasswordScreen = () => {
                             )}
                         />
 
-                        <PWText
-                            variant='footnoteMedium'
-                            style={styles.rules}
-                        >
-                            {t('peraCard.create_password.rules')}
-                        </PWText>
+                        <PasswordRequirements password={password} />
                     </PWView>
                 </PWView>
 

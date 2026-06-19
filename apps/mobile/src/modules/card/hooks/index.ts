@@ -14,3 +14,7 @@ export {
     useCardOnboardingLogout,
     type UseCardOnboardingLogoutResult,
 } from './useCardOnboardingLogout'
+export {
+    useCardAddAccount,
+    type UseCardAddAccountResult,
+} from './useCardAddAccount'

@@ -18,9 +18,25 @@ export const useStyles = makeStyles(theme => ({
     },
     messageContainer: {
         flexGrow: 1,
-        alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
+    },
+    section: {
+        gap: theme.spacing.xs,
+    },
+    sectionLabel: {
+        color: theme.colors.textGray,
+    },
+    dataBox: {
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing.md,
+    },
+    untrustedLabel: {
+        color: theme.colors.textGray,
+    },
+    untrustedMessage: {
+        color: theme.colors.textGray,
     },
     accountContainer: {
         alignItems: 'center',

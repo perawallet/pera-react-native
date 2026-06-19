@@ -21,7 +21,9 @@ export type CardOnboardingStackParamList = {
     CardOnboardingPhoneVerify: undefined
     CardOnboardingPassword: undefined
     CardOnboardingVerification: undefined
-    CardOnboardingStatus: undefined
+    // One-shot flag from the add-account returnTo: on arrival, link the
+    // just-created (globally selected) account as the funding source.
+    CardOnboardingStatus: { autoConnectSelected?: boolean }
     CardOnboardingPersonalDetails: undefined
     CardOnboardingAddress: undefined
 }

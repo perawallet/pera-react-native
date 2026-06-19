@@ -48,6 +48,9 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: string | null
                 contactVerificationId: string | null
                 onboardingId: string | null
+                setCodeVerificationError: (
+                    target: 'email' | 'phone' | null,
+                ) => void
             }) => unknown,
         ) =>
             selector({
@@ -59,6 +62,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 phoneNumber: '7400846282',
                 contactVerificationId: 'mock-contact-id',
                 onboardingId: null,
+                setCodeVerificationError: vi.fn(),
             }),
     }
 })

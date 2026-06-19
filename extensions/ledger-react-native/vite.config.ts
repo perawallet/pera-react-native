@@ -48,6 +48,7 @@ export default defineConfig({
                 '@ledgerhq/react-native-hw-transport-ble',
                 '@algorandfoundation/ledger-algorand-js',
                 '@ledgerhq/hw-transport',
+                'expo',
                 'react-native',
                 'react-native-ble-plx',
                 '@perawallet/wallet-core-hardware-wallet',

@@ -30,6 +30,11 @@ export const SingleArbitrarySignRequestView = ({
     const { t } = useLanguage()
     const account = useFindAccountByAddress(request.signer)
 
+    // The bytes actually signed are `MX || decode(data)`. Show the decoded
+    // payload prominently — `request.message` is untrusted dApp text that is
+    // never signed and must not be mistaken for the signed content.
+    const signedContent = Buffer.from(request.data, 'base64').toString('utf-8')
+
     const handleDetailsPress = () => {
         onDetailsPress(request)
     }
@@ -40,7 +45,38 @@ export const SingleArbitrarySignRequestView = ({
                 <PWText variant='h2'>
                     {t('signing.arbitrary_data_view.body')}
                 </PWText>
-                <PWText>{request.message}</PWText>
+
+                <PWView style={styles.section}>
+                    <PWText
+                        variant='captionMedium'
+                        style={styles.sectionLabel}
+                    >
+                        {t('signing.arbitrary_data_view.data_label')}
+                    </PWText>
+                    <PWView style={styles.dataBox}>
+                        <PWText variant='mono'>{signedContent}</PWText>
+                    </PWView>
+                </PWView>
+
+                {!!request.message && (
+                    <PWView style={styles.section}>
+                        <PWText
+                            variant='captionMedium'
+                            style={styles.untrustedLabel}
+                        >
+                            {t(
+                                'signing.arbitrary_data_view.untrusted_message_label',
+                            )}
+                        </PWText>
+                        <PWText
+                            variant='bodyCompact'
+                            style={styles.untrustedMessage}
+                        >
+                            {request.message}
+                        </PWText>
+                    </PWView>
+                )}
+
                 {!!account && (
                     <PWView style={styles.accountContainer}>
                         <PWText style={styles.onBehalfOf}>

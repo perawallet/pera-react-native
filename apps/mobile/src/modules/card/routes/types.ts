@@ -15,5 +15,6 @@ import { type CardOnboardingStackParamList } from './card-onboarding/types'
 
 export type PeraCardStackParamList = {
     PeraCardIntro: undefined
+    CardSignIn: undefined
     CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
 }

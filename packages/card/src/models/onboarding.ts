@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Declared in flow order: KYC (Verification) runs after phone verify and
 // before personal details; address is the final step and issues the session.
@@ -49,6 +50,11 @@ export type SupportedUsState = {
 export type RegistrationSettings = {
     countries: SupportedCountry[]
     usStates: SupportedUsState[]
+    /** Baanx-hosted T&C URLs by jurisdiction (US vs international). */
+    termsAndConditionsUrls: {
+        us: Nullable<string>
+        intl: Nullable<string>
+    }
 }
 
 /**
@@ -102,6 +108,14 @@ export const emailSendSchema = z.object({
 
 export type EmailSendFormValues = z.infer<typeof emailSendSchema>
 
+/** Validation for the Pera Card sign-in (login) screen. */
+export const signInSchema = z.object({
+    email: z.string().trim().email(),
+    password: z.string().min(1),
+})
+
+export type SignInFormValues = z.infer<typeof signInSchema>
+
 /** Validation for the phone-send onboarding step (calling code + number). */
 export const phoneSendSchema = z.object({
     /** International dialing code, digits only, no leading '+'. */
@@ -123,19 +137,47 @@ export type PhoneSendFormValues = z.infer<typeof phoneSendSchema>
 const PASSWORD_SPECIAL_CHARACTER_REGEX = /[^A-Za-z0-9]/
 
 /**
- * Validation for the password the user sets during email verification. Mirrors
- * Baanx's rules: at least 8 chars with an uppercase, a lowercase, a number, and
- * a special character; `confirmPassword` must match.
+ * The individual password rules, in display order. Exported so the Create
+ * Password screen's live checklist and the schema below stay in lockstep — a
+ * single source of truth for "what makes a valid password". Mirrors Baanx's
+ * rules: at least 8 chars with an uppercase, a lowercase, a number, and a
+ * special character. (Baanx also advises avoiding common passwords; that's
+ * surfaced as guidance on the screen but not enforced here.)
+ */
+export const PASSWORD_RULES = [
+    { id: 'length', test: (value: string): boolean => value.length >= 8 },
+    { id: 'uppercase', test: (value: string): boolean => /[A-Z]/.test(value) },
+    { id: 'lowercase', test: (value: string): boolean => /[a-z]/.test(value) },
+    { id: 'number', test: (value: string): boolean => /[0-9]/.test(value) },
+    {
+        id: 'special',
+        test: (value: string): boolean =>
+            PASSWORD_SPECIAL_CHARACTER_REGEX.test(value),
+    },
+] as const
+
+export type PasswordRuleId = (typeof PASSWORD_RULES)[number]['id']
+
+/** Password field schema, derived from {@link PASSWORD_RULES} so the two agree. */
+const passwordFieldSchema = z.string().superRefine((value, ctx) => {
+    for (const rule of PASSWORD_RULES) {
+        if (!rule.test(value)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `password-${rule.id}`,
+            })
+        }
+    }
+})
+
+/**
+ * Validation for the password the user sets during email verification.
+ * `password` must satisfy every {@link PASSWORD_RULES} entry and
+ * `confirmPassword` must match.
  */
 export const passwordSetSchema = z
     .object({
-        password: z
-            .string()
-            .min(8)
-            .regex(/[A-Z]/)
-            .regex(/[a-z]/)
-            .regex(/[0-9]/)
-            .regex(PASSWORD_SPECIAL_CHARACTER_REGEX),
+        password: passwordFieldSchema,
         confirmPassword: z.string(),
     })
     .refine(values => values.password === values.confirmPassword, {
@@ -198,6 +240,16 @@ export const formatDobInput = (raw: string): string => {
 export const dobToIsoDate = (ddmmyyyy: string): string => {
     const [dd, mm, yyyy] = ddmmyyyy.split('/')
     return `${yyyy}-${mm}-${dd}`
+}
+
+/**
+ * Converts an ISO date or datetime (e.g. `1997-11-08T00:00:00.000Z`) to the
+ * `DD/MM/YYYY` display format. String-only (never `new Date`) so the day can't
+ * shift across timezones — the server stores a pure birth date.
+ */
+export const isoDateToDob = (iso: string): string => {
+    const [yyyy, mm, dd] = iso.slice(0, 10).split('-')
+    return `${dd}/${mm}/${yyyy}`
 }
 
 /** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */

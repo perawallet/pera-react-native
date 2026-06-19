@@ -173,7 +173,7 @@ const withAgeGateIosSources = (config) =>
 
 // ─── iOS: register files in Xcode project ────────────────────────────────────
 //
-// Uses the same pbxproj manipulation pattern as withMigrationModule.js:
+// Uses the standard pbxproj manipulation pattern:
 // 1. Find (or create) a named PBXGroup under the app target's root group.
 // 2. Call proj.addSourceFile(projectRelPath, { target }, groupKey) for each
 //    file not already present (proj.hasFile guards against double-adding).

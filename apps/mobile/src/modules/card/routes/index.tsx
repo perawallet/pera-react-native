@@ -18,6 +18,7 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { PeraCardIntroScreen } from '../screens/PeraCardIntroScreen'
+import { CardSignInScreen } from '../screens/CardSignInScreen'
 import { CardOnboardingStackNavigator } from './card-onboarding'
 import { type PeraCardStackParamList } from './types'
 
@@ -42,6 +43,11 @@ export const PeraCardStackNavigator = () => {
                 name='PeraCardIntro'
                 options={{ title: 'peraCard.intro.navigation_title' }}
                 component={PeraCardIntroScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardSignIn'
+                options={{ title: 'peraCard.sign_in.navigation_title' }}
+                component={CardSignInScreen}
             />
             <PeraCardStack.Screen
                 name='CardOnboarding'

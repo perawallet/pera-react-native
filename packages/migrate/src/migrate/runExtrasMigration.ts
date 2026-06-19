@@ -19,9 +19,17 @@ import {
     migrateNotificationMutes,
     type NotificationsMigrationResult,
 } from './migrateNotifications'
+import {
+    migratePasskeys,
+    type PasskeysMigrationResult,
+} from './migratePasskeys'
 import { migratePreferences } from './migratePreferences'
 import { migrateStashed, type StashedMigrationResult } from './migrateStashed'
 import { migrateSwaps } from './migrateSwaps'
+import {
+    migrateWalletConnect,
+    type WalletConnectMigrationResult,
+} from './migrateWalletConnect'
 
 export type ExtrasMigrationResult = {
     preferences: boolean
@@ -30,6 +38,8 @@ export type ExtrasMigrationResult = {
     contacts: ContactMigrationResult
     notifications: NotificationsMigrationResult
     auth: AuthMigrationResult
+    walletConnect: WalletConnectMigrationResult
+    passkeys: PasskeysMigrationResult
     stashed: StashedMigrationResult
     failed: ExtrasMigrationStepFailure[]
 }
@@ -46,6 +56,8 @@ export type ExtrasMigrationStepName =
     | 'contacts'
     | 'notifications'
     | 'auth'
+    | 'walletConnect'
+    | 'passkeys'
     | 'stashed'
 
 export const runExtrasMigration = async (
@@ -62,7 +74,9 @@ export const runExtrasMigration = async (
             biometricMigrated: false,
             lockoutMigrated: false,
         },
-        stashed: { passkeysStashed: 0 },
+        walletConnect: { imported: 0, skipped: 0 },
+        passkeys: { imported: 0, skipped: 0 },
+        stashed: { walletConnectHistoryBlobStashed: false },
         failed: [],
     }
 
@@ -95,9 +109,16 @@ export const runExtrasMigration = async (
         result.auth = await migrateAuth(data.auth, data.preferences)
     })
 
+    runStep(result, 'walletConnect', () => {
+        result.walletConnect = migrateWalletConnect(data.walletConnectV1)
+    })
+
+    await runAsyncStep(result, 'passkeys', async () => {
+        result.passkeys = await migratePasskeys(data.passkeys)
+    })
+
     runStep(result, 'stashed', () => {
         result.stashed = migrateStashed({
-            passkeys: data.passkeys,
             walletConnectHistoryBlob: data.walletConnectHistoryBlob,
         })
     })

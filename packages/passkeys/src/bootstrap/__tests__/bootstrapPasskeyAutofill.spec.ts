@@ -46,6 +46,7 @@ const makeService = () => ({
     setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
     setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
     configureIntentActions: vi.fn().mockResolvedValue(undefined),
+    isProviderActive: vi.fn().mockResolvedValue(true),
     refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
 })
 
@@ -89,6 +90,66 @@ describe('bootstrapPasskeyAutofill', () => {
             'CREATE_ACTION',
         )
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
+    })
+
+    it('skips refreshing identities when the credential provider is inactive', async () => {
+        const service = makeService()
+        service.isProviderActive.mockResolvedValue(false)
+        mocks.getAllKeys.mockReturnValue([])
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        // The rest of the bootstrap still ran.
+        expect(service.setMasterKey).toHaveBeenCalled()
+        // But no refresh — nothing to sync to a disabled store, and no error.
+        expect(service.refreshCredentialIdentities).not.toHaveBeenCalled()
+        expect(mocks.error).not.toHaveBeenCalled()
+    })
+
+    it('does not log an error when the identity store is disabled mid-refresh', async () => {
+        const service = makeService()
+        mocks.getAllKeys.mockReturnValue([])
+        // Active at check time, but the store reports disabled on the write
+        // (the check→enable race).
+        service.refreshCredentialIdentities.mockRejectedValue(
+            new Error(
+                'The operation couldn’t be completed. (ASCredentialIdentityStoreErrorDomain error 1.)',
+            ),
+        )
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(service.refreshCredentialIdentities).toHaveBeenCalled()
+        expect(mocks.error).not.toHaveBeenCalled()
+        expect(mocks.warn).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ step: 'refreshCredentialIdentities' }),
+        )
+    })
+
+    it('logs an error when refresh fails for a non-store-disabled reason', async () => {
+        const service = makeService()
+        mocks.getAllKeys.mockReturnValue([])
+        // App Group misconfiguration shares code 1 but a different domain — a
+        // real fault that must still surface.
+        service.refreshCredentialIdentities.mockRejectedValue(
+            new Error('App Group is not configured for passkey autofill.'),
+        )
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
+            step: 'refreshCredentialIdentities',
+        })
     })
 
     it('does not push a derived main key when the HD root secret has no private bytes', async () => {
@@ -153,6 +214,7 @@ describe('bootstrapPasskeyAutofill', () => {
             configureIntentActions: vi
                 .fn()
                 .mockRejectedValue(new Error('configureIntentActions')),
+            isProviderActive: vi.fn().mockResolvedValue(true),
             refreshCredentialIdentities: vi
                 .fn()
                 .mockRejectedValue(new Error('refreshCredentialIdentities')),

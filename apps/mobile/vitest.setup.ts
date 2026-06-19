@@ -257,7 +257,13 @@ vi.mock('react-native-vision-camera', () => {
             hasPermission: true,
             requestPermission: vi.fn().mockResolvedValue(true),
         })),
-        useCodeScanner: vi.fn(),
+    }
+})
+
+// Mock react-native-vision-camera-barcode-scanner (v5 code-scanning path)
+vi.mock('react-native-vision-camera-barcode-scanner', () => {
+    return {
+        useBarcodeScannerOutput: vi.fn(() => ({})),
     }
 })
 

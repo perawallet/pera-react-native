@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { toEnumValue, type Network } from '@perawallet/wallet-core-shared'
+import {
+    toEnumValue,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getCardApiError, isConflictError, isDuplicateError } from '../errors'
 import { getCardTransport } from '../transport'
 import { VerificationState } from '../../models'
 import type {
@@ -21,6 +27,8 @@ import type {
 } from '../../models'
 import {
     addressResponseSchema,
+    connectFundingSourceResponseSchema,
+    consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
@@ -150,8 +158,17 @@ export const startRegisterVerification = async (
 export type FetchOnboardingDetailsParams = NetworkParams & {
     onboardingId: string
 }
-export type OnboardingDetails = { verificationState: VerificationState }
-/** Pre-auth onboarding status — polled to detect KYC completion. */
+export type OnboardingDetails = {
+    verificationState: VerificationState
+    /** Profile fields prefilled into the personal-details form when present. */
+    firstName: Nullable<string>
+    lastName: Nullable<string>
+    /** ISO datetime as returned by Baanx; the date part is the birth date. */
+    dateOfBirth: Nullable<string>
+    /** ISO 3166-1 alpha-2; null until the user provides it. */
+    countryOfNationality: Nullable<string>
+}
+/** Pre-auth onboarding status — polled for KYC and read to prefill the form. */
 export const fetchOnboardingDetails = async (
     params: FetchOnboardingDetailsParams,
 ): Promise<OnboardingDetails> => {
@@ -171,17 +188,23 @@ export const fetchOnboardingDetails = async (
             parsed.verificationState,
             VerificationState.Unverified,
         ),
+        firstName: parsed.firstName ?? null,
+        lastName: parsed.lastName ?? null,
+        dateOfBirth: parsed.dateOfBirth ?? null,
+        countryOfNationality: parsed.countryOfNationality ?? null,
     }
 }
 
 export type SubmitAddressParams = NetworkParams & { address: AddressInput }
 // The final registration step. Unlike the other register steps its response
 // matters: it carries the `accessToken` that authenticates the post-onboarding
-// user endpoints, so we parse and return it rather than discarding the body
-// via `postRegisterStep`.
+// user endpoints plus the permanent `userId` the consent-link step binds to, so
+// we parse and return them rather than discarding the body via `postRegisterStep`.
 export type SubmitAddressResult = {
     accessToken: string | null
     onboardingId: string
+    /** Permanent user id (`user.id`); null until Baanx returns the user block. */
+    userId: string | null
 }
 export const submitAddress = async (
     params: SubmitAddressParams,
@@ -193,23 +216,170 @@ export const submitAddress = async (
         data: params.address,
         signal: params.signal,
     })
-    return addressResponseSchema.parse(response.data)
+    const parsed = addressResponseSchema.parse(response.data)
+    return {
+        accessToken: parsed.accessToken,
+        onboardingId: parsed.onboardingId,
+        userId: parsed.user?.id ?? null,
+    }
 }
 
-// Records the user's onboarding consents (T&C acceptances + marketing opt-in)
-// collected on the final address step. The exact request shape is an assumption
-// pending confirmation against the live /v2/consent/onboarding contract.
-export type SubmitOnboardingConsentParams = NetworkParams & {
+// POST /v2/consent/onboarding. Jurisdiction policy: US residents use 'us',
+// everyone else 'global'.
+export type ConsentPolicyType = 'us' | 'global'
+
+type ConsentType =
+    | 'termsAndPrivacy'
+    | 'marketingNotifications'
+    | 'smsNotifications'
+    | 'emailNotifications'
+    | 'eSignAct'
+type Consent = {
+    consentType: ConsentType
+    consentStatus: 'granted' | 'denied'
+}
+
+export type OnboardingConsentInput = {
     onboardingId: string
+    tenantId: string
+    policyType: ConsentPolicyType
+    /** Both T&C boxes accepted (they gate the Continue button). */
+    termsAccepted: boolean
+    /** The single marketing checkbox; drives all notification consents. */
     allowMarketing: boolean
-    cardTermsAccepted: boolean
-    platformTermsAccepted: boolean
+}
+
+/**
+ * Maps the address-step checkboxes to Baanx's required consent set. Both
+ * policies require terms + the three notification channels; `us` additionally
+ * requires the e-sign consent.
+ */
+export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
+    const {
+        onboardingId,
+        tenantId,
+        policyType,
+        termsAccepted,
+        allowMarketing,
+    } = input
+    const status = (granted: boolean): Consent['consentStatus'] =>
+        granted ? 'granted' : 'denied'
+    const consents: Consent[] = [
+        {
+            consentType: 'termsAndPrivacy',
+            consentStatus: status(termsAccepted),
+        },
+        {
+            consentType: 'marketingNotifications',
+            consentStatus: status(allowMarketing),
+        },
+        {
+            consentType: 'smsNotifications',
+            consentStatus: status(allowMarketing),
+        },
+        {
+            consentType: 'emailNotifications',
+            consentStatus: status(allowMarketing),
+        },
+        ...(policyType === 'us'
+            ? [
+                  {
+                      consentType: 'eSignAct' as const,
+                      consentStatus: status(termsAccepted),
+                  },
+              ]
+            : []),
+    ]
+    return { onboardingId, tenantId, policyType, consents }
+}
+
+// Step 1 of Baanx's two-step consent flow: create the consent set during
+// registration (before the address step). The tenant id is build-time config
+// (per network), like the Baanx client key. Returns the `consentSetId` the link
+// step (below) binds to the user once the address step issues the userId.
+export type SubmitOnboardingConsentParams = NetworkParams &
+    Omit<OnboardingConsentInput, 'tenantId'>
+export type SubmitOnboardingConsentResult = {
+    /** Null when Baanx omitted it (e.g. a duplicate-onboardingId retry). */
+    consentSetId: string | null
 }
 export const submitOnboardingConsent = async (
     params: SubmitOnboardingConsentParams,
+): Promise<SubmitOnboardingConsentResult> => {
+    const { network, signal, ...rest } = params
+    const body = buildOnboardingConsentBody({
+        ...rest,
+        tenantId: getNetworkConfig(network).baanxTenantId,
+    })
+    try {
+        const response = await postRegisterStep(
+            '/v2/consent/onboarding',
+            body,
+            { network, signal },
+        )
+        // Lenient: the consentSetId is best-effort (the link step skips when it's
+        // absent), so an unexpected body shape must not fail the address finalize.
+        const parsed = consentResponseSchema.safeParse(
+            (response as { data?: unknown }).data,
+        )
+        return {
+            consentSetId: parsed.success ? parsed.data.consentSetId : null,
+        }
+    } catch (error) {
+        // Consent creation is non-idempotent on Baanx: a retried submit (e.g.
+        // after the address step failed and the user taps Continue again)
+        // returns "Duplicate onboardingId". The consent set already exists — the
+        // desired end state — so treat it as success. We have no id to return
+        // here; the link step falls back to the one stashed on the first create.
+        const apiError = await getCardApiError(error)
+        if (isDuplicateError(apiError)) return { consentSetId: null }
+        throw error
+    }
+}
+
+// Step 2 of Baanx's two-step consent flow: link the consent set created above to
+// the permanent user id the address step issues. Idempotent — Baanx returns 409
+// Conflict if the set is already linked (the desired end state), which we swallow.
+export type LinkOnboardingConsentParams = NetworkParams & {
+    consentSetId: string
+    userId: string
+}
+export const linkOnboardingConsent = async (
+    params: LinkOnboardingConsentParams,
 ): Promise<void> => {
-    const { network, signal, ...body } = params
-    await postRegisterStep('/v2/consent/onboarding', body, { network, signal })
+    const { network, signal, consentSetId, userId } = params
+    try {
+        await getCardTransport().request({
+            network,
+            method: 'PATCH',
+            path: `/v2/consent/onboarding/${consentSetId}`,
+            data: { userId },
+            signal,
+        })
+    } catch (error) {
+        const apiError = await getCardApiError(error)
+        if (isConflictError(apiError)) return
+        throw error
+    }
+}
+
+// Connects a Pera (Algorand) account as the card's funding source on the setup
+// checklist's Connect Funds step. Authenticated (the transport attaches the
+// bearer issued by the address step). ASSUMPTION: the exact contract is pending
+// the live Baanx API (sandbox down) — it's mocked in installCardDevMocks for now.
+export type ConnectFundingSourceParams = NetworkParams & { address: string }
+export type ConnectFundingSourceResult = { fundingSourceId: string }
+export const connectFundingSource = async (
+    params: ConnectFundingSourceParams,
+): Promise<ConnectFundingSourceResult> => {
+    const response = await getCardTransport().request({
+        network: params.network,
+        method: 'POST',
+        path: '/v1/card/funding-source',
+        data: { address: params.address },
+        signal: params.signal,
+    })
+    return connectFundingSourceResponseSchema.parse(response.data)
 }
 
 export const fetchRegistrationSettings = async (

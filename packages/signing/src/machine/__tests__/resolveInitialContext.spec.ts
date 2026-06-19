@@ -282,6 +282,26 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
         )
     })
 
+    it('throws when items in the data array claim different signers', () => {
+        // Security: the whole group is bound to data[0].signer and signed with
+        // that one account. Items claiming a different signer must be rejected
+        // rather than silently signed by the first signer's key.
+        const request: ArbitraryDataSignRequest = {
+            id: 'req-arb-mismatch',
+            type: 'arbitrary-data',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            data: [
+                { signer: userAccount.address, data: 'hello', chainId: 4160 },
+                { signer: 'OTHER_SIGNER', data: 'world', chainId: 4160 },
+            ],
+        }
+
+        expect(() => resolveInitialContext(baseInput(request))).toThrow(
+            /signer/i,
+        )
+    })
+
     it('wraps the approve callback to project signatures back to the request', async () => {
         const arbApprove = vi.fn(async () => undefined)
         const request: ArbitraryDataSignRequest = {
@@ -306,6 +326,39 @@ describe('resolveInitialContext — arbitrary-data requests', () => {
 
         expect(arbApprove).toHaveBeenCalledWith([
             { signature: sig, signer: userAccount.address },
+        ])
+    })
+
+    it('maps every signature to the single resolved signer (not signers[i])', async () => {
+        // All items share one signer (enforced at build time), so each
+        // signature must be attributed to that signer — never an empty string
+        // for items beyond the first.
+        const arbApprove = vi.fn(async () => undefined)
+        const request: ArbitraryDataSignRequest = {
+            id: 'req-arb-multi',
+            type: 'arbitrary-data',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            data: [
+                { signer: userAccount.address, data: 'one', chainId: 4160 },
+                { signer: userAccount.address, data: 'two', chainId: 4160 },
+            ],
+            approve: arbApprove,
+        }
+
+        const context = resolveInitialContext(baseInput(request))
+        const { callbacks } = context.signableGroups![0].source
+        const sigA = new Uint8Array([1])
+        const sigB = new Uint8Array([2])
+
+        await callbacks?.approve?.({
+            signedData: { type: 'arbitrary-data', signatures: [sigA, sigB] },
+            signers: [{ address: userAccount.address }],
+        } as never)
+
+        expect(arbApprove).toHaveBeenCalledWith([
+            { signature: sigA, signer: userAccount.address },
+            { signature: sigB, signer: userAccount.address },
         ])
     })
 })

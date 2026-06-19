@@ -12,8 +12,7 @@
 
 import { useCallback } from 'react'
 import { config } from '@perawallet/wallet-core-config'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
+import { useCardStore } from '@perawallet/wallet-core-card'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 
@@ -24,25 +23,22 @@ type UsePeraCardIntroScreenResult = {
 }
 
 export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
-    const { infoToast } = useToast()
-    const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const navigation = useAppNavigation()
 
     const handleCreateAccount = useCallback(() => {
+        // Starting a new sign-up: clear any leftover onboarding progress from a
+        // prior run so the setup checklist re-locks until this run completes.
+        useCardStore.getState().resetOnboardingProgress()
         navigation.navigate('PeraCard', {
             screen: 'CardOnboarding',
             params: { screen: 'CardOnboardingEmail' },
         })
     }, [navigation])
 
-    // TODO(card): wire to the Baanx login flow
-    const showComingSoon = useCallback(() => {
-        infoToast(
-            t('peraCard.intro.coming_soon_title'),
-            t('peraCard.intro.coming_soon_body'),
-        )
-    }, [infoToast, t])
+    const handleAlreadyHaveAccount = useCallback(() => {
+        navigation.navigate('PeraCard', { screen: 'CardSignIn' })
+    }, [navigation])
 
     const handleLearnMore = useCallback(() => {
         pushWebView({ url: config.peraCardLearnMoreUrl })
@@ -50,7 +46,7 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
 
     return {
         handleCreateAccount,
-        handleAlreadyHaveAccount: showComingSoon,
+        handleAlreadyHaveAccount,
         handleLearnMore,
     }
 }

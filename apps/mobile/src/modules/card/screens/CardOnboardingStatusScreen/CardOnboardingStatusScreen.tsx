@@ -11,148 +11,69 @@
  */
 
 import React from 'react'
-import { Trans } from 'react-i18next'
-import {
-    PWButton,
-    PWScreen,
-    PWText,
-    PWView,
-    type IconName,
-    type PWIconVariant,
-} from '@components/core'
+import { PWScreen, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    useCardOnboardingStatusScreen,
-    type DocumentsState,
-} from './useCardOnboardingStatusScreen'
-import { StatusChecklistRow } from './StatusChecklistRow'
+import { useCardOnboardingStatusScreen } from './useCardOnboardingStatusScreen'
+import { DocumentsRow } from './DocumentsRow'
+import { EnterDetailsRow } from './EnterDetailsRow'
+import { ConnectFundsRow } from './ConnectFundsRow'
+import { SelectFundingTypeRow } from './SelectFundingTypeRow'
+import { StatusFooter } from './StatusFooter'
 import { useStyles } from './styles'
-
-// Icon, color, and copy for the "Submit Your Documents" row per KYC state.
-const DOCUMENTS_ROW: Record<
-    DocumentsState,
-    {
-        icon: IconName
-        variant: PWIconVariant
-        bodyKey: string
-        showsPendingLabel: boolean
-    }
-> = {
-    pending: {
-        icon: 'pending',
-        variant: 'secondary',
-        bodyKey: 'peraCard.setup_status.documents_pending_body',
-        showsPendingLabel: true,
-    },
-    verified: {
-        icon: 'check',
-        variant: 'positive',
-        bodyKey: 'peraCard.setup_status.documents_verified_body',
-        showsPendingLabel: false,
-    },
-    rejected: {
-        icon: 'cross',
-        variant: 'error',
-        bodyKey: 'peraCard.setup_status.documents_rejected_body',
-        showsPendingLabel: false,
-    },
-}
 
 export const CardOnboardingStatusScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
         documentsState,
+        isRegistrationComplete,
+        isFundsConnected,
+        connectedAccount,
+        connectedAddress,
+        isConnecting,
+        selectedFundingType,
+        handleSelectFundingType,
+        handleCreatePeraCard,
         handleEnterDetails,
+        handleConnectAccount,
         handleLogout,
         handleOpenSupport,
     } = useCardOnboardingStatusScreen()
-
-    const documentsRow = DOCUMENTS_ROW[documentsState]
 
     return (
         <PWScreen
             testID='card-onboarding-status'
             footer={
-                <PWView style={styles.footer}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('peraCard.verification.logout_button')}
-                        onPress={handleLogout}
-                        testID='card-onboarding-status-logout'
-                    />
-                    <PWText
-                        variant='footnoteMedium'
-                        weight={400}
-                        style={styles.contactText}
-                    >
-                        <Trans
-                            i18nKey='peraCard.verification.contact_us'
-                            components={[
-                                <PWText
-                                    key='link'
-                                    variant='linkPositive'
-                                    onPress={handleOpenSupport}
-                                    testID='card-onboarding-status-contact-link'
-                                />,
-                            ]}
-                        />
-                    </PWText>
-                </PWView>
+                <StatusFooter
+                    isFundsConnected={isFundsConnected}
+                    onCreatePeraCard={handleCreatePeraCard}
+                    onLogout={handleLogout}
+                    onOpenSupport={handleOpenSupport}
+                />
             }
         >
             <PWView style={styles.content}>
                 <PWText variant='h1'>{t('peraCard.setup_status.title')}</PWText>
 
                 <PWView style={styles.checklist}>
-                    {/* 1 — Submit Your Documents (driven by the KYC state) */}
-                    <StatusChecklistRow
-                        icon={documentsRow.icon}
-                        iconVariant={documentsRow.variant}
-                        pendingLabel={
-                            documentsRow.showsPendingLabel
-                                ? t(
-                                      'peraCard.setup_status.documents_pending_label',
-                                  )
-                                : undefined
-                        }
-                        title={t('peraCard.setup_status.documents_title')}
-                        body={t(documentsRow.bodyKey)}
-                        testID='card-onboarding-status-documents'
+                    <DocumentsRow documentsState={documentsState} />
+                    <EnterDetailsRow
+                        isRegistrationComplete={isRegistrationComplete}
+                        documentsState={documentsState}
+                        onEnterDetails={handleEnterDetails}
                     />
-
-                    {/* 2 — Enter Your Details (actionable unless rejected) */}
-                    <StatusChecklistRow
-                        icon='person'
-                        iconVariant='primary'
-                        title={t('peraCard.setup_status.details_title')}
-                        body={t('peraCard.setup_status.details_body')}
-                    >
-                        {documentsState !== 'rejected' ? (
-                            <PWButton
-                                variant='primary'
-                                title={t(
-                                    'peraCard.setup_status.details_button',
-                                )}
-                                onPress={handleEnterDetails}
-                                style={styles.detailsButton}
-                                testID='card-onboarding-status-details-cta'
-                            />
-                        ) : null}
-                    </StatusChecklistRow>
-
-                    {/* 3 + 4 — future slices, rendered as inactive steps */}
-                    <StatusChecklistRow
-                        icon='wallet'
-                        iconVariant='secondary'
-                        isInactive
-                        title={t('peraCard.setup_status.connect_funds_title')}
+                    <ConnectFundsRow
+                        isFundsConnected={isFundsConnected}
+                        isRegistrationComplete={isRegistrationComplete}
+                        connectedAccount={connectedAccount}
+                        connectedAddress={connectedAddress}
+                        isConnecting={isConnecting}
+                        onConnectAccount={handleConnectAccount}
                     />
-                    <StatusChecklistRow
-                        icon='fund'
-                        iconVariant='secondary'
-                        isInactive
-                        title={t('peraCard.setup_status.funding_type_title')}
+                    <SelectFundingTypeRow
+                        isFundsConnected={isFundsConnected}
+                        selectedFundingType={selectedFundingType}
+                        onSelectFundingType={handleSelectFundingType}
                     />
                 </PWView>
             </PWView>

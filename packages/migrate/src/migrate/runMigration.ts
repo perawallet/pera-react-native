@@ -109,24 +109,6 @@ export const runMigration = async (
         }
     }
 
-    if (accountResult.failed.length > 0) {
-        logger.error(
-            '[Migration] account failures; sentinel not set, will retry next launch',
-            {
-                failed: accountResult.failed,
-                imported: accountResult.imported,
-                skipped: accountResult.skipped,
-            },
-        )
-        return {
-            completed: false,
-            incompleteReason: 'accounts-failed',
-            accounts: accountResult,
-            extras: null,
-            error: null,
-        }
-    }
-
     let extrasResult: ExtrasMigrationResult
     try {
         extrasResult = await runExtrasMigration(data)
@@ -142,6 +124,24 @@ export const runMigration = async (
             accounts: accountResult,
             extras: null,
             error,
+        }
+    }
+
+    if (accountResult.failed.length > 0) {
+        logger.error(
+            '[Migration] account failures; sentinel not set, will retry next launch',
+            {
+                failed: accountResult.failed,
+                imported: accountResult.imported,
+                skipped: accountResult.skipped,
+            },
+        )
+        return {
+            completed: false,
+            incompleteReason: 'accounts-failed',
+            accounts: accountResult,
+            extras: extrasResult,
+            error: null,
         }
     }
 

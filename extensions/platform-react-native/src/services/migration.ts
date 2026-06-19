@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { NativeModules, Platform } from 'react-native'
+import { Platform } from 'react-native'
+import { requireOptionalNativeModule } from 'expo'
 import {
     decodeFromBase64,
     decodeLongString,
@@ -234,12 +235,8 @@ interface NativeLegacyMigrationModule {
     resetLegacyData?(): Promise<void>
 }
 
-const getNativeModule = (): NativeLegacyMigrationModule | null => {
-    const module = (
-        NativeModules as Record<string, NativeLegacyMigrationModule | undefined>
-    ).LegacyMigration
-    return module ?? null
-}
+const getNativeModule = (): NativeLegacyMigrationModule | null =>
+    requireOptionalNativeModule<NativeLegacyMigrationModule>('LegacyMigration')
 
 const decodeBase64 = (value: unknown): Uint8Array | null => {
     if (value == null) return null
@@ -294,9 +291,22 @@ interface RawLegacyHDKey extends Omit<LegacyHDKey, 'privateKey'> {
 
 interface RawLegacyWalletConnectV1Session extends Omit<
     LegacyWalletConnectV1Session,
-    'dateTimestampMs'
+    | 'dateTimestampMs'
+    | 'clientId'
+    | 'peerId'
+    | 'handshakeId'
+    | 'currentKey'
+    | 'approvedAccounts'
+    | 'chainId'
 > {
-    dateTimestampMs: LongString | number
+    // iOS emits null when the legacy session has no stored date.
+    dateTimestampMs: LongString | number | null
+    clientId?: string | null
+    peerId?: string | null
+    handshakeId?: LongString | number | null
+    currentKey?: string | null
+    approvedAccounts?: string[] | null
+    chainId?: number | null
 }
 
 interface RawLegacyWalletConnectV2Session extends Omit<
@@ -403,6 +413,12 @@ const decodeWalletConnectV1Session = (
     ...raw,
     dateTimestampMs:
         decodeLongString(raw.dateTimestampMs, 'dateTimestampMs') ?? 0,
+    clientId: raw.clientId ?? null,
+    peerId: raw.peerId ?? null,
+    handshakeId: decodeLongString(raw.handshakeId, 'handshakeId'),
+    currentKey: raw.currentKey ?? null,
+    approvedAccounts: raw.approvedAccounts ?? null,
+    chainId: raw.chainId ?? null,
 })
 
 const decodeWalletConnectV2Session = (

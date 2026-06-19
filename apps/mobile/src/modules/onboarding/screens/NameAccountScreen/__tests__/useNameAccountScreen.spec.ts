@@ -23,7 +23,7 @@ const mockExitAccountFlow = vi.fn()
 const mockShowToast = vi.fn()
 const mockUpdateAccount = vi.fn()
 
-let mockRouteParams: Optional<{ account?: unknown }>
+let mockRouteParams: Optional<{ account?: unknown; returnTo?: unknown }>
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -169,6 +169,34 @@ describe('useNameAccountScreen', () => {
         expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockExitAccountFlow).toHaveBeenCalled()
         expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
+    })
+
+    it('handleFinish forwards a returnTo target to the exit flow', async () => {
+        const returnTo = {
+            name: 'PeraCard',
+            params: {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingStatus' },
+            },
+        }
+        mockRouteParams = {
+            account: {
+                id: '1',
+                address: 'ADDR',
+                type: 'hdWallet',
+                name: 'Old Name',
+                keyPairId: 'kp1',
+            },
+            returnTo,
+        }
+
+        const { result } = renderHook(() => useNameAccountScreen())
+
+        await act(async () => {
+            await result.current.handleFinish()
+        })
+
+        expect(mockExitAccountFlow).toHaveBeenCalledWith(returnTo)
     })
 
     it('handleFinish creates HD wallet account when no account is provided', async () => {

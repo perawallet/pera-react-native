@@ -12,7 +12,9 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import { submitAddress, type SubmitAddressResult } from '../api/onboarding'
+import { getCardApiError } from '../api/errors'
 import { OnboardingStep, type AddressInput } from '../models'
 import { setCardSession } from '../session'
 import { useCardStore } from '../store'
@@ -44,6 +46,13 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
                 })
             }
             useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
+        },
+        // Surface Baanx's real (often nested-stringified) error for diagnosis —
+        // the screen only shows a generic toast, so this is where the actual
+        // status/message lands.
+        onError: async error => {
+            const apiError = await getCardApiError(error)
+            logger.warn('Card address submission failed', { error: apiError })
         },
         throwOnError: false,
     })

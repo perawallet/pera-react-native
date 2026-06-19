@@ -1,0 +1,27 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.algorand.perarn.migration'
+version = '0.1.0'
+
+android {
+  namespace "com.algorand.perarn.migration"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  implementation "com.google.crypto.tink:tink-android:1.18.0"
+  // Migration readers/builders use com.facebook.react.bridge.* (WritableMap,
+  // Arguments, etc.). expo-modules-core depends on react-android as
+  // `implementation` (not `api`), so it isn't exposed transitively — declare it
+  // here. Version is resolved project-wide by the React Native Gradle plugin.
+  implementation "com.facebook.react:react-android"
+}

@@ -30,6 +30,7 @@ export const CardOnboardingEmailVerifyScreen = () => {
         email,
         onChangeCode,
         isValid,
+        codeError,
         secondsRemaining,
         canResend,
         handleResend,
@@ -54,6 +55,7 @@ export const CardOnboardingEmailVerifyScreen = () => {
                             length={CARD_VERIFICATION_CODE_LENGTH}
                             onComplete={handleConfirm}
                             onSubmitEditing={() => handleConfirm()}
+                            errorMessage={codeError}
                             autoFocus
                             accessibilityLabel={t(
                                 'peraCard.verify_email.navigation_title',

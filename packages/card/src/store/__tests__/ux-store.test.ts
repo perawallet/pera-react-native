@@ -12,7 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { CardStatus, OnboardingStep } from '../../models'
+import { CardStatus, FundingType, OnboardingStep } from '../../models'
 
 const registerStoreMock = vi.fn()
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -93,6 +93,31 @@ describe('useCardStore', () => {
         expect(persisted).not.toHaveProperty('phoneVerificationCode')
     })
 
+    test('setCodeVerificationError is transient and clears on reset', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => result.current.setCodeVerificationError('phone'))
+        expect(result.current.codeVerificationError).toBe('phone')
+
+        // It's a transient UI signal — excluded from the persisted snapshot.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).not.toHaveProperty('codeVerificationError')
+
+        act(() => result.current.resetOnboardingProgress())
+        expect(result.current.codeVerificationError).toBeNull()
+    })
+
     test('resetState clears the onboarding contact inputs', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
@@ -126,6 +151,30 @@ describe('useCardStore', () => {
         expect(result.current.allowMarketing).toBe(false)
     })
 
+    test('setSelectedFundingType stores (and persists) the chosen funding type', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        expect(result.current.selectedFundingType).toBeNull()
+
+        act(() => result.current.setSelectedFundingType(FundingType.Manual))
+
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
+        // Persisted so the later card-creation step can read it on a cold resume.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted?.selectedFundingType).toBe(FundingType.Manual)
+    })
+
     test('setCardSnapshot stores the non-sensitive card hint', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
@@ -156,6 +205,58 @@ describe('useCardStore', () => {
         expect(result.current.onboardingStep).toBe(OnboardingStep.EmailSend)
         expect(result.current.transactionFilters).toEqual({})
         expect(result.current.cardId).toBeNull()
+    })
+
+    test('resetOnboardingProgress clears onboarding fields but keeps card snapshot/filters', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setOnboardingStep(OnboardingStep.Completed)
+            result.current.setEmail('john@example.com')
+            result.current.setOnboardingId('onb_1')
+            result.current.setConsentSetId('cs_1')
+            result.current.setConnectedFundingSourceAddress('ADDR1')
+            result.current.setSelectedFundingType(FundingType.Auto)
+            result.current.setAllowMarketing(false)
+            // Card-snapshot / filters should survive a fresh sign-up.
+            result.current.setCardSnapshot({
+                cardId: 'card_1',
+                status: CardStatus.Active,
+                panLast4: '1234',
+            })
+            result.current.setTransactionFilters({ searchKey: 'coffee' })
+        })
+        // Persisted so a cross-reload retry can still link the consent set.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted?.consentSetId).toBe('cs_1')
+
+        act(() => result.current.resetOnboardingProgress())
+
+        // Onboarding progress reset → setup checklist re-locks.
+        expect(result.current.onboardingStep).toBe(OnboardingStep.EmailSend)
+        expect(result.current.email).toBeNull()
+        expect(result.current.onboardingId).toBeNull()
+        expect(result.current.consentSetId).toBeNull()
+        expect(result.current.connectedFundingSourceAddress).toBeNull()
+        expect(result.current.selectedFundingType).toBeNull()
+        expect(result.current.allowMarketing).toBe(true)
+        // Card snapshot / filters preserved.
+        expect(result.current.cardId).toBe('card_1')
+        expect(result.current.lastKnownStatus).toBe(CardStatus.Active)
+        expect(result.current.transactionFilters).toEqual({
+            searchKey: 'coffee',
+        })
     })
 
     test('registers clearStorage and resetState under card-store', async () => {

@@ -37,6 +37,7 @@ import {
     WalletConnectEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
@@ -50,7 +51,8 @@ export const ConnectionView = ({
     onSuccess,
     onError,
 }: ConnectionViewProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const { removeSessionRequest } = useWalletConnectSessionRequests()
     const { network } = useNetwork()

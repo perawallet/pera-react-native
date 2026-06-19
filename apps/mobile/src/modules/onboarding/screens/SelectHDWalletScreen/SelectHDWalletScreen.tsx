@@ -36,6 +36,8 @@ export const SelectHDWalletScreen = () => {
         hdWalletGroups,
         accountBalances,
         isCreatingWallet,
+        isSelectingWallet,
+        isAutoSelecting,
         handleSelectWallet,
         handleCreateNewWallet,
         t,
@@ -112,37 +114,44 @@ export const SelectHDWalletScreen = () => {
             <PWScreen
                 scroll='never'
                 footer={
-                    <PWButton
-                        title={t(
-                            'onboarding.select_hd_wallet.create_new_wallet',
-                        )}
-                        onPress={handleCreateNewWallet}
-                        variant='secondary'
-                        isDisabled={isCreatingWallet}
-                        icon='plus'
-                        testID='select_hd_wallet_create_new'
-                    />
+                    isAutoSelecting ? undefined : (
+                        <PWButton
+                            title={t(
+                                'onboarding.select_hd_wallet.create_new_wallet',
+                            )}
+                            onPress={handleCreateNewWallet}
+                            variant='secondary'
+                            isDisabled={isCreatingWallet || isSelectingWallet}
+                            icon='plus'
+                            testID='select_hd_wallet_create_new'
+                        />
+                    )
                 }
             >
-                <PWView style={styles.content}>
-                    <ScreenHeader
-                        title={t('onboarding.select_hd_wallet.title')}
-                        description={t(
-                            'onboarding.select_hd_wallet.description',
-                        )}
-                    />
-                    <PWFlatList
-                        style={styles.list}
-                        data={hdWalletGroups}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.seedKeyId}
-                        extraData={accountBalances}
-                    />
-                </PWView>
+                {/* Skip the one-item picker entirely while auto-selecting. */}
+                {isAutoSelecting ? null : (
+                    <PWView style={styles.content}>
+                        <ScreenHeader
+                            title={t('onboarding.select_hd_wallet.title')}
+                            description={t(
+                                'onboarding.select_hd_wallet.description',
+                            )}
+                        />
+                        <PWFlatList
+                            style={styles.list}
+                            data={hdWalletGroups}
+                            renderItem={renderItem}
+                            keyExtractor={item => item.seedKeyId}
+                            extraData={accountBalances}
+                        />
+                    </PWView>
+                )}
             </PWScreen>
 
             <PWLoadingOverlay
-                isVisible={isCreatingWallet}
+                isVisible={
+                    isCreatingWallet || isSelectingWallet || isAutoSelecting
+                }
                 title={t('onboarding.create_account.processing')}
             />
         </>

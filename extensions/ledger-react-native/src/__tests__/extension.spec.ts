@@ -24,6 +24,10 @@ vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
     },
     ScopeType: { UNKNOWN: -1, AUTH: 1 },
 }))
+vi.mock('expo', () => ({
+    requireOptionalNativeModule: () => null,
+}))
+
 vi.mock('react-native', () => ({
     Platform: { OS: 'ios', Version: 17 },
     PermissionsAndroid: {

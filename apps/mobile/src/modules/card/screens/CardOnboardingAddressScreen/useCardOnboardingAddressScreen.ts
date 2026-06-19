@@ -15,8 +15,8 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     addressSchema,
-    OnboardingStep,
     useCardStore,
+    useLinkConsentMutation,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
     useSubmitConsentMutation,
@@ -45,8 +45,6 @@ export type UseCardOnboardingAddressScreenResult = {
     /** True when the address form is valid AND both T&C boxes are accepted. */
     isValid: boolean
     isSubmitting: boolean
-    /** Registration finalized — the screen swaps to its completion state. */
-    isCompleted: boolean
     selectedCountry: Optional<SupportedCountry>
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
@@ -61,8 +59,6 @@ export type UseCardOnboardingAddressScreenResult = {
     handleOpenCardTerms: () => void
     handleOpenPlatformTerms: () => void
     handleConfirm: () => void
-    /** Leaves onboarding from the completion state. */
-    handleDone: () => void
 }
 
 export const useCardOnboardingAddressScreen =
@@ -81,6 +77,7 @@ export const useCardOnboardingAddressScreen =
         const allowMarketing = useCardStore(state => state.allowMarketing)
         const submitAddress = useSubmitAddressMutation()
         const submitConsent = useSubmitConsentMutation()
+        const linkConsent = useLinkConsentMutation()
         const { data: settings } = useRegistrationSettingsQuery()
 
         const [selectedCountry, setSelectedCountry] =
@@ -90,12 +87,6 @@ export const useCardOnboardingAddressScreen =
         const [cardTermsAccepted, setCardTermsAccepted] = useState(false)
         const [platformTermsAccepted, setPlatformTermsAccepted] =
             useState(false)
-        // Derived from the persisted onboarding step (set by the address
-        // mutation's onSuccess) rather than local state, so a cold resume or
-        // re-entry still renders the correct completion status.
-        const isCompleted = useCardStore(
-            state => state.onboardingStep === OnboardingStep.Completed,
-        )
         const hasPreselected = useRef(false)
 
         const {
@@ -103,6 +94,7 @@ export const useCardOnboardingAddressScreen =
             handleSubmit,
             setValue,
             watch,
+            trigger,
             formState: { isValid: isFormValid, errors },
         } = useForm<AddressFormValues>({
             resolver: zodResolver(addressSchema),
@@ -118,6 +110,14 @@ export const useCardOnboardingAddressScreen =
         })
 
         const isUsResident = watch('countryIso') === US_ISO
+
+        // Baanx Card-Issue T&C URL for the resident's jurisdiction (from
+        // GET /v1/auth/settings); Pera's terms page is the fallback. Fully
+        // optional-chained so a settings shape without the links block can't
+        // crash the render.
+        const cardTermsUrl =
+            settings?.termsAndConditionsUrls?.[isUsResident ? 'us' : 'intl'] ??
+            config.termsOfServiceUrl
 
         // Prefill the residence country chosen earlier in the flow, once settings
         // load. One-shot; matches it against the supported list for the flag/name.
@@ -135,6 +135,13 @@ export const useCardOnboardingAddressScreen =
             })
         }, [residenceCountryIso, settings, selectedCountry, setValue])
 
+        // Surface the "state required" error as soon as a US residence is in
+        // effect (preselected or picked) — validating only `countryIso` wouldn't
+        // populate the cross-field `usState` issue. Picking a state clears it.
+        useEffect(() => {
+            if (isUsResident) void trigger('usState')
+        }, [isUsResident, trigger])
+
         // TODO(card): confirm whether residence is editable here — Baanx already
         // received the country at email/verify, and this pick (even a
         // canSignUp:false country) only updates local state.
@@ -142,7 +149,9 @@ export const useCardOnboardingAddressScreen =
             const openPicker = async () => {
                 const country = await request<SupportedCountry>({
                     contents: createElement(CardCountryPickerContent),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (!country) return
                 setSelectedCountry(country)
@@ -162,7 +171,9 @@ export const useCardOnboardingAddressScreen =
             const openPicker = async () => {
                 const usState = await request<SupportedUsState>({
                     contents: createElement(CardUsStatePickerContent),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (!usState) return
                 setSelectedUsState(usState)
@@ -187,11 +198,10 @@ export const useCardOnboardingAddressScreen =
         )
 
         const handleOpenCardTerms = useCallback(() => {
-            // TODO(card): use the real Baanx Card-Issue T&C URL once provided.
-            pushWebView({ url: config.termsOfServiceUrl, id: 'card-terms' })
-        }, [pushWebView])
+            pushWebView({ url: cardTermsUrl, id: 'card-terms' })
+        }, [pushWebView, cardTermsUrl])
         const handleOpenPlatformTerms = useCallback(() => {
-            // TODO(card): use the real Baanx Platform T&C URL once provided.
+            // Checkbox 2 is Pera's own Terms & Conditions.
             pushWebView({ url: config.termsOfServiceUrl, id: 'platform-terms' })
         }, [pushWebView])
 
@@ -221,19 +231,36 @@ export const useCardOnboardingAddressScreen =
                     : {}),
             }
             try {
-                // Record the user's consents (T&Cs + marketing) first, then
-                // finalize registration with the address. Both T&Cs are
-                // guaranteed accepted here — the Continue button gates on them.
-                await submitConsent.mutateAsync({
+                // Baanx's two-step consent: (1) create the consent set (T&Cs +
+                // marketing) before the address, (2) link it to the user once
+                // the address step issues the userId. Both T&Cs are guaranteed
+                // accepted here — the Continue button gates on them.
+                const { consentSetId } = await submitConsent.mutateAsync({
                     onboardingId,
+                    policyType: isUsResident ? 'us' : 'global',
+                    // Both T&C boxes gate Continue, so they're accepted here.
+                    termsAccepted: cardTermsAccepted && platformTermsAccepted,
                     allowMarketing,
-                    cardTermsAccepted,
-                    platformTermsAccepted,
                 })
-                await submitAddress.mutateAsync(address)
-                // The mutation's onSuccess commits the session and marks the
-                // onboarding step Completed, which flips `isCompleted` and swaps
-                // this screen to its completion state in place.
+                const { userId } = await submitAddress.mutateAsync(address)
+                // Link best-effort: registration is already finalized (the
+                // address mutation committed the session + marked the step
+                // Completed), so a link hiccup must not strand a registered user
+                // here. Falls back to the id stashed on the first create when a
+                // duplicate retry returned none; failures are logged, not thrown.
+                const consentSetIdToLink =
+                    consentSetId ?? useCardStore.getState().consentSetId
+                if (consentSetIdToLink !== null && userId !== null) {
+                    await linkConsent
+                        .mutateAsync({
+                            consentSetId: consentSetIdToLink,
+                            userId,
+                        })
+                        .catch(() => undefined)
+                }
+                // Registration is done — hand back to the setup checklist, where
+                // Connect Funds is now the live step.
+                navigation.navigate('CardOnboardingStatus')
             } catch {
                 errorToast(
                     t('peraCard.address.error_title'),
@@ -246,17 +273,14 @@ export const useCardOnboardingAddressScreen =
             void submitAddressForm()
         }
 
-        const handleDone = useCallback(() => {
-            // TODO(card): route into card creation once that slice lands.
-            navigation.navigate('PeraCardIntro')
-        }, [navigation])
-
         return {
             control,
             errors,
             isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
-            isSubmitting: submitAddress.isPending || submitConsent.isPending,
-            isCompleted,
+            isSubmitting:
+                submitAddress.isPending ||
+                submitConsent.isPending ||
+                linkConsent.isPending,
             selectedCountry,
             isUsResident,
             selectedUsState,
@@ -271,6 +295,5 @@ export const useCardOnboardingAddressScreen =
             handleOpenCardTerms,
             handleOpenPlatformTerms,
             handleConfirm,
-            handleDone,
         }
     }

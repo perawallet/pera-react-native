@@ -77,6 +77,9 @@ export const useAddressSearchView = (
                           (!value?.length ||
                               a.address
                                   .toLowerCase()
+                                  .includes(value.toLowerCase()) ||
+                              a.name
+                                  ?.toLowerCase()
                                   .includes(value.toLowerCase())),
                   ),
         [value, accounts, excludeAddress, excludeTypes, addressIsValid],
