@@ -267,6 +267,26 @@ describe('createLocalKeyStrategy', () => {
                 makeStrategy().sign(makeArbitraryGroup(), algo25Account),
             ).rejects.toThrow('42')
         })
+
+        test('refuses to sign when an item claims a different signer than the resolving account', async () => {
+            const group: AnalyzedSignableGroup = {
+                data: {
+                    type: 'arbitrary-data',
+                    data: [
+                        { data: 'payload-1', signer: 'ADDR', chainId: 283 },
+                        { data: 'payload-2', signer: 'OTHER', chainId: 283 },
+                    ],
+                },
+                source: { type: 'walletconnect' },
+                signerAddress: 'ADDR',
+                analysis: emptyAnalysis,
+            }
+
+            await expect(
+                makeStrategy().sign(group, algo25Account),
+            ).rejects.toThrow(/signer/i)
+            expect(signArbitraryData).not.toHaveBeenCalled()
+        })
     })
 
     describe('sign - arc60', () => {

@@ -80,6 +80,10 @@ describe('Flow: arbitrary-data (algo_signData) signing review', () => {
                 { timeout: 10_000 },
             )
 
+            // The decoded payload ('aGVsbG8=' → "hello") is the actual signed
+            // content and must be surfaced — not just the untrusted message.
+            expect(screen.getByText('hello')).toBeTruthy()
+
             confirm('arbitrary-data-confirm-slide')
 
             await waitFor(

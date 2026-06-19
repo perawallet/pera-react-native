@@ -1828,7 +1828,9 @@
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
-            "on_behalf_of": "Signing On Behalf Of"
+            "on_behalf_of": "Signing On Behalf Of",
+            "data_label": "Data to be signed",
+            "untrusted_message_label": "Display message (not part of what you sign)"
         },
         "arbitrary_data_details": {
             "unnamed": "Someone",
@@ -1838,7 +1840,8 @@
             "amount": "Amount",
             "fee": "Fee",
             "message": "Message",
-            "data": "Raw Data"
+            "message_untrusted_note": "Provided by the app. This text is not what gets signed.",
+            "data": "Signed Data"
         },
         "transaction_view": {
             "invalid_title": "Invalid Transaction",
