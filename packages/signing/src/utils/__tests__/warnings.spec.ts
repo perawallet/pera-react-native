@@ -311,4 +311,149 @@ describe('aggregateTransactionWarnings', () => {
         expect(warnings[0].type).toBe('asset-freeze')
         expect(warnings[1].type).toBe('rekey')
     })
+
+    // PERA-4417: gating must follow the authorizing entity (the dApp-supplied
+    // ARC-0001 signer override), not tx.sender. Otherwise a dApp can suppress
+    // the rekey/close warning — and the blocking security gate it drives — by
+    // setting a foreign sender it cannot import while signing with an account
+    // the wallet holds.
+    describe('authorizerByIndex (signer-override gating)', () => {
+        test('flags a rekey when the authorizer is signable even though the sender is not in the wallet', () => {
+            // Attack: sender E is rekeyed-to-O on-chain but never imported.
+            // dApp signs with O (signable) → the wallet authorizes the rekey,
+            // so the warning must fire and still name E as the account rekeyed.
+            const txs = [
+                makeTx({
+                    sender: 'FOREIGN_E',
+                    rekeyTo: {
+                        publicKey: new TextEncoder().encode('ATTACKER'),
+                    } as any,
+                }),
+            ]
+
+            const warnings = aggregateTransactionWarnings(
+                txs,
+                new Set(['ADDR_O']),
+                new Set(['ADDR_O']),
+                new Map([[0, 'ADDR_O']]),
+            )
+
+            expect(warnings).toEqual([
+                {
+                    type: 'rekey',
+                    senderAddress: 'FOREIGN_E',
+                    targetAddress: 'ENCODED_ATTACKER',
+                },
+            ])
+        })
+
+        test('flags a close when the authorizer is owned even though the sender is not in the wallet', () => {
+            const txs = [
+                makeTx({
+                    sender: 'FOREIGN_E',
+                    paymentTransaction: {
+                        closeRemainderTo: 'ATTACKER',
+                    } as any,
+                }),
+            ]
+
+            const warnings = aggregateTransactionWarnings(
+                txs,
+                new Set(['ADDR_O']),
+                new Set(['ADDR_O']),
+                new Map([[0, 'ADDR_O']]),
+            )
+
+            expect(warnings).toEqual([
+                {
+                    type: 'close',
+                    senderAddress: 'FOREIGN_E',
+                    targetAddress: 'ATTACKER',
+                },
+            ])
+        })
+
+        test('does not flag when the authorizer override is not in the wallet', () => {
+            const txs = [
+                makeTx({
+                    sender: 'ADDR1',
+                    rekeyTo: {
+                        publicKey: new TextEncoder().encode('ATTACKER'),
+                    } as any,
+                }),
+            ]
+
+            // Override points the authority at a foreign account: the wallet
+            // would not produce a usable signature, so no warning/gate.
+            const warnings = aggregateTransactionWarnings(
+                txs,
+                userAccountAddresses,
+                signableAddresses,
+                new Map([[0, 'FOREIGN_AUTH']]),
+            )
+
+            expect(warnings).toEqual([])
+        })
+
+        test('falls back to sender when no override is present for an index', () => {
+            const txs = [
+                makeTx({
+                    sender: 'ADDR1',
+                    rekeyTo: {
+                        publicKey: new TextEncoder().encode('REKEY_TARGET'),
+                    } as any,
+                }),
+            ]
+
+            // Empty override map → sender-based gating (no regression).
+            const warnings = aggregateTransactionWarnings(
+                txs,
+                userAccountAddresses,
+                signableAddresses,
+                new Map(),
+            )
+
+            expect(warnings).toEqual([
+                {
+                    type: 'rekey',
+                    senderAddress: 'ADDR1',
+                    targetAddress: 'ENCODED_REKEY_TARGET',
+                },
+            ])
+        })
+
+        test('applies overrides per index across multiple transactions', () => {
+            const txs = [
+                // index 0: foreign sender, no override → skipped
+                makeTx({
+                    sender: 'FOREIGN_X',
+                    rekeyTo: {
+                        publicKey: new TextEncoder().encode('TARGET_0'),
+                    } as any,
+                }),
+                // index 1: foreign sender, override to signable O → flagged
+                makeTx({
+                    sender: 'FOREIGN_E',
+                    rekeyTo: {
+                        publicKey: new TextEncoder().encode('TARGET_1'),
+                    } as any,
+                }),
+            ]
+
+            const warnings = aggregateTransactionWarnings(
+                txs,
+                new Set(['ADDR_O']),
+                new Set(['ADDR_O']),
+                new Map([[1, 'ADDR_O']]),
+            )
+
+            expect(warnings).toEqual([
+                {
+                    type: 'rekey',
+                    senderAddress: 'FOREIGN_E',
+                    targetAddress: 'ENCODED_TARGET_1',
+                },
+            ])
+        })
+    })
 })
