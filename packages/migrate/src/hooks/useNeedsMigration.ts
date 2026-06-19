@@ -12,10 +12,13 @@
 
 import { useEffect } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    RemoteConfigKeys,
-    useRemoteConfig,
-} from '@perawallet/wallet-core-remote-config'
+// TEMP (QA): remote-config gate bypassed below so QA can test the migration
+// flow on this branch. Restore this import together with the block in
+// useNeedsMigration before merge.
+// import {
+//     RemoteConfigKeys,
+//     useRemoteConfig,
+// } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useMigrationGateStore } from '../store'
 
@@ -27,11 +30,16 @@ export type UseNeedsMigrationResult = {
 }
 
 export const useNeedsMigration = (): UseNeedsMigrationResult => {
-    const remoteConfig = useRemoteConfig()
-    const isMigrationFeatureEnabled = remoteConfig.getBooleanValue(
-        RemoteConfigKeys.pera_7_migration,
-        false,
-    )
+    // ─── TEMP (QA): migration feature force-enabled on this branch ───
+    // QA needs to exercise the migration flow without flipping the
+    // `pera_7_migration` Firebase Remote Config flag. Revert this whole block
+    // (uncomment the remote-config read + its import above) before merge.
+    const isMigrationFeatureEnabled = true
+    // const remoteConfig = useRemoteConfig()
+    // const isMigrationFeatureEnabled = remoteConfig.getBooleanValue(
+    //     RemoteConfigKeys.pera_7_migration,
+    //     false,
+    // )
 
     const isChecking = useMigrationGateStore(state => state.isChecking)
     const needsMigration = useMigrationGateStore(state => state.needsMigration)

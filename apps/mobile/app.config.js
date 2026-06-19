@@ -44,6 +44,8 @@ const bundleIdentifiers = {
   },
 };
 
+const androidLegacyApplicationId = process.env.ANDROID_APPLICATION_ID || null;
+
 // App names per environment
 const appNames = {
   dev: 'Pera 7 Dev',
@@ -330,6 +332,18 @@ module.exports = {
     './plugins/withPasskeyAutofillFixes',
 
     './plugins/withAgeGate',
+
+    ...(androidLegacyApplicationId
+      ? [
+          [
+            './plugins/withAndroidLegacyApplicationId.js',
+            {
+              applicationId: androidLegacyApplicationId,
+              debugSuffix: '.debug',
+            },
+          ],
+        ]
+      : []),
   ],
 
   // Experiments (for bleeding edge features)
