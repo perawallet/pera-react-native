@@ -57,13 +57,15 @@ const SENSITIVE_KEY_FRAGMENTS = [
 ] as const
 
 // Keys redacted only on a whole-key (exact) match. These carry raw transaction
-// payloads — the base64 blob in WalletConnect `algo_signTxn` (`txn`), the
-// ARC-0001 signed-txn field (`stxn`), and signed/raw/unsigned transaction bytes
-// — and must be scrubbed. Exact (not substring) match is deliberate: a substring
-// would also wipe the diagnostic siblings engineers rely on (`txnGroup`, `txns`,
-// `txnBytes`). `walletTxn` is intentionally NOT listed — it's a wrapper object
-// whose inner `txn` is already redacted by the recursive walk, which preserves
-// its signer siblings. Entries must be lowercase (compared against `lower`).
+// or signing payloads — the base64 blob in WalletConnect `algo_signTxn`
+// (`txn`), the ARC-0001 signed-txn field (`stxn`), signed/raw/unsigned
+// transaction bytes, and the `algo_signData` auth challenge
+// (`authenticatorData`) — and must be scrubbed. Exact (not substring) match is
+// deliberate: a substring would also wipe the diagnostic siblings engineers
+// rely on (`txnGroup`, `txns`, `txnBytes`). `walletTxn` is intentionally NOT
+// listed — it's a wrapper object whose inner `txn` is already redacted by the
+// recursive walk, which preserves its signer siblings. Entries must be
+// lowercase (compared against `lower`).
 const SENSITIVE_EXACT_KEYS = [
     'txn',
     'stxn',
@@ -73,6 +75,7 @@ const SENSITIVE_EXACT_KEYS = [
     'rawtxn',
     'rawtxns',
     'unsignedtxn',
+    'authenticatordata',
 ] as const
 
 const REDACTED = '[REDACTED]'
@@ -166,11 +169,20 @@ const redactSensitiveValue = (
     if (Array.isArray(value)) {
         return value.map(item => redactSensitiveValue(item, depth + 1, seen))
     }
+    // ARC-0001 `algo_signData` / ARC-60 payloads carry the signed message in a
+    // `data` field next to `authenticatorData`. `data` is far too common a key
+    // to redact globally, so scrub it only inside an object that also carries
+    // `authenticatorData` — the marker of a signing payload.
+    const lowerKeys = new Set(Object.keys(value).map(key => key.toLowerCase()))
+    const isSignDataPayload =
+        lowerKeys.has('authenticatordata') && lowerKeys.has('data')
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value)) {
-        out[k] = isSensitiveKey(k)
-            ? REDACTED
-            : redactSensitiveValue(v, depth + 1, seen)
+        const isScopedSignData = isSignDataPayload && k.toLowerCase() === 'data'
+        out[k] =
+            isSensitiveKey(k) || isScopedSignData
+                ? REDACTED
+                : redactSensitiveValue(v, depth + 1, seen)
     }
     return out
 }

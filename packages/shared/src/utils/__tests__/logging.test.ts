@@ -442,6 +442,41 @@ describe('logging', () => {
             expect(out.txnBytes).toBe(1234)
         })
 
+        test('redacts algo_signData message (data) and auth challenge but keeps the signer', () => {
+            const out = redactSensitiveContext({
+                payload: {
+                    params: [
+                        {
+                            data: 'eyJ0ZXN0IjoxfQ==',
+                            authenticatorData: 'AAAA',
+                            signer: 'ADDR1',
+                        },
+                    ],
+                },
+            }) as {
+                payload: {
+                    params: Array<{
+                        data: string
+                        authenticatorData: string
+                        signer: string
+                    }>
+                }
+            }
+            const item = out.payload.params[0]
+            expect(item.data).toBe('[REDACTED]')
+            expect(item.authenticatorData).toBe('[REDACTED]')
+            expect(item.signer).toBe('ADDR1')
+        })
+
+        test('preserves a plain `data` field when there is no authenticatorData sibling', () => {
+            const out = redactSensitiveContext({
+                data: { items: [1, 2, 3] },
+                count: 3,
+            }) as { data: { items: number[] }; count: number }
+            expect(out.data).toEqual({ items: [1, 2, 3] })
+            expect(out.count).toBe(3)
+        })
+
         test('redacts a stringified `txn` field but preserves `txnGroup` in JSON strings', () => {
             const out = redactSensitiveContext({
                 raw: '{"txn":"AAID","txnGroup":"g1"}',
