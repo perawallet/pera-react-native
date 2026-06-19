@@ -13,8 +13,6 @@
 import { useCallback } from 'react'
 import { config } from '@perawallet/wallet-core-config'
 import { useCardStore } from '@perawallet/wallet-core-card'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 
@@ -25,8 +23,6 @@ type UsePeraCardIntroScreenResult = {
 }
 
 export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
-    const { infoToast } = useToast()
-    const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const navigation = useAppNavigation()
 
@@ -40,13 +36,9 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
         })
     }, [navigation])
 
-    // TODO(card): wire to the Baanx login flow
-    const showComingSoon = useCallback(() => {
-        infoToast(
-            t('peraCard.intro.coming_soon_title'),
-            t('peraCard.intro.coming_soon_body'),
-        )
-    }, [infoToast, t])
+    const handleAlreadyHaveAccount = useCallback(() => {
+        navigation.navigate('PeraCard', { screen: 'CardSignIn' })
+    }, [navigation])
 
     const handleLearnMore = useCallback(() => {
         pushWebView({ url: config.peraCardLearnMoreUrl })
@@ -54,7 +46,7 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
 
     return {
         handleCreateAccount,
-        handleAlreadyHaveAccount: showComingSoon,
+        handleAlreadyHaveAccount,
         handleLearnMore,
     }
 }

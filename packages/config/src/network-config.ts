@@ -23,6 +23,7 @@ export type NetworkConfig = {
     bidaliApiKey: string
     baanxBaseUrl: string
     baanxClientKey: string
+    baanxTenantId: string
     isTestnet: boolean
     isMainnet: boolean
 }
@@ -59,5 +60,8 @@ export const getNetworkConfig = (network: Network): NetworkConfig => {
         baanxClientKey: isMain
             ? config.mainnetBaanxClientKey
             : config.testnetBaanxClientKey,
+        baanxTenantId: isMain
+            ? config.mainnetBaanxTenantId
+            : config.testnetBaanxTenantId,
     }
 }

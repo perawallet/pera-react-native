@@ -94,17 +94,16 @@ describe('usePeraCardIntroScreen', () => {
         ).toBeLessThan(mockNavigate.mock.invocationCallOrder[0])
     })
 
-    it('handleAlreadyHaveAccount surfaces the coming-soon info toast', () => {
+    it('handleAlreadyHaveAccount navigates to the sign-in screen', () => {
         const { result } = renderHook(() => usePeraCardIntroScreen())
 
         act(() => {
             result.current.handleAlreadyHaveAccount()
         })
 
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.intro.coming_soon_title',
-            'peraCard.intro.coming_soon_body',
-        )
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'CardSignIn',
+        })
     })
 
     it('handleLearnMore opens the Pera Card learn-more url in a webview', () => {

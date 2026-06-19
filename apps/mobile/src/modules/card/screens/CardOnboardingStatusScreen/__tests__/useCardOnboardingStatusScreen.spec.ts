@@ -136,12 +136,27 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 let mockRouteParams: { autoConnectSelected?: boolean } | undefined
 const mockSetParams = vi.fn()
+
+type BeforeRemoveEvent = {
+    data: { action: { type: string } }
+    preventDefault: () => void
+}
+let mockBeforeRemoveCallback: ((event: BeforeRemoveEvent) => void) | null = null
+const mockAddListener = vi.fn(
+    (event: string, callback: (e: BeforeRemoveEvent) => void) => {
+        if (event === 'beforeRemove') mockBeforeRemoveCallback = callback
+        return vi.fn() // unsubscribe
+    },
+)
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
         useRoute: () => ({ params: mockRouteParams }),
-        useNavigation: () => ({ setParams: mockSetParams }),
+        useNavigation: () => ({
+            setParams: mockSetParams,
+            addListener: mockAddListener,
+        }),
     }
 })
 
@@ -180,6 +195,7 @@ beforeEach(() => {
     mockAccounts = []
     mockRouteParams = undefined
     mockSelectedAddress = null
+    mockBeforeRemoveCallback = null
 })
 
 describe('useCardOnboardingStatusScreen', () => {
@@ -208,6 +224,47 @@ describe('useCardOnboardingStatusScreen', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('rejected')
+    })
+
+    it('redirects a back action to the wallet home once KYC is verified', () => {
+        mockVerificationState = 'VERIFIED'
+        renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(mockBeforeRemoveCallback).not.toBeNull()
+        const preventDefault = vi.fn()
+        act(() => {
+            mockBeforeRemoveCallback?.({
+                data: { action: { type: 'GO_BACK' } },
+                preventDefault,
+            })
+        })
+
+        expect(preventDefault).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+    })
+
+    it('leaves forward navigation untouched while KYC is verified', () => {
+        mockVerificationState = 'VERIFIED'
+        renderHook(() => useCardOnboardingStatusScreen())
+
+        const preventDefault = vi.fn()
+        act(() => {
+            mockBeforeRemoveCallback?.({
+                data: { action: { type: 'NAVIGATE' } },
+                preventDefault,
+            })
+        })
+
+        expect(preventDefault).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('keeps the default back behavior while KYC is not yet verified', () => {
+        mockVerificationState = 'PENDING'
+        renderHook(() => useCardOnboardingStatusScreen())
+
+        // No back interceptor is registered, so back falls through to default.
+        expect(mockBeforeRemoveCallback).toBeNull()
     })
 
     it('continues to personal details and advances the stored step', () => {

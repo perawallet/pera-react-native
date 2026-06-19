@@ -15,6 +15,7 @@ import {
     getCardApiError,
     isConflictError,
     isInvalidInputError,
+    isDuplicateError,
 } from '../errors'
 
 describe('getCardApiError', () => {
@@ -116,6 +117,62 @@ describe('getCardApiError', () => {
 
         expect(await getCardApiError(error)).toEqual({ status: 500 })
     })
+
+    it("unwraps Baanx's nested-stringified error object", async () => {
+        // Baanx returns the real error JSON-encoded inside `message`.
+        const error = {
+            response: { status: 500 },
+            data: {
+                message: JSON.stringify({
+                    error: {
+                        status: 500,
+                        message:
+                            'Something went wrong, please contact support.',
+                        errorCode: null,
+                    },
+                }),
+            },
+        }
+
+        expect(await getCardApiError(error)).toEqual({
+            status: 500,
+            code: undefined,
+            message: 'Something went wrong, please contact support.',
+        })
+    })
+
+    it('unwraps a nested-stringified duplicate error (string + details)', async () => {
+        const error = {
+            response: { status: 409 },
+            data: {
+                message: JSON.stringify({
+                    error: 'Duplicate onboardingId',
+                    details: [
+                        "A consent set with onboardingId 'abc' already exists",
+                    ],
+                }),
+            },
+        }
+
+        expect(await getCardApiError(error)).toEqual({
+            status: 409,
+            code: 'Duplicate onboardingId',
+            message: "A consent set with onboardingId 'abc' already exists",
+        })
+    })
+
+    it('keeps the original message when it looks like JSON but does not parse', async () => {
+        const error = {
+            response: { status: 500 },
+            data: { message: '{not valid json' },
+        }
+
+        expect(await getCardApiError(error)).toEqual({
+            status: 500,
+            code: undefined,
+            message: '{not valid json',
+        })
+    })
 })
 
 describe('isConflictError', () => {
@@ -135,5 +192,21 @@ describe('isInvalidInputError', () => {
 
     it.each([409, 404, 500, undefined])('is false for %s', status => {
         expect(isInvalidInputError({ status })).toBe(false)
+    })
+})
+
+describe('isDuplicateError', () => {
+    it('is true when the code or message signals an existing record', () => {
+        expect(isDuplicateError({ code: 'Duplicate onboardingId' })).toBe(true)
+        expect(
+            isDuplicateError({
+                message: 'A consent set with onboardingId abc already exists',
+            }),
+        ).toBe(true)
+    })
+
+    it('is false for unrelated failures', () => {
+        expect(isDuplicateError({ status: 500, message: 'boom' })).toBe(false)
+        expect(isDuplicateError({})).toBe(false)
     })
 })

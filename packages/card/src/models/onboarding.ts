@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Declared in flow order: KYC (Verification) runs after phone verify and
 // before personal details; address is the final step and issues the session.
@@ -49,6 +50,11 @@ export type SupportedUsState = {
 export type RegistrationSettings = {
     countries: SupportedCountry[]
     usStates: SupportedUsState[]
+    /** Baanx-hosted T&C URLs by jurisdiction (US vs international). */
+    termsAndConditionsUrls: {
+        us: Nullable<string>
+        intl: Nullable<string>
+    }
 }
 
 /**
@@ -101,6 +107,14 @@ export const emailSendSchema = z.object({
 })
 
 export type EmailSendFormValues = z.infer<typeof emailSendSchema>
+
+/** Validation for the Pera Card sign-in (login) screen. */
+export const signInSchema = z.object({
+    email: z.string().trim().email(),
+    password: z.string().min(1),
+})
+
+export type SignInFormValues = z.infer<typeof signInSchema>
 
 /** Validation for the phone-send onboarding step (calling code + number). */
 export const phoneSendSchema = z.object({
@@ -226,6 +240,16 @@ export const formatDobInput = (raw: string): string => {
 export const dobToIsoDate = (ddmmyyyy: string): string => {
     const [dd, mm, yyyy] = ddmmyyyy.split('/')
     return `${yyyy}-${mm}-${dd}`
+}
+
+/**
+ * Converts an ISO date or datetime (e.g. `1997-11-08T00:00:00.000Z`) to the
+ * `DD/MM/YYYY` display format. String-only (never `new Date`) so the day can't
+ * shift across timezones — the server stores a pure birth date.
+ */
+export const isoDateToDob = (iso: string): string => {
+    const [yyyy, mm, dd] = iso.slice(0, 10).split('-')
+    return `${dd}/${mm}/${yyyy}`
 }
 
 /** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */

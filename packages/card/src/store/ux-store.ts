@@ -31,6 +31,7 @@ const initialState = {
     phoneNumber: null,
     contactVerificationId: null,
     onboardingId: null,
+    consentSetId: null,
     // Defaults to opted-in, matching the address screen's pre-checked box.
     allowMarketing: true,
     connectedFundingSourceAddress: null,
@@ -59,6 +60,7 @@ export const useCardStore: UseBoundStore<
                 set({ phoneCountryCode, phoneNumber }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
             setOnboardingId: id => set({ onboardingId: id }),
+            setConsentSetId: id => set({ consentSetId: id }),
             setAllowMarketing: allowMarketing => set({ allowMarketing }),
             setConnectedFundingSourceAddress: address =>
                 set({ connectedFundingSourceAddress: address }),
@@ -85,6 +87,7 @@ export const useCardStore: UseBoundStore<
                     phoneNumber: initialState.phoneNumber,
                     contactVerificationId: initialState.contactVerificationId,
                     onboardingId: initialState.onboardingId,
+                    consentSetId: initialState.consentSetId,
                     allowMarketing: initialState.allowMarketing,
                     connectedFundingSourceAddress:
                         initialState.connectedFundingSourceAddress,
@@ -106,6 +109,7 @@ export const useCardStore: UseBoundStore<
                 phoneNumber: state.phoneNumber,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
+                consentSetId: state.consentSetId,
                 allowMarketing: state.allowMarketing,
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,

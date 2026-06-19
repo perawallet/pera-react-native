@@ -176,13 +176,14 @@ export const useCardOnboardingStatusScreen =
                 RouteProp<CardOnboardingStackParamList, 'CardOnboardingStatus'>
             >()
         const autoConnectSelected = route.params?.autoConnectSelected ?? false
-        const { setParams } =
+        const stackNavigation =
             useNavigation<
                 NativeStackNavigationProp<
                     CardOnboardingStackParamList,
                     'CardOnboardingStatus'
                 >
             >()
+        const { setParams } = stackNavigation
         const { selectedAccountAddress } = useSelectedAccountAddress()
 
         useEffect(() => {
@@ -215,6 +216,25 @@ export const useCardOnboardingStatusScreen =
             errorToast,
             t,
         ])
+
+        // Once KYC is approved this screen becomes the card hub, so a back
+        // action (header arrow, swipe, or Android hardware back) exits to the
+        // wallet home instead of returning into the onboarding flow. Forward
+        // navigation (Enter Details, Create Pera Card) isn't a back action, so
+        // it stays unaffected.
+        useEffect(() => {
+            if (documentsState !== 'verified') return
+            const unsubscribe = stackNavigation.addListener(
+                'beforeRemove',
+                event => {
+                    const { type } = event.data.action
+                    if (type !== 'GO_BACK' && type !== 'POP') return
+                    event.preventDefault()
+                    navigation.navigate('TabBar', { screen: 'Home' })
+                },
+            )
+            return unsubscribe
+        }, [documentsState, stackNavigation, navigation])
 
         const handleEnterDetails = useCallback(() => {
             useCardStore

@@ -27,6 +27,10 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         isValid,
         isSubmitting,
         selectedNationality,
+        isFirstNameLocked,
+        isLastNameLocked,
+        isDateOfBirthLocked,
+        isNationalityLocked,
         handleSelectNationality,
         handleConfirm,
     } = useCardOnboardingPersonalDetailsScreen()
@@ -53,6 +57,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 autoCapitalize='words'
                                 autoCorrect={false}
                                 returnKeyType='next'
+                                editable={!isFirstNameLocked}
                                 showErrorOnBlur
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
@@ -86,6 +91,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 autoCapitalize='words'
                                 autoCorrect={false}
                                 returnKeyType='next'
+                                editable={!isLastNameLocked}
                                 showErrorOnBlur
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
@@ -118,6 +124,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 onBlur={onBlur}
                                 keyboardType='number-pad'
                                 returnKeyType='done'
+                                editable={!isDateOfBirthLocked}
                                 onSubmitEditing={handleConfirm}
                                 showErrorOnBlur
                                 renderErrorMessage
@@ -141,6 +148,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                         )}
                         country={selectedNationality}
                         onPress={handleSelectNationality}
+                        disabled={isNationalityLocked}
                         errorMessage={
                             errors.countryOfNationality
                                 ? t(

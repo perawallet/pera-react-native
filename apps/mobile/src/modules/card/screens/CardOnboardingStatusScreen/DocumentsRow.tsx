@@ -28,7 +28,7 @@ const DOCUMENTS_ROW: Record<
 > = {
     pending: {
         icon: 'pending',
-        variant: 'secondary',
+        variant: 'warning',
         bodyKey: 'peraCard.setup_status.documents_pending_body',
         showsPendingLabel: true,
     },

@@ -84,6 +84,58 @@ const firstString = (
     return undefined
 }
 
+type NestedError = { status?: number; code?: string; message?: string }
+
+/**
+ * Baanx nests its real error as a JSON *string* inside `message`, e.g.
+ * `{"message":"{\"error\":{\"status\":500,\"message\":\"…\",\"errorCode\":null}}"}`
+ * or `{"message":"{\"error\":\"Duplicate onboardingId\",\"details\":[\"…\"]}"}`.
+ * Best-effort parse it and pull out the inner status/code/message; returns
+ * undefined when `value` isn't a JSON-object string (the common case) or parsing
+ * fails, so the caller keeps the original message untouched.
+ */
+const unwrapNestedError = (
+    value: string | undefined,
+): NestedError | undefined => {
+    if (!value || !value.trimStart().startsWith('{')) return undefined
+    let parsed: unknown
+    try {
+        parsed = JSON.parse(value)
+    } catch {
+        return undefined
+    }
+    if (typeof parsed !== 'object' || parsed === null) return undefined
+
+    const inner = (parsed as { error?: unknown }).error
+    const details = (parsed as { details?: unknown }).details
+    const firstDetail =
+        Array.isArray(details) && typeof details[0] === 'string'
+            ? details[0]
+            : undefined
+
+    // `error` as an object: { status, message, errorCode }.
+    if (typeof inner === 'object' && inner !== null) {
+        const record = inner as Record<string, unknown>
+        return {
+            status:
+                typeof record.status === 'number' ? record.status : undefined,
+            code:
+                typeof record.errorCode === 'string'
+                    ? record.errorCode
+                    : undefined,
+            message:
+                typeof record.message === 'string'
+                    ? record.message
+                    : firstDetail,
+        }
+    }
+    // `error` as a string: "Duplicate onboardingId" (+ `details`).
+    if (typeof inner === 'string') {
+        return { code: inner, message: firstDetail ?? inner }
+    }
+    return firstDetail ? { message: firstDetail } : undefined
+}
+
 /**
  * Resolves the error body. ky pre-parses and *consumes* the response body into
  * `error.data` (so `error.response.json()`/`text()` no longer work) — that's the
@@ -118,15 +170,25 @@ export const getCardApiError = async (
     if (typeof body !== 'object' || body === null) return { status }
 
     const record = body as Record<string, unknown>
-    return {
-        status,
-        code: firstString(record, ['code', 'errorCode', 'error']),
-        message: firstString(record, [
-            'message',
-            'detail',
-            'error_description',
-        ]),
+    const code = firstString(record, ['code', 'errorCode', 'error'])
+    const message = firstString(record, [
+        'message',
+        'detail',
+        'error_description',
+    ])
+
+    // Baanx wraps the real error as a JSON string inside `message` — unwrap it so
+    // callers see the actual status/code/message instead of an opaque blob.
+    const nested = unwrapNestedError(message)
+    if (nested) {
+        return {
+            status: status ?? nested.status,
+            code: nested.code ?? code,
+            message: nested.message ?? message,
+        }
     }
+
+    return { status, code, message }
 }
 
 /** HTTP statuses that mean "this value conflicts with an existing record". */
@@ -139,3 +201,14 @@ export const isConflictError = (apiError: CardApiError): boolean =>
 /** True when the failure looks like a rejected/invalid submission (400/422). */
 export const isInvalidInputError = (apiError: CardApiError): boolean =>
     apiError.status === 400 || apiError.status === 422
+
+/**
+ * True when the failure means the record already exists (e.g. Baanx's
+ * "Duplicate onboardingId … already exists"). Matched by message text rather
+ * than HTTP status — Baanx's status for this case is unconfirmed — so a retry
+ * of a non-idempotent submit can be treated as success.
+ */
+export const isDuplicateError = (apiError: CardApiError): boolean =>
+    /duplicate|already exists/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )

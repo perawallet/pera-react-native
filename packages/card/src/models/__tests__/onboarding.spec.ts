@@ -16,6 +16,7 @@ import {
     addressSchema,
     dobToIsoDate,
     formatDobInput,
+    isoDateToDob,
     passwordSetSchema,
     personalDetailsSchema,
 } from '../onboarding'
@@ -139,6 +140,25 @@ describe('formatDobInput', () => {
 describe('dobToIsoDate', () => {
     it('converts DD/MM/YYYY to ISO YYYY-MM-DD', () => {
         expect(dobToIsoDate('27/02/1986')).toBe('1986-02-27')
+    })
+})
+
+describe('isoDateToDob', () => {
+    it('converts a full ISO datetime to DD/MM/YYYY using the date part only', () => {
+        // String-only, so the day never shifts by timezone (the trailing
+        // T00:00:00.000Z would slip to the previous day via `new Date().getDate()`
+        // in negative-UTC zones).
+        expect(isoDateToDob('1997-11-08T00:00:00.000Z')).toBe('08/11/1997')
+    })
+
+    it('converts a date-only ISO string', () => {
+        expect(isoDateToDob('1986-02-27')).toBe('27/02/1986')
+    })
+
+    it('round-trips with dobToIsoDate', () => {
+        expect(dobToIsoDate(isoDateToDob('1997-11-08T00:00:00.000Z'))).toBe(
+            '1997-11-08',
+        )
     })
 })
 

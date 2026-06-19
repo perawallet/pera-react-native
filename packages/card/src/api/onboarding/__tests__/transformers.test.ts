@@ -45,4 +45,27 @@ describe('onboarding transformers', () => {
         expect(settings.countries).toEqual([])
         expect(settings.usStates).toEqual([])
     })
+
+    it('maps the per-jurisdiction T&C links', () => {
+        const settings = transformRegistrationSettings({
+            links: {
+                us: { termsAndConditions: 'https://baanx/us-terms.pdf' },
+                intl: { termsAndConditions: 'https://baanx/intl-terms.pdf' },
+            },
+        })
+
+        expect(settings.termsAndConditionsUrls).toEqual({
+            us: 'https://baanx/us-terms.pdf',
+            intl: 'https://baanx/intl-terms.pdf',
+        })
+    })
+
+    it('defaults the T&C links to null when the links block is absent', () => {
+        const settings = transformRegistrationSettings({})
+
+        expect(settings.termsAndConditionsUrls).toEqual({
+            us: null,
+            intl: null,
+        })
+    })
 })

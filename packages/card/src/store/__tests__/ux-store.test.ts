@@ -215,6 +215,7 @@ describe('useCardStore', () => {
             result.current.setOnboardingStep(OnboardingStep.Completed)
             result.current.setEmail('john@example.com')
             result.current.setOnboardingId('onb_1')
+            result.current.setConsentSetId('cs_1')
             result.current.setConnectedFundingSourceAddress('ADDR1')
             result.current.setSelectedFundingType(FundingType.Auto)
             result.current.setAllowMarketing(false)
@@ -226,12 +227,27 @@ describe('useCardStore', () => {
             })
             result.current.setTransactionFilters({ searchKey: 'coffee' })
         })
+        // Persisted so a cross-reload retry can still link the consent set.
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted?.consentSetId).toBe('cs_1')
+
         act(() => result.current.resetOnboardingProgress())
 
         // Onboarding progress reset → setup checklist re-locks.
         expect(result.current.onboardingStep).toBe(OnboardingStep.EmailSend)
         expect(result.current.email).toBeNull()
         expect(result.current.onboardingId).toBeNull()
+        expect(result.current.consentSetId).toBeNull()
         expect(result.current.connectedFundingSourceAddress).toBeNull()
         expect(result.current.selectedFundingType).toBeNull()
         expect(result.current.allowMarketing).toBe(true)

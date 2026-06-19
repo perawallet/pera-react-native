@@ -20,6 +20,7 @@ export {
     submitPersonalDetails,
     submitAddress,
     submitOnboardingConsent,
+    linkOnboardingConsent,
     connectFundingSource,
     fetchRegistrationSettings,
     type SendEmailVerificationParams,
@@ -35,6 +36,10 @@ export {
     type SubmitAddressParams,
     type SubmitAddressResult,
     type SubmitOnboardingConsentParams,
+    type SubmitOnboardingConsentResult,
+    type LinkOnboardingConsentParams,
+    type OnboardingConsentInput,
+    type ConsentPolicyType,
     type ConnectFundingSourceParams,
     type ConnectFundingSourceResult,
 } from './endpoints'
