@@ -458,4 +458,43 @@ describe('Flow: Account management', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
+
+    it(
+        'Given showPeraCardActivation, when the Pera Card Activate button is tapped, then the row renders and the activate intent fires',
+        async () => {
+            useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+            useAccountsStore
+                .getState()
+                .setSelectedAccountAddress(ACCOUNT_A.address)
+            const handlePeraCardActivate = vi.fn()
+
+            renderWithNavigation(
+                () => (
+                    <AccountMenu
+                        onSelected={vi.fn()}
+                        onAddAccount={() => {}}
+                        onOpenSort={() => {}}
+                        onPeraCardActivate={handlePeraCardActivate}
+                        showPeraCardActivation
+                    />
+                ),
+                'AccountMenuHost',
+            )
+
+            // i18n falls back to the raw key under the integration setup, so
+            // match the title/button keys directly.
+            await waitFor(() => {
+                expect(
+                    screen.getByText('peraCard.account_item.title'),
+                ).toBeTruthy()
+            })
+
+            tapButtonByLabel('peraCard.account_item.activate')
+
+            // The intent fires so the host can close the menu sheet and
+            // navigate to the Pera Card intro.
+            expect(handlePeraCardActivate).toHaveBeenCalledTimes(1)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
 })

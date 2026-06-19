@@ -18,6 +18,7 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import type { AccountMenuProps } from './AccountMenu'
 
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
@@ -37,8 +38,12 @@ export const resolveChartCollapsed = (
     return wasCollapsed
 }
 
+export type AccountMenuListItem =
+    | { kind: 'account'; account: WalletAccount }
+    | { kind: 'pera-card'; activated: boolean; nested: boolean }
+
 type UseAccountMenuResult = {
-    sortedAccounts: WalletAccount[]
+    listItems: AccountMenuListItem[]
     selectedAccountAddress: Nullable<string>
     sortMode: string
     handleTap: (acct: WalletAccount) => void
@@ -75,6 +80,45 @@ export const useAccountMenu = (
         accountBalances,
     )
 
+    const { isAuthenticated } = useCardSession()
+    const connectedFundingSourceAddress = useCardStore(
+        state => state.connectedFundingSourceAddress,
+    )
+
+    const listItems = useMemo<AccountMenuListItem[]>(() => {
+        const accountItems = sortedAccounts.map(
+            (account): AccountMenuListItem => ({ kind: 'account', account }),
+        )
+        if (!props.showPeraCardActivation) return accountItems
+
+        const connectedIndex =
+            isAuthenticated && connectedFundingSourceAddress
+                ? sortedAccounts.findIndex(
+                      account =>
+                          account.address === connectedFundingSourceAddress,
+                  )
+                : -1
+        // Only nest (and draw the connector) when the connected account is in
+        // the list; otherwise place the row right after the first account. The
+        // render variant is derived from the same `nested` flag so the drawn
+        // state and the placement can never diverge.
+        const nested = connectedIndex >= 0
+        const insertAt = nested
+            ? connectedIndex + 1
+            : Math.min(1, accountItems.length)
+        accountItems.splice(insertAt, 0, {
+            kind: 'pera-card',
+            activated: isAuthenticated,
+            nested,
+        })
+        return accountItems
+    }, [
+        sortedAccounts,
+        props.showPeraCardActivation,
+        isAuthenticated,
+        connectedFundingSourceAddress,
+    ])
+
     const handleTap = useCallback(
         (acct: WalletAccount) => {
             if (!isControlled) setSelectedAccountAddress(acct.address)
@@ -97,7 +141,7 @@ export const useAccountMenu = (
     }, [])
 
     return {
-        sortedAccounts,
+        listItems,
         selectedAccountAddress: effectiveSelectedAddress,
         sortMode,
         handleTap,

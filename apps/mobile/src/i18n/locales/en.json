@@ -690,6 +690,12 @@
         }
     },
     "peraCard": {
+        "account_item": {
+            "title": "Pera Card Account",
+            "subtitle": "Spend your crypto",
+            "activate": "Activate",
+            "status_approved": "Approved"
+        },
         "intro": {
             "navigation_title": "Pera Card",
             "title": "Your gateway to\nWeb3 payments",

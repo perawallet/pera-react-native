@@ -47,6 +47,8 @@ export type AccountSelectionProps = {
     hideDefaultHeader?: boolean
     showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
+    /** Opt in to the Pera Card activation/connected row (home switcher only). */
+    showPeraCardActivation?: boolean
 } & TouchableOpacityProps
 
 export const AccountSelection = ({
@@ -59,6 +61,7 @@ export const AccountSelection = ({
     hideDefaultHeader,
     showSearch = false,
     accountFilter,
+    showPeraCardActivation,
     ...props
 }: AccountSelectionProps) => {
     const styles = useStyles()
@@ -75,6 +78,7 @@ export const AccountSelection = ({
                     hideDefaultHeader={hideDefaultHeader}
                     showSearch={showSearch}
                     accountFilter={accountFilter}
+                    showPeraCardActivation={showPeraCardActivation}
                 />
             ),
             options: {
@@ -101,6 +105,10 @@ export const AccountSelection = ({
                 navigation.navigate('Search', { screen: 'SearchScreen' })
                 return
             }
+            case 'pera-card-activate': {
+                navigation.navigate('PeraCard', { screen: 'PeraCardIntro' })
+                return
+            }
             case 'sort': {
                 trackEvent(HomeEvent.Sort)
                 await requestBottomSheet<void>({
@@ -123,6 +131,7 @@ export const AccountSelection = ({
         hideDefaultHeader,
         showSearch,
         accountFilter,
+        showPeraCardActivation,
         onSelected,
         navigation,
     ])
