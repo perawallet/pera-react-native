@@ -88,5 +88,25 @@ describe('WalletConnect Parser', () => {
             const result = parseWalletConnectUri(wrapped)
             expect(result?.uri).toBe(inner)
         })
+
+        it('rejects a wc: URI with no bridge (e.g. a return-to-wallet signal, not a pairing URI)', () => {
+            // dApps emit signals like `wc://?browser=...` to bring the wallet
+            // to the foreground. These are not pairing URIs — they carry no
+            // bridge — and routing them into the WC client throws
+            // "Invalid or missing bridge url parameter value".
+            expect(
+                parseWalletConnectUri('wc://?browser=Android%20Browser'),
+            ).toBeNull()
+        })
+
+        it('rejects a wc: URI with a topic but no bridge param', () => {
+            expect(parseWalletConnectUri('wc:test@1?key=test')).toBeNull()
+        })
+
+        it('rejects a wc: URI with an empty bridge param', () => {
+            expect(
+                parseWalletConnectUri('wc:test@1?bridge=&key=test'),
+            ).toBeNull()
+        })
     })
 })
