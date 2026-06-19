@@ -90,9 +90,11 @@ export const useStyles = makeStyles(
             },
             cancelButton: {
                 flexGrow: 1,
+                flexBasis: 0,
             },
             connectButton: {
-                flexGrow: 2,
+                flexGrow: 1,
+                flexBasis: 0,
             },
             accountItem: {
                 flexDirection: 'row',
