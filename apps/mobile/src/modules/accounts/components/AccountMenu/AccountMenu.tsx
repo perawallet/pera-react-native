@@ -15,8 +15,9 @@ import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
+import { PeraCardAccountItem } from '../PeraCardAccountItem'
 import { AccountMenuHeader } from './AccountMenuHeader'
-import { useAccountMenu } from './useAccountMenu'
+import { useAccountMenu, type AccountMenuListItem } from './useAccountMenu'
 import { useCallback, type ReactNode } from 'react'
 
 export type AccountMenuProps = {
@@ -26,6 +27,10 @@ export type AccountMenuProps = {
     headerContent?: ReactNode
     hideDefaultHeader?: boolean
     accountFilter?: (account: WalletAccount) => boolean
+    /** Opt in to the Pera Card activation/connected row (home switcher only). */
+    showPeraCardActivation?: boolean
+    /** Fired when the Pera Card Activate button is tapped (host closes the menu and navigates). */
+    onPeraCardActivate?: () => void
     /**
      * Controlled highlight: when provided (even `null`), highlights this address
      * instead of the global selection, and tapping won't change the global account.
@@ -36,7 +41,7 @@ export type AccountMenuProps = {
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
     const {
-        sortedAccounts,
+        listItems,
         selectedAccountAddress,
         sortMode,
         handleTap,
@@ -44,28 +49,51 @@ export const AccountMenu = (props: AccountMenuProps) => {
         handleListScroll,
         handleExpandChart,
     } = useAccountMenu(props)
-    const { onAddAccount, onOpenSort, headerContent, hideDefaultHeader } = props
+    const {
+        onAddAccount,
+        onOpenSort,
+        onPeraCardActivate,
+        headerContent,
+        hideDefaultHeader,
+    } = props
 
-    const renderAccount = useCallback(
-        ({ item: acct }: { item: WalletAccount }) => (
-            <PWTouchableOpacity onPress={() => handleTap(acct)}>
-                <AccountWithBalance
-                    account={acct}
-                    isHighlighted={acct.address === selectedAccountAddress}
-                />
-            </PWTouchableOpacity>
-        ),
-        [handleTap, selectedAccountAddress],
+    const renderItem = useCallback(
+        ({ item }: { item: AccountMenuListItem }) => {
+            if (item.kind === 'pera-card') {
+                return (
+                    <PeraCardAccountItem
+                        activated={item.activated}
+                        nested={item.nested}
+                        onActivate={onPeraCardActivate}
+                    />
+                )
+            }
+
+            const acct = item.account
+            return (
+                <PWTouchableOpacity onPress={() => handleTap(acct)}>
+                    <AccountWithBalance
+                        account={acct}
+                        isHighlighted={acct.address === selectedAccountAddress}
+                    />
+                </PWTouchableOpacity>
+            )
+        },
+        [handleTap, selectedAccountAddress, onPeraCardActivate],
     )
 
     return (
         <PWView style={styles.container}>
             <PWView style={styles.mainContent}>
-                <PWFlatList<WalletAccount>
-                    data={sortedAccounts}
+                <PWFlatList<AccountMenuListItem>
+                    data={listItems}
                     extraData={sortMode}
-                    keyExtractor={item => item.address}
-                    renderItem={renderAccount}
+                    keyExtractor={item =>
+                        item.kind === 'account'
+                            ? item.account.address
+                            : 'pera-card'
+                    }
+                    renderItem={renderItem}
                     ListHeaderComponent={
                         <AccountMenuHeader
                             headerContent={headerContent}

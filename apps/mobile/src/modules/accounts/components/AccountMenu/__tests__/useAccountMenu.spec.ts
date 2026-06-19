@@ -24,6 +24,10 @@ const { mockSetSelected, ACCT_A, ACCT_B } = vi.hoisted(() => ({
     ACCT_A: { address: 'ADDR_A', type: 'hdWallet' },
     ACCT_B: { address: 'ADDR_B', type: 'hdWallet' },
 }))
+const mockCardState = vi.hoisted(() => ({
+    isAuthenticated: false as boolean,
+    connectedFundingSourceAddress: null as string | null,
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [ACCT_A, ACCT_B],
@@ -36,6 +40,19 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         selectedAccountAddress: mockState.globalSelected,
         setSelectedAccountAddress: mockSetSelected,
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-card', () => ({
+    useCardSession: () => ({ isAuthenticated: mockCardState.isAuthenticated }),
+    useCardStore: (
+        selector: (state: {
+            connectedFundingSourceAddress: string | null
+        }) => unknown,
+    ) =>
+        selector({
+            connectedFundingSourceAddress:
+                mockCardState.connectedFundingSourceAddress,
+        }),
 }))
 
 import { resolveChartCollapsed, useAccountMenu } from '../useAccountMenu'
@@ -113,5 +130,92 @@ describe('useAccountMenu selection', () => {
 
         expect(mockSetSelected).not.toHaveBeenCalled()
         expect(props.onSelected).toHaveBeenCalledWith(ACCT_B)
+    })
+})
+
+describe('useAccountMenu pera card row', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockState.globalSelected = 'ADDR_A'
+        mockCardState.isAuthenticated = false
+        mockCardState.connectedFundingSourceAddress = null
+    })
+
+    it('omits the pera-card row when showPeraCardActivation is off', () => {
+        const { result } = renderHook(() => useAccountMenu(baseProps()))
+
+        expect(result.current.listItems).toHaveLength(2)
+        expect(
+            result.current.listItems.every(item => item.kind === 'account'),
+        ).toBe(true)
+    })
+
+    it('inserts an un-activated row after the first account when not authenticated', () => {
+        const { result } = renderHook(() =>
+            useAccountMenu({ ...baseProps(), showPeraCardActivation: true }),
+        )
+
+        const items = result.current.listItems
+        expect(items).toHaveLength(3)
+        expect(items[0]).toEqual({ kind: 'account', account: ACCT_A })
+        expect(items[1]).toEqual({
+            kind: 'pera-card',
+            activated: false,
+            nested: false,
+        })
+        expect(items[2]).toEqual({ kind: 'account', account: ACCT_B })
+    })
+
+    it('nests an activated row after the connected account', () => {
+        mockCardState.isAuthenticated = true
+        mockCardState.connectedFundingSourceAddress = 'ADDR_B'
+
+        const { result } = renderHook(() =>
+            useAccountMenu({ ...baseProps(), showPeraCardActivation: true }),
+        )
+
+        const items = result.current.listItems
+        expect(items).toHaveLength(3)
+        expect(items[1]).toEqual({ kind: 'account', account: ACCT_B })
+        expect(items[2]).toEqual({
+            kind: 'pera-card',
+            activated: true,
+            nested: true,
+        })
+    })
+
+    it('shows an activated-but-not-nested row after the first account when authenticated with no connected account', () => {
+        mockCardState.isAuthenticated = true
+        mockCardState.connectedFundingSourceAddress = null
+
+        const { result } = renderHook(() =>
+            useAccountMenu({ ...baseProps(), showPeraCardActivation: true }),
+        )
+
+        const items = result.current.listItems
+        expect(items).toHaveLength(3)
+        // Activated (the wallet has a card) but not nested — no real account to
+        // connect under, so no connector is drawn.
+        expect(items[1]).toEqual({
+            kind: 'pera-card',
+            activated: true,
+            nested: false,
+        })
+    })
+
+    it('does not nest when the connected address is not among the listed accounts', () => {
+        mockCardState.isAuthenticated = true
+        mockCardState.connectedFundingSourceAddress = 'ADDR_NOT_IN_LIST'
+
+        const { result } = renderHook(() =>
+            useAccountMenu({ ...baseProps(), showPeraCardActivation: true }),
+        )
+
+        const items = result.current.listItems
+        expect(items[1]).toEqual({
+            kind: 'pera-card',
+            activated: true,
+            nested: false,
+        })
     })
 })
