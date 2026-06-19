@@ -178,7 +178,7 @@ export const PortfolioView = ({
                     />
                 </PWView>
 
-                {!selectedPoint && (
+                {!selectedPoint && isChartShown && (
                     <PWView style={styles.rightColumn}>
                         <PWText
                             variant='h4'
