@@ -14,7 +14,11 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import type { AnyActorRef } from 'xstate'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { canSignWith, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    canSignWith,
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { PipelineStage, TransactionSignRequest } from '../models'
 import {
     createTransactionListItems,
@@ -51,6 +55,153 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseSigningPipelineResult = SigningPipeline
 
+// =============================================================================
+// Shared display-data computation
+// =============================================================================
+
+/**
+ * Pure transform: a transaction request + the wallet's accounts → everything
+ * the signing UI renders (displayable txns, grouped list items, fees,
+ * warnings, structure). At 1000 transactions this is ~800ms of work.
+ */
+const computeDisplayData = (
+    txRequest: TransactionSignRequest,
+    accounts: WalletAccount[],
+) => {
+    // Show the FULL atomic group when the source filtered down to a
+    // signable subset — gives the user context for partial-group
+    // requests (e.g. cross-account atomic flows). `signableIndices`
+    // tells the UI which slots are actually being signed.
+    const source = txRequest.groupContext ?? txRequest.txs ?? []
+    const allTransactions = source
+        .map(tx => mapToDisplayableTransaction(tx))
+        .filter((tx): tx is PeraDisplayableTransaction => !!tx)
+
+    // Default to "every index is signable" when groupContext is absent
+    // (internal flows) — keeps the UI's "is this slot signable" check
+    // working without per-caller bookkeeping.
+    const signableIndices = new Set<number>(
+        txRequest.signableIndices ?? allTransactions.map((_, i) => i),
+    )
+
+    const listItems = createTransactionListItems(
+        allTransactions,
+        signableIndices,
+    )
+
+    const signableAddresses = new Set(
+        accounts.filter(a => canSignWith(a, accounts)).map(a => a.address),
+    )
+
+    const userAccountAddresses = new Set(accounts.map(a => a.address))
+
+    const totalFee = calculateTotalFee(allTransactions, signableAddresses)
+
+    const addressWarnings = aggregateTransactionWarnings(
+        allTransactions,
+        userAccountAddresses,
+        signableAddresses,
+    )
+
+    // High fee is a group-level concern ("what's being signed"), so it
+    // lives here rather than in the per-transaction aggregator that the
+    // transaction-history view also consumes.
+    const highFeeWarning = detectHighGroupFee(
+        allTransactions,
+        signableAddresses,
+    )
+    const warnings = highFeeWarning
+        ? [...addressWarnings, highFeeWarning]
+        : addressWarnings
+
+    const distinctWarnings = warnings.filter(
+        (warning, index) =>
+            warnings.findIndex(w => w.type === warning.type) === index,
+    )
+
+    const requestStructure = classifyRequestStructure(listItems)
+
+    return {
+        allTransactions,
+        listItems,
+        signableAddresses,
+        signableIndices,
+        totalFee,
+        warnings,
+        distinctWarnings,
+        requestStructure,
+    }
+}
+
+type DisplayData = ReturnType<typeof computeDisplayData>
+
+const EMPTY_DISPLAY_DATA: DisplayData = {
+    allTransactions: EMPTY_TRANSACTIONS,
+    listItems: EMPTY_LIST_ITEMS,
+    signableAddresses: EMPTY_SIGNABLE_ADDRESSES,
+    signableIndices: EMPTY_SIGNABLE_INDICES,
+    totalFee: ZERO_FEE,
+    warnings: EMPTY_WARNINGS,
+    distinctWarnings: EMPTY_WARNINGS,
+    requestStructure: 'single',
+}
+
+// Module-level single-entry cache. Only one sign request is active at a time
+// (single-flight queue), yet the signing sheet mounts ~6-8 components that
+// each call useSigningPipeline. Without sharing, every consumer — and every
+// actor-snapshot re-render — reran the full O(n) transform above, which at
+// 1000 txns meant ~8×800ms of duplicated main-thread work that froze the UI
+// and starved the bottom-sheet present animation (PERA-3353). Keyed by
+// request identity + its input arrays (referentially stable from the store)
+// + the accounts reference, so it recomputes exactly when an input changes.
+let displayDataCache: {
+    requestId: string
+    txs: unknown
+    groupContext: unknown
+    signableIndices: unknown
+    accounts: unknown
+    result: DisplayData
+} | null = null
+
+const getSharedDisplayData = (
+    txRequest: TransactionSignRequest,
+    accounts: WalletAccount[],
+): DisplayData => {
+    if (
+        displayDataCache &&
+        displayDataCache.requestId === txRequest.id &&
+        displayDataCache.txs === txRequest.txs &&
+        displayDataCache.groupContext === txRequest.groupContext &&
+        displayDataCache.signableIndices === txRequest.signableIndices &&
+        displayDataCache.accounts === accounts
+    ) {
+        return displayDataCache.result
+    }
+    const result = computeDisplayData(txRequest, accounts)
+    displayDataCache = {
+        requestId: txRequest.id,
+        txs: txRequest.txs,
+        groupContext: txRequest.groupContext,
+        signableIndices: txRequest.signableIndices,
+        accounts,
+        result,
+    }
+    return result
+}
+
+/**
+ * Releases the cached display data. Called when no transaction request is
+ * active so the (potentially large, 1000-txn) cached arrays aren't retained
+ * at module scope after the signing sheet closes — otherwise the last
+ * request's data lingers until the next request happens to overwrite it.
+ */
+const clearDisplayDataCache = (): void => {
+    displayDataCache = null
+}
+
+/** Test-only alias for clearing the shared cache between cases. */
+export const __resetDisplayDataCacheForTests = clearDisplayDataCache
+
 export const useSigningPipeline = (
     config: SigningConfiguration = {},
 ): UseSigningPipelineResult => {
@@ -76,76 +227,24 @@ export const useSigningPipeline = (
             ? (currentRequest as TransactionSignRequest)
             : undefined
 
-    const displayData = useMemo(() => {
-        // Show the FULL atomic group when the source filtered down to a
-        // signable subset — gives the user context for partial-group
-        // requests (e.g. cross-account atomic flows). `signableIndices`
-        // tells the UI which slots are actually being signed.
-        const source = txRequest?.groupContext ?? txRequest?.txs ?? []
-        const allTransactions = source
-            .map(tx => mapToDisplayableTransaction(tx))
-            .filter((tx): tx is PeraDisplayableTransaction => !!tx)
+    const displayData = useMemo(
+        () =>
+            txRequest
+                ? getSharedDisplayData(txRequest, accounts)
+                : EMPTY_DISPLAY_DATA,
+        [txRequest, accounts],
+    )
 
-        // Default to "every index is signable" when groupContext is absent
-        // (internal flows) — keeps the UI's "is this slot signable" check
-        // working without per-caller bookkeeping.
-        const signableIndices = new Set<number>(
-            txRequest?.signableIndices ?? allTransactions.map((_, i) => i),
-        )
-
-        const listItems = createTransactionListItems(
-            allTransactions,
-            signableIndices,
-        )
-
-        const signableAddresses = new Set(
-            accounts.filter(a => canSignWith(a, accounts)).map(a => a.address),
-        )
-
-        const userAccountAddresses = new Set(accounts.map(a => a.address))
-
-        const totalFee = calculateTotalFee(allTransactions, signableAddresses)
-
-        const addressWarnings = aggregateTransactionWarnings(
-            allTransactions,
-            userAccountAddresses,
-            signableAddresses,
-        )
-
-        // High fee is a group-level concern ("what's being signed"), so it
-        // lives here rather than in the per-transaction aggregator that the
-        // transaction-history view also consumes.
-        const highFeeWarning = detectHighGroupFee(
-            allTransactions,
-            signableAddresses,
-        )
-        const warnings = highFeeWarning
-            ? [...addressWarnings, highFeeWarning]
-            : addressWarnings
-
-        const distinctWarnings = warnings.filter(
-            (warning, index) =>
-                warnings.findIndex(w => w.type === warning.type) === index,
-        )
-
-        const requestStructure = classifyRequestStructure(listItems)
-
-        return {
-            allTransactions,
-            listItems,
-            signableAddresses,
-            signableIndices,
-            totalFee,
-            warnings,
-            distinctWarnings,
-            requestStructure,
+    // Release the shared cache once no transaction request is active — i.e.
+    // when the queue drains as the signing sheet closes. While a request is
+    // active the entry is keyed by its id and shared across the sheet's many
+    // consumers; this just stops the trailing entry from being retained.
+    // Clearing is idempotent, so concurrent consumers running it is harmless.
+    useEffect(() => {
+        if (!txRequest) {
+            clearDisplayDataCache()
         }
-    }, [
-        txRequest?.txs,
-        txRequest?.groupContext,
-        txRequest?.signableIndices,
-        accounts,
-    ])
+    }, [txRequest])
 
     // -------------------------------------------------------------------------
     // Machine state — derived from actor subscription

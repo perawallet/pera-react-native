@@ -47,17 +47,22 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
+const mockMapToDisplayable = vi.fn((tx: unknown) => tx)
+
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-blockchain',
     )
     return {
         ...actual,
-        mapToDisplayableTransaction: (tx: unknown) => tx,
+        mapToDisplayableTransaction: (tx: unknown) => mockMapToDisplayable(tx),
     }
 })
 
-import { useSigningPipeline } from '../useSigningPipeline'
+import {
+    useSigningPipeline,
+    __resetDisplayDataCacheForTests,
+} from '../useSigningPipeline'
 
 beforeEach(() => {
     mockSigningRequest.currentRequest = undefined
@@ -70,6 +75,8 @@ beforeEach(() => {
         { address: 'ADDR_B', type: 'algo25' },
     ])
     mockCanSignWith.mockReturnValue(true)
+    mockMapToDisplayable.mockClear()
+    __resetDisplayDataCacheForTests()
 })
 
 describe('useSigningPipeline', () => {
@@ -177,6 +184,58 @@ describe('useSigningPipeline', () => {
                 item => (item as { isExternal: boolean }).isExternal,
             ),
         ).toEqual([false, true, false])
+    })
+
+    test('shares the display transform across consumers — computes once per request', () => {
+        const txs = [
+            { sender: { toString: () => 'ADDR_A' }, fee: 1000n },
+            { sender: { toString: () => 'ADDR_A' }, fee: 1000n },
+            { sender: { toString: () => 'ADDR_A' }, fee: 1000n },
+        ]
+        const request: TransactionSignRequest = {
+            id: 'shared-req',
+            type: 'transactions',
+            transport: 'algod',
+            txs: txs as never,
+        }
+        mockSigningRequest.currentRequest = request
+
+        // Three independent consumers, mirroring the ~6-8 components that
+        // call useSigningPipeline in the real signing-sheet tree.
+        renderHook(() => useSigningPipeline())
+        renderHook(() => useSigningPipeline())
+        renderHook(() => useSigningPipeline())
+
+        // mapToDisplayableTransaction runs once per txn for the FIRST
+        // consumer; the rest hit the shared cache. Without sharing it would
+        // be 3 consumers × 3 txns = 9 calls.
+        expect(mockMapToDisplayable).toHaveBeenCalledTimes(3)
+    })
+
+    test('releases the shared cache when no request is active (no retention after the sheet closes)', () => {
+        const txs = [{ sender: { toString: () => 'ADDR_A' }, fee: 1000n }]
+        const request: TransactionSignRequest = {
+            id: 'kept-req',
+            type: 'transactions',
+            transport: 'algod',
+            txs: txs as never,
+        }
+        mockSigningRequest.currentRequest = request
+
+        const { rerender } = renderHook(() => useSigningPipeline())
+        expect(mockMapToDisplayable).toHaveBeenCalledTimes(1)
+
+        // Queue drains → the cache for the just-finished request is dropped.
+        mockSigningRequest.currentRequest = undefined
+        rerender()
+
+        // The very same request object returns. If the cache had been
+        // retained it would be served (0 calls); because it was released, the
+        // transform runs again.
+        mockMapToDisplayable.mockClear()
+        mockSigningRequest.currentRequest = request
+        rerender()
+        expect(mockMapToDisplayable).toHaveBeenCalledTimes(1)
     })
 
     test('defaults signableIndices to all indices when groupContext is absent', () => {

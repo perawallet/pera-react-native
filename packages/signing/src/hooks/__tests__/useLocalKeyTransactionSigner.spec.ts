@@ -59,7 +59,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-import { useLocalKeyTransactionSigner } from '../useLocalKeyTransactionSigner'
+import {
+    useLocalKeyTransactionSigner,
+    SIGN_BATCH_SIZE,
+} from '../useLocalKeyTransactionSigner'
 
 const hdAccount = {
     address: 'HD_ADDR',
@@ -228,6 +231,37 @@ describe('useLocalKeyTransactionSigner', () => {
         )
         expect(signed).toHaveLength(1)
         expect(signed[0].sig).toEqual(new Uint8Array([42]))
+    })
+
+    test('signs large batches in chunks (yielding between) preserving order [PERA-3353]', async () => {
+        mockIsAlgo25Account.mockImplementation(acc => acc.type === 'algo25')
+        // One signature per encoded tx in each batch.
+        mockSignTransactionsWithKey.mockImplementation(
+            (_id: string, _domain: string, encoded: Uint8Array[]) =>
+                Promise.resolve(encoded.map(() => new Uint8Array([9]))),
+        )
+
+        const total = SIGN_BATCH_SIZE * 2 + 3 // 3 chunks: full, full, remainder
+        const txns = Array.from({ length: total }, () => makeTxn('ALGO25_ADDR'))
+        const indexes = txns.map((_, i) => i)
+
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
+        const signed = await result.current.signTransactions(
+            txns,
+            indexes,
+            algo25Account,
+        )
+
+        // One signing call per chunk — not a single 1000-wide burst.
+        const calls = mockSignTransactionsWithKey.mock.calls
+        expect(calls).toHaveLength(3)
+        expect(calls[0][2]).toHaveLength(SIGN_BATCH_SIZE)
+        expect(calls[1][2]).toHaveLength(SIGN_BATCH_SIZE)
+        expect(calls[2][2]).toHaveLength(3)
+
+        // Every transaction is signed and order is preserved.
+        expect(signed).toHaveLength(total)
+        expect(signed.every(s => s.sig !== undefined)).toBe(true)
     })
 
     test('rejects for unsupported account type', async () => {
