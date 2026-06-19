@@ -13,7 +13,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-import { FeeDelegationAttestationRequiredError } from '../../errors'
+import {
+    FeeDelegationAttestationRequiredError,
+    FeeDelegationResponseMismatchError,
+} from '../../errors'
 
 // -----------------------------------------------------------------------------
 // Mocks
@@ -34,14 +37,22 @@ const {
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({ kind: 'algokit-client' }),
     useNetwork: () => ({ network: 'mainnet' }),
+    // Order-sensitive byte match; with deterministic base64 inputs, comparing
+    // the encoded strings is equivalent to the real decode-and-compare.
+    rawTransactionsMatch: (expected: string[], polled: string[]) =>
+        expected.length === polled.length &&
+        expected.every((value, index) => value === polled[index]),
     useTransactionEncoder: () => ({
         encodeTransaction: (txn: { id: string }) =>
             new Uint8Array([...txn.id].map(c => c.charCodeAt(0))),
         encodeSignedTransactions: vi.fn(),
         // Decoders turn the base64-decoded bytes back into readable ids so
-        // assertions can track slots through the flow.
+        // assertions can track slots through the flow. Decoded wallet slots
+        // carry the requesting account as sender so the trust-anchor check
+        // (sender === account) passes on the happy path.
         decodeTransaction: (bytes: Uint8Array) => ({
             id: String.fromCharCode(...bytes),
+            sender: { toString: () => 'TESTADDRESS' },
         }),
         decodeSignedTransaction: (bytes: Uint8Array) => ({
             sig: new Uint8Array([9]),
@@ -82,7 +93,11 @@ const validAttestation = () => ({
 
 const baseParams = {
     account: ACCOUNT,
-    transactions: [{ id: 'optin' }] as never[],
+    // Sender matches the encoder/decoder shape so the trust-anchor check can
+    // assert the returned slot is byte-identical (modulo group) to this txn.
+    transactions: [
+        { id: 'optin', sender: { toString: () => ACCOUNT } },
+    ] as never[],
     includeMbr: true,
     optInAssetIds: [ASSET_ID],
     sourceMetadata: { name: 'test-flow', description: 'Test flow' },
@@ -176,11 +191,12 @@ describe('fee-delegation/useFeeDelegation', () => {
         expect(addSignRequestMock).toHaveBeenCalledTimes(1)
         const signRequest = addSignRequestMock.mock.calls[0]![0]
         expect(signRequest.signableIndices).toEqual([1])
-        expect(signRequest.txs).toEqual([{ id: 'optin' }])
-        expect(signRequest.groupContext).toEqual([
-            { id: 'sponsor' },
-            { id: 'optin' },
+        expect(signRequest.txs.map((tx: { id: string }) => tx.id)).toEqual([
+            'optin',
         ])
+        expect(
+            signRequest.groupContext.map((tx: { id: string }) => tx.id),
+        ).toEqual(['sponsor', 'optin'])
         expect(signRequest.sourceMetadata).toEqual(baseParams.sourceMetadata)
 
         // Submission: sponsor's pre-signed slot first, wallet signature after,
@@ -214,6 +230,30 @@ describe('fee-delegation/useFeeDelegation', () => {
         await expect(
             result.current.submitWithFeeDelegation(baseParams),
         ).rejects.toThrow(/rejected/i)
+        expect(submitAndAutoRefreshMock).not.toHaveBeenCalled()
+    })
+
+    test('rejects without signing when a returned to-sign slot does not match what was sent', async () => {
+        // The backend swaps the wallet's opt-in for an attacker-favorable
+        // transaction in the same slot. It must never reach the signing
+        // pipeline or be submitted.
+        requestFeeDelegationMock.mockResolvedValue({
+            txnGroup: [
+                {
+                    txn: toBase64('sponsor'),
+                    signers: [],
+                    stxn: toBase64('sponsor'),
+                },
+                { txn: toBase64('drain-payment'), signers: [ACCOUNT] },
+            ],
+        })
+
+        const result = renderDelegation()
+
+        await expect(
+            result.current.submitWithFeeDelegation(baseParams),
+        ).rejects.toBeInstanceOf(FeeDelegationResponseMismatchError)
+        expect(addSignRequestMock).not.toHaveBeenCalled()
         expect(submitAndAutoRefreshMock).not.toHaveBeenCalled()
     })
 })
