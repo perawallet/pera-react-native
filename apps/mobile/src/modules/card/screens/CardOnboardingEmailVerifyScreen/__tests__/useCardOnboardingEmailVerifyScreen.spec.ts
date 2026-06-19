@@ -15,8 +15,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const mockMutateAsync = vi.fn()
 const mockSetVerificationCode = vi.fn()
+const mockSetCodeVerificationError = vi.fn()
 const mockEmail = 'john@example.com'
 let mockSendIsPending = false
+let mockCodeVerificationError: 'email' | 'phone' | null = null
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -37,11 +39,17 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             selector: (state: {
                 email: string | null
                 setVerificationCode: (code: string | null) => void
+                codeVerificationError: 'email' | 'phone' | null
+                setCodeVerificationError: (
+                    target: 'email' | 'phone' | null,
+                ) => void
             }) => unknown,
         ) =>
             selector({
                 email: mockEmail,
                 setVerificationCode: mockSetVerificationCode,
+                codeVerificationError: mockCodeVerificationError,
+                setCodeVerificationError: mockSetCodeVerificationError,
             }),
     }
 })
@@ -78,6 +86,7 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         vi.clearAllMocks()
         mockMutateAsync.mockResolvedValue(undefined)
         mockSendIsPending = false
+        mockCodeVerificationError = null
         vi.useFakeTimers()
     })
 
@@ -162,5 +171,30 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         })
 
         expect(mockMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('surfaces an inline code error when a prior attempt was rejected', () => {
+        mockCodeVerificationError = 'email'
+        const { result } = renderVerifyHook()
+
+        expect(result.current.codeError).toBe(
+            'peraCard.verify_email.code_invalid',
+        )
+    })
+
+    it('ignores a phone-targeted code error', () => {
+        mockCodeVerificationError = 'phone'
+        const { result } = renderVerifyHook()
+
+        expect(result.current.codeError).toBeUndefined()
+    })
+
+    it('clears the code-error flag as soon as the user edits the code', () => {
+        mockCodeVerificationError = 'email'
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode('1'))
+
+        expect(mockSetCodeVerificationError).toHaveBeenCalledWith(null)
     })
 })

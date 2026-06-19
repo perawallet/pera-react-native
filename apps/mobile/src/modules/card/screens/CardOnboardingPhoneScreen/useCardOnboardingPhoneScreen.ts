@@ -14,6 +14,8 @@ import { createElement, useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
+    getCardApiError,
+    isConflictError,
     phoneSendSchema,
     useCardStore,
     useRegistrationSettingsQuery,
@@ -61,6 +63,7 @@ export const useCardOnboardingPhoneScreen =
             control,
             handleSubmit,
             setValue,
+            setError,
             formState: { isValid, errors },
         } = useForm<PhoneSendFormValues>({
             resolver: zodResolver(phoneSendSchema),
@@ -87,7 +90,9 @@ export const useCardOnboardingPhoneScreen =
             const openPicker = async () => {
                 const country = await request<SupportedCountry>({
                     contents: createElement(CardCountryPickerContent),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (country) {
                     setSelectedCallingCountry(country)
@@ -118,7 +123,21 @@ export const useCardOnboardingPhoneScreen =
                     })
                     setPhone({ phoneCountryCode, phoneNumber })
                     navigation.navigate('CardOnboardingPhoneVerify')
-                } catch {
+                } catch (error) {
+                    // A conflict means the number is rejected (e.g. already
+                    // registered) — attribute it to the field. Prefer Baanx's
+                    // own message so the real reason shows; fall back to a
+                    // localized string when the response carries none.
+                    const apiError = await getCardApiError(error)
+                    if (isConflictError(apiError)) {
+                        setError('phoneNumber', {
+                            type: 'server',
+                            message:
+                                apiError.message ??
+                                t('peraCard.verify_phone.phone_taken'),
+                        })
+                        return
+                    }
                     errorToast(
                         t('peraCard.verify_phone.send_error_title'),
                         t('peraCard.verify_phone.send_error_body'),

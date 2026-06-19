@@ -15,8 +15,10 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     dobToIsoDate,
+    isoDateToDob,
     personalDetailsSchema,
     useCardStore,
+    useOnboardingDetailsQuery,
     useRegistrationSettingsQuery,
     useSubmitPersonalDetailsMutation,
     type PersonalDetailsFormValues,
@@ -36,6 +38,11 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
     isValid: boolean
     isSubmitting: boolean
     selectedNationality: Optional<SupportedCountry>
+    /** Fields the server already has are prefilled and locked (read-only). */
+    isFirstNameLocked: boolean
+    isLastNameLocked: boolean
+    isDateOfBirthLocked: boolean
+    isNationalityLocked: boolean
     handleSelectNationality: () => void
     handleConfirm: () => void
 }
@@ -50,10 +57,35 @@ export const useCardOnboardingPersonalDetailsScreen =
         const countryIso = useCardStore(state => state.countryIso)
         const submitPersonalDetails = useSubmitPersonalDetailsMutation()
         const { data: settings } = useRegistrationSettingsQuery()
+        // On resume the onboarding record already holds the user's details, so
+        // we prefill them and lock the fields the server has confirmed.
+        const { data: onboardingDetails } = useOnboardingDetailsQuery({
+            onboardingId,
+        })
+
+        const isFirstNameLocked = Boolean(onboardingDetails?.firstName)
+        const isLastNameLocked = Boolean(onboardingDetails?.lastName)
+        const isDateOfBirthLocked = Boolean(onboardingDetails?.dateOfBirth)
+
+        // The server's confirmed nationality, resolved against the supported
+        // list so we can render its flag/name. Lock the field only when it
+        // actually resolves — a nationality the list doesn't contain (e.g.
+        // pulled from the KYC scan, or a list that shrank between sessions)
+        // must stay editable, otherwise the unmatched value would leave the
+        // field empty *and* locked, blocking submit with no way to fix it.
+        const serverNationality =
+            onboardingDetails?.countryOfNationality ?? null
+        const serverNationalityCountry = serverNationality
+            ? settings?.countries.find(
+                  country => country.iso3166alpha2 === serverNationality,
+              )
+            : undefined
+        const isNationalityLocked = Boolean(serverNationalityCountry)
 
         const [selectedNationality, setSelectedNationality] =
             useState<Optional<SupportedCountry>>(undefined)
         const hasPreselected = useRef(false)
+        const hasPrefilled = useRef(false)
 
         const {
             control,
@@ -71,22 +103,54 @@ export const useCardOnboardingPersonalDetailsScreen =
             },
         })
 
-        // Default the nationality to the residence country once settings load —
-        // a sensible guess the user can override. Only fires once, and only if
-        // the residence country is in the supported list; never overrides a pick.
+        // Prefill the text fields from the onboarding record once it loads.
+        // Only fires once and only for fields the server actually returned, so a
+        // fresh registration (all profile fields null) leaves the form empty.
+        useEffect(() => {
+            if (hasPrefilled.current || !onboardingDetails) return
+            const { firstName, lastName, dateOfBirth } = onboardingDetails
+            if (!firstName && !lastName && !dateOfBirth) return
+            hasPrefilled.current = true
+            if (firstName) {
+                setValue('firstName', firstName, { shouldValidate: true })
+            }
+            if (lastName) {
+                setValue('lastName', lastName, { shouldValidate: true })
+            }
+            if (dateOfBirth) {
+                setValue('dateOfBirth', isoDateToDob(dateOfBirth), {
+                    shouldValidate: true,
+                })
+            }
+        }, [onboardingDetails, setValue])
+
+        // Preselect the nationality once settings load: prefer the server's
+        // confirmed value (resume), else fall back to the residence country as
+        // a changeable guess — including when the server value isn't in the
+        // supported list. Fires once and never overrides a manual pick.
         useEffect(() => {
             if (hasPreselected.current || selectedNationality) return
-            if (!countryIso || !settings?.countries.length) return
-            const match = settings.countries.find(
-                country => country.iso3166alpha2 === countryIso,
-            )
+            if (!settings?.countries.length) return
+            const match =
+                serverNationalityCountry ??
+                (countryIso
+                    ? settings.countries.find(
+                          country => country.iso3166alpha2 === countryIso,
+                      )
+                    : undefined)
             if (!match) return
             hasPreselected.current = true
             setSelectedNationality(match)
             setValue('countryOfNationality', match.iso3166alpha2, {
                 shouldValidate: true,
             })
-        }, [countryIso, settings, selectedNationality, setValue])
+        }, [
+            serverNationalityCountry,
+            countryIso,
+            settings,
+            selectedNationality,
+            setValue,
+        ])
 
         const handleSelectNationality = useCallback(() => {
             const openPicker = async () => {
@@ -96,7 +160,9 @@ export const useCardOnboardingPersonalDetailsScreen =
                             'peraCard.personal_details.nationality_picker_title',
                         ),
                     }),
-                    options: { size: 'full' },
+                    // The picker owns a scrollable list, so it manages its own
+                    // layout — `false` gives that list a bounded height to scroll.
+                    options: { size: 'full', autoCreateContainer: false },
                 })
                 if (country) {
                     setSelectedNationality(country)
@@ -155,6 +221,10 @@ export const useCardOnboardingPersonalDetailsScreen =
             isValid,
             isSubmitting: submitPersonalDetails.isPending,
             selectedNationality,
+            isFirstNameLocked,
+            isLastNameLocked,
+            isDateOfBirthLocked,
+            isNationalityLocked,
             handleSelectNationality,
             handleConfirm,
         }

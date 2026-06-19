@@ -30,6 +30,8 @@ export type UseCardOnboardingEmailVerifyScreenResult = {
     email: string
     onChangeCode: (text: string) => void
     isValid: boolean
+    /** Set when a prior attempt rejected the code; shown inline on the input. */
+    codeError?: string
     secondsRemaining: number
     canResend: boolean
     handleResend: () => void
@@ -51,6 +53,12 @@ export const useCardOnboardingEmailVerifyScreen =
         const setVerificationCode = useCardStore(
             state => state.setVerificationCode,
         )
+        const codeVerificationError = useCardStore(
+            state => state.codeVerificationError,
+        )
+        const setCodeVerificationError = useCardStore(
+            state => state.setCodeVerificationError,
+        )
 
         const [code, setCode] = useState('')
         const { secondsRemaining, isActive, restart } = useCountdown(
@@ -58,10 +66,19 @@ export const useCardOnboardingEmailVerifyScreen =
         )
 
         const trimmedCode = code.trim()
+        const codeError =
+            codeVerificationError === 'email'
+                ? t('peraCard.verify_email.code_invalid')
+                : undefined
 
-        const onChangeCode = useCallback((text: string) => {
-            setCode(text)
-        }, [])
+        const onChangeCode = useCallback(
+            (text: string) => {
+                setCode(text)
+                // Editing clears the "code invalid" flag from a failed attempt.
+                if (codeVerificationError) setCodeVerificationError(null)
+            },
+            [codeVerificationError, setCodeVerificationError],
+        )
 
         const handleResend = useCallback(() => {
             // Guard against duplicate sends from a double-tap while the request
@@ -102,6 +119,7 @@ export const useCardOnboardingEmailVerifyScreen =
             email: email ?? '',
             onChangeCode,
             isValid: trimmedCode.length === CARD_VERIFICATION_CODE_LENGTH,
+            codeError,
             secondsRemaining,
             canResend: !isActive,
             handleResend,

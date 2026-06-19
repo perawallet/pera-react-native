@@ -21,19 +21,26 @@ export type CountrySelectorFieldProps = {
     placeholder: string
     country: Optional<SupportedCountry>
     onPress: () => void
+    /** When set, shown below the field as a validation error. */
+    errorMessage?: string
+    /** Locks the field: no picker on press and the chevron is hidden. */
+    disabled?: boolean
     testID?: string
 }
 
 /**
  * A read-only field styled like the email input (label + underline) that opens
  * the country picker on press. Renders the selected country's flag + name, or
- * the placeholder when none is selected.
+ * the placeholder when none is selected. When `disabled`, it's a static display
+ * (no press, no chevron) — used to show a server-confirmed value.
  */
 export const CountrySelectorField = ({
     label,
     placeholder,
     country,
     onPress,
+    errorMessage,
+    disabled = false,
     testID,
 }: CountrySelectorFieldProps) => {
     const styles = useStyles()
@@ -45,6 +52,7 @@ export const CountrySelectorField = ({
     return (
         <PWTouchableOpacity
             onPress={onPress}
+            disabled={disabled}
             accessibilityRole='button'
             accessibilityLabel={`${label}, ${country ? country.name : placeholder}`}
             testID={testID}
@@ -60,12 +68,16 @@ export const CountrySelectorField = ({
                     value={value}
                     placeholder={placeholder}
                     editable={false}
-                    renderErrorMessage={false}
+                    renderErrorMessage={!!errorMessage}
+                    errorMessage={errorMessage}
+                    errorStyle={styles.errorMessage}
                     rightIcon={
-                        <PWIcon
-                            name='chevron-down'
-                            variant='secondary'
-                        />
+                        disabled ? undefined : (
+                            <PWIcon
+                                name='chevron-down'
+                                variant='secondary'
+                            />
+                        )
                     }
                 />
             </PWView>

@@ -20,7 +20,7 @@ import type { Network } from '@perawallet/wallet-core-shared'
  */
 export type CardRoute = 'direct' | 'proxy'
 
-export type CardHttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
+export type CardHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export type CardResponseType = 'json' | 'text' | 'blob' | 'arraybuffer'
 

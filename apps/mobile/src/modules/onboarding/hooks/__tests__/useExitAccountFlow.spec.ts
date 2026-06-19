@@ -69,4 +69,27 @@ describe('useExitAccountFlow', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
         expect(mockReset).not.toHaveBeenCalled()
     })
+
+    it('navigates to a provided return target instead of Home', () => {
+        const returnTo = {
+            name: 'PeraCard',
+            params: {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingStatus' },
+            },
+        }
+
+        const { result } = renderHook(() => useExitAccountFlow())
+
+        act(() => {
+            result.current.exitAccountFlow(returnTo)
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith(
+            returnTo.name,
+            returnTo.params,
+        )
+        expect(mockReset).not.toHaveBeenCalled()
+        expect(mockSetIsOnboarding).not.toHaveBeenCalled()
+    })
 })

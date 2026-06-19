@@ -21,6 +21,17 @@ import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-walle
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
+/**
+ * Where to go after an account is created + named, instead of the default
+ * exit-to-Home. A generic nested-navigation descriptor so a flow (e.g. Pera
+ * Card's Connect Funds) can resume itself without coupling the shared account
+ * creation flow to it. Consumed by `useExitAccountFlow`.
+ */
+export type PostCreateReturnTarget = {
+    name: string
+    params?: object
+}
+
 export type SearchAccountsParams =
     | {
           mode?: 'existing'
@@ -68,6 +79,8 @@ export type ImportFlowParamList = {
     ImportAccountOptions: undefined
     NameAccount: Optional<{
         account?: WalletAccount
+        /** Override the post-naming destination (defaults to exit-to-Home). */
+        returnTo?: PostCreateReturnTarget
     }>
     ImportSelectAddresses: ImportSelectAddressesParams
     ImportRekeyedAddresses: {
@@ -125,7 +138,10 @@ export type OnboardingStackParamList = ImportFlowParamList & {
 
 export type AddAccountStackParamList = ImportFlowParamList & {
     AddAccountHome: undefined
-    SelectHDWallet: undefined
+    SelectHDWallet: Optional<{
+        /** Forwarded to NameAccount so the caller's flow can resume after naming. */
+        returnTo?: PostCreateReturnTarget
+    }>
     WatchInfo: undefined
     WatchAccount: Optional<{
         // Set by the watch-account / register-watch-account deeplinks so the

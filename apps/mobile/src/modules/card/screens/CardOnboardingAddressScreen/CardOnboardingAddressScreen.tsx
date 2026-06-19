@@ -32,9 +32,9 @@ export const CardOnboardingAddressScreen = () => {
     const styles = useStyles()
     const {
         control,
+        errors,
         isValid,
         isSubmitting,
-        isCompleted,
         selectedCountry,
         isUsResident,
         selectedUsState,
@@ -49,42 +49,7 @@ export const CardOnboardingAddressScreen = () => {
         handleOpenCardTerms,
         handleOpenPlatformTerms,
         handleConfirm,
-        handleDone,
     } = useCardOnboardingAddressScreen()
-
-    // Address is the final registration step; once it lands the screen swaps
-    // to a completion state in place.
-    if (isCompleted) {
-        return (
-            <PWScreen
-                testID='card-onboarding-address-success'
-                footer={
-                    <PWButton
-                        variant='primary'
-                        title={t('peraCard.address.done_button')}
-                        onPress={handleDone}
-                        testID='card-onboarding-address-done'
-                    />
-                }
-            >
-                <PWView style={styles.content}>
-                    <PWText
-                        variant='h1'
-                        style={styles.completedTitle}
-                    >
-                        {t('peraCard.address.completed_title')}
-                    </PWText>
-                    <PWText
-                        variant='bodyLarge'
-                        weight={400}
-                        style={styles.completedBody}
-                    >
-                        {t('peraCard.address.completed_body')}
-                    </PWText>
-                </PWView>
-            </PWScreen>
-        )
-    }
 
     return (
         <PWScreen testID='card-onboarding-address'>
@@ -95,6 +60,11 @@ export const CardOnboardingAddressScreen = () => {
                         placeholder={t('peraCard.address.country_label')}
                         country={selectedCountry}
                         onPress={handleSelectCountry}
+                        errorMessage={
+                            errors.countryIso
+                                ? t('peraCard.address.country_required')
+                                : undefined
+                        }
                         testID='card-onboarding-address-country-field'
                     />
 
@@ -104,6 +74,7 @@ export const CardOnboardingAddressScreen = () => {
                             name='city'
                             render={({
                                 field: { onChange, onBlur, value },
+                                fieldState: { error },
                             }) => (
                                 <PWInput
                                     containerStyle={styles.rowItem}
@@ -114,7 +85,14 @@ export const CardOnboardingAddressScreen = () => {
                                     onBlur={onBlur}
                                     autoCapitalize='words'
                                     autoCorrect={false}
-                                    renderErrorMessage={false}
+                                    showErrorOnBlur
+                                    renderErrorMessage
+                                    errorStyle={styles.errorMessage}
+                                    errorMessage={
+                                        error && value
+                                            ? t('peraCard.address.city_invalid')
+                                            : undefined
+                                    }
                                     testID='card-onboarding-address-city-input'
                                 />
                             )}
@@ -124,6 +102,7 @@ export const CardOnboardingAddressScreen = () => {
                             name='zip'
                             render={({
                                 field: { onChange, onBlur, value },
+                                fieldState: { error },
                             }) => (
                                 <PWInput
                                     containerStyle={styles.rowItem}
@@ -134,7 +113,14 @@ export const CardOnboardingAddressScreen = () => {
                                     onBlur={onBlur}
                                     autoCapitalize='characters'
                                     autoCorrect={false}
-                                    renderErrorMessage={false}
+                                    showErrorOnBlur
+                                    renderErrorMessage
+                                    errorStyle={styles.errorMessage}
+                                    errorMessage={
+                                        error && value
+                                            ? t('peraCard.address.zip_invalid')
+                                            : undefined
+                                    }
                                     testID='card-onboarding-address-zip-input'
                                 />
                             )}
@@ -144,7 +130,10 @@ export const CardOnboardingAddressScreen = () => {
                     <Controller
                         control={control}
                         name='addressLine1'
-                        render={({ field: { onChange, onBlur, value } }) => (
+                        render={({
+                            field: { onChange, onBlur, value },
+                            fieldState: { error },
+                        }) => (
                             <PWInput
                                 label={t(
                                     'peraCard.address.address_line1_label',
@@ -155,7 +144,16 @@ export const CardOnboardingAddressScreen = () => {
                                 onBlur={onBlur}
                                 autoCapitalize='words'
                                 autoCorrect={false}
-                                renderErrorMessage={false}
+                                showErrorOnBlur
+                                renderErrorMessage
+                                errorStyle={styles.errorMessage}
+                                errorMessage={
+                                    error && value
+                                        ? t(
+                                              'peraCard.address.address_line1_invalid',
+                                          )
+                                        : undefined
+                                }
                                 testID='card-onboarding-address-line1-input'
                             />
                         )}
@@ -201,13 +199,22 @@ export const CardOnboardingAddressScreen = () => {
                                         'peraCard.address.us_state_placeholder',
                                     )}
                                     editable={false}
-                                    renderErrorMessage={false}
+                                    renderErrorMessage={!!errors.usState}
+                                    errorStyle={styles.errorMessage}
+                                    errorMessage={
+                                        errors.usState
+                                            ? t(
+                                                  'peraCard.address.us_state_required',
+                                              )
+                                            : undefined
+                                    }
                                     rightIcon={
                                         <PWIcon
                                             name='chevron-down'
                                             variant='secondary'
                                         />
                                     }
+                                    testID='card-onboarding-address-state-input'
                                 />
                             </PWView>
                         </PWTouchableOpacity>

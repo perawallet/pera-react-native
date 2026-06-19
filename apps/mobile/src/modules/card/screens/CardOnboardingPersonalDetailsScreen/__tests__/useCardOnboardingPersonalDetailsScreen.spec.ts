@@ -19,6 +19,14 @@ const mockMutateAsync = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockCountryIso: string | null = 'GB'
 let mockSettings: { countries: SupportedCountry[]; usStates: [] } | undefined
+type MockOnboardingDetails = {
+    verificationState: string
+    firstName: string | null
+    lastName: string | null
+    dateOfBirth: string | null
+    countryOfNationality: string | null
+}
+let mockOnboardingDetails: MockOnboardingDetails | undefined
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -38,6 +46,12 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         }),
         useRegistrationSettingsQuery: () => ({
             data: mockSettings,
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        }),
+        useOnboardingDetailsQuery: () => ({
+            data: mockOnboardingDetails,
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
@@ -108,6 +122,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         mockOnboardingId = 'mock-onboarding-id'
         mockCountryIso = 'GB'
         mockSettings = { countries: [uk, france], usStates: [] }
+        mockOnboardingDetails = undefined
         mockMutateAsync.mockResolvedValue(undefined)
     })
 
@@ -154,9 +169,13 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         await waitFor(() =>
             expect(result.current.selectedNationality).toEqual(france),
         )
-        // Opens full-size with the nationality-specific sheet title.
+        // Opens full-size with the nationality-specific sheet title. The
+        // picker manages its own scroll, so the sheet must not auto-wrap it.
         const requestArg = mockRequest.mock.calls[0]?.[0]
-        expect(requestArg?.options).toEqual({ size: 'full' })
+        expect(requestArg?.options).toEqual({
+            size: 'full',
+            autoCreateContainer: false,
+        })
         expect(requestArg?.contents?.props?.title).toBe(
             'peraCard.personal_details.nationality_picker_title',
         )
@@ -173,5 +192,93 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
 
         expect(mockMutateAsync).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('prefills and locks the identity fields the server has confirmed', async () => {
+        mockOnboardingDetails = {
+            verificationState: 'VERIFIED',
+            firstName: 'YASIN',
+            lastName: 'ÇALIŞKAN',
+            dateOfBirth: '1997-11-08T00:00:00.000Z',
+            countryOfNationality: null,
+        }
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        // Prefilled identity (DOB converted to DD/MM/YYYY) makes the form valid
+        // with no typing, and those fields are locked.
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+        expect(result.current.isFirstNameLocked).toBe(true)
+        expect(result.current.isLastNameLocked).toBe(true)
+        expect(result.current.isDateOfBirthLocked).toBe(true)
+        // Nationality wasn't returned, so it stays editable, defaulted to the
+        // residence country.
+        expect(result.current.isNationalityLocked).toBe(false)
+        await waitFor(() =>
+            expect(result.current.selectedNationality).toEqual(uk),
+        )
+    })
+
+    it('leaves the form empty and editable for a fresh registration', () => {
+        mockOnboardingDetails = {
+            verificationState: 'UNVERIFIED',
+            firstName: null,
+            lastName: null,
+            dateOfBirth: null,
+            countryOfNationality: null,
+        }
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        expect(result.current.isFirstNameLocked).toBe(false)
+        expect(result.current.isLastNameLocked).toBe(false)
+        expect(result.current.isDateOfBirthLocked).toBe(false)
+        expect(result.current.isNationalityLocked).toBe(false)
+    })
+
+    it('locks nationality and prefers the server value over the residence guess', async () => {
+        mockCountryIso = 'GB'
+        mockOnboardingDetails = {
+            verificationState: 'VERIFIED',
+            firstName: 'YASIN',
+            lastName: 'ÇALIŞKAN',
+            dateOfBirth: '1997-11-08T00:00:00.000Z',
+            countryOfNationality: 'FR',
+        }
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        expect(result.current.isNationalityLocked).toBe(true)
+        // Server nationality (FR) wins over the residence default (GB).
+        await waitFor(() =>
+            expect(result.current.selectedNationality).toEqual(france),
+        )
+    })
+
+    it('stays editable when the server nationality is not in the supported list', async () => {
+        // A nationality outside the signup-eligible list (e.g. pulled from the
+        // KYC scan) can't be resolved to a picker option. Locking it would
+        // leave the field empty + locked and block submit, so it stays editable
+        // and falls back to the residence guess.
+        mockCountryIso = 'GB'
+        mockOnboardingDetails = {
+            verificationState: 'VERIFIED',
+            firstName: 'YASIN',
+            lastName: 'ÇALIŞKAN',
+            dateOfBirth: '1997-11-08T00:00:00.000Z',
+            countryOfNationality: 'JP',
+        }
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+
+        expect(result.current.isNationalityLocked).toBe(false)
+        // Falls back to the residence country so the field isn't left empty.
+        await waitFor(() =>
+            expect(result.current.selectedNationality).toEqual(uk),
+        )
     })
 })

@@ -169,6 +169,64 @@ describe('Flow: Card onboarding — email + country', () => {
         expect(screen.queryByTestId('card-onboarding-email-verify')).toBeNull()
     })
 
+    it('Given a conflict with a Baanx message, when Confirm is pressed, then that message is shown on the email field', async () => {
+        server.use(
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
+            http.post('*/v1/auth/register/email/send', () =>
+                HttpResponse.json(
+                    { message: 'That email is already in use' },
+                    { status: 409 },
+                ),
+            ),
+        )
+
+        renderFlow()
+        const input = screen.getByTestId('card-onboarding-email-input')
+        fireEvent.change(input, { target: { value: 'john@example.com' } })
+        // Blur so the (server) error is allowed to render, mirroring the user
+        // tapping the country field after typing.
+        fireEvent.blur(input)
+        await openPickerAndSelect('GB')
+
+        fireEvent.click(screen.getByTestId('card-onboarding-email-confirm'))
+
+        // The real Baanx message is attributed to the field, and the flow stays
+        // on the email screen.
+        await waitFor(() =>
+            expect(input.getAttribute('errormessage')).toBe(
+                'That email is already in use',
+            ),
+        )
+        expect(screen.queryByTestId('card-onboarding-email-verify')).toBeNull()
+    })
+
+    it('Given a conflict with no message body, when Confirm is pressed, then the localized fallback is shown', async () => {
+        server.use(
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
+            http.post('*/v1/auth/register/email/send', () =>
+                HttpResponse.json({}, { status: 409 }),
+            ),
+        )
+
+        renderFlow()
+        const input = screen.getByTestId('card-onboarding-email-input')
+        fireEvent.change(input, { target: { value: 'john@example.com' } })
+        fireEvent.blur(input)
+        await openPickerAndSelect('GB')
+
+        fireEvent.click(screen.getByTestId('card-onboarding-email-confirm'))
+
+        await waitFor(() =>
+            expect(input.getAttribute('errormessage')).toBe(
+                'peraCard.create_account.email_taken',
+            ),
+        )
+    })
+
     it('Given an unsupported country, when Sign up for waitlist is pressed, then the country + device are submitted and the success sheet opens', async () => {
         let waitlistBody: unknown
         const waitlistSpy = vi.fn()

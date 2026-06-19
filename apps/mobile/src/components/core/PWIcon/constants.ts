@@ -19,6 +19,7 @@ import BellIcon from '@assets/icons/bell.svg'
 import BellOffIcon from '@assets/icons/bell-off.svg'
 import BellWithBadgeIcon from '@assets/icons/bell-with-badge.svg'
 import BuyIcon from '@assets/icons/buy.svg'
+import BuySellIcon from '@assets/icons/buy-sell.svg'
 import CameraIcon from '@assets/icons/camera.svg'
 import CardIcon from '@assets/icons/card.svg'
 import CardStackIcon from '@assets/icons/card-stack.svg'
@@ -171,6 +172,7 @@ export const ICON_LIBRARY = {
     'bell-off': BellOffIcon,
     'bell-with-badge': BellWithBadgeIcon,
     buy: BuyIcon,
+    'buy-sell': BuySellIcon,
     camera: CameraIcon,
     card: CardIcon,
     'card-stack': CardStackIcon,

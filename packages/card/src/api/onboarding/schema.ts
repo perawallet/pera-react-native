@@ -12,8 +12,9 @@
 
 import { z } from 'zod'
 
-// GET /v1/auth/settings. We model the country/state lists the signup UI needs;
-// the rich `links`/`config` blocks are ignored for now.
+// GET /v1/auth/settings. We model the country/state lists the signup UI needs
+// plus the per-jurisdiction T&C links used on the address step; the rest of the
+// `links`/`config` blocks are still ignored.
 const supportedCountrySchema = z.object({
     id: z.string(),
     iso3166alpha2: z.string(),
@@ -29,9 +30,22 @@ const supportedUsStateSchema = z.object({
     canSignUp: z.boolean(),
 })
 
+// Per-jurisdiction link group; we only read the T&C URL for now.
+const settingsLinkGroupSchema = z
+    .object({ termsAndConditions: z.string().optional().nullable() })
+    .optional()
+    .nullable()
+
 export const registrationSettingsResponseSchema = z.object({
     countries: z.array(supportedCountrySchema).optional().nullable(),
     usStates: z.array(supportedUsStateSchema).optional().nullable(),
+    links: z
+        .object({
+            us: settingsLinkGroupSchema,
+            intl: settingsLinkGroupSchema,
+        })
+        .optional()
+        .nullable(),
 })
 export type RegistrationSettingsApiResponse = z.infer<
     typeof registrationSettingsResponseSchema
@@ -57,10 +71,17 @@ export type RegisterVerificationApiResponse = z.infer<
     typeof registerVerificationResponseSchema
 >
 
-// GET /v1/auth/register?onboardingId= — onboarding status. We only model the
-// KYC state the verification screen polls; Zod strips the profile fields.
+// GET /v1/auth/register?onboardingId= — onboarding status. We model the KYC
+// state the verification screen polls plus the profile fields used to prefill
+// the personal-details form on resume; Zod strips the rest.
 export const onboardingDetailsResponseSchema = z.object({
     verificationState: z.string(),
+    firstName: z.string().optional().nullable(),
+    lastName: z.string().optional().nullable(),
+    /** ISO datetime, e.g. `1997-11-08T00:00:00.000Z`. */
+    dateOfBirth: z.string().optional().nullable(),
+    /** ISO 3166-1 alpha-2; null until the user provides it. */
+    countryOfNationality: z.string().optional().nullable(),
 })
 export type OnboardingDetailsApiResponse = z.infer<
     typeof onboardingDetailsResponseSchema
@@ -69,9 +90,28 @@ export type OnboardingDetailsApiResponse = z.infer<
 // POST /v1/auth/register/address — the final registration step; issues the
 // bearer token the authenticated user endpoints require. `accessToken` is null
 // only when US AND isSameMailingAddress=false (a mailing address is still
-// owed). The response also carries a `user` block we don't model yet.
+// owed). `user.id` is the permanent userId the consent-link (PATCH) step needs;
+// we model just that field of the larger `user` block.
 export const addressResponseSchema = z.object({
     accessToken: z.string().nullable(),
     onboardingId: z.string(),
+    user: z.object({ id: z.string() }).optional().nullable(),
 })
 export type AddressApiResponse = z.infer<typeof addressResponseSchema>
+
+// POST /v2/consent/onboarding — returns the created consent set's id, which the
+// link (PATCH) step binds to the user once the address step issues the userId.
+export const consentResponseSchema = z.object({
+    consentSetId: z.string(),
+})
+export type ConsentApiResponse = z.infer<typeof consentResponseSchema>
+
+// POST /v1/card/funding-source — connects a Pera (Algorand) account as the
+// card's funding source on the setup checklist. ASSUMPTION: the request/response
+// shape is unverified (Baanx sandbox down), so it's mocked for now.
+export const connectFundingSourceResponseSchema = z.object({
+    fundingSourceId: z.string(),
+})
+export type ConnectFundingSourceApiResponse = z.infer<
+    typeof connectFundingSourceResponseSchema
+>

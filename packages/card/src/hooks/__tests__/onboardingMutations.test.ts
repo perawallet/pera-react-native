@@ -28,6 +28,8 @@ const api = vi.hoisted(() => ({
     submitPersonalDetails: vi.fn(),
     submitAddress: vi.fn(),
     submitOnboardingConsent: vi.fn(),
+    linkOnboardingConsent: vi.fn(),
+    connectFundingSource: vi.fn(),
 }))
 vi.mock('../../api/onboarding', () => api)
 
@@ -41,6 +43,8 @@ import { useVerifyPhoneMutation } from '../useVerifyPhoneMutation'
 import { useSubmitPersonalDetailsMutation } from '../useSubmitPersonalDetailsMutation'
 import { useSubmitAddressMutation } from '../useSubmitAddressMutation'
 import { useSubmitConsentMutation } from '../useSubmitConsentMutation'
+import { useLinkConsentMutation } from '../useLinkConsentMutation'
+import { useConnectFundingSourceMutation } from '../useConnectFundingSourceMutation'
 import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
 
@@ -63,7 +67,10 @@ describe('onboarding mutation hooks', () => {
         api.submitAddress.mockResolvedValue({
             accessToken: 'tok',
             onboardingId: 'ob_1',
+            userId: 'user_1',
         })
+        // Consent create returns the set id the hook stashes for the link step.
+        api.submitOnboardingConsent.mockResolvedValue({ consentSetId: 'cs_1' })
         session.setCardSession.mockResolvedValue(undefined)
         useCardStore.getState().resetState()
     })
@@ -253,7 +260,7 @@ describe('onboarding mutation hooks', () => {
         )
     })
 
-    it('useSubmitConsentMutation forwards the consent payload without advancing the step', async () => {
+    it('useSubmitConsentMutation forwards the payload, stashes the consentSetId, and does not advance the step', async () => {
         const stepBefore = useCardStore.getState().onboardingStep
         const { result } = renderHook(() => useSubmitConsentMutation(), {
             wrapper,
@@ -275,8 +282,75 @@ describe('onboarding mutation hooks', () => {
                 network: 'mainnet',
             }),
         )
+        // The created consent set id is stashed for the link step.
+        expect(useCardStore.getState().consentSetId).toBe('cs_1')
         // Consent is part of the final address step — it must not advance the
         // onboarding step on its own.
         expect(useCardStore.getState().onboardingStep).toBe(stepBefore)
+    })
+
+    it('useSubmitConsentMutation does not overwrite a stashed id when a duplicate returns none', async () => {
+        // A duplicate-onboardingId retry resolves with consentSetId: null; the id
+        // stashed on the first create must survive for the link step.
+        useCardStore.getState().setConsentSetId('cs_first')
+        api.submitOnboardingConsent.mockResolvedValue({ consentSetId: null })
+        const { result } = renderHook(() => useSubmitConsentMutation(), {
+            wrapper,
+        })
+        result.current.mutate({
+            onboardingId: 'ob_1',
+            allowMarketing: true,
+            cardTermsAccepted: true,
+            platformTermsAccepted: true,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(useCardStore.getState().consentSetId).toBe('cs_first')
+    })
+
+    it('useLinkConsentMutation forwards the consentSetId and userId', async () => {
+        const { result } = renderHook(() => useLinkConsentMutation(), {
+            wrapper,
+        })
+        result.current.mutate({ consentSetId: 'cs_1', userId: 'user_1' })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.linkOnboardingConsent).toHaveBeenCalledWith({
+            consentSetId: 'cs_1',
+            userId: 'user_1',
+            network: 'mainnet',
+        })
+    })
+
+    it('useConnectFundingSourceMutation links the account and stores its address', async () => {
+        api.connectFundingSource.mockResolvedValue({
+            fundingSourceId: 'fs_1',
+        })
+        const { result } = renderHook(() => useConnectFundingSourceMutation(), {
+            wrapper,
+        })
+        result.current.mutate({ address: 'ALGO_ADDRESS' })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(api.connectFundingSource).toHaveBeenCalledWith({
+            address: 'ALGO_ADDRESS',
+            network: 'mainnet',
+        })
+        // The connected account address (not the fabricated id) is persisted so
+        // the checklist's Connect Funds row renders its done state.
+        expect(useCardStore.getState().connectedFundingSourceAddress).toBe(
+            'ALGO_ADDRESS',
+        )
+    })
+
+    it('useConnectFundingSourceMutation leaves the store untouched on failure', async () => {
+        api.connectFundingSource.mockRejectedValue(new Error('nope'))
+        const { result } = renderHook(() => useConnectFundingSourceMutation(), {
+            wrapper,
+        })
+        result.current.mutate({ address: 'ALGO_ADDRESS' })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(useCardStore.getState().connectedFundingSourceAddress).toBeNull()
     })
 })

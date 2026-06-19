@@ -131,6 +131,59 @@ describe('card onboarding — phone', () => {
         expect(screen.queryByTestId('card-onboarding-phone-verify')).toBeNull()
     })
 
+    it('Given a conflict with a Baanx message, when the code is sent, then that message is shown on the phone field', async () => {
+        server.use(
+            http.post('*/v1/auth/register/phone/send', () =>
+                HttpResponse.json(
+                    { message: 'That number is already in use' },
+                    { status: 409 },
+                ),
+            ),
+        )
+
+        renderPhone()
+        const input = screen.getByTestId('card-onboarding-phone-input')
+        fireEvent.change(input, { target: { value: PHONE_NUMBER } })
+        fireEvent.blur(input)
+        const confirm = screen.getByTestId('card-onboarding-phone-confirm')
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        // The real Baanx message is attributed to the field, and the flow stays put.
+        await waitFor(() =>
+            expect(
+                screen
+                    .getByTestId('card-onboarding-phone-input')
+                    .getAttribute('errormessage'),
+            ).toBe('That number is already in use'),
+        )
+        expect(screen.queryByTestId('card-onboarding-phone-verify')).toBeNull()
+    })
+
+    it('Given a conflict with no message body, when the code is sent, then the localized fallback is shown', async () => {
+        server.use(
+            http.post('*/v1/auth/register/phone/send', () =>
+                HttpResponse.json({}, { status: 409 }),
+            ),
+        )
+
+        renderPhone()
+        const input = screen.getByTestId('card-onboarding-phone-input')
+        fireEvent.change(input, { target: { value: PHONE_NUMBER } })
+        fireEvent.blur(input)
+        const confirm = screen.getByTestId('card-onboarding-phone-confirm')
+        await waitFor(() => expect(confirm.getAttribute('disabled')).toBeNull())
+        fireEvent.click(confirm)
+
+        await waitFor(() =>
+            expect(
+                screen
+                    .getByTestId('card-onboarding-phone-input')
+                    .getAttribute('errormessage'),
+            ).toBe('peraCard.verify_phone.phone_taken'),
+        )
+    })
+
     it('shows the invalid-number error only after the field is blurred', async () => {
         renderPhone()
         const input = screen.getByTestId('card-onboarding-phone-input')

@@ -33,13 +33,74 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     pendingLabel: {
-        color: theme.colors.warning,
+        color: theme.colors.warningText,
     },
     inactiveTitle: {
         color: theme.colors.textGrayLighter,
     },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     detailsButton: {
         marginTop: theme.spacing.md,
+    },
+    // Header shown in the account-picker sheet (passed via AccountMenu's
+    // headerContent), replacing the default portfolio summary.
+    pickerHeader: {
+        paddingTop: theme.spacing.md,
+        gap: theme.spacing.sm,
+    },
+    pickerHeaderTitle: {
+        color: theme.colors.textMain,
+    },
+    pickerHeaderSubtitle: {
+        color: theme.colors.textGray,
+    },
+    connectedCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+        marginTop: theme.spacing.md,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.lg,
+        padding: theme.spacing.lg,
+    },
+    connectedAccountInfo: {
+        flex: 1,
+    },
+    optionsList: {
+        marginTop: theme.spacing.sm,
+        gap: theme.spacing.md,
+    },
+    // Radio sits on the left (row-reverse flips PWRadioButton's default layout).
+    optionCard: {
+        flexDirection: 'row-reverse',
+        padding: theme.spacing.md,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.sm,
+    },
+    optionCardSelected: {
+        borderColor: theme.colors.positive,
+    },
+    optionText: {
+        gap: theme.spacing.xs,
+    },
+    optionDescription: {
+        color: theme.colors.textGray,
+    },
+    infoContent: {
+        gap: theme.spacing.lg,
+    },
+    infoSection: {
+        gap: theme.spacing.xs,
+    },
+    infoText: {
+        color: theme.colors.textGray,
     },
     footer: {
         gap: theme.spacing.md,

@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import {
     useHDWalletGroups,
     useCreateAccount,
@@ -27,6 +29,10 @@ type UseSelectHDWalletScreenResult = {
     hdWalletGroups: HDWalletGroup[]
     accountBalances: AccountBalances
     isCreatingWallet: boolean
+    /** A wallet is being selected and its next account built. */
+    isSelectingWallet: boolean
+    /** Exactly one wallet → skip the picker and auto-select it. */
+    isAutoSelecting: boolean
     handleSelectWallet: (group: HDWalletGroup) => void
     handleCreateNewWallet: () => void
     handleGoBack: () => void
@@ -35,11 +41,19 @@ type UseSelectHDWalletScreenResult = {
 
 export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     const navigation = useAppNavigation()
+    const route =
+        useRoute<RouteProp<AddAccountStackParamList, 'SelectHDWallet'>>()
+    // Forwarded to NameAccount so a caller flow (e.g. Pera Card) resumes after naming.
+    const returnTo = route.params?.returnTo
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { hdWalletGroups } = useHDWalletGroups()
     const { buildHdWalletAccount } = useCreateAccount()
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
+    const [isSelectingWallet, setIsSelectingWallet] = useState(false)
+    // Set when auto-select fails, so the picker is revealed for a manual retry.
+    const [autoSelectFailed, setAutoSelectFailed] = useState(false)
+    const autoSelectedRef = useRef(false)
 
     const allGroupAccounts = useMemo(
         () => hdWalletGroups.flatMap(g => g.accounts),
@@ -50,27 +64,54 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
 
     const handleSelectWallet = useCallback(
         async (group: HDWalletGroup) => {
-            // Group is keyed by the bip39 seed id; siblings are the
-            // accounts already grouped under it. Compute the next free
-            // keyIndex on account 0 from the group itself rather than
-            // re-filtering allAccounts (no need — the group already did).
-            const nextKeyIndex =
-                group.accounts.length > 0
-                    ? Math.max(
-                          ...group.accounts.map(
-                              a => a.hdWalletDetails.keyIndex,
-                          ),
-                      ) + 1
-                    : 0
-            const newAccount = await buildHdWalletAccount({
-                walletId: group.seedKeyId,
-                account: 0,
-                keyIndex: nextKeyIndex,
-            })
-            navigation.replace('NameAccount', { account: newAccount })
+            setIsSelectingWallet(true)
+            try {
+                // Group is keyed by the bip39 seed id; siblings are the
+                // accounts already grouped under it. Compute the next free
+                // keyIndex on account 0 from the group itself rather than
+                // re-filtering allAccounts (no need — the group already did).
+                const nextKeyIndex =
+                    group.accounts.length > 0
+                        ? Math.max(
+                              ...group.accounts.map(
+                                  a => a.hdWalletDetails.keyIndex,
+                              ),
+                          ) + 1
+                        : 0
+                const newAccount = await buildHdWalletAccount({
+                    walletId: group.seedKeyId,
+                    account: 0,
+                    keyIndex: nextKeyIndex,
+                })
+                navigation.replace('NameAccount', {
+                    account: newAccount,
+                    returnTo,
+                })
+            } catch (error) {
+                // Reveal the picker for a manual retry instead of getting stuck.
+                setAutoSelectFailed(true)
+                setIsSelectingWallet(false)
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
+                showToast({
+                    title: t('onboarding.create_account.error_title'),
+                    body: t('onboarding.create_account.error_message', {
+                        error: `${error}`,
+                    }),
+                    type: 'error',
+                })
+            }
         },
-        [buildHdWalletAccount, navigation],
+        [buildHdWalletAccount, navigation, returnTo, showToast, t],
     )
+
+    // A lone wallet makes the picker pointless — auto-select it.
+    const isAutoSelecting = hdWalletGroups.length === 1 && !autoSelectFailed
+    useEffect(() => {
+        if (isAutoSelecting && !autoSelectedRef.current) {
+            autoSelectedRef.current = true
+            void handleSelectWallet(hdWalletGroups[0])
+        }
+    }, [isAutoSelecting, hdWalletGroups, handleSelectWallet])
 
     const handleCreateNewWallet = useCallback(() => {
         setIsCreatingWallet(true)
@@ -80,7 +121,10 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
                     account: 0,
                     keyIndex: 0,
                 })
-                navigation.push('NameAccount', { account: newAccount })
+                navigation.push('NameAccount', {
+                    account: newAccount,
+                    returnTo,
+                })
             } catch (error) {
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
@@ -94,7 +138,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
                 setIsCreatingWallet(false)
             }
         })
-    }, [buildHdWalletAccount, navigation, showToast, t])
+    }, [buildHdWalletAccount, navigation, showToast, t, returnTo])
 
     const handleGoBack = useCallback(() => {
         navigation.goBack()
@@ -104,6 +148,8 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
         hdWalletGroups,
         accountBalances,
         isCreatingWallet,
+        isSelectingWallet,
+        isAutoSelecting,
         handleSelectWallet: (group: HDWalletGroup) =>
             void handleSelectWallet(group),
         handleCreateNewWallet,

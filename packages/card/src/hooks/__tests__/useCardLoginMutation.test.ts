@@ -20,12 +20,23 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mockUseNetwork,
 }))
 
-const { loginRequest, setCardSession } = vi.hoisted(() => ({
+const {
+    loginRequest,
+    setCardSession,
+    fetchOnboardingDetails,
+    setOnboardingId,
+} = vi.hoisted(() => ({
     loginRequest: vi.fn(),
     setCardSession: vi.fn(),
+    fetchOnboardingDetails: vi.fn(),
+    setOnboardingId: vi.fn(),
 }))
 vi.mock('../../api/auth', () => ({ loginRequest }))
 vi.mock('../../session', () => ({ setCardSession }))
+vi.mock('../../api/onboarding', () => ({ fetchOnboardingDetails }))
+vi.mock('../../store', () => ({
+    useCardStore: { getState: () => ({ setOnboardingId }) },
+}))
 
 import { useCardLoginMutation } from '../useCardLoginMutation'
 
@@ -74,6 +85,9 @@ describe('useCardLoginMutation', () => {
         expect(setCardSession).toHaveBeenCalledWith(
             expect.objectContaining({ accessToken: 'a', refreshToken: '' }),
         )
+        // A complete account never touches the onboarding bridge.
+        expect(fetchOnboardingDetails).not.toHaveBeenCalled()
+        expect(setOnboardingId).not.toHaveBeenCalled()
     })
 
     it('does not persist a session while OTP is still required', async () => {
@@ -91,6 +105,59 @@ describe('useCardLoginMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(setCardSession).not.toHaveBeenCalled()
+        expect(fetchOnboardingDetails).not.toHaveBeenCalled()
+        expect(setOnboardingId).not.toHaveBeenCalled()
         expect(result.current.data?.isOtpRequired).toBe(true)
+    })
+
+    it('resolves KYC state and bridges userId to onboardingId for a mid-onboarding login', async () => {
+        loginRequest.mockResolvedValue({
+            accessToken: null,
+            userId: 'user-123',
+            isOtpRequired: false,
+            phase: 'PERSONAL_INFORMATION',
+            verificationState: null,
+            isLinked: false,
+        })
+        fetchOnboardingDetails.mockResolvedValue({
+            verificationState: 'UNVERIFIED',
+        })
+
+        const { result } = renderHook(() => useCardLoginMutation(), { wrapper })
+        result.current.mutate({ email: 'e@x.com', password: 'pw' })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        // userId is treated as the onboardingId for the pre-auth lookup.
+        expect(fetchOnboardingDetails).toHaveBeenCalledWith(
+            expect.objectContaining({
+                onboardingId: 'user-123',
+                network: 'mainnet',
+            }),
+        )
+        // The resolved state is merged into the result, and the bridge is set.
+        expect(result.current.data?.verificationState).toBe('UNVERIFIED')
+        expect(setOnboardingId).toHaveBeenCalledWith('user-123')
+        expect(setCardSession).not.toHaveBeenCalled()
+    })
+
+    it('still bridges the onboardingId when the KYC lookup fails', async () => {
+        loginRequest.mockResolvedValue({
+            accessToken: null,
+            userId: 'user-123',
+            isOtpRequired: false,
+            phase: 'PERSONAL_INFORMATION',
+            verificationState: null,
+            isLinked: false,
+        })
+        fetchOnboardingDetails.mockRejectedValue(new Error('not found'))
+
+        const { result } = renderHook(() => useCardLoginMutation(), { wrapper })
+        result.current.mutate({ email: 'e@x.com', password: 'pw' })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        // The login result is kept (state stays null → caller treats unverified)
+        // but the onboardingId bridge still happens.
+        expect(result.current.data?.verificationState).toBeNull()
+        expect(setOnboardingId).toHaveBeenCalledWith('user-123')
     })
 })

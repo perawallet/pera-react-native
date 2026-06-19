@@ -146,7 +146,9 @@ describe('useCardOnboardingPhoneScreen', () => {
             expect(result.current.selectedCallingCountry).toEqual(france),
         )
         expect(mockRequest).toHaveBeenCalledWith(
-            expect.objectContaining({ options: { size: 'full' } }),
+            expect.objectContaining({
+                options: { size: 'full', autoCreateContainer: false },
+            }),
         )
     })
 
