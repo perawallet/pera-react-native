@@ -189,3 +189,24 @@ export class NetworkChangedError extends PipelineError {
         )
     }
 }
+
+/**
+ * A transaction's genesisHash does not match the active network. Treated as
+ * exceptional/malicious (e.g. mainnet-genesis bytes delivered over a testnet
+ * session) — aborts signing entirely rather than producing a cross-chain
+ * signature. Non-retryable: retrying cannot change the bytes.
+ */
+export class GenesisHashMismatchError extends PipelineError {
+    constructor(
+        network: string,
+        index: number,
+        expected: string,
+        actual: string,
+    ) {
+        super(
+            `One or more of the transactions targeta different Algorand network than the active one (${network}).`,
+            undefined,
+            { params: { network, index, expected, actual } },
+        )
+    }
+}

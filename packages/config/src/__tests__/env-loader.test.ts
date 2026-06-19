@@ -256,6 +256,8 @@ describe('env-loader', () => {
             testnetAlgodUrl: 'https://base-testnet-algod.example.com',
             mainnetIndexerUrl: 'https://base-mainnet-indexer.example.com',
             testnetIndexerUrl: 'https://base-testnet-indexer.example.com',
+            mainnetGenesisHash: 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+            testnetGenesisHash: 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
             backendAPIKey: 'base-backend-key',
             algodApiKey: 'base-algod-key',
             indexerApiKey: 'base-indexer-key',

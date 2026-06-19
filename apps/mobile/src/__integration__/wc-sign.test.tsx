@@ -47,6 +47,7 @@ import { Address } from '@algorandfoundation/algokit-utils/common'
 import {
     Transaction,
     TransactionType,
+    encodeTransaction,
 } from '@algorandfoundation/algokit-utils/transact'
 
 import { createTestQueryClient, render } from '@test-utils/render'
@@ -64,7 +65,7 @@ import {
     useWalletConnectStore,
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { Networks, encodeToBase64 } from '@perawallet/wallet-core-shared'
 import {
     useSigningRequest,
     type TransactionSignRequest,
@@ -88,6 +89,12 @@ const baseTxParams = {
     genesisId: 'mainnet-v1.0',
     genesisHash: new Uint8Array(32).fill(0xab),
 }
+
+// Canonical testnet genesis hash — the active network in these tests is mainnet,
+// so a transaction carrying this hash must be rejected before signing.
+const TESTNET_GENESIS_HASH = new Uint8Array(
+    Buffer.from('SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=', 'base64'),
+)
 
 /** User's payment transaction — will be in `txs` (signable) */
 const makeTx0 = () =>
@@ -362,6 +369,65 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
             expect(rejected?.name).toBe('Arc0001Error')
             expect(rejected?.code).toBe(4300)
             // Signing pipeline never reaches the success branch.
+            expect(connector.approveRequestCalls).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an established mainnet session, when the dApp fires algo_signTxn with a testnet genesis hash, then the request is rejected before any signature is produced',
+        async () => {
+            render(
+                <WalletConnectProvider>
+                    <div data-testid='child' />
+                </WalletConnectProvider>,
+            )
+            const connector = await pairAndApprove()
+
+            // Build a transaction whose genesisHash is testnet — the active
+            // network in this test is mainnet, so the standard analyzer's
+            // assertTransactionsMatchNetwork call must reject it. The sender
+            // must be the session's signing account so the ARC-0001 resolver
+            // places the transaction in `toSign` (an empty toSign short-circuits
+            // before analysis, bypassing the genesis-hash check entirely).
+            const foreignNetworkTx = new Transaction({
+                type: TransactionType.Payment,
+                sender: Address.fromString(SIGNING_ACCOUNT.address),
+                fee: 1000n,
+                firstValid: 1000n,
+                lastValid: 2000n,
+                genesisId: 'testnet-v1.0',
+                genesisHash: TESTNET_GENESIS_HASH,
+                payment: { receiver: senderB, amount: 1_000_000n },
+            })
+            const txnBase64 = encodeToBase64(
+                encodeTransaction(foreignNetworkTx),
+            )
+
+            const requestId = 9004
+            act(() => {
+                connector.fire('algo_signTxn', null, {
+                    id: requestId,
+                    method: 'algo_signTxn',
+                    params: [[{ txn: txnBase64 }]],
+                })
+            })
+
+            // The standard analyzer throws GenesisHashMismatchError; the
+            // signing machine calls respondWithError, which calls
+            // connector.rejectRequest. Approval is never delivered.
+            await waitFor(() => {
+                expect(connector.rejectRequestCalls).toHaveLength(1)
+            })
+            expect(connector.rejectRequestCalls[0].id).toBe(requestId)
+            // Pin the rejection to the genesis-hash cause so a future
+            // regression rejecting for an unrelated reason cannot pass
+            // vacuously. The error flows from GenesisHashMismatchError
+            // through toError (identity for Error instances) → req.error
+            // → respondWithError, arriving at rejectRequest unwrapped.
+            expect(connector.rejectRequestCalls[0].error?.name).toBe(
+                'GenesisHashMismatchError',
+            )
             expect(connector.approveRequestCalls).toHaveLength(0)
         },
         SLOW_TEST_TIMEOUT_MS,
