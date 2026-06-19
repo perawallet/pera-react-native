@@ -40,5 +40,11 @@ export const useRekeyToSharedConfirmScreen =
                     screen: 'RekeyToSharedSuccess',
                     params: { sourceAddress: sourceAddr },
                 }),
+            // The rekey txn is signed by the shared account's multisig, so it's
+            // proposed for cosigning rather than broadcast here. Exit to Home
+            // and let the global pending-signatures sheet drive completion —
+            // there's no success screen until cosigners sign (matches iOS/
+            // Android).
+            onProposed: () => navigation.navigate('TabBar', { screen: 'Home' }),
         })
     }

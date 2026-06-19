@@ -170,4 +170,61 @@ describe('transportActor', () => {
 
         await expect(toPromise(actor)).rejects.toThrow(/not found/)
     })
+
+    it('keys the multisig propose on the resolved auth account when the sender is a rekeyed shared account', async () => {
+        // A shared account (J1) rekeyed to another shared account (J2). The
+        // transaction's sender is J1, but its on-chain auth is J2, so the
+        // multisig must be assembled from J2's template — the propose must be
+        // keyed on J2's address, not the sender J1's.
+        const J1_ADDRESS =
+            'G3EG2YQE72G52LIV5AHOA5VEVM7AFT2BFKOSZXJIJBDHBSBPXPTZC5OM24'
+        const J2_ADDRESS =
+            'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
+        const jointSender = {
+            type: 'multisig',
+            address: J1_ADDRESS,
+            rekeyAddress: J2_ADDRESS,
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['p1', 'p2'],
+                version: 1,
+            },
+        } as unknown as WalletAccount
+        const authAccount = {
+            type: 'multisig',
+            address: J2_ADDRESS,
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['p3', 'p4'],
+                version: 1,
+            },
+        } as unknown as WalletAccount
+
+        const proposeMock = vi
+            .fn()
+            .mockResolvedValue({ signRequestId: 'sr-1', status: 'pending' })
+
+        const input = makeInput(
+            { type: 'local' },
+            {
+                signerAddress: J1_ADDRESS,
+                allAccounts: [jointSender, authAccount],
+                createTransport: createTransportSelector({
+                    algokit: mockAlgokit,
+                    encodeSignedTransactions: mockEncodeSignedTransactions,
+                    network: 'testnet',
+                    proposeSignRequest: proposeMock,
+                    getMsigMetadata: () => undefined,
+                    getDeviceId: () => 'device-1',
+                }),
+            },
+        )
+        const actor = createActor(transportActor, { input })
+        actor.start()
+        await toPromise(actor)
+
+        expect(proposeMock).toHaveBeenCalledWith(
+            expect.objectContaining({ multisigAddress: J2_ADDRESS }),
+        )
+    })
 })

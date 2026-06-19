@@ -11,7 +11,11 @@
  */
 
 import { fromPromise } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isMultisigAccount,
+    resolveAuthAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type {
     SigningResult,
     SourceMetadata,
@@ -56,9 +60,21 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             )
         }
 
+        // The "multisig address" a transport is keyed on is the address whose
+        // multisig template authorizes the transaction. For a shared account
+        // that is itself rekeyed to another shared account, that is the auth
+        // account (a single rekey hop), not the sender — otherwise the propose
+        // would assemble the msig from the sender's own template and algod
+        // rejects it ("should have been authorized by <auth> but was actually
+        // authorized by <sender>"). Non-rekeyed accounts resolve to themselves,
+        // so this is a no-op for them.
+        const multisigAddress = isMultisigAccount(signerAccount)
+            ? resolveAuthAccount(signerAccount, allAccounts).address
+            : signerAddress
+
         const transport = createTransport(source, signerAccount)
         const merged = mergeSigningResults(signingResults)
 
-        return transport.send(merged, source, signerAddress)
+        return transport.send(merged, source, multisigAddress)
     },
 )

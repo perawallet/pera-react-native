@@ -105,6 +105,21 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+// Capture the handler registered with useSigningEvent so tests can simulate a
+// signing event firing on the bus.
+let capturedSigningHandler: ((event: unknown) => void) | null = null
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    useSigningEvent: (
+        _predicate: unknown,
+        handler: (event: unknown) => void,
+    ) => {
+        capturedSigningHandler = handler
+    },
+}))
+
 describe('useUndoRekeyConfirmScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -112,6 +127,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         mockSourceAccount.type = 'algo25'
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
+        capturedSigningHandler = null
     })
 
     it('returns feeAlgos from the rekey transaction fee query', () => {
@@ -152,6 +168,40 @@ describe('useUndoRekeyConfirmScreen', () => {
             screen: 'UndoRekeySuccess',
             params: { sourceAddress: 'SRC' },
         })
+    })
+
+    it('hands off to the pending-signatures flow on multisig propose without showing success', async () => {
+        // Undoing the rekey of a shared account is a multisig propose:
+        // submitAsync never resolves (it surfaces via the 'proposed' signing
+        // event). The flow must exit to Home for the pending-signatures sheet
+        // to take over, not hang or show the success screen.
+        mockRequestBottomSheet.mockResolvedValueOnce(true)
+        mockSubmitAsync.mockReturnValueOnce(new Promise(() => {}))
+        const { result } = renderHook(() => useUndoRekeyConfirmScreen())
+
+        await act(async () => {
+            result.current.handleContinuePress()
+        })
+
+        await waitFor(() => expect(mockSubmitAsync).toHaveBeenCalled())
+
+        act(() => {
+            capturedSigningHandler?.({
+                type: 'transport-result',
+                result: {
+                    type: 'proposed',
+                    signRequestId: 'sr-1',
+                    status: 'pending',
+                    sourceType: 'local',
+                },
+            })
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'UndoRekey',
+            expect.objectContaining({ screen: 'UndoRekeySuccess' }),
+        )
     })
 
     it('does not submit when the warning sheet resolves with false', async () => {

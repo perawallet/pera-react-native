@@ -12,7 +12,10 @@
 
 import { describe, test, expect } from 'vitest'
 import { Address } from '@algorandfoundation/algokit-utils'
-import { decodeMsgpack } from '@algorandfoundation/algokit-utils/common'
+import {
+    decodeMsgpack,
+    encodeMsgpack,
+} from '@algorandfoundation/algokit-utils/common'
 import nacl from 'tweetnacl'
 import {
     assembleSignedMultisigTransactions,
@@ -330,6 +333,71 @@ describe('assembleSignedMultisigTransactions', () => {
             responses: [],
         })
         expect(result2.kind).toBe('error')
+    })
+
+    // A real transaction carries its sender in the `snd` field. These build a
+    // minimal msgpack txn { snd: <32-byte pubkey> } so the assembler can detect
+    // whether the sender differs from the multisig (auth) address.
+    const txWithSender = (senderPublicKey: Uint8Array): Uint8Array =>
+        encodeMsgpack({ snd: senderPublicKey })
+
+    const KP_REKEYED = keyPairOf(0x09)
+
+    test('writes a sgnr field (the multisig auth address) when the sender is rekeyed to the multisig', () => {
+        // Sender (a rekeyed account) differs from the signing multisig address,
+        // so the signed txn must carry sgnr = the multisig address pubkey.
+        const txBytes = txWithSender(KP_REKEYED.publicKey)
+        const txB64 = toBase64(txBytes)
+
+        const result = assembleSignedMultisigTransactions({
+            rawTransactionsBase64: [txB64],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 2,
+            multisigAddress: ADDR_3,
+            responses: [
+                buildResponse(ADDR_1, 'signed', [signTx(KP_1, txBytes)]),
+                buildResponse(ADDR_2, 'signed', [signTx(KP_2, txBytes)]),
+            ],
+        })
+
+        expect(result.kind).toBe('success')
+        if (result.kind !== 'success') return
+        const decoded = decodeMsgpack(
+            result.signedTransactionsBytes[0],
+            Object,
+        ) as Record<string, unknown>
+
+        expect(Object.keys(decoded).sort()).toEqual(['msig', 'sgnr', 'txn'])
+        expect(Array.from(decoded.sgnr as Uint8Array)).toEqual(
+            Array.from(KP_3.publicKey),
+        )
+    })
+
+    test('omits sgnr when the sender equals the multisig address (not rekeyed)', () => {
+        // Sender IS the multisig — a normal multisig spend, no auth indirection.
+        const txBytes = txWithSender(KP_3.publicKey)
+        const txB64 = toBase64(txBytes)
+
+        const result = assembleSignedMultisigTransactions({
+            rawTransactionsBase64: [txB64],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 2,
+            multisigAddress: ADDR_3,
+            responses: [
+                buildResponse(ADDR_1, 'signed', [signTx(KP_1, txBytes)]),
+                buildResponse(ADDR_2, 'signed', [signTx(KP_2, txBytes)]),
+            ],
+        })
+
+        expect(result.kind).toBe('success')
+        if (result.kind !== 'success') return
+        const decoded = decodeMsgpack(
+            result.signedTransactionsBytes[0],
+            Object,
+        ) as Record<string, unknown>
+        expect(Object.keys(decoded).sort()).toEqual(['msig', 'txn'])
     })
 
     test('handles multi-transaction lists (each tx gets its own signed bytes)', () => {
