@@ -106,10 +106,28 @@ export const useSigningPipeline = (
 
         const totalFee = calculateTotalFee(allTransactions, signableAddresses)
 
+        // Gate warnings on the authorizing entity, not the raw sender: a dApp
+        // can set a foreign `sender` it never imported while signing with an
+        // account the wallet holds via `signerOverrides`. Keyed by position in
+        // `txs` (the signable subset), so translate into `allTransactions`'
+        // index space — `signableIndices` maps that position to its slot in
+        // `groupContext` when the full group is shown. [PERA-4417]
+        const authorizerByIndex = new Map<number, string>()
+        if (txRequest?.signerOverrides) {
+            const usingGroupContext = !!txRequest.groupContext
+            for (const [subsetIndex, authorizer] of txRequest.signerOverrides) {
+                const displayIndex = usingGroupContext
+                    ? (txRequest.signableIndices?.[subsetIndex] ?? subsetIndex)
+                    : subsetIndex
+                authorizerByIndex.set(displayIndex, authorizer)
+            }
+        }
+
         const addressWarnings = aggregateTransactionWarnings(
             allTransactions,
             userAccountAddresses,
             signableAddresses,
+            authorizerByIndex,
         )
 
         // High fee is a group-level concern ("what's being signed"), so it
@@ -144,6 +162,7 @@ export const useSigningPipeline = (
         txRequest?.txs,
         txRequest?.groupContext,
         txRequest?.signableIndices,
+        txRequest?.signerOverrides,
         accounts,
     ])
 

@@ -18,15 +18,27 @@ export const aggregateTransactionWarnings = (
     transactions: PeraDisplayableTransaction[],
     userAccountAddresses: Set<string>,
     signableAddresses: Set<string>,
+    // Maps a transaction's index → the authorizing address (the dApp-supplied
+    // ARC-0001 signer override). When set, gating keys off this entity instead
+    // of `tx.sender` so the warning logic agrees with the signing decision,
+    // which also signs as `signerOverride ?? tx.sender`. Keys index into
+    // `transactions`. [PERA-4417]
+    authorizerByIndex?: Map<number, string>,
 ): TransactionWarning[] => {
     const warnings: TransactionWarning[] = []
 
-    for (const tx of transactions) {
+    for (const [index, tx] of transactions.entries()) {
         if (!tx.sender) {
             continue
         }
 
-        if (userAccountAddresses.has(tx.sender)) {
+        // The account that actually authorizes the transaction — the override
+        // when the dApp supplied one, otherwise the sender. `senderAddress` in
+        // each warning stays `tx.sender`: that's the account being
+        // rekeyed/closed/frozen on-chain, regardless of who signs for it.
+        const authorizer = authorizerByIndex?.get(index) ?? tx.sender
+
+        if (userAccountAddresses.has(authorizer)) {
             const closeAddress =
                 tx.paymentTransaction?.closeRemainderTo ??
                 tx.assetTransferTransaction?.closeTo
@@ -48,11 +60,11 @@ export const aggregateTransactionWarnings = (
             }
         }
 
-        // Gate rekey on signability, not mere ownership: only flag rekeys of
-        // accounts the wallet can actually sign for (standard, ledger,
+        // Gate rekey on signability, not mere ownership: only flag rekeys the
+        // wallet can actually sign for (standard, ledger,
         // multisig-with-local-participant). Watch-only accounts and dApp
         // escrow/contract accounts (Folks Finance, Tinyman) are excluded. [PERA-4348]
-        if (signableAddresses.has(tx.sender) && tx.rekeyTo?.publicKey) {
+        if (signableAddresses.has(authorizer) && tx.rekeyTo?.publicKey) {
             const rekeyAddress = encodeAlgorandAddress(tx.rekeyTo.publicKey)
             warnings.push({
                 type: 'rekey',
