@@ -13,7 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useWalletConnect } from '../useWalletConnect'
-import { __resetRegistryForTests } from '../../connection'
+import { __resetRegistryForTests, getConnector } from '../../connection'
 import { useWalletConnectStore } from '../../store'
 import { useWalletConnectSessionRequests } from '../useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
@@ -21,7 +21,7 @@ import WalletConnect from '@perawallet/walletconnect'
 import { PERA_CLIENT_META } from '../../constants'
 import { WalletConnectInvalidNetworkError } from '../../errors'
 import { AlgorandChainId } from '../../models'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { Networks, logger } from '@perawallet/wallet-core-shared'
 
 // Mock dependencies
 vi.mock('../../store', () => ({
@@ -685,6 +685,58 @@ describe('useWalletConnect', () => {
             // 2 calls from initWalletConnect (on mount). Manual reconnectAllSessions reuses existing connectors so no new calls.
             expect(WalletConnect).toHaveBeenCalledTimes(2)
             expect(mockSetConnections).toHaveBeenCalled()
+        })
+
+        it('skips a stored connection whose connector construction throws, logging instead of leaking an unhandled rejection', async () => {
+            const broken = { clientId: 'bad-no-bridge' } as any
+            const valid = { clientId: 'good', bridge: 'wss://b.example' } as any
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [broken, valid],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
+
+            // Mirror the WC v1 library: constructing a connector for a session
+            // without a usable bridge throws synchronously.
+            const originalImpl = (WalletConnect as any).getMockImplementation()
+            ;(WalletConnect as any).mockImplementation(function (options: any) {
+                if (options?.clientId === 'bad-no-bridge') {
+                    throw new Error(
+                        'Invalid or missing bridge url parameter value',
+                    )
+                }
+                return {
+                    on: vi.fn(),
+                    off: vi.fn(),
+                    killSession: vi.fn(),
+                    approveSession: vi.fn(),
+                    rejectSession: vi.fn(),
+                    connected: false,
+                    clientId: options?.clientId ?? 'mock-client-id',
+                    session: {},
+                }
+            })
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+
+            await act(async () => {
+                result.current.reconnectAllSessions()
+                // let the fire-and-forget connect promises settle
+                await Promise.resolve()
+                await Promise.resolve()
+            })
+            ;(WalletConnect as any).mockImplementation(originalImpl)
+
+            // The broken session is logged and skipped; the valid one still
+            // registers, and the failure never escapes as an unhandled
+            // rejection.
+            expect(logger.error).toHaveBeenCalled()
+            expect(getConnector('good')).toBeDefined()
+            expect(getConnector('bad-no-bridge')).toBeUndefined()
         })
 
         it('should do nothing if connections is null', async () => {

@@ -173,6 +173,7 @@ const classifyReadyPoll = (
             participantAddresses: handoff.msigMetadata.addresses,
             version: handoff.msigMetadata.version,
             threshold: handoff.msigMetadata.threshold,
+            multisigAddress: handoff.multisigAddress,
             // The structural `HandoffPollDetail.response` is `string` to
             // avoid a hard coupling on the multisig schema; the multisig
             // backend only ever emits `'signed' | 'declined'`, so the cast

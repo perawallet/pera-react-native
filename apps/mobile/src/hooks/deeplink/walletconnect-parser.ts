@@ -56,6 +56,15 @@ export const parseWalletConnectUri = (
         return null
     }
 
+    // A real WC v1 pairing URI always carries a bridge (`wc:<topic>@1?bridge=…`).
+    // dApps also emit non-pairing `wc://?…` signals (e.g. a return-to-wallet
+    // focus hint with `?browser=…`) that have no bridge. Routing one into the
+    // WC client throws "Invalid or missing bridge url parameter value", so
+    // reject anything without a non-empty bridge param here.
+    if (!/[?&]bridge=[^&]+/.test(wcUri)) {
+        return null
+    }
+
     return {
         type: DeeplinkType.WALLET_CONNECT,
         sourceUrl: url,

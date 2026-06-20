@@ -221,7 +221,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     }),
 }))
 
-const mockConnect = vi.fn()
+const mockConnect = vi.fn(() => Promise.resolve())
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockConnect }),
 }))

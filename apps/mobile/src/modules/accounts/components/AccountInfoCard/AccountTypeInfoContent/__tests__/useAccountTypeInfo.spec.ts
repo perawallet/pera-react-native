@@ -43,6 +43,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
             'https://support.perawallet.app/en/category/accounts/',
         ledgerAccountSupportUrl:
             'https://support.perawallet.app/en/article/how-to-rekey-an-algorand-account-with-pera-mobile-13ykjxs/',
+        multisigSupportUrl:
+            'https://support.perawallet.app/en/article/introduction-to-joint-accounts-1j0dt2g/',
     },
 }))
 
@@ -166,6 +168,21 @@ describe('useAccountTypeInfo', () => {
         )
     })
 
+    it('resolves a shared-to-shared rekey with the shared description', () => {
+        mockUseCanSignWith.mockReturnValue(true)
+        mockUseRekeyTransition.mockReturnValue({
+            from: 'multisig',
+            to: 'multisig',
+        })
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('multisig', 'AUTH') }),
+        )
+
+        expect(result.current.description).toBe(
+            'account_type_info.rekeyed_shared_description',
+        )
+    })
+
     it('resolves a ledger-to-ledger rekey with the ledger-to-ledger description', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue({
@@ -213,6 +230,20 @@ describe('useAccountTypeInfo', () => {
 
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://support.perawallet.app/en/category/accounts/',
+        })
+    })
+
+    it('opens webview with the shared-accounts article when learn more is pressed for a shared account', () => {
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('multisig') }),
+        )
+
+        act(() => {
+            result.current.handleLearnMore()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://support.perawallet.app/en/article/introduction-to-joint-accounts-1j0dt2g/',
         })
     })
 

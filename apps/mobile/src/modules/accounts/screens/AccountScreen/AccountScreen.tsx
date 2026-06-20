@@ -86,6 +86,7 @@ export const AccountScreen = () => {
                         <AccountSelection
                             showSearch
                             style={styles.accountSelectionToolbar}
+                            showPeraCardActivation
                         />
                     }
                     right={

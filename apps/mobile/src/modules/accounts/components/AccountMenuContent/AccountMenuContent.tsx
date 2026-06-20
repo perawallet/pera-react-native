@@ -25,12 +25,15 @@ export type AccountMenuContentResult =
     | { kind: 'add-account' }
     | { kind: 'sort' }
     | { kind: 'search' }
+    | { kind: 'pera-card-activate' }
 
 export type AccountMenuContentProps = {
     headerContent?: ReactNode
     hideDefaultHeader?: boolean
     showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
+    /** Opt in to the Pera Card activation/connected row (home switcher only). */
+    showPeraCardActivation?: boolean
     /** Controlled highlight forwarded to AccountMenu (see its `selectedAddress`). */
     selectedAddress?: Nullable<string>
 }
@@ -40,6 +43,7 @@ export const AccountMenuContent = ({
     hideDefaultHeader = false,
     showSearch = false,
     accountFilter,
+    showPeraCardActivation = false,
     selectedAddress,
 }: AccountMenuContentProps) => {
     const styles = useStyles()
@@ -70,9 +74,13 @@ export const AccountMenuContent = ({
                 onSelected={account => resolve({ kind: 'selected', account })}
                 onAddAccount={() => resolve({ kind: 'add-account' })}
                 onOpenSort={() => resolve({ kind: 'sort' })}
+                onPeraCardActivate={() =>
+                    resolve({ kind: 'pera-card-activate' })
+                }
                 headerContent={headerContent}
                 hideDefaultHeader={hideDefaultHeader}
                 accountFilter={accountFilter}
+                showPeraCardActivation={showPeraCardActivation}
                 selectedAddress={selectedAddress}
             />
         </PWView>

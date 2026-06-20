@@ -106,12 +106,28 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+// Capture the handler registered with useSigningEvent so tests can simulate a
+// signing event firing on the bus.
+let capturedSigningHandler: ((event: unknown) => void) | null = null
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    useSigningEvent: (
+        _predicate: unknown,
+        handler: (event: unknown) => void,
+    ) => {
+        capturedSigningHandler = handler
+    },
+}))
+
 describe('useRekeyToSharedConfirmScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSourceAccount.rekeyAddress = undefined
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
+        capturedSigningHandler = null
     })
 
     it('returns feeAlgos from the rekey transaction fee query', () => {
@@ -197,6 +213,58 @@ describe('useRekeyToSharedConfirmScreen', () => {
             )
         })
         expect(mockShowError).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('hands off to the pending-signatures flow on multisig propose without showing success', async () => {
+        // A shared-account rekey is proposed for cosigning: submitAsync never
+        // resolves (the propose returns via the 'proposed' signing event, not
+        // the algod Promise). The flow must exit to Home so the global
+        // pending-signatures sheet takes over — and must NOT show the success
+        // screen, since the rekey isn't final until cosigners sign.
+        mockSubmitAsync.mockReturnValueOnce(new Promise(() => {}))
+        const { result } = renderHook(() => useRekeyToSharedConfirmScreen())
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        await waitFor(() => expect(mockSubmitAsync).toHaveBeenCalled())
+
+        act(() => {
+            capturedSigningHandler?.({
+                type: 'transport-result',
+                result: {
+                    type: 'proposed',
+                    signRequestId: 'sr-1',
+                    status: 'pending',
+                    sourceType: 'local',
+                },
+            })
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'RekeyToShared',
+            expect.objectContaining({ screen: 'RekeyToSharedSuccess' }),
+        )
+    })
+
+    it('ignores a propose event when no submit is in flight', () => {
+        renderHook(() => useRekeyToSharedConfirmScreen())
+
+        act(() => {
+            capturedSigningHandler?.({
+                type: 'transport-result',
+                result: {
+                    type: 'proposed',
+                    signRequestId: 'sr-1',
+                    status: 'pending',
+                    sourceType: 'local',
+                },
+            })
+        })
+
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 

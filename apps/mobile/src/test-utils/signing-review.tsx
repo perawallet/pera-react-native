@@ -50,7 +50,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+} from '@perawallet/wallet-core-shared'
 import { renderHook } from '@testing-library/react'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import { renderWithNavigation } from './renderWithNavigation'
@@ -68,7 +71,10 @@ const BASE_TX_PARAMS = {
     firstValid: 1000n,
     lastValid: 2000n,
     genesisId: 'mainnet-v1.0',
-    genesisHash: new Uint8Array(32).fill(0xab),
+    // Must match the harness's active network (mainnet); the genesis-hash check rejects any txn that doesn't.
+    genesisHash: decodeFromBase64(
+        'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+    ),
 }
 
 /**

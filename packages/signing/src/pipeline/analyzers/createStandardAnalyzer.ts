@@ -18,13 +18,18 @@ import type {
     AnalysisWarning,
     TransactionSummary,
 } from '../types'
-import { AnalysisError, TransactionRoundTripError } from '../errors'
+import {
+    AnalysisError,
+    TransactionRoundTripError,
+    GenesisHashMismatchError,
+} from '../errors'
 import {
     type PeraTransaction,
     encodeAlgorandAddress,
     classifyPeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { validateTransactionRoundTrip } from '../../utils/validateTransactionRoundTrip'
+import { assertTransactionsMatchNetwork } from '../../utils/assertTransactionsMatchNetwork'
 import { isArc60OriginMismatch } from '../../utils/arc60-wire'
 
 /**
@@ -54,6 +59,8 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                         rawTransactionsBase64,
                     )
                 }
+
+                assertTransactionsMatchNetwork(transactions, context.network)
 
                 const accountAddresses = new Set(
                     context.accounts.map(a => a.address),
@@ -91,6 +98,7 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                 }
             } catch (error) {
                 if (error instanceof TransactionRoundTripError) throw error
+                if (error instanceof GenesisHashMismatchError) throw error
                 throw new AnalysisError(
                     error instanceof Error ? error.message : String(error),
                     error instanceof Error ? error : undefined,
