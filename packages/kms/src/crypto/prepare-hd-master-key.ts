@@ -38,9 +38,14 @@ export const prepareHDMasterKey = async (params?: {
     const keyId = params?.id ?? generateOrderedUniqueId()
     const masterKey = await generateHDMasterKey(params?.mnemonic)
 
-    const rootKey = fromSeed(masterKey.seed)
-
-    zeroBytes(masterKey.seed)
+    let rootKey: Uint8Array
+    try {
+        rootKey = fromSeed(masterKey.seed)
+    } finally {
+        // Wipe the BIP39 seed unconditionally — if `fromSeed` throws, the seed
+        // would otherwise stay resident on the heap until GC.
+        zeroBytes(masterKey.seed)
+    }
 
     return {
         keyId,
