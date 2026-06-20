@@ -330,9 +330,14 @@ describe('createStandardAnalyzer', () => {
             signerAddress: ACCOUNT_A,
         }
 
-        await expect(
-            analyzer.analyze(group, makeContext([ACCOUNT_A])),
-        ).resolves.toBeDefined()
+        const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+
+        expect(result.totalFees).toBe(1000n)
+        expect(result.signableAddresses).toEqual([ACCOUNT_A])
+        expect(result.transactionSummaries).toHaveLength(1)
+        expect(result.transactionSummaries[0].sender).toBe(ACCOUNT_A)
+        expect(result.warnings).toEqual([])
+        expect(result.riskLevel).toBe('low')
     })
 
     test('throws TransactionRoundTripError when decoder silently dropped a field', async () => {
@@ -367,9 +372,14 @@ describe('createStandardAnalyzer', () => {
         // No rawTransactionsBase64 — internal request, no round-trip needed.
         const group = makeGroup([tx])
 
-        await expect(
-            analyzer.analyze(group, makeContext([ACCOUNT_A])),
-        ).resolves.toBeDefined()
+        const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+
+        expect(result.totalFees).toBe(1000n)
+        expect(result.signableAddresses).toEqual([ACCOUNT_A])
+        expect(result.transactionSummaries).toHaveLength(1)
+        expect(result.transactionSummaries[0].sender).toBe(ACCOUNT_A)
+        expect(result.warnings).toEqual([])
+        expect(result.riskLevel).toBe('low')
     })
 
     test('rethrows GenesisHashMismatchError without wrapping it as AnalysisError', async () => {

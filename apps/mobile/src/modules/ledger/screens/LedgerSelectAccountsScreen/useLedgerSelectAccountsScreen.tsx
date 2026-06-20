@@ -262,9 +262,13 @@ export const useLedgerSelectAccountsScreen =
                         -1,
                     ) + 1
 
+                // verify=true forces the user to confirm each derived address
+                // on the Ledger before it's added to the import list, so a
+                // wrong-device/wrong-address derivation can't be imported
+                // silently.
                 const next = await transportRef.current.getAddress(
                     nextIndex,
-                    false,
+                    true,
                 )
 
                 if (!isMounted()) return

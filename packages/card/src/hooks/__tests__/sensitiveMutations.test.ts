@@ -78,4 +78,32 @@ describe('sensitive mutation hooks', () => {
             network: 'mainnet',
         })
     })
+
+    it('useCardPinViewMutation surfaces the error when the secure-view request fails', async () => {
+        api.fetchCardPinToken.mockRejectedValue(new Error('pin token denied'))
+
+        const { result } = renderHook(() => useCardPinViewMutation(), {
+            wrapper,
+        })
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('pin token denied')
+        expect(result.current.data).toBeNull()
+    })
+
+    it('useSetCardPinMutation surfaces the error when the session request fails', async () => {
+        api.createSetPinSession.mockRejectedValue(
+            new Error('set-pin unavailable'),
+        )
+
+        const { result } = renderHook(() => useSetCardPinMutation(), {
+            wrapper,
+        })
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('set-pin unavailable')
+        expect(result.current.data).toBeNull()
+    })
 })
