@@ -212,6 +212,7 @@ describe('Flow: Account management', () => {
                 accountIndex: number,
                 name: string,
             ): WalletAccount => ({
+                id: `hw-ledger-${accountIndex}`,
                 type: AccountTypes.hardware,
                 address,
                 name,

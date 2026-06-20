@@ -102,12 +102,14 @@ const buildSignRequest = (
     }) as unknown as MultisigSignRequest
 
 const buildAccount = (address: string): WalletAccount => ({
+    id: `algo25-${address}`,
     type: AccountTypes.algo25,
     address,
     keyPairId: `kp-${address}`,
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
+    id: `hardware-${address}`,
     type: AccountTypes.hardware,
     address,
     hardwareDetails: {

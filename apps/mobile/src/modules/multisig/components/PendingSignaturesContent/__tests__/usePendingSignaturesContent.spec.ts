@@ -154,6 +154,7 @@ const mockQueryReturn = (data: Optional<MultisigSignRequest>) => {
 }
 
 const buildAccount = (address: string): WalletAccount => ({
+    id: `algo25-${address}`,
     type: AccountTypes.algo25,
     address,
     keyPairId: `kp-${address}`,
@@ -874,6 +875,7 @@ describe('usePendingSignaturesContent', () => {
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
+    id: `hardware-${address}`,
     type: AccountTypes.hardware,
     address,
     hardwareDetails: {

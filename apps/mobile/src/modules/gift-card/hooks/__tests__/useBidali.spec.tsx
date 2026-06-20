@@ -16,6 +16,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useBidali } from '../useBidali'
 
 const mockAccount: WalletAccount = {
+    id: 'bidali-account',
     address: 'TESTADDRESS123',
     name: 'Test Account',
     type: 'algo25',
