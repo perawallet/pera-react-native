@@ -15,7 +15,11 @@ import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 import nacl from 'tweetnacl'
 import { AccessControlPermission, type AccessControl } from './models'
-import { SeedScheme } from './constants'
+import {
+    SeedScheme,
+    SIGNING_ACCESS_DOMAIN,
+    BACKUP_ACCESS_DOMAIN,
+} from './constants'
 
 /**
  * Pera-domain extras (acl, timestamps) round-trip through a seed entry's
@@ -96,15 +100,12 @@ export const algo25AddressOf = (key: Key): string => {
     return ''
 }
 
-// The wallet's own signing origins. These MUST match SIGNING_KEY_DOMAIN
-// ('pera.accounts', packages/signing) and the backup-flow DOMAIN
-// ('backup-flow', apps/mobile backup). They live here as literals because kms
-// is a lower-level package that cannot import from its consumers — if either
-// consumer constant changes, this list must change with it or signing/backup
-// will fail closed.
+// The wallet's own access origins, shared with the consumers that pass them to
+// `checkAccess` (signing's SIGNING_KEY_DOMAIN, the backup flow's DOMAIN) so the
+// fail-closed default and the call sites can't drift.
 const DEFAULT_SEED_ACL: AccessControl[] = [
     {
-        domains: ['pera.accounts', 'backup-flow'],
+        domains: [SIGNING_ACCESS_DOMAIN, BACKUP_ACCESS_DOMAIN],
         permissions: [AccessControlPermission.ReadPrivate],
     },
 ]
