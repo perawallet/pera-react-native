@@ -13,7 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { registerStore } from '@perawallet/wallet-core-shared'
 import {
-    indicesToMnemonicWords,
+    mnemonicIndexToWord,
     mnemonicWordsToIndices,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
@@ -113,7 +113,10 @@ export const consumePendingImportMnemonic = (): string | null => {
 
     let mnemonic: string | null = null
     if (pendingIndices) {
-        mnemonic = indicesToMnemonicWords(pendingIndices).join(' ')
+        // Materialize the phrase string only here, at the consumption boundary
+        // (the Import screen needs it), converting one index at a time rather
+        // than holding a decoded word array in the store.
+        mnemonic = Array.from(pendingIndices, mnemonicIndexToWord).join(' ')
     } else if (pendingRawBytes) {
         mnemonic = new TextDecoder().decode(pendingRawBytes)
     }

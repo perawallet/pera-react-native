@@ -16,7 +16,7 @@ import type { Key } from '@algorandfoundation/keystore'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { InvalidKeyError, KeyNotFoundError } from '../../errors'
 import { SeedScheme } from '../../constants'
-import { indicesToMnemonicWords } from '../../crypto/mnemonic-indices'
+import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -290,7 +290,7 @@ describe('useKMS', () => {
             received = await result.current.executeWithMnemonic(
                 child.id,
                 'backup',
-                indices => indicesToMnemonicWords(indices),
+                indices => Array.from(indices, mnemonicIndexToWord),
             )
         })
         expect(mockKeyStoreExport).toHaveBeenCalledWith('hd-1')
@@ -311,7 +311,7 @@ describe('useKMS', () => {
             received = await result.current.executeWithMnemonic(
                 child.id,
                 'backup',
-                indices => indicesToMnemonicWords(indices),
+                indices => Array.from(indices, mnemonicIndexToWord),
             )
         })
         expect(mockKeyStoreExport).toHaveBeenCalledWith('algo-1')
@@ -337,7 +337,7 @@ describe('useKMS', () => {
                     // [ability, able, about] → non-zero indices, so a wipe is
                     // unambiguous.
                     expect(Array.from(indices)).toEqual([1, 2, 3])
-                    return indicesToMnemonicWords(indices)
+                    return Array.from(indices, mnemonicIndexToWord)
                 },
             )
         })

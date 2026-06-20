@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { indicesToMnemonicWords } from '@perawallet/wallet-core-kms'
+import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '@modules/backup'
 
@@ -33,16 +33,16 @@ export const useViewPassphraseContent = ({
         state => state.accounts.find(a => a.address === address) ?? null,
     )
     const { executeWithMnemonic } = useMnemonicForAddress(address, account)
-    const [words, setWords] = useState<string[]>([])
+    const [indices, setIndices] = useState<Uint16Array | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Error | null>(null)
 
-    // Overwrite each slot in the existing array before dereferencing so the
-    // previously decoded phrase doesn't linger in memory waiting on GC.
-    const clearWords = useCallback(() => {
-        setWords(previous => {
-            previous.fill('')
-            return []
+    // Zero the retained index buffer before dropping it so the phrase doesn't
+    // linger in memory waiting on GC.
+    const clearIndices = useCallback(() => {
+        setIndices(previous => {
+            zeroBytes(previous)
+            return null
         })
     }, [])
 
@@ -50,15 +50,16 @@ export const useViewPassphraseContent = ({
         let cancelled = false
         setIsLoading(true)
         setError(null)
-        executeWithMnemonic(indices => {
-            if (!cancelled) setWords(indicesToMnemonicWords(indices))
+        executeWithMnemonic(src => {
+            // Retain a zeroable copy; words are derived at render, never stored.
+            if (!cancelled) setIndices(src.slice())
         })
             .catch(err => {
                 logger.error('ViewPassphrase: failed to retrieve mnemonic', {
                     error: err instanceof Error ? err.message : String(err),
                     stack: err instanceof Error ? err.stack : undefined,
                 })
-                clearWords()
+                clearIndices()
                 if (!cancelled) setError(err as Error)
             })
             .finally(() => {
@@ -66,9 +67,12 @@ export const useViewPassphraseContent = ({
             })
         return () => {
             cancelled = true
-            clearWords()
+            clearIndices()
         }
-    }, [executeWithMnemonic, clearWords])
+    }, [executeWithMnemonic, clearIndices])
+
+    // Derived at render only — the full word array is never held in state.
+    const words = indices ? Array.from(indices, mnemonicIndexToWord) : []
 
     return { words, isLoading, error }
 }

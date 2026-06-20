@@ -49,19 +49,16 @@ export const mnemonicWordsToIndices = (words: string[]): Uint16Array | null => {
 }
 
 /**
- * Inverse of {@link mnemonicWordsToIndices}: maps each wordlist index back to
- * its word.
+ * Inverse of the word→index lookup: maps a single wordlist index back to its
+ * word. Callers convert individual indices to words only at display time, so the
+ * full phrase is never materialized as a `string[]` for storage — the only
+ * retained representation stays the zeroable index buffer.
  */
-export const indicesToMnemonicWords = (indices: Uint16Array): string[] => {
-    const words: string[] = new Array(indices.length)
-    for (let i = 0; i < indices.length; i++) {
-        const index = indices[i]
-        if (index >= WORDLIST.length) {
-            throw new RangeError(
-                `Mnemonic index ${index} is out of range (wordlist has ${WORDLIST.length} entries).`,
-            )
-        }
-        words[i] = WORDLIST[index]
+export const mnemonicIndexToWord = (index: number): string => {
+    if (index < 0 || index >= WORDLIST.length) {
+        throw new RangeError(
+            `Mnemonic index ${index} is out of range (wordlist has ${WORDLIST.length} entries).`,
+        )
     }
-    return words
+    return WORDLIST[index]
 }

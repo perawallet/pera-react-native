@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import {
-    indicesToMnemonicWords,
+    mnemonicIndexToWord,
     mnemonicWordsToIndices,
 } from '../mnemonic-indices'
 
@@ -41,20 +41,14 @@ describe('mnemonicWordsToIndices', () => {
     })
 })
 
-describe('indicesToMnemonicWords', () => {
-    it('maps each index back to its wordlist word', () => {
-        const indices = Uint16Array.from([
-            wordlist.indexOf('abandon'),
-            wordlist.indexOf('zoo'),
-        ])
-
-        expect(indicesToMnemonicWords(indices)).toEqual(['abandon', 'zoo'])
+describe('mnemonicIndexToWord', () => {
+    it('maps a single index back to its wordlist word', () => {
+        expect(mnemonicIndexToWord(wordlist.indexOf('abandon'))).toBe('abandon')
+        expect(mnemonicIndexToWord(wordlist.indexOf('zoo'))).toBe('zoo')
     })
 
     it('throws a RangeError for an out-of-range index', () => {
-        const indices = Uint16Array.from([wordlist.length])
-
-        expect(() => indicesToMnemonicWords(indices)).toThrow(RangeError)
+        expect(() => mnemonicIndexToWord(wordlist.length)).toThrow(RangeError)
     })
 
     it('round-trips a full mnemonic without altering it', () => {
@@ -65,6 +59,6 @@ describe('indicesToMnemonicWords', () => {
 
         const indices = mnemonicWordsToIndices(words)
 
-        expect(indicesToMnemonicWords(indices!)).toEqual(words)
+        expect(Array.from(indices!, mnemonicIndexToWord)).toEqual(words)
     })
 })

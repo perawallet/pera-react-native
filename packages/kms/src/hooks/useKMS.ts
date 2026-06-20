@@ -193,7 +193,7 @@ export const useKMS = () => {
      * across the handler's work — which may be async and PIN-gated — is a
      * buffer we can actually scrub, and holds opaque numbers rather than the
      * dictionary words a memory scanner could grep for. Handlers materialize
-     * words via `indicesToMnemonicWords` only at the point of use.
+     * individual words via `mnemonicIndexToWord` only at the point of use.
      */
     const executeWithMnemonic = async <T>(
         childKeyId: string,
