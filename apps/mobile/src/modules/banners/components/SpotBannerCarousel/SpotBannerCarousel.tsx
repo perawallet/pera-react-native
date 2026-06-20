@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { useState } from 'react'
 import PagerView from 'react-native-pager-view'
 import type { SpotBanner } from '@perawallet/wallet-core-banners'
 import { PWView } from '@components/core'
 import { SpotBannerCard } from './SpotBannerCard'
+import { useSpotBannerCarousel } from './useSpotBannerCarousel'
 import { useStyles } from './styles'
 
 export type SpotBannerCarouselProps = {
@@ -31,7 +31,8 @@ export const SpotBannerCarousel = ({
     testID = 'spot_banner_carousel',
 }: SpotBannerCarouselProps) => {
     const styles = useStyles()
-    const [activeIndex, setActiveIndex] = useState(0)
+    const { pagerKey, activeIndex, handlePageSelected } =
+        useSpotBannerCarousel(banners)
 
     if (banners.length === 0) return null
 
@@ -52,8 +53,9 @@ export const SpotBannerCarousel = ({
     return (
         <PWView testID={testID}>
             <PagerView
+                key={pagerKey}
                 style={styles.pager}
-                onPageSelected={e => setActiveIndex(e.nativeEvent.position)}
+                onPageSelected={handlePageSelected}
             >
                 {banners.map(banner => (
                     <PWView key={banner.id}>
