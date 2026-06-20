@@ -56,15 +56,46 @@ const SENSITIVE_KEY_FRAGMENTS = [
     'signature',
 ] as const
 
+// Keys redacted only on a whole-key (exact) match. These carry raw transaction
+// or signing payloads — the base64 blob in WalletConnect `algo_signTxn`
+// (`txn`), the ARC-0001 signed-txn field (`stxn`), signed/raw/unsigned
+// transaction bytes, and the `algo_signData` auth challenge
+// (`authenticatorData`) — and must be scrubbed. Exact (not substring) match is
+// deliberate: a substring would also wipe the diagnostic siblings engineers
+// rely on (`txnGroup`, `txns`, `txnBytes`). `walletTxn` is intentionally NOT
+// listed — it's a wrapper object whose inner `txn` is already redacted by the
+// recursive walk, which preserves its signer siblings. Entries must be
+// lowercase (compared against `lower`).
+const SENSITIVE_EXACT_KEYS = [
+    'txn',
+    'stxn',
+    'stxns',
+    'signedtxn',
+    'signedtxns',
+    'rawtxn',
+    'rawtxns',
+    'unsignedtxn',
+    'authenticatordata',
+] as const
+
 const REDACTED = '[REDACTED]'
 
 const isSensitiveKey = (key: string): boolean => {
     const lower = key.toLowerCase()
-    return SENSITIVE_KEY_FRAGMENTS.some(fragment => lower.includes(fragment))
+    return (
+        SENSITIVE_KEY_FRAGMENTS.some(fragment => lower.includes(fragment)) ||
+        SENSITIVE_EXACT_KEYS.some(exact => lower === exact)
+    )
 }
 
+// Exact keys participate here too: each key is already anchored between a
+// `^`/`?&#` boundary and `=`, so this is a whole-parameter match that never
+// over-matches `txnGroup`/`txns`.
 const SENSITIVE_QUERY_REGEX = new RegExp(
-    `((?:^|[?&#])(?:${SENSITIVE_KEY_FRAGMENTS.join('|')})=)([^&#]*)`,
+    `((?:^|[?&#])(?:${[
+        ...SENSITIVE_KEY_FRAGMENTS,
+        ...SENSITIVE_EXACT_KEYS,
+    ].join('|')})=)([^&#]*)`,
     'gi',
 )
 
@@ -74,8 +105,12 @@ const SENSITIVE_QUERY_REGEX = new RegExp(
 // string containing a sensitive field would pass through untouched. Match
 // any `"…sensitive…":"value"` pair so the value is scrubbed regardless of
 // the surrounding format.
+// Fragment keys match as a substring of the JSON key; exact keys (`txn`) match
+// the whole key only, so `"txnGroup"`/`"txns"` values are preserved.
 const SENSITIVE_JSON_REGEX = new RegExp(
-    `("[^"]*(?:${SENSITIVE_KEY_FRAGMENTS.join('|')})[^"]*"\\s*:\\s*)"[^"]*"`,
+    `("(?:[^"]*(?:${SENSITIVE_KEY_FRAGMENTS.join(
+        '|',
+    )})[^"]*|${SENSITIVE_EXACT_KEYS.join('|')})"\\s*:\\s*)"[^"]*"`,
     'gi',
 )
 
@@ -134,11 +169,20 @@ const redactSensitiveValue = (
     if (Array.isArray(value)) {
         return value.map(item => redactSensitiveValue(item, depth + 1, seen))
     }
+    // ARC-0001 `algo_signData` / ARC-60 payloads carry the signed message in a
+    // `data` field next to `authenticatorData`. `data` is far too common a key
+    // to redact globally, so scrub it only inside an object that also carries
+    // `authenticatorData` — the marker of a signing payload.
+    const lowerKeys = new Set(Object.keys(value).map(key => key.toLowerCase()))
+    const isSignDataPayload =
+        lowerKeys.has('authenticatordata') && lowerKeys.has('data')
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value)) {
-        out[k] = isSensitiveKey(k)
-            ? REDACTED
-            : redactSensitiveValue(v, depth + 1, seen)
+        const isScopedSignData = isSignDataPayload && k.toLowerCase() === 'data'
+        out[k] =
+            isSensitiveKey(k) || isScopedSignData
+                ? REDACTED
+                : redactSensitiveValue(v, depth + 1, seen)
     }
     return out
 }
