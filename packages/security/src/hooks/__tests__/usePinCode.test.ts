@@ -624,4 +624,42 @@ describe('usePinCode', () => {
         })
         expect(shouldLock).toBe(false)
     }, 30_000)
+
+    test('checkAutoLock fails closed (locks) when autoLockStartedAt is NaN', async () => {
+        setupMock({
+            failedAttempts: 0,
+            lockoutEndTime: null,
+            autoLockStartedAt: NaN,
+        })
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
+
+        const { result } = renderHook(() => usePinCode())
+
+        let shouldLock = false
+        await act(async () => {
+            shouldLock = await result.current.checkAutoLock()
+        })
+        expect(shouldLock).toBe(true)
+    }, 30_000)
+
+    test('checkAutoLock fails closed (locks) when autoLockStartedAt is in the future', async () => {
+        vi.useFakeTimers()
+        const now = Date.now()
+        vi.setSystemTime(now)
+
+        setupMock({
+            failedAttempts: 0,
+            lockoutEndTime: null,
+            autoLockStartedAt: now + 60 * 60 * 1000,
+        })
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
+
+        const { result } = renderHook(() => usePinCode())
+
+        let shouldLock = false
+        await act(async () => {
+            shouldLock = await result.current.checkAutoLock()
+        })
+        expect(shouldLock).toBe(true)
+    }, 30_000)
 })
