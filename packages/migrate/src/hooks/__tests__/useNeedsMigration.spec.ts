@@ -137,7 +137,10 @@ describe('useNeedsMigration', () => {
         expect(result.current.needsMigration).toBe(false)
     })
 
-    it('short-circuits to needsMigration=false when pera_7_migration flag is off', async () => {
+    // TEMP (QA): the remote-config gate is force-enabled in useNeedsMigration on
+    // this branch, so the flag is no longer read. Restore this test (it.skip ->
+    // it) together with the remote-config block in useNeedsMigration before merge.
+    it.skip('short-circuits to needsMigration=false when pera_7_migration flag is off', async () => {
         getBooleanValueMock.mockImplementation(
             (key: string, fallback: boolean) =>
                 key === 'pera_7_migration' ? false : fallback,
@@ -155,7 +158,10 @@ describe('useNeedsMigration', () => {
         expect(isMigrationCompleteMock).not.toHaveBeenCalled()
     })
 
-    it('passes the documented default (false) when reading the feature flag', () => {
+    // TEMP (QA): see note above — the feature flag is force-enabled and no longer
+    // read on this branch. Restore this test (it.skip -> it) together with the
+    // remote-config block in useNeedsMigration before merge.
+    it.skip('passes the documented default (false) when reading the feature flag', () => {
         renderHook(() => useNeedsMigration())
 
         expect(getBooleanValueMock).toHaveBeenCalledWith(

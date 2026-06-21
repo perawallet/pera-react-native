@@ -43,6 +43,10 @@ const addDebugSuffix = (contents, debugSuffix) => {
   );
 };
 
+/**
+ * @param {string} contents
+ * @param {{ applicationId?: string; debugSuffix?: string }} props
+ */
 const patchAppBuildGradle = (contents, { applicationId, debugSuffix }) => {
   if (!applicationId) {
     throw new Error(
