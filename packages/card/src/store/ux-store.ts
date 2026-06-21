@@ -98,15 +98,15 @@ export const useCardStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
             // `verificationCode` and `phoneVerificationCode` are intentionally
             // omitted — transient OTPs that should never be written to disk.
+            // `email`, `phoneCountryCode` and `phoneNumber` are likewise
+            // omitted: KYC PII must not sit in unencrypted MMKV. The trade-off
+            // is that a mid-onboarding resume re-prompts for them.
             partialize: state => ({
                 onboardingStep: state.onboardingStep,
-                email: state.email,
                 countryIso: state.countryIso,
-                phoneCountryCode: state.phoneCountryCode,
-                phoneNumber: state.phoneNumber,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
                 consentSetId: state.consentSetId,
@@ -119,6 +119,27 @@ export const useCardStore: UseBoundStore<
                 lastKnownPanLast4: state.lastKnownPanLast4,
                 transactionFilters: state.transactionFilters,
             }),
+            // v2: earlier builds persisted these KYC PII fields to unencrypted
+            // MMKV. `partialize` now excludes them, but that only governs future
+            // writes — strip any values already on disk so existing installs are
+            // cleaned on upgrade instead of carrying PII until the next write.
+            migrate: (persistedState: unknown) => {
+                if (
+                    persistedState == null ||
+                    typeof persistedState !== 'object'
+                ) {
+                    return persistedState
+                }
+                // Omit the PII keys by destructuring into a fresh object
+                // rather than mutating the input, keeping `migrate` pure.
+                const {
+                    email: _email,
+                    phoneCountryCode: _phoneCountryCode,
+                    phoneNumber: _phoneNumber,
+                    ...rest
+                } = persistedState as Record<string, unknown>
+                return rest
+            },
         },
     ),
 )

@@ -120,6 +120,19 @@ type LedgerHIDDescriptor = {
 }
 
 /**
+ * Identifier for a HID descriptor, matching the id `scan` surfaces so a
+ * deviceId stored on an account can be matched back to a live descriptor in
+ * `connect`. Uses the descriptor's deviceId when present, falling back to the
+ * (model-wide) productId. Android USB ids are reassigned on replug and lost on
+ * app restart, so this is not a durable handle — `connect` treats a non-match
+ * as "id unknown" rather than a hard failure.
+ */
+const descriptorId = (descriptor: LedgerHIDDescriptor): string | undefined => {
+    const id = descriptor.deviceId ?? descriptor.productId
+    return id === undefined ? undefined : String(id)
+}
+
+/**
  * Maps a HID descriptor product ID to a friendly model name.
  * IDs from https://developers.ledger.com (vendor 0x2C97).
  */
@@ -174,19 +187,15 @@ export class RNLedgerUsbService implements HardwareWalletService {
                         descriptor: LedgerHIDDescriptor
                     }) => {
                         if (event.type !== 'add') return
-                        const { deviceId, productId, deviceName } =
-                            event.descriptor
+                        const { productId, deviceName } = event.descriptor
                         const model = resolveModel(productId ?? null)
-                        // deviceId is the stable handle from the HID
-                        // descriptor; productId is the same across all
-                        // Ledger devices of the same model. If neither
-                        // is present we skip the descriptor rather than
-                        // emit a sentinel that would alias multiple
-                        // devices in the connection-routing map.
-                        const id = deviceId ?? productId
+                        // If neither deviceId nor productId is present we skip
+                        // the descriptor rather than emit a sentinel that would
+                        // alias multiple devices in the connection-routing map.
+                        const id = descriptorId(event.descriptor)
                         if (id === undefined) return
                         onDevice({
-                            id: String(id),
+                            id,
                             name: deviceName || `Ledger ${model}`,
                             manufacturer: 'ledger',
                             transportType: 'usb',
@@ -203,20 +212,33 @@ export class RNLedgerUsbService implements HardwareWalletService {
                 return () => subscription.unsubscribe()
             },
 
-            // Android USB device IDs are reassigned on replug and lost on app
-            // restart, so the deviceId stored on an imported account is not a
-            // stable handle. The native HID.openDevice looks the device up by
-            // vendorId only — so connecting just means opening whichever
-            // Ledger is currently plugged in.
-            async connect(): Promise<HardwareWalletTransport> {
-                const [device] = await TransportHID.list()
-                if (!device) {
+            // Connect to the sole attached Ledger. The native Android HID
+            // module (@ledgerhq/react-native-hid) selects a device by vendorId
+            // ALONE — `openDevice` reads only `vendorId` and opens the first
+            // match, ignoring productId/deviceId. Every Ledger shares one
+            // vendorId, so with more than one attached we cannot target a
+            // specific device and could open (and sign with) the wrong one.
+            // We therefore connect only when exactly one Ledger is present and
+            // refuse otherwise. `deviceId` is advisory per the interface and
+            // cannot influence which physical device the native layer opens.
+            async connect(
+                _deviceId?: string,
+            ): Promise<HardwareWalletTransport> {
+                const descriptors = await TransportHID.list()
+                if (descriptors.length === 0) {
                     throw new LedgerConnectionError(
                         'No Ledger connected over USB.',
                     )
                 }
+
+                if (descriptors.length > 1) {
+                    throw new LedgerConnectionError(
+                        'Multiple Ledger devices are connected over USB. The USB layer cannot target a specific device, so connect only one at a time: disconnect the others and try again.',
+                    )
+                }
+
                 try {
-                    const hidTransport = await TransportHID.open(device)
+                    const hidTransport = await TransportHID.open(descriptors[0])
                     const algorandApp = new AlgorandApp(hidTransport)
                     return createTransportWrapper(hidTransport, algorandApp)
                 } catch (error) {

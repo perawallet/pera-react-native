@@ -25,6 +25,7 @@ vi.mock('@modules/transactions/hooks', () => ({
 }))
 
 const mockAccount = {
+    id: 'watch-test-account',
     address: 'test-address-123',
     name: 'Test Account',
     type: 'watch' as const,

@@ -90,6 +90,7 @@ const registerFakeLedgerProvider = () => {
 }
 
 const ledgerAccount: HardwareWalletAccount = {
+    id: 'hw-ledger-1',
     type: AccountTypes.hardware,
     address: LEDGER_ADDRESS,
     hardwareDetails: {

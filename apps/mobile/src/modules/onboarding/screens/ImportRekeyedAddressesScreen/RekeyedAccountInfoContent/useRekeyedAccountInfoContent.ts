@@ -43,6 +43,8 @@ export function useRekeyedAccountInfoContent({
     const authAccount = useMemo<Optional<WatchAccount>>(() => {
         if (!account.rekeyAddress) return undefined
         return {
+            // Display-only synth account, keyed by its address.
+            id: account.rekeyAddress,
             address: account.rekeyAddress,
             type: AccountTypes.watch,
         }

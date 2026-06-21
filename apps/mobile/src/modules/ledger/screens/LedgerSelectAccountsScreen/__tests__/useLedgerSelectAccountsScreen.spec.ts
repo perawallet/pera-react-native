@@ -206,7 +206,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         expect(mockConnect).toHaveBeenCalledTimes(1)
         expect(mockConnect).toHaveBeenCalledWith('device-1')
         expect(mockGetAddress).toHaveBeenCalledTimes(1)
-        expect(mockGetAddress).toHaveBeenCalledWith(2, false)
+        expect(mockGetAddress).toHaveBeenCalledWith(2, true)
         const derived = derivedAccounts(result.current)
         expect(derived).toHaveLength(3)
         expect(derived[2]).toEqual({
@@ -232,8 +232,8 @@ describe('useLedgerSelectAccountsScreen', () => {
         })
 
         expect(mockConnect).toHaveBeenCalledTimes(1)
-        expect(mockGetAddress).toHaveBeenNthCalledWith(1, 2, false)
-        expect(mockGetAddress).toHaveBeenNthCalledWith(2, 3, false)
+        expect(mockGetAddress).toHaveBeenNthCalledWith(1, 2, true)
+        expect(mockGetAddress).toHaveBeenNthCalledWith(2, 3, true)
         const derived = derivedAccounts(result.current)
         expect(derived).toHaveLength(4)
         expect(derived[3].accountIndex).toBe(3)

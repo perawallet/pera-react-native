@@ -889,11 +889,11 @@ describe('useAccountOptions', () => {
             )
         })
 
-        it('removes a Ledger account imported without an id', async () => {
-            // Hardware accounts from the Ledger pairing flow carry no `id` —
-            // removal must still go through (regression: silent no-op with
+        it('removes a Ledger (hardware) account via the address path', async () => {
+            // Removal keys on address, not id (regression: silent no-op with
             // a success toast).
-            const idlessLedgerAccount: WalletAccount = {
+            const ledgerAccount: WalletAccount = {
+                id: 'acc-ledger',
                 address: 'LEDGERADDRESS',
                 type: AccountTypes.hardware,
                 hardwareDetails: {
@@ -904,14 +904,11 @@ describe('useAccountOptions', () => {
                     transportType: 'ble',
                 },
             }
-            mockAllAccounts.mockReturnValue([
-                algo25Account,
-                idlessLedgerAccount,
-            ])
+            mockAllAccounts.mockReturnValue([algo25Account, ledgerAccount])
 
             const { result } = renderHook(() =>
                 useAccountOptions({
-                    account: idlessLedgerAccount,
+                    account: ledgerAccount,
                     onClose: mockOnClose,
                     onShowAddress: mockOnShowAddress,
                 }),

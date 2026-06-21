@@ -25,6 +25,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
@@ -146,6 +147,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             })
 
             const newAccount: MultiSigAccount = {
+                id: generateOrderedUniqueId(),
                 type: 'multisig',
                 address: multisigAddress,
                 name: accountName,

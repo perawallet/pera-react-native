@@ -408,4 +408,37 @@ describe('services/accounts/store', () => {
             ).not.toThrow()
         })
     })
+
+    describe('migration to v4', () => {
+        type MigratedState = { accounts: { id?: string; address?: string }[] }
+
+        const getMigrate = () =>
+            useAccountsStore.persist.getOptions().migrate as (
+                state: unknown,
+                version: number,
+            ) => unknown
+
+        test('backfills missing id from address, preserving an existing id', () => {
+            const v3State = {
+                accounts: [
+                    { type: 'hardware', address: 'HW-LEGACY' },
+                    { type: 'algo25', address: 'STD', id: 'existing-id' },
+                ],
+            }
+
+            const migrated = getMigrate()(v3State, 3) as MigratedState
+
+            expect(migrated.accounts[0].id).toBe('HW-LEGACY')
+            expect(migrated.accounts[1].id).toBe('existing-id')
+        })
+
+        test('backfills a generated id when address is absent', () => {
+            const v3State = { accounts: [{ type: 'watch' }] }
+
+            const migrated = getMigrate()(v3State, 3) as MigratedState
+
+            expect(migrated.accounts[0].id).toEqual(expect.any(String))
+            expect(migrated.accounts[0].id).not.toBe('')
+        })
+    })
 })
