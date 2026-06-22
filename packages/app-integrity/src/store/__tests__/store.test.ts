@@ -96,9 +96,49 @@ describe('useAppIntegrityStore', () => {
         expect(trimSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('does not compact when there is no v1 token to purge', async () => {
+    it('purges and compacts a v1 install that stored an expiry but no token', async () => {
         const trimSpy = vi.spyOn(getProvider().keyValueStorage, 'trim')
-        // Already on the current schema version with no token persisted.
+        getProvider().keyValueStorage.setItem(
+            STORE_NAME,
+            JSON.stringify({
+                version: 1,
+                state: {
+                    integrityToken: null,
+                    expiresAt: '2026-07-01',
+                    keyId: 'k1',
+                    status: 'success',
+                },
+            }),
+        )
+
+        await rehydrate()
+
+        const persisted = readPersistedState()
+        expect(persisted.expiresAt).toBeUndefined()
+        expect(persisted.keyId).toBe('k1')
+        expect(trimSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not compact a v1 install that never stored a token', async () => {
+        const trimSpy = vi.spyOn(getProvider().keyValueStorage, 'trim')
+        // A device that ran v1 but never successfully attested has nothing to
+        // purge, so the migration must not trigger a compaction.
+        getProvider().keyValueStorage.setItem(
+            STORE_NAME,
+            JSON.stringify({
+                version: 1,
+                state: { keyId: 'k1', deviceId: 'd1', status: 'idle' },
+            }),
+        )
+
+        await rehydrate()
+
+        expect(trimSpy).not.toHaveBeenCalled()
+    })
+
+    it('does not compact when already on the current schema version', async () => {
+        const trimSpy = vi.spyOn(getProvider().keyValueStorage, 'trim')
+        // No migration runs, so no compaction.
         getProvider().keyValueStorage.setItem(
             STORE_NAME,
             JSON.stringify({
