@@ -98,6 +98,7 @@ const AssetListItemViewBase = ({
                 currency={asset.unitName ?? ''}
                 value={amount}
                 precision={asset.decimals}
+                maxPrecision={2}
                 minPrecision={2}
                 showSymbol
                 style={styles.primaryAmount}

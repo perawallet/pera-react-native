@@ -79,7 +79,10 @@ export const createExternalSource = <TRequest>(
     decoder: (request: TRequest) => Promise<{
         data: SignableData
         signerAddress: string
-        metadata: Partial<SourceMetadata>
+        // `type` is fixed by the factory and must never come from the decoded
+        // (request-controlled) metadata — omitting it here blocks that at the
+        // type level; the spread order below is the matching runtime guard.
+        metadata: Partial<Omit<SourceMetadata, 'type'>>
     }>,
 ): DataSource<TRequest> => ({
     getSignableData: async (request: TRequest): Promise<SignableGroup> => {
@@ -87,7 +90,10 @@ export const createExternalSource = <TRequest>(
             const { data, signerAddress, metadata } = await decoder(request)
             return {
                 data,
-                source: { type: 'walletconnect', ...metadata },
+                // Literal `type` follows the spread so request-controlled
+                // metadata can never override it to a non-interactive source
+                // and bypass the approval gate.
+                source: { ...metadata, type: 'walletconnect' },
                 signerAddress,
             }
         } catch (error) {

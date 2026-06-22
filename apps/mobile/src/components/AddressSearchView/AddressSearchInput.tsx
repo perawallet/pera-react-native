@@ -33,6 +33,7 @@ export const AddressSearchInput = ({
             inputContainerStyle={styles.searchField}
             containerStyle={styles.searchContainer}
             onFocus={onFocus}
+            testID='address_search_input'
             leftIcon={
                 <PWIcon
                     variant='secondary'

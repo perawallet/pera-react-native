@@ -30,6 +30,7 @@ export const BidaliWebViewScreen = () => {
                 customJavaScript={bidaliProviderJS}
                 onCustomMessage={handleMessage}
                 webviewRef={webviewRef}
+                inBottomSheet
             />
         </PWView>
     )

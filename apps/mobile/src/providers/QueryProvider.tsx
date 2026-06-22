@@ -21,6 +21,7 @@ import { isTransientNetworkError, logger } from '@perawallet/wallet-core-shared'
 import { isAccountQuery } from '@perawallet/wallet-core-accounts'
 import { isAssetQuery } from '@perawallet/wallet-core-assets'
 import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
+import { isCardQuery } from '@perawallet/wallet-core-card'
 
 const cache = new QueryCache({
     onError: error => {
@@ -64,11 +65,14 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
                 maxAge: config.reactQueryPersistenceAge,
                 dehydrateOptions: {
                     shouldDehydrateQuery: query => {
-                        // Don't persist DB-backed queries — SQLite is the source of truth
+                        // Don't persist DB-backed queries — SQLite is the source of truth.
+                        // Card queries are excluded too: their responses can carry KYC
+                        // PII that must never land in the unencrypted disk cache.
                         if (
                             isAccountQuery(query.queryKey) ||
                             isAssetQuery(query.queryKey) ||
-                            isTransactionQuery(query.queryKey)
+                            isTransactionQuery(query.queryKey) ||
+                            isCardQuery(query.queryKey)
                         ) {
                             return false
                         }

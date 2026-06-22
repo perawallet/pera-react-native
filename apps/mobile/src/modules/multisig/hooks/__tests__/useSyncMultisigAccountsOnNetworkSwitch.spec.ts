@@ -90,6 +90,7 @@ const multisigAccount = (
     address: string,
     multisigDetails: MultiSigDetails = DETAILS,
 ): MultiSigAccount => ({
+    id: `multisig-${address}`,
     type: 'multisig',
     address,
     name: address,
@@ -97,6 +98,7 @@ const multisigAccount = (
 })
 
 const watchAccount = (address: string): WatchAccount => ({
+    id: `watch-${address}`,
     type: 'watch',
     address,
 })

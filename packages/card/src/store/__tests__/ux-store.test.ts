@@ -118,6 +118,63 @@ describe('useCardStore', () => {
         expect(result.current.codeVerificationError).toBeNull()
     })
 
+    test('email and phone KYC PII are never persisted', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setEmail('john@example.com')
+            result.current.setPhone({
+                phoneCountryCode: '44',
+                phoneNumber: '7400846282',
+            })
+        })
+
+        expect(result.current.email).toBe('john@example.com')
+        expect(result.current.phoneNumber).toBe('7400846282')
+
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).not.toHaveProperty('email')
+        expect(persisted).not.toHaveProperty('phoneCountryCode')
+        expect(persisted).not.toHaveProperty('phoneNumber')
+    })
+
+    test('migration strips KYC PII left on disk by earlier builds, preserving non-PII fields', async () => {
+        const { useCardStore } = await import('../ux-store')
+
+        const migratedState = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        migrate?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .migrate?.({
+                onboardingId: 'ob-1',
+                email: 'john@example.com',
+                phoneCountryCode: '44',
+                phoneNumber: '7400846282',
+            })
+
+        expect(migratedState).not.toHaveProperty('email')
+        expect(migratedState).not.toHaveProperty('phoneCountryCode')
+        expect(migratedState).not.toHaveProperty('phoneNumber')
+        expect(migratedState).toMatchObject({ onboardingId: 'ob-1' })
+    })
+
     test('resetState clears the onboarding contact inputs', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())

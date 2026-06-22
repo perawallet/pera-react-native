@@ -12,11 +12,12 @@
 
 import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
+import { useClipboard } from '@hooks/useClipboard'
 
 const QR_SIZE = 180
 
@@ -42,6 +43,7 @@ const PayInAddressBlock = ({
     value: string
 }) => {
     const styles = useStyles()
+    const { copyToClipboard } = useClipboard()
 
     return (
         <PWView style={styles.addressBlock}>
@@ -61,10 +63,11 @@ const PayInAddressBlock = ({
                 >
                     {value}
                 </PWText>
-                <PWIcon
+                <PWTouchableIcon
                     name='copy'
                     size='sm'
                     variant='secondary'
+                    onPress={() => void copyToClipboard(value)}
                 />
             </CopyableText>
         </PWView>

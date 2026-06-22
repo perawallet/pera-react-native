@@ -42,6 +42,7 @@ export const NoFundsButtonPanel = () => {
                 icon='ellipsis'
                 variant='secondary'
                 onPress={handleMore}
+                testID='more_button'
                 style={themeStyle.button}
             />
         </PWView>

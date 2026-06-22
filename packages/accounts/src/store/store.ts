@@ -145,7 +145,7 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 3,
+            version: 4,
             partialize: state => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
@@ -181,6 +181,35 @@ export const useAccountsStore: UseBoundStore<
                             ) {
                                 details.version = 1
                             }
+                        })
+                    }
+                }
+                // v4: `id` became required on every WalletAccount. Accounts
+                // persisted before v4 (hardware accounts in particular were
+                // deliberately stored without one) have `id` unset, so backfill
+                // it. The on-chain address is a stable, unique handle for every
+                // account kind that exists today; fall back to a generated id
+                // for the (currently impossible) address-less account.
+                if (version < 4) {
+                    const accounts = state.accounts
+                    if (Array.isArray(accounts)) {
+                        accounts.forEach(account => {
+                            if (
+                                account == null ||
+                                typeof account !== 'object'
+                            ) {
+                                return
+                            }
+                            const typed = account as {
+                                id?: unknown
+                                address?: unknown
+                            }
+                            if (typeof typed.id === 'string' && typed.id) return
+                            typed.id =
+                                typeof typed.address === 'string' &&
+                                typed.address
+                                    ? typed.address
+                                    : generateOrderedUniqueId()
                         })
                     }
                 }

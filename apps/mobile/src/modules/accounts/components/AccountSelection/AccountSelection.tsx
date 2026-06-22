@@ -29,7 +29,7 @@ import {
     type TouchableOpacityProps,
     type ViewStyle,
 } from 'react-native'
-import { AccountDisplay } from '../AccountDisplay'
+import { AccountDisplay, type AccountDisplayCard } from '../AccountDisplay'
 import { type AccountIconProps } from '../AccountIcon'
 import {
     type PWIconProps,
@@ -40,6 +40,11 @@ import {
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
     headerContent?: ReactNode
+    /**
+     * When set, the trigger renders the Pera Card identity instead of the
+     * selected account (the switcher still opens on tap).
+     */
+    card?: AccountDisplayCard
     triggerStyle?: StyleProp<ViewStyle>
     triggerIconProps?: Omit<AccountIconProps, 'account'>
     triggerChevronProps?: Partial<PWIconProps>
@@ -54,6 +59,7 @@ export type AccountSelectionProps = {
 export const AccountSelection = ({
     onSelected,
     headerContent,
+    card,
     triggerStyle,
     triggerIconProps,
     triggerChevronProps,
@@ -109,6 +115,10 @@ export const AccountSelection = ({
                 navigation.navigate('PeraCard', { screen: 'PeraCardIntro' })
                 return
             }
+            case 'pera-card-open': {
+                navigation.navigate('PeraCard', { screen: 'PeraCardAccount' })
+                return
+            }
             case 'sort': {
                 trackEvent(HomeEvent.Sort)
                 await requestBottomSheet<void>({
@@ -148,6 +158,7 @@ export const AccountSelection = ({
         >
             <AccountDisplay
                 account={account ?? undefined}
+                card={card}
                 style={[styles.container, triggerStyle]}
                 iconProps={triggerIconProps}
                 chevronProps={triggerChevronProps}

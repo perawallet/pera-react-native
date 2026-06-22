@@ -56,6 +56,27 @@ export const useHDWallet = () => {
 
         try {
             // The seed entry holds the 96-byte XHD root in `privateKey`.
+            //
+            // `extractable: true` is intentional and required: the root must
+            // stay re-exportable to reconstruct the BIP-39 mnemonic for
+            // non-custodial backup/recovery (executeWithMnemonic ->
+            // withExportedKey in useKMS/useKMSServices). Derived child keys
+            // are minted `extractable: false`.
+            //
+            // The flag is NOT the at-rest protection. Every keystore entry is
+            // persisted as AES-256-GCM ciphertext; the symmetric master key
+            // lives in the OS keystore (iOS Keychain / Android Keystore), and
+            // `keyStore.export` is an internal API gated by `checkAccess` --
+            // it is never reachable from dApp/WebView JS. Flipping this to
+            // `false` would only break mnemonic recovery, not harden storage.
+            //
+            // Known hardening gaps tracked as separate work, not regressions
+            // of the above: (1) on iOS the passkey-autofill bootstrap mirrors
+            // the master key into App-Group UserDefaults so the AutoFill
+            // extension can read it, which weakens the at-rest guarantee on
+            // that platform (Android wraps the mirrored copy with a hardware
+            // Keystore key; iOS stores it unwrapped); (2) `checkAccess` is
+            // fail-open for a seed carrying no ACL entries.
             const seed: Omit<Seed, 'id'> & { id: string } = {
                 id: keyId,
                 type: 'seed',
