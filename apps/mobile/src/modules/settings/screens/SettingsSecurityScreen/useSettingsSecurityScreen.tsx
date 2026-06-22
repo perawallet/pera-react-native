@@ -147,14 +147,17 @@ export const useSettingsSecurityScreen =
                         // A weak (class-2) biometric can't be bound — guide the
                         // user to enroll a fingerprint rather than showing the
                         // generic "couldn't authenticate" error.
-                        const isWeakBiometric = result.reason === 'weak-biometric'
+                        const isWeakBiometric =
+                            result.reason === 'weak-biometric'
                         showToast({
                             title: isWeakBiometric
                                 ? t('settings.security.biometric_weak_title')
                                 : t('settings.security.biometric_error_title'),
                             body: isWeakBiometric
                                 ? t('settings.security.biometric_weak_message')
-                                : t('settings.security.biometric_error_message'),
+                                : t(
+                                      'settings.security.biometric_error_message',
+                                  ),
                             type: 'error',
                         })
                     }
