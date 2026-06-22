@@ -74,6 +74,15 @@ describe('parsePrecisionSafeJson', () => {
         expect(parsed.v).toBe('99999999999999999')
     })
 
+    it('handles numbers with long fractional parts (16+ fraction digits)', () => {
+        const parsed = parsePrecisionSafeJson(
+            '{"price":0.12345678901234567,"neg":-1.98765432109876543,"exp":1.234567890123456e-7}',
+        ) as { price: unknown; neg: unknown; exp: unknown }
+        expect(parsed.price).toBe(0.12345678901234567)
+        expect(parsed.neg).toBe(-1.98765432109876543)
+        expect(parsed.exp).toBe(1.234567890123456e-7)
+    })
+
     it('handles big integers in arrays and nested objects', () => {
         const parsed = parsePrecisionSafeJson(
             '{"results":[{"asset_id":18446744073709551615},{"asset_id":7}]}',

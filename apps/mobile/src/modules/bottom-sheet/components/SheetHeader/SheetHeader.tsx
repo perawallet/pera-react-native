@@ -19,6 +19,7 @@ import { useStyles } from './styles'
 import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import type { FontWeight, TypographyVariant } from '@theme/typography'
+import { useTheme } from '@rneui/themed'
 
 export type SheetHeaderProps = {
     title: ReactNode
@@ -51,6 +52,7 @@ export const SheetHeader = ({
     style,
     testID,
 }: SheetHeaderProps) => {
+    const { theme } = useTheme()
     const styles = useStyles()
     const { dismiss } = useBottomSheetResult()
     const isPanDownEnabled = useBottomSheetPanDownEnabled()
@@ -69,6 +71,7 @@ export const SheetHeader = ({
                         variant='primary'
                         onPress={handleClose}
                         testID={testID ? `${testID}-close` : undefined}
+                        hitSlop={theme.spacing.xl}
                     />
                 ) : undefined
             }

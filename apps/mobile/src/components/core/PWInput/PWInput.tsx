@@ -13,17 +13,24 @@
 import {
     type ComponentType,
     forwardRef,
+    useCallback,
     useImperativeHandle,
     useRef,
     useState,
 } from 'react'
-import { type TextInput, type TextInputProps } from 'react-native'
+import {
+    type LayoutChangeEvent,
+    type TextInput,
+    type TextInputProps,
+} from 'react-native'
 import {
     Input as RNEInput,
     type InputProps as RNEInputProps,
+    useTheme,
 } from '@rneui/themed'
-import { type TypographyVariant } from '@theme/typography'
+import { getTypography, type TypographyVariant } from '@theme/typography'
 import { PWTouchableIcon } from '../PWTouchableIcon'
+import { computeFitFontSize } from './computeFitFontSize'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
 import {
@@ -99,15 +106,38 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
         },
         ref,
     ) => {
-        const styles = useStyles({ variant })
+        const { theme } = useTheme()
         const inputRef = useRef<TextInput>(null)
         const [isRevealed, setIsRevealed] = useState(false)
         const [isFocused, setIsFocused] = useState(false)
         const [hasBlurred, setHasBlurred] = useState(false)
+        // Width measured on layout, used to shrink the font to fit. 0 until the
+        // input is laid out, and only tracked when `adjustsFontSizeToFit` is on.
+        const [measuredWidth, setMeasuredWidth] = useState(0)
 
         const resolvedMinimumFontScale =
             minimumFontScale ??
             (adjustsFontSizeToFit ? DEFAULT_MINIMUM_FONT_SCALE : undefined)
+
+        // RN ignores `adjustsFontSizeToFit` on <TextInput> (it only works on
+        // <Text>), so emulate it: measure the field and scale the font down to
+        // keep the value on one line. The field width is layout-driven, not
+        // content-driven, so shrinking the font won't re-trigger layout.
+        const handleLayout = useCallback((event: LayoutChangeEvent) => {
+            setMeasuredWidth(event.nativeEvent.layout.width)
+        }, [])
+
+        const fittedFontSize = adjustsFontSizeToFit
+            ? computeFitFontSize({
+                  text: props.value ?? '',
+                  availableWidth: measuredWidth,
+                  baseFontSize: getTypography(theme, variant).fontSize ?? 0,
+                  minFontScale:
+                      resolvedMinimumFontScale ?? DEFAULT_MINIMUM_FONT_SCALE,
+              })
+            : undefined
+
+        const styles = useStyles({ variant, fittedFontSize })
 
         useImperativeHandle(
             ref,
@@ -169,6 +199,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 rightIcon={resolvedRightIcon}
                 errorMessage={resolvedErrorMessage}
                 numberOfLines={numberOfLines}
+                onLayout={adjustsFontSizeToFit ? handleLayout : undefined}
                 {...{
                     adjustsFontSizeToFit,
                     minimumFontScale: resolvedMinimumFontScale,
