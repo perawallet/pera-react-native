@@ -33,10 +33,12 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 const mockCheckBiometricsAvailable = vi.fn()
 const mockAuthenticate = vi.fn()
+const mockGetSecurityLevel = vi.fn()
 
 const mockBiometricsService = {
     checkBiometricsAvailable: mockCheckBiometricsAvailable,
     authenticate: mockAuthenticate,
+    getSecurityLevel: mockGetSecurityLevel,
     getSupportedBiometricType: vi.fn(),
 }
 
@@ -46,7 +48,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import { useBiometrics } from '../useBiometrics'
+import { useBiometrics, type EnableBiometricsResult } from '../useBiometrics'
 import { PIN_RECORD_KEY_ID, BIOMETRIC_BLOB_KEY_ID } from '../../constants'
 
 const wireBlobMocks = () => {
@@ -100,6 +102,9 @@ describe('useBiometrics', () => {
         kmsMocks.biometricBytes = null
         wireBlobMocks()
         mockCheckBiometricsAvailable.mockResolvedValue(false)
+        // Default to a strong (class-3) enrolled biometric; tests that need a
+        // weak device override this.
+        mockGetSecurityLevel.mockResolvedValue('strong')
     })
 
     test('initializes isEnabled from secure storage on mount', async () => {
@@ -215,15 +220,15 @@ describe('useBiometrics', () => {
         })
     })
 
-    test('enableBiometrics returns false when PIN is not enabled', async () => {
+    test('enableBiometrics returns no-pin reason when PIN is not enabled', async () => {
         const { result } = await renderAndSettle()
 
-        let success: boolean = true
+        let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            success = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics()
         })
 
-        expect(success).toBe(false)
+        expect(enableResult).toEqual({ ok: false, reason: 'no-pin' })
         expect(kmsMocks.withSecret).toHaveBeenCalledWith(
             PIN_RECORD_KEY_ID,
             expect.any(Function),
@@ -231,15 +236,15 @@ describe('useBiometrics', () => {
         expect(result.current.isEnabled).toBe(false)
     })
 
-    test('enableBiometrics returns false when PIN data not found', async () => {
+    test('enableBiometrics returns no-pin reason when PIN data not found', async () => {
         const { result } = await renderAndSettle()
 
-        let success: boolean = true
+        let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            success = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics()
         })
 
-        expect(success).toBe(false)
+        expect(enableResult).toEqual({ ok: false, reason: 'no-pin' })
         expect(kmsMocks.withSecret).toHaveBeenCalledWith(
             PIN_RECORD_KEY_ID,
             expect.any(Function),
@@ -283,12 +288,12 @@ describe('useBiometrics', () => {
 
         const { result } = await renderAndSettle()
 
-        let success: boolean = false
+        let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            success = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics()
         })
 
-        expect(success).toBe(true)
+        expect(enableResult).toEqual({ ok: true })
         expect(kmsMocks.withSecret).toHaveBeenCalledWith(
             PIN_RECORD_KEY_ID,
             expect.any(Function),
@@ -302,49 +307,71 @@ describe('useBiometrics', () => {
         expect(result.current.isEnabled).toBe(true)
     })
 
-    test('enableBiometrics returns false on error', async () => {
+    test('enableBiometrics returns error reason on unexpected failure', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockRejectedValue(new Error('Auth error'))
 
         const { result } = await renderAndSettle()
 
-        let success: boolean = true
+        let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            success = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics()
         })
 
-        expect(success).toBe(false)
+        expect(enableResult).toEqual({ ok: false, reason: 'error' })
     })
 
-    test('enableBiometrics returns false when biometrics are not available', async () => {
+    test('enableBiometrics returns unavailable reason when biometrics are not available', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(false)
 
         const { result } = await renderAndSettle()
 
-        let success: boolean = true
+        let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            success = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics()
         })
 
-        expect(success).toBe(false)
+        expect(enableResult).toEqual({ ok: false, reason: 'unavailable' })
         expect(mockAuthenticate).not.toHaveBeenCalled()
     })
 
-    test('enableBiometrics returns false when the user declines authentication', async () => {
+    test('enableBiometrics returns weak-biometric reason and does not prompt when only a weak biometric is enrolled', async () => {
+        kmsMocks.pinBytes = new TextEncoder().encode('123456')
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        mockGetSecurityLevel.mockResolvedValue('weak')
+
+        const { result } = await renderAndSettle()
+
+        let enableResult: EnableBiometricsResult | undefined
+        await act(async () => {
+            enableResult = await result.current.enableBiometrics()
+        })
+
+        expect(enableResult).toEqual({ ok: false, reason: 'weak-biometric' })
+        // The OS prompt must not fire, and nothing is bound to the keystore.
+        expect(mockAuthenticate).not.toHaveBeenCalled()
+        const commits = kmsMocks.commitSecret.mock.calls.filter(
+            call => call[0].id === BIOMETRIC_BLOB_KEY_ID,
+        )
+        expect(commits).toHaveLength(0)
+        expect(result.current.isEnabled).toBe(false)
+    })
+
+    test('enableBiometrics returns declined reason when the user declines authentication', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockResolvedValue(false)
 
         const { result } = await renderAndSettle()
 
-        let success: boolean = true
+        let enableResult: EnableBiometricsResult | undefined
         await act(async () => {
-            success = await result.current.enableBiometrics()
+            enableResult = await result.current.enableBiometrics()
         })
 
-        expect(success).toBe(false)
+        expect(enableResult).toEqual({ ok: false, reason: 'declined' })
         // The biometric blob must not be committed when auth fails.
         const commits = kmsMocks.commitSecret.mock.calls.filter(
             call => call[0].id === BIOMETRIC_BLOB_KEY_ID,

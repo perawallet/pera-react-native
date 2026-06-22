@@ -11,7 +11,12 @@
  */
 
 export { usePinCode } from './usePinCode'
-export { useBiometrics, type BiometricType } from './useBiometrics'
+export {
+    useBiometrics,
+    type BiometricType,
+    type EnableBiometricsResult,
+    type EnableBiometricsFailureReason,
+} from './useBiometrics'
 export {
     useBiometricSecurityLevel,
     getBiometricSecurityLevel,
