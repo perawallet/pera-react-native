@@ -33,9 +33,8 @@ export type { HDWalletKeyResult } from './useHDWallet'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
-import { entropyToMnemonic } from '../crypto/hdwallet-utils'
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
-import { mnemonicWordsToIndices } from '../crypto/mnemonic-indices'
+import { entropyToIndices } from '../crypto/hdwallet-utils'
+import { algo25SeedToIndices } from '../crypto/algo25-utils'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -206,7 +205,7 @@ export const useKMS = () => {
         if (!scheme) throw new InvalidKeyError(seedKey.id)
 
         return withExportedKey(seedKey.id, async seedData => {
-            let words: string[]
+            let indices: Uint16Array
 
             if (scheme === SeedScheme.Bip39) {
                 const meta = (seedData.metadata ?? {}) as SeedMetadata
@@ -217,7 +216,9 @@ export const useKMS = () => {
                 }
                 const entropyBytes = hexToBytes(meta.entropy)
                 try {
-                    words = entropyToMnemonic(entropyBytes).split(' ')
+                    // entropy → indices directly: the HD phrase is never
+                    // materialized as a string on the heap.
+                    indices = entropyToIndices(entropyBytes)
                 } finally {
                     zeroBytes(entropyBytes)
                 }
@@ -229,21 +230,14 @@ export const useKMS = () => {
                 }
                 const seedBytes = new Uint8Array(seedData.privateKey)
                 try {
-                    words = mnemonicFromSeed(seedBytes).split(' ')
+                    // seed → indices directly: the algo25 phrase is never
+                    // materialized as a string on the heap.
+                    indices = algo25SeedToIndices(seedBytes)
                 } finally {
                     zeroBytes(seedBytes)
                 }
             }
 
-            // The phrase came from our own keystore material, so every token is
-            // a wordlist word; a null return means a wordlist/derivation
-            // mismatch we can't recover from.
-            const indices = mnemonicWordsToIndices(words)
-            if (!indices) {
-                throw new KeyManagementError(
-                    'Recovered mnemonic is not in the BIP39 wordlist',
-                )
-            }
             try {
                 return await handler(indices)
             } finally {

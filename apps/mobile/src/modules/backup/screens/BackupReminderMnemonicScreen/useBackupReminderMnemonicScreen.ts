@@ -122,9 +122,7 @@ export const useBackupReminderMnemonicScreen =
         useEffect(() => () => clearIndices(), [clearIndices])
 
         // Derived at render only — the full word array is never held in state.
-        const words = indices
-            ? Array.from(indices, mnemonicIndexToWord)
-            : []
+        const words = indices ? Array.from(indices, mnemonicIndexToWord) : []
 
         const handlePinVerified = useCallback(() => {
             setIsPinVisible(false)

@@ -14,6 +14,16 @@ import { zeroBytes } from './secure-memory'
 import { WORDLIST } from './wordlist'
 
 /**
+ * Mnemonic encoding. Both BIP39 and algo25 pack the wordlist into 11-bit groups
+ * (the wordlist has 2^11 = 2048 entries), repacked from raw 8-bit bytes by the
+ * `entropy → indices` (hdwallet-utils) and `seed → indices` (algo25-utils)
+ * codecs.
+ */
+export const BITS_PER_MNEMONIC_WORD = 11
+export const MNEMONIC_WORD_INDEX_MASK = (1 << BITS_PER_MNEMONIC_WORD) - 1 // 2047
+export const BITS_PER_BYTE = 8
+
+/**
  * Maps a mnemonic word to its position in the 2048-entry BIP39 English
  * wordlist — the same wordlist Algorand's 25-word mnemonic uses. Built once.
  */
