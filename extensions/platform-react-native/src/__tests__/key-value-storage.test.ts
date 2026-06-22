@@ -27,6 +27,7 @@ vi.mock('react-native-mmkv', () => {
             getAllKeys() {
                 return Array.from(store.keys())
             },
+            trim: vi.fn(),
         }
     }
     return { createMMKV }
@@ -63,5 +64,13 @@ describe('RNKeyValueStorageService', () => {
 
         const result = kv.getJSON('non-existent-key')
         expect(result).toBeNull()
+    })
+
+    it('trim() compacts the underlying MMKV store', () => {
+        const kv = new RNKeyValueStorageService()
+
+        kv.trim()
+
+        expect(kv.mmkv.trim).toHaveBeenCalledTimes(1)
     })
 })
