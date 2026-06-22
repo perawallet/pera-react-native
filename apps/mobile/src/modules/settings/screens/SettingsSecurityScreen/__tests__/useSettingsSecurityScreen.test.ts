@@ -58,9 +58,13 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+const { mockShowToast } = vi.hoisted(() => ({
+    mockShowToast: vi.fn(),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: vi.fn(),
+        showToast: mockShowToast,
     }),
 }))
 
@@ -208,7 +212,7 @@ describe('useSettingsSecurityScreen', () => {
 
     describe('handleBiometricToggle', () => {
         it('should call enableBiometrics when enabling biometrics', async () => {
-            mockEnableBiometrics.mockResolvedValue(true)
+            mockEnableBiometrics.mockResolvedValue({ ok: true })
 
             const { result } = renderHook(() => useSettingsSecurityScreen())
 
@@ -230,7 +234,7 @@ describe('useSettingsSecurityScreen', () => {
         // DEVICE_CREDENTIAL isn't in the allowed authenticators. The screen
         // must forward a localized cancelLabel through to enableBiometrics.
         it('forwards a localized title and cancelLabel to enableBiometrics', async () => {
-            mockEnableBiometrics.mockResolvedValue(true)
+            mockEnableBiometrics.mockResolvedValue({ ok: true })
 
             const { result } = renderHook(() => useSettingsSecurityScreen())
 
@@ -272,7 +276,10 @@ describe('useSettingsSecurityScreen', () => {
         })
 
         it('should return false when enableBiometrics fails', async () => {
-            mockEnableBiometrics.mockResolvedValue(false)
+            mockEnableBiometrics.mockResolvedValue({
+                ok: false,
+                reason: 'declined',
+            })
 
             const { result } = renderHook(() => useSettingsSecurityScreen())
 
@@ -286,6 +293,39 @@ describe('useSettingsSecurityScreen', () => {
             })
 
             expect(success!).toBe(false)
+            // A generic failure shows the generic error toast.
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'settings.security.biometric_error_title',
+                }),
+            )
+        })
+
+        it('shows the weak-biometric guidance toast when the device lacks a strong biometric', async () => {
+            mockEnableBiometrics.mockResolvedValue({
+                ok: false,
+                reason: 'weak-biometric',
+            })
+
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await waitFor(() => {
+                expect(mockCheckPinEnabled).toHaveBeenCalled()
+            })
+
+            let success: boolean
+            await act(async () => {
+                success = await result.current.handleBiometricToggle(true)
+            })
+
+            expect(success!).toBe(false)
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'settings.security.biometric_weak_title',
+                    body: 'settings.security.biometric_weak_message',
+                    type: 'error',
+                }),
+            )
         })
     })
 

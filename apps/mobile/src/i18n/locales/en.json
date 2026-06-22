@@ -1830,6 +1830,8 @@
             "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address.",
             "biometric_error_title": "Failed to authenticate.",
             "biometric_error_message": "We were unable to authenticate you.  Please try again.",
+            "biometric_weak_title": "Stronger biometric required",
+            "biometric_weak_message": "Pera requires a fingerprint or other strong biometric to unlock your wallet. Add a fingerprint in your device's biometric settings, then turn this on again.",
             "advanced_security_settings": "Advanced Security Settings",
             "enable_asset_freeze_support": "Enable Asset Freeze Support",
             "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset.",
