@@ -19,11 +19,13 @@ import {
 import {
     PWIcon,
     type PWIconProps,
+    PWImage,
     PWText,
     type PWTextProps,
     PWView,
     type PWViewProps,
 } from '@components/core'
+import peraCardImage from '@assets/images/pera-card.png'
 import { useStyles } from './styles'
 
 import { AccountIcon, type AccountIconProps } from '../AccountIcon'
@@ -31,8 +33,21 @@ import { useMemo } from 'react'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
 
+/** Pera Card identity rendered in place of an account (header trigger). */
+export type AccountDisplayCard = {
+    /** Primary label, e.g. "Pera Card". */
+    title: string
+    /** Secondary label, e.g. "Linked to Main account". */
+    subtitle: string
+}
+
 export type AccountDisplayProps = {
     account?: WalletAccount
+    /**
+     * When set, render the Pera Card presentation (card art + title/subtitle)
+     * instead of an account. Takes precedence over `account`.
+     */
+    card?: AccountDisplayCard
     iconProps?: Omit<AccountIconProps, 'account'>
     textProps?: PWTextProps
     chevronProps?: Partial<PWIconProps>
@@ -48,6 +63,7 @@ export type AccountDisplayProps = {
 
 export const AccountDisplay = ({
     account,
+    card,
     iconProps,
     chevronProps,
     showChevron = true,
@@ -75,6 +91,45 @@ export const AccountDisplay = ({
     const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 
     const { label: accountTypeLabel } = useAccountTypeLabel(account)
+
+    if (card) {
+        return (
+            <PWView
+                {...rest}
+                style={[styles.container, rest.style]}
+            >
+                <PWImage
+                    source={peraCardImage}
+                    style={styles.cardThumb}
+                    resizeMode='cover'
+                />
+                <PWView style={styles.textContainer}>
+                    <PWText
+                        style={textProps?.style ?? styles.text}
+                        variant={textProps?.variant ?? 'bodyLarge'}
+                        weight={textProps?.variant ? undefined : 500}
+                        numberOfLines={1}
+                    >
+                        {card.title}
+                    </PWText>
+                    <PWText
+                        style={styles.addressText}
+                        variant='body'
+                        numberOfLines={1}
+                    >
+                        {card.subtitle}
+                    </PWText>
+                </PWView>
+                {showChevron && (
+                    <PWIcon
+                        variant='secondary'
+                        name='chevron-down'
+                        {...chevronProps}
+                    />
+                )}
+            </PWView>
+        )
+    }
 
     const hasName = Boolean(nfdName) || displayName !== address
     const showTypeAsSecondary =

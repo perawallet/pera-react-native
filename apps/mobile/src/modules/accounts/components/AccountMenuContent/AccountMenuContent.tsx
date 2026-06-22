@@ -26,6 +26,7 @@ export type AccountMenuContentResult =
     | { kind: 'sort' }
     | { kind: 'search' }
     | { kind: 'pera-card-activate' }
+    | { kind: 'pera-card-open' }
 
 export type AccountMenuContentProps = {
     headerContent?: ReactNode
@@ -77,6 +78,7 @@ export const AccountMenuContent = ({
                 onPeraCardActivate={() =>
                     resolve({ kind: 'pera-card-activate' })
                 }
+                onPeraCardOpen={() => resolve({ kind: 'pera-card-open' })}
                 headerContent={headerContent}
                 hideDefaultHeader={hideDefaultHeader}
                 accountFilter={accountFilter}

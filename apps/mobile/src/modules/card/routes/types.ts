@@ -17,4 +17,5 @@ export type PeraCardStackParamList = {
     PeraCardIntro: undefined
     CardSignIn: undefined
     CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
+    PeraCardAccount: undefined
 }

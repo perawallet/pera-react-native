@@ -691,6 +691,29 @@
         }
     },
     "peraCard": {
+        "account": {
+            "navigation_title": "Pera Card",
+            "linked_to": "Linked to {{name}}",
+            "linked_to_fallback": "Linked to your account",
+            "overview_tab": "Overview",
+            "card_details_tab": "Card Details",
+            "balance": "Balance",
+            "manual_funding_enabled": "Manual Funding enabled",
+            "auto_funding_enabled": "Auto Funding enabled",
+            "withdraw": "Withdraw",
+            "add_funds": "Add Funds",
+            "get_usdc": "Get USDC",
+            "credits_title": "Credits",
+            "credits_description": "Your credits are money you get back from refunds or reversed transactions.",
+            "cashbacks": "Cashbacks",
+            "refunds": "Refunds",
+            "transactions_title": "Transactions",
+            "show_all": "Show all",
+            "transactions_empty": "You have no transactions yet.",
+            "transaction_fallback": "Transaction",
+            "coming_soon_title": "Coming soon",
+            "coming_soon_body": "This feature isn't available just yet."
+        },
         "account_item": {
             "title": "Pera Card Account",
             "subtitle": "Spend your crypto",

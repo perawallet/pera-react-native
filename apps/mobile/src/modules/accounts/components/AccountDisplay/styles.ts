@@ -13,6 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 import type { AccountDisplayProps } from './AccountDisplay'
 
+// Card-art thumbnail dims (fixed card ratio — no runtime aspect-ratio
+// derivation, per the project's image-sizing convention).
+const CARD_THUMB_WIDTH = 48
+const CARD_THUMB_HEIGHT = 30
+
 export const useStyles = makeStyles(
     (theme, { noBorder }: AccountDisplayProps) => {
         const addressText = {
@@ -36,6 +41,16 @@ export const useStyles = makeStyles(
             },
             text: {
                 color: theme.colors.textMain,
+            },
+            // Card-art thumbnail shown in place of the account icon when the
+            // `card` prop is set.
+            cardThumb: {
+                width: CARD_THUMB_WIDTH,
+                height: CARD_THUMB_HEIGHT,
+                borderRadius: theme.spacing.xs,
+                // PWImage puts `style` on an outer View, so clip the inner image
+                // to make the rounded corners actually show.
+                overflow: 'hidden',
             },
             addressText,
         }
