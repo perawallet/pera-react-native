@@ -40,7 +40,11 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { type Optional } from '@perawallet/wallet-core-shared'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useBiometrics, usePinCode } from '@perawallet/wallet-core-security'
+import {
+    useBiometrics,
+    usePinCode,
+    type EnableBiometricsResult,
+} from '@perawallet/wallet-core-security'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
@@ -59,10 +63,14 @@ const wireBiometricsService = (config: {
     const biometrics = getProvider().biometrics as unknown as {
         checkBiometricsAvailable: ReturnType<typeof vi.fn>
         authenticate: ReturnType<typeof vi.fn>
+        getSecurityLevel: ReturnType<typeof vi.fn>
         getSupportedBiometricType: ReturnType<typeof vi.fn>
     }
     biometrics.checkBiometricsAvailable.mockResolvedValue(config.available)
     biometrics.authenticate.mockResolvedValue(config.authenticate)
+    // enableBiometrics only binds to a strong (class-3) authenticator; the
+    // default scenario presents one so the enable path reaches the prompt.
+    biometrics.getSecurityLevel.mockResolvedValue('strong')
 }
 
 describe('Flow: Biometric authentication lifecycle', () => {
@@ -93,12 +101,12 @@ describe('Flow: Biometric authentication lifecycle', () => {
             expect(result.current.isEnabled).toBe(false)
 
             // No PIN → withTypedSecret(PIN_RECORD_KEY_ID, ...) yields
-            // undefined → enableBiometrics resolves false.
-            let enabled: Optional<boolean>
+            // undefined → enableBiometrics reports the no-pin reason.
+            let enabled: Optional<EnableBiometricsResult>
             await act(async () => {
                 enabled = await result.current.enableBiometrics()
             })
-            expect(enabled).toBe(false)
+            expect(enabled).toEqual({ ok: false, reason: 'no-pin' })
             expect(result.current.isEnabled).toBe(false)
         },
         SLOW_TEST_TIMEOUT_MS,
@@ -121,11 +129,11 @@ describe('Flow: Biometric authentication lifecycle', () => {
             // approves authenticate() with `true`, so the PIN bytes
             // get copied under BIOMETRIC_BLOB_KEY_ID and isEnabled
             // flips to true.
-            let enabled: Optional<boolean>
+            let enabled: Optional<EnableBiometricsResult>
             await act(async () => {
                 enabled = await result.current.enableBiometrics()
             })
-            expect(enabled).toBe(true)
+            expect(enabled).toEqual({ ok: true })
             expect(result.current.isEnabled).toBe(true)
 
             // checkBiometricsEnabled reads the keystore — it should

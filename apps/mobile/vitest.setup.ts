@@ -35,6 +35,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            getSecurityLevel: vi.fn().mockResolvedValue('none'),
             authenticate: vi.fn().mockResolvedValue(false),
         },
         crashReporting: {
@@ -122,6 +123,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
         biometrics: {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            getSecurityLevel: vi.fn().mockResolvedValue('none'),
             authenticate: vi.fn().mockResolvedValue(false),
         },
         crashReporting: {
@@ -2881,6 +2883,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         pera_7_migration: 'pera_7_migration',
         enable_motion_lock: 'enable_motion_lock',
         enable_duress_pin: 'enable_duress_pin',
+        onramp_currency_decimals: 'onramp_currency_decimals',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
     useNotificationsListQuery: vi.fn(() => ({

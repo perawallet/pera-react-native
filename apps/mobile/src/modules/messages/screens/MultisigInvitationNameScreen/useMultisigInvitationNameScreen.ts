@@ -36,7 +36,10 @@ import { useToast } from '@hooks/useToast'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 import { getNextSharedAccountName } from '@modules/multisig/utils'
 import type { MessagesStackParamList } from '../../routes/types'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 type UseMultisigInvitationNameScreenResult = {
     accountName: string
@@ -156,6 +159,7 @@ export const useMultisigInvitationNameScreen =
                 })
 
                 const newAccount: MultiSigAccount = {
+                    id: generateOrderedUniqueId(),
                     type: AccountTypes.multisig,
                     address: derivedAddress,
                     name: trimmedName,

@@ -352,6 +352,95 @@ describe('useSignRequestDetailQuery', () => {
         }
     })
 
+    test('stops polling at failed by default (pollWhileFailed off)', async () => {
+        mocks.getSignRequestDetail.mockResolvedValue(
+            createSignRequestResponse('failed'),
+        )
+
+        vi.useFakeTimers()
+        try {
+            const { result } = renderHook(
+                () =>
+                    useSignRequestDetailQuery({
+                        network: 'mainnet',
+                        deviceId: 'device-1',
+                        signRequestId: 'sr-123',
+                        pollWhilePending: true,
+                    }),
+                { wrapper },
+            )
+
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('failed'),
+            )
+
+            const callsAfterFailed =
+                mocks.getSignRequestDetail.mock.calls.length
+            await vi.advanceTimersByTimeAsync(15000)
+            expect(mocks.getSignRequestDetail).toHaveBeenCalledTimes(
+                callsAfterFailed,
+            )
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    test('pollWhileFailed keeps polling through a transient failed and recovers to confirmed', async () => {
+        // The async (in-app) broadcast can briefly report `failed` for a
+        // transaction that actually landed; the caller keeps polling within a
+        // bounded recovery window so the later `confirmed` supersedes it.
+        mocks.getSignRequestDetail.mockResolvedValueOnce(
+            createSignRequestResponse('failed'),
+        )
+        mocks.getSignRequestDetail.mockResolvedValueOnce(
+            createSignRequestResponse('failed'),
+        )
+        mocks.getSignRequestDetail.mockResolvedValueOnce(
+            createSignRequestResponse('confirmed'),
+        )
+
+        vi.useFakeTimers()
+        try {
+            const { result } = renderHook(
+                () =>
+                    useSignRequestDetailQuery({
+                        network: 'mainnet',
+                        deviceId: 'device-1',
+                        signRequestId: 'sr-123',
+                        pollWhilePending: true,
+                        pollWhileFailed: true,
+                    }),
+                { wrapper },
+            )
+
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('failed'),
+            )
+
+            // Polling must continue on `failed` — the next fetch is still
+            // `failed`, the one after that recovers to `confirmed`.
+            await vi.advanceTimersByTimeAsync(5000)
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('failed'),
+            )
+
+            await vi.advanceTimersByTimeAsync(5000)
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('confirmed'),
+            )
+
+            // Stops once confirmed.
+            const callsAfterConfirmed =
+                mocks.getSignRequestDetail.mock.calls.length
+            await vi.advanceTimersByTimeAsync(10000)
+            expect(mocks.getSignRequestDetail).toHaveBeenCalledTimes(
+                callsAfterConfirmed,
+            )
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
     test('handles empty transaction_lists', async () => {
         const emptyTxListResponse = {
             ...createSignRequestResponse('pending'),

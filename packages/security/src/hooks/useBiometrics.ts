@@ -19,6 +19,31 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
 import { BIOMETRIC_BLOB_KEY_ID, PIN_RECORD_KEY_ID } from '../constants'
 
+/**
+ * Why enabling biometrics failed, so callers can show targeted guidance
+ * instead of a single generic error.
+ *
+ * - `no-pin`         — no PIN record to wrap; a PIN must be set first.
+ * - `unavailable`    — the device has no usable biometric hardware/enrollment.
+ * - `weak-biometric` — a biometric is enrolled, but only at class-2 ("weak")
+ *                      strength (e.g. Samsung 2D face unlock). Wallet unlock
+ *                      requires a hardware-backed class-3 ("strong")
+ *                      authenticator, so the user must enroll a fingerprint or
+ *                      other strong biometric.
+ * - `declined`       — the user dismissed or failed the OS prompt.
+ * - `error`          — an unexpected failure.
+ */
+export type EnableBiometricsFailureReason =
+    | 'no-pin'
+    | 'unavailable'
+    | 'weak-biometric'
+    | 'declined'
+    | 'error'
+
+export type EnableBiometricsResult =
+    | { ok: true }
+    | { ok: false; reason: EnableBiometricsFailureReason }
+
 type UseBiometricsResult = {
     isEnabled: boolean
     isAvailable: boolean
@@ -27,7 +52,7 @@ type UseBiometricsResult = {
     refreshBiometricsBinding: () => Promise<void>
     enableBiometrics: (
         prompt?: BiometricsAuthenticatePrompt,
-    ) => Promise<boolean>
+    ) => Promise<EnableBiometricsResult>
     disableBiometrics: () => Promise<void>
     authenticateWithBiometrics: (
         prompt?: BiometricsAuthenticatePrompt,
@@ -71,29 +96,47 @@ export const useBiometrics = (): UseBiometricsResult => {
     )
 
     const enableBiometrics = useCallback(
-        async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {
+        async (
+            prompt?: BiometricsAuthenticatePrompt,
+        ): Promise<EnableBiometricsResult> => {
             try {
                 const result = await withSecret(
                     PIN_RECORD_KEY_ID,
-                    async pinData => {
+                    async (pinData): Promise<EnableBiometricsResult> => {
                         const available =
                             await biometricsService.checkBiometricsAvailable()
-                        if (!available) return false
+                        if (!available) {
+                            return { ok: false, reason: 'unavailable' }
+                        }
+
+                        // Only bind biometrics to a hardware-backed class-3
+                        // ("strong") authenticator. A class-2 ("weak") modality
+                        // — e.g. Samsung 2D face unlock — must not be bound;
+                        // fail fast with a distinct reason (before popping a
+                        // doomed OS prompt) so the UI can tell the user to
+                        // enroll a fingerprint.
+                        const level = await biometricsService.getSecurityLevel()
+                        if (level !== 'strong') {
+                            return { ok: false, reason: 'weak-biometric' }
+                        }
 
                         const authenticated =
                             await biometricsService.authenticate(prompt)
-                        if (!authenticated) return false
+                        if (!authenticated) {
+                            return { ok: false, reason: 'declined' }
+                        }
 
                         // `writeBiometricBlob` copies the bytes into the keystore;
                         // the original `pinData` here is zeroed by
                         // `withSecret`'s finally after this resolves.
                         await writeBiometricBlob(pinData)
-                        return true
+                        return { ok: true }
                     },
                 )
-                return result ?? false
+                // `withSecret` resolves null when no PIN record exists to wrap.
+                return result ?? { ok: false, reason: 'no-pin' }
             } catch {
-                return false
+                return { ok: false, reason: 'error' }
             }
         },
         [biometricsService, withSecret, writeBiometricBlob],

@@ -11,4 +11,4 @@
  */
 
 export { AccountDisplay } from './AccountDisplay'
-export type { AccountDisplayProps } from './AccountDisplay'
+export type { AccountDisplayProps, AccountDisplayCard } from './AccountDisplay'

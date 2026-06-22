@@ -22,6 +22,7 @@ export const SigningActionButtons = () => {
     const {
         handleReject,
         handleSignAndSend,
+        slideResetKey,
         isLoading,
         currentRequest,
         isMultisigCosign,
@@ -45,6 +46,7 @@ export const SigningActionButtons = () => {
                 </PWView>
             ) : (
                 <PWSlideToConfirm
+                    key={slideResetKey}
                     title={t('common.slide_to_confirm.label')}
                     onConfirm={handleSignAndSend}
                     isLoading={isLoading}

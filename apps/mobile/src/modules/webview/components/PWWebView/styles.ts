@@ -12,7 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = {
+    bottomInset: number
+}
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => {
     const url = {
         color: theme.colors.textGray,
         fontSize: theme.spacing.md,
@@ -68,11 +72,17 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
         },
         url,
+        // In a bottom sheet the sheet supplies no bottom inset, so the footer
+        // controls would sit under the home indicator / system nav bar. Extend
+        // the footer's own background through the safe area and lift the
+        // controls above it. Outside a sheet `bottomInset` is 0 (the host
+        // screen already handles insets), leaving this unchanged.
         footerBar: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingVertical: theme.spacing.md,
+            paddingTop: theme.spacing.md,
+            paddingBottom: theme.spacing.md + bottomInset,
             paddingHorizontal: theme.spacing.lg,
             backgroundColor: theme.colors.background,
         },

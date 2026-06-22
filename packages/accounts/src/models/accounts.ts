@@ -69,37 +69,54 @@ export type WalletAccount =
     | WatchAccount
 
 export type BaseWalletAccount = {
-    id?: string
+    /**
+     * Stable unique identifier for the account, independent of any on-chain
+     * address. Every wallet account has one so it can always be referenced
+     * (and so future account kinds without an address — e.g. vIBANs, cards —
+     * still fit this shape). May coincide with an Indexer account id.
+     */
+    id: string
     name?: string
     type: AccountType
-    address: string
+    /**
+     * On-chain Algorand address. Required for every account kind that exists
+     * today (all of them are on-chain), so it is redeclared as required on each
+     * concrete type below. Optional here so future off-chain account kinds can
+     * omit it.
+     */
+    address?: string
     keyPairId?: string
     rekeyAddress?: string
 }
 
 export type Algo25Account = BaseWalletAccount & {
     type: typeof AccountTypes.algo25
+    address: string
     keyPairId: string
 }
 
 export type HDWalletAccount = BaseWalletAccount & {
     type: typeof AccountTypes.hdWallet
+    address: string
     hdWalletDetails: HDWalletDetails
     keyPairId: string
 }
 
 export type MultiSigAccount = BaseWalletAccount & {
     type: typeof AccountTypes.multisig
+    address: string
     multisigDetails: MultiSigDetails
 }
 
 export type HardwareWalletAccount = BaseWalletAccount & {
     type: typeof AccountTypes.hardware
+    address: string
     hardwareDetails: HardwareWalletDetails
 }
 
 export type WatchAccount = BaseWalletAccount & {
     type: typeof AccountTypes.watch
+    address: string
 }
 
 export type AccountAddress = string

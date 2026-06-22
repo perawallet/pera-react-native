@@ -47,6 +47,7 @@ export const ThresholdStepper = ({
                 <PWText
                     variant='h1'
                     testID='threshold_value'
+                    accessibilityLabel={String(value)}
                 >
                     {value}
                 </PWText>

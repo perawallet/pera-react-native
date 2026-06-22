@@ -76,6 +76,7 @@ const OTHER = 'OTHER_ADDRESS'
 const SIGNER = 'SIGNER_ADDRESS'
 
 const buildAccount = (address: string): WalletAccount => ({
+    id: `algo25-${address}`,
     type: AccountTypes.algo25,
     address,
     keyPairId: `kp-${address}`,

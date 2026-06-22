@@ -83,6 +83,23 @@ describe('parsePeraWebQrPayload', () => {
         }
     })
 
+    it('rejects a backupId with path/query metacharacters', () => {
+        for (const backupId of ['../secrets', 'a/b', 'id?x=1', 'id#frag']) {
+            const qr = JSON.stringify({
+                backupId,
+                encryptionKey: encodeToBase64(KEY_BYTES),
+            })
+            try {
+                parsePeraWebQrPayload(qr)
+                throw new Error(`expected throw for ${backupId}`)
+            } catch (e) {
+                expect((e as PeraWebImportError).reason).toBe(
+                    PeraWebImportErrorReason.MalformedQr,
+                )
+            }
+        }
+    })
+
     it('rejects payloads missing encryptionKey', () => {
         const qr = JSON.stringify({ backupId: 'x' })
         try {

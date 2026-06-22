@@ -29,6 +29,24 @@ const initialState = {
     lockRequestVersion: 0,
 }
 
+// `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
+// value must never disable auto-lock. `null` legitimately means "no timer
+// running" (consumer treats it as unlocked), so an invalid persisted value
+// can't be sanitized to `null` — that would fail open. Coerce it to epoch `0`
+// instead, which the consumer reads as a long-elapsed timer and locks.
+const sanitizeAutoLockStartedAt = (value: unknown): Nullable<number> => {
+    if (value == null) return null
+    if (
+        typeof value !== 'number' ||
+        !Number.isFinite(value) ||
+        value < 0 ||
+        value > Date.now()
+    ) {
+        return 0
+    }
+    return value
+}
+
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>
 > = create<SecurityState>()(
@@ -58,6 +76,13 @@ export const useSecurityStore: UseBoundStore<
             version: 1,
             partialize: state => ({
                 autoLockStartedAt: state.autoLockStartedAt,
+            }),
+            merge: (persisted, current) => ({
+                ...current,
+                autoLockStartedAt: sanitizeAutoLockStartedAt(
+                    (persisted as Partial<SecurityState> | undefined)
+                        ?.autoLockStartedAt,
+                ),
             }),
         },
     ),

@@ -138,21 +138,30 @@ export const useSettingsSecurityScreen =
         const handleBiometricToggle = useCallback(
             async (value: boolean): Promise<boolean> => {
                 if (value) {
-                    const success = await enableBiometrics({
+                    const result = await enableBiometrics({
                         title: t('security.biometric.enable_prompt_title'),
                         cancelLabel: t('security.biometric.cancel_label'),
                     })
 
-                    if (!success) {
+                    if (!result.ok) {
+                        // A weak (class-2) biometric can't be bound — guide the
+                        // user to enroll a fingerprint rather than showing the
+                        // generic "couldn't authenticate" error.
+                        const isWeakBiometric =
+                            result.reason === 'weak-biometric'
                         showToast({
-                            title: t('settings.security.biometric_error_title'),
-                            body: t(
-                                'settings.security.biometric_error_message',
-                            ),
+                            title: isWeakBiometric
+                                ? t('settings.security.biometric_weak_title')
+                                : t('settings.security.biometric_error_title'),
+                            body: isWeakBiometric
+                                ? t('settings.security.biometric_weak_message')
+                                : t(
+                                      'settings.security.biometric_error_message',
+                                  ),
                             type: 'error',
                         })
                     }
-                    return success
+                    return result.ok
                 } else {
                     await disableBiometrics()
                     return true

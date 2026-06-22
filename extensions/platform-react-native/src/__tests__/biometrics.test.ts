@@ -178,9 +178,19 @@ describe('RNBiometricsService', () => {
                 expect.objectContaining({
                     promptMessage: 'Unlock',
                     disableDeviceFallback: true,
-                    // Intentionally 'weak' — see service comment for the
-                    // Samsung S21 / Galaxy firmware compatibility rationale.
-                    biometricsSecurityLevel: 'weak',
+                }),
+            )
+        })
+
+        // Wallet unlock and biometric enrolment must require a hardware-backed
+        // class-3 authenticator; a spoofable class-2 ("weak") modality must not
+        // be accepted. See the service comment for the full rationale.
+        test('requires a strong (class-3) authenticator', async () => {
+            authenticateAsyncMock.mockResolvedValue({ success: true })
+            await service.authenticate({ title: 'Unlock' })
+            expect(authenticateAsyncMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    biometricsSecurityLevel: 'strong',
                 }),
             )
         })

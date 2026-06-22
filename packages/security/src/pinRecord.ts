@@ -111,16 +111,46 @@ export const verifyPinAgainstRecord = async (
 export const serializePinRecord = (record: PinRecord): Uint8Array =>
     encoder.encode(JSON.stringify(record))
 
+const SALT_HEX_LENGTH = SALT_LENGTH_BYTES * 2
+const HASH_HEX_LENGTH = HASH_LENGTH_BYTES * 2
+
 const isValidPinRecord = (value: unknown): value is PinRecord => {
     if (typeof value !== 'object' || value === null) return false
     const r = value as Record<string, unknown>
-    return (
-        r.version === PIN_RECORD_VERSION &&
-        typeof r.salt === 'string' &&
-        typeof r.hash === 'string' &&
-        typeof r.failedAttempts === 'number' &&
-        (r.lockoutEndTime === null || typeof r.lockoutEndTime === 'number')
-    )
+
+    if (r.version !== PIN_RECORD_VERSION) return false
+    if (typeof r.salt !== 'string' || typeof r.hash !== 'string') return false
+
+    // Validate hex shape + exact length so a corrupted/truncated record is
+    // rejected rather than silently treated as a (broken) valid PIN.
+    const hexOfLength = (s: string, len: number): boolean =>
+        s.length === len && /^[0-9a-f]+$/i.test(s)
+    if (!hexOfLength(r.salt, SALT_HEX_LENGTH)) return false
+    if (!hexOfLength(r.hash, HASH_HEX_LENGTH)) return false
+
+    // failedAttempts: finite, non-negative integer.
+    if (
+        typeof r.failedAttempts !== 'number' ||
+        !Number.isInteger(r.failedAttempts) ||
+        r.failedAttempts < 0
+    ) {
+        return false
+    }
+
+    // lockoutEndTime: null, or a finite, non-negative integer timestamp. A
+    // NaN/Infinity/negative value would otherwise defeat the
+    // `Date.now() < lockoutEndTime` lock comparison (fail open).
+    if (r.lockoutEndTime !== null) {
+        if (
+            typeof r.lockoutEndTime !== 'number' ||
+            !Number.isInteger(r.lockoutEndTime) ||
+            r.lockoutEndTime < 0
+        ) {
+            return false
+        }
+    }
+
+    return true
 }
 
 export const parsePinRecord = (data: Uint8Array): PinRecord | null => {

@@ -26,6 +26,17 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 const isNonEmptyString = (value: unknown): value is string =>
     typeof value === 'string' && value.length > 0
 
+// `backupId` is interpolated into the backup API path. Constrain it to a
+// URL-path-safe identifier (charset + length) at the QR boundary so a scanned
+// value can't smuggle `../`, `?` or `#` path/query metacharacters — defence in
+// depth alongside the `encodeURIComponent` at the request boundary.
+const BACKUP_ID_PATTERN = /^[A-Za-z0-9_-]+$/
+const MAX_BACKUP_ID_LENGTH = 128
+const isValidBackupId = (value: unknown): value is string =>
+    isNonEmptyString(value) &&
+    value.length <= MAX_BACKUP_ID_LENGTH &&
+    BACKUP_ID_PATTERN.test(value)
+
 /**
  * Decode the QR-encoded encryption key. The two legacy clients diverge on the
  * on-wire format:
@@ -98,7 +109,7 @@ export const parsePeraWebQrPayload = (raw: string): PeraWebQrPayload => {
     }
 
     const { backupId, encryptionKey, version, action } = parsed
-    if (!isNonEmptyString(backupId) || !isNonEmptyString(encryptionKey)) {
+    if (!isValidBackupId(backupId) || !isNonEmptyString(encryptionKey)) {
         throw new PeraWebImportError(PeraWebImportErrorReason.MalformedQr)
     }
 

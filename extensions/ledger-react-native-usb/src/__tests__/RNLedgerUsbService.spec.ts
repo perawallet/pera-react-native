@@ -47,11 +47,19 @@ import {
     LedgerUserRejectedError,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
+// The real @ledgerhq/react-native-hid DeviceObj exposes only vendorId,
+// productId and deviceName — there is no stable per-device id — so
+// descriptorId() falls back to the model-wide productId. Fixtures mirror that.
 const NANO_S_PLUS_DESCRIPTOR = {
-    deviceId: 1234,
     productId: 0x4011,
     vendorId: 0x2c97,
     deviceName: 'Nano S Plus',
+}
+
+const NANO_X_DESCRIPTOR = {
+    productId: 0x0004,
+    vendorId: 0x2c97,
+    deviceName: 'Nano X',
 }
 
 const connectToFirstDevice = async (
@@ -142,6 +150,30 @@ describe('RNLedgerUsbService', () => {
             /No Ledger connected over USB/,
         )
         expect(transportOpenMock).not.toHaveBeenCalled()
+    })
+
+    test('connect refuses when more than one Ledger is attached, even if the requested id matches one (native HID selects by vendorId alone and cannot target a specific device)', async () => {
+        transportListMock.mockResolvedValue([
+            NANO_S_PLUS_DESCRIPTOR,
+            NANO_X_DESCRIPTOR,
+        ])
+
+        await expect(
+            new RNLedgerUsbService()
+                .createTransportProvider()
+                .connect(String(NANO_X_DESCRIPTOR.productId)),
+        ).rejects.toThrow(/Multiple Ledger devices/)
+        expect(transportOpenMock).not.toHaveBeenCalled()
+    })
+
+    test('connect falls back to the sole attached Ledger when the requested id no longer matches (USB ids reassign on replug)', async () => {
+        transportListMock.mockResolvedValue([NANO_S_PLUS_DESCRIPTOR])
+
+        await new RNLedgerUsbService()
+            .createTransportProvider()
+            .connect('stale-id-from-before-replug')
+
+        expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DESCRIPTOR)
     })
 
     test('wrapped transport.getAddress delegates to AlgorandApp and returns public-key bytes', async () => {

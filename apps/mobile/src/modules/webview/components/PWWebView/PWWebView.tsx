@@ -18,6 +18,7 @@ import {
     type WebViewMessageEvent,
     type WebViewProps,
 } from 'react-native-webview'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     type WebViewErrorEvent,
     type WebViewHttpErrorEvent,
@@ -77,7 +78,6 @@ const updateTheme = (mode: 'light' | 'dark') => {
 }
 
 export const PWWebView = (props: PWWebViewProps) => {
-    const styles = useStyles()
     const {
         url,
         enablePeraConnect,
@@ -89,8 +89,14 @@ export const PWWebView = (props: PWWebViewProps) => {
         onCustomMessage,
         webviewRef,
         favorite,
+        inBottomSheet = false,
         ...rest
     } = props
+    const insets = useSafeAreaInsets()
+    // A bottom sheet supplies no bottom inset of its own, so the footer must
+    // clear the home indicator / system nav bar itself. Outside a sheet the
+    // host screen handles insets, so keep it 0 to avoid double-insetting.
+    const styles = useStyles({ bottomInset: inBottomSheet ? insets.bottom : 0 })
     const { theme } = useTheme()
     const removeWebView = useWebViewStore(state => state.removeWebView)
     const internalRef = useRef<WebView>(null)

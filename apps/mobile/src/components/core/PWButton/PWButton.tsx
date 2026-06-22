@@ -110,6 +110,7 @@ export const PWButton = ({
             allowRapidPress={allowRapidPress}
             {...getTestProps(testID)}
             {...props}
+            accessibilityState={{ disabled: !!(isDisabled || isLoading) }}
         >
             {!!icon && !isLoading && (
                 <PWIcon

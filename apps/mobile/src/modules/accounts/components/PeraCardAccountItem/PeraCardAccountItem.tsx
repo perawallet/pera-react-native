@@ -20,15 +20,21 @@ export type PeraCardAccountItemProps = {
     nested: boolean
     /** Fired when the Activate button is tapped; the host closes the menu and navigates. */
     onActivate?: () => void
+    /** Fired when an activated card row is tapped; the host closes the menu and opens the card. */
+    onOpen?: () => void
 }
 
 export const PeraCardAccountItem = ({
     activated,
     nested,
     onActivate,
+    onOpen,
 }: PeraCardAccountItemProps) => {
     return activated ? (
-        <PeraCardConnectedRow nested={nested} />
+        <PeraCardConnectedRow
+            nested={nested}
+            onPress={onOpen}
+        />
     ) : (
         <PeraCardActivateRow onActivate={onActivate} />
     )

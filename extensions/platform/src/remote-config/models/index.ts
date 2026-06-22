@@ -22,6 +22,7 @@ export const RemoteConfigKeys = {
     enable_duress_pin: 'enable_duress_pin',
     pera_7_migration: 'pera_7_migration',
     force_platform_age_gate: 'force_platform_age_gate',
+    onramp_currency_decimals: 'onramp_currency_decimals',
 } as const
 
 export type RemoteConfigKey =
@@ -42,6 +43,9 @@ export const RemoteConfigDefaults: Record<
     enable_duress_pin: false,
     pera_7_migration: false,
     force_platform_age_gate: false,
+    // JSON map of source-currency symbol -> max fraction digits, extending the
+    // built-in onramp defaults. Empty string = no overrides.
+    onramp_currency_decimals: '',
 }
 
 export interface RemoteConfigService {

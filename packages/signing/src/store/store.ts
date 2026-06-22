@@ -14,6 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
 import type { SigningStore, SignRequest } from '../models'
+import { isInteractiveSource, type SourceType } from '../pipeline/types'
 import {
     logger,
     generateOrderedUniqueId,
@@ -59,6 +60,38 @@ const signingStoreStorage = (): PersistStorage<PartializedState> => ({
         getProvider().keyValueStorage.removeItem(name)
     },
 })
+
+/**
+ * Re-validate a rehydrated sign-request before it is allowed back into the
+ * signing actor lifecycle. Rehydrated state is attacker-/corruption-reachable
+ * (sandboxed MMKV), so we drop anything that is malformed or that would resume
+ * WITHOUT an interactive approval gate:
+ *   - malformed shape (missing id/type/transport) → can't drive the machine
+ *   - non-interactive sources (`'local'`/undefined) → would sign HEADLESSLY on
+ *     a cold start, with no review sheet (the same gap class as PERA-4416)
+ *   - `'deeplink'` → ephemeral; the user re-scans rather than resuming
+ * Interactive, persistable sources (e.g. `multisig-cosign`) are kept.
+ */
+export const isResumableRehydratedRequest = (
+    value: unknown,
+): value is SignRequest => {
+    if (typeof value !== 'object' || value === null) return false
+    const r = value as Record<string, unknown>
+    if (typeof r.id !== 'string' || r.id.length === 0) return false
+    if (typeof r.type !== 'string' || typeof r.transport !== 'string') {
+        return false
+    }
+    // `callback` transports carry in-memory callbacks that cannot survive
+    // serialization; `partialize` already blocks them from being persisted, so
+    // a rehydrated entry claiming `transport: 'callback'` is crafted/corrupted
+    // — reject it here too rather than surface an approval sheet that can only
+    // fail at the transport layer.
+    return (
+        r.transport !== 'callback' &&
+        r.sourceType !== 'deeplink' &&
+        isInteractiveSource(r.sourceType as SourceType | undefined)
+    )
+}
 
 const STORE_NAME = 'signing-store'
 
@@ -113,13 +146,13 @@ export const useSigningStore: UseBoundStore<
                         r.sourceType !== 'deeplink',
                 ),
             }),
-            // Strip any rehydrated deeplink request — matches the
-            // partialize filter above so the two stay in lockstep.
+            // Re-validate every rehydrated request before it can enter the
+            // signing actor lifecycle. Subsumes the old deeplink strip.
             onRehydrateStorage: () => state => {
                 if (state) {
                     state.pendingSignRequests = (
                         state.pendingSignRequests ?? []
-                    ).filter(r => r.sourceType !== 'deeplink')
+                    ).filter(isResumableRehydratedRequest)
                 }
             },
         },
