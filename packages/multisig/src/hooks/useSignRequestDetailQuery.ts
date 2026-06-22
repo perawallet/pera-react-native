@@ -29,6 +29,16 @@ type UseSignRequestDetailQueryParams = {
     signRequestId: string
     enabled?: boolean
     pollWhilePending?: boolean
+    /**
+     * When true, keep polling while the request is `failed` (in addition to
+     * the in-flight statuses). A `failed` status on an async (in-app)
+     * broadcast can be a transient backend false-negative for a transaction
+     * that actually confirmed on chain; the caller keeps this true only
+     * within a bounded recovery window so a later `confirmed` can supersede
+     * it (see `usePendingSignaturesContent`). Mirrors iOS, which polls the
+     * open sheet until `confirmed`. Requires `pollWhilePending` to be true.
+     */
+    pollWhileFailed?: boolean
 }
 
 const PENDING_POLL_INTERVAL = 5000
@@ -39,6 +49,7 @@ export const useSignRequestDetailQuery = ({
     signRequestId,
     enabled = true,
     pollWhilePending = false,
+    pollWhileFailed = false,
 }: UseSignRequestDetailQueryParams): UseQueryResult<
     MultisigSignRequest,
     Error
@@ -75,6 +86,12 @@ export const useSignRequestDetailQuery = ({
             ? data => {
                   const status = data.state.data?.status
                   if (status && IN_FLIGHT_SIGN_REQUEST_STATUSES.has(status)) {
+                      return PENDING_POLL_INTERVAL
+                  }
+                  // Keep polling on `failed` while the caller's recovery
+                  // window is open, so a transient false-negative can be
+                  // superseded by a later `confirmed`.
+                  if (status === 'failed' && pollWhileFailed) {
                       return PENDING_POLL_INTERVAL
                   }
                   return false
