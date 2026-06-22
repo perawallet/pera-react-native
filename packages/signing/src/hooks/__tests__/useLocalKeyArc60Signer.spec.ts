@@ -30,7 +30,8 @@ import type { Arc60Metadata, Arc60StdSigData } from '../../pipeline/types'
 
 const mockSignDataWithKey = vi.fn()
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<object>()),
     useKMS: () => ({
         signDataWithKey: (...args: any[]) => mockSignDataWithKey(...args),
     }),
