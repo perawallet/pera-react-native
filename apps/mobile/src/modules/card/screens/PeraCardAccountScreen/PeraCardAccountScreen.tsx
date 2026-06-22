@@ -10,28 +10,55 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWIcon, PWToolbar, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { PeraCardTabNavigator } from '../../components/PeraCardTabNavigator'
-import { PeraCardAccountHeader } from './PeraCardAccountHeader'
 import { usePeraCardAccountScreen } from './usePeraCardAccountScreen'
 import { useStyles } from './styles'
 
 export const PeraCardAccountScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { linkedLabel, onMore, onScan, onInbox } = usePeraCardAccountScreen()
+    const { cardDisplay, onSelectAccount, onMore, onScan, onInbox } =
+        usePeraCardAccountScreen()
 
     return (
         <PWView
             style={styles.container}
             testID='pera_card_account_screen'
         >
-            <PeraCardAccountHeader
-                linkedLabel={linkedLabel}
-                onMore={onMore}
-                onScan={onScan}
-                onInbox={onInbox}
+            <PWToolbar
+                paddingStyle='none'
+                style={styles.iconBar}
+                left={
+                    <AccountSelection
+                        card={cardDisplay}
+                        showSearch
+                        showPeraCardActivation
+                        onSelected={onSelectAccount}
+                        style={styles.accountSelectionToolbar}
+                    />
+                }
+                right={
+                    <PWView style={styles.iconBarSection}>
+                        <PWIcon
+                            name='ellipsis'
+                            onPress={onMore}
+                            testID='pera_card_account_more_button'
+                        />
+                        <PWIcon
+                            name='camera'
+                            onPress={onScan}
+                            testID='pera_card_account_scan_button'
+                        />
+                        <PWIcon
+                            name='inbox'
+                            onPress={onInbox}
+                            testID='pera_card_account_inbox_button'
+                        />
+                    </PWView>
+                }
             />
             <PWView style={styles.tabNavigator}>
                 <PeraCardTabNavigator />

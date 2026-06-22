@@ -13,11 +13,15 @@
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useCardStore } from '@perawallet/wallet-core-card'
+import { type AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
 type UsePeraCardAccountScreenResult = {
-    linkedLabel: string
+    /** Pera Card identity rendered in the shared AccountSelection trigger. */
+    cardDisplay: AccountDisplayCard
+    onSelectAccount: () => void
     onMore: () => void
     onScan: () => void
     onInbox: () => void
@@ -26,19 +30,28 @@ type UsePeraCardAccountScreenResult = {
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     const { t } = useLanguage()
     const { infoToast } = useToast()
+    const navigation = useAppNavigation()
     const accounts = useAllAccounts()
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
 
-    const linkedLabel = useMemo(() => {
+    const cardDisplay = useMemo<AccountDisplayCard>(() => {
         const account = connectedAddress
             ? accounts.find(item => item.address === connectedAddress)
             : undefined
-        return account?.name
-            ? t('peraCard.account.linked_to', { name: account.name })
-            : t('peraCard.account.linked_to_fallback')
+        return {
+            title: t('peraCard.account.navigation_title'),
+            subtitle: account?.name
+                ? t('peraCard.account.linked_to', { name: account.name })
+                : t('peraCard.account.linked_to_fallback'),
+        }
     }, [accounts, connectedAddress, t])
+
+    // Picking a wallet account from the switcher returns to the wallet home.
+    const onSelectAccount = useCallback(() => {
+        navigation.navigate('TabBar', { screen: 'Home' })
+    }, [navigation])
 
     // TODO(card): wire the more/scan/inbox actions once their destinations exist.
     const showComingSoon = useCallback(() => {
@@ -49,7 +62,8 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     }, [infoToast, t])
 
     return {
-        linkedLabel,
+        cardDisplay,
+        onSelectAccount,
         onMore: showComingSoon,
         onScan: showComingSoon,
         onInbox: showComingSoon,

@@ -18,6 +18,7 @@ const mockState = vi.hoisted(() => ({
     accounts: [] as Array<{ address: string; name?: string }>,
 }))
 const mockInfoToast = vi.fn()
+const mockNavigate = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -50,6 +51,17 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        navigate: mockNavigate,
+        push: vi.fn(),
+        replace: vi.fn(),
+        goBack: vi.fn(),
+        canGoBack: vi.fn(),
+        reset: vi.fn(),
+    }),
+}))
+
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {
@@ -70,12 +82,22 @@ describe('usePeraCardAccountScreen', () => {
         mockState.accounts = [{ address: 'ADDR_A', name: 'Main' }]
     })
 
+    it('exposes the Pera Card title for the selection trigger', () => {
+        const { result } = renderHook(() => usePeraCardAccountScreen())
+
+        expect(result.current.cardDisplay.title).toBe(
+            'peraCard.account.navigation_title',
+        )
+    })
+
     it('labels the linked account when the connected address matches', () => {
         mockState.connectedAddress = 'ADDR_A'
 
         const { result } = renderHook(() => usePeraCardAccountScreen())
 
-        expect(result.current.linkedLabel).toBe('peraCard.account.linked_to')
+        expect(result.current.cardDisplay.subtitle).toBe(
+            'peraCard.account.linked_to',
+        )
     })
 
     it('falls back when there is no connected account', () => {
@@ -83,7 +105,7 @@ describe('usePeraCardAccountScreen', () => {
 
         const { result } = renderHook(() => usePeraCardAccountScreen())
 
-        expect(result.current.linkedLabel).toBe(
+        expect(result.current.cardDisplay.subtitle).toBe(
             'peraCard.account.linked_to_fallback',
         )
     })
@@ -93,9 +115,17 @@ describe('usePeraCardAccountScreen', () => {
 
         const { result } = renderHook(() => usePeraCardAccountScreen())
 
-        expect(result.current.linkedLabel).toBe(
+        expect(result.current.cardDisplay.subtitle).toBe(
             'peraCard.account.linked_to_fallback',
         )
+    })
+
+    it('returns to the wallet home when a wallet account is selected', () => {
+        const { result } = renderHook(() => usePeraCardAccountScreen())
+
+        result.current.onSelectAccount()
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
     })
 
     it('header actions surface the coming-soon toast', () => {

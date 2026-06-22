@@ -40,7 +40,6 @@ export const PeraCardCreditsSection = ({
             <PWText variant='h4'>{t('peraCard.account.credits_title')}</PWText>
             <PWText
                 variant='footnoteMedium'
-                weight={400}
                 style={styles.sectionDescription}
             >
                 {t('peraCard.account.credits_description')}

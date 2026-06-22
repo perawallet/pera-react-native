@@ -20,20 +20,17 @@ export type CardTransactionSection = {
     data: CardTransaction[]
 }
 
-const MONTH_NAMES = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-]
+// Month names come from `Intl` (the same `en-US` convention as `formatDisplayDate`
+// in shared) rather than a hand-maintained English list. UTC keeps the grouping
+// and labels timezone-stable.
+const longMonthFormatter = new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    timeZone: 'UTC',
+})
+const shortMonthFormatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    timeZone: 'UTC',
+})
 
 /**
  * Groups card transactions into month sections, newest month first and newest
@@ -58,7 +55,7 @@ export const groupCardTransactionsByMonth = (
             indexByKey.set(key, sections.length)
             sections.push({
                 key,
-                title: MONTH_NAMES[date.getUTCMonth()],
+                title: longMonthFormatter.format(date),
                 data: [transaction],
             })
         } else {
@@ -72,6 +69,5 @@ export const groupCardTransactionsByMonth = (
 /** Short, timezone-stable transaction date, e.g. "12 Jul". */
 export const formatCardTransactionDate = (dateTime: string): string => {
     const date = new Date(dateTime)
-    const month = MONTH_NAMES[date.getUTCMonth()].slice(0, 3)
-    return `${date.getUTCDate()} ${month}`
+    return `${date.getUTCDate()} ${shortMonthFormatter.format(date)}`
 }
