@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { PeraCardRowHeader } from './PeraCardRowHeader'
 import { useStyles } from './styles'
@@ -18,32 +18,48 @@ import { useStyles } from './styles'
 type PeraCardConnectedRowProps = {
     /** When true, indent the card and draw the connector to the account above. */
     nested: boolean
+    onPress?: () => void
 }
 
-export const PeraCardConnectedRow = ({ nested }: PeraCardConnectedRowProps) => {
+export const PeraCardConnectedRow = ({
+    nested,
+    onPress,
+}: PeraCardConnectedRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     // TODO(card): derive the real label from lastKnownStatus / useCardUserQuery
     // once the on-chain link and card-status wiring lands.
-    const card = (
+    const cardContent = (
+        <PeraCardRowHeader>
+            <PWView style={styles.statusRow}>
+                <PWIcon
+                    name='check'
+                    size='sm'
+                    variant='secondary'
+                />
+                <PWText
+                    variant='footnoteMedium'
+                    style={styles.statusLabel}
+                    numberOfLines={1}
+                >
+                    {t('peraCard.account_item.status_approved')}
+                </PWText>
+            </PWView>
+        </PeraCardRowHeader>
+    )
+
+    const card = onPress ? (
+        <PWTouchableOpacity
+            style={[styles.container, styles.solidBorder]}
+            onPress={onPress}
+            testID='pera_card_connected_row'
+        >
+            {cardContent}
+        </PWTouchableOpacity>
+    ) : (
         <PWView style={[styles.container, styles.solidBorder]}>
-            <PeraCardRowHeader>
-                <PWView style={styles.statusRow}>
-                    <PWIcon
-                        name='check'
-                        size='sm'
-                        variant='secondary'
-                    />
-                    <PWText
-                        variant='footnoteMedium'
-                        style={styles.statusLabel}
-                        numberOfLines={1}
-                    >
-                        {t('peraCard.account_item.status_approved')}
-                    </PWText>
-                </PWView>
-            </PeraCardRowHeader>
+            {cardContent}
         </PWView>
     )
 

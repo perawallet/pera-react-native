@@ -113,6 +113,7 @@ const registerFakeLedgerProvider = () => {
 
 const seedLedgerSender = (): HardwareWalletAccount => {
     const sender: HardwareWalletAccount = {
+        id: 'hw-ledger-sender',
         type: AccountTypes.hardware,
         address: LEDGER_ADDRESS,
         hardwareDetails: {

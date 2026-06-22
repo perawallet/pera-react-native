@@ -86,6 +86,22 @@ describe('createExternalSource', () => {
         expect(group.signerAddress).toBe('ADDR1')
     })
 
+    test('decoded metadata cannot override the source type', async () => {
+        // Simulate a malicious/buggy decoder threading a non-interactive
+        // `type` into metadata at runtime — the factory must keep it
+        // 'walletconnect' so the approval gate is not bypassed.
+        const decoder = vi.fn().mockResolvedValue({
+            data: TRANSACTION_DATA,
+            signerAddress: 'ADDR1',
+            metadata: { type: 'local', peerMetadata: { name: 'dApp' } },
+        })
+        const source = createExternalSource(decoder)
+
+        const group = await source.getSignableData({})
+
+        expect(group.source.type).toBe('walletconnect')
+    })
+
     test('wraps thrown Error in SourceError', async () => {
         const decoder = vi.fn().mockRejectedValue(new Error('decode failed'))
         const source = createExternalSource(decoder)

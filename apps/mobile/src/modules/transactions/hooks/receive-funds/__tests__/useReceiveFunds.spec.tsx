@@ -16,6 +16,7 @@ import { useReceiveFunds, useReceiveFundsStore } from '../useReceiveFunds'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockAccount: WalletAccount = {
+    id: 'watch-test-account',
     address: 'test-address-123',
     name: 'Test Account',
     type: 'watch',

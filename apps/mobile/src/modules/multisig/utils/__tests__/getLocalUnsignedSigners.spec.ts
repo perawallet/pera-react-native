@@ -33,12 +33,14 @@ import type {
 import { getLocalUnsignedSigners } from '../getLocalUnsignedSigners'
 
 const buildAlgo25Account = (address: string): WalletAccount => ({
+    id: `algo25-${address}`,
     type: AccountTypes.algo25,
     address,
     keyPairId: `kp-${address}`,
 })
 
 const buildHardwareAccount = (address: string): WalletAccount => ({
+    id: `hardware-${address}`,
     type: AccountTypes.hardware,
     address,
     hardwareDetails: {
@@ -142,6 +144,7 @@ describe('getLocalUnsignedSigners', () => {
     it('excludes watch-only participants even when included in accounts', () => {
         const a = buildAlgo25Account('A')
         const watch: WalletAccount = {
+            id: 'watch-w',
             type: AccountTypes.watch,
             address: 'W',
         }
@@ -164,6 +167,7 @@ describe('getLocalUnsignedSigners', () => {
     it('excludes a watch participant rekeyed to a local-key account (multisig slot needs participant key)', () => {
         const auth = buildAlgo25Account('AUTH')
         const rekeyed: WalletAccount = {
+            id: 'watch-rekeyed-local',
             type: AccountTypes.watch,
             address: 'PARTICIPANT',
             rekeyAddress: 'AUTH',
@@ -178,6 +182,7 @@ describe('getLocalUnsignedSigners', () => {
     it('excludes a watch participant rekeyed to a hardware account', () => {
         const auth = buildHardwareAccount('AUTH')
         const rekeyed: WalletAccount = {
+            id: 'watch-rekeyed-hardware',
             type: AccountTypes.watch,
             address: 'PARTICIPANT',
             rekeyAddress: 'AUTH',

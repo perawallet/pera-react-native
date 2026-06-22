@@ -23,9 +23,21 @@ export type StatusBannerVariant =
 
 export const getStatusBannerVariant = (
     status: SignRequestStatus | null,
+    isFailureWithinRecoveryWindow = false,
 ): StatusBannerVariant => {
     if (!status) return 'waiting'
     if (status === 'confirmed') return 'success'
+    // A `failed` status on an async (in-app) broadcast can be a transient
+    // backend false-negative for a transaction that actually confirmed on
+    // chain. While still inside the recovery window, keep the request on the
+    // intermediate "submitting" banner and keep polling so a later `confirmed`
+    // supersedes it — mirrors iOS (polls the open sheet until `confirmed`) and
+    // Android (treats threshold-met as success and never surfaces
+    // submitting→failed). `expired`/`declined` are genuine terminal states and
+    // are never suppressed.
+    if (status === 'failed' && isFailureWithinRecoveryWindow) {
+        return 'submitting'
+    }
     if (FAILURE_SIGN_REQUEST_STATUSES.has(status)) return 'failure'
     // `ready` (threshold met, awaiting backend submission) and `submitting`
     // (in-flight) collapse into the same intermediate banner — distinguishes

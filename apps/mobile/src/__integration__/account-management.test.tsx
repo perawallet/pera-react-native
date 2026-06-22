@@ -23,6 +23,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useCardSessionStore } from '@perawallet/wallet-core-card'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
@@ -130,6 +131,9 @@ describe('Flow: Account management', () => {
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
         resetNotificationPreferences()
+        // Reset the card session so an activated state doesn't leak into other
+        // tests (it flips the Pera Card row between its activate/connected forms).
+        useCardSessionStore.getState().setAuthenticated(false)
     })
 
     it('Given two accounts with the first selected, when the user taps the second in the account menu, then the selected address switches', async () => {
@@ -212,6 +216,7 @@ describe('Flow: Account management', () => {
                 accountIndex: number,
                 name: string,
             ): WalletAccount => ({
+                id: `hw-ledger-${accountIndex}`,
                 type: AccountTypes.hardware,
                 address,
                 name,
@@ -494,6 +499,39 @@ describe('Flow: Account management', () => {
             // The intent fires so the host can close the menu sheet and
             // navigate to the Pera Card intro.
             expect(handlePeraCardActivate).toHaveBeenCalledTimes(1)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an activated card session, when the connected Pera Card row is tapped, then the open intent fires',
+        async () => {
+            useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+            useAccountsStore
+                .getState()
+                .setSelectedAccountAddress(ACCOUNT_A.address)
+            // An authenticated card session renders the connected (tappable)
+            // row instead of the dashed Activate CTA.
+            useCardSessionStore.getState().setAuthenticated(true)
+            const handlePeraCardOpen = vi.fn()
+
+            renderWithNavigation(
+                () => (
+                    <AccountMenu
+                        onSelected={vi.fn()}
+                        onAddAccount={() => {}}
+                        onOpenSort={() => {}}
+                        onPeraCardOpen={handlePeraCardOpen}
+                        showPeraCardActivation
+                    />
+                ),
+                'AccountMenuHost',
+            )
+
+            const row = await screen.findByTestId('pera_card_connected_row')
+            fireEvent.click(row)
+
+            expect(handlePeraCardOpen).toHaveBeenCalledTimes(1)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

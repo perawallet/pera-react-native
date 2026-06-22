@@ -82,6 +82,7 @@ const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const mockAccount: WalletAccount = {
+    id: 'bidali-webview-account',
     address: VALID_ADDRESS,
     name: 'Test',
     type: 'algo25',

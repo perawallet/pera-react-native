@@ -12,6 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { DEFAULT_MAX_FRACTION_DIGITS } from '@perawallet/wallet-core-onramp'
 import {
     getFiatBaseAmount,
     sanitizeAmountInput,
@@ -37,6 +38,22 @@ describe('sanitizeAmountInput', () => {
         expect(sanitizeAmountInput('100')).toBe('100')
         expect(sanitizeAmountInput('0.5')).toBe('0.5')
         expect(sanitizeAmountInput('12.')).toBe('12.')
+    })
+
+    it('defaults to the 19-digit fallback when no cap is given', () => {
+        const fraction = '1'.repeat(DEFAULT_MAX_FRACTION_DIGITS + 5)
+        expect(sanitizeAmountInput(`0.${fraction}`)).toBe(
+            `0.${'1'.repeat(DEFAULT_MAX_FRACTION_DIGITS)}`,
+        )
+    })
+
+    it('caps the fraction at the supplied number of places', () => {
+        expect(sanitizeAmountInput('0.123456789', 2)).toBe('0.12')
+        expect(sanitizeAmountInput('1.5', 0)).toBe('1.')
+        // Integer digits are never truncated.
+        expect(sanitizeAmountInput('123456789012345678901234567890', 2)).toBe(
+            '123456789012345678901234567890',
+        )
     })
 })
 

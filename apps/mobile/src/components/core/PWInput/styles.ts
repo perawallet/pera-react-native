@@ -15,29 +15,35 @@ import { getTypography, type TypographyVariant } from '@theme/typography'
 
 type PWInputStyleProps = {
     variant: TypographyVariant
+    // Runtime-scaled size emulating `adjustsFontSizeToFit` for the underlying
+    // <TextInput>; overrides the variant's font size when set.
+    fittedFontSize?: number
 }
 
-export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
-    const input = {
-        ...getTypography(theme, variant),
-        lineHeight: undefined,
-        // Full width so the placeholder doesn't wrap (RN TextInput has no
-        // maxLines for placeholders).
-        flex: 1,
-        paddingVertical: 0,
-        // Pin the single line centered on Android.
-        textAlignVertical: 'center' as const,
-    }
-    return {
-        // Zero RNEInput's default outer paddingHorizontal: 10 so fields align
-        // flush with surrounding content.
-        container: {
-            paddingHorizontal: 0,
-        },
-        inputContainer: {
-            paddingHorizontal: theme.spacing.md,
-            borderRadius: theme.borderRadius.xs,
-        },
-        input,
-    }
-})
+export const useStyles = makeStyles(
+    (theme, { variant, fittedFontSize }: PWInputStyleProps) => {
+        const input = {
+            ...getTypography(theme, variant),
+            ...(fittedFontSize ? { fontSize: fittedFontSize } : {}),
+            lineHeight: undefined,
+            // Full width so the placeholder doesn't wrap (RN TextInput has no
+            // maxLines for placeholders).
+            flex: 1,
+            paddingVertical: 0,
+            // Pin the single line centered on Android.
+            textAlignVertical: 'center' as const,
+        }
+        return {
+            // Zero RNEInput's default outer paddingHorizontal: 10 so fields
+            // align flush with surrounding content.
+            container: {
+                paddingHorizontal: 0,
+            },
+            inputContainer: {
+                paddingHorizontal: theme.spacing.md,
+                borderRadius: theme.borderRadius.xs,
+            },
+            input,
+        }
+    },
+)

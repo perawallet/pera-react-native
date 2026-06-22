@@ -30,6 +30,24 @@ describe('getStatusBannerVariant', () => {
         },
     )
 
+    it('keeps a failed request on the submitting banner while inside the recovery window', () => {
+        // A `failed` async broadcast can be a transient backend false-negative
+        // for a transaction that actually confirmed; while still recovering we
+        // render the intermediate banner so a later `confirmed` can supersede it.
+        expect(getStatusBannerVariant('failed', true)).toBe('submitting')
+    })
+
+    it('returns failure for a failed request once the recovery window is exhausted', () => {
+        expect(getStatusBannerVariant('failed', false)).toBe('failure')
+    })
+
+    it.each<SignRequestStatus>(['expired', 'declined'])(
+        'never suppresses genuinely terminal %s status, even within the recovery window',
+        status => {
+            expect(getStatusBannerVariant(status, true)).toBe('failure')
+        },
+    )
+
     it('returns waiting for pending status', () => {
         expect(getStatusBannerVariant('pending')).toBe('waiting')
     })

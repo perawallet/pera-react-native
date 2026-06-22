@@ -79,6 +79,36 @@ describe('pinRecord', () => {
         ).toBeNull()
     })
 
+    test('parsePinRecord rejects out-of-range / non-integer numeric fields', async () => {
+        const base = await createPinRecord('000000')
+        const encoder = new TextEncoder()
+        const bytesWith = (overrides: Record<string, unknown>) =>
+            encoder.encode(JSON.stringify({ ...base, ...overrides }))
+
+        expect(parsePinRecord(bytesWith({ failedAttempts: -1 }))).toBeNull()
+        expect(parsePinRecord(bytesWith({ failedAttempts: 1.5 }))).toBeNull()
+        expect(parsePinRecord(bytesWith({ lockoutEndTime: -5 }))).toBeNull()
+        expect(parsePinRecord(bytesWith({ lockoutEndTime: 1.5 }))).toBeNull()
+    }, 30_000)
+
+    test('parsePinRecord rejects malformed or wrong-length salt/hash', async () => {
+        const base = await createPinRecord('000000')
+        const encoder = new TextEncoder()
+        const bytesWith = (overrides: Record<string, unknown>) =>
+            encoder.encode(JSON.stringify({ ...base, ...overrides }))
+
+        // non-hex characters, correct length
+        expect(parsePinRecord(bytesWith({ salt: 'z'.repeat(32) }))).toBeNull()
+        expect(parsePinRecord(bytesWith({ hash: 'z'.repeat(64) }))).toBeNull()
+        // valid hex, wrong length
+        expect(
+            parsePinRecord(bytesWith({ salt: base.salt.slice(0, 30) })),
+        ).toBeNull()
+        expect(
+            parsePinRecord(bytesWith({ hash: base.hash.slice(0, 62) })),
+        ).toBeNull()
+    }, 30_000)
+
     test('constantTimeEqual returns true only for identical byte sequences', () => {
         expect(
             constantTimeEqual(

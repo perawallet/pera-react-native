@@ -163,6 +163,7 @@ describe('useSigningActionButtons', () => {
         mockRequestBottomSheet.mockResolvedValue('confirm')
 
         const { result } = renderHook(() => useSigningActionButtons())
+        const initialResetKey = result.current.slideResetKey
 
         await act(async () => {
             result.current.handleSignAndSend()
@@ -171,15 +172,18 @@ describe('useSigningActionButtons', () => {
         await waitFor(() => {
             expect(mockNext).toHaveBeenCalledTimes(1)
         })
+        // Proceeding to signing should leave the slider as-is (loading drives it).
+        expect(result.current.slideResetKey).toBe(initialResetKey)
     })
 
-    it('navigates to settings when guard resolves with go-to-settings', async () => {
+    it('navigates to settings and resets the slider when guard resolves with go-to-settings', async () => {
         setupPipeline([
             { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
         ])
         mockRequestBottomSheet.mockResolvedValue('go-to-settings')
 
         const { result } = renderHook(() => useSigningActionButtons())
+        const initialResetKey = result.current.slideResetKey
 
         await act(async () => {
             result.current.handleSignAndSend()
@@ -189,15 +193,18 @@ describe('useSigningActionButtons', () => {
             expect(mockNavigate).toHaveBeenCalledWith('SecuritySettings')
         })
         expect(mockNext).not.toHaveBeenCalled()
+        // Slider remounts (key bumps) so it is unslid when the user returns.
+        expect(result.current.slideResetKey).not.toBe(initialResetKey)
     })
 
-    it('does not call next when guard is dismissed', async () => {
+    it('does not call next and resets the slider when guard is dismissed', async () => {
         setupPipeline([
             { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
         ])
         mockRequestBottomSheet.mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useSigningActionButtons())
+        const initialResetKey = result.current.slideResetKey
 
         await act(async () => {
             result.current.handleSignAndSend()
@@ -209,6 +216,7 @@ describe('useSigningActionButtons', () => {
 
         expect(mockNext).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+        expect(result.current.slideResetKey).not.toBe(initialResetKey)
     })
 
     it('does not trigger guard for close warnings only', () => {

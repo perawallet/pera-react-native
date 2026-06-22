@@ -76,11 +76,14 @@ export const useLedgerAccountInfoContent = (
         const synthAccount: WalletAccount =
             preview.rekey.kind === 'rekeyedTo'
                 ? ({
+                      // Display-only synth account, keyed by its address.
+                      id: preview.address,
                       type: AccountTypes.watch,
                       address: preview.address,
                       rekeyAddress: preview.rekey.authAddress,
                   } satisfies WatchAccount)
                 : ({
+                      id: preview.address,
                       type: AccountTypes.hardware,
                       address: preview.address,
                       hardwareDetails: {
@@ -147,6 +150,7 @@ export const useLedgerAccountInfoContent = (
             // signing key). accountIndex 0 is a safe placeholder — AccountDisplay
             // only reads type/address/name for display.
             const authSynthAccount: HardwareWalletAccount = {
+                id: preview.rekey.authAddress,
                 type: AccountTypes.hardware,
                 address: preview.rekey.authAddress,
                 hardwareDetails: {
@@ -179,6 +183,7 @@ export const useLedgerAccountInfoContent = (
             preview.rekey.addresses.forEach(addr => {
                 // These rekeyed addresses are watch accounts (no key on this device).
                 const watchSynth: WatchAccount = {
+                    id: addr,
                     type: AccountTypes.watch,
                     address: addr,
                 }
