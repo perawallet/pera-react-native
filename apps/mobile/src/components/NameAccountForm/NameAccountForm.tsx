@@ -94,6 +94,7 @@ export const NameAccountForm = ({
                                 size='sm'
                                 onPress={() => onChangeText('')}
                                 containerStyle={styles.clearButton}
+                                testID='name_account_clear_button'
                             />
                         ) : undefined
                     }

@@ -77,6 +77,7 @@ export const AddressSearchView = ({
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.account.address)}
+                            testID={`account_result_row_${item.account.address}`}
                         >
                             <AccountResultRow
                                 account={item.account}
