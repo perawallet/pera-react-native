@@ -20,7 +20,7 @@ catalog:
   "@types/node": ^20.19.39
   "@types/react": ~19.2.14
   "@vitejs/plugin-react": 6.0.2
-  "@vitest/coverage-v8": ^4.1.4
+  "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
   before-after-hook: ^4.0.0
   decimal.js: ^10.6.0
@@ -41,7 +41,7 @@ catalog:
   msw: ^2.14.6
   vite: ^8.0.8
   vite-plugin-dts: ^5.0.0
-  vitest: ^4.1.4
+  vitest: ^4.1.9
   xstate: ^5.28.0
   zod: ^4.4.3
   zustand: ^5.0.12
