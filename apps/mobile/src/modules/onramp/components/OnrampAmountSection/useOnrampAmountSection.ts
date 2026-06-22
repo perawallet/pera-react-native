@@ -15,7 +15,17 @@ import { type Decimal } from 'decimal.js'
 import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { parseRampAmount, type RampToken } from '@perawallet/wallet-core-onramp'
+import {
+    DEFAULT_MAX_FRACTION_DIGITS,
+    getMaxFractionDigits,
+    parseCurrencyDecimalsConfig,
+    parseRampAmount,
+    type RampToken,
+} from '@perawallet/wallet-core-onramp'
+import {
+    RemoteConfigKeys,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
 import { getCircleFlagUrl } from '@components/CircleFlag'
 
 // Receive amounts fall back to this many fraction digits when the token does
@@ -51,15 +61,22 @@ type UseOnrampAmountSectionResult = {
 }
 
 // Keep only digits and a single decimal separator — the decimal-pad keyboard
-// still allows a second separator, and a paste can contain anything.
-export const sanitizeAmountInput = (text: string): string => {
+// still allows a second separator, and a paste can contain anything. The
+// fraction is capped at `maxFractionDigits` (currency-aware); integer digits
+// are untouched.
+export const sanitizeAmountInput = (
+    text: string,
+    maxFractionDigits: number = DEFAULT_MAX_FRACTION_DIGITS,
+): string => {
     const normalized = text.replace(/,/g, '.').replace(/[^0-9.]/g, '')
     const separatorIndex = normalized.indexOf('.')
     if (separatorIndex === -1) return normalized
-    return (
-        normalized.slice(0, separatorIndex + 1) +
-        normalized.slice(separatorIndex + 1).replace(/\./g, '')
-    )
+    const integerPart = normalized.slice(0, separatorIndex)
+    const fractionPart = normalized
+        .slice(separatorIndex + 1)
+        .replace(/\./g, '')
+        .slice(0, maxFractionDigits)
+    return `${integerPart}.${fractionPart}`
 }
 
 // Token-unit amount for the fiat (preferred-currency) row. Empty, invalid, or
@@ -107,12 +124,29 @@ export const useOnrampAmountSection = ({
 
     const fiatBaseAmount = useMemo(() => getFiatBaseAmount(amount), [amount])
 
+    // Fraction-digit cap for the pay field, resolved from the source currency
+    // and any remote-config overrides (fiat → 2, known crypto → its decimals,
+    // unknown → 19). Read the raw string outside the memo since useRemoteConfig
+    // returns a fresh wrapper each render.
+    const remoteConfig = useRemoteConfig()
+    const currencyDecimalsConfig = remoteConfig.getStringValue(
+        RemoteConfigKeys.onramp_currency_decimals,
+    )
+    const maxFractionDigits = useMemo(
+        () =>
+            getMaxFractionDigits(
+                token,
+                parseCurrencyDecimalsConfig(currencyDecimalsConfig),
+            ),
+        [token, currencyDecimalsConfig],
+    )
+
     const handleTextChange = useCallback(
         (text: string) => {
             if (!isPay || !onAmountChange) return
-            onAmountChange(sanitizeAmountInput(text))
+            onAmountChange(sanitizeAmountInput(text, maxFractionDigits))
         },
-        [isPay, onAmountChange],
+        [isPay, onAmountChange, maxFractionDigits],
     )
 
     return {

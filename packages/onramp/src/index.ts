@@ -11,6 +11,7 @@
  */
 
 export * from './constants'
+export * from './currency-decimals'
 export * from './errors'
 export * from './models'
 export * from './quotes'

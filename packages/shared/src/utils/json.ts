@@ -54,22 +54,33 @@ const quoteUnsafeIntegerLiterals = (text: string): string => {
             continue
         }
         if (c === '-' || isDigit(c)) {
+            // Consume the whole number token (sign, integer, fraction,
+            // exponent) as one unit. Scanning the parts separately would let
+            // a long fractional run (e.g. 0.12345678901234567) be re-read as a
+            // standalone integer and quoted, yielding invalid JSON.
             let j = i
             if (text[j] === '-') j++
-            let digits = 0
+            let intDigits = 0
             while (j < n && isDigit(text[j])) {
                 j++
-                digits++
+                intDigits++
             }
-            const isIntegerLiteral =
-                digits > 0 &&
-                text[j] !== '.' &&
-                text[j] !== 'e' &&
-                text[j] !== 'E'
+            let isIntegerLiteral = true
+            if (text[j] === '.') {
+                isIntegerLiteral = false
+                j++
+                while (j < n && isDigit(text[j])) j++
+            }
+            if (text[j] === 'e' || text[j] === 'E') {
+                isIntegerLiteral = false
+                j++
+                if (text[j] === '+' || text[j] === '-') j++
+                while (j < n && isDigit(text[j])) j++
+            }
             const literal = text.slice(i, j)
             if (
                 isIntegerLiteral &&
-                digits >= 16 &&
+                intDigits >= 16 &&
                 !Number.isSafeInteger(Number(literal))
             ) {
                 out += `"${literal}"`
