@@ -18,6 +18,8 @@ import { encodeAddress } from '@algorandfoundation/algokit-utils'
 /**
  * Integration test for Algo25 (standard Algorand 25-word mnemonic) key derivation.
  * Uses a known test vector — mnemonic -> seed -> Ed25519 keypair -> Algorand address.
+ *
+ * THROWAWAY TEST VECTOR — published in source; NEVER fund EXPECTED_ADDRESS.
  */
 
 const TEST_MNEMONIC =
