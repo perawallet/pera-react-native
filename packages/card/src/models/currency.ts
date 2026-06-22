@@ -10,11 +10,20 @@
  limitations under the License
  */
 
-export * from './card'
-export * from './currency'
-export * from './user'
-export * from './onboarding'
-export * from './transaction'
-export * from './session'
-export * from './funding'
-export * from './store'
+/**
+ * Stablecoins a Pera Card can settle in. USDC only today; add new entries here
+ * as they become supported.
+ */
+export const CardCurrency = {
+    USDC: 'USDC',
+} as const
+export type CardCurrency = (typeof CardCurrency)[keyof typeof CardCurrency]
+
+/**
+ * Default settlement currency to display until the API exposes the card's
+ * actual one.
+ *
+ * TODO(card): source the card's settlement currency from the API once exposed,
+ * falling back to this default.
+ */
+export const DEFAULT_CARD_CURRENCY: CardCurrency = CardCurrency.USDC

@@ -10,11 +10,18 @@
  limitations under the License
  */
 
-export * from './card'
-export * from './currency'
-export * from './user'
-export * from './onboarding'
-export * from './transaction'
-export * from './session'
-export * from './funding'
-export * from './store'
+import { PWScrollView } from '@components/core'
+import { PeraCardVisual } from './PeraCardVisual'
+import { usePeraCardDetails } from './usePeraCardDetails'
+import { useStyles } from './styles'
+
+export const PeraCardDetails = () => {
+    const styles = useStyles()
+    const { maskedPan } = usePeraCardDetails()
+
+    return (
+        <PWScrollView contentContainerStyle={styles.content}>
+            <PeraCardVisual maskedPan={maskedPan} />
+        </PWScrollView>
+    )
+}

@@ -109,6 +109,10 @@ export const AccountSelection = ({
                 navigation.navigate('PeraCard', { screen: 'PeraCardIntro' })
                 return
             }
+            case 'pera-card-open': {
+                navigation.navigate('PeraCard', { screen: 'PeraCardAccount' })
+                return
+            }
             case 'sort': {
                 trackEvent(HomeEvent.Sort)
                 await requestBottomSheet<void>({

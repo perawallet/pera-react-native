@@ -31,6 +31,8 @@ export type AccountMenuProps = {
     showPeraCardActivation?: boolean
     /** Fired when the Pera Card Activate button is tapped (host closes the menu and navigates). */
     onPeraCardActivate?: () => void
+    /** Fired when an activated Pera Card row is tapped (host closes the menu and opens the card). */
+    onPeraCardOpen?: () => void
     /**
      * Controlled highlight: when provided (even `null`), highlights this address
      * instead of the global selection, and tapping won't change the global account.
@@ -53,6 +55,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
         onAddAccount,
         onOpenSort,
         onPeraCardActivate,
+        onPeraCardOpen,
         headerContent,
         hideDefaultHeader,
     } = props
@@ -65,6 +68,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         activated={item.activated}
                         nested={item.nested}
                         onActivate={onPeraCardActivate}
+                        onOpen={onPeraCardOpen}
                     />
                 )
             }
@@ -79,7 +83,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                 </PWTouchableOpacity>
             )
         },
-        [handleTap, selectedAccountAddress, onPeraCardActivate],
+        [handleTap, selectedAccountAddress, onPeraCardActivate, onPeraCardOpen],
     )
 
     return (
