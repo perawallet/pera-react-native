@@ -22,6 +22,7 @@ export const RemoteConfigKeys = {
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
     enable_motion_lock: 'enable_motion_lock',
     enable_duress_pin: 'enable_duress_pin',
+    enable_cloud_backup: 'enable_cloud_backup',
     pera_7_migration: 'pera_7_migration',
     force_platform_age_gate: 'force_platform_age_gate',
     onramp_currency_decimals: 'onramp_currency_decimals',
@@ -59,6 +60,7 @@ export const RemoteConfigDefaults: Record<
     swap_price_impact_high_threshold: 5,
     enable_motion_lock: false,
     enable_duress_pin: false,
+    enable_cloud_backup: false,
     pera_7_migration: false,
     force_platform_age_gate: false,
     // JSON map of source-currency symbol -> max fraction digits, extending the

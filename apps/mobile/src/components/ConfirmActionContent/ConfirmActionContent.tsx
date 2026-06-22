@@ -27,11 +27,15 @@ export type ConfirmActionContentProps<TResult = boolean> = {
     message?: ReactNode
     confirmLabel?: string
     cancelLabel?: string
+    tertiaryLabel?: string
     confirmValue?: TResult
+    tertiaryValue?: TResult
     onConfirm?: () => void
     onCancel?: () => void
+    onTertiary?: () => void
     confirmVariant?: PWButtonProps['variant']
     cancelVariant?: PWButtonProps['variant']
+    tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
     testID?: string
     confirmTestID?: string
@@ -45,11 +49,15 @@ export const ConfirmActionContent = <TResult = boolean,>({
     message,
     confirmLabel,
     cancelLabel,
+    tertiaryLabel,
     confirmValue = true as TResult,
+    tertiaryValue,
     onConfirm,
     onCancel,
+    onTertiary,
     confirmVariant = 'primary',
     cancelVariant = 'secondary',
+    tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
     testID,
     confirmTestID,
@@ -68,10 +76,13 @@ export const ConfirmActionContent = <TResult = boolean,>({
             message={message}
             confirmLabel={confirmLabel}
             cancelLabel={cancelLabel}
+            tertiaryLabel={tertiaryLabel}
             onConfirm={onConfirm ?? (() => resolve(confirmValue))}
             onCancel={onCancel ?? dismiss}
+            onTertiary={onTertiary ?? (() => resolve(tertiaryValue as TResult))}
             confirmVariant={confirmVariant}
             cancelVariant={cancelVariant}
+            tertiaryVariant={tertiaryVariant}
             buttonPaddingStyle={buttonPaddingStyle}
             testID={testID}
             confirmTestID={confirmTestID}

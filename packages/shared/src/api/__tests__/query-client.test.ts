@@ -141,6 +141,9 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         backendAPIKey: 'test-api-key',
         algodApiKey: mockAlgodApiKey,
         indexerApiKey: mockIndexerApiKey,
+        // Not per-network: the backup service is one global endpoint, so every
+        // network's `backup` client is built against this same prefix.
+        backupBaseUrl: 'https://backup.test.perawallet.app/',
     },
     Networks: mockNetworks,
     // Mirrors the real per-network table: betanet/custom carry an EMPTY
@@ -486,7 +489,7 @@ describe('queryClient', () => {
         expect(options).not.toHaveProperty('timeout')
     })
 
-    it('lazily builds all 12 clients on first use, never at import time', async () => {
+    it('lazily builds all 16 clients on first use, never at import time', async () => {
         vi.resetModules()
         mockKy.create.mockClear()
 
@@ -507,9 +510,9 @@ describe('queryClient', () => {
         })
 
         // One request for one network builds ALL 4 networks ×
-        // (pera + algod + indexer) — the gate is shared, not a per-network
-        // build-on-miss.
-        expect(mockKy.create).toHaveBeenCalledTimes(12)
+        // (pera + algod + indexer + backup) — the gate is shared, not a
+        // per-network build-on-miss.
+        expect(mockKy.create).toHaveBeenCalledTimes(16)
 
         // Every client is built uniformly — a `prefix` (empty for betanet's
         // and custom's `pera` slot, which is never invoked) and the same
@@ -713,10 +716,10 @@ describe('queryClient', () => {
 
         updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
 
-        // 4 networks × (algod + indexer + pera) — updateBackendHeaders must
-        // build before extending, not silently skip networks nothing has
-        // requested yet.
-        expect(mockKy.extend).toHaveBeenCalledTimes(12)
+        // 4 networks × (algod + indexer + pera + backup) —
+        // updateBackendHeaders must build before extending, not silently skip
+        // networks nothing has requested yet.
+        expect(mockKy.extend).toHaveBeenCalledTimes(16)
     })
 
     it('does not re-append the request logger when extending clients', async () => {
@@ -793,13 +796,14 @@ describe('queryClient', () => {
                 indexerToken: mockIndexerApiKey,
             })
 
-            // 12 from ensureClientsBuilt (4 networks x algod+indexer+pera)
-            // + 2 for the rebuilt algod/indexer of the overridden network.
-            // 15 would mean pera got needlessly rebuilt too; fewer than 14
-            // would mean the override was silently dropped because the
-            // ensureClientsBuilt gate never ran (clients.get would have
-            // returned undefined on an empty, never-built map).
-            expect(mockKy.create).toHaveBeenCalledTimes(14)
+            // 16 from ensureClientsBuilt (4 networks x
+            // algod+indexer+pera+backup) + 2 for the rebuilt algod/indexer of
+            // the overridden network. 19 would mean pera got needlessly
+            // rebuilt too; fewer than 18 would mean the override was silently
+            // dropped because the ensureClientsBuilt gate never ran
+            // (clients.get would have returned undefined on an empty,
+            // never-built map).
+            expect(mockKy.create).toHaveBeenCalledTimes(18)
 
             const algodConfig = findClientConfig(
                 'https://overridden.algod.algo',

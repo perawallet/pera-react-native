@@ -23,11 +23,13 @@ import { getTestProps } from '@utils/test-id-helper'
 export type PWListItemProps = PWTouchableOpacityProps & {
     icon: IconName
     title: string
+    value?: string
 }
 
 export const PWListItem = ({
     icon,
     title,
+    value,
     style,
     testID,
     ...props
@@ -49,10 +51,20 @@ export const PWListItem = ({
                     {title}
                 </PWText>
             </PWView>
-            <PWIcon
-                name='chevron-right'
-                variant='secondary'
-            />
+            <PWView style={styles.trailingContainer}>
+                {value ? (
+                    <PWText
+                        style={styles.value}
+                        numberOfLines={1}
+                    >
+                        {value}
+                    </PWText>
+                ) : null}
+                <PWIcon
+                    name='chevron-right'
+                    variant='secondary'
+                />
+            </PWView>
         </PWTouchableOpacity>
     )
 }

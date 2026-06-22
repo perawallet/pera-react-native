@@ -50,6 +50,7 @@ describe('config/main', () => {
                               'https://mainnet.api.perawallet.app',
                           testnetBackendUrl:
                               'https://testnet.api.perawallet.app',
+                          backupBaseUrl: 'https://backup.perawallet.app/',
                       }
                     : { appEnvironment }
             expect(getConfig(overrides).discoverBaseUrl).toBe(expectedUrl)
