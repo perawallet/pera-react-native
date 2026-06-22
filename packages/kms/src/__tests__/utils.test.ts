@@ -23,6 +23,7 @@ import {
     algo25AddressOf,
     buildSeedMetadata,
     createdAtOf,
+    entropyKeyId,
     expiresAtOf,
     hexToBytes,
     isSeedKey,
@@ -201,24 +202,20 @@ describe('buildSeedMetadata', () => {
         expect(created).toBeGreaterThanOrEqual(before)
     })
 
-    test('stashes entropy as a lowercase hex string when provided', () => {
-        const entropy = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
-        expect(meta.entropy).toBe('deadbeef')
-    })
-
-    test('omits the entropy field entirely when not provided', () => {
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
+    test('never stores entropy in the metadata, even for a bip39 seed', () => {
+        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
         expect('entropy' in meta).toBe(false)
     })
 })
 
+describe('entropyKeyId', () => {
+    test('derives the entropy secret-key id from the seed id', () => {
+        expect(entropyKeyId('seed-123')).toBe('seed-123-bip39-entropy')
+    })
+})
+
 describe('hexToBytes', () => {
-    test('round-trips with the hex emitted by buildSeedMetadata', () => {
-        const entropy = new Uint8Array([1, 2, 3, 255])
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
-        expect(Array.from(hexToBytes(meta.entropy!))).toEqual(
-            Array.from(entropy),
-        )
+    test('decodes a lowercase hex string to its bytes', () => {
+        expect(Array.from(hexToBytes('010203ff'))).toEqual([1, 2, 3, 255])
     })
 })

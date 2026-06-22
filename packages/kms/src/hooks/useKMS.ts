@@ -18,13 +18,7 @@ import {
     KeyNotFoundError,
 } from '../errors'
 import { zeroBytes } from '../crypto/secure-memory'
-import {
-    expiresAtOf,
-    hexToBytes,
-    isSeedKey,
-    seedSchemeOf,
-    type SeedMetadata,
-} from '../utils'
+import { entropyKeyId, expiresAtOf, isSeedKey, seedSchemeOf } from '../utils'
 import { SeedScheme } from '../constants'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
@@ -35,6 +29,7 @@ import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
 import { entropyToIndices } from '../crypto/hdwallet-utils'
 import { algo25SeedToIndices } from '../crypto/algo25-utils'
+import { withSecret } from '../storage/secrets'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -184,9 +179,9 @@ export const useKMS = () => {
     /**
      * Runs `handler` with the mnemonic for the seed that minted `childKeyId`,
      * passed as a zeroable `Uint16Array` of BIP39 wordlist indices. The phrase
-     * is rebuilt from keystore material (BIP39 entropy or the algo25 seed) only
-     * for the duration of this call; the intermediate byte buffers and the
-     * index buffer are all zeroed in `finally`.
+     * is rebuilt from keystore material (the BIP39 entropy secret-key, or the
+     * algo25 seed) only for the duration of this call; the intermediate byte
+     * buffers and the index buffer are all zeroed in `finally`.
      *
      * Indices (not `string[]`) are the currency here so the secret retained
      * across the handler's work — which may be async and PIN-gated — is a
@@ -204,45 +199,45 @@ export const useKMS = () => {
         const scheme = seedSchemeOf(seedKey)
         if (!scheme) throw new InvalidKeyError(seedKey.id)
 
-        return withExportedKey(seedKey.id, async seedData => {
-            let indices: Uint16Array
-
-            if (scheme === SeedScheme.Bip39) {
-                const meta = (seedData.metadata ?? {}) as SeedMetadata
-                if (!meta.entropy) {
-                    throw new KeyManagementError(
-                        'HD seed is missing entropy metadata for mnemonic recovery',
-                    )
-                }
-                const entropyBytes = hexToBytes(meta.entropy)
-                try {
-                    // entropy → indices directly: the HD phrase is never
-                    // materialized as a string on the heap.
-                    indices = entropyToIndices(entropyBytes)
-                } finally {
-                    zeroBytes(entropyBytes)
-                }
-            } else {
-                if (!seedData.privateKey) {
-                    throw new KeyManagementError(
-                        'Algo25 seed has no private key bytes',
-                    )
-                }
-                const seedBytes = new Uint8Array(seedData.privateKey)
-                try {
-                    // seed → indices directly: the algo25 phrase is never
-                    // materialized as a string on the heap.
-                    indices = algo25SeedToIndices(seedBytes)
-                } finally {
-                    zeroBytes(seedBytes)
-                }
-            }
-
+        const runWithIndices = async (indices: Uint16Array): Promise<T> => {
             try {
                 return await handler(indices)
             } finally {
                 zeroBytes(indices)
             }
+        }
+
+        if (scheme === SeedScheme.Bip39) {
+            // The HD entropy lives in its own `secret-key` child, so the seed's
+            // XHD root is never exported just to recover the phrase. entropy →
+            // indices directly: the phrase is never a string on the heap.
+            const indices = await withSecret(
+                entropyKeyId(seedKey.id),
+                entropy => entropyToIndices(entropy),
+            )
+            if (!indices) {
+                throw new KeyManagementError(
+                    'HD seed is missing its entropy secret',
+                )
+            }
+            return runWithIndices(indices)
+        }
+
+        // algo25: the phrase derives from the seed's own private-key bytes.
+        return withExportedKey(seedKey.id, async seedData => {
+            if (!seedData.privateKey) {
+                throw new KeyManagementError(
+                    'Algo25 seed has no private key bytes',
+                )
+            }
+            const seedBytes = new Uint8Array(seedData.privateKey)
+            let indices: Uint16Array
+            try {
+                indices = algo25SeedToIndices(seedBytes)
+            } finally {
+                zeroBytes(seedBytes)
+            }
+            return runWithIndices(indices)
         })
     }
 

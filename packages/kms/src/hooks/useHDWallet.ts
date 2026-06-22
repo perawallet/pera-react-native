@@ -16,10 +16,11 @@ import {
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
-import { buildSeedMetadata } from '../utils'
+import { buildSeedMetadata, entropyKeyId } from '../utils'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
 import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
+import { commitSecret } from '../storage/secrets'
 import { zeroBytes } from '../crypto/secure-memory'
 import { SeedScheme } from '../constants'
 
@@ -49,10 +50,7 @@ export const useHDWallet = () => {
     }): Promise<HDWalletKeyResult> => {
         const { keyId, rootKey, entropy } = prepared
 
-        const metadata = buildSeedMetadata({
-            scheme: SeedScheme.Bip39,
-            entropy,
-        })
+        const metadata = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
 
         try {
             // The seed entry holds the 96-byte XHD root in `privateKey`.
@@ -88,6 +86,16 @@ export const useHDWallet = () => {
             }
 
             await keyStore.import(seed, 'raw')
+
+            // Entropy lives in a separate `secret-key` child, not in the seed
+            // metadata, so it never leaks through the seed's reactive snapshot
+            // or `keyStore.export()`. `commitSecret` copies the bytes; the
+            // originals are zeroed below.
+            await commitSecret({
+                id: entropyKeyId(keyId),
+                bytes: entropy,
+                metadata: { parentKeyId: keyId },
+            })
         } finally {
             zeroBytes(rootKey, entropy)
         }
