@@ -64,6 +64,7 @@ export const SwapToAssetSelectionList = ({
                 balance={item.balance}
                 onPress={() => handleAssetSelected(item)}
                 style={styles.item}
+                testID={`swap-asset-item-${item.dexAsset.assetId}`}
             />
         ),
         [handleAssetSelected, styles],
