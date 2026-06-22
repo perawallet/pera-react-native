@@ -22,6 +22,7 @@ import {
     reconcileKeystore,
 } from '@perawallet/wallet-extension-provider'
 import { logger } from '@perawallet/wallet-core-shared'
+import { PeraPasskeyAutofillSecrets } from '../../native-modules/passkey-autofill-secrets'
 
 const PASSKEY_INTENT_ACTIONS = {
     getPasskeyAction: 'com.algorand.perarn.passkeyautofill.GET_PASSKEY',
@@ -48,9 +49,30 @@ export const runPasskeyAutofillBootstrap = async (): Promise<void> => {
         return
     }
 
+    // Capture as a local const so the narrowed (non-null) binding survives
+    // into the closure below.
+    const secrets = PeraPasskeyAutofillSecrets
+
     await bootstrapPasskeyAutofill({
         service,
         intentActions: PASSKEY_INTENT_ACTIONS,
+        // iOS: persist the master key as raw bytes so no non-zeroable hex
+        // string is ever created in the JS heap. Absent on Android / older
+        // builds, where the bootstrap falls back to the string bridge.
+        writeMasterKeyBytes: secrets
+            ? async masterKey => {
+                  // getMasterKey() returns a (craftzdog) Buffer polyfill that
+                  // Expo's native typed-array bridge doesn't recognize — copy
+                  // into a genuine Uint8Array so it marshals to Swift Data /
+                  // Kotlin ByteArray. Wipe the copy after.
+                  const bytes = Uint8Array.from(masterKey)
+                  try {
+                      return await secrets.setMasterKey(bytes)
+                  } finally {
+                      bytes.fill(0)
+                  }
+              }
+            : undefined,
     })
 }
 

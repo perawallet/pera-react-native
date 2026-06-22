@@ -45,6 +45,7 @@ const makeService = () => ({
     setMasterKey: vi.fn().mockResolvedValue(undefined),
     setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
     setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
+    supportsDerivedMainKey: true,
     configureIntentActions: vi.fn().mockResolvedValue(undefined),
     isProviderActive: vi.fn().mockResolvedValue(true),
     refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
@@ -90,6 +91,94 @@ describe('bootstrapPasskeyAutofill', () => {
             'CREATE_ACTION',
         )
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
+    })
+
+    it('writes the master key as raw bytes via the native writer and skips the string bridge when it succeeds', async () => {
+        const service = makeService()
+        // Snapshot the bytes at call time: the bootstrap zeroes the source
+        // Buffer in its finally (after the native side has copied it), so the
+        // captured reference would otherwise read as zeros by assertion time.
+        let receivedBytes: Buffer | null = null
+        const writeMasterKeyBytes = vi.fn(async (bytes: Uint8Array) => {
+            receivedBytes = Buffer.from(bytes)
+            return true
+        })
+        mocks.getAllKeys.mockReturnValue([])
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            writeMasterKeyBytes,
+        })
+
+        expect(receivedBytes).toEqual(Buffer.from('aabbcc', 'hex'))
+        // No non-zeroable hex string handed to the string bridge.
+        expect(service.setMasterKey).not.toHaveBeenCalled()
+    })
+
+    it('zeroes the master-key bytes after the native writer has consumed them', async () => {
+        const service = makeService()
+        let sharedRef: Uint8Array | null = null
+        const writeMasterKeyBytes = vi.fn(async (bytes: Uint8Array) => {
+            sharedRef = bytes
+            return true
+        })
+        mocks.getAllKeys.mockReturnValue([])
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            writeMasterKeyBytes,
+        })
+
+        // The source Buffer the writer received is wiped once bootstrap unwinds.
+        expect(sharedRef).toEqual(Buffer.from([0, 0, 0]))
+    })
+
+    it('falls back to the string bridge when the native writer reports it did not write', async () => {
+        const service = makeService()
+        const writeMasterKeyBytes = vi.fn().mockResolvedValue(false)
+        mocks.getAllKeys.mockReturnValue([])
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            writeMasterKeyBytes,
+        })
+
+        expect(writeMasterKeyBytes).toHaveBeenCalled()
+        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
+    })
+
+    it('falls back to the string bridge and logs when the native writer throws', async () => {
+        const service = makeService()
+        const writeMasterKeyBytes = vi
+            .fn()
+            .mockRejectedValue(new Error('native write failed'))
+        mocks.getAllKeys.mockReturnValue([])
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+            writeMasterKeyBytes,
+        })
+
+        expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
+            step: 'writeMasterKeyBytes',
+        })
+        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
+    })
+
+    it('uses the string bridge when no native writer is injected', async () => {
+        const service = makeService()
+        mocks.getAllKeys.mockReturnValue([])
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
     })
 
     it('skips refreshing identities when the credential provider is inactive', async () => {
@@ -152,6 +241,28 @@ describe('bootstrapPasskeyAutofill', () => {
         })
     })
 
+    it('does not build or push a derived main key when the native side lacks setDerivedMainKey support', async () => {
+        const service = makeService()
+        service.supportsDerivedMainKey = false
+        mocks.getAllKeys.mockReturnValue(['hd'])
+        wireSecrets({
+            hd: {
+                id: 'root-id',
+                type: 'hd-root-key',
+                privateKey: new Uint8Array([1, 2, 3]),
+            } as unknown as KeyData,
+        })
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        // HD root id is still wired; the secret hex string is never materialized.
+        expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
+        expect(service.setDerivedMainKey).not.toHaveBeenCalled()
+    })
+
     it('does not push a derived main key when the HD root secret has no private bytes', async () => {
         const service = makeService()
         mocks.getAllKeys.mockReturnValue(['hd'])
@@ -211,6 +322,7 @@ describe('bootstrapPasskeyAutofill', () => {
             setDerivedMainKey: vi
                 .fn()
                 .mockRejectedValue(new Error('setDerivedMainKey')),
+            supportsDerivedMainKey: true,
             configureIntentActions: vi
                 .fn()
                 .mockRejectedValue(new Error('configureIntentActions')),

@@ -30,6 +30,21 @@ export interface BootstrapPasskeyAutofillOptions {
         getPasskeyAction: string
         createPasskeyAction: string
     }
+    /**
+     * Optional native byte-channel writer for the keystore master key.
+     *
+     * When supplied and it resolves `true`, the master key is persisted to the
+     * shared autofill store as **raw bytes** — so a non-zeroable hex string is
+     * never materialized in the JS heap (the `service.setMasterKey` bridge
+     * takes a `string`, and JS strings can't be wiped). Resolving `false` (or
+     * throwing) falls back to the string bridge, so platforms/builds without
+     * the native writer keep working unchanged.
+     *
+     * Injected by the app layer (the native module lives in the app, not in
+     * this logic package) so this package stays free of any native/`expo`
+     * dependency.
+     */
+    writeMasterKeyBytes?: (masterKey: Uint8Array) => Promise<boolean>
 }
 
 const HD_ROOT_KEY_TYPES = new Set<string>([
@@ -88,14 +103,30 @@ export const bootstrapPasskeyAutofill = (
 const runBootstrap = async (
     options: BootstrapPasskeyAutofillOptions,
 ): Promise<void> => {
-    const { service, intentActions } = options
+    const { service, intentActions, writeMasterKeyBytes } = options
 
     let masterKey: Buffer | null = null
     try {
         masterKey = await getMasterKey()
-        await service
-            .setMasterKey(masterKey.toString('hex'))
-            .catch(err => logger.error(err as Error, { step: 'setMasterKey' }))
+
+        // Prefer the native byte-channel: it hands the raw master-key bytes to
+        // the shared autofill store without ever creating a non-zeroable hex
+        // string in the JS heap. Fall back to the string bridge when the writer
+        // is absent (Android / older builds) or reports it didn't write.
+        const wroteMasterKeyNatively = writeMasterKeyBytes
+            ? await writeMasterKeyBytes(masterKey).catch(err => {
+                  logger.error(err as Error, { step: 'writeMasterKeyBytes' })
+                  return false
+              })
+            : false
+
+        if (!wroteMasterKeyNatively) {
+            await service
+                .setMasterKey(masterKey.toString('hex'))
+                .catch(err =>
+                    logger.error(err as Error, { step: 'setMasterKey' }),
+                )
+        }
 
         await configureHdRootKey(service, masterKey)
 
@@ -200,11 +231,24 @@ const configureHdRootKey = async (
                 logger.error(err as Error, { step: 'setHdRootKeyId' }),
             )
 
-        if (hdRootSecret.privateKey) {
+        // Only build the derived private-key hex string when the native side
+        // actually implements setDerivedMainKey. On current iOS/Android builds
+        // it doesn't, so this skips materializing a non-zeroable secret string
+        // for a call that would no-op anyway. Lights up automatically on builds
+        // that add native support.
+        if (hdRootSecret.privateKey && service.supportsDerivedMainKey) {
+            const pk = hdRootSecret.privateKey
+            // Read the hex off a Buffer *view* over the secret's existing bytes
+            // rather than `Buffer.from(pk)`, which would allocate a second copy
+            // of the private key that nothing zeroes (the finally below only
+            // wipes the original). The view shares the original's backing
+            // store, so that single wipe covers it.
+            const derived =
+                pk instanceof Uint8Array
+                    ? Buffer.from(pk.buffer, pk.byteOffset, pk.byteLength)
+                    : Buffer.from(pk)
             await service
-                .setDerivedMainKey(
-                    Buffer.from(hdRootSecret.privateKey).toString('hex'),
-                )
+                .setDerivedMainKey(derived.toString('hex'))
                 .catch(err =>
                     logger.error(err as Error, { step: 'setDerivedMainKey' }),
                 )

@@ -100,6 +100,19 @@ describe('PasskeyAutofillService', () => {
                 service.setDerivedMainKey('abcd'),
             ).resolves.toBeUndefined()
         })
+
+        it('reports supportsDerivedMainKey from the presence of the native method', () => {
+            // Default native double has no setDerivedMainKey → unsupported.
+            expect(
+                new PasskeyAutofillService(makeNative()).supportsDerivedMainKey,
+            ).toBe(false)
+
+            expect(
+                new PasskeyAutofillService(
+                    makeNative({ setDerivedMainKey: vi.fn() }),
+                ).supportsDerivedMainKey,
+            ).toBe(true)
+        })
     })
 
     describe('configureIntentActions platform gating', () => {

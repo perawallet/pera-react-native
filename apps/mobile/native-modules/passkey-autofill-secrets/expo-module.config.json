@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["PeraPasskeyAutofillSecretsModule"]
+  },
+  "android": {
+    "modules": ["com.algorand.perarn.passkeyautofillsecrets.PeraPasskeyAutofillSecretsModule"]
+  }
+}
