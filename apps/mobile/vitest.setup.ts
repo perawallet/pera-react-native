@@ -2449,6 +2449,12 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     // to satisfy `new Set(MNEMONIC_WORDLIST)` at import time without dragging
     // the real wordlist into the test bundle.
     MNEMONIC_WORDLIST: ['abandon', 'ability', 'able', 'about'],
+    // Seed-access origins consumed at import time by the signing pipeline and
+    // the backup flow (SIGNING_KEY_DOMAIN, useMnemonicForAddress). kms is fully
+    // stubbed here, so both the constant and its consumers read these values —
+    // they stay self-consistent without the real module.
+    SIGNING_ACCESS_DOMAIN: 'pera.accounts',
+    BACKUP_ACCESS_DOMAIN: 'backup-flow',
 }))
 
 // Mock @perawallet/wallet-core-assets

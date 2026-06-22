@@ -22,6 +22,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
         executeWithMnemonic: mockExecuteWithMnemonic,
     }),
+    BACKUP_ACCESS_DOMAIN: 'backup-flow',
 }))
 
 import { useMnemonicForAddress } from '../useMnemonicForAddress'
