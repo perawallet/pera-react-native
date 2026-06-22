@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import {
     AccountTypes,
     type WalletAccount,
@@ -112,7 +112,10 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxInvalidator: () => ({ invalidate: vi.fn() }),
 }))
 
-import { usePendingSignaturesContent } from '../usePendingSignaturesContent'
+import {
+    FAILED_RECOVERY_WINDOW_MS,
+    usePendingSignaturesContent,
+} from '../usePendingSignaturesContent'
 import { usePendingSignaturesSheetStore } from '../../../stores/usePendingSignaturesSheetStore'
 
 const buildSignRequest = (
@@ -216,8 +219,8 @@ describe('usePendingSignaturesContent', () => {
         expect(result.current.timeRemaining).toBeNull()
     })
 
-    it.each<SignRequestStatus>(['failed', 'expired', 'declined'])(
-        'shows failure banner for %s status',
+    it.each<SignRequestStatus>(['expired', 'declined'])(
+        'shows failure banner immediately for genuinely terminal %s status',
         status => {
             usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
             mockQueryReturn(
@@ -233,6 +236,79 @@ describe('usePendingSignaturesContent', () => {
             expect(result.current.failReason).toBe('Insufficient balance')
         },
     )
+
+    describe('failed-status recovery window', () => {
+        it('keeps the submitting banner when a request first becomes failed (transient backend false-negative)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'failed' }))
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.bannerVariant).toBe('submitting')
+        })
+
+        it('keeps polling on failed (pollWhileFailed) while still recovering', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'failed' }))
+
+            renderHook(() => usePendingSignaturesContent())
+
+            const lastCallArg =
+                useSignRequestDetailQueryMock.mock.calls.at(-1)?.[0]
+            expect(lastCallArg).toEqual(
+                expect.objectContaining({ pollWhileFailed: true }),
+            )
+        })
+
+        it('commits to the failure banner and stops polling once the recovery window elapses', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(
+                buildSignRequest({
+                    status: 'failed',
+                    failReasonDisplay: 'Unkown exception happened',
+                }),
+            )
+
+            const { result, rerender } = renderHook(() =>
+                usePendingSignaturesContent(),
+            )
+
+            expect(result.current.bannerVariant).toBe('submitting')
+
+            act(() => {
+                vi.advanceTimersByTime(FAILED_RECOVERY_WINDOW_MS)
+            })
+            rerender()
+
+            expect(result.current.bannerVariant).toBe('failure')
+            expect(result.current.failReason).toBe('Unkown exception happened')
+            const lastCallArg =
+                useSignRequestDetailQueryMock.mock.calls.at(-1)?.[0]
+            expect(lastCallArg).toEqual(
+                expect.objectContaining({ pollWhileFailed: false }),
+            )
+        })
+
+        it('recovers to the success banner if the request confirms within the window', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest({ status: 'failed' }))
+
+            const { result, rerender } = renderHook(() =>
+                usePendingSignaturesContent(),
+            )
+
+            expect(result.current.bannerVariant).toBe('submitting')
+
+            // Next poll, still inside the window, returns confirmed.
+            act(() => {
+                vi.advanceTimersByTime(5000)
+            })
+            mockQueryReturn(buildSignRequest({ status: 'confirmed' }))
+            rerender()
+
+            expect(result.current.bannerVariant).toBe('success')
+        })
+    })
 
     it.each<[SignRequestStatus, string]>([
         ['expired', 'multisig.pending_signatures.canceled'],

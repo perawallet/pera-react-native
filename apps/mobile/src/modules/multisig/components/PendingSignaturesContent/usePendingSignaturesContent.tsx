@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { trackEvent, MultisigEvent } from '@analytics'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
@@ -86,6 +86,18 @@ export type UsePendingSignaturesContentResult = {
     disableOtherSignersForDraft: boolean
 }
 
+/**
+ * How long to keep treating a `failed` request as still-submitting before
+ * committing to the failure banner. For an async (in-app) broadcast the
+ * backend owns submission and can briefly report `failed` for a transaction
+ * that actually landed on chain (a false-negative); we keep polling for this
+ * window so a later `confirmed` supersedes it. At the 5s detail-poll interval
+ * this is ~6 poll cycles. Mirrors the native apps, which never surface this
+ * transient state (iOS polls the open sheet until `confirmed`; Android treats
+ * threshold-met as success).
+ */
+export const FAILED_RECOVERY_WINDOW_MS = 30_000
+
 const FAILURE_BANNER_KEY_BY_STATUS: Partial<Record<SignRequestStatus, string>> =
     {
         expired: 'multisig.pending_signatures.canceled',
@@ -121,6 +133,13 @@ export const usePendingSignaturesContent =
             isDraft && signRequestId ? state.drafts[signRequestId] : undefined,
         )
 
+        // Tracks whether the bounded recovery window for a `failed` request
+        // has elapsed. While false, a `failed` request is treated as still
+        // submitting (keep polling) so a transient backend false-negative can
+        // be superseded by a later `confirmed`. See FAILED_RECOVERY_WINDOW_MS.
+        const [isFailedRecoveryExpired, setIsFailedRecoveryExpired] =
+            useState(false)
+
         const { data: signRequestData, isLoading } = useSignRequestDetailQuery({
             network,
             deviceId,
@@ -130,6 +149,8 @@ export const usePendingSignaturesContent =
             // the local draft below so the rest of the hook is unchanged.
             enabled: signRequestId !== null && deviceId !== '' && !isDraft,
             pollWhilePending: true,
+            // Keep polling on `failed` until the recovery window elapses.
+            pollWhileFailed: !isFailedRecoveryExpired,
         })
         const signRequest = isDraft
             ? (synthesizeDraftSignRequest(draft) ?? null)
@@ -137,8 +158,30 @@ export const usePendingSignaturesContent =
 
         const status = signRequest?.status ?? null
 
-        const bannerVariant: StatusBannerVariant =
-            getStatusBannerVariant(status)
+        // Open a one-shot recovery window the first time a request reports
+        // `failed`, and close it (reset) whenever the status moves off
+        // `failed` — e.g. a later poll recovers to `confirmed`. The window is
+        // measured from the first `failed`, not reset per poll, because the
+        // dependency is the `status` string (stable across identical polls).
+        useEffect(() => {
+            if (status !== 'failed') {
+                setIsFailedRecoveryExpired(false)
+                return
+            }
+            const timer = setTimeout(
+                () => setIsFailedRecoveryExpired(true),
+                FAILED_RECOVERY_WINDOW_MS,
+            )
+            return () => clearTimeout(timer)
+        }, [status])
+
+        const isFailureWithinRecoveryWindow =
+            status === 'failed' && !isFailedRecoveryExpired
+
+        const bannerVariant: StatusBannerVariant = getStatusBannerVariant(
+            status,
+            isFailureWithinRecoveryWindow,
+        )
 
         const signedCount = signRequest
             ? getSignedResponseCount(signRequest)
