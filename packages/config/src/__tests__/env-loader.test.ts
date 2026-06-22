@@ -279,6 +279,7 @@ describe('env-loader', () => {
             stakingBaseUrl: 'https://staking.example.com',
             onrampBaseUrl: 'https://onramp.example.com',
             onrampSupportEmail: 'support@xoswap.example.com',
+            backupBaseUrl: 'https://backup.example.com',
             supportBaseUrl: 'https://support.example.com',
             mainnetBidaliApiKey: 'test-mainnet-bidali-key',
             testnetBidaliApiKey: 'test-testnet-bidali-key',

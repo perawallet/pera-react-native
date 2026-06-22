@@ -33,11 +33,15 @@ export type ConfirmActionContentProps<TResult = boolean> = {
     message?: ReactNode
     confirmLabel?: string
     cancelLabel?: string
+    tertiaryLabel?: string
     confirmValue?: TResult
+    tertiaryValue?: TResult
     onConfirm?: () => void
     onCancel?: () => void
+    onTertiary?: () => void
     confirmVariant?: PWButtonProps['variant']
     cancelVariant?: PWButtonProps['variant']
+    tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
     testID?: string
     confirmTestID?: string
@@ -51,11 +55,15 @@ export const ConfirmActionContent = <TResult = boolean,>({
     message,
     confirmLabel,
     cancelLabel,
+    tertiaryLabel,
     confirmValue = true as TResult,
+    tertiaryValue,
     onConfirm,
     onCancel,
+    onTertiary,
     confirmVariant = 'primary',
     cancelVariant = 'secondary',
+    tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
     testID,
     confirmTestID,
@@ -70,6 +78,8 @@ export const ConfirmActionContent = <TResult = boolean,>({
 
     const handleConfirm = onConfirm ?? (() => resolve(confirmValue))
     const handleCancel = onCancel ?? dismiss
+    const handleTertiary =
+        onTertiary ?? (() => resolve(tertiaryValue as TResult))
 
     return (
         <PWView
@@ -118,6 +128,14 @@ export const ConfirmActionContent = <TResult = boolean,>({
                             onPress={handleCancel}
                             paddingStyle={buttonPaddingStyle}
                             testID={cancelTestID}
+                        />
+                    )}
+                    {!!tertiaryLabel && (
+                        <PWButton
+                            variant={tertiaryVariant}
+                            title={tertiaryLabel}
+                            onPress={handleTertiary}
+                            paddingStyle={buttonPaddingStyle}
                         />
                     )}
                 </PWView>

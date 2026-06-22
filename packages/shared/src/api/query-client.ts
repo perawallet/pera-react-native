@@ -33,6 +33,7 @@ type BackendInstances = {
     algod: KyInstance
     indexer: KyInstance
     pera: KyInstance
+    backup: KyInstance
 }
 
 type DiagnosticContext = {
@@ -275,6 +276,15 @@ const testnetPeraClient = ky.create({
     prefix: config.testnetBackendUrl,
     retry: peraRetryConfig,
 })
+
+const backupClient = ky.create({
+    hooks: {
+        ...standardHooks,
+        beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
+    },
+    prefix: config.backupBaseUrl,
+    retry: peraRetryConfig,
+})
 const mainnetAlgodClient = ky.create({
     hooks: {
         ...standardHooks,
@@ -351,11 +361,13 @@ clients.set(Networks.mainnet, {
     algod: mainnetAlgodClient,
     indexer: mainnetIndexerClient,
     pera: mainnetPeraClient,
+    backup: backupClient,
 })
 clients.set(Networks.testnet, {
     algod: testnetAlgodClient,
     indexer: testnetIndexerClient,
     pera: testnetPeraClient,
+    backup: backupClient,
 })
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
@@ -381,6 +393,7 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
             algod: applyHeaders(client.algod),
             indexer: applyHeaders(client.indexer),
             pera: applyHeaders(client.pera),
+            backup: applyHeaders(client.backup),
         })
     })
 }

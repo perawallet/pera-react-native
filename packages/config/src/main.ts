@@ -56,6 +56,7 @@ export const configSchema = z.object({
     onrampBaseUrl: z.url(),
     /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
     onrampSupportEmail: z.email(),
+    backupBaseUrl: z.url(),
     supportBaseUrl: z.url(),
     termsOfServiceUrl: z.url(),
     privacyPolicyUrl: z.url(),
@@ -153,6 +154,7 @@ const productionConfig = {
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
     onrampSupportEmail: 'support@xoswap.com',
+    backupBaseUrl: 'https://staging.backup.perawallet.app/',
     supportBaseUrl: 'https://support.perawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
@@ -262,6 +264,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     stakingBaseUrl: 'STAKING_BASE_URL',
     onrampBaseUrl: 'ONRAMP_BASE_URL',
     onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
+    backupBaseUrl: 'BACKUP_BASE_URL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
     termsOfServiceUrl: 'TERMS_OF_SERVICE_URL',
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',
