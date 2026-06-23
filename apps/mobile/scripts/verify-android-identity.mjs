@@ -61,25 +61,37 @@ const gradleProperties = readFileSync(
     join(androidRoot, 'gradle.properties'),
     'utf8',
 )
-const buildGradleAll = buildGradle + '\n' + gradleProperties
+// targetSdkCorpus combines build.gradle + gradle.properties ONLY for the
+// targetSdkVersion check — applicationId/namespace still read buildGradle alone.
+const targetSdkCorpus = buildGradle + '\n' + gradleProperties
 const mergedRoot = join(androidRoot, 'app/build/intermediates/merged_manifests')
 
 // AGP < 8: <mergedRoot>/<variant>/AndroidManifest.xml
 // AGP >= 8: <mergedRoot>/<variant>/<task>/AndroidManifest.xml
 // Walk up to two levels deep to handle both layouts.
 const findMergedManifest = root => {
+    const candidates = []
     for (const entry of readdirSync(root)) {
         if (!entry.toLowerCase().includes('release')) continue
         const variantPath = join(root, entry)
         if (!statSync(variantPath).isDirectory()) continue
         const flat = join(variantPath, 'AndroidManifest.xml')
-        if (existsSync(flat)) return flat
+        if (existsSync(flat)) {
+            candidates.push(flat)
+            continue
+        }
         for (const sub of readdirSync(variantPath)) {
             const deep = join(variantPath, sub, 'AndroidManifest.xml')
-            if (existsSync(deep)) return deep
+            if (existsSync(deep)) candidates.push(deep)
         }
     }
-    return null
+    if (candidates.length > 1) {
+        console.warn(
+            '[verify-android-identity] WARNING: multiple release manifest candidates found — using first:',
+            candidates,
+        )
+    }
+    return candidates[0] ?? null
 }
 const manifestPath = findMergedManifest(mergedRoot)
 if (!manifestPath) {
@@ -101,9 +113,10 @@ assert(
 )
 // Expo stores targetSdkVersion in gradle.properties (android.targetSdkVersion=N) rather
 // than inline; the assertion checks both locations so it works across Expo/AGP versions.
+// Two precise forms only — the over-broad `targetSdk\s*=?\s*36` middle branch is omitted.
 assert(
-    /targetSdkVersion\s+36|targetSdk\s*=?\s*36|android\.targetSdkVersion\s*=\s*36/.test(
-        buildGradleAll,
+    /targetSdkVersion\s+36|android\.targetSdkVersion\s*=\s*36/.test(
+        targetSdkCorpus,
     ),
     'targetSdkVersion 36 not found',
 )
