@@ -153,12 +153,25 @@ function buildAppConfig(env) {
         'android.permission.USE_FINGERPRINT',
         'android.permission.VIBRATE',
         'android.permission.RECEIVE_BOOT_COMPLETED',
+        'android.permission.POST_NOTIFICATIONS',
         // BLE permissions for Ledger hardware wallet communication
         'android.permission.BLUETOOTH',
         'android.permission.BLUETOOTH_ADMIN',
         'android.permission.BLUETOOTH_SCAN',
         'android.permission.BLUETOOTH_CONNECT',
         'android.permission.ACCESS_FINE_LOCATION',
+      ],
+      // Permissions auto-added by Expo plugins (image-picker / screen-capture /
+      // vision-camera) that the native app never requested and the RN app does
+      // not use. Blocked so the merged manifest matches native (no new runtime
+      // prompts / store-review flags). READ_MEDIA_IMAGES is intentionally kept —
+      // expo-image-picker needs it for the contact-photo flow.
+      // Confirm the final set against the native pera-android manifest (WB-7).
+      blockedPermissions: [
+        'android.permission.RECORD_AUDIO',
+        'android.permission.SYSTEM_ALERT_WINDOW',
+        'android.permission.READ_MEDIA_AUDIO',
+        'android.permission.READ_MEDIA_VIDEO',
       ],
       intentFilters: [
         {
@@ -255,7 +268,7 @@ function buildAppConfig(env) {
           },
           android: {
             minSdkVersion: 24,
-            targetSdkVersion: 35,
+            targetSdkVersion: 36,
             compileSdkVersion: 36,
             buildToolsVersion: '35.0.0',
             enableProguardInReleaseBuilds: false,
