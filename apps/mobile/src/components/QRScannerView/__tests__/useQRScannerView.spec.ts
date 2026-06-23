@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { useBarcodeScannerOutput } from 'react-native-vision-camera-barcode-scanner'
 import { useQRScannerView } from '../useQRScannerView'
 
 const mockHandleDeepLink = vi.fn()
@@ -49,6 +50,18 @@ describe('useQRScannerView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         capturedOnBarcodeScanned = null
+    })
+
+    it('scans from the full-resolution buffer so dense QR codes decode on Android', () => {
+        renderHook(() =>
+            useQRScannerView({
+                isVisible: true,
+                onSuccess: vi.fn(),
+            }),
+        )
+        expect(useBarcodeScannerOutput).toHaveBeenCalledWith(
+            expect.objectContaining({ outputResolution: 'full' }),
+        )
     })
 
     it('calls handleDeepLink when skipDeepLinkHandler is false', () => {
