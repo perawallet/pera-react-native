@@ -57,7 +57,8 @@ const appDir = readdirSync(iosRoot).find(entry => {
         statSync(full).isDirectory() &&
         !entry.endsWith('.xcodeproj') &&
         entry !== 'Pods' &&
-        readdirSync(full).some(file => file.endsWith('.entitlements'))
+        readdirSync(full).some(file => file.endsWith('.entitlements')) &&
+        readdirSync(full).includes('Info.plist')
     )
 })
 if (!appDir) {
