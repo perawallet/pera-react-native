@@ -82,47 +82,52 @@ export const ViewPassphraseContent = ({
                     </PWView>
                 )}
 
-                {!isLoading && !error && wordIndices && wordIndices.length > 0 && (
-                    <PWView
-                        style={styles.grid}
-                        testID={`${testID}_grid`}
-                    >
-                        {[0, 1].map(columnIndex => {
-                            const half = Math.ceil(wordIndices.length / 2)
-                            const start = columnIndex * half
-                            const columnIndices = Array.from(
-                                wordIndices.slice(start, start + half),
-                            )
-                            return (
-                                <PWView
-                                    key={columnIndex}
-                                    style={styles.column}
-                                >
-                                    {columnIndices.map((wordIndex, i) => {
-                                        const number = start + i + 1
-                                        return (
-                                            <PWView
-                                                key={`${number}-${wordIndex}`}
-                                                style={styles.wordCell}
-                                            >
-                                                <PWText
-                                                    style={styles.wordIndex}
+                {!isLoading &&
+                    !error &&
+                    wordIndices &&
+                    wordIndices.length > 0 && (
+                        <PWView
+                            style={styles.grid}
+                            testID={`${testID}_grid`}
+                        >
+                            {[0, 1].map(columnIndex => {
+                                const half = Math.ceil(wordIndices.length / 2)
+                                const start = columnIndex * half
+                                const columnIndices = Array.from(
+                                    wordIndices.slice(start, start + half),
+                                )
+                                return (
+                                    <PWView
+                                        key={columnIndex}
+                                        style={styles.column}
+                                    >
+                                        {columnIndices.map((wordIndex, i) => {
+                                            const number = start + i + 1
+                                            return (
+                                                <PWView
+                                                    key={`${number}-${wordIndex}`}
+                                                    style={styles.wordCell}
                                                 >
-                                                    {String(number)}
-                                                </PWText>
-                                                <PWText style={styles.wordText}>
-                                                    {mnemonicIndexToWord(
-                                                        wordIndex,
-                                                    )}
-                                                </PWText>
-                                            </PWView>
-                                        )
-                                    })}
-                                </PWView>
-                            )
-                        })}
-                    </PWView>
-                )}
+                                                    <PWText
+                                                        style={styles.wordIndex}
+                                                    >
+                                                        {String(number)}
+                                                    </PWText>
+                                                    <PWText
+                                                        style={styles.wordText}
+                                                    >
+                                                        {mnemonicIndexToWord(
+                                                            wordIndex,
+                                                        )}
+                                                    </PWText>
+                                                </PWView>
+                                            )
+                                        })}
+                                    </PWView>
+                                )
+                            })}
+                        </PWView>
+                    )}
             </PWView>
         </PWView>
     )
