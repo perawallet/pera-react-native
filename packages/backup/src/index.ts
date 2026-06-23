@@ -14,9 +14,11 @@
 //   - mnemonic: "has the user written down their phrase?" prompt state
 //   - asb:      Algorand Secure Backup (ARC-35) recovery-only support
 //   - peraweb:  Pera Web "Transfer Accounts" QR-based import
+//   - cloud:    end-to-end encrypted multi-device cloud backup + sync
 //   - shared:   primitives common to ASB + Pera Web (secretbox, seed→
 //               mnemonic import, private_key decoder)
 export * from './asb'
+export * from './cloud'
 export * from './mnemonic'
 export * from './peraweb'
 export * from './shared'
