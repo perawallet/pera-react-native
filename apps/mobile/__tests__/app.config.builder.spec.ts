@@ -213,4 +213,21 @@ describe('buildAppConfig — associated-domains restore plugin (WB-6)', () => {
             isProduction: false,
         })
     })
+
+    it('registers the restore plugin after the passkey-autofill plugin', () => {
+        const { plugins } = build({ APP_ENV: 'production' })
+        const indexOf = (id: string) =>
+            plugins.findIndex(
+                plugin => Array.isArray(plugin) && plugin[0] === id,
+            )
+        const autofillIndex = indexOf(
+            '@algorandfoundation/react-native-passkey-autofill',
+        )
+        const restoreIndex = indexOf(
+            './plugins/withProductionAssociatedDomains',
+        )
+
+        expect(autofillIndex).toBeGreaterThanOrEqual(0)
+        expect(restoreIndex).toBeGreaterThan(autofillIndex)
+    })
 })

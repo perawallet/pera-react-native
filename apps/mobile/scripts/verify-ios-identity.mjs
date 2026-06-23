@@ -32,7 +32,12 @@ const assert = (condition, message) => {
     if (!condition) failures.push(message)
 }
 
-const env = { ...process.env, APP_ENV: 'production', IOS_TEAM_ID: TEAM_ID }
+const env = {
+    ...process.env,
+    APP_ENV: 'production',
+    IOS_TEAM_ID: TEAM_ID,
+    PASSKEY_AUTOFILL_SITE: 'https://perawallet.app',
+}
 const run = (cmd, args) =>
     execFileSync(cmd, args, { cwd: mobileRoot, stdio: 'inherit', env })
 
@@ -53,12 +58,17 @@ const pbx = readFileSync(join(iosRoot, xcodeproj, 'project.pbxproj'), 'utf8')
 // The app source dir is the one holding the .entitlements (excludes Pods/.xcodeproj).
 const appDir = readdirSync(iosRoot).find(entry => {
     const full = join(iosRoot, entry)
+    if (
+        !statSync(full).isDirectory() ||
+        entry.endsWith('.xcodeproj') ||
+        entry === 'Pods'
+    ) {
+        return false
+    }
+    const children = readdirSync(full)
     return (
-        statSync(full).isDirectory() &&
-        !entry.endsWith('.xcodeproj') &&
-        entry !== 'Pods' &&
-        readdirSync(full).some(file => file.endsWith('.entitlements')) &&
-        readdirSync(full).includes('Info.plist')
+        children.some(file => file.endsWith('.entitlements')) &&
+        children.includes('Info.plist')
     )
 })
 if (!appDir) {
@@ -105,13 +115,15 @@ assert(
     'aps-environment is not production',
 )
 assert(
-    /appattest-environment<\/key>\s*<string>production<\/string>/.test(
+    /<key>com\.apple\.developer\.devicecheck\.appattest-environment<\/key>\s*<string>production<\/string>/.test(
         entitlements,
     ),
     'appattest-environment is not production',
 )
 assert(
-    /autofill-credential-provider<\/key>\s*<true\/>/.test(entitlements),
+    /<key>com\.apple\.developer\.authentication-services\.autofill-credential-provider<\/key>\s*<true\/>/.test(
+        entitlements,
+    ),
     'autofill-credential-provider entitlement is not true',
 )
 

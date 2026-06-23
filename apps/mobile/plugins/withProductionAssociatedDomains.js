@@ -39,11 +39,19 @@ function mergeAssociatedDomains(existing) {
 /**
  * Restores the production applinks domains into the iOS associated-domains
  * entitlement. MUST be registered AFTER the
- * @algorandfoundation/react-native-passkey-autofill plugin so it unions onto
- * that plugin's output. No-op for non-production variants (staging/dev keep the
- * autofill plugin's output — production-only scope).
+ * @algorandfoundation/react-native-passkey-autofill plugin.
  *
- * Remove once the autofill plugin preserves pre-existing associated-domains.
+ * Why this is needed (verified against a real prebuild, not theoretical):
+ * although the autofill plugin unions onto existing associated-domains, in the
+ * actual prebuild its mod runs before app.config's static `applinks:` entries
+ * are applied, so the generated entitlements end up with ONLY
+ * `webcredentials:<host>` — the applinks are dropped. This plugin runs last and
+ * unions them back. The verify-ios-identity gate is the guard: do NOT remove
+ * this plugin unless that gate still shows all applinks in the built
+ * entitlements without it.
+ *
+ * No-op for non-production variants (staging/dev keep the autofill plugin's
+ * output — production-only scope).
  *
  * @type {import('expo/config-plugins').ConfigPlugin<{ isProduction?: boolean }>}
  */
