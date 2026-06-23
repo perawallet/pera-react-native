@@ -356,6 +356,9 @@ function buildAppConfig(env) {
         './plugins/withProductionAssociatedDomains',
         { isProduction: variant === 'production' },
       ],
+
+      // Match native BLE/location permission scoping (maxSdkVersion + neverForLocation).
+      './plugins/withAndroidBlePermissionScoping',
     ],
 
     // Experiments (for bleeding edge features)
