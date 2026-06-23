@@ -28,6 +28,12 @@ describe('zeroBytes', () => {
         expect(Array.from(b)).toEqual([0, 0, 0])
     })
 
+    it('zeros a Uint16Array of wordlist indices in place', () => {
+        const indices = new Uint16Array([3, 2047, 1024])
+        zeroBytes(indices)
+        expect(Array.from(indices)).toEqual([0, 0, 0])
+    })
+
     it('skips null and undefined entries without throwing', () => {
         const buf = new Uint8Array([7, 8])
         expect(() => zeroBytes(null, undefined, buf)).not.toThrow()

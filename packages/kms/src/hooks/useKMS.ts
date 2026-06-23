@@ -33,10 +33,12 @@ export type { HDWalletKeyResult } from './useHDWallet'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
-import { entropyToMnemonic } from '../crypto/hdwallet-utils'
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import { entropyToIndices } from '../crypto/hdwallet-utils'
+import { algo25SeedToIndices } from '../crypto/algo25-utils'
 
-export type ExecuteWithMnemonicHandler<T> = (words: string[]) => T | Promise<T>
+export type ExecuteWithMnemonicHandler<T> = (
+    indices: Uint16Array,
+) => T | Promise<T>
 
 export const useKMS = () => {
     const keystoreKeys = useKeystoreKeys()
@@ -180,8 +182,17 @@ export const useKMS = () => {
     )
 
     /**
-     * Runs `handler` with the mnemonic words for the seed that minted
-     * `childKeyId`.
+     * Runs `handler` with the mnemonic for the seed that minted `childKeyId`,
+     * passed as a zeroable `Uint16Array` of BIP39 wordlist indices. The phrase
+     * is rebuilt from keystore material (BIP39 entropy or the algo25 seed) only
+     * for the duration of this call; the intermediate byte buffers and the
+     * index buffer are all zeroed in `finally`.
+     *
+     * Indices (not `string[]`) are the currency here so the secret retained
+     * across the handler's work — which may be async and PIN-gated — is a
+     * buffer we can actually scrub, and holds opaque numbers rather than the
+     * dictionary words a memory scanner could grep for. Handlers materialize
+     * individual words via `mnemonicIndexToWord` only at the point of use.
      */
     const executeWithMnemonic = async <T>(
         childKeyId: string,
@@ -194,7 +205,7 @@ export const useKMS = () => {
         if (!scheme) throw new InvalidKeyError(seedKey.id)
 
         return withExportedKey(seedKey.id, async seedData => {
-            let words: string[]
+            let indices: Uint16Array
 
             if (scheme === SeedScheme.Bip39) {
                 const meta = (seedData.metadata ?? {}) as SeedMetadata
@@ -205,7 +216,9 @@ export const useKMS = () => {
                 }
                 const entropyBytes = hexToBytes(meta.entropy)
                 try {
-                    words = entropyToMnemonic(entropyBytes).split(' ')
+                    // entropy → indices directly: the HD phrase is never
+                    // materialized as a string on the heap.
+                    indices = entropyToIndices(entropyBytes)
                 } finally {
                     zeroBytes(entropyBytes)
                 }
@@ -217,17 +230,18 @@ export const useKMS = () => {
                 }
                 const seedBytes = new Uint8Array(seedData.privateKey)
                 try {
-                    words = mnemonicFromSeed(seedBytes).split(' ')
+                    // seed → indices directly: the algo25 phrase is never
+                    // materialized as a string on the heap.
+                    indices = algo25SeedToIndices(seedBytes)
                 } finally {
                     zeroBytes(seedBytes)
                 }
             }
 
-            const bytes = new TextEncoder().encode(words.join(' '))
             try {
-                return await handler(words)
+                return await handler(indices)
             } finally {
-                zeroBytes(bytes)
+                zeroBytes(indices)
             }
         })
     }
