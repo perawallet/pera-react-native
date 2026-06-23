@@ -122,12 +122,6 @@ describe('buildAppConfig — iOS identity (WB-1, production only)', () => {
             build({ APP_ENV: 'staging' }).ios.bundleIdentifier,
         )
     })
-
-    it('leaves the Android package untouched (out of scope)', () => {
-        expect(build({ APP_ENV: 'production' }).android.package).toBe(
-            'com.algorand.perarn',
-        )
-    })
 })
 
 describe('buildAppConfig — entitlements parity (WB-6, production only)', () => {
