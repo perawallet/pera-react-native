@@ -36,9 +36,9 @@ export const useAssetPriceHistoryQuery = (
         queryFn: () => fetchAssetPriceHistory(assetID, period, network),
         select: useCallback(
             (data: AssetPriceHistoryResponse) =>
-                data.map((item: AssetPriceHistoryResponseItem) =>
+                data?.map((item: AssetPriceHistoryResponseItem) =>
                     transformAssetPriceHistoryResponse(item),
-                ),
+                ) ?? [],
             [],
         ),
     })

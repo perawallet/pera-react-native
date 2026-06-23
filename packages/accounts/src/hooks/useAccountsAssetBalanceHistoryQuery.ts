@@ -43,15 +43,18 @@ export const useAccountsAssetsBalanceHistoryQuery = (
                 preferredCurrency,
                 network,
             ),
-        select: data => {
-            return data.results.map(item => ({
+        // `data` / `data.results` can be absent when the endpoint answers with
+        // an empty or 204 body (the fetch layer yields `undefined` for those).
+        // Guard so a not-ready response collapses to an empty chart instead of
+        // throwing and surfacing as a query error.
+        select: data =>
+            data?.results?.map(item => ({
                 datetime: new Date(item.datetime),
                 algoValue: new Decimal(item.algo_value ?? '0'),
                 preferredValue: usdToPreferred(
                     new Decimal(item.usd_value ?? '0'),
                 ),
                 round: item.round,
-            }))
-        },
+            })) ?? [],
     })
 }

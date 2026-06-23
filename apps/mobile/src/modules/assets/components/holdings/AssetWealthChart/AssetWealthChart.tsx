@@ -42,11 +42,8 @@ export const AssetWealthChart = ({
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
-    const { data, isPending } = useAccountsAssetsBalanceHistoryQuery(
-        account,
-        asset.assetId,
-        period,
-    )
+    const { data, isPending, isError, refetch } =
+        useAccountsAssetsBalanceHistoryQuery(account, asset.assetId, period)
 
     const dataPoints = useMemo(
         () =>
@@ -63,6 +60,8 @@ export const AssetWealthChart = ({
         <BalanceLineChart
             dataPoints={dataPoints}
             isPending={isPending}
+            isError={isError}
+            onRetry={() => void refetch()}
             emptyBody={t('common.wealth_chart.asset_empty_body')}
             getPointerProps={getPointerProps}
             style={themeStyle.container}
