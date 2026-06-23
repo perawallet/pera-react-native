@@ -23,6 +23,11 @@ export const useStyles = makeStyles(theme => ({
         paddingTop: theme.spacing.lg,
         gap: theme.spacing.xl,
     },
+    // Card visual + reveal pill grouped together (12px gap per the design).
+    cardBlock: {
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
     cardContainer: {
         width: '100%',
         height: CARD_HEIGHT,
@@ -42,5 +47,54 @@ export const useStyles = makeStyles(theme => ({
     // (theme-independent) — same approach as BannerCard's fixed-surface text.
     pan: {
         color: palette.gray[900],
+    },
+    // Reveal pill: bordered, content-hugging row with an eye icon + label.
+    revealPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'center',
+        gap: theme.spacing.sm,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.xl,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+    },
+    revealLabel: {
+        color: theme.colors.textGray,
+    },
+    // Generic labelled section ("Funding Account", "Options").
+    section: {
+        gap: theme.spacing.md,
+    },
+    sectionLabel: {
+        color: theme.colors.textGray,
+    },
+    // Funding account row: bordered box, account on the left, Change on the right.
+    fundingRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.sm,
+        padding: theme.spacing.md,
+    },
+    changeLink: {
+        color: theme.colors.linkPrimary,
+    },
+    // Options list.
+    optionsList: {
+        gap: theme.spacing.xxs,
+    },
+    optionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+        paddingVertical: theme.spacing.lg,
+    },
+    optionLabelDestructive: {
+        color: theme.colors.negative,
     },
 }))

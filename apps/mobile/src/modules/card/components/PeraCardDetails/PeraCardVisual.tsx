@@ -17,10 +17,32 @@ import { useStyles } from './styles'
 type PeraCardVisualProps = {
     /** Already-masked PAN, e.g. "•••• 2234". */
     maskedPan: string
+    /**
+     * Single-use secure-view image URL (PAN/CVC/expiry rendered server-side).
+     * When set, it replaces the masked brand art; raw values never reach us.
+     */
+    secureImageUrl?: string
 }
 
-export const PeraCardVisual = ({ maskedPan }: PeraCardVisualProps) => {
+export const PeraCardVisual = ({
+    maskedPan,
+    secureImageUrl,
+}: PeraCardVisualProps) => {
     const styles = useStyles()
+
+    if (secureImageUrl != null) {
+        return (
+            <PWView style={styles.cardContainer}>
+                {/* `contain` so the server-rendered PAN/CVC/expiry can never be
+                    cropped, even if its aspect ratio differs from the box. */}
+                <PWImage
+                    source={{ uri: secureImageUrl }}
+                    style={styles.cardImage}
+                    resizeMode='contain'
+                />
+            </PWView>
+        )
+    }
 
     return (
         <PWView style={styles.cardContainer}>

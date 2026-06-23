@@ -1,0 +1,202 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback, useState } from 'react'
+import { Platform } from 'react-native'
+import {
+    CardStatus,
+    getCardApiError,
+    useCardDetailsMutation,
+    useCardStatusQuery,
+    useCardStore,
+    useFreezeCardMutation,
+    useSetCardPinMutation,
+    useUnfreezeCardMutation,
+} from '@perawallet/wallet-core-card'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useWebView } from '@modules/webview'
+import { useCardComingSoonToast } from '../../hooks'
+import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
+import { WalletInstructionsSheet } from '../WalletInstructionsSheet'
+
+const PAN_MASK = '••••'
+
+type UsePeraCardDetailsResult = {
+    /** Masked PAN for the card visual, e.g. "•••• 2234". */
+    maskedPan: string
+    /** Secure-view image URL when revealed; `null` while masked. */
+    secureImageUrl: string | null
+    isRevealing: boolean
+    onToggleReveal: () => void
+    /** Connected funding-source address, or `null` if none is stored. */
+    fundingAddress: string | null
+    onChangeFunding: () => void
+    isFrozen: boolean
+    freezeLabel: string
+    /** True while a freeze or unfreeze request is in flight. */
+    isFreezing: boolean
+    /** False when the card is BLOCKED — the freeze toggle is then hidden. */
+    canToggleFreeze: boolean
+    onToggleFreeze: () => void
+    onSetPin: () => void
+    /** True while the set-PIN token request is in flight. */
+    isSettingPin: boolean
+    onAccountsDetails: () => void
+    /** Which wallet-provisioning row to show: Apple Wallet on iOS, Google Pay on Android. */
+    walletPlatform: 'apple' | 'google'
+    onAddToWallet: () => void
+    onReportLostStolen: () => void
+    onReportSuspicious: () => void
+    onCancelCard: () => void
+}
+
+export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
+    const { t } = useLanguage()
+    const { errorToast } = useToast()
+    const { pushWebView } = useWebView()
+    const { request } = useBottomSheet()
+
+    const panLast4 = useCardStore(state => state.lastKnownPanLast4)
+    const fundingAddress = useCardStore(
+        state => state.connectedFundingSourceAddress,
+    )
+
+    const { data: card } = useCardStatusQuery()
+    const isFrozen = card?.status === CardStatus.Frozen
+    // Freeze/unfreeze only applies to a live card; a BLOCKED card can't toggle.
+    const canToggleFreeze = card?.status !== CardStatus.Blocked
+
+    // iOS provisions to Apple Wallet, Android to Google Pay — show one row.
+    const walletPlatform = Platform.OS === 'ios' ? 'apple' : 'google'
+
+    const cardDetails = useCardDetailsMutation()
+    const freeze = useFreezeCardMutation()
+    const unfreeze = useUnfreezeCardMutation()
+    const setPin = useSetCardPinMutation()
+
+    // The single-use secure image is held only in memory and discarded when the
+    // user hides it again — never persisted.
+    const [secureImageUrl, setSecureImageUrl] = useState<string | null>(null)
+
+    // Surface the backend's message (e.g. "user doesn't have a card") rather
+    // than a generic toast; fall back to the generic body when it's absent.
+    const showError = useCallback(
+        async (error: unknown) => {
+            const apiError = await getCardApiError(error)
+            errorToast(
+                t('peraCard.account.error_title'),
+                apiError.message ?? t('peraCard.account.error_body'),
+            )
+        },
+        [errorToast, t],
+    )
+
+    const showComingSoon = useCardComingSoonToast()
+
+    // Async impls are wrapped in sync `void` handlers below so the exposed
+    // callbacks are `() => void` (the codebase convention for onPress props).
+    const toggleReveal = useCallback(async () => {
+        if (secureImageUrl != null) {
+            setSecureImageUrl(null)
+            return
+        }
+        try {
+            const view = await cardDetails.mutateAsync()
+            setSecureImageUrl(view.imageUrl)
+        } catch (error) {
+            await showError(error)
+        }
+    }, [secureImageUrl, cardDetails, showError])
+    const onToggleReveal = useCallback(() => {
+        void toggleReveal()
+    }, [toggleReveal])
+
+    const toggleFreeze = useCallback(async () => {
+        // Guard re-entry so a double-tap can't double-fire or flip the freeze
+        // state back before the status query has refetched.
+        if (freeze.isPending || unfreeze.isPending) return
+        try {
+            if (isFrozen) {
+                await unfreeze.mutateAsync()
+            } else {
+                await freeze.mutateAsync()
+            }
+        } catch (error) {
+            await showError(error)
+        }
+    }, [isFrozen, freeze, unfreeze, showError])
+    const onToggleFreeze = useCallback(() => {
+        void toggleFreeze()
+    }, [toggleFreeze])
+
+    const submitSetPin = useCallback(async () => {
+        // Guard re-entry so a slow token request can't stack a second WebView.
+        if (setPin.isPending) return
+        try {
+            const session = await setPin.mutateAsync()
+            pushWebView({ url: session.hostedPageUrl, id: 'card-set-pin' })
+        } catch (error) {
+            await showError(error)
+        }
+    }, [setPin, pushWebView, showError])
+    const onSetPin = useCallback(() => {
+        void submitSetPin()
+    }, [submitSetPin])
+
+    const onAccountsDetails = useCallback(() => {
+        void request({
+            contents: <CardAccountDetailsSheet />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [request])
+
+    const onAddToWallet = useCallback(() => {
+        void request({
+            contents: <WalletInstructionsSheet platform={walletPlatform} />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [request, walletPlatform])
+
+    return {
+        maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,
+        secureImageUrl,
+        isRevealing: cardDetails.isPending,
+        onToggleReveal,
+        fundingAddress,
+        onChangeFunding: showComingSoon,
+        isFrozen,
+        freezeLabel: isFrozen
+            ? t('peraCard.account.unfreeze_card')
+            : t('peraCard.account.freeze_card'),
+        isFreezing: freeze.isPending || unfreeze.isPending,
+        canToggleFreeze,
+        onToggleFreeze,
+        onSetPin,
+        isSettingPin: setPin.isPending,
+        onAccountsDetails,
+        walletPlatform,
+        onAddToWallet,
+        onReportLostStolen: showComingSoon,
+        onReportSuspicious: showComingSoon,
+        onCancelCard: showComingSoon,
+    }
+}

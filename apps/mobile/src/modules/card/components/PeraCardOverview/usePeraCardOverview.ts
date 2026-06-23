@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     DEFAULT_CARD_CURRENCY,
@@ -18,8 +18,7 @@ import {
     useCardStore,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { useCardComingSoonToast } from '../../hooks'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -46,8 +45,6 @@ type UsePeraCardOverviewResult = {
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
-    const { t } = useLanguage()
-    const { infoToast } = useToast()
     const selectedFundingType = useCardStore(state => state.selectedFundingType)
     const { transactions, isLoading } = useCardTransactionsQuery()
 
@@ -63,12 +60,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [],
     )
 
-    const showComingSoon = useCallback(() => {
-        infoToast(
-            t('peraCard.account.coming_soon_title'),
-            t('peraCard.account.coming_soon_body'),
-        )
-    }, [infoToast, t])
+    const showComingSoon = useCardComingSoonToast()
 
     return {
         isAutoFunding: selectedFundingType === FundingType.Auto,

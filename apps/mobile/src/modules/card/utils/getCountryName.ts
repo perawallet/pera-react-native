@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-export {
-    useCardOnboardingLogout,
-    type UseCardOnboardingLogoutResult,
-} from './useCardOnboardingLogout'
-export {
-    useCardAddAccount,
-    type UseCardAddAccountResult,
-} from './useCardAddAccount'
-export { useCardComingSoonToast } from './useCardComingSoonToast'
+import type { SupportedCountry } from '@perawallet/wallet-core-card'
+
+/**
+ * Maps an ISO 3166-1 alpha-2 code (e.g. "DE") to its display name (e.g.
+ * "Germany") using the Baanx-supported country list. Returns `undefined` when
+ * the code is missing or not in the list, so callers can fall back to the code.
+ */
+export const getCountryName = (
+    code: string | undefined,
+    countries: SupportedCountry[],
+): string | undefined =>
+    code
+        ? countries.find(country => country.iso3166alpha2 === code)?.name
+        : undefined

@@ -10,19 +10,4 @@
  limitations under the License
  */
 
-import { useCardStore } from '@perawallet/wallet-core-card'
-
-const PAN_MASK = '••••'
-
-type UsePeraCardDetailsResult = {
-    /** Masked PAN for the card visual, e.g. "•••• 2234". */
-    maskedPan: string
-}
-
-export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
-    const panLast4 = useCardStore(state => state.lastKnownPanLast4)
-
-    return {
-        maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,
-    }
-}
+export { CardAccountDetailsSheet } from './CardAccountDetailsSheet'

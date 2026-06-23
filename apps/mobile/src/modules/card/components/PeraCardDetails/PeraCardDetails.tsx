@@ -10,18 +10,72 @@
  limitations under the License
  */
 
-import { PWScrollView } from '@components/core'
+import { PWScrollView, PWView } from '@components/core'
 import { PeraCardVisual } from './PeraCardVisual'
+import { RevealCardDetailsButton } from './RevealCardDetailsButton'
+import { CardFundingAccountSection } from './CardFundingAccountSection'
+import { CardOptionsSection } from './CardOptionsSection'
 import { usePeraCardDetails } from './usePeraCardDetails'
 import { useStyles } from './styles'
 
 export const PeraCardDetails = () => {
     const styles = useStyles()
-    const { maskedPan } = usePeraCardDetails()
+    const {
+        maskedPan,
+        secureImageUrl,
+        isRevealing,
+        onToggleReveal,
+        fundingAddress,
+        onChangeFunding,
+        isFrozen,
+        freezeLabel,
+        isFreezing,
+        canToggleFreeze,
+        onToggleFreeze,
+        onSetPin,
+        isSettingPin,
+        onAccountsDetails,
+        walletPlatform,
+        onAddToWallet,
+        onReportLostStolen,
+        onReportSuspicious,
+        onCancelCard,
+    } = usePeraCardDetails()
 
     return (
         <PWScrollView contentContainerStyle={styles.content}>
-            <PeraCardVisual maskedPan={maskedPan} />
+            <PWView style={styles.cardBlock}>
+                <PeraCardVisual
+                    maskedPan={maskedPan}
+                    secureImageUrl={secureImageUrl ?? undefined}
+                />
+                <RevealCardDetailsButton
+                    isLoading={isRevealing}
+                    isRevealed={secureImageUrl != null}
+                    onPress={onToggleReveal}
+                />
+            </PWView>
+
+            <CardFundingAccountSection
+                address={fundingAddress}
+                onChange={onChangeFunding}
+            />
+
+            <CardOptionsSection
+                isFrozen={isFrozen}
+                freezeLabel={freezeLabel}
+                isFreezing={isFreezing}
+                canToggleFreeze={canToggleFreeze}
+                walletPlatform={walletPlatform}
+                isSettingPin={isSettingPin}
+                onAccountsDetails={onAccountsDetails}
+                onAddToWallet={onAddToWallet}
+                onSetPin={onSetPin}
+                onToggleFreeze={onToggleFreeze}
+                onReportLostStolen={onReportLostStolen}
+                onReportSuspicious={onReportSuspicious}
+                onCancelCard={onCancelCard}
+            />
         </PWScrollView>
     )
 }
