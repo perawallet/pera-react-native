@@ -45,4 +45,8 @@ export class RNKeyValueStorageService implements KeyValueStorageService {
     getAllKeys(): string[] {
         return this.mmkv.getAllKeys()
     }
+
+    trim() {
+        this.mmkv.trim()
+    }
 }

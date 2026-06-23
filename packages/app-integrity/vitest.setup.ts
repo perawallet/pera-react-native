@@ -14,35 +14,22 @@ import { vi } from 'vitest'
 
 const store = new Map<string, string>()
 
+// A single stable instance so tests can spy on its methods (e.g. `trim`) and
+// see the same object the store-under-test resolves via getProvider().
+const keyValueStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => store.set(key, value),
+    removeItem: (key: string) => {
+        store.delete(key)
+    },
+    trim: () => {},
+}
+
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    WithPlatformExtension: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
+    WithPlatformExtension: () => ({ keyValueStorage }),
+    getPlatformServices: () => ({ keyValueStorage }),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
+    getProvider: () => ({ keyValueStorage }),
 }))
