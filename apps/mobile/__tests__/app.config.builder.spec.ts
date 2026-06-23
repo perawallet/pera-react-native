@@ -27,7 +27,11 @@ type ResolvedConfig = {
         infoPlist: Record<string, unknown>
         entitlements: Record<string, unknown>
     }
-    android: { package: string; permissions: string[]; blockedPermissions: string[] }
+    android: {
+        package: string
+        permissions: string[]
+        blockedPermissions: string[]
+    }
     extra: { appVariant: string; appEnv: string }
     plugins: unknown[]
 }
@@ -260,7 +264,10 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
     }
 
     it('targets Android SDK 36', () => {
-        expect(buildPropsAndroid(build({ APP_ENV: 'production' })).targetSdkVersion).toBe(36)
+        expect(
+            buildPropsAndroid(build({ APP_ENV: 'production' }))
+                .targetSdkVersion,
+        ).toBe(36)
     })
 
     it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {
@@ -268,12 +275,16 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
 
         expect(permissions).toContain('android.permission.POST_NOTIFICATIONS')
         expect(
-            permissions.some(p => p.startsWith('android.permission.FOREGROUND_SERVICE')),
+            permissions.some(p =>
+                p.startsWith('android.permission.FOREGROUND_SERVICE'),
+            ),
         ).toBe(false)
     })
 
     it('blocks the unused auto-added permissions, keeping image access', () => {
-        const { blockedPermissions, permissions } = build({ APP_ENV: 'production' }).android
+        const { blockedPermissions, permissions } = build({
+            APP_ENV: 'production',
+        }).android
 
         for (const blocked of [
             'android.permission.RECORD_AUDIO',
@@ -284,7 +295,9 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
             expect(blockedPermissions).toContain(blocked)
         }
         // image-picker still needs image access — must NOT be blocked.
-        expect(blockedPermissions).not.toContain('android.permission.READ_MEDIA_IMAGES')
+        expect(blockedPermissions).not.toContain(
+            'android.permission.READ_MEDIA_IMAGES',
+        )
         expect(permissions).not.toContain('android.permission.RECORD_AUDIO')
     })
 })

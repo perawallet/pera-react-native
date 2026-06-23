@@ -35,9 +35,19 @@ describe('scopeBlePermissions', () => {
                 p => p.$['android:name'] === n,
             )?.$
 
-        expect(byName('android.permission.BLUETOOTH')?.['android:maxSdkVersion']).toBe('30')
-        expect(byName('android.permission.BLUETOOTH_ADMIN')?.['android:maxSdkVersion']).toBe('30')
-        expect(byName('android.permission.ACCESS_FINE_LOCATION')?.['android:maxSdkVersion']).toBe('30')
+        expect(
+            byName('android.permission.BLUETOOTH')?.['android:maxSdkVersion'],
+        ).toBe('30')
+        expect(
+            byName('android.permission.BLUETOOTH_ADMIN')?.[
+                'android:maxSdkVersion'
+            ],
+        ).toBe('30')
+        expect(
+            byName('android.permission.ACCESS_FINE_LOCATION')?.[
+                'android:maxSdkVersion'
+            ],
+        ).toBe('30')
     })
 
     it('flags BLUETOOTH_SCAN as neverForLocation', () => {
@@ -45,7 +55,9 @@ describe('scopeBlePermissions', () => {
             manifestWith(['android.permission.BLUETOOTH_SCAN']),
         )
         expect(
-            result.manifest['uses-permission'][0].$['android:usesPermissionFlags'],
+            result.manifest['uses-permission'][0].$[
+                'android:usesPermissionFlags'
+            ],
         ).toBe('neverForLocation')
     })
 
