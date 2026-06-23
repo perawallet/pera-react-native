@@ -119,6 +119,10 @@ function buildAppConfig(env) {
          'aps-environment': variant === 'production' ? 'production' : 'development',
         'com.apple.developer.associated-domains': [
           'applinks:perawallet.app',
+          // Legacy bare-host universal link — production parity with the
+          // native app we ship over. Staging/dev never advertised it and keep
+          // their current set (production-only scope).
+          ...(variant === 'production' ? ['applinks:perawallet'] : []),
           `webcredentials:${PASSKEY_AUTOFILL_HOST}`,
         ],
         'com.apple.developer.authentication-services.autofill-credential-provider': true,

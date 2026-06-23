@@ -126,3 +126,47 @@ describe('buildAppConfig — iOS identity (WB-1, production only)', () => {
         )
     })
 })
+
+describe('buildAppConfig — entitlements parity (WB-6, production only)', () => {
+    const DOMAINS = 'com.apple.developer.associated-domains'
+
+    it('adds the legacy applinks:perawallet host for production only', () => {
+        expect(build({ APP_ENV: 'production' }).ios.entitlements[DOMAINS]).toEqual([
+            'applinks:perawallet.app',
+            'applinks:perawallet',
+            'webcredentials:perawallet.app',
+        ])
+    })
+
+    it('leaves staging and dev associated-domains untouched', () => {
+        const expected = [
+            'applinks:perawallet.app',
+            'webcredentials:perawallet.app',
+        ]
+
+        expect(build({ APP_ENV: 'staging' }).ios.entitlements[DOMAINS]).toEqual(expected)
+        expect(build({}).ios.entitlements[DOMAINS]).toEqual(expected)
+    })
+
+    it('enables aps-environment=production only for production builds', () => {
+        expect(build({ APP_ENV: 'production' }).ios.entitlements['aps-environment']).toBe('production')
+        expect(build({ APP_ENV: 'staging' }).ios.entitlements['aps-environment']).toBe('development')
+        expect(build({}).ios.entitlements['aps-environment']).toBe('development')
+    })
+
+    it('attests against the production App Attest environment for distributed builds', () => {
+        const key = 'com.apple.developer.devicecheck.appattest-environment'
+
+        expect(build({ APP_ENV: 'production' }).ios.entitlements[key]).toBe('production')
+        expect(build({ APP_ENV: 'staging' }).ios.entitlements[key]).toBe('production')
+        expect(build({}).ios.entitlements[key]).toBe('development')
+    })
+
+    it('enables the autofill credential provider entitlement', () => {
+        expect(
+            build({ APP_ENV: 'production' }).ios.entitlements[
+                'com.apple.developer.authentication-services.autofill-credential-provider'
+            ],
+        ).toBe(true)
+    })
+})
