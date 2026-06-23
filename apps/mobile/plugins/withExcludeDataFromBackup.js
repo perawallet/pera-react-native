@@ -45,6 +45,7 @@ const withAppDelegateSwiftMod = require('./utils/withAppDelegateSwiftMod');
 const { withAndroidManifest, withDangerousMod } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const CALL = 'excludePeraDataFromBackupIfNeeded()';
 
