@@ -58,7 +58,7 @@ export const useAccountBalancesHistoryQuery = (
         queryFn: () => fetchAccountsBalanceHistory(addresses, period, network),
         select: useCallback(
             (data: AccountBalanceHistoryResponse) =>
-                data.results?.map(item =>
+                data?.results?.map(item =>
                     mapAccountBalanceHistoryItem(item, usdToPreferred),
                 ) ?? [],
             [usdToPreferred],
