@@ -41,7 +41,7 @@ const bundleIdentifiers = {
   },
   production: {
     ios: 'com.algorandllc.algorand',
-    android: 'com.algorand.perarn',
+    android: 'com.algorand.android',
   },
 };
 

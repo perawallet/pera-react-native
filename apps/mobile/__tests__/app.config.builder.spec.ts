@@ -231,3 +231,24 @@ describe('buildAppConfig — associated-domains restore plugin (WB-6)', () => {
         expect(restoreIndex).toBeGreaterThan(autofillIndex)
     })
 })
+
+describe('buildAppConfig — Android identity (WB-2, production only)', () => {
+    it('uses the native production package for production', () => {
+        expect(build({ APP_ENV: 'production' }).android.package).toBe(
+            'com.algorand.android',
+        )
+    })
+
+    it('leaves staging and dev Android identity untouched', () => {
+        expect(build({ APP_ENV: 'staging' }).android.package).toBe(
+            'com.algorand.perarn.staging',
+        )
+        expect(build({}).android.package).toBe('com.algorand.perarn.staging')
+    })
+
+    it('leaves the iOS bundle identifier untouched (out of scope)', () => {
+        expect(build({ APP_ENV: 'production' }).ios.bundleIdentifier).toBe(
+            'com.algorandllc.algorand',
+        )
+    })
+})
