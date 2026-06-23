@@ -47,7 +47,6 @@ export const useStyles = makeStyles(
             width: theme.spacing.xxl,
             height: theme.spacing.xxl,
             borderRadius: theme.borderRadius.full,
-            backgroundColor: theme.colors.white,
             alignItems: 'center',
             justifyContent: 'center',
         },

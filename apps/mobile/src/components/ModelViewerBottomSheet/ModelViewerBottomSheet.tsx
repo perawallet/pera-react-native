@@ -72,6 +72,7 @@ export const ModelViewerBottomSheet = ({
             detached={false}
             enablePanDownToClose={false}
             enableOverDrag={false}
+            enableContentPanningGesture={false}
         >
             <PWView style={styles.innerContainer}>
                 <LinearGradient
