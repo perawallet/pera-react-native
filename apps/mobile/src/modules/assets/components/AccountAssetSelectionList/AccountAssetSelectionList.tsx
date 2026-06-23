@@ -56,6 +56,7 @@ export const AccountAssetSelectionList = ({
                 onPress={() => onAssetSelected(item)}
                 style={styles.item}
                 accountBalance={item}
+                testID={`asset-list-item-${item.assetId}`}
             />
         ),
         [onAssetSelected, styles],
