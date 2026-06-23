@@ -121,13 +121,13 @@ export const CardOptionsSection = ({
                     />
                 ) : null}
                 <CardOptionRow
-                    icon='warning'
+                    icon='shield-warning'
                     label={t('peraCard.account.report_lost_stolen')}
                     onPress={onReportLostStolen}
                     testID='pera_card_report_lost_row'
                 />
                 <CardOptionRow
-                    icon='shield-warning'
+                    icon='flag'
                     label={t('peraCard.account.report_suspicious')}
                     onPress={onReportSuspicious}
                     testID='pera_card_report_suspicious_row'

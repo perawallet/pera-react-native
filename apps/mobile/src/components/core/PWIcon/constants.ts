@@ -43,6 +43,7 @@ import ErrorCircleIcon from '@assets/icons/error-circle.svg'
 import EyeIcon from '@assets/icons/eye.svg'
 import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
+import FlagIcon from '@assets/icons/flag.svg'
 import FullViewIcon from '@assets/icons/full-view.svg'
 import FundIcon from '@assets/icons/fund.svg'
 import FunnelIcon from '@assets/icons/funnel.svg'
@@ -199,6 +200,7 @@ export const ICON_LIBRARY = {
     eye: EyeIcon,
     faceid: FaceIdIcon,
     feedback: FeedbackIcon,
+    flag: FlagIcon,
     'full-view': FullViewIcon,
     fund: FundIcon,
     funnel: FunnelIcon,
