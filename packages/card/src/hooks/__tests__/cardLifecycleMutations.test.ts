@@ -28,6 +28,8 @@ vi.mock('../../api/card', () => api)
 
 import { useFreezeCardMutation } from '../useFreezeCardMutation'
 import { useUnfreezeCardMutation } from '../useUnfreezeCardMutation'
+import { cardQueryKeys } from '../querykeys'
+import { CardStatus, type Card } from '../../models/card'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -78,6 +80,40 @@ describe('card lifecycle mutation hooks', () => {
             expect.objectContaining({
                 queryKey: expect.arrayContaining(['card', 'status']),
             }),
+        )
+    })
+
+    it('useFreezeCardMutation marks the cached card frozen on success', async () => {
+        const key = cardQueryKeys.status('mainnet')
+        queryClient.setQueryData<Card>(key, {
+            status: CardStatus.Active,
+        } as Card)
+        const { result } = renderHook(() => useFreezeCardMutation(), {
+            wrapper,
+        })
+
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(queryClient.getQueryData<Card>(key)?.status).toBe(
+            CardStatus.Frozen,
+        )
+    })
+
+    it('useUnfreezeCardMutation clears the frozen state on success', async () => {
+        const key = cardQueryKeys.status('mainnet')
+        queryClient.setQueryData<Card>(key, {
+            status: CardStatus.Frozen,
+        } as Card)
+        const { result } = renderHook(() => useUnfreezeCardMutation(), {
+            wrapper,
+        })
+
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(queryClient.getQueryData<Card>(key)?.status).toBe(
+            CardStatus.Active,
         )
     })
 

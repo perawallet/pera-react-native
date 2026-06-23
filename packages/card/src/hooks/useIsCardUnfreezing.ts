@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-export {
-    useCardOnboardingLogout,
-    type UseCardOnboardingLogoutResult,
-} from './useCardOnboardingLogout'
-export {
-    useCardAddAccount,
-    type UseCardAddAccountResult,
-} from './useCardAddAccount'
-export { useCardComingSoonToast } from './useCardComingSoonToast'
-export { useCardErrorToast } from './useCardErrorToast'
+import { useIsMutating } from '@tanstack/react-query'
+import { cardMutationKeys } from './querykeys'
+
+/**
+ * True while ANY unfreeze request is in flight, across all callers. The card is
+ * unfreezable from two places at once (the Card Frozen banner and the Card
+ * Details options row), each with its own mutation instance; this shared flag
+ * lets both guard against — and reflect — a single in-flight unfreeze so they
+ * can't double-fire.
+ */
+export const useIsCardUnfreezing = (): boolean =>
+    useIsMutating({ mutationKey: cardMutationKeys.unfreeze }) > 0
