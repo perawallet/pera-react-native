@@ -10,6 +10,7 @@
     "ios:device": "expo run:ios --device",
     "expo:prebuild": "expo prebuild --no-install && node scripts/fix-development-team.js && npx pod-install ios",
     "expo:prebuild:clean": "expo prebuild --clean --no-install && node scripts/fix-development-team.js && npx pod-install ios",
+    "verify:ios-identity": "node scripts/verify-ios-identity.mjs",
     "ios:fix-development-team": "node scripts/fix-development-team.js",
     "lint": "oxlint --config .oxlintrc.json .",
     "test": "bash ../../tools/rebuild-native.sh && vitest run",
