@@ -29,7 +29,10 @@ export const FreezeCardConfirmationSheet = () => {
     const { isFreezing, onConfirm, onClose } = useFreezeCardConfirmationSheet()
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='freeze_card_confirmation_sheet'
+        >
             <FrozenCardGlyph size='lg' />
             <PWText
                 variant='h3'
