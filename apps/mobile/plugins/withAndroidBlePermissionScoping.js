@@ -19,6 +19,9 @@ const { withAndroidManifest } = require('expo/config-plugins');
 // BLUETOOTH_SCAN neverForLocation) avoids requesting legacy/location perms on
 // modern Android — parity with native. Confirm the exact values against the
 // native pera-android manifest (WB-7).
+// Note: react-native-ble-plx already scopes its own BLUETOOTH* copies; this
+// scopes the separate copies declared in app.config's android.permissions and
+// adds maxSdkVersion to ACCESS_FINE_LOCATION (which ble-plx leaves unscoped).
 const MAX_SDK = '30';
 const MAX_SDK_PERMISSIONS = new Set([
   'android.permission.BLUETOOTH',
