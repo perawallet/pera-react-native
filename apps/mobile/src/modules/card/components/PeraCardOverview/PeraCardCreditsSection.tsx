@@ -12,7 +12,7 @@
 
 import { type Decimal } from 'decimal.js'
 import { PWIcon, PWListItemLayout, PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -88,10 +88,10 @@ const CreditRow = ({
             testID={testID}
             right={
                 <PWView style={styles.rowRight}>
-                    <CurrencyDisplay
+                    <CurrencyAmount
                         value={amount}
                         currency={currency}
-                        precision={2}
+                        precision='compact'
                         symbolPosition='end'
                         variant='bodyLarge'
                         weight={500}

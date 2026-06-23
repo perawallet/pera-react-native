@@ -18,7 +18,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import peraCardImage from '@assets/images/pera-card.png'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -55,10 +55,10 @@ export const PeraCardBalanceSection = ({
                 </PWText>
             </PWView>
 
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={balance}
                 currency={currency}
-                precision={2}
+                precision='compact'
                 symbolPosition='end'
                 variant='h1'
             />
