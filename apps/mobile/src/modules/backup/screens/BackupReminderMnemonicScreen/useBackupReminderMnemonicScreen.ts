@@ -18,14 +18,14 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderMnemonicScreenResult = {
-    words: string[]
+    wordIndices: Uint16Array | null
     isLoading: boolean
     error: Error | null
     isPinVisible: boolean
@@ -121,9 +121,6 @@ export const useBackupReminderMnemonicScreen =
         // on a detached fiber.
         useEffect(() => () => clearIndices(), [clearIndices])
 
-        // Derived at render only — the full word array is never held in state.
-        const words = indices ? Array.from(indices, mnemonicIndexToWord) : []
-
         const handlePinVerified = useCallback(() => {
             setIsPinVisible(false)
             setIsPinGateResolved(true)
@@ -140,7 +137,10 @@ export const useBackupReminderMnemonicScreen =
         }, [address, navigation, clearIndices])
 
         return {
-            words,
+            // The component resolves each word from the index buffer at render
+            // (see mnemonicIndexToWord); the full phrase is never held as a
+            // string array here.
+            wordIndices: indices,
             isLoading,
             error,
             isPinVisible,

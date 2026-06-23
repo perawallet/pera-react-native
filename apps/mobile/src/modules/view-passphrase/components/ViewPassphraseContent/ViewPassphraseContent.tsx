@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
 import { PWHeader, PWText, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -32,7 +33,7 @@ export const ViewPassphraseContent = ({
     const { t } = useLanguage()
     const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
-    const { words, isLoading, error } = useViewPassphraseContent({
+    const { wordIndices, isLoading, error } = useViewPassphraseContent({
         address,
     })
 
@@ -81,25 +82,27 @@ export const ViewPassphraseContent = ({
                     </PWView>
                 )}
 
-                {!isLoading && !error && words.length > 0 && (
+                {!isLoading && !error && wordIndices && wordIndices.length > 0 && (
                     <PWView
                         style={styles.grid}
                         testID={`${testID}_grid`}
                     >
                         {[0, 1].map(columnIndex => {
-                            const half = Math.ceil(words.length / 2)
+                            const half = Math.ceil(wordIndices.length / 2)
                             const start = columnIndex * half
-                            const columnWords = words.slice(start, start + half)
+                            const columnIndices = Array.from(
+                                wordIndices.slice(start, start + half),
+                            )
                             return (
                                 <PWView
                                     key={columnIndex}
                                     style={styles.column}
                                 >
-                                    {columnWords.map((word, i) => {
+                                    {columnIndices.map((wordIndex, i) => {
                                         const number = start + i + 1
                                         return (
                                             <PWView
-                                                key={`${number}-${word}`}
+                                                key={`${number}-${wordIndex}`}
                                                 style={styles.wordCell}
                                             >
                                                 <PWText
@@ -108,7 +111,9 @@ export const ViewPassphraseContent = ({
                                                     {String(number)}
                                                 </PWText>
                                                 <PWText style={styles.wordText}>
-                                                    {word}
+                                                    {mnemonicIndexToWord(
+                                                        wordIndex,
+                                                    )}
                                                 </PWText>
                                             </PWView>
                                         )

@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { mnemonicIndexToWord, zeroBytes } from '@perawallet/wallet-core-kms'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '@modules/backup'
 
@@ -21,7 +21,7 @@ export type UseViewPassphraseContentParams = {
 }
 
 export type UseViewPassphraseContentResult = {
-    words: string[]
+    wordIndices: Uint16Array | null
     isLoading: boolean
     error: Error | null
 }
@@ -71,8 +71,7 @@ export const useViewPassphraseContent = ({
         }
     }, [executeWithMnemonic, clearIndices])
 
-    // Derived at render only — the full word array is never held in state.
-    const words = indices ? Array.from(indices, mnemonicIndexToWord) : []
-
-    return { words, isLoading, error }
+    // The component resolves each word from the index buffer at render (see
+    // mnemonicIndexToWord); the full phrase is never held as a string array here.
+    return { wordIndices: indices, isLoading, error }
 }
