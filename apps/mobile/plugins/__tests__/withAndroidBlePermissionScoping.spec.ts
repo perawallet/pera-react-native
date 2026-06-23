@@ -32,7 +32,7 @@ describe('scopeBlePermissions', () => {
         )
         const byName = (n: string) =>
             result.manifest['uses-permission'].find(
-                p => p.$['android:name'] === n,
+                (p: { $: Record<string, string> }) => p.$['android:name'] === n,
             )?.$
 
         expect(

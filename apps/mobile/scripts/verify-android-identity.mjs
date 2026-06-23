@@ -31,6 +31,10 @@ const assert = (condition, message) => {
     if (!condition) failures.push(message)
 }
 
+// Escape all regex metacharacters (backslash first, via the char class) so a
+// literal string can be embedded safely in a RegExp.
+const escapeRegExp = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const env = {
     ...process.env,
     APP_ENV: 'production',
@@ -145,7 +149,7 @@ for (const scoped of [
 ]) {
     // AGP manifest merger may reorder XML attributes (maxSdkVersion before name or vice versa);
     // assert both attributes appear on the same <uses-permission> element regardless of order.
-    const escapedName = scoped.replace(/\./g, '\\.')
+    const escapedName = escapeRegExp(scoped)
     const nameFirst = new RegExp(
         `<uses-permission[^>]*android:name="${escapedName}"[^>]*android:maxSdkVersion="30"`,
     )
