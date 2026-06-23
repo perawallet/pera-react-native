@@ -74,8 +74,9 @@ const infoPlist = readFileSync(join(appPath, 'Info.plist'), 'utf8')
 
 // 3. pbxproj — bundle id + DEVELOPMENT_TEAM on every target (app + extension).
 assert(
-    pbx.includes(`PRODUCT_BUNDLE_IDENTIFIER = ${BUNDLE_ID};`),
-    `PRODUCT_BUNDLE_IDENTIFIER = ${BUNDLE_ID} not found`,
+    pbx.includes(`PRODUCT_BUNDLE_IDENTIFIER = "${BUNDLE_ID}";`) ||
+        pbx.includes(`PRODUCT_BUNDLE_IDENTIFIER = ${BUNDLE_ID};`),
+    `PRODUCT_BUNDLE_IDENTIFIER = ${BUNDLE_ID} not found (quoted or unquoted)`,
 )
 const teamLines = pbx.match(/DEVELOPMENT_TEAM = .*?;/g) || []
 assert(teamLines.length > 0, 'no DEVELOPMENT_TEAM assignments found')

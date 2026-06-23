@@ -334,6 +334,15 @@ function buildAppConfig(env) {
       './plugins/withPasskeyAutofillFixes',
 
       './plugins/withAgeGate',
+
+      // Restore the production universal-link (applinks) domains that the
+      // passkey-autofill plugin drops from associated-domains during prebuild.
+      // MUST run after that plugin. Production only — staging/dev keep the
+      // autofill plugin's output (production-only scope).
+      [
+        './plugins/withProductionAssociatedDomains',
+        { isProduction: variant === 'production' },
+      ],
     ],
 
     // Experiments (for bleeding edge features)

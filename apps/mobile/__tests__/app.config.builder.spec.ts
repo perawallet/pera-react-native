@@ -189,3 +189,28 @@ describe('buildAppConfig — entitlements parity (WB-6, production only)', () =>
         ).toBe(true)
     })
 })
+
+describe('buildAppConfig — associated-domains restore plugin (WB-6)', () => {
+    const findRestorePlugin = (config: ResolvedConfig) =>
+        config.plugins.find(
+            plugin =>
+                Array.isArray(plugin) &&
+                plugin[0] === './plugins/withProductionAssociatedDomains',
+        )
+
+    it('registers the restore plugin gated to production', () => {
+        const prod = findRestorePlugin(build({ APP_ENV: 'production' }))
+        const staging = findRestorePlugin(build({ APP_ENV: 'staging' }))
+        const dev = findRestorePlugin(build({}))
+
+        expect(Array.isArray(prod) ? prod[1] : undefined).toEqual({
+            isProduction: true,
+        })
+        expect(Array.isArray(staging) ? staging[1] : undefined).toEqual({
+            isProduction: false,
+        })
+        expect(Array.isArray(dev) ? dev[1] : undefined).toEqual({
+            isProduction: false,
+        })
+    })
+})
