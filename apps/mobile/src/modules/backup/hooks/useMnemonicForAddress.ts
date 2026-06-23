@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     useKMS,
+    BACKUP_ACCESS_DOMAIN,
     type ExecuteWithMnemonicHandler,
 } from '@perawallet/wallet-core-kms'
 import { type Optional } from '@perawallet/wallet-core-shared'
@@ -33,7 +34,7 @@ export type UseMnemonicForAddressResult = {
     ) => Promise<T>
 }
 
-const DOMAIN = 'backup-flow'
+const DOMAIN = BACKUP_ACCESS_DOMAIN
 
 export const useMnemonicForAddress = (
     address: Optional<string>,

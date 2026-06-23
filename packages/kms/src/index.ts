@@ -28,7 +28,12 @@ export {
     deriveLiquidAuthMainKey,
 } from './crypto/hdwallet-utils'
 export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
-export { SeedScheme, ALGO25_SEED_LENGTH } from './constants'
+export {
+    SeedScheme,
+    ALGO25_SEED_LENGTH,
+    SIGNING_ACCESS_DOMAIN,
+    BACKUP_ACCESS_DOMAIN,
+} from './constants'
 export {
     aclOf,
     algo25AddressOf,

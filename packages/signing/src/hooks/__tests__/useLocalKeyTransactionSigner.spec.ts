@@ -17,7 +17,8 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 const mockSignTransactionsWithKey = vi.fn()
 let mockAccounts: WalletAccount[] = []
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
+    ...(await importOriginal<object>()),
     useKMS: () => ({
         signTransactionsWithKey: (...args: unknown[]) =>
             mockSignTransactionsWithKey(...args),

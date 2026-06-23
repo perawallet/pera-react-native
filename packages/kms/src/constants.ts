@@ -30,3 +30,14 @@ export type SeedScheme = (typeof SeedScheme)[keyof typeof SeedScheme]
  * seed alone. The leading 32 bytes are always the seed in either case.
  */
 export const ALGO25_SEED_LENGTH = 32
+
+/**
+ * The origins that legitimately request private-key access from a seed via
+ * `checkAccess`: the signing pipeline and the mnemonic backup flow. The
+ * fail-closed seed-ACL default (`DEFAULT_SEED_ACL` in utils) and these
+ * consumers must agree on the exact strings, so kms — the lowest common
+ * dependency of signing and the backup flow — owns them as the single source
+ * of truth instead of each side repeating a literal that could drift.
+ */
+export const SIGNING_ACCESS_DOMAIN = 'pera.accounts'
+export const BACKUP_ACCESS_DOMAIN = 'backup-flow'

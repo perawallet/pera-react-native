@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms'
+
 export const MAX_TRANSACTION_SIGN_REQUESTS = 1000
 export const MAX_DATA_SIGN_REQUESTS = 1000
-export const SIGNING_KEY_DOMAIN = 'pera.accounts'
+export const SIGNING_KEY_DOMAIN = SIGNING_ACCESS_DOMAIN

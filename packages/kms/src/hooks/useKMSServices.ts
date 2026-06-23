@@ -31,17 +31,19 @@ import {
 import { type Nullable } from '@perawallet/wallet-core-shared'
 
 export const checkAccess = (key: Key, domain: string): void => {
+    // `aclOf` always returns a non-empty ACL (the wallet's own-origin default
+    // for seeds without an explicit one), so this is fail-closed: a domain not
+    // granted ReadPrivate is rejected rather than slipping through the old
+    // empty-ACL bypass.
     const acl = aclOf(key)
-    if (acl.length) {
-        const hasAccess = acl.some(
-            entry =>
-                entry.domains.includes(domain) &&
-                entry.permissions.includes(AccessControlPermission.ReadPrivate),
-        )
+    const hasAccess = acl.some(
+        entry =>
+            entry.domains.includes(domain) &&
+            entry.permissions.includes(AccessControlPermission.ReadPrivate),
+    )
 
-        if (!hasAccess) {
-            throw new KeyAccessError()
-        }
+    if (!hasAccess) {
+        throw new KeyAccessError()
     }
 }
 

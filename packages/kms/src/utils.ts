@@ -14,8 +14,12 @@ import type { Key } from '@algorandfoundation/keystore'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 import nacl from 'tweetnacl'
-import type { AccessControl } from './models'
-import { SeedScheme } from './constants'
+import { AccessControlPermission, type AccessControl } from './models'
+import {
+    SeedScheme,
+    SIGNING_ACCESS_DOMAIN,
+    BACKUP_ACCESS_DOMAIN,
+} from './constants'
 
 /**
  * Pera-domain extras (acl, timestamps) round-trip through a seed entry's
@@ -96,8 +100,25 @@ export const algo25AddressOf = (key: Key): string => {
     return ''
 }
 
-export const aclOf = (key: Key): AccessControl[] =>
-    seedMetadata(key).pera?.acl ?? []
+// The wallet's own access origins, shared with the consumers that pass them to
+// `checkAccess` (signing's SIGNING_KEY_DOMAIN, the backup flow's DOMAIN) so the
+// fail-closed default and the call sites can't drift.
+const DEFAULT_SEED_ACL: AccessControl[] = [
+    {
+        domains: [SIGNING_ACCESS_DOMAIN, BACKUP_ACCESS_DOMAIN],
+        permissions: [AccessControlPermission.ReadPrivate],
+    },
+]
+
+export const aclOf = (key: Key): AccessControl[] => {
+    const stored = seedMetadata(key).pera?.acl
+    // Fail closed: a seed with no/empty ACL is treated as scoped to the
+    // wallet's own origins, not allow-all. `checkAccess` then denies any other
+    // domain instead of silently permitting it. Existing seeds (which all have
+    // empty ACLs) keep working because every real caller passes one of the
+    // default domains.
+    return stored && stored.length > 0 ? stored : DEFAULT_SEED_ACL
+}
 
 export const createdAtOf = (key: Key): Date => {
     const iso = seedMetadata(key).pera?.createdAt
