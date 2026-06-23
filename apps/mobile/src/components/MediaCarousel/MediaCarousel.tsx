@@ -133,7 +133,7 @@ export const MediaCarousel = ({
                     )}
                     {onFullScreenPress && index >= 0 && !isModelItem && (
                         <PWTouchableIcon
-                            style={styles.fullScreenButton}
+                            containerStyle={styles.fullScreenButton}
                             onPress={() => onFullScreenPress(index)}
                             name='full-view'
                             size='lg'

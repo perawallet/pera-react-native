@@ -226,11 +226,19 @@ export const CollectibleDetailScreen = ({
                     />
                 </PWView>
             </PWScreen>
-            <ModelViewerBottomSheet
-                isVisible={modelViewerModal.isOpen}
-                onClose={modelViewerModal.close}
-                modelUrl={modelViewerUrl ?? ''}
-            />
+            {/* Mount the sheet fresh on open. A BottomSheetModal that's been
+                mounted and idle no-ops on present() — present() calls
+                snapToIndex(), which bails until the modal's container height is
+                measured, and that never resolves for a long-lived instance.
+                Gating the mount on isOpen means present() runs against a freshly
+                laid-out container. */}
+            {modelViewerModal.isOpen && (
+                <ModelViewerBottomSheet
+                    isVisible
+                    onClose={modelViewerModal.close}
+                    modelUrl={modelViewerUrl ?? ''}
+                />
+            )}
         </>
     )
 }
