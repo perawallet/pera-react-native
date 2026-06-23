@@ -94,7 +94,6 @@ export const buildModelViewerHtml = ({
   src="${safeUrl}"
   camera-controls
   auto-rotate
-  ar
   style="width:100%;height:100%;background-color:transparent"
 ></model-viewer>
 <script>
