@@ -55,7 +55,10 @@ describe('buildAppConfig — refactor invariants', () => {
     })
 
     it('propagates IOS_TEAM_ID to the app and the passkey plugin from one source', () => {
-        const config = build({ APP_ENV: 'production', IOS_TEAM_ID: '87QL82XC78' })
+        const config = build({
+            APP_ENV: 'production',
+            IOS_TEAM_ID: '87QL82XC78',
+        })
 
         expect(config.ios.appleTeamId).toBe('87QL82XC78')
         expect(passkeyOptions(config).appleTeamId).toBe('87QL82XC78')
@@ -131,7 +134,9 @@ describe('buildAppConfig — entitlements parity (WB-6, production only)', () =>
     const DOMAINS = 'com.apple.developer.associated-domains'
 
     it('adds the legacy applinks:perawallet host for production only', () => {
-        expect(build({ APP_ENV: 'production' }).ios.entitlements[DOMAINS]).toEqual([
+        expect(
+            build({ APP_ENV: 'production' }).ios.entitlements[DOMAINS],
+        ).toEqual([
             'applinks:perawallet.app',
             'applinks:perawallet',
             'webcredentials:perawallet.app',
@@ -144,21 +149,35 @@ describe('buildAppConfig — entitlements parity (WB-6, production only)', () =>
             'webcredentials:perawallet.app',
         ]
 
-        expect(build({ APP_ENV: 'staging' }).ios.entitlements[DOMAINS]).toEqual(expected)
+        expect(build({ APP_ENV: 'staging' }).ios.entitlements[DOMAINS]).toEqual(
+            expected,
+        )
         expect(build({}).ios.entitlements[DOMAINS]).toEqual(expected)
     })
 
     it('enables aps-environment=production only for production builds', () => {
-        expect(build({ APP_ENV: 'production' }).ios.entitlements['aps-environment']).toBe('production')
-        expect(build({ APP_ENV: 'staging' }).ios.entitlements['aps-environment']).toBe('development')
-        expect(build({}).ios.entitlements['aps-environment']).toBe('development')
+        expect(
+            build({ APP_ENV: 'production' }).ios.entitlements[
+                'aps-environment'
+            ],
+        ).toBe('production')
+        expect(
+            build({ APP_ENV: 'staging' }).ios.entitlements['aps-environment'],
+        ).toBe('development')
+        expect(build({}).ios.entitlements['aps-environment']).toBe(
+            'development',
+        )
     })
 
     it('attests against the production App Attest environment for distributed builds', () => {
         const key = 'com.apple.developer.devicecheck.appattest-environment'
 
-        expect(build({ APP_ENV: 'production' }).ios.entitlements[key]).toBe('production')
-        expect(build({ APP_ENV: 'staging' }).ios.entitlements[key]).toBe('production')
+        expect(build({ APP_ENV: 'production' }).ios.entitlements[key]).toBe(
+            'production',
+        )
+        expect(build({ APP_ENV: 'staging' }).ios.entitlements[key]).toBe(
+            'production',
+        )
         expect(build({}).ios.entitlements[key]).toBe('development')
     })
 

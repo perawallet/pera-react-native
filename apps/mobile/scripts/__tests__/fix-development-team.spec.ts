@@ -11,10 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import {
-    resolveTeamId,
-    sanitizeDevelopmentTeam,
-} from '../fix-development-team'
+import { resolveTeamId, sanitizeDevelopmentTeam } from '../fix-development-team'
 
 describe('fix-development-team helpers', () => {
     it('resolves the team id from IOS_TEAM_ID first', () => {
@@ -22,13 +19,18 @@ describe('fix-development-team helpers', () => {
     })
 
     it('falls back to APPLE_TEAM_ID then empty string', () => {
-        expect(resolveTeamId({ APPLE_TEAM_ID: 'FALLBACKID' })).toBe('FALLBACKID')
+        expect(resolveTeamId({ APPLE_TEAM_ID: 'FALLBACKID' })).toBe(
+            'FALLBACKID',
+        )
         expect(resolveTeamId({})).toBe('')
     })
 
     it('prefers IOS_TEAM_ID over APPLE_TEAM_ID when both are set', () => {
         expect(
-            resolveTeamId({ IOS_TEAM_ID: '87QL82XC78', APPLE_TEAM_ID: 'OTHER' }),
+            resolveTeamId({
+                IOS_TEAM_ID: '87QL82XC78',
+                APPLE_TEAM_ID: 'OTHER',
+            }),
         ).toBe('87QL82XC78')
     })
 
