@@ -40,7 +40,7 @@ const bundleIdentifiers = {
     android: 'com.algorand.perarn.staging',
   },
   production: {
-    ios: 'com.algorandllc.perarn',
+    ios: 'com.algorandllc.algorand',
     android: 'com.algorand.perarn',
   },
 };

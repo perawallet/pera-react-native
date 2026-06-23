@@ -85,3 +85,44 @@ describe('buildAppConfig — refactor invariants', () => {
         expect(appConfig).toEqual(buildAppConfig(process.env))
     })
 })
+
+describe('buildAppConfig — iOS identity (WB-1, production only)', () => {
+    it('uses the native production bundle id for production', () => {
+        expect(build({ APP_ENV: 'production' }).ios.bundleIdentifier).toBe(
+            'com.algorandllc.algorand',
+        )
+    })
+
+    it('derives the production App Group as group.com.algorandllc.algorand', () => {
+        expect(passkeyOptions(build({ APP_ENV: 'production' })).appGroup).toBe(
+            'group.com.algorandllc.algorand',
+        )
+    })
+
+    it('leaves staging and dev iOS identity untouched (production-only scope)', () => {
+        expect(build({ APP_ENV: 'staging' }).ios.bundleIdentifier).toBe(
+            'com.algorandllc.perarn.staging',
+        )
+        expect(build({}).ios.bundleIdentifier).toBe(
+            'com.algorandllc.perarn.staging',
+        )
+    })
+
+    it('leaves the staging App Group untouched', () => {
+        expect(passkeyOptions(build({ APP_ENV: 'staging' })).appGroup).toBe(
+            'group.com.algorandllc.perarn.staging',
+        )
+    })
+
+    it('keeps staging distinct from production', () => {
+        expect(build({ APP_ENV: 'production' }).ios.bundleIdentifier).not.toBe(
+            build({ APP_ENV: 'staging' }).ios.bundleIdentifier,
+        )
+    })
+
+    it('leaves the Android package untouched (out of scope)', () => {
+        expect(build({ APP_ENV: 'production' }).android.package).toBe(
+            'com.algorand.perarn',
+        )
+    })
+})
