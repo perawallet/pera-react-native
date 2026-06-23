@@ -25,6 +25,7 @@ export const PeraCardDetails = () => {
         secureImageUrl,
         isRevealing,
         onToggleReveal,
+        onSecureImageError,
         fundingAddress,
         onChangeFunding,
         isFrozen,
@@ -48,6 +49,7 @@ export const PeraCardDetails = () => {
                 <PeraCardVisual
                     maskedPan={maskedPan}
                     secureImageUrl={secureImageUrl ?? undefined}
+                    onSecureImageError={onSecureImageError}
                 />
                 <RevealCardDetailsButton
                     isLoading={isRevealing}

@@ -22,11 +22,14 @@ type PeraCardVisualProps = {
      * When set, it replaces the masked brand art; raw values never reach us.
      */
     secureImageUrl?: string
+    /** Called when the secure image fails to load (expired URL, network). */
+    onSecureImageError?: () => void
 }
 
 export const PeraCardVisual = ({
     maskedPan,
     secureImageUrl,
+    onSecureImageError,
 }: PeraCardVisualProps) => {
     const styles = useStyles()
 
@@ -39,6 +42,7 @@ export const PeraCardVisual = ({
                     source={{ uri: secureImageUrl }}
                     style={styles.cardImage}
                     resizeMode='contain'
+                    onError={onSecureImageError}
                 />
             </PWView>
         )

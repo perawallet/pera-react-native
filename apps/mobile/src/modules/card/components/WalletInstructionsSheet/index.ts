@@ -11,3 +11,4 @@
  */
 
 export { WalletInstructionsSheet } from './WalletInstructionsSheet'
+export type { WalletPlatform } from './useWalletInstructionsSheet'

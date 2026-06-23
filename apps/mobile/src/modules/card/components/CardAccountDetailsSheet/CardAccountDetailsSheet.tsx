@@ -35,7 +35,12 @@ export const CardAccountDetailsSheet = () => {
 
     return (
         <PWSheetLayout
-            header={<SheetHeader title={t('peraCard.account_details.title')} />}
+            header={
+                <SheetHeader
+                    title={t('peraCard.account_details.title')}
+                    showClose
+                />
+            }
         >
             {isLoading ? (
                 <ActivityIndicator />

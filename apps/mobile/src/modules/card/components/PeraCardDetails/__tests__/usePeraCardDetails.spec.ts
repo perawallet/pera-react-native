@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     status: 'ACTIVE' as string | null,
     cardDetailsMutateAsync: vi.fn(),
     freezeMutateAsync: vi.fn(),
+    freezePending: false,
     unfreezeMutateAsync: vi.fn(),
     setPinMutateAsync: vi.fn(),
     setPinPending: false,
@@ -62,7 +63,8 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         }),
         useCardDetailsMutation: () =>
             mutationResult(mocks.cardDetailsMutateAsync),
-        useFreezeCardMutation: () => mutationResult(mocks.freezeMutateAsync),
+        useFreezeCardMutation: () =>
+            mutationResult(mocks.freezeMutateAsync, mocks.freezePending),
         useUnfreezeCardMutation: () =>
             mutationResult(mocks.unfreezeMutateAsync),
         useSetCardPinMutation: () =>
@@ -104,6 +106,7 @@ describe('usePeraCardDetails', () => {
         mocks.fundingAddress = null
         mocks.status = 'ACTIVE'
         mocks.setPinPending = false
+        mocks.freezePending = false
     })
 
     it('masks the PAN with the last 4 when known', () => {
@@ -168,6 +171,26 @@ describe('usePeraCardDetails', () => {
             expect.any(String),
             "user doesn't have a card",
         )
+    })
+
+    it('hides the secure image and toasts when it fails to load', async () => {
+        mocks.cardDetailsMutateAsync.mockResolvedValue({
+            token: 'tok',
+            imageUrl: 'https://secure/card.png',
+        })
+
+        const { result } = renderHook(() => usePeraCardDetails())
+        await act(async () => {
+            result.current.onToggleReveal()
+        })
+        expect(result.current.secureImageUrl).toBe('https://secure/card.png')
+
+        act(() => {
+            result.current.onSecureImageError()
+        })
+
+        expect(result.current.secureImageUrl).toBeNull()
+        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
     })
 
     it('falls back to a generic body when the error has no message', async () => {
@@ -238,6 +261,18 @@ describe('usePeraCardDetails', () => {
         })
 
         expect(mocks.errorToast).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not start a second freeze request while one is pending', async () => {
+        mocks.freezePending = true
+
+        const { result } = renderHook(() => usePeraCardDetails())
+        await act(async () => {
+            result.current.onToggleFreeze()
+        })
+
+        expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
+        expect(mocks.unfreezeMutateAsync).not.toHaveBeenCalled()
     })
 
     it('opens the hosted page in a WebView on Set PIN', async () => {

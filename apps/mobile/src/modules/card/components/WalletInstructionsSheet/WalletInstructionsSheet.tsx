@@ -56,15 +56,18 @@ export const WalletInstructionsSheet = ({
                 <Logo
                     width={theme.spacing['3xl']}
                     height={theme.spacing['3xl']}
-                    color={theme.colors.textMain}
+                    // Apple's mark is monochrome (themed); Google's is fixed multi-color.
+                    color={
+                        platform === 'apple' ? theme.colors.textMain : undefined
+                    }
                     style={styles.logo}
                 />
                 <PWView style={styles.stepsList}>
                     {steps.map((step, index) => (
                         <WalletInstructionStep
-                            key={step}
+                            key={step.id}
                             number={index + 1}
-                            text={step}
+                            text={step.text}
                         />
                     ))}
                 </PWView>

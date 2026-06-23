@@ -32,11 +32,13 @@ const GOOGLE_STEP_KEYS = [
     'peraCard.wallet_instructions.google_step_7',
 ] as const
 
+/** One ordered step; `id` is the stable i18n key (used as the React key). */
+type WalletInstructionStepItem = { id: string; text: string }
+
 type UseWalletInstructionsSheetResult = {
-    /** Sheet title; reuses the Card Details row labels. */
     title: string
     /** Ordered, translated manual-add steps for the platform. */
-    steps: string[]
+    steps: WalletInstructionStepItem[]
 }
 
 export const useWalletInstructionsSheet = (
@@ -48,11 +50,12 @@ export const useWalletInstructionsSheet = (
     return {
         title: t(
             isApple
-                ? 'peraCard.account.add_to_apple_wallet'
-                : 'peraCard.account.add_to_google_pay',
+                ? 'peraCard.wallet_instructions.apple_title'
+                : 'peraCard.wallet_instructions.google_title',
         ),
-        steps: (isApple ? APPLE_STEP_KEYS : GOOGLE_STEP_KEYS).map(key =>
-            t(key),
-        ),
+        steps: (isApple ? APPLE_STEP_KEYS : GOOGLE_STEP_KEYS).map(key => ({
+            id: key,
+            text: t(key),
+        })),
     }
 }

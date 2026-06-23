@@ -28,7 +28,10 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { useCardComingSoonToast } from '../../hooks'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
-import { WalletInstructionsSheet } from '../WalletInstructionsSheet'
+import {
+    WalletInstructionsSheet,
+    type WalletPlatform,
+} from '../WalletInstructionsSheet'
 
 const PAN_MASK = '••••'
 
@@ -39,6 +42,8 @@ type UsePeraCardDetailsResult = {
     secureImageUrl: string | null
     isRevealing: boolean
     onToggleReveal: () => void
+    /** Recover if the single-use secure image fails to load: hide it + toast. */
+    onSecureImageError: () => void
     /** Connected funding-source address, or `null` if none is stored. */
     fundingAddress: string | null
     onChangeFunding: () => void
@@ -54,7 +59,7 @@ type UsePeraCardDetailsResult = {
     isSettingPin: boolean
     onAccountsDetails: () => void
     /** Which wallet-provisioning row to show: Apple Wallet on iOS, Google Pay on Android. */
-    walletPlatform: 'apple' | 'google'
+    walletPlatform: WalletPlatform
     onAddToWallet: () => void
     onReportLostStolen: () => void
     onReportSuspicious: () => void
@@ -122,6 +127,16 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         void toggleReveal()
     }, [toggleReveal])
 
+    // The secure-view image is the only way details are shown; if it fails to
+    // load (expired single-use URL, network), fall back to masked + notify.
+    const onSecureImageError = useCallback(() => {
+        setSecureImageUrl(null)
+        errorToast(
+            t('peraCard.account.error_title'),
+            t('peraCard.account.error_body'),
+        )
+    }, [errorToast, t])
+
     const toggleFreeze = useCallback(async () => {
         // Guard re-entry so a double-tap can't double-fire or flip the freeze
         // state back before the status query has refetched.
@@ -181,6 +196,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         secureImageUrl,
         isRevealing: cardDetails.isPending,
         onToggleReveal,
+        onSecureImageError,
         fundingAddress,
         onChangeFunding: showComingSoon,
         isFrozen,

@@ -21,7 +21,7 @@ describe('useWalletInstructionsSheet', () => {
 
         // The test i18n returns raw keys, so assert on the key.
         expect(result.current.title).toBe(
-            'peraCard.account.add_to_apple_wallet',
+            'peraCard.wallet_instructions.apple_title',
         )
         expect(result.current.steps).toHaveLength(5)
     })
@@ -31,7 +31,9 @@ describe('useWalletInstructionsSheet', () => {
             useWalletInstructionsSheet('google'),
         )
 
-        expect(result.current.title).toBe('peraCard.account.add_to_google_pay')
+        expect(result.current.title).toBe(
+            'peraCard.wallet_instructions.google_title',
+        )
         expect(result.current.steps).toHaveLength(7)
     })
 })

@@ -745,6 +745,8 @@
         },
         "wallet_instructions": {
             "done": "Got it",
+            "apple_title": "Add to Apple Wallet",
+            "google_title": "Add to Google Pay",
             "apple_step_1": "Open the Wallet app on your device",
             "apple_step_2": "Tap the + button on the screen",
             "apple_step_3": "Add your card details",

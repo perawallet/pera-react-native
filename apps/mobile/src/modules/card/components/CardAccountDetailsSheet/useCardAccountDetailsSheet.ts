@@ -68,12 +68,14 @@ export const useCardAccountDetailsSheet =
         const fullName =
             [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
             unavailable
+        // `||` (not `??`) so an empty-string field falls back to the
+        // placeholder, consistent with the full-name row.
         const country =
             getCountryName(
-                user?.countryOfResidence ?? undefined,
+                user?.countryOfResidence || undefined,
                 settings?.countries ?? [],
-            ) ??
-            user?.countryOfResidence ??
+            ) ||
+            user?.countryOfResidence ||
             unavailable
 
         const details: AccountDetail[] = [
@@ -85,12 +87,12 @@ export const useCardAccountDetailsSheet =
             {
                 key: 'email',
                 label: t('peraCard.account_details.email'),
-                value: user?.email ?? unavailable,
+                value: user?.email || unavailable,
             },
             {
                 key: 'phone',
                 label: t('peraCard.account_details.phone'),
-                value: user?.phoneNumber ?? unavailable,
+                value: user?.phoneNumber || unavailable,
             },
             {
                 key: 'country',

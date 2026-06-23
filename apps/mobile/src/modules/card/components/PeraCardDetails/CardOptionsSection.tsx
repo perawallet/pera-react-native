@@ -15,6 +15,7 @@ import { PWDivider, PWText, PWView } from '@components/core'
 import AppleWalletIcon from '@assets/icons/apple-wallet.svg'
 import GooglePayIcon from '@assets/icons/google-pay.svg'
 import { useLanguage } from '@hooks/useLanguage'
+import { type WalletPlatform } from '../WalletInstructionsSheet'
 import { CardOptionRow } from './CardOptionRow'
 import { useStyles } from './styles'
 
@@ -25,7 +26,7 @@ type CardOptionsSectionProps = {
     /** Hides the freeze row when the card can't be (un)frozen (e.g. BLOCKED). */
     canToggleFreeze: boolean
     /** iOS shows Apple Wallet, Android shows Google Pay — only one provisioning row. */
-    walletPlatform: 'apple' | 'google'
+    walletPlatform: WalletPlatform
     isSettingPin: boolean
     onAccountsDetails: () => void
     onAddToWallet: () => void
