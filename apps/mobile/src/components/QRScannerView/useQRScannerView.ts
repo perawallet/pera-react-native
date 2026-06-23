@@ -77,6 +77,16 @@ export const useQRScannerView = ({
 
     const scannerOutput = useBarcodeScannerOutput({
         barcodeFormats: BARCODE_FORMATS,
+        // Scan from the full-resolution camera buffer rather than the
+        // default 'preview' buffer. On Android the 'preview' path caps the
+        // ML Kit analysis frame at ~720p (see the package's
+        // HybridBarcodeScannerOutput), which lacks the pixels-per-module to
+        // decode dense QR codes (high version / long WalletConnect URIs) —
+        // they silently fail to scan while sparse codes still work. 'full'
+        // selects the highest available buffer, restoring the v4
+        // `useCodeScanner` reliability. iOS was unaffected (preview buffers
+        // there are preview-layer sized), but the option is cross-platform.
+        outputResolution: 'full',
         onBarcodeScanned: barcodes => {
             try {
                 if (handlingRef.current) return
