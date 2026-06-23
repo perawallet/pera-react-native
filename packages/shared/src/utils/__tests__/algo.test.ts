@@ -10,5 +10,20 @@
  limitations under the License
  */
 
-export { PreferredCurrencyDisplay } from './PreferredCurrencyDisplay'
-export type { PreferredCurrencyDisplayProps } from './PreferredCurrencyDisplay'
+import { describe, test, expect } from 'vitest'
+import { isAlgoAssetId } from '../algo'
+
+describe('isAlgoAssetId', () => {
+    test('returns true for the ALGO string id', () => {
+        expect(isAlgoAssetId('0')).toBe(true)
+    })
+
+    test('returns true for the ALGO numeric id', () => {
+        expect(isAlgoAssetId(0)).toBe(true)
+    })
+
+    test('returns false for non-ALGO ids', () => {
+        expect(isAlgoAssetId('31566704')).toBe(false)
+        expect(isAlgoAssetId(31566704)).toBe(false)
+    })
+})

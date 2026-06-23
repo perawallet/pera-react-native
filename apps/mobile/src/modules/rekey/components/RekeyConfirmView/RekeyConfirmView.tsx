@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
@@ -85,11 +85,9 @@ export const RekeyConfirmView = ({
                         >
                             {t(`${i18nPrefix}.fee_label`)}
                         </PWText>
-                        <CurrencyDisplay
-                            currency='ALGO'
+                        <AssetAmount
+                            asset={ALGO_ASSET}
                             value={feeAlgos}
-                            precision={ALGO_ASSET.decimals}
-                            minPrecision={3}
                             variant='bodyLarge'
                         />
                     </PWView>

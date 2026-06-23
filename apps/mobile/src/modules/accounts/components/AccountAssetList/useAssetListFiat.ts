@@ -16,8 +16,12 @@ import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
 } from '@perawallet/wallet-core-currencies'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import {
+    isAlgoAssetId,
+    type Maybe,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 export type AssetFiatValue = {
     displayCurrency: string
@@ -36,7 +40,7 @@ export type AssetFiatConverter = (
  * per-row React Query observers), and visible rows call the returned function
  * during render — so the conversion is done only for the ~handful of on-screen
  * rows, not all N holdings on every data change. Mirrors
- * `usePreferredCurrencyDisplay`'s conversion exactly so the result is
+ * `usePreferredAmount`'s conversion exactly so the result is
  * identical to the shared display component.
  */
 export const useAssetListFiatConverter = (): AssetFiatConverter => {
@@ -57,7 +61,7 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
                 return { displayCurrency: preferredCurrency, value: null }
             }
 
-            const isSourceAlgo = assetId === ALGO_ASSET_ID
+            const isSourceAlgo = isAlgoAssetId(assetId)
             const needsFallback = isPreferredAlgo && isSourceAlgo
             const usdValue = amountDisplayUnits.mul(usdPrice)
             const value = needsFallback

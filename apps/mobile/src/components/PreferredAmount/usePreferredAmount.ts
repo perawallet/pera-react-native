@@ -16,29 +16,30 @@ import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
 } from '@perawallet/wallet-core-currencies'
+import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import {
-    useAssetPricesQuery,
-    ALGO_ASSET_ID,
-    ALGO_ASSET,
-} from '@perawallet/wallet-core-assets'
-import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
+    isAlgoAssetId,
+    isAlgoAssetName,
+    type Maybe,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
-type UsePreferredCurrencyDisplayResult = {
+type UsePreferredAmountResult = {
     displayCurrency: string
     convertedValue: Nullable<Decimal>
     isPending: boolean
 }
 
-export const usePreferredCurrencyDisplay = (
+export const usePreferredAmount = (
     sourceAmount: Maybe<Decimal>,
     sourceAssetId: string,
     forceFallback?: boolean,
     preFetchedUsdPrice?: Decimal,
-): UsePreferredCurrencyDisplayResult => {
+): UsePreferredAmountResult => {
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency()
-    const isPreferredAlgo = preferredCurrency === ALGO_ASSET.unitName
-    const isSourceAlgo = sourceAssetId === ALGO_ASSET_ID
+    const isPreferredAlgo = isAlgoAssetName(preferredCurrency)
+    const isSourceAlgo = isAlgoAssetId(sourceAssetId)
 
     const needsFallback = forceFallback || (isPreferredAlgo && isSourceAlgo)
 
@@ -48,12 +49,13 @@ export const usePreferredCurrencyDisplay = (
     }, [needsFallback, fallbackCurrency, preferredCurrency])
 
     // Skip per-item price fetch when a pre-fetched price is provided (bulk query optimization)
+    const hasPreFetchedUsdPrice = preFetchedUsdPrice !== undefined
     const priceIDs = useMemo(
-        () => (preFetchedUsdPrice !== undefined ? [] : [sourceAssetId]),
-        [preFetchedUsdPrice, sourceAssetId],
+        () => (hasPreFetchedUsdPrice ? [] : [sourceAssetId]),
+        [hasPreFetchedUsdPrice, sourceAssetId],
     )
     const { data: usdPrices, isPending: usdPricesPending } =
-        useAssetPricesQuery(priceIDs)
+        useAssetPricesQuery(priceIDs, !hasPreFetchedUsdPrice)
 
     // Fallback exchange rate (needed when displaying in fallback currency)
     const { data: fallbackRate, isPending: fallbackRatePending } =

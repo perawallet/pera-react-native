@@ -24,7 +24,8 @@ import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
 import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
 import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
@@ -115,11 +116,9 @@ export const AssetTransferDisplay = ({
 
                 {transferType !== 'opt-in' && (
                     <KeyValueRow title={t('transactions.common.amount')}>
-                        <CurrencyDisplay
+                        <AssetAmount
                             isLoading={!asset}
-                            currency={asset?.unitName ?? ''}
-                            precision={asset?.decimals ?? 6}
-                            minPrecision={asset?.decimals ?? 2}
+                            asset={asset}
                             value={amount}
                             showSymbol
                             style={amountStyle}
@@ -166,10 +165,8 @@ export const AssetTransferDisplay = ({
                 )}
 
                 <KeyValueRow title={t('transactions.common.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={6}
-                        minPrecision={2}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
                         ignorePrivacyMode

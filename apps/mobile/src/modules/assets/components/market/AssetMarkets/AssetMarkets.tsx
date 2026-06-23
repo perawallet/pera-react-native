@@ -18,8 +18,7 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { Decimal } from 'decimal.js'
@@ -73,7 +72,7 @@ export const AssetMarkets = ({
     onSwipeEnabledChange,
 }: AssetMarketsProps) => {
     const styles = useStyles()
-    const { preferredCurrency, usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
 
@@ -149,22 +148,17 @@ export const AssetMarkets = ({
                 <PWView style={styles.priceContainer}>
                     <PWView>
                         {selectedPoint ? (
-                            <CurrencyDisplay
+                            <PreferredAmount
                                 variant='h1'
                                 value={usdToPreferred(
                                     new Decimal(selectedPoint.usdPrice),
                                 )}
-                                currency={preferredCurrency}
-                                precision={6}
-                                minPrecision={2}
                             />
                         ) : (
-                            <PreferredCurrencyDisplay
+                            <PreferredAmount
                                 variant='h1'
                                 sourceAmount={new Decimal(1)}
                                 sourceAssetId={asset.assetId}
-                                precision={6}
-                                minPrecision={2}
                             />
                         )}
 

@@ -76,7 +76,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
-    ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         new Decimal(typeof value === 'bigint' ? value.toString() : value).div(

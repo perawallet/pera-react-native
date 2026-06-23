@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import {
-    ALGO_ASSET_UNIT_NAME,
-    useInvalidateAssetPrices,
-} from '@perawallet/wallet-core-assets'
+    ALGO_ASSET_NAME,
+    isAlgoAssetName,
+} from '@perawallet/wallet-core-shared'
 import {
+    USD_CURRENCY_ID,
     type Currency,
     useCurrenciesQuery,
     useCurrency,
@@ -64,12 +66,12 @@ export const useSettingsCurrencyScreen =
             trackEvent(SettingsEvent.ChangeCurrency, {
                 [AnalyticsMetadataKey.Id]: currency.id,
             })
-            if (currency.id === 'ALGO') {
-                setPreferredCurrency('ALGO')
-                setFallbackCurrency('USD')
+            if (isAlgoAssetName(currency.id)) {
+                setPreferredCurrency(ALGO_ASSET_NAME)
+                setFallbackCurrency(USD_CURRENCY_ID)
             } else {
                 setPreferredCurrency(currency.id)
-                setFallbackCurrency(ALGO_ASSET_UNIT_NAME)
+                setFallbackCurrency(ALGO_ASSET_NAME)
             }
             invalidateAssetPrices()
         }

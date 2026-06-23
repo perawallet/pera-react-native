@@ -81,7 +81,7 @@ export const sanitizeAmountInput = (
 
 // Token-unit amount for the fiat (preferred-currency) row. Empty, invalid, or
 // non-positive input computes as zero so the row shows a "0.00" placeholder
-// (matching the web AssetInput) instead of CurrencyDisplay's "---".
+// (matching the web AssetInput) instead of CurrencyAmount's "---".
 export const getFiatBaseAmount = (
     amount: string | Nullable<Decimal>,
 ): Decimal => {

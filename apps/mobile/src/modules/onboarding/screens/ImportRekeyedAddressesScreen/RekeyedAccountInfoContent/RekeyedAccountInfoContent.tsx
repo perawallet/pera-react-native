@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     PWButton,
     PWRoundIcon,
@@ -20,13 +21,13 @@ import {
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useRekeyedAccountInfoContent } from './useRekeyedAccountInfoContent'
 import { useStyles } from './styles'
 
@@ -88,18 +89,15 @@ export const RekeyedAccountInfoContent = ({
                     </PWText>
                 </PWView>
                 <PWView style={styles.balanceContainer}>
-                    <CurrencyDisplay
-                        currency='ALGO'
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={rekeyedAccountAlgoValue}
-                        precision={6}
-                        minPrecision={2}
                         showSymbol
                     />
-                    <PreferredCurrencyDisplay
+                    <PreferredAmount
                         sourceAmount={rekeyedAccountAlgoValue}
                         sourceAssetId={ALGO_ASSET_ID}
-                        precision={2}
-                        minPrecision={2}
+                        density='compact'
                         showSymbol
                         style={styles.secondaryBalance}
                     />
@@ -156,18 +154,15 @@ export const RekeyedAccountInfoContent = ({
                             </CopyableText>
                         </PWView>
                         <PWView style={styles.balanceContainer}>
-                            <CurrencyDisplay
-                                currency='ALGO'
+                            <AssetAmount
+                                asset={ALGO_ASSET}
                                 value={authAccountAlgoValue}
-                                precision={6}
-                                minPrecision={2}
                                 showSymbol
                             />
-                            <PreferredCurrencyDisplay
+                            <PreferredAmount
                                 sourceAmount={authAccountAlgoValue}
                                 sourceAssetId={ALGO_ASSET_ID}
-                                precision={2}
-                                minPrecision={2}
+                                density='compact'
                                 showSymbol
                                 style={styles.secondaryBalance}
                             />

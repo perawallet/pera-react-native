@@ -11,9 +11,10 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useSingleAssetDetailsQuery } from '../useSingleAssetDetailsQuery'
-import { ALGO_ASSET_ID } from '../../models'
+
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'

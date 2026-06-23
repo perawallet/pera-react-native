@@ -13,23 +13,7 @@
 import { Decimal } from 'decimal.js'
 import { formatNumber } from '@perawallet/wallet-core-shared'
 
-import {
-    ALGO_ASSET_ID,
-    type MinimalAsset,
-    type PeraAsset,
-    PeraAssetType,
-} from './models'
-
-/**
- * Checks whether an asset id refers to the native ALGO asset.
- * Accepts both string and number ids since different data sources
- * (Pera API vs DEX responses) represent the id in different shapes.
- *
- * @param assetId - The asset id to check
- * @returns true if the asset id is ALGO
- */
-export const isAlgoAsset = (assetId: string | number): boolean =>
-    String(assetId) === ALGO_ASSET_ID
+import { type MinimalAsset, type PeraAsset, PeraAssetType } from './models'
 
 /**
  * Converts an amount from base units to display units for a given asset.

@@ -11,6 +11,7 @@
  */
 
 import { PWButton, PWText, PWView, type PWFlatListRef } from '@components/core'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
@@ -18,7 +19,6 @@ import {
     type WalletAccount,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
 import { SearchableList } from '@components/SearchableList'
@@ -94,7 +94,7 @@ export const AccountAssetList = ({
         ({ item }: { item: AccountHoldingsLiteRow }) => {
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
-                item.assetId !== ALGO_ASSET_ID &&
+                !isAlgoAssetId(item.assetId) &&
                 item.amount.isZero()
 
             return (

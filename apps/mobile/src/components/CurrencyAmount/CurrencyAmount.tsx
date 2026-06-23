@@ -16,6 +16,7 @@ import { useMemo } from 'react'
 import {
     formatCurrency,
     formatRawNumberInput,
+    isAlgoAssetName,
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -28,6 +29,7 @@ import {
     type FontWeight,
     type TypographyVariant,
 } from '@theme/typography'
+import { resolvePrecision, type PrecisionVariant } from './precision'
 
 const ALGO_SYMBOL = '¦'
 
@@ -40,12 +42,22 @@ export const getAlgoSymbolWeight = (
     return effective === 600 ? 700 : effective
 }
 
-export type CurrencyDisplayProps = {
+/**
+ * The precision policy is expressed semantically (see {@link PrecisionVariant}),
+ * never as raw digit counts — that is the single door through which every
+ * currency figure picks up its decimals. `assetDecimals` is only meaningful
+ * for (and only accepted by) the `assetFull` variant.
+ */
+type PrecisionProps =
+    | {
+          precision: Exclude<PrecisionVariant, 'assetFull'>
+          assetDecimals?: never
+      }
+    | { precision: 'assetFull'; assetDecimals?: number }
+
+export type CurrencyAmountProps = {
     currency: string
     value: Maybe<Decimal>
-    precision: number
-    minPrecision?: number
-    maxPrecision?: number
     prefix?: string
     alignRight?: boolean
     showSymbol?: boolean
@@ -56,30 +68,36 @@ export type CurrencyDisplayProps = {
     ignorePrivacyMode?: boolean
     variant?: TypographyVariant
     style?: StyleProp<TextStyle>
-} & Omit<PWTextProps, 'children' | 'variant'>
+} & PrecisionProps &
+    Omit<PWTextProps, 'children' | 'variant'>
 
-export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
+export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const themeStyle = useStyles(props)
     const provider = usePeraProvider()
-    const deviceInfo = provider.deviceInfo
+    const locale = provider.deviceInfo.getDeviceLocale()
     const {
         currency,
         value,
-        precision,
+        precision: precisionVariant,
+        assetDecimals,
+        alignRight: _alignRight,
         prefix,
         truncateToUnits,
         showSymbol = true,
         symbolPosition = 'start',
         isLoading = false,
-        minPrecision,
-        maxPrecision,
         rawValue,
         ignorePrivacyMode = false,
         variant = 'body',
         ...rest
     } = props
 
-    const isAlgo = useMemo(() => currency === 'ALGO', [currency])
+    const { precision, minPrecision } = resolvePrecision(
+        precisionVariant,
+        assetDecimals,
+    )
+
+    const isAlgo = useMemo(() => isAlgoAssetName(currency), [currency])
     const { privacyMode: privacyModeSetting } = useSettings()
     const privacyMode = privacyModeSetting && !ignorePrivacyMode
 
@@ -89,25 +107,20 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
 
     const displayValue = useMemo(() => {
         if (rawValue != null) {
-            return privacyMode
-                ? '****'
-                : formatRawNumberInput(rawValue, deviceInfo.getDeviceLocale())
+            return privacyMode ? '****' : formatRawNumberInput(rawValue, locale)
         }
 
         if (value == null) {
             return '---'
         }
 
-        const effectivePrecision =
-            maxPrecision != null ? Math.min(precision, maxPrecision) : precision
-
         return privacyMode
             ? '****'
             : formatCurrency(
                   value,
-                  effectivePrecision,
+                  precision,
                   currency,
-                  deviceInfo.getDeviceLocale(),
+                  locale,
                   shouldShowSymbolInFormat,
                   truncateToUnits,
                   minPrecision,
@@ -115,9 +128,8 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     }, [
         value,
         precision,
-        maxPrecision,
         currency,
-        deviceInfo,
+        locale,
         shouldShowSymbolInFormat,
         truncateToUnits,
         minPrecision,

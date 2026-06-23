@@ -306,7 +306,6 @@ describe('useTransactionListItem', () => {
             )
 
             expect(result.current.amounts[0].value.toNumber()).toBe(1)
-            expect(result.current.amounts[0].precision).toBe(6)
         })
 
         it('falls back to transaction asset decimals when query has no data', () => {
@@ -328,7 +327,6 @@ describe('useTransactionListItem', () => {
             )
 
             expect(result.current.amounts[0].value.toNumber()).toBe(1)
-            expect(result.current.amounts[0].precision).toBe(6)
         })
 
         it('shows negative prefix for outgoing transactions', () => {

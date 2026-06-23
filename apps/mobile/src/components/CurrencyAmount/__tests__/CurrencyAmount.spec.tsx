@@ -13,28 +13,31 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
-import { CurrencyDisplay, getAlgoSymbolWeight } from '../CurrencyDisplay'
+import { CurrencyAmount, getAlgoSymbolWeight } from '../CurrencyAmount'
+import { PREFERRED_MAX_PRECISION } from '../precision'
 import { Decimal } from 'decimal.js'
 import type { TypographyVariant } from '@theme/typography'
 
-describe('CurrencyDisplay', () => {
+describe('CurrencyAmount', () => {
     it('renders formatted currency value', () => {
         const { container } = render(
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={new Decimal(100)}
                 currency='USD'
-                precision={2}
+                precision='compact'
             />,
         )
-        expect(container).toBeTruthy()
+        // A real value renders formatted content, not the null placeholder.
+        expect(container.textContent).not.toContain('---')
+        expect(container.textContent?.length).toBeGreaterThan(0)
     })
 
     it('displays placeholder when value is null', () => {
         const { container } = render(
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={null}
                 currency='USD'
-                precision={2}
+                precision='compact'
             />,
         )
         expect(container.textContent).toContain('---')
@@ -42,10 +45,10 @@ describe('CurrencyDisplay', () => {
 
     it('applies prefix when provided', () => {
         const { container } = render(
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={new Decimal(100)}
                 currency='USD'
-                precision={2}
+                precision='compact'
                 prefix='+'
             />,
         )
@@ -54,40 +57,43 @@ describe('CurrencyDisplay', () => {
 
     it('renders the Algo symbol as a text glyph for ALGO', () => {
         const { container } = render(
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={new Decimal('0.001')}
                 currency='ALGO'
-                precision={6}
+                precision='preferredFull'
             />,
         )
         // U+00A6 is the Algo mark in the bundled DMSans font.
         expect(container.textContent).toContain('¦')
     })
 
-    it('clamps the precision handed to the formatter to maxPrecision', () => {
+    it('hands the formatter the asset decimals resolved from the assetFull variant', () => {
         vi.mocked(formatCurrency).mockClear()
         render(
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={new Decimal('8.817812345')}
                 currency='USD'
-                precision={6}
-                maxPrecision={2}
+                precision='assetFull'
+                assetDecimals={6}
             />,
         )
-        // formatCurrency(value, precision, currency, ...) — precision is arg 1.
-        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(2)
+        // formatCurrency(value, precision, currency, ..., minPrecision) — the
+        // assetFull variant resolves precision to the asset's own decimals.
+        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(6)
     })
 
-    it('passes precision through unchanged when maxPrecision is omitted', () => {
+    it('hands the formatter PREFERRED_MAX_PRECISION for the preferredFull variant', () => {
         vi.mocked(formatCurrency).mockClear()
         render(
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={new Decimal('8.817812345')}
                 currency='USD'
-                precision={6}
+                precision='preferredFull'
             />,
         )
-        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(6)
+        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(
+            PREFERRED_MAX_PRECISION,
+        )
     })
 })
 

@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import {
     PWView,
     PWText,
@@ -22,9 +23,9 @@ import {
     PWScreen,
 } from '@components/core'
 import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
@@ -87,19 +88,17 @@ export const SelectHDWalletScreen = () => {
                         </PWText>
                     </PWView>
                     <PWView style={styles.balanceContainer}>
-                        <CurrencyDisplay
-                            currency='ALGO'
+                        <AssetAmount
+                            asset={ALGO_ASSET}
                             value={groupAlgoValue}
-                            precision={ALGO_ASSET.decimals}
-                            minPrecision={2}
+                            density='compact'
                             style={styles.algoBalance}
                             variant='h4'
                         />
-                        <PreferredCurrencyDisplay
+                        <PreferredAmount
                             sourceAssetId={ALGO_ASSET_ID}
                             sourceAmount={groupAlgoValue}
-                            precision={2}
-                            minPrecision={2}
+                            density='compact'
                             style={styles.fiatBalance}
                             variant='body'
                         />

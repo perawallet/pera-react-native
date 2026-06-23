@@ -12,7 +12,7 @@
 
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { ALGO_ASSET_UNIT_NAME } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useSettingsCurrencyScreen } from '../useSettingsCurrencyScreen'
 
 const mockSetPreferredCurrency = vi.hoisted(() => vi.fn())
@@ -22,12 +22,12 @@ const mockUseCurrenciesQuery = vi.hoisted(() => vi.fn())
 const mockInvalidateAssetPrices = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
+    USD_CURRENCY_ID: 'USD',
     useCurrency: mockUseCurrency,
     useCurrenciesQuery: mockUseCurrenciesQuery,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_UNIT_NAME: 'ALGO',
     useInvalidateAssetPrices: () => ({
         invalidateAssetPrices: mockInvalidateAssetPrices,
     }),
@@ -62,8 +62,6 @@ describe('useSettingsCurrencyScreen', () => {
         result.current.setCurrency({ id: 'AED', name: 'Dirham' } as never)
 
         expect(mockSetPreferredCurrency).toHaveBeenCalledWith('AED')
-        expect(mockSetFallbackCurrency).toHaveBeenCalledWith(
-            ALGO_ASSET_UNIT_NAME,
-        )
+        expect(mockSetFallbackCurrency).toHaveBeenCalledWith(ALGO_ASSET_NAME)
     })
 })

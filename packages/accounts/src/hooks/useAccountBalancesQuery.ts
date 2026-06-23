@@ -14,6 +14,7 @@ import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
+    isAlgoAssetId,
     logger,
     pow10,
     type Network,
@@ -25,7 +26,7 @@ import type {
     AssetWithAccountBalance,
     WalletAccount,
 } from '../models'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
@@ -147,13 +148,13 @@ export const useAccountBalancesQuery = (
             // ALGO is itself a holding row now; its joined price is the ALGO/USD
             // rate used to express every holding's value in ALGO terms.
             const usdAlgoPrice =
-                holdings.find(h => h.assetId === ALGO_ASSET_ID)?.usdPrice ??
+                holdings.find(h => isAlgoAssetId(h.assetId))?.usdPrice ??
                 new Decimal(0)
 
             let algoValue = new Decimal(0)
             const assetBalances: AssetWithAccountBalance[] = holdings.map(
                 holding => {
-                    const isAlgo = holding.assetId === ALGO_ASSET_ID
+                    const isAlgo = isAlgoAssetId(holding.assetId)
                     // ALGO metadata is seeded, but fall back defensively so the
                     // native balance always renders even mid-sync.
                     const asset = holding.asset ?? (isAlgo ? ALGO_ASSET : null)

@@ -12,10 +12,9 @@
 
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
@@ -57,10 +56,8 @@ export const AssetTransferSummaryHeader = ({
 
             <PWView style={styles.amountContainer}>
                 {amount.isZero() ? null : (
-                    <CurrencyDisplay
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={asset}
                         value={amount}
                         showSymbol
                         variant='h1'
@@ -69,11 +66,9 @@ export const AssetTransferSummaryHeader = ({
                     />
                 )}
                 {amount.isZero() ? null : (
-                    <PreferredCurrencyDisplay
+                    <PreferredAmount
                         sourceAmount={amount}
                         sourceAssetId={assetId}
-                        precision={DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
                         showSymbol
                         variant='h4'
                         style={styles.secondaryAmountValue}

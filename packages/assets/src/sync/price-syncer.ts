@@ -12,9 +12,14 @@
 
 import { fetchAssetPrices, fetchPublicAssetDetails } from '../api'
 import { upsertAssetPrices } from '../db'
-import { ALGO_ASSET_ID } from '../models'
+
 import { Decimal } from 'decimal.js'
-import { partition, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    ALGO_ASSET_ID,
+    partition,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 
 const PRICE_BATCH_SIZE = 25
 const PRICE_FETCH_CONCURRENCY = 5
@@ -25,7 +30,7 @@ export async function fetchAndPersistPrices(
 ): Promise<void> {
     if (assetIds.length === 0) return
 
-    const nonAlgoIds = assetIds.filter(id => id !== ALGO_ASSET_ID)
+    const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     const batches = partition(nonAlgoIds, PRICE_BATCH_SIZE)
 
     // ALGO uses a different endpoint, so it doesn't compete with the

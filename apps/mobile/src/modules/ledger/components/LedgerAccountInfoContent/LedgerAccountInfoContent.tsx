@@ -11,11 +11,12 @@
  */
 
 import { useCallback } from 'react'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { ActivityIndicator } from 'react-native'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { PWView, PWText, PWButton, PWFlatList } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -73,19 +74,17 @@ export const LedgerAccountInfoContent = ({
                                 }}
                             />
                             <PWView style={styles.balanceContainer}>
-                                <CurrencyDisplay
-                                    currency='ALGO'
+                                <AssetAmount
+                                    asset={ALGO_ASSET}
                                     value={item.algoBalance}
-                                    precision={ALGO_ASSET.decimals}
-                                    minPrecision={2}
+                                    density='compact'
                                     variant='bodyCompact'
                                 />
-                                <PreferredCurrencyDisplay
+                                <PreferredAmount
                                     sourceAssetId={ALGO_ASSET_ID}
                                     sourceAmount={item.algoBalance}
                                     usdPrice={item.algoUsdPrice}
-                                    precision={2}
-                                    minPrecision={2}
+                                    density='compact'
                                     variant='bodyCompact'
                                     style={styles.fiatBalance}
                                 />

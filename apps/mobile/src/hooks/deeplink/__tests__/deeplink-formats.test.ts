@@ -97,6 +97,9 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_ID: '0',
+    isAlgoAssetId: (assetId: string | number | bigint) =>
+        String(assetId) === '0',
     logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
     decodeFromBase64: vi.fn((b64: string) =>

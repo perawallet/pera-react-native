@@ -11,7 +11,7 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import {
     type CardTransaction,
     TransactionSign,
@@ -58,10 +58,10 @@ export const CardTransactionListItem = ({
                     {subtitle}
                 </PWText>
             </PWView>
-            <CurrencyDisplay
+            <CurrencyAmount
                 value={transaction.amountInTransactionCurrency.abs()}
                 currency={transaction.transactionCurrency}
-                precision={2}
+                precision='compact'
                 prefix={isDebit ? '-' : '+'}
                 symbolPosition='end'
                 variant='bodyLarge'

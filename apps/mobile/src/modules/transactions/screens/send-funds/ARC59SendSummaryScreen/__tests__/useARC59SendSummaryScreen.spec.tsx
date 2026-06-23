@@ -77,6 +77,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_NAME: 'ALGO',
     formatCurrency: vi.fn(
         (value: number, _precision: number, currency: string) =>
             `${value.toFixed(6)} ${currency}`,

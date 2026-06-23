@@ -24,7 +24,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
 import { AccountIcon } from '../AccountIcon'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { AccountStructureTree } from './AccountStructureTree'
 import { InfoButton, useInfoButton } from '@components/InfoButton'
@@ -149,11 +149,9 @@ export const AccountInfoCard = ({
                     <InfoButton
                         title={t('min_balance_info.title')}
                         trigger={
-                            <CurrencyDisplay
-                                currency='ALGO'
+                            <AssetAmount
+                                asset={ALGO_ASSET}
                                 value={minBalanceAlgos}
-                                precision={ALGO_ASSET.decimals}
-                                minPrecision={2}
                                 showSymbol
                                 symbolPosition='start'
                                 isLoading={isMinBalanceLoading}

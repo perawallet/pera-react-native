@@ -23,16 +23,14 @@ import {
     useNetwork,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    ALGO_ASSET,
-    ALGO_ASSET_ID,
-    getKnownAssetId,
-} from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET, getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
     useSigningRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
+    isAlgoAssetId,
+    ALGO_ASSET_ID,
     generateOrderedUniqueId,
     logger,
     type Optional,
@@ -159,8 +157,8 @@ export const useBidaliTransport = (
     const providerJS = useMemo(() => {
         const balance = balances.get(account?.address ?? '')
 
-        const algoBalance = balance?.assetBalances.find(
-            a => a.assetId === ALGO_ASSET_ID,
+        const algoBalance = balance?.assetBalances.find(a =>
+            isAlgoAssetId(a.assetId),
         )?.amount
         const usdcBalance = balance?.assetBalances.find(
             a => a.assetId === getKnownAssetId('USDC', network),
@@ -238,7 +236,7 @@ export const useBidaliTransport = (
             try {
                 const composer = algokit.newGroup()
 
-                if (currencyInfo.assetId === ALGO_ASSET_ID) {
+                if (isAlgoAssetId(currencyInfo.assetId)) {
                     composer.addPayment({
                         sender,
                         receiver: address,

@@ -15,7 +15,7 @@ import { Trans } from 'react-i18next'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { config } from '@perawallet/wallet-core-config'
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
@@ -77,11 +77,9 @@ export const UndoRekeyConfirmScreen = () => {
                         >
                             {t('rekey.undo.confirm.fee_label')}
                         </PWText>
-                        <CurrencyDisplay
-                            currency='ALGO'
+                        <AssetAmount
+                            asset={ALGO_ASSET}
                             value={feeAlgos}
-                            precision={ALGO_ASSET.decimals}
-                            minPrecision={2}
                             variant='bodyLarge'
                         />
                     </PWView>

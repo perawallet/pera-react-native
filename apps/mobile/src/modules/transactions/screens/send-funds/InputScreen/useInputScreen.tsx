@@ -24,7 +24,6 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     ALGO_ASSET,
-    ALGO_ASSET_ID,
     isCollectible,
     toWholeUnits,
     useAssetsQuery,
@@ -37,7 +36,7 @@ import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Maybe } from '@perawallet/wallet-core-shared'
 
 export const useInputScreen = () => {
     const navigation =
@@ -125,7 +124,7 @@ export const useInputScreen = () => {
     }, [accountBalances, selectedAssetId, selectedAccount])
 
     const maxAmount = useMemo(() => {
-        if (selectedAssetId === ALGO_ASSET_ID) {
+        if (isAlgoAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
                 ALGO_ASSET,
@@ -142,7 +141,7 @@ export const useInputScreen = () => {
     }, [selectedAssetId, params, accountInformation, tokenBalance])
 
     const totalBalance = useMemo(() => {
-        if (selectedAssetId === ALGO_ASSET_ID) {
+        if (isAlgoAssetId(selectedAssetId)) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
                 ALGO_ASSET,
@@ -154,7 +153,7 @@ export const useInputScreen = () => {
     }, [selectedAssetId, accountInformation, tokenBalance])
 
     const minBalanceDisplay = useMemo(() => {
-        if (selectedAssetId === ALGO_ASSET_ID) {
+        if (isAlgoAssetId(selectedAssetId)) {
             return toWholeUnits(
                 accountInformation?.minBalance ?? 0n,
                 ALGO_ASSET,
@@ -176,7 +175,7 @@ export const useInputScreen = () => {
 
     const hasNoOptedInAssets = useMemo(() => {
         return (
-            selectedAssetId === ALGO_ASSET_ID &&
+            isAlgoAssetId(selectedAssetId) &&
             (accountInformation?.assets?.length ?? 0) === 0
         )
     }, [selectedAssetId, accountInformation?.assets])

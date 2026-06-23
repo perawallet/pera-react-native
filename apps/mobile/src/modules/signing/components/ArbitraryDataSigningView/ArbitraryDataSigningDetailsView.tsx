@@ -20,7 +20,8 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 
 export type ArbitraryDataSigningDetailsViewProps = {
@@ -62,22 +63,20 @@ export const ArbitraryDataSigningDetailsView = ({
             </PWView>
             <PWView style={styles.section}>
                 <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={Decimal(0)}
                         showSymbol
-                        precision={2}
-                        minPrecision={2}
+                        density='compact'
                         ignorePrivacyMode
                     />
                 </KeyValueRow>
                 <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={Decimal(0)}
                         showSymbol
-                        precision={2}
-                        minPrecision={2}
+                        density='compact'
                         ignorePrivacyMode
                     />
                 </KeyValueRow>

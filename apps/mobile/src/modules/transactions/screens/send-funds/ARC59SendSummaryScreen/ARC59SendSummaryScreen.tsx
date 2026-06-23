@@ -20,9 +20,8 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { AssetTitle } from '@modules/assets/components'
 import { LoadingView } from '@components/LoadingView'
 
@@ -101,11 +100,9 @@ export const ARC59SendSummaryScreen = () => {
                                 <PWText variant='h4'>{assetId}</PWText>
                             )}
                         </PWView>
-                        <CurrencyDisplay
+                        <AssetAmount
                             value={amount}
-                            currency={asset?.unitName ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={DEFAULT_PRECISION}
+                            asset={asset}
                             variant='h4'
                             ignorePrivacyMode
                         />
@@ -117,11 +114,9 @@ export const ARC59SendSummaryScreen = () => {
                         <PWText style={styles.rowLabel}>
                             {t('send_funds.arc59_summary.fees_label')}
                         </PWText>
-                        <CurrencyDisplay
+                        <AssetAmount
                             value={fee}
-                            currency={'ALGO'}
-                            precision={ALGO_ASSET.decimals}
-                            minPrecision={DEFAULT_PRECISION}
+                            asset={ALGO_ASSET}
                             ignorePrivacyMode
                         />
                     </PWView>

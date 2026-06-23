@@ -14,7 +14,6 @@ import { type QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
-    ALGO_ASSET_ID,
     fetchAndPersistAssets,
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
@@ -29,6 +28,7 @@ import {
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
 import { useAccountsStore } from '../store'
 import {
+    ALGO_ASSET_ID,
     logger,
     type Network,
     type Nullable,

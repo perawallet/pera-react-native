@@ -11,7 +11,8 @@
  */
 
 import { useStyles } from './styles'
-import { ALGO_ASSET_ID, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
+import { type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useTheme } from '@rneui/themed'
 import {
     type IconName,
@@ -40,7 +41,7 @@ export const AssetVerificationCard = ({
     const handleLearnMore = useCallback(() => {
         pushWebView({ url: config.asaVerificationUrl })
     }, [pushWebView])
-    const isTrusted = assetDetails.assetId === ALGO_ASSET_ID
+    const isTrusted = isAlgoAssetId(assetDetails.assetId)
     const isVerified =
         !isTrusted && assetDetails.peraMetadata?.verificationTier === 'verified'
     const isSuspicious =

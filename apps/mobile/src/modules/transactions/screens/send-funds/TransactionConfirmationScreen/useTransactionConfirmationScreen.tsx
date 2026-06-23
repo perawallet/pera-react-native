@@ -26,7 +26,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
-    ALGO_ASSET_ID,
     isCollectible,
     toWholeUnits,
     useAssetsQuery,
@@ -40,7 +39,12 @@ import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    type Maybe,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
@@ -106,7 +110,7 @@ export const useTransactionConfirmationScreen =
                 selectedAssetId,
             )
 
-        const isAlgoSend = selectedAssetId === ALGO_ASSET_ID
+        const isAlgoSend = isAlgoAssetId(selectedAssetId)
         const {
             data: recipientAccountInfo,
             isPending: recipientAccountInfoPending,

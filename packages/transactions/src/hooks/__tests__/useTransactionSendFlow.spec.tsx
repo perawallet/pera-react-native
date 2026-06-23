@@ -75,8 +75,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: 0n,
-    ALGO_ASSET: { assetId: 0n, decimals: 6, name: 'Algo', unitName: 'ALGO' },
+    ALGO_ASSET: { assetId: '0', decimals: 6, name: 'Algo', unitName: 'ALGO' },
     fetchAndPersistAssets: (...args: unknown[]) =>
         mockFetchAndPersistAssets(...args),
 }))
@@ -108,7 +107,7 @@ describe('useTransactionSendFlow', () => {
                     sendMode: 'normal',
                     sender: { address: 'A' } as any,
                     receiver: 'B',
-                    asset: { assetId: 0n, decimals: 6 } as any,
+                    asset: { assetId: '0', decimals: 6 } as any,
                     amount: new Decimal(1),
                 },
             })

@@ -19,15 +19,12 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {
-    useSingleAssetDetailsQuery,
     ALGO_ASSET,
+    useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { PWText, PWView } from '@components/core'
-import {
-    DEFAULT_PRECISION,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
 const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
@@ -58,10 +55,9 @@ export const TxTypeDetails = ({
             if (tx.paymentTransaction) {
                 const amount = microAlgosToAlgos(tx.paymentTransaction.amount)
                 secondary = (
-                    <CurrencyDisplay
-                        currency={'ALGO'}
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
+                        density='compact'
                         value={amount}
                         showSymbol
                         variant='caption'
@@ -76,10 +72,9 @@ export const TxTypeDetails = ({
             if (tx.assetTransferTransaction) {
                 // Just show the raw amount for now - asset decimals would need asset lookup
                 secondary = (
-                    <CurrencyDisplay
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? 6}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={asset}
+                        density='compact'
                         value={baseUnitsToDisplayUnits(
                             tx.assetTransferTransaction.amount,
                             asset?.decimals ?? 6,

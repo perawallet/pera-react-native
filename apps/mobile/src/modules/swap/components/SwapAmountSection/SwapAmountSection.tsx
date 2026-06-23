@@ -14,14 +14,10 @@ import { Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
 import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
-import { isAlgoAsset } from '@perawallet/wallet-core-assets'
-import {
-    DEFAULT_PRECISION,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
@@ -55,7 +51,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const isAlgo = isAlgoAsset(assetId)
+    const isAlgo = isAlgoAssetId(assetId)
     const onAmountChange = variant === 'pay' ? props.onAmountChange : undefined
     const {
         asset,
@@ -80,13 +76,9 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     >
                         {t('swap.form.balance_label')}
                     </PWText>
-                    <CurrencyDisplay
+                    <AssetAmount
                         value={balance ?? new Decimal(0)}
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? 0}
-                        minPrecision={
-                            balance === null || balance.equals(0) ? 0 : 2
-                        }
+                        asset={asset}
                         symbolPosition={isAlgo ? 'start' : 'end'}
                         variant='body'
                         style={styles.balance}
@@ -140,11 +132,9 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                 />
             }
             fiat={
-                <PreferredCurrencyDisplay
+                <PreferredAmount
                     sourceAmount={amount ?? new Decimal(0)}
                     sourceAssetId={assetId}
-                    precision={DEFAULT_PRECISION}
-                    minPrecision={DEFAULT_PRECISION}
                     showSymbol
                     isLoading={isLoading}
                     style={styles.fiatValue}

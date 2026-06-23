@@ -12,7 +12,7 @@
 
 import { Linking } from 'react-native'
 import { useToast } from './useToast'
-import { logger } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import {
@@ -187,7 +187,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ALGO_TRANSFER: {
                     openSendFunds({
-                        assetId: '0',
+                        assetId: ALGO_ASSET_ID,
                         destination: parsedData.receiverAddress,
                         // ALGO amounts arrive in microAlgos; the store holds
                         // the display value (ALGOs) so convert here.

@@ -13,10 +13,7 @@
 import { useCallback } from 'react'
 
 import { type Decimal } from 'decimal.js'
-import {
-    ALGO_ASSET_ID,
-    fetchAndPersistAssets,
-} from '@perawallet/wallet-core-assets'
+import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -37,7 +34,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
-import { logger } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type BaseSendParams = {
@@ -163,7 +160,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             )
 
             const composer = algokit.newGroup()
-            if (params.asset.assetId === ALGO_ASSET_ID) {
+            if (isAlgoAssetId(params.asset.assetId)) {
                 composer.addPayment({
                     sender: params.sender.address,
                     receiver: params.receiver,

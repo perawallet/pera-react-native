@@ -12,9 +12,13 @@
 
 import { fetchAssets, transformAssetResponse } from '../api'
 import { upsertAssets, getStaleOrMissingAssetIds } from '../db'
-import { ALGO_ASSET_ID } from '../models'
+
 import { ASSET_BULK_CHUNK_SIZE, ASSET_CACHE_TTL_MS } from '../constants'
-import { partition, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    partition,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 
 const ASSET_FETCH_CONCURRENCY = 5
 
@@ -28,7 +32,7 @@ export async function fetchAndPersistAssets(
     assetIds: string[],
     network: Network,
 ): Promise<void> {
-    const nonAlgoIds = assetIds.filter(id => id !== ALGO_ASSET_ID)
+    const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     if (nonAlgoIds.length === 0) return
 
     const toFetch = await getStaleOrMissingAssetIds({

@@ -11,7 +11,9 @@
  */
 
 import { useCallback } from 'react'
+import { isAlgoAssetName } from '@perawallet/wallet-core-shared'
 import { useCurrenciesStore } from '../store'
+import { USD_CURRENCY_ID } from '../constants'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
 import { useAlgoUsdPriceQuery } from './useAlgoUsdPriceQuery'
 import { Decimal } from 'decimal.js'
@@ -28,7 +30,7 @@ export const useCurrency = () => {
         state => state.setFallbackCurrency,
     )
 
-    const isAlgoPreferred = preferredCurrency === 'ALGO'
+    const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
 
     const { data: preferredRate, isPending: preferredRatePending } =
         usePreferredCurrencyPriceQuery(preferredCurrency, !isAlgoPreferred)
@@ -38,7 +40,7 @@ export const useCurrency = () => {
 
     const usdToPreferred = useCallback<(usdAmount: Decimal) => Decimal>(
         (usdAmount: Decimal) => {
-            if (preferredCurrency === 'USD') {
+            if (preferredCurrency === USD_CURRENCY_ID) {
                 return usdAmount
             }
 

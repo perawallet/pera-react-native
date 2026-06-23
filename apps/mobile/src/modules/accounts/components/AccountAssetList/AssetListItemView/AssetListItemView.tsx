@@ -16,7 +16,8 @@ import {
     type StyleProp,
     type ViewStyle,
 } from 'react-native'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'
 import { isCollectible } from '@perawallet/wallet-core-assets'
 import {
@@ -94,21 +95,24 @@ const AssetListItemViewBase = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
-            <CurrencyDisplay
-                currency={asset.unitName ?? ''}
+            <AssetAmount
+                asset={asset}
                 value={amount}
-                precision={asset.decimals}
-                maxPrecision={2}
-                minPrecision={2}
+                density='compact'
                 showSymbol
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
-            <CurrencyDisplay
+            {/* Dynamic currency: usually the preferred currency, but ALGO-
+                denominated holdings fall back to the fiat currency when the
+                preferred currency is ALGO (see useAssetListFiat). Must honor
+                fiat.displayCurrency, so this is CurrencyAmount (not
+                PreferredAmount, which would force the ALGO label onto a fiat
+                value). */}
+            <CurrencyAmount
                 currency={fiat.displayCurrency}
                 value={fiat.value}
-                precision={2}
-                minPrecision={2}
+                precision='compact'
                 showSymbol
                 variant='body'
                 style={styles.secondaryAmount}

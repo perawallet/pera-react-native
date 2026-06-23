@@ -13,8 +13,8 @@
 import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { Decimal } from 'decimal.js'
 
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useStyles } from './styles'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { NumberPad } from '@components/NumberPad'
@@ -149,9 +149,8 @@ export const InputScreen = () => {
         >
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.mainContentContainer}>
-                    <CurrencyDisplay
-                        currency={asset.unitName ?? ''}
-                        precision={asset.decimals}
+                    <AssetAmount
+                        asset={asset}
                         value={
                             cryptoValue
                                 ? new Decimal(cryptoValue)
@@ -167,18 +166,15 @@ export const InputScreen = () => {
                             styles.h1,
                         ]}
                         showSymbol={false}
-                        minPrecision={asset.decimals ? 2 : 0}
                     />
                     {!isCollectible && (
-                        <PreferredCurrencyDisplay
+                        <PreferredAmount
                             sourceAmount={
                                 cryptoValue ? new Decimal(cryptoValue) : null
                             }
                             ignorePrivacyMode
                             sourceAssetId={accountAssetBalance?.assetId ?? ''}
-                            precision={6}
                             showSymbol
-                            minPrecision={2}
                             variant='h1'
                             style={styles.amountPlaceholder}
                         />

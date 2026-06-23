@@ -11,10 +11,10 @@
  */
 
 import { useMemo } from 'react'
+import { isAlgoAssetId, ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import {
     ALGO_ASSET,
-    ALGO_ASSET_ID,
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -62,7 +62,7 @@ export const useOwnedAssets = (
     const assets = useMemo<PeraAsset[]>(() => {
         const list: PeraAsset[] = [assetsMap.get(ALGO_ASSET_ID) ?? ALGO_ASSET]
         for (const id of ownedAssetIds) {
-            if (id === ALGO_ASSET_ID) continue
+            if (isAlgoAssetId(id)) continue
             const asset = assetsMap.get(id)
             if (asset) list.push(asset)
         }

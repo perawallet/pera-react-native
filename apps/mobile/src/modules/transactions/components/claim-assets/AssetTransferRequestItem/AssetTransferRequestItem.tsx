@@ -13,12 +13,11 @@
 import { PWBadge, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useStyles } from './styles'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { PreferredAmount } from '@components/PreferredAmount'
 import {
     useSingleAssetDetailsQuery,
     toWholeUnits,
@@ -82,12 +81,10 @@ export const AssetTransferRequestItem = ({
                         verificationTier={asset.peraMetadata?.verificationTier}
                         textStyle={styles.nameText}
                     />
-                    <CurrencyDisplay
+                    <AssetAmount
                         value={amount}
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals}
-                        maxPrecision={DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
+                        asset={asset}
+                        density='compact'
                         variant='h4'
                     />
                 </PWView>
@@ -110,10 +107,9 @@ export const AssetTransferRequestItem = ({
                             />
                         )}
                     </PWView>
-                    <PreferredCurrencyDisplay
+                    <PreferredAmount
                         sourceAmount={amount}
                         sourceAssetId={asset?.assetId}
-                        precision={DEFAULT_PRECISION}
                         showSymbol
                         usdPrice={usdValue ?? undefined}
                     />

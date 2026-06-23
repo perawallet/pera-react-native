@@ -11,9 +11,8 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
-    ALGO_ASSET_ID,
     type PeraAssetType,
     type PeraAssetVerificationTier,
     type PeraAsset,
@@ -133,7 +132,7 @@ export const transformPublicAssetResponse = (
                 asset.verification_tier as PeraAssetVerificationTier,
             isVerified:
                 asset.verification_tier === 'verified' ||
-                `${asset.asset_id}` === ALGO_ASSET_ID,
+                isAlgoAssetId(asset.asset_id),
             logo: asset.logo,
         },
         unitName: asset.unit_name ?? undefined,

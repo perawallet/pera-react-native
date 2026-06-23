@@ -17,7 +17,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
@@ -26,7 +26,6 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
@@ -131,10 +130,8 @@ export const OptOutConfirmationContent = ({
                     >
                         {t('asset_opt_out.fee_label')}
                     </PWText>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={MIN_FEE_WHOLE_UNITS}
                         showSymbol
                         style={styles.rowValue}
