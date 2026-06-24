@@ -1,7 +1,7 @@
 {
   "name": "mobile",
   "version": "7.0.0-alpha",
-  "versionCodeBase": 2000000,
+  "versionCodeBase": 10000,
   "private": true,
   "main": "index.js",
   "scripts": {
