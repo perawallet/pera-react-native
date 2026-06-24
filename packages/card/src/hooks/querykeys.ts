@@ -41,6 +41,14 @@ export const cardQueryKeys = {
         ] as const,
 }
 
+// Stable mutation keys so the same logical operation is recognised as a single
+// in-flight mutation across independent useMutation callers (e.g. the Card
+// Frozen banner and the Card Details options row both unfreezing).
+export const cardMutationKeys = {
+    freeze: [MODULE_PREFIX, 'freeze'] as const,
+    unfreeze: [MODULE_PREFIX, 'unfreeze'] as const,
+}
+
 export const isCardQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX
 

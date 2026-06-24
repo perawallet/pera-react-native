@@ -20,6 +20,7 @@ export * from './useCardStatusQuery'
 export * from './useOrderCardMutation'
 export * from './useFreezeCardMutation'
 export * from './useUnfreezeCardMutation'
+export * from './useIsCardUnfreezing'
 
 // User / profile
 export * from './useCardUserQuery'

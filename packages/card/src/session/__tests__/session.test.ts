@@ -16,6 +16,7 @@ const {
     secretStore,
     commitSecret,
     removeSecret,
+    hasSecret,
     withSecret,
     refreshTokenRequest,
     setRefreshHandler,
@@ -32,6 +33,7 @@ const {
         removeSecret: vi.fn(async (id: string) => {
             secretStore.delete(id)
         }),
+        hasSecret: vi.fn((id: string) => secretStore.has(id)),
         // Mirrors the real withSecret: runs the handler with the secret bytes,
         // returns null (without invoking the handler) when the secret is absent.
         withSecret: vi.fn(
@@ -50,6 +52,7 @@ const {
 vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret,
     removeSecret,
+    hasSecret,
     withSecret,
     zeroBytes,
 }))
@@ -59,7 +62,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('../../api/auth', () => ({ refreshTokenRequest }))
 vi.mock('../../api/transport', () => ({ setRefreshHandler }))
 
-import { setCardSession, clearCardSession, refreshSession } from '../session'
+import {
+    setCardSession,
+    clearCardSession,
+    refreshSession,
+    hasCardSession,
+} from '../session'
 import { useCardSessionStore } from '../../store/session-store'
 
 describe('card session', () => {
@@ -106,6 +114,16 @@ describe('card session', () => {
         expect(removeSecret).toHaveBeenCalledWith('baanx-access-token')
         expect(removeSecret).toHaveBeenCalledWith('baanx-refresh-token')
         expect(useCardSessionStore.getState().isAuthenticated).toBe(false)
+    })
+
+    it('reports a live session only while the access token is in the keystore', async () => {
+        expect(hasCardSession()).toBe(false)
+
+        await setCardSession({ accessToken: 'a', refreshToken: 'r' })
+        expect(hasCardSession()).toBe(true)
+
+        await clearCardSession()
+        expect(hasCardSession()).toBe(false)
     })
 
     it('exchanges the refresh token (read via withSecret) and returns true', async () => {

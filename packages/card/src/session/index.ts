@@ -12,4 +12,9 @@
 
 // Importing this barrel also registers the transport refresh handler (a
 // module-load side effect in ./session).
-export { setCardSession, clearCardSession, refreshSession } from './session'
+export {
+    setCardSession,
+    clearCardSession,
+    refreshSession,
+    hasCardSession,
+} from './session'

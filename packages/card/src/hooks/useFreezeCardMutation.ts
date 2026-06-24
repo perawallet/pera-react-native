@@ -13,7 +13,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { freezeCard } from '../api/card'
-import { cardQueryKeys } from './querykeys'
+import { CardStatus, type Card } from '../models/card'
+import { cardMutationKeys, cardQueryKeys } from './querykeys'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseFreezeCardMutationResult = CardMutationResult<void>
@@ -23,9 +24,17 @@ export const useFreezeCardMutation = (): UseFreezeCardMutationResult => {
     const queryClient = useQueryClient()
 
     const mutation = useMutation<void, Error, void>({
+        mutationKey: cardMutationKeys.freeze,
         mutationFn: () => freezeCard({ network }),
         throwOnError: false,
         onSuccess: () => {
+            // On success, reflect the frozen state in the cache so dependent UI
+            // (the Card Frozen banner) updates immediately; the invalidation
+            // then reconciles with the server.
+            queryClient.setQueryData<Card | null>(
+                cardQueryKeys.status(network),
+                prev => (prev ? { ...prev, status: CardStatus.Frozen } : prev),
+            )
             void queryClient.invalidateQueries({
                 queryKey: cardQueryKeys.status(network),
             })
