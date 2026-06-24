@@ -18,6 +18,12 @@ import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 //     legacy Pera Web producers emit this
 const ALLOWED_LENGTHS = new Set([32, 64])
 
+// A valid key string is tiny: base64 of 64 bytes is ~88 chars, and the legacy
+// comma-separated form of 64 decimal bytes is under ~256 chars. Reject anything
+// well beyond that before decoding/splitting — defence in depth on a per-row
+// field even though the enclosing payload is already size-bounded upstream.
+const MAX_KEY_STRING_LENGTH = 512
+
 /**
  * Decode a per-account `private_key` string into raw bytes. Accepts base64
  * by default; pass `allowCommaSeparated: true` to also accept the legacy
@@ -32,6 +38,10 @@ export const decodePrivateKeyBytes = (
     raw: string,
     options?: { allowCommaSeparated?: boolean },
 ): Uint8Array | null => {
+    if (raw.length > MAX_KEY_STRING_LENGTH) {
+        return null
+    }
+
     let asBase64: Uint8Array | null = null
     try {
         asBase64 = decodeFromBase64(raw)

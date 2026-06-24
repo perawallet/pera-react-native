@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    assertMaxLength,
+    decodeFromBase64,
+} from '@perawallet/wallet-core-shared'
 import { PeraWebImportError, PeraWebImportErrorReason } from '../errors'
 import {
     PERA_WEB_QR_ACTION_IMPORT,
@@ -19,6 +22,11 @@ import {
 } from '../models'
 
 const SECRETBOX_KEY_LENGTH = 32
+
+// Upper bound on the scanned QR string. A transfer QR carries a small JSON
+// object (backupId + 32-byte key + a couple of short fields); 8 KB is far above
+// any legitimate payload and below QR's own practical capacity.
+const MAX_QR_PAYLOAD_LENGTH = 8 * 1024
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -97,6 +105,15 @@ const decodeEncryptionKey = (raw: string): Uint8Array => {
  * matching iOS's stricter contract.
  */
 export const parsePeraWebQrPayload = (raw: string): PeraWebQrPayload => {
+    // Defence-in-depth: cap the scanned string before JSON.parse. A legitimate
+    // transfer QR is a small JSON object (well under this); QR symbols can't
+    // physically carry much more anyway. Oversize maps to MalformedQr.
+    try {
+        assertMaxLength(raw, MAX_QR_PAYLOAD_LENGTH, 'pera-web qr payload')
+    } catch {
+        throw new PeraWebImportError(PeraWebImportErrorReason.MalformedQr)
+    }
+
     let parsed: unknown
     try {
         parsed = JSON.parse(raw)
