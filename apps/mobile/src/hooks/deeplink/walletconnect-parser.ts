@@ -12,7 +12,11 @@
 
 import { DeeplinkType, type WalletConnectDeeplink } from './types'
 import { normalizeUrl } from './utils'
-import { PERAWALLET_WC_SCHEME, WC_SCHEME } from './constants'
+import {
+    ALGORAND_WC_SCHEME,
+    PERAWALLET_WC_SCHEME,
+    WC_SCHEME,
+} from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
@@ -26,7 +30,8 @@ export const parseWalletConnectUri = (
 
     if (
         !normalizedUrl.startsWith(`${WC_SCHEME}:`) &&
-        !normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)
+        !normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) &&
+        !normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
     ) {
         return null
     }
@@ -45,6 +50,12 @@ export const parseWalletConnectUri = (
         // Legacy format: perawallet-wc:topic@1?...  →  wc:topic@1?...
         wcUri = normalizedUrl.replace(
             `${PERAWALLET_WC_SCHEME}:`,
+            `${WC_SCHEME}:`,
+        )
+    } else if (normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)) {
+        // Native-parity format: algorand-wc:topic@1?...  →  wc:topic@1?...
+        wcUri = normalizedUrl.replace(
+            `${ALGORAND_WC_SCHEME}:`,
             `${WC_SCHEME}:`,
         )
     }
