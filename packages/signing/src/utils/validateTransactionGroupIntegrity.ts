@@ -49,10 +49,21 @@ import { InvalidSignableDataError } from '../pipeline/errors'
  * - Transactions with no `group` field are independent and skipped.
  *
  * Throws `InvalidSignableDataError` (non-retryable) on any violation.
+ *
+ * @param options.recomputeGroupHash When `false`, the per-partition group-ID
+ *   recompute is skipped while partitioning and contiguity enforcement still
+ *   run. Used by the multisig **co-sign** path: the co-signer's device only
+ *   holds the multisig-signable subset of a larger atomic group (a swap mixes
+ *   in backend pre-signed pool/fee slots that never reach the co-signer), so
+ *   the full-group hash can never match over the subset. Full-group integrity
+ *   is instead enforced on the proposer/submitter — which holds the complete
+ *   group — and ultimately by algod at submission. Defaults to `true`.
  */
 export const validateTransactionGroupIntegrity = (
     transactions: PeraTransaction[],
+    options: { recomputeGroupHash?: boolean } = {},
 ): void => {
+    const { recomputeGroupHash = true } = options
     // Partition by claimed group ID. Ungrouped transactions are independent
     // — ARC-0001 allows them alongside grouped txs in the same request.
     // Per spec, txns sharing a group ID must also be CONTIGUOUS in the
@@ -91,6 +102,11 @@ export const validateTransactionGroupIntegrity = (
     }
 
     if (partitions.size === 0) return
+
+    // Co-sign subsets legitimately fail a full-group recompute (members are
+    // missing), but contiguity above still guards against scattered/tampered
+    // groups. Stop here when the caller opts out of the hash recompute.
+    if (!recomputeGroupHash) return
 
     for (const { group: claimed, txs } of partitions.values()) {
         let computed: Optional<Uint8Array>

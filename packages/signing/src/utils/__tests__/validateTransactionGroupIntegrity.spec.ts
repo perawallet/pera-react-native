@@ -187,6 +187,67 @@ describe('validateTransactionGroupIntegrity', () => {
         )
     })
 
+    test('skips the group-hash recompute when recomputeGroupHash is false (co-sign subset)', () => {
+        // A co-signer only holds the multisig-signable subset of a larger
+        // atomic group (e.g. a swap's pre-signed pool/fee slots never reach
+        // them). The surviving txns still carry the full group's hash, so the
+        // default recompute would reject — but the cosign path opts out.
+        const fullGroup = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+            makePayment(senderA, 3n),
+        ])
+        const subset = [fullGroup[0], fullGroup[1]]
+        expect(() =>
+            validateTransactionGroupIntegrity(subset, {
+                recomputeGroupHash: false,
+            }),
+        ).not.toThrow()
+    })
+
+    test('still enforces contiguity when recomputeGroupHash is false', () => {
+        // Opting out of the hash recompute must NOT disable the ARC-0001
+        // ordering guard — a malicious backend still cannot scatter members
+        // of distinct groups into one cosign payload.
+        const groupX = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+        ])
+        const groupY = groupTransactions([
+            makePayment(senderA, 3n),
+            makePayment(senderA, 4n),
+        ])
+        const interleaved = [groupX[0], groupY[0], groupY[1], groupX[1]]
+        expect(() =>
+            validateTransactionGroupIntegrity(interleaved, {
+                recomputeGroupHash: false,
+            }),
+        ).toThrow(
+            'group transactions with the same group ID must be contiguous',
+        )
+    })
+
+    test('passes a multi-group co-sign subset (swap shape) when recompute is off', () => {
+        // A swap flattens the signable txns of several atomic groups (opt-in,
+        // swap, fee) into one cosign list. Each contributes only its signable
+        // members, contiguously — distinct group IDs, each incomplete.
+        const optIn = groupTransactions([
+            makePayment(senderA, 1n),
+            makePayment(senderA, 2n),
+        ])
+        const swap = groupTransactions([
+            makePayment(senderA, 3n),
+            makePayment(senderA, 4n),
+        ])
+        // one signable member from each group, preserving order
+        const subset = [optIn[0], swap[0]]
+        expect(() =>
+            validateTransactionGroupIntegrity(subset, {
+                recomputeGroupHash: false,
+            }),
+        ).not.toThrow()
+    })
+
     test('passes when distinct groups are concatenated contiguously (Format 2)', () => {
         // Sanity: the spec's allowed shape — multiple complete groups
         // concatenated in order — must still pass.

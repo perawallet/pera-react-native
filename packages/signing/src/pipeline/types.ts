@@ -191,6 +191,14 @@ export interface SourceMetadata {
     /** For multisig co-sign: the sign request ID */
     signRequestId?: string
 
+    /**
+     * For multisig propose: overrides the propose `type` sent to the backend.
+     * Unset → the transport derives it (`'sync'` for external handoffs,
+     * `'async'` for local in-app sends). Shared-account in-app swaps set
+     * `'sync'` so the backend won't broadcast; the proposer submits to algod.
+     */
+    multisigProposeMode?: 'sync' | 'async'
+
     /** Original request ID for callbacks */
     requestId?: string
 
@@ -233,6 +241,18 @@ export interface SourceCallbacks {
      * the original `algo_signTxn` request before responding.
      */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
+    /**
+     * Fired by the multisig propose transport once the backend sign-request
+     * is created, before the headless propose flow resolves. Lets an in-app
+     * proposer that delivers asynchronously — the shared-account swap flow —
+     * capture the backend `signRequestId` and the exact raw transactions sent,
+     * so it can register a handoff to finish the swap once threshold is met.
+     */
+    onProposed?: (info: {
+        signRequestId: string
+        status: SignRequestStatus
+        rawTransactionsBase64: string[]
+    }) => Promise<void>
 }
 
 /**

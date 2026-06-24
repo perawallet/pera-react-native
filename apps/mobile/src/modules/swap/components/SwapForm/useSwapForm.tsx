@@ -437,6 +437,22 @@ export const useSwapForm = (): UseSwapFormResult => {
             return
         }
 
+        if (result.kind === 'pending-cosign') {
+            // Shared-account swap: proposed, awaiting co-signer approval. Reset
+            // the form and inform the user; balances change only once it
+            // submits (handled later by the cosign resolver).
+            successToast(
+                t('swap.execution.pending_cosign_title'),
+                t('swap.execution.pending_cosign_body'),
+            )
+            setPayAmount(null)
+            setReceiveAmount(null)
+            setAllQuotes([])
+            setSelectedProviderName(null)
+            resetQuoteMutation()
+            return
+        }
+
         invalidateAccountBalances()
 
         const fromUnit = selectedQuote.assetIn.unitName ?? ''

@@ -57,6 +57,16 @@ type BaseSignRequest = {
      * transport can target the right backend record.
      */
     signRequestId?: string
+    /**
+     * Multisig-propose only: overrides the propose `type` the transport sends
+     * to the backend. Local in-app sends default to `'async'` (backend
+     * broadcasts once threshold is met); external handoffs default to
+     * `'sync'`. Shared-account in-app **swaps** set `'sync'` explicitly so the
+     * backend does NOT broadcast — the proposer's device assembles the
+     * composite multisig, interleaves the pre-signed slots, and submits to
+     * algod itself. See {@link SourceMetadata.multisigProposeMode}.
+     */
+    multisigProposeMode?: 'sync' | 'async'
 }
 
 export type TransactionSignRequest = {
@@ -97,6 +107,17 @@ export type TransactionSignRequest = {
      * embedded verbatim — critical so per-participant signatures verify.
      */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
+    /**
+     * Multisig propose only: fired once the backend sign-request is created
+     * (see {@link SourceCallbacks.onProposed}). The shared-account swap flow
+     * uses it to register a handoff with the backend `signRequestId` so the
+     * swap completes once the co-signer signs.
+     */
+    onProposed?: (info: {
+        signRequestId: string
+        status: import('../pipeline/types').SignRequestStatus
+        rawTransactionsBase64: string[]
+    }) => Promise<void>
 } & BaseSignRequest
 
 export type PeraArbitraryDataMessage = {

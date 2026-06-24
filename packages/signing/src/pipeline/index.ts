@@ -51,6 +51,7 @@ export {
     resolveHandoffOutcome,
     errorReasonToMessage,
     type HandoffPollDetail,
+    type HandoffAssemblyContext,
     type ResolverMessages,
     type HandoffErrorReason,
     type HandoffPollOutcome,

@@ -75,6 +75,60 @@ export const requestSwapSignatures = (
         addSignRequest(request)
     })
 
+/** Info handed back by the propose transport once the backend record exists. */
+export type SwapProposedInfo = {
+    signRequestId: string
+    rawTransactionsBase64: string[]
+}
+
+/**
+ * Shared-account variant of {@link requestSwapSignatures}: hand the unsigned
+ * transactions to the signing pipeline, which (for a multisig sender) signs
+ * with the proposer's local key(s) and proposes a `sync` multisig sign-request
+ * to the backend instead of submitting. Resolves once the backend record is
+ * created — the swap then completes asynchronously via the cosign resolver, so
+ * the proposer does NOT wait for co-signer signatures here.
+ *
+ * Rejects with {@link SwapUserRejectedError} on user cancel, or the original
+ * error if the propose itself fails.
+ */
+export const requestSwapProposal = (
+    addSignRequest: AddSignRequestFn,
+    source: { name: string; description: string },
+    unsignedTxs: PeraTransaction[],
+    groupContext: PeraTransaction[],
+    onProposed: (info: SwapProposedInfo) => void,
+): Promise<void> =>
+    new Promise((resolve, reject) => {
+        const request: TransactionSignRequest = {
+            id: generateOrderedUniqueId(),
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'local',
+            // Force the sync protocol: the backend collects signatures but does
+            // NOT broadcast — the proposer's device assembles + submits via the
+            // cosign resolver once threshold is met.
+            multisigProposeMode: 'sync',
+            txs: unsignedTxs,
+            groupContext,
+            sourceMetadata: source,
+            onProposed: async info => {
+                onProposed({
+                    signRequestId: info.signRequestId,
+                    rawTransactionsBase64: info.rawTransactionsBase64,
+                })
+                resolve()
+            },
+            reject: async () => {
+                reject(new SwapUserRejectedError())
+            },
+            error: async (err: Error) => {
+                reject(err)
+            },
+        }
+        addSignRequest(request)
+    })
+
 type UpdateSwapStatusFn = (params: {
     swapId: string
     data: SwapStatusUpdateRequest

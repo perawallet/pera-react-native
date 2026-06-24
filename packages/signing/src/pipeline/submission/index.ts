@@ -16,6 +16,7 @@ export type {
     EncodeSignedTransactionsFn,
 } from './types'
 export { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
+export { submitRawSignedTransactionGroup } from './submitRawSignedTransactionGroup'
 export { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 export {
     submitAndAutoRefresh,
