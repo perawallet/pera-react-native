@@ -78,6 +78,9 @@ export const buildTestPlatform = (
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },
+        addNotificationOpenListener() {
+            return () => {}
+        },
     }
 
     const defaultCrash: CrashReportingService = {

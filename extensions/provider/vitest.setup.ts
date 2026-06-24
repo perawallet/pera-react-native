@@ -59,6 +59,9 @@ const mockPlatformServices = {
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },
+        addNotificationOpenListener() {
+            return () => {}
+        },
     },
     crashReporting: {
         initializeCrashReporting() {},

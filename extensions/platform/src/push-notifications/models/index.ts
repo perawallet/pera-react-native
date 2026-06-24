@@ -14,6 +14,20 @@ export type PushNotificationInitResult = {
     token?: string
     unsubscribe: () => void
 }
+
+/**
+ * Called with the deeplink URL carried by a tapped push notification
+ * (foreground, background-resume, or cold-start).
+ */
+export type NotificationOpenListener = (deeplinkUrl: string) => void
+
 export interface PushNotificationService {
     initializeNotifications(): Promise<PushNotificationInitResult>
+    /**
+     * Registers a listener for push-notification taps that carry a deeplink
+     * URL. Returns an unsubscribe function. A cold-start tap that resolves
+     * before any listener is registered is replayed to the first listener so
+     * launching the app from a notification isn't lost to a race.
+     */
+    addNotificationOpenListener(listener: NotificationOpenListener): () => void
 }

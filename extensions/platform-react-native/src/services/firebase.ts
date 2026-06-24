@@ -26,9 +26,11 @@ import {
 } from '@react-native-firebase/remote-config'
 import {
     type FirebaseMessagingTypes,
+    getInitialNotification,
     getMessaging,
     getToken,
     onMessage,
+    onNotificationOpenedApp,
 } from '@react-native-firebase/messaging'
 import {
     type Analytics,
@@ -44,7 +46,9 @@ import notifee, {
 } from '@notifee/react-native'
 import {
     type CrashReportingService,
+    type NotificationOpenListener,
     type PushNotificationInitResult,
+    type PushNotificationService,
     type RemoteConfigService,
     type AnalyticsService,
     RemoteConfigDefaults,
@@ -61,13 +65,64 @@ export const androidForegroundNotification = (
     smallIcon: NOTIFICATION_SMALL_ICON,
 })
 
+/**
+ * Pulls the deeplink URL out of a push payload. Both notifee and FCM expose
+ * the dApp-supplied custom fields under `data`; we mirror the in-app
+ * notification schema, which carries the deeplink in `url`.
+ */
+const extractDeeplinkUrl = (
+    data: Record<string, unknown> | undefined,
+): string | undefined => {
+    const url = data?.url
+    return typeof url === 'string' && url.length > 0 ? url : undefined
+}
+
 export class RNFirebaseService
-    implements CrashReportingService, RemoteConfigService, AnalyticsService
+    implements
+        CrashReportingService,
+        RemoteConfigService,
+        AnalyticsService,
+        PushNotificationService
 {
     remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: Analytics | null = null
     crashlytics: FirebaseCrashlyticsTypes.Module | null = null
+
+    // Single listener (the app registers one at the root). A cold-start tap
+    // resolves during init, before the app mounts its listener, so the URL is
+    // buffered and replayed on the first registration.
+    private notificationOpenListener: NotificationOpenListener | null = null
+    private pendingNotificationUrl: string | null = null
+
+    private emitNotificationOpen(
+        data: Record<string, unknown> | undefined,
+    ): void {
+        const url = extractDeeplinkUrl(data)
+        if (!url) {
+            return
+        }
+        if (this.notificationOpenListener) {
+            this.notificationOpenListener(url)
+        } else {
+            this.pendingNotificationUrl = url
+        }
+    }
+
+    addNotificationOpenListener(
+        listener: NotificationOpenListener,
+    ): () => void {
+        this.notificationOpenListener = listener
+        if (this.pendingNotificationUrl) {
+            listener(this.pendingNotificationUrl)
+            this.pendingNotificationUrl = null
+        }
+        return () => {
+            if (this.notificationOpenListener === listener) {
+                this.notificationOpenListener = null
+            }
+        }
+    }
 
     async initializeRemoteConfig() {
         this.remoteConfig = await getRemoteConfig()
@@ -164,13 +219,14 @@ export class RNFirebaseService
               })
             : () => {}
 
-        // Foreground notification events
+        // Foreground notification events — a tap on a notifee-displayed
+        // notification routes its deeplink to the registered listener.
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(
-            async ({ type }) => {
+            async ({ type, detail }) => {
                 switch (type) {
                     case EventType.ACTION_PRESS:
                     case EventType.PRESS: {
-                        // TODO: Handle taps or actions using deeplink parser when we have it
+                        this.emitNotificationOpen(detail.notification?.data)
                         break
                     }
                     default: {
@@ -180,11 +236,30 @@ export class RNFirebaseService
             },
         )
 
+        // Tap that resumed the app from the background (FCM notification
+        // message handled natively while backgrounded).
+        const unsubscribeOnOpened = this.messaging
+            ? onNotificationOpenedApp(this.messaging, remoteMessage => {
+                  this.emitNotificationOpen(remoteMessage?.data)
+              })
+            : () => {}
+
+        // Tap that cold-started the app. Buffered until the app registers its
+        // listener (see addNotificationOpenListener).
+        if (this.messaging) {
+            void getInitialNotification(this.messaging).then(remoteMessage => {
+                if (remoteMessage) {
+                    this.emitNotificationOpen(remoteMessage.data)
+                }
+            })
+        }
+
         return {
             token,
             unsubscribe: () => {
                 unsubscribeOnMessage?.()
                 unsubscribeNotifeeForeground()
+                unsubscribeOnOpened()
             },
         }
     }

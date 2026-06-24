@@ -91,6 +91,9 @@ const buildServices = (): PlatformServices => {
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },
+        addNotificationOpenListener() {
+            return () => {}
+        },
     }
 
     const deviceInfo: DeviceInfoService = {
