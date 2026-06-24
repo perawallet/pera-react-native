@@ -34,6 +34,9 @@ export * from './useSetCardPinMutation'
 export * from './useCardTransactionsQuery'
 export * from './useExportCardStatementMutation'
 
+// Funding (deposit / top-up)
+export * from './useDepositToCardMutation'
+
 // Onboarding / KYC
 export * from './useSendEmailVerificationMutation'
 export * from './useVerifyEmailMutation'

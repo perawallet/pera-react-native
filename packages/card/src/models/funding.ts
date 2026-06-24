@@ -72,14 +72,26 @@ export interface CardFundingProvider {
     ): Promise<FundingResult>
 }
 
+/**
+ * Thrown by the deposit pipeline when no funding provider is wired yet (the
+ * default {@link unavailableFundingProvider}). Screens catch this to fall back
+ * to the "coming soon" path instead of surfacing a generic error.
+ */
+export class CardFundingUnavailableError extends Error {
+    constructor() {
+        super('Card funding is not available yet')
+        this.name = 'CardFundingUnavailableError'
+    }
+}
+
 /** Null-object so callers can branch on availability without null checks. */
 export const unavailableFundingProvider: CardFundingProvider = {
     isAvailable: () => false,
     getQuote: async () => null,
     buildDelegation: async () => {
-        throw new Error('Card funding is not available yet')
+        throw new CardFundingUnavailableError()
     },
     submitFunding: async () => {
-        throw new Error('Card funding is not available yet')
+        throw new CardFundingUnavailableError()
     },
 }

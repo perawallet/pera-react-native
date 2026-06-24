@@ -20,6 +20,15 @@ const mockState = vi.hoisted(() => ({
     isLoading: false,
 }))
 const mockInfoToast = vi.fn()
+const mockNavigate = vi.fn()
+
+vi.mock('@react-navigation/native', async () => {
+    const actual = await vi.importActual<object>('@react-navigation/native')
+    return {
+        ...actual,
+        useNavigation: () => ({ navigate: mockNavigate }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
@@ -102,10 +111,18 @@ describe('usePeraCardOverview', () => {
         ])
     })
 
-    it('action handlers surface the coming-soon toast', () => {
+    it('navigates to the Add Funds screen', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         result.current.onAddFunds()
+
+        expect(mockNavigate).toHaveBeenCalledWith('CardAddFunds')
+    })
+
+    it('unwired action handlers surface the coming-soon toast', () => {
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onWithdraw()
         result.current.onGetUsdc()
 
         expect(mockInfoToast).toHaveBeenCalled()

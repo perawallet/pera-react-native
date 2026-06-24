@@ -736,6 +736,31 @@
             "error_title": "Something went wrong",
             "error_body": "Please try again."
         },
+        "add_funds": {
+            "navigation_title": "Add Funds",
+            "subtitle": "Add USDC or swap assets to USDC in your linked Pera account to add more funds.",
+            "fund_address": "Fund address",
+            "amount": "Amount",
+            "balance": "Balance: {{amount}}",
+            "deposit": "Deposit",
+            "select_asset": "Select asset",
+            "select_asset_search": "Search by name or ID",
+            "select_asset_empty_title": "No matching assets",
+            "select_asset_empty_body": "No assets matched your search term",
+            "swap_success_title": "Swap complete",
+            "swap_success_body": "Your assets were swapped to USDC.",
+            "swap_error_title": "Swap failed"
+        },
+        "confirm_swap": {
+            "navigation_title": "Confirm Swap",
+            "price": "Price",
+            "slippage": "Slippage Tolerance",
+            "price_impact": "Price Impact",
+            "minimum_received": "Minimum Received",
+            "exchange_fee": "Exchange Fee",
+            "pera_fee": "Pera Fee",
+            "confirm": "Confirm"
+        },
         "account_details": {
             "title": "Account Details",
             "full_name": "Full Name",

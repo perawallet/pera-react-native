@@ -30,6 +30,14 @@ export type {
     CardTransportResponse,
 } from './api/transport/types'
 
+// Funding seam — the deposit pipeline routes through getCardFundingProvider().
+// Defaults to unavailableFundingProvider until the Baanx Algorand provider ships.
+export {
+    getCardFundingProvider,
+    setCardFundingProvider,
+    resetCardFundingProvider,
+} from './api/funding'
+
 // API error normalization — lets screens attribute a Baanx failure to a field.
 export {
     getCardApiError,

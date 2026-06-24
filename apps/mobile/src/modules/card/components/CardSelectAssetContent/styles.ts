@@ -10,14 +10,10 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
+import { makeStyles } from '@rneui/themed'
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardSignIn: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-    PeraCardAccount: undefined
-    CardAddFunds: undefined
-    CardConfirmSwap: { sourceAssetId: string; amount: string }
-}
+export const useStyles = makeStyles(() => ({
+    body: {
+        flex: 1,
+    },
+}))

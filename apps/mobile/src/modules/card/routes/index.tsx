@@ -20,6 +20,8 @@ import { screenListeners } from '@routes/listeners'
 import { PeraCardIntroScreen } from '../screens/PeraCardIntroScreen'
 import { CardSignInScreen } from '../screens/CardSignInScreen'
 import { PeraCardAccountScreen } from '../screens/PeraCardAccountScreen'
+import { CardAddFundsScreen } from '../screens/CardAddFundsScreen'
+import { CardConfirmSwapScreen } from '../screens/CardConfirmSwapScreen'
 import { CardOnboardingStackNavigator } from './card-onboarding'
 import { type PeraCardStackParamList } from './types'
 
@@ -59,6 +61,16 @@ export const PeraCardStackNavigator = () => {
                 name='PeraCardAccount'
                 options={{ headerShown: false }}
                 component={PeraCardAccountScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardAddFunds'
+                options={{ title: 'peraCard.add_funds.navigation_title' }}
+                component={CardAddFundsScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardConfirmSwap'
+                options={{ title: 'peraCard.confirm_swap.navigation_title' }}
+                component={CardConfirmSwapScreen}
             />
         </PeraCardStack.Navigator>
     )
