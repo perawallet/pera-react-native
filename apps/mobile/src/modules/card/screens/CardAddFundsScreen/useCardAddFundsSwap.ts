@@ -45,7 +45,7 @@ const SWAPPING_STATUSES = new Set([
     'updating-status',
 ])
 
-export type CardAddFundsSwapOutcome =
+type CardAddFundsSwapOutcome =
     | { kind: 'success' }
     | { kind: 'cancelled' }
     | { kind: 'error'; message: string }
