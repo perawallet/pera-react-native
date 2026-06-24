@@ -10,33 +10,17 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    baseUnitsToDisplayUnits,
-    displayUnitsToBaseUnits,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    useCreateQuotesMutation,
-    type SwapQuote,
-} from '@perawallet/wallet-core-swaps'
-import { useDeviceID } from '@perawallet/wallet-core-device'
-import {
-    isDecimalEqual,
-    uint64IdToNumber,
-    useDebouncedValue,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
-import { useSwapExecution } from '@modules/swap/hooks'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { type SwapQuote } from '@perawallet/wallet-core-swaps'
+import { type Nullable } from '@perawallet/wallet-core-shared'
+import { useSwapExecution, useSwapQuotes } from '@modules/swap/hooks'
 import {
     formatSwapRate,
     pickBestByAmountOut,
 } from '@modules/swap/hooks/swapQuoteHelpers'
-
-// Mirrors the swap form's quote debounce so typing doesn't fire a request per key.
-const QUOTE_DEBOUNCE_MS = 500
 
 const SWAPPING_STATUSES = new Set([
     'preparing',
@@ -75,9 +59,8 @@ type UseCardAddFundsSwapResult = {
 
 /**
  * Quote + execution glue for the Add Funds internal swap (any asset → USDC).
- * Reuses the swap module's quote pipeline (`useCreateQuotesMutation` +
- * `pickBestByAmountOut`) and `useSwapExecution`, fixing the output asset to
- * USDC and signing with the passed account.
+ * Fetches quotes via the shared `useSwapQuotes` (fixed-input, output pinned to
+ * USDC), picks the best one, and runs it through `useSwapExecution`.
  */
 export const useCardAddFundsSwap = ({
     account,
@@ -88,69 +71,14 @@ export const useCardAddFundsSwap = ({
     amount,
     enabled,
 }: UseCardAddFundsSwapParams): UseCardAddFundsSwapResult => {
-    const { network } = useNetwork()
-    const deviceId = useDeviceID(network)
-
-    const { mutateAsync: createQuotes, isPending: isQuoteLoading } =
-        useCreateQuotesMutation()
-    const createQuotesRef = useRef(createQuotes)
-    createQuotesRef.current = createQuotes
-
-    const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
-    const [quotedAmount, setQuotedAmount] = useState<Nullable<Decimal>>(null)
-
-    const debouncedAmount = useDebouncedValue(
-        amount,
-        QUOTE_DEBOUNCE_MS,
-        isDecimalEqual,
-    )
-
-    useEffect(() => {
-        if (!enabled || !account || debouncedAmount.lte(0)) {
-            setAllQuotes([])
-            setQuotedAmount(null)
-            return
-        }
-
-        const amountInBaseUnits = displayUnitsToBaseUnits(
-            debouncedAmount,
-            sourceDecimals,
-        )
-        let cancelled = false
-
-        const fetchQuotes = async () => {
-            try {
-                const result = await createQuotesRef.current({
-                    swapper_address: account.address,
-                    swap_type: 'fixed-input',
-                    asset_in_id: uint64IdToNumber(sourceAssetId),
-                    asset_out_id: uint64IdToNumber(usdcAssetId),
-                    amount: amountInBaseUnits.toFixed(0),
-                    device: deviceId ?? null,
-                })
-                if (cancelled) return
-                setAllQuotes(result)
-                setQuotedAmount(debouncedAmount)
-            } catch {
-                if (cancelled) return
-                setAllQuotes([])
-                setQuotedAmount(null)
-            }
-        }
-
-        void fetchQuotes()
-        return () => {
-            cancelled = true
-        }
-    }, [
+    const { allQuotes, isQuoteFetching } = useSwapQuotes({
         enabled,
-        account,
-        debouncedAmount,
-        sourceAssetId,
-        usdcAssetId,
-        sourceDecimals,
-        deviceId,
-    ])
+        swapperAddress: account?.address ?? null,
+        fromAssetId: sourceAssetId,
+        toAssetId: usdcAssetId,
+        payAmount: amount,
+        payDecimals: sourceDecimals,
+    })
 
     const quote = useMemo(() => pickBestByAmountOut(allQuotes), [allQuotes])
     const rate = useMemo(() => (quote ? formatSwapRate(quote) : null), [quote])
@@ -161,12 +89,6 @@ export const useCardAddFundsSwap = ({
                 : null,
         [quote, usdcDecimals],
     )
-
-    const isDebouncing = !isDecimalEqual(amount, debouncedAmount)
-    const hasUnresolvedQuote =
-        amount.gt(0) && !isDecimalEqual(amount, quotedAmount)
-    const isQuoteFetching =
-        enabled && (isQuoteLoading || isDebouncing || hasUnresolvedQuote)
 
     const { execute, status } = useSwapExecution()
     const isSwapping = SWAPPING_STATUSES.has(status)

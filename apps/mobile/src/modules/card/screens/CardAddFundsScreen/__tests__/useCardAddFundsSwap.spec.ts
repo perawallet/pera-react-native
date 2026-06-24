@@ -10,55 +10,37 @@
  limitations under the License
  */
 
-import { renderHook, waitFor } from '@test-utils/render'
+import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 
-const mockCreateQuotes = vi.fn()
 const mockExecute = vi.fn()
 const mockStatus = vi.hoisted(() => ({ value: 'idle' as string }))
+const mockQuotes = vi.hoisted(() => ({
+    allQuotes: [] as unknown[],
+    isQuoteFetching: false,
+}))
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const { Decimal: D } =
         await vi.importActual<typeof import('decimal.js')>('decimal.js')
     return {
-        useNetwork: () => ({ network: 'mainnet' }),
-        displayUnitsToBaseUnits: (a: unknown, d: number) =>
-            new D(String(a)).mul(D.pow(10, d)),
         baseUnitsToDisplayUnits: (a: unknown, d: number) =>
             new D(String(a)).div(D.pow(10, d)),
     }
 })
 
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceID: () => 'device-1',
-}))
-
-vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useCreateQuotesMutation: () => ({
-        mutateAsync: mockCreateQuotes,
-        isPending: false,
-    }),
-}))
-
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    useDebouncedValue: (value: unknown) => value,
-    isDecimalEqual: (
-        a: { equals?: (b: unknown) => boolean } | null,
-        b: unknown,
-    ) =>
-        a == null && b == null
-            ? true
-            : a != null && b != null
-              ? !!a.equals?.(b)
-              : false,
-    uint64IdToNumber: (id: string) => Number(id),
-}))
-
 vi.mock('@modules/swap/hooks', () => ({
     useSwapExecution: () => ({
         execute: mockExecute,
         status: mockStatus.value,
+    }),
+    useSwapQuotes: () => ({
+        allQuotes: mockQuotes.allQuotes,
+        quotedAmount: null,
+        isQuoteFetching: mockQuotes.isQuoteFetching,
+        isQuoteError: false,
+        reset: vi.fn(),
     }),
 }))
 
@@ -71,10 +53,6 @@ vi.mock('@modules/swap/hooks/swapQuoteHelpers', () => ({
 
 import { useCardAddFundsSwap } from '../useCardAddFundsSwap'
 
-const ACCOUNT = { address: 'ADDR' } as never
-const ALGO_ID = '0'
-const USDC_ID = '31566704'
-
 const QUOTE = {
     quoteIdStr: 'q1',
     amountOut: new Decimal('5000000'), // 5 USDC in base units (6 decimals)
@@ -84,10 +62,10 @@ const QUOTE = {
 }
 
 const baseParams = {
-    account: ACCOUNT,
-    sourceAssetId: ALGO_ID,
+    account: { address: 'ADDR' } as never,
+    sourceAssetId: '0',
     sourceDecimals: 6,
-    usdcAssetId: USDC_ID,
+    usdcAssetId: '31566704',
     usdcDecimals: 6,
     amount: new Decimal(5),
     enabled: true,
@@ -97,40 +75,31 @@ describe('useCardAddFundsSwap', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockStatus.value = 'idle'
-        mockCreateQuotes.mockResolvedValue([QUOTE])
+        mockQuotes.allQuotes = []
+        mockQuotes.isQuoteFetching = false
         mockExecute.mockResolvedValue({ kind: 'success' })
     })
 
-    it('fetches a fixed-input quote (asset → USDC) and exposes rate + USDC output', async () => {
+    it('exposes the best quote with its rate and USDC output', () => {
+        mockQuotes.allQuotes = [QUOTE]
         const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
 
-        await waitFor(() => expect(result.current.quote).toBeTruthy())
-
-        expect(mockCreateQuotes).toHaveBeenCalledWith({
-            swapper_address: 'ADDR',
-            swap_type: 'fixed-input',
-            asset_in_id: 0,
-            asset_out_id: 31_566_704,
-            amount: '5000000',
-            device: 'device-1',
-        })
+        expect(result.current.quote).toBe(QUOTE)
         expect(result.current.rate).toBe('rate:q1')
         expect(result.current.usdcOut?.toString()).toBe('5')
     })
 
-    it('does not fetch a quote when disabled (USDC mode)', async () => {
-        const { result } = renderHook(() =>
-            useCardAddFundsSwap({ ...baseParams, enabled: false }),
-        )
+    it('forwards the fetching state and has no quote when none returned', () => {
+        mockQuotes.isQuoteFetching = true
+        const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
 
-        await waitFor(() => expect(result.current.isQuoteFetching).toBe(false))
-        expect(mockCreateQuotes).not.toHaveBeenCalled()
+        expect(result.current.isQuoteFetching).toBe(true)
         expect(result.current.quote).toBeNull()
     })
 
     it('executeSwap runs the best quote and maps the outcome', async () => {
+        mockQuotes.allQuotes = [QUOTE]
         const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
-        await waitFor(() => expect(result.current.quote).toBeTruthy())
 
         const success = await result.current.executeSwap()
         expect(mockExecute).toHaveBeenCalledWith('q1')
