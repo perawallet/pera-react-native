@@ -57,6 +57,7 @@ const {
     mockErrorToast,
     mockInfoToast,
     mockPeraWebSetQr,
+    mockShowSignRequest,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockDispatch: vi.fn(),
@@ -79,6 +80,17 @@ const {
     mockErrorToast: vi.fn(),
     mockInfoToast: vi.fn(),
     mockPeraWebSetQr: vi.fn(),
+    mockShowSignRequest: vi.fn(),
+}))
+
+vi.mock('@modules/multisig/hooks/usePendingSignaturesSheet', () => ({
+    usePendingSignaturesSheet: () => ({
+        showSignRequest: mockShowSignRequest,
+    }),
+}))
+
+vi.mock('../../useIsPeraCardEnabled', () => ({
+    useIsPeraCardEnabled: () => true,
 }))
 
 vi.mock('@routes/navigationRef', () => ({
@@ -321,7 +333,7 @@ type Channel =
     | { kind: 'addSignRequest' }
     | { kind: 'sendFunds' }
     | { kind: 'peraWebImport' }
-    | { kind: 'errorToast' }
+    | { kind: 'signRequest'; signRequestId: string }
 
 type Case = {
     name: string
@@ -583,13 +595,15 @@ const cases: Case[] = [
         },
     ),
 
-    // -- Cards (still toast-only) -----------------------------------------
+    // -- Cards ------------------------------------------------------------
     ...newPair(
         'Cards',
         `cards-path/?path=onboarding/select-country`,
-        { kind: 'errorToast' }, // infoToast — assert via extra
+        { kind: 'navigate', screen: 'PeraCard' },
         () => {
-            expect(mockInfoToast).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'PeraCardIntro',
+            })
         },
     ),
 
@@ -657,6 +671,12 @@ const cases: Case[] = [
             expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(ADDRESS)
         },
     ),
+
+    // -- Sign Request -------------------------------------------------
+    ...newPair('Sign request', `sign-request/?signRequestId=req-123`, {
+        kind: 'signRequest',
+        signRequestId: 'req-123',
+    }),
 
     // -- Internal Browser ---------------------------------------------
     ...newPair(
@@ -765,9 +785,11 @@ const cases: Case[] = [
     {
         name: 'Old: Cards (perawallet://cards?path=…)',
         url: `perawallet://cards?path=onboarding/select-country`,
-        expect: { kind: 'errorToast' },
+        expect: { kind: 'navigate', screen: 'PeraCard' },
         extra: () => {
-            expect(mockInfoToast).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'PeraCardIntro',
+            })
         },
     },
     {
@@ -946,10 +968,10 @@ describe('deeplink format coverage', () => {
                 )
                 break
             }
-            case 'errorToast': {
-                // Catch-all for unimplemented handlers that fall back to
-                // info/error toasts (Cards, etc.).
-                expect(mockInfoToast).toHaveBeenCalled()
+            case 'signRequest': {
+                expect(mockShowSignRequest).toHaveBeenCalledWith(
+                    channel.signRequestId,
+                )
                 break
             }
         }
