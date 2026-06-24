@@ -31,6 +31,12 @@ import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMen
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 
+// Pera Card is gated behind a remote-config feature flag; enable it so the
+// account-switcher card row renders in these flows.
+vi.mock('@hooks/useIsPeraCardEnabled', () => ({
+    useIsPeraCardEnabled: () => true,
+}))
+
 // Production opens the account-options sheet through `requestBottomSheet`
 // (see useAccountOverview.openAccountOptions). Mirror that here so the
 // content mounts inside a real BottomSheetHost — the content reads
