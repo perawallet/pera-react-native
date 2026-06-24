@@ -16,6 +16,14 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const bootsplashManifest = require('./assets/bootsplash/manifest.json');
+const { versionCodeBase } = require('./package.json');
+
+// iOS build number / Android versionCode floor. The committed base clears the
+// live store values (in-place update over the native apps, PERA-4451); adding
+// the monotonic CI BUILD_NUMBER keeps each build unique and strictly higher.
+function resolveBuildNumber(env) {
+  return versionCodeBase + parseInt(env.BUILD_NUMBER || '0', 10);
+}
 
 // Determine app variant based on environment
 function getAppVariant(env) {
@@ -86,7 +94,7 @@ function buildAppConfig(env) {
     // iOS-specific configuration
     ios: {
       bundleIdentifier: bundleIdentifiers[variant].ios,
-      buildNumber: env.BUILD_NUMBER || '1',
+      buildNumber: String(resolveBuildNumber(env)),
       appleTeamId: env.IOS_TEAM_ID,
       supportsTablet: true,
       config: {
@@ -139,7 +147,7 @@ function buildAppConfig(env) {
     // Android-specific configuration
     android: {
       package: bundleIdentifiers[variant].android,
-      versionCode: parseInt(env.BUILD_NUMBER || '1', 10),
+      versionCode: resolveBuildNumber(env),
       adaptiveIcon: {
         foregroundImage: './assets/icon-android.png',
         backgroundColor: bootsplashManifest.background,
