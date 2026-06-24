@@ -41,7 +41,7 @@ const bundleIdentifiers = {
   },
   production: {
     ios: 'com.algorandllc.algorand',
-    android: 'com.algorand.perarn',
+    android: 'com.algorand.android',
   },
 };
 
@@ -153,12 +153,28 @@ function buildAppConfig(env) {
         'android.permission.USE_FINGERPRINT',
         'android.permission.VIBRATE',
         'android.permission.RECEIVE_BOOT_COMPLETED',
+        'android.permission.POST_NOTIFICATIONS',
         // BLE permissions for Ledger hardware wallet communication
         'android.permission.BLUETOOTH',
         'android.permission.BLUETOOTH_ADMIN',
         'android.permission.BLUETOOTH_SCAN',
         'android.permission.BLUETOOTH_CONNECT',
         'android.permission.ACCESS_FINE_LOCATION',
+      ],
+      // Permissions auto-added by linked libraries that native never requested
+      // and the RN app does not use — blocked so the merged manifest matches
+      // native (no new runtime prompts / store-review flags). Real sources:
+      // RECORD_AUDIO from expo-image-picker; READ_MEDIA_AUDIO + READ_MEDIA_VIDEO
+      // from expo-media-library; SYSTEM_ALERT_WINDOW is a debug-only react-native
+      // overlay permission (never in release — blocked defensively).
+      // READ_MEDIA_IMAGES is intentionally NOT blocked — expo-media-library /
+      // expo-image-picker need it for the contact-photo flow.
+      // Confirm the final set against the native pera-android manifest (WB-7).
+      blockedPermissions: [
+        'android.permission.RECORD_AUDIO',
+        'android.permission.SYSTEM_ALERT_WINDOW',
+        'android.permission.READ_MEDIA_AUDIO',
+        'android.permission.READ_MEDIA_VIDEO',
       ],
       intentFilters: [
         {
@@ -255,7 +271,7 @@ function buildAppConfig(env) {
           },
           android: {
             minSdkVersion: 24,
-            targetSdkVersion: 35,
+            targetSdkVersion: 36,
             compileSdkVersion: 36,
             buildToolsVersion: '35.0.0',
             enableProguardInReleaseBuilds: false,
@@ -311,7 +327,9 @@ function buildAppConfig(env) {
       './plugins/withMMKVAppGroupMigration.js',
 
       // Custom plugin: exclude the local data stores (MMKV + pera.db) from iOS
-      // backups (NSURLIsExcludedFromBackupKey). Android parity is allowBackup:false.
+      // backups (NSURLIsExcludedFromBackupKey), and on Android from cloud-backup
+      // + device-transfer via dataExtractionRules / fullBackupContent — alongside
+      // allowBackup:false.
       './plugins/withExcludeDataFromBackup.js',
 
       // Passkey autofill (FIDO2) — system credential provider extension
@@ -343,6 +361,9 @@ function buildAppConfig(env) {
         './plugins/withProductionAssociatedDomains',
         { isProduction: variant === 'production' },
       ],
+
+      // Match native BLE/location permission scoping (maxSdkVersion + neverForLocation).
+      './plugins/withAndroidBlePermissionScoping',
     ],
 
     // Experiments (for bleeding edge features)

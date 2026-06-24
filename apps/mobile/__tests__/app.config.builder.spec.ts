@@ -27,7 +27,11 @@ type ResolvedConfig = {
         infoPlist: Record<string, unknown>
         entitlements: Record<string, unknown>
     }
-    android: { package: string }
+    android: {
+        package: string
+        permissions: string[]
+        blockedPermissions: string[]
+    }
     extra: { appVariant: string; appEnv: string }
     plugins: unknown[]
 }
@@ -120,12 +124,6 @@ describe('buildAppConfig — iOS identity (WB-1, production only)', () => {
     it('keeps staging distinct from production', () => {
         expect(build({ APP_ENV: 'production' }).ios.bundleIdentifier).not.toBe(
             build({ APP_ENV: 'staging' }).ios.bundleIdentifier,
-        )
-    })
-
-    it('leaves the Android package untouched (out of scope)', () => {
-        expect(build({ APP_ENV: 'production' }).android.package).toBe(
-            'com.algorand.perarn',
         )
     })
 })
@@ -229,5 +227,77 @@ describe('buildAppConfig — associated-domains restore plugin (WB-6)', () => {
 
         expect(autofillIndex).toBeGreaterThanOrEqual(0)
         expect(restoreIndex).toBeGreaterThan(autofillIndex)
+    })
+})
+
+describe('buildAppConfig — Android identity (WB-2, production only)', () => {
+    it('uses the native production package for production', () => {
+        expect(build({ APP_ENV: 'production' }).android.package).toBe(
+            'com.algorand.android',
+        )
+    })
+
+    it('leaves staging and dev Android identity untouched', () => {
+        expect(build({ APP_ENV: 'staging' }).android.package).toBe(
+            'com.algorand.perarn.staging',
+        )
+        expect(build({}).android.package).toBe('com.algorand.perarn.staging')
+    })
+
+    it('leaves the iOS bundle identifier untouched (out of scope)', () => {
+        expect(build({ APP_ENV: 'production' }).ios.bundleIdentifier).toBe(
+            'com.algorandllc.algorand',
+        )
+    })
+})
+
+describe('buildAppConfig — Android manifest parity (WB-7)', () => {
+    const buildPropsAndroid = (config: ResolvedConfig) => {
+        const entry = config.plugins.find(
+            plugin =>
+                Array.isArray(plugin) && plugin[0] === 'expo-build-properties',
+        )
+        if (!Array.isArray(entry)) {
+            throw new Error('expo-build-properties plugin not found')
+        }
+        return (entry[1] as { android: Record<string, unknown> }).android
+    }
+
+    it('targets Android SDK 36', () => {
+        expect(
+            buildPropsAndroid(build({ APP_ENV: 'production' }))
+                .targetSdkVersion,
+        ).toBe(36)
+    })
+
+    it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {
+        const { permissions } = build({ APP_ENV: 'production' }).android
+
+        expect(permissions).toContain('android.permission.POST_NOTIFICATIONS')
+        expect(
+            permissions.some(p =>
+                p.startsWith('android.permission.FOREGROUND_SERVICE'),
+            ),
+        ).toBe(false)
+    })
+
+    it('blocks the unused auto-added permissions, keeping image access', () => {
+        const { blockedPermissions, permissions } = build({
+            APP_ENV: 'production',
+        }).android
+
+        for (const blocked of [
+            'android.permission.RECORD_AUDIO',
+            'android.permission.SYSTEM_ALERT_WINDOW',
+            'android.permission.READ_MEDIA_AUDIO',
+            'android.permission.READ_MEDIA_VIDEO',
+        ]) {
+            expect(blockedPermissions).toContain(blocked)
+        }
+        // image-picker still needs image access — must NOT be blocked.
+        expect(blockedPermissions).not.toContain(
+            'android.permission.READ_MEDIA_IMAGES',
+        )
+        expect(permissions).not.toContain('android.permission.RECORD_AUDIO')
     })
 })

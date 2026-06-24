@@ -33,10 +33,19 @@
  * The dirs are created first (no-op if present) so the flag sticks from the
  * first launch, before MMKV / expo-sqlite create them. Idempotent and cheap,
  * so it runs every launch. iOS-only.
+ *
+ * On Android it sets `allowBackup=false` AND exclude-all `dataExtractionRules`
+ * (API 31+, incl. device-transfer) + `fullBackupContent` (pre-31) so
+ * backups/transfers never copy the local stores — parity with native.
  */
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const withAppDelegateSwiftMod = require('./utils/withAppDelegateSwiftMod');
+/* eslint-disable @typescript-eslint/no-require-imports */
+const { withAndroidManifest, withDangerousMod } = require('expo/config-plugins');
+const fs = require('fs');
+const path = require('path');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const CALL = 'excludePeraDataFromBackupIfNeeded()';
 
@@ -125,8 +134,86 @@ function injectBackupExclusion(contents) {
   return withCall;
 }
 
-const withExcludeDataFromBackup = (config) =>
-  withAppDelegateSwiftMod(config, injectBackupExclusion);
+// Exclude-all backup rule resources. The native app excludes every domain
+// from both cloud backup and device-to-device transfer. Confirm the exact
+// domains against the native pera-android res/xml files (WB-7).
+const DATA_EXTRACTION_RULES_XML = `<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </device-transfer>
+</data-extraction-rules>
+`;
+
+const FULL_BACKUP_CONTENT_XML = `<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <exclude domain="file" path="." />
+    <exclude domain="database" path="." />
+    <exclude domain="sharedpref" path="." />
+    <exclude domain="external" path="." />
+</full-backup-content>
+`;
+
+/**
+ * Point the <application> node at the exclude-all backup rule resources and
+ * keep allowBackup=false. Pure (mutates + returns the manifest); throws if the
+ * <application> anchor is missing so a template change fails loudly.
+ *
+ * @param {{ manifest: { application?: Array<{ $: Record<string,string> }> } }} androidManifest
+ * @returns {typeof androidManifest}
+ */
+function setAndroidBackupAttributes(androidManifest) {
+  const application = androidManifest?.manifest?.application?.[0];
+  if (!application || !application.$) {
+    throw new Error('withExcludeDataFromBackup: no <application> in AndroidManifest');
+  }
+  application.$['android:allowBackup'] = 'false';
+  application.$['android:dataExtractionRules'] = '@xml/pera_data_extraction_rules';
+  application.$['android:fullBackupContent'] = '@xml/pera_backup_rules';
+  return androidManifest;
+}
+
+/** Write the two res/xml backup-rule files into the generated Android project. */
+const withAndroidBackupRuleFiles = (config) =>
+  withDangerousMod(config, [
+    'android',
+    (config) => {
+      const xmlDir = path.join(
+        config.modRequest.platformProjectRoot,
+        'app/src/main/res/xml',
+      );
+      fs.mkdirSync(xmlDir, { recursive: true });
+      fs.writeFileSync(
+        path.join(xmlDir, 'pera_data_extraction_rules.xml'),
+        DATA_EXTRACTION_RULES_XML,
+      );
+      fs.writeFileSync(
+        path.join(xmlDir, 'pera_backup_rules.xml'),
+        FULL_BACKUP_CONTENT_XML,
+      );
+      return config;
+    },
+  ]);
+
+const withExcludeDataFromBackup = (config) => {
+  config = withAppDelegateSwiftMod(config, injectBackupExclusion);
+  config = withAndroidManifest(config, (config) => {
+    setAndroidBackupAttributes(config.modResults);
+    return config;
+  });
+  config = withAndroidBackupRuleFiles(config);
+  return config;
+};
 
 module.exports = withExcludeDataFromBackup;
 module.exports.injectBackupExclusion = injectBackupExclusion;
+module.exports.setAndroidBackupAttributes = setAndroidBackupAttributes;
