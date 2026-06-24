@@ -52,6 +52,15 @@ import {
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 
+export const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
+
+export const androidForegroundNotification = (
+    channelId: string,
+): NotificationAndroid => ({
+    channelId,
+    smallIcon: NOTIFICATION_SMALL_ICON,
+})
+
 export class RNFirebaseService
     implements CrashReportingService, RemoteConfigService, AnalyticsService
 {
@@ -148,7 +157,7 @@ export class RNFirebaseService
                       body,
                       data: remoteMessage.data,
                       android: Platform.select({
-                          android: { channelId: 'default' },
+                          android: androidForegroundNotification('default'),
                           ios: undefined,
                       }) as NotificationAndroid,
                   })
