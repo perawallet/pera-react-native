@@ -251,6 +251,55 @@ describe('buildAppConfig — Android identity (WB-2, production only)', () => {
     })
 })
 
+describe('buildAppConfig — production app images (icon + name)', () => {
+    type WithImages = ResolvedConfig & {
+        icon: string
+        android: ResolvedConfig['android'] & {
+            adaptiveIcon: { foregroundImage: string; backgroundColor: string }
+        }
+        ios: ResolvedConfig['ios'] & {
+            infoPlist: { CFBundleDisplayName: string }
+        }
+    }
+    const img = (env: Record<string, string | undefined>) =>
+        build(env) as unknown as WithImages
+
+    it('uses the native production app icon + foreground for production', () => {
+        const config = img({ APP_ENV: 'production' })
+        expect(config.icon).toBe('./assets/production/icon-ios.png')
+        expect(config.android.adaptiveIcon.foregroundImage).toBe(
+            './assets/production/icon-android-foreground.png',
+        )
+    })
+
+    it('keeps the existing dev/staging icons untouched', () => {
+        for (const env of [{ APP_ENV: 'staging' }, {}]) {
+            const config = img(env)
+            expect(config.icon).toBe('./assets/icon-ios.png')
+            expect(config.android.adaptiveIcon.foregroundImage).toBe(
+                './assets/icon-android.png',
+            )
+        }
+    })
+
+    it('keeps the adaptive background #ffee55 on every variant', () => {
+        for (const env of [{ APP_ENV: 'production' }, { APP_ENV: 'staging' }, {}]) {
+            expect(img(env).android.adaptiveIcon.backgroundColor).toBe('#ffee55')
+        }
+    })
+
+    it('uses the native display name "Pera Algo Wallet" for production', () => {
+        const config = img({ APP_ENV: 'production' })
+        expect(config.name).toBe('Pera Algo Wallet')
+        expect(config.ios.infoPlist.CFBundleDisplayName).toBe('Pera Algo Wallet')
+    })
+
+    it('leaves dev/staging display names untouched', () => {
+        expect(build({ APP_ENV: 'staging' }).name).toBe('Pera 7 Staging')
+        expect(build({}).name).toBe('Pera 7 Dev')
+    })
+})
+
 import pkg from '../package.json'
 
 describe('buildAppConfig — store versioning floor (WB-5)', () => {

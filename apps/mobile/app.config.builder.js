@@ -57,7 +57,7 @@ const bundleIdentifiers = {
 const appNames = {
   dev: 'Pera 7 Dev',
   staging: 'Pera 7 Staging',
-  production: 'Pera 7',
+  production: 'Pera Algo Wallet',
 };
 
 // Expo project slugs
@@ -69,6 +69,18 @@ const slugs = {
 
 function buildAppConfig(env) {
   const variant = getAppVariant(env);
+
+  // Production ships the native App Store / Play Store app images; dev and
+  // staging keep their current (dark) icon. Production sources are generated
+  // from the native Android brand vector (see scripts/generate-production-icons.mjs).
+  const appIconIos =
+    variant === 'production'
+      ? './assets/production/icon-ios.png'
+      : './assets/icon-ios.png';
+  const androidAdaptiveForeground =
+    variant === 'production'
+      ? './assets/production/icon-android-foreground.png'
+      : './assets/icon-android.png';
 
   // Passkey autofill (FIDO2) configuration. The site must serve a valid
   // /.well-known/apple-app-site-association linking back to this bundle.
@@ -87,7 +99,7 @@ function buildAppConfig(env) {
     slug: slugs[variant],
     version: '7.0.0',
     orientation: 'portrait',
-    icon: './assets/icon-ios.png',
+    icon: appIconIos,
     scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc'],
     userInterfaceStyle: 'automatic',
 
@@ -149,7 +161,7 @@ function buildAppConfig(env) {
       package: bundleIdentifiers[variant].android,
       versionCode: resolveBuildNumber(env),
       adaptiveIcon: {
-        foregroundImage: './assets/icon-android.png',
+        foregroundImage: androidAdaptiveForeground,
         backgroundColor: bootsplashManifest.background,
       },
       permissions: [
