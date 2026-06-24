@@ -21,10 +21,17 @@ import nacl from 'tweetnacl'
 import {
     bytesEqual,
     concatBytes,
-    decodeFromBase64,
+    decodeBoundedBase64,
 } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { addTxPrefix } from './rawTransactions'
+
+// Defence-in-depth caps on base64 fields in the backend cosign response, applied
+// before each decode. A signature is exactly 64 bytes; 128 leaves slack for
+// padding. A raw transaction is at most a few KB; 64 KB is far above any real
+// transaction. Oversize is treated as a malformed entry, not a hard failure.
+const MAX_SIGNATURE_B64_BYTES = 128
+const MAX_RAW_TXN_B64_BYTES = 64 * 1024
 
 /**
  * Per-participant response from the multisig backend. `signatures[i]` is
@@ -125,7 +132,11 @@ const parseSignature = (sig: Nullable<string>): Uint8Array | null => {
     if (!sig) return null
     let bytes: Uint8Array
     try {
-        bytes = decodeFromBase64(sig)
+        bytes = decodeBoundedBase64(
+            sig,
+            MAX_SIGNATURE_B64_BYTES,
+            'msig signature',
+        )
     } catch {
         return null
     }
@@ -253,7 +264,11 @@ export const assembleSignedMultisigTransactions = (
     for (let txIndex = 0; txIndex < rawTransactionsBase64.length; txIndex++) {
         let rawTxBytes: Uint8Array
         try {
-            rawTxBytes = decodeFromBase64(rawTransactionsBase64[txIndex])
+            rawTxBytes = decodeBoundedBase64(
+                rawTransactionsBase64[txIndex],
+                MAX_RAW_TXN_B64_BYTES,
+                'msig raw transaction',
+            )
         } catch {
             return {
                 kind: 'error',
