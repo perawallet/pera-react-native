@@ -26,6 +26,13 @@ const androidRoot = join(mobileRoot, 'android')
 
 const APP_ID = 'com.algorand.android'
 
+// PERA-4451: the committed versionCode floor. Prebuild here runs without
+// BUILD_NUMBER, so the merged manifest versionCode must equal exactly the base.
+const { versionCodeBase } = JSON.parse(
+    readFileSync(join(mobileRoot, 'package.json'), 'utf8'),
+)
+const EXPECTED_VERSION_NAME = '7.0.0'
+
 const failures = []
 const assert = (condition, message) => {
     if (!condition) failures.push(message)
@@ -171,6 +178,24 @@ assert(
 assert(
     /android:fullBackupContent="@xml\/pera_backup_rules"/.test(manifest),
     'fullBackupContent not wired',
+)
+
+// 4b. Versioning floor (PERA-4451) — read from the merged manifest.
+const versionCodeMatch = manifest.match(/android:versionCode="(\d+)"/)
+assert(
+    versionCodeMatch !== null,
+    'android:versionCode not found in merged manifest',
+)
+if (versionCodeMatch) {
+    const versionCode = Number(versionCodeMatch[1])
+    assert(
+        versionCode === versionCodeBase,
+        `versionCode ${versionCode} does not equal versionCodeBase ${versionCodeBase} (prebuild runs without BUILD_NUMBER)`,
+    )
+}
+assert(
+    manifest.includes(`android:versionName="${EXPECTED_VERSION_NAME}"`),
+    `versionName ${EXPECTED_VERSION_NAME} not found in merged manifest`,
 )
 
 // 5. Report.
