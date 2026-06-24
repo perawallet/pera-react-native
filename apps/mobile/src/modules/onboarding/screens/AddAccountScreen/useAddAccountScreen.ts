@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
+import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
@@ -48,6 +49,7 @@ export const useAddAccountScreen = () => {
     const { isAuthenticated } = useCardSession()
     const hasCardSession =
         __DEV__ || config.appEnvironment === 'staging' ? false : isAuthenticated
+    const isPeraCardEnabled = useIsPeraCardEnabled()
 
     const {
         isOpen: isCreatingAccount,
@@ -194,14 +196,16 @@ export const useAddAccountScreen = () => {
                     leftIcon: 'people' as IconName,
                     onPress: openMultisigIntroduction,
                 },
-                !hasCardSession && {
-                    testID: 'add_account_pera_card_button',
-                    titleKey: 'onboarding.add_account.pera_card_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.pera_card_option_description',
-                    leftIcon: 'card' as IconName,
-                    onPress: handleAddPeraCard,
-                },
+                isPeraCardEnabled &&
+                    !hasCardSession && {
+                        testID: 'add_account_pera_card_button',
+                        titleKey:
+                            'onboarding.add_account.pera_card_option_title',
+                        descriptionKey:
+                            'onboarding.add_account.pera_card_option_description',
+                        leftIcon: 'card' as IconName,
+                        onPress: handleAddPeraCard,
+                    },
                 {
                     testID: 'add_account_import_button',
                     titleKey:
@@ -219,6 +223,7 @@ export const useAddAccountScreen = () => {
             isCreatingAccount,
             openMultisigIntroduction,
             hasCardSession,
+            isPeraCardEnabled,
             handleAddPeraCard,
             handleOpenImportAccountOptions,
         ],
