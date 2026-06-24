@@ -251,6 +251,44 @@ describe('buildAppConfig — Android identity (WB-2, production only)', () => {
     })
 })
 
+import pkg from '../package.json'
+
+describe('buildAppConfig — store versioning floor (WB-5)', () => {
+    const base = (pkg as { versionCodeBase: number }).versionCodeBase
+
+    it('exposes a numeric versionCodeBase from package.json', () => {
+        expect(typeof base).toBe('number')
+        expect(base).toBeGreaterThan(0)
+    })
+
+    it('floors the Android versionCode to the base when BUILD_NUMBER is unset', () => {
+        const { android } = build({ APP_ENV: 'production' }) as ResolvedConfig & {
+            android: { versionCode: number }
+        }
+        expect(android.versionCode).toBe(base)
+    })
+
+    it('adds BUILD_NUMBER to the base for the Android versionCode', () => {
+        const { android } = build({
+            APP_ENV: 'production',
+            BUILD_NUMBER: '42',
+        }) as ResolvedConfig & { android: { versionCode: number } }
+        expect(android.versionCode).toBe(base + 42)
+    })
+
+    it('floors the iOS build number to the base (as a string) when BUILD_NUMBER is unset', () => {
+        expect(build({ APP_ENV: 'production' }).ios.buildNumber).toBe(
+            String(base),
+        )
+    })
+
+    it('adds BUILD_NUMBER to the base for the iOS build number', () => {
+        expect(
+            build({ APP_ENV: 'production', BUILD_NUMBER: '42' }).ios.buildNumber,
+        ).toBe(String(base + 42))
+    })
+})
+
 describe('buildAppConfig — Android manifest parity (WB-7)', () => {
     const buildPropsAndroid = (config: ResolvedConfig) => {
         const entry = config.plugins.find(
