@@ -1956,6 +1956,11 @@
     },
     "signing": {
         "view_details": "View Transaction Details",
+        "balance_impact": {
+            "receive_title": "You will receive",
+            "spend_title": "You will spend",
+            "analyzing": "Analyzing transaction…"
+        },
         "arbitrary_data_view": {
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",

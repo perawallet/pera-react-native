@@ -13,12 +13,26 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    transactionListHeaderText: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.sm,
-        paddingTop: theme.spacing.md,
+    container: {
+        width: '100%',
+        gap: theme.spacing.lg,
     },
-    itemSeparator: {
-        height: theme.spacing.sm,
+    section: {
+        gap: theme.spacing.md,
+    },
+    sectionTitle: {
+        color: theme.colors.textGray,
+        textTransform: 'uppercase',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    rowText: {
+        flex: 1,
+    },
+    subtitle: {
+        color: theme.colors.textGray,
     },
 }))

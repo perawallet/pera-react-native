@@ -21,10 +21,15 @@ import { Decimal } from 'decimal.js'
 const mocks = vi.hoisted(() => ({
     getAssetsByIds: vi.fn(),
     useNetwork: vi.fn(),
+    fetchAndPersistAssets: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
     getAssetsByIds: mocks.getAssetsByIds,
+}))
+
+vi.mock('../../sync/asset-syncer', () => ({
+    fetchAndPersistAssets: mocks.fetchAndPersistAssets,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -38,6 +43,7 @@ describe('useAssetsQuery', () => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetsByIds.mockReturnValue([])
+        mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -106,6 +112,37 @@ describe('useAssetsQuery', () => {
                     assetId: '123',
                     name: 'Test Asset',
                 }),
+            )
+        })
+
+        it('does not touch the network by default', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+
+            const { result } = renderHook(() => useAssetsQuery(['123']), {
+                wrapper: createWrapper(queryClient),
+            })
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
+        })
+
+        it('fetches and persists missing assets before reading when fetchMissing is set', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+
+            const { result } = renderHook(
+                () => useAssetsQuery(['123'], { fetchMissing: true }),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith(
+                ['123'],
+                'mainnet',
+            )
+            expect(result.current.data.get('123')).toEqual(
+                expect.objectContaining({ assetId: '123', name: 'Test Asset' }),
             )
         })
 

@@ -59,6 +59,13 @@ export type CurrencyAmountProps = {
     currency: string
     value: Maybe<Decimal>
     prefix?: string
+    /**
+     * A +/- (or similar) sign rendered between the asset symbol and the amount
+     * — "¦ -0.5", "HIPO +1000". Unlike `prefix` (which sits before everything,
+     * e.g. the "≈ " approximation marker), `sign` always follows the symbol so
+     * signed amounts read consistently for ALGO and ASAs alike.
+     */
+    sign?: string
     alignRight?: boolean
     showSymbol?: boolean
     symbolPosition?: 'start' | 'end'
@@ -82,6 +89,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         assetDecimals,
         alignRight: _alignRight,
         prefix,
+        sign,
         truncateToUnits,
         showSymbol = true,
         symbolPosition = 'start',
@@ -101,7 +109,18 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const { privacyMode: privacyModeSetting } = useSettings()
     const privacyMode = privacyModeSetting && !ignorePrivacyMode
 
-    const shouldShowSymbolInFormat = showSymbol && symbolPosition === 'start'
+    // With a `sign`, render the unit as its own leading element so the sign can
+    // sit between it and the amount. ALGO already has a separate leading glyph;
+    // an ASA's unit is otherwise baked into the formatted string, which would
+    // push the sign in front of it ("+HIPO 1000" instead of "HIPO +1000").
+    const showAsaSymbolStart =
+        showSymbol &&
+        symbolPosition === 'start' &&
+        !isAlgo &&
+        sign != null &&
+        !privacyMode
+    const shouldShowSymbolInFormat =
+        showSymbol && symbolPosition === 'start' && !showAsaSymbolStart
 
     const algoSymbolWeight = getAlgoSymbolWeight(variant, props.weight)
 
@@ -167,6 +186,14 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                     {ALGO_SYMBOL}
                 </PWText>
             )}
+            {showAsaSymbolStart && (
+                <PWText
+                    variant={variant}
+                    style={[themeStyle.symbol, props.style]}
+                >
+                    {currency}
+                </PWText>
+            )}
             <PWView style={themeStyle.textContainer}>
                 <PWText
                     variant={variant}
@@ -174,6 +201,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                     {...rest}
                 >
                     {prefix ? prefix : ''}
+                    {sign ? sign : ''}
                     {displayValue}
                     {trailingSymbol}
                 </PWText>
