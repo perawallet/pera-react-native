@@ -328,6 +328,10 @@ function buildAppConfig(env) {
       // Custom plugin for Ledger USB intent-filter (Android USB host)
       './plugins/withLedgerUsbAndroidManifest',
 
+      // Ship the native white-silhouette notification icon on all lanes
+      // (Android falls back to a white box without it). See plugin header.
+      './plugins/withAndroidNotificationIcon',
+
       // Custom plugin for local.properties SDK path (machine-specific fix)
       './plugins/withAndroidLocalProperties',
 

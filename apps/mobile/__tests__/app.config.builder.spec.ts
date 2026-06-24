@@ -341,6 +341,22 @@ describe('buildAppConfig — store versioning floor (WB-5)', () => {
     })
 })
 
+describe('buildAppConfig — Android notification icon (all lanes)', () => {
+    const hasNotificationPlugin = (config: ResolvedConfig) =>
+        config.plugins.some(
+            plugin =>
+                plugin === './plugins/withAndroidNotificationIcon' ||
+                (Array.isArray(plugin) &&
+                    plugin[0] === './plugins/withAndroidNotificationIcon'),
+        )
+
+    it('registers the notification-icon plugin on production, staging and dev', () => {
+        expect(hasNotificationPlugin(build({ APP_ENV: 'production' }))).toBe(true)
+        expect(hasNotificationPlugin(build({ APP_ENV: 'staging' }))).toBe(true)
+        expect(hasNotificationPlugin(build({}))).toBe(true)
+    })
+})
+
 describe('buildAppConfig — Android manifest parity (WB-7)', () => {
     const buildPropsAndroid = (config: ResolvedConfig) => {
         const entry = config.plugins.find(
