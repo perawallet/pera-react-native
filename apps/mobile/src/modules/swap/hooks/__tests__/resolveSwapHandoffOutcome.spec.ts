@@ -51,6 +51,8 @@ const makeDeps = (): {
     updateSwapStatus: vi.fn().mockResolvedValue(undefined),
     markConfirmed: vi.fn().mockResolvedValue(undefined),
     removeHandoff: vi.fn(),
+    reportError: vi.fn(),
+    declineSignRequest: vi.fn().mockResolvedValue(undefined),
 })
 
 describe('resolveSwapHandoffOutcome', () => {
@@ -134,11 +136,50 @@ describe('resolveSwapHandoffOutcome', () => {
                 swap_version: 'v2',
             },
         })
+        expect(deps.reportError).toHaveBeenCalled()
+        expect(deps.declineSignRequest).toHaveBeenCalledWith('req-1')
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
     test('ready: a submission failure flips the swap to failed and removes the handoff', async () => {
         deps.submitGroup.mockRejectedValueOnce(new Error('algod 400'))
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
+            swapId: '42',
+            data: {
+                status: 'failed',
+                reason: 'blockchain_error',
+                swap_version: 'v2',
+            },
+        })
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    test('ready: a submission failure notifies the user and cancels the pending request', async () => {
+        const submitError = new Error('balance below min')
+        deps.submitGroup.mockRejectedValueOnce(submitError)
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        // The proposer is told why (toast), and the still-live request is
+        // cancelled so the pending sheet/inbox don't hang on "Submitting…".
+        expect(deps.reportError).toHaveBeenCalledWith(submitError)
+        expect(deps.declineSignRequest).toHaveBeenCalledWith('req-1')
+    })
+
+    test('ready: a cancel (decline) failure is swallowed — swap still fails cleanly', async () => {
+        deps.submitGroup.mockRejectedValueOnce(new Error('algod 400'))
+        deps.declineSignRequest.mockRejectedValueOnce(new Error('backend 409'))
 
         await resolveSwapHandoffOutcome({
             outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
@@ -191,6 +232,10 @@ describe('resolveSwapHandoffOutcome', () => {
                 swap_version: 'v2',
             },
         })
+        // A user decline is already terminal on the backend — don't toast or
+        // re-cancel.
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.declineSignRequest).not.toHaveBeenCalled()
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
@@ -227,6 +272,8 @@ describe('resolveSwapHandoffOutcome', () => {
                 swap_version: 'v2',
             },
         })
+        expect(deps.reportError).toHaveBeenCalled()
+        expect(deps.declineSignRequest).toHaveBeenCalledWith('req-1')
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 })

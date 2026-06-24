@@ -40,6 +40,21 @@ export type SwapHandoffResolutionDeps = {
     }) => Promise<void>
     /** Drop the handoff from the persisted store once terminally resolved. */
     removeHandoff: (signRequestId: string) => void
+    /**
+     * Surface a terminal failure to the user as a localized toast. The resolver
+     * runs app-wide (and on launch), so this is the proposer's only feedback
+     * that a co-signed swap failed — the "Submitting…" sheet otherwise gives no
+     * reason. Algod errors are mapped to a friendly message by the caller.
+     */
+    reportError: (error: unknown) => void
+    /**
+     * Best-effort: cancel the still-live multisig sign-request (a proposer
+     * decline) so the pending-signatures sheet / inbox go terminal instead of
+     * lingering on "Submitting…" until expiry. The backend may refuse a decline
+     * once threshold is met, so a failure here is swallowed — the swap is still
+     * marked failed and the user is still notified.
+     */
+    declineSignRequest: (signRequestId: string) => Promise<void>
 }
 
 /**
@@ -72,8 +87,13 @@ const buildGroupBytes = (
  * On `ready`: per group, interleave the persisted pre-signed slots with the
  * assembled composite-multisig bytes and submit to algod; then mark the swap
  * `in_progress` with the resulting txIds and best-effort `markConfirmed` so the
- * backend doesn't also broadcast. A submission failure flips the swap to
- * `failed`. Either way the handoff is removed so it isn't retried endlessly.
+ * backend doesn't also broadcast.
+ *
+ * On any failure (submit rejected, assembly error, backend `failed`) the swap
+ * is marked `failed`, the user is notified with the (algod-mapped) reason, and
+ * the still-live sign-request is cancelled so the pending-signatures sheet/inbox
+ * stop showing "Submitting…" instead of lingering until expiry. Either way the
+ * handoff is removed so it isn't retried endlessly (no retry by design).
  */
 export const resolveSwapHandoffOutcome = async ({
     outcome,
@@ -98,11 +118,16 @@ export const resolveSwapHandoffOutcome = async ({
     }
 
     if (outcome.kind === 'error') {
-        await safeUpdateSwapStatus(deps, swapIdStr, {
-            status: 'failed',
-            reason: 'blockchain_error',
-            swap_version: 'v2',
-        })
+        // Not every error reason carries a backend display string.
+        const displayReason =
+            'displayReason' in outcome.reason
+                ? outcome.reason.displayReason
+                : undefined
+        await failSwap(
+            deps,
+            record,
+            new Error(displayReason ?? 'Swap could not be completed'),
+        )
         deps.removeHandoff(signRequestId)
         return
     }
@@ -141,17 +166,48 @@ export const resolveSwapHandoffOutcome = async ({
             })
         }
     } catch (error) {
-        logger.warn('Shared-account swap submission failed', {
+        await failSwap(deps, record, error)
+    } finally {
+        deps.removeHandoff(signRequestId)
+    }
+}
+
+/**
+ * Common terminal-failure path: notify the user, cancel the still-live
+ * sign-request (best-effort) so the pending sheet/inbox don't hang, and mark
+ * the swap failed. Does NOT remove the handoff — the caller owns that so the
+ * `ready` path can keep its single `finally` cleanup.
+ */
+const failSwap = async (
+    deps: SwapHandoffResolutionDeps,
+    record: SwapHandoffRecord,
+    error: unknown,
+): Promise<void> => {
+    logger.warn('Shared-account swap submission failed', {
+        signRequestId: record.signRequestId,
+        error: error instanceof Error ? error.message : String(error),
+    })
+    deps.reportError(error)
+    await safeDecline(deps, record.signRequestId)
+    await safeUpdateSwapStatus(deps, record.swapIdStr, {
+        status: 'failed',
+        reason: 'blockchain_error',
+        swap_version: 'v2',
+    })
+}
+
+/** Decline is best-effort cleanup — never let it throw past us. */
+const safeDecline = async (
+    deps: SwapHandoffResolutionDeps,
+    signRequestId: string,
+): Promise<void> => {
+    try {
+        await deps.declineSignRequest(signRequestId)
+    } catch (error) {
+        logger.warn('Swap handoff cancel (decline) failed (non-fatal)', {
             signRequestId,
             error: error instanceof Error ? error.message : String(error),
         })
-        await safeUpdateSwapStatus(deps, swapIdStr, {
-            status: 'failed',
-            reason: 'blockchain_error',
-            swap_version: 'v2',
-        })
-    } finally {
-        deps.removeHandoff(signRequestId)
     }
 }
 

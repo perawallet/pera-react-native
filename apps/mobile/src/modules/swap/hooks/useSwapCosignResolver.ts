@@ -19,6 +19,7 @@ import {
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
+    addSignature,
     getSignRequestsWithSignatures,
     getSignRequestsWithSignaturesQueryKey,
     useMarkSignRequestsConfirmedMutation,
@@ -32,6 +33,7 @@ import {
     useSwapHandoffStore,
     useUpdateSwapStatusMutation,
 } from '@perawallet/wallet-core-swaps'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { resolveSwapHandoffOutcome } from './resolveSwapHandoffOutcome'
 
 /** Poll cadence while the backend is responding. */
@@ -68,6 +70,7 @@ export const useSwapCosignResolver = ({
     const algorandClient = useAlgorandClient()
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
+    const { showError } = useErrorToast()
 
     const handoffsMap = useSwapHandoffStore(s => s.handoffs)
     const removeHandoff = useSwapHandoffStore(s => s.removeHandoff)
@@ -134,6 +137,10 @@ export const useSwapCosignResolver = ({
             })
             if (outcome.kind === 'keep-polling') return
 
+            // Proposer address from the poll — the only local participant
+            // allowed to cancel the request on a terminal failure.
+            const proposerAddress = detail.proposer_address ?? undefined
+
             // Claim synchronously so a re-render can't double-submit.
             resolvedRef.current.add(handoff.signRequestId)
             void resolveSwapHandoffOutcome({
@@ -146,6 +153,21 @@ export const useSwapCosignResolver = ({
                     updateSwapStatus,
                     markConfirmed,
                     removeHandoff,
+                    reportError: showError,
+                    // Cancel the proposer's own request (decline = the final
+                    // word) so the pending sheet/inbox go terminal. Best-effort:
+                    // skipped if the backend didn't echo a proposer address or
+                    // the device id isn't ready.
+                    declineSignRequest: async (signRequestId: string) => {
+                        if (!proposerAddress || !deviceId) return
+                        await addSignature(handoff.network, signRequestId, [
+                            {
+                                address: proposerAddress,
+                                response: 'declined',
+                                device_id: deviceId,
+                            },
+                        ])
+                    },
                 },
             })
         })
@@ -153,8 +175,10 @@ export const useSwapCosignResolver = ({
         queryResults,
         handoffs,
         algorandClient,
+        deviceId,
         updateSwapStatus,
         markConfirmed,
         removeHandoff,
+        showError,
     ])
 }
