@@ -179,8 +179,32 @@ assert(
     /android:fullBackupContent="@xml\/pera_backup_rules"/.test(manifest),
     'fullBackupContent not wired',
 )
+// 4b. Deep-link continuity (WB-8) — custom schemes + autoVerify App Links.
+for (const scheme of [
+    'perawallet',
+    'algorand',
+    'wc',
+    'perawallet-wc',
+    'algorand-wc',
+    'liquid',
+]) {
+    assert(
+        manifest.includes(`android:scheme="${scheme}"`),
+        `intent-filter scheme ${scheme} not found in merged manifest`,
+    )
+}
+assert(
+    manifest.includes('android:autoVerify="true"'),
+    'autoVerify App Link filter not present',
+)
+for (const path of ['/qr/perawallet/', '/qr/perawallet-wc/']) {
+    assert(
+        manifest.includes(`android:pathPrefix="${path}"`),
+        `autoVerify App Link pathPrefix ${path} not found`,
+    )
+}
 
-// 4b. Versioning floor (PERA-4451) — read from the merged manifest.
+// 4c. Versioning floor (PERA-4451) — read from the merged manifest.
 const versionCodeMatch = manifest.match(/android:versionCode="(\d+)"/)
 assert(
     versionCodeMatch !== null,
