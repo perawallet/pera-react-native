@@ -297,7 +297,7 @@ platform :android do
     #   track: "internal",
     #   package_name: package_name,
     #   aab: android_artifact_path(flavor, "aab"),
-    #   version_code: ENV["BUILD_NUMBER"],
+    #   version_code: resolve_build_number,
     #   skip_upload_metadata: true,
     #   skip_upload_images: true,
     #   skip_upload_screenshots: true,
