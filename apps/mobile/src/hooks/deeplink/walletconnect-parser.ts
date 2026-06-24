@@ -20,7 +20,7 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * Parse WalletConnect URIs: wc:// or perawallet-wc://
+ * Parse WalletConnect URIs: wc://, perawallet-wc://, or algorand-wc://
  * These are NOT parsed, just wrapped and normalized for the WalletConnect library to handle
  */
 export const parseWalletConnectUri = (
