@@ -42,7 +42,9 @@ describe('WalletConnect Parser', () => {
         })
 
         it('routes algorand-wc: through to WALLET_CONNECT', () => {
-            const result = parseDeeplink('algorand-wc:test@1?bridge=test&key=test')
+            const result = parseDeeplink(
+                'algorand-wc:test@1?bridge=test&key=test',
+            )
             expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
             if (result?.type === DeeplinkType.WALLET_CONNECT) {
                 expect(result.uri).toContain('wc:')
@@ -127,8 +129,7 @@ describe('WalletConnect Parser', () => {
 
         it('unwraps a valid encoded wc: URI in an algorand-wc wrapper', () => {
             const inner = 'wc:test@1?bridge=test&key=test'
-            const wrapped =
-                'algorand-wc://wc?uri=' + encodeURIComponent(inner)
+            const wrapped = 'algorand-wc://wc?uri=' + encodeURIComponent(inner)
             expect(parseWalletConnectUri(wrapped)?.uri).toBe(inner)
         })
 

@@ -54,10 +54,7 @@ export const parseWalletConnectUri = (
         )
     } else if (normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)) {
         // Native-parity format: algorand-wc:topic@1?...  →  wc:topic@1?...
-        wcUri = normalizedUrl.replace(
-            `${ALGORAND_WC_SCHEME}:`,
-            `${WC_SCHEME}:`,
-        )
+        wcUri = normalizedUrl.replace(`${ALGORAND_WC_SCHEME}:`, `${WC_SCHEME}:`)
     }
 
     // Re-validate after unwrap/rewrite so a wrapper like
