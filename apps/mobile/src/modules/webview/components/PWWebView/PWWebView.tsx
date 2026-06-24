@@ -42,6 +42,7 @@ import {
     isTrustedWebviewOrigin,
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
+import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
 import { EmptyView } from '@components/EmptyView'
 import {
     PWView,
@@ -147,6 +148,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         onCloseRequested,
         onBack,
     )
+
+    const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard()
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
@@ -325,6 +328,10 @@ export const PWWebView = (props: PWWebViewProps) => {
                 onHttpError={showError}
                 dataDetectorTypes={[]}
                 onNavigationStateChange={navigationStateChange}
+                onShouldStartLoadWithRequest={
+                    rest.onShouldStartLoadWithRequest ??
+                    onShouldStartLoadWithRequest
+                }
                 nestedScrollEnabled
             />
         )
@@ -336,6 +343,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         showLoadError,
         showError,
         navigationStateChange,
+        onShouldStartLoadWithRequest,
         isDarkMode,
         userAgent,
         jsToLoad,
