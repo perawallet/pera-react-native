@@ -19,26 +19,39 @@ import {
 
 const FCM_ICON_META = 'com.google.firebase.messaging.default_notification_icon'
 
+type MetaDataItem = { $: Record<string, string> }
+
 const emptyManifest = () => ({
     manifest: {
-        application: [{ $: { 'android:name': '.MainApplication' } }],
+        application: [
+            { $: { 'android:name': '.MainApplication' } } as {
+                $: Record<string, string>
+                'meta-data'?: MetaDataItem[]
+            },
+        ],
     },
 })
+
+const metaData = (manifest: ReturnType<typeof emptyManifest>): MetaDataItem[] =>
+    manifest.manifest.application[0]['meta-data'] ?? []
 
 describe('addNotificationIconMetaData', () => {
     it('registers the FCM default notification icon as a drawable resource', () => {
         const result = addNotificationIconMetaData(emptyManifest())
-        const meta = result.manifest.application[0]['meta-data'] ?? []
-        const entry = meta.find(m => m.$['android:name'] === FCM_ICON_META)
+        const entry = metaData(result).find(
+            (m: MetaDataItem) => m.$['android:name'] === FCM_ICON_META,
+        )
         expect(entry).toBeDefined()
-        expect(entry.$['android:resource']).toBe('@drawable/ic_notification_small')
+        expect(entry?.$['android:resource']).toBe(
+            '@drawable/ic_notification_small',
+        )
     })
 
     it('is idempotent — does not add the meta-data twice', () => {
         const once = addNotificationIconMetaData(emptyManifest())
         const twice = addNotificationIconMetaData(once)
-        const count = (twice.manifest.application[0]['meta-data'] ?? []).filter(
-            m => m.$['android:name'] === FCM_ICON_META,
+        const count = metaData(twice).filter(
+            (m: MetaDataItem) => m.$['android:name'] === FCM_ICON_META,
         ).length
         expect(count).toBe(1)
     })

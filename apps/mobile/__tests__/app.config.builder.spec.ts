@@ -283,15 +283,23 @@ describe('buildAppConfig — production app images (icon + name)', () => {
     })
 
     it('keeps the adaptive background #ffee55 on every variant', () => {
-        for (const env of [{ APP_ENV: 'production' }, { APP_ENV: 'staging' }, {}]) {
-            expect(img(env).android.adaptiveIcon.backgroundColor).toBe('#ffee55')
+        for (const env of [
+            { APP_ENV: 'production' },
+            { APP_ENV: 'staging' },
+            {},
+        ]) {
+            expect(img(env).android.adaptiveIcon.backgroundColor).toBe(
+                '#ffee55',
+            )
         }
     })
 
     it('uses the native display name "Pera Algo Wallet" for production', () => {
         const config = img({ APP_ENV: 'production' })
         expect(config.name).toBe('Pera Algo Wallet')
-        expect(config.ios.infoPlist.CFBundleDisplayName).toBe('Pera Algo Wallet')
+        expect(config.ios.infoPlist.CFBundleDisplayName).toBe(
+            'Pera Algo Wallet',
+        )
     })
 
     it('leaves dev/staging display names untouched', () => {
@@ -351,7 +359,9 @@ describe('buildAppConfig — Android notification icon (all lanes)', () => {
         )
 
     it('registers the notification-icon plugin on production, staging and dev', () => {
-        expect(hasNotificationPlugin(build({ APP_ENV: 'production' }))).toBe(true)
+        expect(hasNotificationPlugin(build({ APP_ENV: 'production' }))).toBe(
+            true,
+        )
         expect(hasNotificationPlugin(build({ APP_ENV: 'staging' }))).toBe(true)
         expect(hasNotificationPlugin(build({}))).toBe(true)
     })

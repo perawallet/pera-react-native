@@ -52,7 +52,7 @@ import {
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 
-export const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
+const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
 
 export const androidForegroundNotification = (
     channelId: string,
