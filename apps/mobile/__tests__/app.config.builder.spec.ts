@@ -262,7 +262,9 @@ describe('buildAppConfig — store versioning floor (WB-5)', () => {
     })
 
     it('floors the Android versionCode to the base when BUILD_NUMBER is unset', () => {
-        const { android } = build({ APP_ENV: 'production' }) as ResolvedConfig & {
+        const { android } = build({
+            APP_ENV: 'production',
+        }) as ResolvedConfig & {
             android: { versionCode: number }
         }
         expect(android.versionCode).toBe(base)
@@ -284,7 +286,8 @@ describe('buildAppConfig — store versioning floor (WB-5)', () => {
 
     it('adds BUILD_NUMBER to the base for the iOS build number', () => {
         expect(
-            build({ APP_ENV: 'production', BUILD_NUMBER: '42' }).ios.buildNumber,
+            build({ APP_ENV: 'production', BUILD_NUMBER: '42' }).ios
+                .buildNumber,
         ).toBe(String(base + 42))
     })
 })
