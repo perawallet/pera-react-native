@@ -1,0 +1,148 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useMemo } from 'react'
+import { type Decimal } from 'decimal.js'
+import {
+    computeBalanceImpact,
+    useImpactTransactions,
+} from '@perawallet/wallet-core-signing'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import {
+    ALGO_ASSET,
+    PeraAssetType,
+    useAssetPricesQuery,
+    useAssetsQuery,
+    type DisplayableAsset,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+
+export type BalanceImpactDirection = 'receive' | 'spend'
+
+export type BalanceImpactItem = {
+    assetId: string
+    /** Drives the asset/collectible avatar and the AssetAmount unit + decimals. */
+    asset: DisplayableAsset
+    isCollectible: boolean
+    direction: BalanceImpactDirection
+    /** Absolute amount in display units. The direction carries the sign. */
+    amount: Decimal
+    /** USD unit price, when known — lets the fiat row convert without a lookup. */
+    usdPrice?: Decimal
+    /** Collectible only. */
+    collectibleTitle?: string
+    collectibleSubtitle?: string
+}
+
+export type UseBalanceImpactSummaryResult = {
+    receive: BalanceImpactItem[]
+    spend: BalanceImpactItem[]
+    hasImpact: boolean
+    /** True while the transaction simulation is still resolving inner txns. */
+    isSimulating: boolean
+}
+
+type SortableItem = BalanceImpactItem & { sortValue: Decimal }
+
+export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
+    const { transactions, signableAddresses, isSimulating } =
+        useImpactTransactions()
+
+    const impact = useMemo(
+        () => computeBalanceImpact(transactions, signableAddresses),
+        [transactions, signableAddresses],
+    )
+
+    const assetIds = useMemo(
+        () =>
+            impact.deltas
+                .map(d => d.assetId)
+                .filter(id => id !== ALGO_ASSET_ID),
+        [impact.deltas],
+    )
+
+    // The signed group can touch assets the user doesn't hold (e.g. a swap
+    // into a new asset), so they won't be in the local DB. Fetch them so rows
+    // show real names/units instead of falling back to the raw asset id.
+    const { data: assets } = useAssetsQuery(assetIds, { fetchMissing: true })
+    const { data: prices } = useAssetPricesQuery([ALGO_ASSET_ID, ...assetIds])
+
+    return useMemo(() => {
+        const items = impact.deltas.map<SortableItem>(({ assetId, amount }) => {
+            const isAlgo = assetId === ALGO_ASSET_ID
+            const asset: PeraAsset | undefined = isAlgo
+                ? ALGO_ASSET
+                : assets.get(assetId)
+            const decimals = asset?.decimals ?? 0
+            const isCollectible =
+                asset?.peraMetadata?.type === PeraAssetType.collectible
+
+            const displayAbs = baseUnitsToDisplayUnits(
+                amount < 0n ? -amount : amount,
+                decimals,
+            )
+            const usdPrice = prices.get(assetId)?.usdPrice
+            const sortValue = usdPrice ? displayAbs.times(usdPrice) : displayAbs
+
+            // Without metadata, still render with the id as the unit so the row
+            // isn't blank while the asset syncs.
+            const displayAsset: DisplayableAsset = asset ?? {
+                assetId,
+                unitName: assetId,
+            }
+
+            const collectible = asset?.peraMetadata?.collectible
+            const collectibleSubtitle = isCollectible
+                ? [collectible?.collection?.name, assetId]
+                      .filter(Boolean)
+                      .join(' · ')
+                : undefined
+
+            return {
+                assetId,
+                asset: displayAsset,
+                isCollectible,
+                direction: amount > 0n ? 'receive' : 'spend',
+                amount: displayAbs,
+                usdPrice,
+                collectibleTitle: isCollectible
+                    ? (collectible?.title ?? asset?.name ?? `#${assetId}`)
+                    : undefined,
+                collectibleSubtitle,
+                sortValue,
+            }
+        })
+
+        // ALGO first, then highest-value first within each section.
+        const order = (list: SortableItem[]): BalanceImpactItem[] =>
+            [...list]
+                .sort((a, b) => {
+                    if (a.assetId === ALGO_ASSET_ID) return -1
+                    if (b.assetId === ALGO_ASSET_ID) return 1
+                    return b.sortValue.comparedTo(a.sortValue)
+                })
+                .map(({ sortValue: _sortValue, ...item }) => item)
+
+        const receive = order(
+            items.filter(item => item.direction === 'receive'),
+        )
+        const spend = order(items.filter(item => item.direction === 'spend'))
+
+        return {
+            receive,
+            spend,
+            hasImpact: receive.length > 0 || spend.length > 0,
+            isSimulating,
+        }
+    }, [impact, assets, prices, isSimulating])
+}

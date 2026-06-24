@@ -16,6 +16,7 @@ import { type PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetsByIds } from '../db'
+import { fetchAndPersistAssets } from '../sync/asset-syncer'
 
 type UseAssetsQueryResult = {
     data: Map<string, PeraAsset>
@@ -25,7 +26,22 @@ type UseAssetsQueryResult = {
     isError: boolean
 }
 
-export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
+type UseAssetsQueryOptions = {
+    /**
+     * Fetch+persist any ids missing from (or stale in) the local DB before
+     * reading. Off by default: most callers only care about assets the user
+     * already holds, which are already synced. Turn it on for flows that
+     * surface arbitrary assets the user may not hold — e.g. signing a
+     * transaction involving an asset that isn't in the wallet yet — so they
+     * resolve to real names/units instead of falling back to the raw id.
+     */
+    fetchMissing?: boolean
+}
+
+export const useAssetsQuery = (
+    ids: string[],
+    { fetchMissing = false }: UseAssetsQueryOptions = {},
+): UseAssetsQueryResult => {
     const { network } = useNetwork()
 
     // Keep a stable reference to ids — only update when the actual content changes.
@@ -38,13 +54,23 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
     const stableIds = idsRef.current.ids
 
     const query = useQuery({
-        queryKey: getAssetsQueryKey(stableIds, network),
+        // fetchMissing reads through the network, so it gets its own cache
+        // entry — a DB-only caller must never satisfy it from cache (with
+        // staleTime Infinity that would strand the missing assets).
+        queryKey: fetchMissing
+            ? [...getAssetsQueryKey(stableIds, network), { fetchMissing: true }]
+            : getAssetsQueryKey(stableIds, network),
         staleTime: Infinity,
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and
         // get an empty id list) don't mount a live observer per row.
         enabled: stableIds.length > 0,
-        queryFn: () => getAssetsByIds({ assetIds: stableIds, network }),
+        queryFn: async () => {
+            if (fetchMissing) {
+                await fetchAndPersistAssets(stableIds, network)
+            }
+            return getAssetsByIds({ assetIds: stableIds, network })
+        },
     })
 
     return useMemo(() => {

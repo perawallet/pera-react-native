@@ -10,15 +10,10 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    transactionListHeaderText: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.sm,
-        paddingTop: theme.spacing.md,
-    },
-    itemSeparator: {
-        height: theme.spacing.sm,
-    },
-}))
+export { BalanceImpactSummary } from './BalanceImpactSummary'
+export {
+    useBalanceImpactSummary,
+    type BalanceImpactItem,
+    type BalanceImpactDirection,
+    type UseBalanceImpactSummaryResult,
+} from './useBalanceImpactSummary'

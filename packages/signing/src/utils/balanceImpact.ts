@@ -1,0 +1,118 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
+/** Asset id used for the native ALGO balance in {@link BalanceImpact} deltas. */
+export const ALGO_BALANCE_IMPACT_ASSET_ID = '0'
+
+export type BalanceImpactDelta = {
+    /** Asset id; `'0'` denotes the native ALGO balance. */
+    assetId: string
+    /** Net change in base units. Positive = received, negative = spent. */
+    amount: bigint
+}
+
+export type BalanceImpact = {
+    /**
+     * Net per-asset movement across the whole group for the user's accounts.
+     * Assets whose movements cancel out (e.g. an internal transfer) are
+     * omitted. Order follows first-seen; the view layer sorts for display.
+     */
+    deltas: BalanceImpactDelta[]
+    /** Total fees (µAlgo) the user's accounts pay across the group. */
+    totalFeeMicroAlgos: bigint
+    /**
+     * A close-remainder that sweeps a user account's remaining balance is
+     * present. The real outflow then exceeds the explicit `amount`, so the UI
+     * must flag it rather than imply the delta is the full story.
+     */
+    hasCloseRemainder: boolean
+}
+
+const toBig = (value: bigint | number | undefined): bigint => {
+    if (typeof value === 'bigint') return value
+    if (typeof value === 'number') return BigInt(Math.trunc(value))
+    return 0n
+}
+
+/**
+ * Net balance impact of a transaction group on the wallet's own accounts.
+ *
+ * Pure arithmetic over the decoded group — no metadata, prices, or network.
+ * For each transfer it credits the receiver and debits the spender when that
+ * party is one of `userAddresses`, then nets per asset. Fees are accumulated
+ * separately (the design surfaces them as their own line, not folded into the
+ * ALGO delta). Clawback debits the asset's `sender` (the clawback target), not
+ * the transaction sender. Internal transfers (user → user) net to zero and
+ * drop out.
+ *
+ * `userAddresses` should be the accounts whose impact we're computing —
+ * typically the pipeline's signable addresses.
+ */
+export const computeBalanceImpact = (
+    transactions: PeraDisplayableTransaction[],
+    userAddresses: Set<string>,
+): BalanceImpact => {
+    const net = new Map<string, bigint>()
+    let totalFeeMicroAlgos = 0n
+    let hasCloseRemainder = false
+
+    const move = (assetId: string, amount: bigint): void => {
+        if (amount === 0n) return
+        net.set(assetId, (net.get(assetId) ?? 0n) + amount)
+    }
+
+    for (const tx of transactions) {
+        const sender = tx.sender
+        const senderIsUser = !!sender && userAddresses.has(sender)
+
+        // Fees are paid in ALGO by the transaction sender.
+        if (senderIsUser) {
+            totalFeeMicroAlgos += toBig(tx.fee)
+        }
+
+        const payment = tx.paymentTransaction
+        if (payment) {
+            const amount = toBig(payment.amount)
+            if (senderIsUser) move(ALGO_BALANCE_IMPACT_ASSET_ID, -amount)
+            if (payment.receiver && userAddresses.has(payment.receiver)) {
+                move(ALGO_BALANCE_IMPACT_ASSET_ID, amount)
+            }
+            if (payment.closeRemainderTo && senderIsUser) {
+                hasCloseRemainder = true
+            }
+        }
+
+        const axfer = tx.assetTransferTransaction
+        if (axfer) {
+            const assetId = axfer.assetId.toString()
+            const amount = toBig(axfer.amount)
+            // Clawback pulls from the asset's `sender`; otherwise the holder
+            // being debited is the transaction sender.
+            const debited = axfer.sender ?? sender
+            if (debited && userAddresses.has(debited)) move(assetId, -amount)
+            if (axfer.receiver && userAddresses.has(axfer.receiver)) {
+                move(assetId, amount)
+            }
+            if (axfer.closeTo && debited && userAddresses.has(debited)) {
+                hasCloseRemainder = true
+            }
+        }
+    }
+
+    const deltas: BalanceImpactDelta[] = [...net.entries()]
+        .filter(([, amount]) => amount !== 0n)
+        .map(([assetId, amount]) => ({ assetId, amount }))
+
+    return { deltas, totalFeeMicroAlgos, hasCloseRemainder }
+}

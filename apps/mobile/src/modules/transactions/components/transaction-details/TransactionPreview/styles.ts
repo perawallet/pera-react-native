@@ -48,7 +48,7 @@ export const useStyles = makeStyles(theme => {
         },
         externalPillText: {
             color: theme.colors.textMain,
-            maxWidth: theme.spacing.xxl,
+            maxWidth: theme.spacing['3xl'],
         },
         primaryText: {
             color: theme.colors.textMain,
