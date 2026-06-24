@@ -25,7 +25,7 @@ import { type PeraCardStackParamList } from '../../routes/types'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
-} from './utils'
+} from '../../utils/cardTransactions'
 
 type PeraCardCredits = {
     cashbacks: Decimal
@@ -71,6 +71,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         navigation.navigate('CardAddFunds')
     }, [navigation])
 
+    const onShowAllTransactions = useCallback(() => {
+        navigation.navigate('CardTransactions')
+    }, [navigation])
+
     return {
         isAutoFunding: selectedFundingType === FundingType.Auto,
         currency: DEFAULT_CARD_CURRENCY,
@@ -82,7 +86,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         onWithdraw: showComingSoon,
         onAddFunds,
         onGetUsdc: showComingSoon,
-        onShowAllTransactions: showComingSoon,
+        onShowAllTransactions,
         onCreditPress: showComingSoon,
     }
 }

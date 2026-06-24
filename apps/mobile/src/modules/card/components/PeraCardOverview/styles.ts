@@ -94,24 +94,4 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.xs,
     },
-    txRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-    },
-    txTextBlock: {
-        flex: 1,
-        minWidth: 0,
-    },
-    txSubtitle: {
-        color: theme.colors.textGray,
-    },
-    txAmountDebit: {
-        color: theme.colors.negative,
-    },
-    txAmountCredit: {
-        color: theme.colors.positive,
-    },
 }))
