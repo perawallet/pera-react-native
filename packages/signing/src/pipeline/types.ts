@@ -158,6 +158,25 @@ export const isExternalCallbackSource = (
     (EXTERNAL_CALLBACK_SOURCES as readonly SourceType[]).includes(sourceType)
 
 /**
+ * Optional, transport-routing hints for a sign request. Namespaced by concern
+ * so the generic pipeline types don't accumulate one-off top-level flags;
+ * everything here is advisory to the transport layer (absence = defaults).
+ */
+export interface SignRequestTransportOptions {
+    /** Multisig-propose route tuning. */
+    multisig?: {
+        /**
+         * Propose `type` sent to the backend. Local in-app sends default to
+         * `'async'` (backend broadcasts once threshold is met); external
+         * handoffs default to `'sync'`. Shared-account swaps set `'sync'` so the
+         * backend does NOT broadcast — the proposer assembles the composite
+         * multisig, interleaves the pre-signed slots, and submits to algod.
+         */
+        proposeMode?: 'sync' | 'async'
+    }
+}
+
+/**
  * Metadata about where signable data came from
  */
 export interface SourceMetadata {
@@ -192,12 +211,10 @@ export interface SourceMetadata {
     signRequestId?: string
 
     /**
-     * For multisig propose: overrides the propose `type` sent to the backend.
-     * Unset → the transport derives it (`'sync'` for external handoffs,
-     * `'async'` for local in-app sends). Shared-account in-app swaps set
-     * `'sync'` so the backend won't broadcast; the proposer submits to algod.
+     * Optional transport-routing hints (e.g. multisig propose mode). Namespaced
+     * by concern so this generic type stays free of one-off flags.
      */
-    multisigProposeMode?: 'sync' | 'async'
+    transportOptions?: SignRequestTransportOptions
 
     /** Original request ID for callbacks */
     requestId?: string

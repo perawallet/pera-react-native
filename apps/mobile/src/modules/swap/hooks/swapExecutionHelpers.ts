@@ -108,7 +108,7 @@ export const requestSwapProposal = (
             // Force the sync protocol: the backend collects signatures but does
             // NOT broadcast — the proposer's device assembles + submits via the
             // cosign resolver once threshold is met.
-            multisigProposeMode: 'sync',
+            transportOptions: { multisig: { proposeMode: 'sync' } },
             txs: unsignedTxs,
             groupContext,
             sourceMetadata: source,

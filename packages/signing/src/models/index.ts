@@ -23,6 +23,7 @@ import type {
     Arc60StdSigData,
     RejectReason,
     SignableAnalysis,
+    SignRequestTransportOptions,
     SourceType,
     TransportResult,
 } from '../pipeline/types'
@@ -58,15 +59,12 @@ type BaseSignRequest = {
      */
     signRequestId?: string
     /**
-     * Multisig-propose only: overrides the propose `type` the transport sends
-     * to the backend. Local in-app sends default to `'async'` (backend
-     * broadcasts once threshold is met); external handoffs default to
-     * `'sync'`. Shared-account in-app **swaps** set `'sync'` explicitly so the
-     * backend does NOT broadcast — the proposer's device assembles the
-     * composite multisig, interleaves the pre-signed slots, and submits to
-     * algod itself. See {@link SourceMetadata.multisigProposeMode}.
+     * Optional transport-routing hints, namespaced by concern (e.g.
+     * `transportOptions.multisig.proposeMode`). Threaded through to
+     * {@link SourceMetadata.transportOptions} so transports can read them
+     * without the generic request type accumulating one-off flags.
      */
-    multisigProposeMode?: 'sync' | 'async'
+    transportOptions?: SignRequestTransportOptions
 }
 
 export type TransactionSignRequest = {

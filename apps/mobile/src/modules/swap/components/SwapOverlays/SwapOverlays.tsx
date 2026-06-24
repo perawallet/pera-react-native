@@ -12,7 +12,8 @@
 
 import { useEffect, useState } from 'react'
 import { AppState } from 'react-native'
-import { useSwapCosignResolver } from '../../hooks/useSwapCosignResolver'
+import { useSwapCosignResolver } from '@perawallet/wallet-core-swaps'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 /**
  * Headless app-root mount for the shared-account swap cosign resolver.
@@ -27,6 +28,8 @@ export const SwapOverlays = (): null => {
         AppState.currentState === 'active',
     )
 
+    const { showError } = useErrorToast()
+
     useEffect(() => {
         const subscription = AppState.addEventListener('change', nextState => {
             setIsAppActive(nextState === 'active')
@@ -34,7 +37,7 @@ export const SwapOverlays = (): null => {
         return () => subscription.remove()
     }, [])
 
-    useSwapCosignResolver({ isAppActive })
+    useSwapCosignResolver({ isAppActive, reportError: showError })
 
     return null
 }

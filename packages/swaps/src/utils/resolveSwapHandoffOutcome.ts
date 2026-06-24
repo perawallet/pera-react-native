@@ -12,10 +12,8 @@
 
 import { logger } from '@perawallet/wallet-core-shared'
 import type { TerminalHandoffOutcome } from '@perawallet/wallet-core-signing'
-import type {
-    SwapHandoffRecord,
-    SwapStatusUpdateRequest,
-} from '@perawallet/wallet-core-swaps'
+import type { SwapStatusUpdateRequest } from '../api'
+import type { SwapHandoffRecord } from '../models'
 
 /**
  * Side-effecting collaborators the swap-handoff resolution needs. Injected so

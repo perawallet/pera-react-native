@@ -585,7 +585,7 @@ describe('createMultisigProposeTransport', () => {
         expect(walletConnectHandoffs.list()).toEqual([])
     })
 
-    test('honors multisigProposeMode override (sync) for a local source', async () => {
+    test('honors transportOptions.multisig.proposeMode (sync) for a local source', async () => {
         // Shared-account swaps propose locally but must use the sync protocol
         // so the backend doesn't broadcast — the proposer submits to algod.
         const proposeSignRequest = vi.fn().mockResolvedValue({
@@ -597,7 +597,10 @@ describe('createMultisigProposeTransport', () => {
 
         await transport.send(
             transactionResult,
-            { type: 'local', multisigProposeMode: 'sync' },
+            {
+                type: 'local',
+                transportOptions: { multisig: { proposeMode: 'sync' } },
+            },
             'JOINT_ADDR',
         )
 

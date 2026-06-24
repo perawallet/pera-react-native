@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import type { SwapHandoffRecord } from '@perawallet/wallet-core-swaps'
+import type { SwapHandoffRecord } from '../../models'
 import {
     resolveSwapHandoffOutcome,
     type SwapHandoffResolutionDeps,

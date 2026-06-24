@@ -143,12 +143,13 @@ export const createMultisigProposeTransport = (
             }
 
             const isExternal = isExternalCallbackSource(source.type)
-            // `multisigProposeMode` lets a local caller opt into the sync
-            // protocol (backend collects sigs but does NOT broadcast). Used by
-            // shared-account swaps: the proposer's device assembles + submits.
-            // Falls back to the source-derived default otherwise.
+            // `transportOptions.multisig.proposeMode` lets a local caller opt
+            // into the sync protocol (backend collects sigs but does NOT
+            // broadcast). Used by shared-account swaps: the proposer's device
+            // assembles + submits. Falls back to the source-derived default.
             const proposeType: MultisigProposeMode =
-                source.multisigProposeMode ?? (isExternal ? 'sync' : 'async')
+                source.transportOptions?.multisig?.proposeMode ??
+                (isExternal ? 'sync' : 'async')
 
             // Deferred propose: hardware-only proposer. `multisigSignerActor`
             // signaled by returning an empty `signers` array (see

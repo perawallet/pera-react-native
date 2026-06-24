@@ -204,7 +204,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     return {
         type: sourceType,
         transport: request.transport,
-        multisigProposeMode: request.multisigProposeMode,
+        transportOptions: request.transportOptions,
         requestId: request.transportId ?? request.id,
         verifiedOrigin: request.verifiedOrigin,
         callbacks: {

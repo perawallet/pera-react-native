@@ -611,7 +611,9 @@ describe('useSwapExecution', () => {
 
             const request = mockAddSignRequest.mock
                 .calls[0][0] as TransactionSignRequest
-            expect(request.multisigProposeMode).toBe('sync')
+            expect(request.transportOptions?.multisig?.proposeMode).toBe(
+                'sync',
+            )
             // Proposer does NOT submit — the cosign resolver does that later.
             expect(mockSendRawTransaction).not.toHaveBeenCalled()
         })
