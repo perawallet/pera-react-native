@@ -278,34 +278,46 @@ platform :android do
     end
   end
 
-  desc "Build and publish to Play Store"
+  desc "Build AAB, upload to Play internal track, and distribute APK to Firebase"
   lane :deploy_internal do |options|
     flavor = options[:flavor] || "staging"
     clean = options[:clean].nil? ? true : options[:clean]
 
-    # TODO: Switch back to "aab" once Play Store deployment is enabled
+    # Resolve the publishing package from CI env so WB-1/WB-2 identity changes
+    # flow through bitrise.yml's ANDROID_PACKAGE_NAME, not this file.
+    package_name = ENV["ANDROID_PACKAGE_NAME"] ||
+      (flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging")
+
+    # 1) Build the AAB and upload it to the Play internal track.
     build_android(
       flavor: flavor,
       build_type: "Release",
       clean: clean,
+      artifact_type: "aab"
+    )
+
+    upload_to_play_store(
+      track: "internal",
+      package_name: package_name,
+      aab: android_artifact_path(flavor, "aab"),
+      version_code: resolve_build_number,
+      release_status: "completed",
+      json_key: "config/api-key.json",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
+
+    # 2) Also distribute an APK to Firebase App Distribution for dogfooding.
+    #    clean:false so the AAB build above is not wiped.
+    build_android(
+      flavor: flavor,
+      build_type: "Release",
+      clean: false,
       artifact_type: "apk"
     )
 
-    package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
-
-    # upload_to_play_store(
-    #   track: "internal",
-    #   package_name: package_name,
-    #   aab: android_artifact_path(flavor, "aab"),
-    #   version_code: resolve_build_number,
-    #   skip_upload_metadata: true,
-    #   skip_upload_images: true,
-    #   skip_upload_screenshots: true,
-    #   json_key: "config/api-key.json"
-    # )
-
-    # We are deploying production builds to Firebase for the purpose of testing also
-    # Unescape literal \n to real newlines for Firebase release notes
     notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
 
     firebase_app_distribution(
