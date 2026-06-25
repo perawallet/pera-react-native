@@ -7,13 +7,14 @@ A `v.*` tag triggers the Bitrise `release-builds` pipeline → `ios-production` 
 - Promotion to the App Store (with phased release) is **manual** from App Store Connect.
 
 ### Android
-- Builds an **AAB**, uploads to the Play **`internal`** track (`fastlane android deploy_internal`), and distributes an APK to Firebase App Distribution (`pera,pera-alpha`) in parallel.
+- Builds an **AAB** and uploads it to the Play **`internal`** track (`fastlane android deploy_internal`), then builds an APK and distributes it to Firebase App Distribution (`pera,pera-alpha`). Both run sequentially within the one lane, and the Firebase step is intentionally **fatal** — a Firebase failure fails the workflow even after the Play upload has already succeeded.
 - Promotion to production (with staged rollout %) is **manual** from Play Console.
 
 ### Required Bitrise secrets
 - `ANDROID_JSON_KEY_FILE` — Play service-account JSON (global secret; written to `apps/mobile/config/api-key.json`).
 - `FIREBASE_SERVICE_ACCOUNT_BASE64` — Firebase service account (base64).
-- `PRODUCTION_FIREBASE_APP_ID_ANDROID`, `PRODUCTION_ANDROID_GOOGLE_SERVICES_BASE64`, `PRODUCTION_IOS_GOOGLE_SERVICE_INFO_BASE64`, iOS signing/profile secrets — as already used by the production workflows.
+- `PRODUCTION_FIREBASE_APP_ID_ANDROID` — Firebase Android app ID, aliased to `FIREBASE_APP_ID_ANDROID` by `setup-env-secrets.sh`. **Required:** if unset, the Firebase step aborts the release with `app: nil` *after* the AAB is already on Play.
+- `PRODUCTION_ANDROID_GOOGLE_SERVICES_BASE64`, `PRODUCTION_IOS_GOOGLE_SERVICE_INFO_BASE64`, iOS signing/profile secrets — as already used by the production workflows.
 
 ### Ops prerequisite (blocks the AC)
 The package in `ANDROID_PACKAGE_NAME` (today `com.algorand.perarn`; `com.algorand.android` after WB‑1/WB‑2) MUST already exist in Play Console with an **internal** track, and the service account in `ANDROID_JSON_KEY_FILE` MUST have release access. The "Play-accepted AAB" acceptance criterion only passes once this is in place.
