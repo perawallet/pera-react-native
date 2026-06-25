@@ -31,6 +31,12 @@ type ResolvedConfig = {
         package: string
         permissions: string[]
         blockedPermissions: string[]
+        intentFilters: Array<{
+            action: string
+            autoVerify?: boolean
+            data: Array<{ scheme?: string; host?: string; pathPrefix?: string }>
+            category: string[]
+        }>
     }
     extra: { appVariant: string; appEnv: string }
     plugins: unknown[]
@@ -415,5 +421,53 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
             'android.permission.READ_MEDIA_IMAGES',
         )
         expect(permissions).not.toContain('android.permission.RECORD_AUDIO')
+    })
+})
+
+describe('buildAppConfig — deep-link scheme parity (WB-8)', () => {
+    const SCHEMES = [
+        'perawallet',
+        'algorand',
+        'wc',
+        'perawallet-wc',
+        'algorand-wc',
+        'liquid',
+    ]
+
+    it('registers all six iOS URL schemes across every variant', () => {
+        for (const env of [
+            { APP_ENV: 'production' },
+            { APP_ENV: 'staging' },
+            {},
+        ]) {
+            expect(build(env).scheme).toEqual(SCHEMES)
+        }
+    })
+
+    it('registers all six custom schemes in the Android intent filter', () => {
+        const filter = build({
+            APP_ENV: 'production',
+        }).android.intentFilters.find(f => !f.autoVerify)
+
+        expect(filter?.data.map(d => d.scheme)).toEqual(SCHEMES)
+    })
+
+    it('preserves the autoVerify App Links for the /qr/ paths', () => {
+        const filter = build({
+            APP_ENV: 'production',
+        }).android.intentFilters.find(f => f.autoVerify)
+
+        expect(filter?.data).toEqual([
+            {
+                scheme: 'https',
+                host: 'perawallet.app',
+                pathPrefix: '/qr/perawallet/',
+            },
+            {
+                scheme: 'https',
+                host: 'perawallet.app',
+                pathPrefix: '/qr/perawallet-wc/',
+            },
+        ])
     })
 })

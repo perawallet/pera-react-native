@@ -19,6 +19,13 @@
 export const PERAWALLET_SCHEME = 'perawallet'
 export const PERAWALLET_WC_SCHEME = 'perawallet-wc'
 export const WC_SCHEME = 'wc'
+
+/**
+ * Native-parity WalletConnect wrapper scheme. The native iOS app registered
+ * `algorand-wc`; the parser rewrites `algorand-wc:` → `wc:` so existing
+ * WalletConnect deep links keep routing after the RN migration.
+ */
+export const ALGORAND_WC_SCHEME = 'algorand-wc'
 export const ALGORAND_SCHEME = 'algorand'
 export const ALGO_SCHEME = 'algo'
 /**

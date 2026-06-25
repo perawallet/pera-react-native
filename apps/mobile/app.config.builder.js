@@ -100,7 +100,7 @@ function buildAppConfig(env) {
     version: '7.0.0',
     orientation: 'portrait',
     icon: appIconIos,
-    scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc'],
+    scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc', 'algorand-wc', 'liquid'],
     userInterfaceStyle: 'automatic',
 
     // iOS-specific configuration
@@ -204,6 +204,10 @@ function buildAppConfig(env) {
             { scheme: 'algorand' },
             { scheme: 'wc' },
             { scheme: 'perawallet-wc' },
+            // Native iOS parity (algorand-wc) + Liquid Auth (liquid). Registered
+            // on Android too so there's a single source of truth (WB-8).
+            { scheme: 'algorand-wc' },
+            { scheme: 'liquid' },
           ],
           category: ['DEFAULT', 'BROWSABLE'],
         },

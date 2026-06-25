@@ -108,6 +108,20 @@ for (const domain of [
 ]) {
     assert(entitlements.includes(domain), `associated-domain ${domain} not found`)
 }
+// 4b. Info.plist — all six native-parity URL schemes registered (WB-8).
+for (const scheme of [
+    'perawallet',
+    'algorand',
+    'wc',
+    'perawallet-wc',
+    'algorand-wc',
+    'liquid',
+]) {
+    assert(
+        infoPlist.includes(`<string>${scheme}</string>`),
+        `URL scheme ${scheme} not found in CFBundleURLSchemes`,
+    )
+}
 assert(
     /<key>aps-environment<\/key>\s*<string>production<\/string>/.test(
         entitlements,
