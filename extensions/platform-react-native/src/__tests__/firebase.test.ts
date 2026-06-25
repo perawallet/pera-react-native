@@ -391,7 +391,11 @@ describe('RNFirebaseService', () => {
                     title: 'Test Title',
                     body: 'Test Body',
                     data: { key: 'value' },
-                    android: { channelId: 'default' }, // Platform.select returns android value due to mock
+                    // Platform.select returns the android value due to mock
+                    android: {
+                        channelId: 'default',
+                        smallIcon: 'ic_notification_small',
+                    },
                 })
             })
 
@@ -416,7 +420,11 @@ describe('RNFirebaseService', () => {
                     title: 'Notification',
                     body: undefined,
                     data: { key: 'value' },
-                    android: { channelId: 'default' }, // Platform.select returns android value due to mock
+                    // Platform.select returns the android value due to mock
+                    android: {
+                        channelId: 'default',
+                        smallIcon: 'ic_notification_small',
+                    },
                 })
             })
 
