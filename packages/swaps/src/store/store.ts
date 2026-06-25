@@ -49,7 +49,6 @@ export const useSwapsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 3,
             partialize: state => ({
                 slippage: state.slippage,
             }),

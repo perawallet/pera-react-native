@@ -48,7 +48,6 @@ export const useBannersStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             // autoOpenedBannerIds is intentionally NOT persisted — it's a
             // session-scoped flag so the carousel re-prompts each launch when
             // the server still flags a banner as 'select' or 'force'.

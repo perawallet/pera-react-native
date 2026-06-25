@@ -53,7 +53,6 @@ export const useOnrampStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             // Only the destination sticks across sessions; the source is
             // session-only so it's unset on every fresh entry.
             partialize: state => ({

@@ -12,7 +12,7 @@
 
 import type { MigrationConfig } from '../migrator'
 
-import m0000 from './0000_mighty_lorna_dane.sql?raw'
+import m0000 from './0000_initial.sql?raw'
 
 const migrations: MigrationConfig = {
     '0000_initial': m0000,

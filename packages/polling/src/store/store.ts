@@ -52,7 +52,6 @@ export const usePollingStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             partialize: state => ({
                 lastRefreshedRound: state.lastRefreshedRound,
             }),

@@ -53,7 +53,6 @@ export const useAppIntegrityStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             // `integrityToken` and `expiresAt` are intentionally NOT persisted:
             // the token is a bearer-style attestation credential and the
             // platform key-value storage is unencrypted (plaintext MMKV on RN).

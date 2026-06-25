@@ -98,7 +98,6 @@ export const useCardStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             // `verificationCode` and `phoneVerificationCode` are intentionally
             // omitted — transient OTPs that should never be written to disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
