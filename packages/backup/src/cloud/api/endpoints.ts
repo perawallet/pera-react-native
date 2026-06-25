@@ -38,7 +38,7 @@ import type {
     UpsertItemResponse,
 } from './types'
 import { signedBackupRequest } from './signedRequest'
-import { API_PREFIX, backupRoot } from './constants'
+import { API_PREFIX } from './constants'
 
 export const registerBackup = async (
     network: Network,
@@ -92,17 +92,17 @@ export const fetchDelta = async (
 export const fetchItem = async (
     network: Network,
     backupId: BackupId,
+    deviceId: DeviceId,
     key: BackupItemKey,
-): Promise<EncryptedPayload> => {
-    const response = await queryClient<EncryptedPayload>({
-        backend: 'backup',
+): Promise<EncryptedPayload> =>
+    signedBackupRequest<EncryptedPayload>({
         network,
         method: 'GET',
-        url: `${backupRoot(backupId)}/${key}`,
+        backupId,
+        pathSuffix: `/${key}`,
+        deviceId,
         responseType: 'text',
     })
-    return response.data
-}
 
 export const readItems = async (
     network: Network,
@@ -127,46 +127,44 @@ export const readItems = async (
 export const upsertItem = async (
     network: Network,
     backupId: BackupId,
+    deviceId: DeviceId,
     key: BackupItemKey,
     request: UpsertItemRequest,
-): Promise<UpsertItemResponse> => {
-    const response = await queryClient<UpsertItemResponse, UpsertItemRequest>({
-        backend: 'backup',
+): Promise<UpsertItemResponse> =>
+    signedBackupRequest<UpsertItemResponse, UpsertItemRequest>({
         network,
         method: 'PUT',
-        url: `${backupRoot(backupId)}/${key}`,
+        backupId,
+        pathSuffix: `/${key}`,
+        deviceId,
         data: request,
     })
-    return response.data
-}
 
 export const batchUpsertItems = async (
     network: Network,
     backupId: BackupId,
+    deviceId: DeviceId,
     request: BatchUpsertRequest,
-): Promise<BatchUpsertResponse> => {
-    const response = await queryClient<BatchUpsertResponse, BatchUpsertRequest>(
-        {
-            backend: 'backup',
-            network,
-            method: 'POST',
-            url: `${backupRoot(backupId)}/items/upsert`,
-            data: request,
-        },
-    )
-    return response.data
-}
+): Promise<BatchUpsertResponse> =>
+    signedBackupRequest<BatchUpsertResponse, BatchUpsertRequest>({
+        network,
+        method: 'POST',
+        backupId,
+        pathSuffix: '/items/upsert',
+        deviceId,
+        data: request,
+    })
 
 export const deleteItem = async (
     network: Network,
     backupId: BackupId,
+    deviceId: DeviceId,
     key: BackupItemKey,
-): Promise<DeleteItemResponse> => {
-    const response = await queryClient<DeleteItemResponse>({
-        backend: 'backup',
+): Promise<DeleteItemResponse> =>
+    signedBackupRequest<DeleteItemResponse>({
         network,
         method: 'DELETE',
-        url: `${backupRoot(backupId)}/${key}`,
+        backupId,
+        pathSuffix: `/${key}`,
+        deviceId,
     })
-    return response.data
-}

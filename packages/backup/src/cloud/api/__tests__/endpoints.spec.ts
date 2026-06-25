@@ -11,14 +11,27 @@
  */
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+import type { BatchUpsertRequest, UpsertItemRequest } from '../types'
 
 const signedBackupRequestMock = vi.fn()
+const queryClientMock = vi.fn().mockResolvedValue({ data: {} })
+
 vi.mock('../signedRequest', () => ({
     signedBackupRequest: (...args: unknown[]) =>
         signedBackupRequestMock(...args),
 }))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    queryClient: (...args: unknown[]) => queryClientMock(...args),
+}))
 
-import { fetchDelta } from '../endpoints'
+import {
+    batchUpsertItems,
+    deleteItem,
+    fetchDelta,
+    fetchItem,
+    upsertItem,
+} from '../endpoints'
 
 describe('fetchDelta', () => {
     beforeEach(() => signedBackupRequestMock.mockReset())
@@ -69,5 +82,124 @@ describe('fetchDelta', () => {
         )
 
         expect(result).toEqual([])
+    })
+})
+
+describe('fetchItem', () => {
+    beforeEach(() => signedBackupRequestMock.mockReset())
+
+    it('issues a signed GET for the item key and returns the payload as text', async () => {
+        signedBackupRequestMock.mockResolvedValue('ENCRYPTED_PAYLOAD')
+
+        const result = await fetchItem(
+            'mainnet',
+            'did:pera:ADDR',
+            'device-1',
+            'accounts/ADDR',
+        )
+
+        expect(signedBackupRequestMock).toHaveBeenCalledWith({
+            network: 'mainnet',
+            method: 'GET',
+            backupId: 'did:pera:ADDR',
+            pathSuffix: '/accounts/ADDR',
+            deviceId: 'device-1',
+            responseType: 'text',
+        })
+        expect(result).toBe('ENCRYPTED_PAYLOAD')
+    })
+})
+
+describe('upsertItem', () => {
+    beforeEach(() => signedBackupRequestMock.mockReset())
+
+    it('issues a signed PUT carrying the upsert request body', async () => {
+        const request: UpsertItemRequest = {
+            expected_ver: 1,
+            status: 'ACTIVE',
+            device_id: 'device-1',
+            type: 'ACCOUNT',
+            payload: 'ENCRYPTED_PAYLOAD',
+        }
+        signedBackupRequestMock.mockResolvedValue({ new_ver: 2, seq: 7 })
+
+        const result = await upsertItem(
+            'mainnet',
+            'did:pera:ADDR',
+            'device-1',
+            'accounts/ADDR',
+            request,
+        )
+
+        expect(signedBackupRequestMock).toHaveBeenCalledWith({
+            network: 'mainnet',
+            method: 'PUT',
+            backupId: 'did:pera:ADDR',
+            pathSuffix: '/accounts/ADDR',
+            deviceId: 'device-1',
+            data: request,
+        })
+        expect(result).toEqual({ new_ver: 2, seq: 7 })
+    })
+})
+
+describe('batchUpsertItems', () => {
+    beforeEach(() => signedBackupRequestMock.mockReset())
+
+    it('issues a signed POST to the batch upsert path', async () => {
+        const request: BatchUpsertRequest = {
+            device_id: 'device-1',
+            items: [
+                {
+                    key: 'accounts/ADDR',
+                    type: 'ACCOUNT',
+                    expected_ver: 1,
+                    status: 'ACTIVE',
+                    payload: 'ENCRYPTED_PAYLOAD',
+                },
+            ],
+        }
+        signedBackupRequestMock.mockResolvedValue({ results: [] })
+
+        const result = await batchUpsertItems(
+            'mainnet',
+            'did:pera:ADDR',
+            'device-1',
+            request,
+        )
+
+        expect(signedBackupRequestMock).toHaveBeenCalledWith({
+            network: 'mainnet',
+            method: 'POST',
+            backupId: 'did:pera:ADDR',
+            pathSuffix: '/items/upsert',
+            deviceId: 'device-1',
+            data: request,
+        })
+        expect(result).toEqual({ results: [] })
+    })
+})
+
+describe('deleteItem', () => {
+    beforeEach(() => signedBackupRequestMock.mockReset())
+
+    it('issues a signed DELETE for the item key', async () => {
+        signedBackupRequestMock.mockResolvedValue({ seq: 9 })
+
+        const result = await deleteItem(
+            'mainnet',
+            'did:pera:ADDR',
+            'device-1',
+            'accounts/ADDR',
+        )
+
+        expect(signedBackupRequestMock).toHaveBeenCalledWith({
+            network: 'mainnet',
+            method: 'DELETE',
+            backupId: 'did:pera:ADDR',
+            pathSuffix: '/accounts/ADDR',
+            deviceId: 'device-1',
+        })
+        expect(result).toEqual({ seq: 9 })
     })
 })

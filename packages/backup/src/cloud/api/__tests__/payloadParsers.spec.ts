@@ -109,6 +109,24 @@ describe('parseAddressPayload', () => {
             parseAddressPayload(JSON.stringify({ type: 'Algo25' })),
         ).toThrow(BackupPayloadParseError)
     })
+
+    it('rejects a non-finite numeric field (1e999 parses to Infinity)', () => {
+        const raw =
+            '{"type":"HdKey","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":1e999,"derivationType":9}'
+        expect(() => parseAddressPayload(raw)).toThrow(BackupPayloadParseError)
+    })
+
+    it('rejects a non-integer numeric field', () => {
+        const raw =
+            '{"type":"HdKey","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":1.5,"derivationType":9}'
+        expect(() => parseAddressPayload(raw)).toThrow(BackupPayloadParseError)
+    })
+
+    it('rejects a negative numeric field', () => {
+        const raw =
+            '{"type":"HdKey","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":-1,"derivationType":9}'
+        expect(() => parseAddressPayload(raw)).toThrow(BackupPayloadParseError)
+    })
 })
 
 describe('parseSecretsPayload', () => {

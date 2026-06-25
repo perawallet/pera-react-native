@@ -47,11 +47,14 @@ const requireString = (o: Record<string, unknown>, field: string): string => {
     return value
 }
 
-const requireNumber = (o: Record<string, unknown>, field: string): number => {
+const requireNonNegativeInteger = (
+    o: Record<string, unknown>,
+    field: string,
+): number => {
     const value = o[field]
-    if (typeof value !== 'number') {
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
         throw new BackupPayloadParseError(
-            `Invalid or missing number field: ${field}`,
+            `Invalid or missing non-negative integer field: ${field}`,
         )
     }
     return value
@@ -99,10 +102,10 @@ export const parseAddressPayload = (raw: string): AddressBackupPayload => {
                     'seedFirstDerivedAddress',
                 ),
                 publicKey: requireString(o, 'publicKey'),
-                account: requireNumber(o, 'account'),
-                change: requireNumber(o, 'change'),
-                keyIndex: requireNumber(o, 'keyIndex'),
-                derivationType: requireNumber(o, 'derivationType'),
+                account: requireNonNegativeInteger(o, 'account'),
+                change: requireNonNegativeInteger(o, 'change'),
+                keyIndex: requireNonNegativeInteger(o, 'keyIndex'),
+                derivationType: requireNonNegativeInteger(o, 'derivationType'),
                 customName: optionalName(o),
             }
         }
@@ -112,7 +115,7 @@ export const parseAddressPayload = (raw: string): AddressBackupPayload => {
                 address: requireString(o, 'address'),
                 deviceMacAddress: requireString(o, 'deviceMacAddress'),
                 bluetoothName: requireString(o, 'bluetoothName'),
-                indexInLedger: requireNumber(o, 'indexInLedger'),
+                indexInLedger: requireNonNegativeInteger(o, 'indexInLedger'),
                 customName: optionalName(o),
             }
         }
@@ -131,8 +134,8 @@ export const parseAddressPayload = (raw: string): AddressBackupPayload => {
                     o,
                     'participantAddresses',
                 ),
-                threshold: requireNumber(o, 'threshold'),
-                version: requireNumber(o, 'version'),
+                threshold: requireNonNegativeInteger(o, 'threshold'),
+                version: requireNonNegativeInteger(o, 'version'),
                 customName: optionalName(o),
             }
         }
