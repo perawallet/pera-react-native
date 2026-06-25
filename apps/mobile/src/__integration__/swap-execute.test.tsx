@@ -39,6 +39,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient } from '@test-utils/render'
@@ -132,6 +133,43 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
                 'BASE64SWAP1',
                 'BASE64SWAP2',
             ])
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the backend rejects the prepare request, when the user kicks off swap execution, then the mutation surfaces the error and yields no transaction groups to sign',
+        async () => {
+            // The Pera API can refuse to prepare a swap (stale quote, slippage
+            // re-check, pool liquidity, etc). The endpoint client throws on a
+            // non-2xx, and the mutation opts out of `throwOnError` (handled by
+            // the caller), so the failure surfaces as `isError` with no data —
+            // the signing pipeline is never handed any groups. Use a raw
+            // handler (the typed mock factory only emits schema-valid success
+            // bodies).
+            server.use(
+                http.post('*/v2/dex-swap/prepare-transactions/', () =>
+                    HttpResponse.json(
+                        { message: 'Quote expired' },
+                        { status: 400 },
+                    ),
+                ),
+            )
+
+            const { result } = renderHook(
+                () => usePrepareTransactionsMutation(),
+                { wrapper: buildWrapper() },
+            )
+
+            result.current.mutate({ quote: QUOTE_ID })
+
+            await waitFor(
+                () => {
+                    expect(result.current.isError).toBe(true)
+                },
+                { timeout: 5000 },
+            )
+            expect(result.current.data).toBeUndefined()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

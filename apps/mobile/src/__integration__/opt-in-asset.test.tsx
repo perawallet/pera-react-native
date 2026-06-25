@@ -314,6 +314,53 @@ describe('Flow: Opt into an asset', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
+
+    it(
+        'Given the account cannot cover the +0.1 ALGO MBR increase plus fee, when the user approves the opt-in, then the mutation throws InsufficientBalanceForOptInError before submitting',
+        async () => {
+            // The mutation's second pre-flight gate (after the already-opted-in
+            // check) requires
+            //   amount >= min-balance + ASSET_MBR (0.1 ALGO) + minFee.
+            // With min-balance 100_000 and fee 1_000 the threshold is 201_000;
+            // report a balance just under it so the gate throws
+            // InsufficientBalanceForOptInError without ever reaching submit.
+            server.use(
+                mockAlgodAccountInformation({
+                    address: ALGO25_TEST_ADDRESS,
+                    response: {
+                        amount: 150_000,
+                        'min-balance': 100_000,
+                        assets: [],
+                    },
+                }),
+            )
+            const sendSpy = vi.fn(() =>
+                HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderWithNavigation(
+                () => (
+                    <OptInHost
+                        sender={sender}
+                        assetId={USDC_TEST_ASSET_ID}
+                    />
+                ),
+                'OptInHost',
+            )
+
+            await waitFor(() => {
+                expect(screen.getByTestId('opt_in_confirm')).toBeTruthy()
+            })
+
+            fireEvent.click(screen.getByTestId('opt_in_confirm'))
+
+            // The balance gate throws before the build/sign/submit step.
+            await new Promise(resolve => setTimeout(resolve, 500))
+            expect(sendSpy).not.toHaveBeenCalled()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
 })
 
 // USDC's creator address (must be a real 58-char Algorand address —
