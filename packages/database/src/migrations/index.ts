@@ -12,14 +12,10 @@
 
 import type { MigrationConfig } from '../migrator'
 
-import m0000 from './0000_initial.sql?raw'
-import m0001 from './0001_nfd_cache.sql?raw'
-import m0002 from './0002_asset_is_favorited.sql?raw'
+import m0000 from './0000_mighty_lorna_dane.sql?raw'
 
 const migrations: MigrationConfig = {
     '0000_initial': m0000,
-    '0001_nfd_cache': m0001,
-    '0002_asset_is_favorited': m0002,
 }
 
 export default migrations

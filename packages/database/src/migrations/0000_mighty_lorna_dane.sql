@@ -1,24 +1,10 @@
-CREATE TABLE `account_asset_holdings` (
-	`account_address` text NOT NULL,
+-- NOTE: decimalColumn defaults are hand-corrected from drizzle-kit's '"0"' to '0' (fromDriver does new Decimal(String(value)); '"0"' would throw).
+CREATE TABLE `asset_prices` (
 	`asset_id` text NOT NULL,
 	`network` text NOT NULL,
-	`amount` text DEFAULT '0' NOT NULL,
+	`usd_price` text NOT NULL,
 	`updated_at` integer NOT NULL,
-	PRIMARY KEY(`account_address`, `asset_id`, `network`)
-);
---> statement-breakpoint
-CREATE TABLE `account_balances` (
-	`account_address` text NOT NULL,
-	`network` text NOT NULL,
-	`algo_balance` text DEFAULT '0' NOT NULL,
-	`total_assets_opted_in` integer DEFAULT 0 NOT NULL,
-	`total_created_assets` integer DEFAULT 0 NOT NULL,
-	`total_apps_opted_in` integer DEFAULT 0 NOT NULL,
-	`min_balance` text DEFAULT '0' NOT NULL,
-	`status` text DEFAULT 'Offline' NOT NULL,
-	`auth_address` text,
-	`updated_at` integer NOT NULL,
-	PRIMARY KEY(`account_address`, `network`)
+	PRIMARY KEY(`asset_id`, `network`)
 );
 --> statement-breakpoint
 CREATE TABLE `assets_node` (
@@ -40,18 +26,34 @@ CREATE TABLE `assets_pera` (
 	`network` text NOT NULL,
 	`verification_tier` text DEFAULT 'unverified' NOT NULL,
 	`is_deleted` integer DEFAULT false NOT NULL,
+	`is_favorited` integer DEFAULT false NOT NULL,
 	`asset_type` text,
 	`pera_metadata_json` text,
 	`updated_at` integer NOT NULL,
 	PRIMARY KEY(`asset_id`, `network`)
 );
 --> statement-breakpoint
-CREATE TABLE `asset_prices` (
+CREATE TABLE `account_asset_holdings` (
+	`account_address` text NOT NULL,
 	`asset_id` text NOT NULL,
 	`network` text NOT NULL,
-	`usd_price` text NOT NULL,
+	`amount` text DEFAULT '0' NOT NULL,
 	`updated_at` integer NOT NULL,
-	PRIMARY KEY(`asset_id`, `network`)
+	PRIMARY KEY(`account_address`, `asset_id`, `network`)
+);
+--> statement-breakpoint
+CREATE TABLE `account_balances` (
+	`account_address` text NOT NULL,
+	`network` text NOT NULL,
+	`algo_balance` text DEFAULT '0' NOT NULL,
+	`total_assets_opted_in` integer DEFAULT 0 NOT NULL,
+	`total_created_assets` integer DEFAULT 0 NOT NULL,
+	`total_apps_opted_in` integer DEFAULT 0 NOT NULL,
+	`min_balance` text DEFAULT '0' NOT NULL,
+	`status` text DEFAULT 'Offline' NOT NULL,
+	`auth_address` text,
+	`updated_at` integer NOT NULL,
+	PRIMARY KEY(`account_address`, `network`)
 );
 --> statement-breakpoint
 CREATE TABLE `account_transactions` (
@@ -81,4 +83,14 @@ CREATE TABLE `transactions` (
 	`swap_group_detail_json` text,
 	`interpreted_meaning_json` text,
 	`updated_at` integer NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `nfd_cache` (
+	`address` text NOT NULL,
+	`network` text NOT NULL,
+	`name` text,
+	`image` text,
+	`source` text,
+	`updated_at` integer NOT NULL,
+	PRIMARY KEY(`address`, `network`)
 );
