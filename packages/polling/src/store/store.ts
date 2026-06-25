@@ -56,18 +56,6 @@ export const usePollingStore: UseBoundStore<
             partialize: state => ({
                 lastRefreshedRound: state.lastRefreshedRound,
             }),
-            migrate: (persistedState: unknown, version: number) => {
-                const state = persistedState as Record<string, unknown>
-                if (version < 2) {
-                    const oldRound =
-                        state.lastRefreshedRound as Nullable<number>
-                    state.lastRefreshedRound = {
-                        mainnet: oldRound,
-                        testnet: null,
-                    }
-                }
-                return state as PollingState
-            },
         },
     ),
 )

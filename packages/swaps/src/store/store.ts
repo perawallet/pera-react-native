@@ -50,23 +50,6 @@ export const useSwapsStore: UseBoundStore<
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 3,
-            migrate: (persisted, version) => {
-                if (version < 2) {
-                    return {
-                        ...(persisted as Partial<SwapsState>),
-                        slippage: null,
-                    } as SwapsState
-                }
-                if (version < 3) {
-                    const {
-                        fromAsset: _fromAsset,
-                        toAsset: _toAsset,
-                        ...rest
-                    } = persisted as Record<string, unknown>
-                    return rest as SwapsState
-                }
-                return persisted as SwapsState
-            },
             partialize: state => ({
                 slippage: state.slippage,
             }),

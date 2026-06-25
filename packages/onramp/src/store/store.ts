@@ -59,9 +59,6 @@ export const useOnrampStore: UseBoundStore<
             partialize: state => ({
                 selectedDestinationTokenId: state.selectedDestinationTokenId,
             }),
-            // Any older persisted shape (v1 used pair ids) is dropped; keep only
-            // a null destination so the seed effect picks the default.
-            migrate: () => ({ selectedDestinationTokenId: null }),
         },
     ),
 )

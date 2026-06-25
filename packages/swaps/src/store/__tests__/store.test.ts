@@ -25,7 +25,6 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 import { useSwapsStore } from '../store'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 describe('swaps/store', () => {
     beforeEach(() => {
@@ -119,43 +118,4 @@ describe('swaps/store', () => {
         expect(() => registration!.clearStorage()).not.toThrow()
     })
 
-    test('migrates v1 state by adding slippage: null', () => {
-        const migrate = useSwapsStore.persist.getOptions().migrate as (
-            state: unknown,
-            version: number,
-        ) => unknown
-
-        const v1 = { fromAsset: '0', toAsset: '31566704' }
-        const migrated = migrate(v1, 1) as { slippage: Nullable<string> }
-
-        expect(migrated.slippage).toBeNull()
-    })
-
-    test('migrates v2 state by stripping fromAsset and toAsset', () => {
-        const migrate = useSwapsStore.persist.getOptions().migrate as (
-            state: unknown,
-            version: number,
-        ) => unknown
-
-        const v2 = {
-            fromAsset: '0',
-            toAsset: '31566704',
-            slippage: '1.0',
-        }
-        const migrated = migrate(v2, 2) as Record<string, unknown>
-
-        expect(migrated.fromAsset).toBeUndefined()
-        expect(migrated.toAsset).toBeUndefined()
-        expect(migrated.slippage).toBe('1.0')
-    })
-
-    test('migrate returns state as-is for the current version', () => {
-        const migrate = useSwapsStore.persist.getOptions().migrate as (
-            state: unknown,
-            version: number,
-        ) => unknown
-
-        const current = { slippage: '2.0' }
-        expect(migrate(current, 3)).toBe(current)
-    })
 })

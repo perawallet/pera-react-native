@@ -149,32 +149,6 @@ describe('useCardStore', () => {
         expect(persisted).not.toHaveProperty('phoneNumber')
     })
 
-    test('migration strips KYC PII left on disk by earlier builds, preserving non-PII fields', async () => {
-        const { useCardStore } = await import('../ux-store')
-
-        const migratedState = (
-            useCardStore as unknown as {
-                persist: {
-                    getOptions: () => {
-                        migrate?: (state: unknown) => Record<string, unknown>
-                    }
-                }
-            }
-        ).persist
-            .getOptions()
-            .migrate?.({
-                onboardingId: 'ob-1',
-                email: 'john@example.com',
-                phoneCountryCode: '44',
-                phoneNumber: '7400846282',
-            })
-
-        expect(migratedState).not.toHaveProperty('email')
-        expect(migratedState).not.toHaveProperty('phoneCountryCode')
-        expect(migratedState).not.toHaveProperty('phoneNumber')
-        expect(migratedState).toMatchObject({ onboardingId: 'ob-1' })
-    })
-
     test('resetState clears the onboarding contact inputs', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
