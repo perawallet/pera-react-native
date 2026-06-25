@@ -347,5 +347,4 @@ describe('services/accounts/store', () => {
             expect(useAccountsStore.getState().accounts).toBe(before)
         })
     })
-
 })

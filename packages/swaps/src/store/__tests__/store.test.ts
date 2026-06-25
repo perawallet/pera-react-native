@@ -117,5 +117,4 @@ describe('swaps/store', () => {
         expect(useSwapsStore.getState().fromAsset).toBe('0')
         expect(() => registration!.clearStorage()).not.toThrow()
     })
-
 })
