@@ -349,11 +349,6 @@ function buildAppConfig(env) {
       // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
       './plugins/withPublicSwiftImports.js',
 
-      // Custom plugin: one-time migration of MMKV stores from the pre-App-Group
-      // sandbox path into the App Group container, so existing iOS installs don't
-      // open an empty keystore after the passkey App Group is enabled.
-      './plugins/withMMKVAppGroupMigration.js',
-
       // Custom plugin: exclude the local data stores (MMKV + pera.db) from iOS
       // backups (NSURLIsExcludedFromBackupKey), and on Android from cloud-backup
       // + device-transfer via dataExtractionRules / fullBackupContent — alongside

@@ -29,7 +29,7 @@
  * `didFinishLaunchingWithOptions`. It marks:
  *   - `<Documents>/SQLite`  — expo-sqlite's default dir (pera.db + -wal/-shm)
  *   - the MMKV store location — the App Group container when AppGroupIdentifier
- *     is set (see withMMKVAppGroupMigration), else `<Documents>/mmkv`
+ *     is set, else `<Documents>/mmkv`
  * The dirs are created first (no-op if present) so the flag sticks from the
  * first launch, before MMKV / expo-sqlite create them. Idempotent and cheap,
  * so it runs every launch. iOS-only.
@@ -51,7 +51,7 @@ const CALL = 'excludePeraDataFromBackupIfNeeded()';
 
 // Top-level Swift function. Foundation symbols (FileManager, Bundle, URL,
 // URLResourceValues, NSLog) are available via the existing Expo/UIKit imports
-// — no extra import needed (mirrors withMMKVAppGroupMigration).
+// — no extra import needed.
 const FUNCTION = `// @pera begin exclude-data-from-backup
 /// Marks the local data stores as excluded from iOS backups
 /// (NSURLIsExcludedFromBackupKey). See plugins/withExcludeDataFromBackup.js.
@@ -69,7 +69,7 @@ func ${CALL.replace('()', '')}() {
   }
 
   // MMKV roots its stores in the App Group container when AppGroupIdentifier
-  // is set (see withMMKVAppGroupMigration). Exclude the whole container — it
+  // is set. Exclude the whole container — it
   // holds only app-private sensitive state.
   if let appGroupID = Bundle.main.object(forInfoDictionaryKey: "AppGroupIdentifier") as? String,
      let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
