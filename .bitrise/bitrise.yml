@@ -46,6 +46,8 @@ stages:
 workflows:
   check-changes:
     description: Check if there are changes since the last successful build
+    envs:
+      - VALIDATE_PROFILE: check-changes
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
@@ -54,6 +56,12 @@ workflows:
           inputs:
             - fetch_tags: "yes"
             - clone_depth: -1
+      - script@1:
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           title: Check for changes
           inputs:
@@ -167,8 +175,15 @@ workflows:
         stack: linux-docker-android-22.04
     envs:
       - ENVIRONMENT: production
+      - VALIDATE_PROFILE: test
     steps:
       - git-clone@8: {}
+      - script@1:
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - restore-cache@2:
           inputs:
             - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
