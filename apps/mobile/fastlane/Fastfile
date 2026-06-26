@@ -110,13 +110,20 @@ platform :ios do
       xcodeproj: get_xcodeproj_path
     )
 
-    # Determine Bundle ID for export options
+    # Determine Bundle ID for export options. Must match app.config.builder.js's
+    # bundleIdentifiers: production ships the legacy store id (in-place upgrade),
+    # staging/dev ship the .staging id.
     bundle_id = case options[:scheme]
-    when "Pera7Production" then "com.algorandllc.perarn"
+    when "Pera7Production" then "com.algorandllc.algorand"
     else "com.algorandllc.perarn.staging"
     end
-    # AutoFill credential-provider extension (added by the passkey plugin).
-    extension_bundle_id = "#{bundle_id}.PasskeyAutofillCredentialProvider"
+    # AutoFill credential-provider extension. Production matches the shipping
+    # native app's extension id (.autofill-extension) so it reuses that App ID's
+    # existing App Store profile; staging/dev use the autofill plugin's default.
+    # Must mirror withPasskeyAutofillFixes.js.
+    extension_suffix =
+      options[:scheme] == "Pera7Production" ? "autofill-extension" : "PasskeyAutofillCredentialProvider"
+    extension_bundle_id = "#{bundle_id}.#{extension_suffix}"
 
     app_profile = ENV["IOS_PROVISIONING_PROFILE_NAME"]
     extension_profile = ENV["IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"]

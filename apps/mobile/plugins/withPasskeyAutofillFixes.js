@@ -66,11 +66,39 @@ const withPasskeyAutofillFixes = (config) => {
 
   config = withXcodeProject(config, (config) => {
     applyIosFixes(config.modResults);
+    setProductionExtensionBundleId(
+      config.modResults,
+      config.ios && config.ios.bundleIdentifier,
+    );
     return config;
   });
 
   return config;
 };
+
+// --- [iOS] Production AutoFill extension bundle id --------------------------
+
+// Production reuses the legacy store app (`com.algorandllc.algorand`) for an
+// in-place upgrade. The shipping native app's AutoFill extension id is
+// `<app>.autofill-extension` (it already has a registered App ID + App Store
+// profile), but the autofill plugin names the extension
+// `<app>.PasskeyAutofillCredentialProvider` for every variant. Rewrite ONLY
+// production's extension to match the shipping id; staging/dev keep the default.
+const PRODUCTION_APP_BUNDLE_ID = 'com.algorandllc.algorand';
+
+function setProductionExtensionBundleId(project, appBundleId) {
+  if (appBundleId !== PRODUCTION_APP_BUNDLE_ID) return;
+  const from = `${appBundleId}.${EXTENSION_TARGET_NAME}`;
+  const to = `${appBundleId}.autofill-extension`;
+  const section = project.pbxXCBuildConfigurationSection();
+  for (const key of Object.keys(section)) {
+    const settings = section[key] && section[key].buildSettings;
+    if (!settings) continue;
+    if (unquote(settings.PRODUCT_BUNDLE_IDENTIFIER || '') === from) {
+      settings.PRODUCT_BUNDLE_IDENTIFIER = to;
+    }
+  }
+}
 
 // --- [Android] DP256 vendored Maven repo -----------------------------------
 
