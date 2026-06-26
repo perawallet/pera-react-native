@@ -42,7 +42,7 @@ stages:
       - android-staging: {}
 workflows:
   create-nightly-tag:
-    description: Mint a vX.Y.Z-nightly.A tag on main HEAD to trigger release-builds
+    description: Mint a vX.Y.Z-alpha.N tag on main HEAD to trigger release-builds
     envs:
       - VALIDATE_PROFILE: create-nightly-tag
     meta:
@@ -168,20 +168,8 @@ workflows:
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
       - VALIDATE_PROFILE: ios
-    steps:
-      - script@1:
-          title: Skip production for nightly tags
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                # Nightly tags (vX.Y.Z-nightly.A) build staging only — skip production.
-                if [[ "$BITRISE_GIT_TAG" == *-nightly.* ]]; then
-                  echo "Nightly tag $BITRISE_GIT_TAG — skipping production build"
-                  envman add --key SKIP_BUILD --value "true"
-                else
-                  envman add --key SKIP_BUILD --value "false"
-                fi
+      # Every release tag (alpha / rc / stable) builds production alongside staging.
+      - SKIP_BUILD: "false"
     after_run:
       - _ios-build
       - _slack-notify-ios
@@ -442,53 +430,20 @@ workflows:
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
-  android-staging-test:
-    description: Android Staging with LEGACY ids (installs over legacy app) → Firebase
-    envs:
-      - ENVIRONMENT: staging
-      - APP_ENV: staging
-      - ANDROID_FLAVOR: staging
-      - ANDROID_APPLICATION_ID: com.algorand.android.staging
-      - BUILD_NUMBER_OFFSET: "6000"
-      - FIREBASE_TESTER_GROUPS: pera
-      - NOTIFICATION_TITLE_PREFIX: QA Build (Migration Test)
-      - USE_CACHE: "true"
-      - PARENT_WORKFLOW: qa-build
-      - DISTRIBUTION: firebase
-      - SKIP_BUILD: "false"
-      - VALIDATE_PROFILE: android
-    after_run:
-      - _android-build
-      - _slack-notify-android
-    meta:
-      bitrise.io:
-        stack: linux-docker-android-22.04
   android-production:
     description: Build and deploy Android Production to Play Store Internal
     envs:
       - ENVIRONMENT: production
       - APP_ENV: production
       - ANDROID_FLAVOR: production
-      - ANDROID_PACKAGE_NAME: com.algorand.perarn
+      - ANDROID_PACKAGE_NAME: com.algorand.android
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
       - DISTRIBUTION: firebase
       - VALIDATE_PROFILE: android
-    steps:
-      - script@1:
-          title: Skip production for nightly tags
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                # Nightly tags (vX.Y.Z-nightly.A) build staging only — skip production.
-                if [[ "$BITRISE_GIT_TAG" == *-nightly.* ]]; then
-                  echo "Nightly tag $BITRISE_GIT_TAG — skipping production build"
-                  envman add --key SKIP_BUILD --value "true"
-                else
-                  envman add --key SKIP_BUILD --value "false"
-                fi
+      # Every release tag (alpha / rc / stable) builds production alongside staging.
+      - SKIP_BUILD: "false"
     after_run:
       - _android-build
       - _slack-notify-android
