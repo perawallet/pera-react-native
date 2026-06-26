@@ -346,9 +346,8 @@ export const useSwapForm = (): UseSwapFormResult => {
             )
             setPayAmount(null)
             setReceiveAmount(null)
-            setAllQuotes([])
             setSelectedProviderName(null)
-            resetQuoteMutation()
+            resetQuotes()
             return
         }
 

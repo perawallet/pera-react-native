@@ -32,6 +32,8 @@ const SWAPPING_STATUSES = new Set([
 type CardAddFundsSwapOutcome =
     | { kind: 'success' }
     | { kind: 'cancelled' }
+    // Shared-account swap proposed; co-signer must approve before it submits.
+    | { kind: 'pending-cosign' }
     | { kind: 'error'; message: string }
 
 type UseCardAddFundsSwapParams = {
@@ -101,6 +103,9 @@ export const useCardAddFundsSwap = ({
             const outcome = await execute(quote.quoteIdStr)
             if (outcome.kind === 'success') return { kind: 'success' }
             if (outcome.kind === 'cancelled') return { kind: 'cancelled' }
+            if (outcome.kind === 'pending-cosign') {
+                return { kind: 'pending-cosign' }
+            }
             return { kind: 'error', message: outcome.message }
         }, [quote, execute])
 
