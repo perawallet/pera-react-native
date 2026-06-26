@@ -253,7 +253,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',
 
-    appStoreAppID: 'APP_STORE_APP_ID',
+    appStoreAppID: 'APP_STORE_APPLE_ID',
     playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
