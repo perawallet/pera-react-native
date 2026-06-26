@@ -238,6 +238,7 @@ workflows:
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build
+      - VALIDATE_PROFILE: ios
     steps:
       - script@1:
           title: Check pipeline outputs
@@ -271,6 +272,7 @@ workflows:
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
       - SKIP_BUILD: "false"
+      - VALIDATE_PROFILE: ios
     after_run:
       - _ios-build
       - _slack-notify-ios
@@ -285,6 +287,13 @@ workflows:
           inputs:
             - fetch_tags: "yes"
             - clone_depth: 0
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
@@ -503,6 +512,7 @@ workflows:
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build
       - DISTRIBUTION: firebase
+      - VALIDATE_PROFILE: android
     steps:
       - script@1:
           title: Check pipeline outputs
@@ -537,6 +547,7 @@ workflows:
       - PARENT_WORKFLOW: qa-build
       - DISTRIBUTION: firebase
       - SKIP_BUILD: "false"
+      - VALIDATE_PROFILE: android
     after_run:
       - _android-build
       - _slack-notify-android
@@ -555,6 +566,7 @@ workflows:
       - PARENT_WORKFLOW: release
       - DISTRIBUTION: firebase
       - SKIP_BUILD: "false"
+      - VALIDATE_PROFILE: android
     after_run:
       - _android-build
       - _slack-notify-android
@@ -568,6 +580,13 @@ workflows:
           inputs:
             - fetch_tags: "yes"
             - clone_depth: 0
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
