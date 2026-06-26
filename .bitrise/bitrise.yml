@@ -167,8 +167,21 @@ workflows:
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
-      - SKIP_BUILD: "false"
       - VALIDATE_PROFILE: ios
+    steps:
+      - script@1:
+          title: Skip production for nightly tags
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                # Nightly tags (vX.Y.Z-nightly.A) build staging only — skip production.
+                if [[ "$BITRISE_GIT_TAG" == *-nightly.* ]]; then
+                  echo "Nightly tag $BITRISE_GIT_TAG — skipping production build"
+                  envman add --key SKIP_BUILD --value "true"
+                else
+                  envman add --key SKIP_BUILD --value "false"
+                fi
     after_run:
       - _ios-build
       - _slack-notify-ios
@@ -461,8 +474,21 @@ workflows:
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
       - DISTRIBUTION: firebase
-      - SKIP_BUILD: "false"
       - VALIDATE_PROFILE: android
+    steps:
+      - script@1:
+          title: Skip production for nightly tags
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                # Nightly tags (vX.Y.Z-nightly.A) build staging only — skip production.
+                if [[ "$BITRISE_GIT_TAG" == *-nightly.* ]]; then
+                  echo "Nightly tag $BITRISE_GIT_TAG — skipping production build"
+                  envman add --key SKIP_BUILD --value "true"
+                else
+                  envman add --key SKIP_BUILD --value "false"
+                fi
     after_run:
       - _android-build
       - _slack-notify-android
