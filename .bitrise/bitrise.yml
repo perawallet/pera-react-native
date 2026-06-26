@@ -534,7 +534,7 @@ workflows:
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
-      - DISTRIBUTION: firebase
+      - DISTRIBUTION: play
       - SKIP_BUILD: "false"
     after_run:
       - _android-build
@@ -755,9 +755,14 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
-                if [ "$DISTRIBUTION" == "firebase" ]; then
+                # Firebase creds are always written when present — the play
+                # route distributes to Firebase in parallel as well.
+                if [ -n "$FIREBASE_SERVICE_ACCOUNT_BASE64" ]; then
                   echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/config/firebase-service-account.json
-                else
+                fi
+
+                # Play service-account JSON, needed by the play route.
+                if [ "$DISTRIBUTION" == "play" ]; then
                   echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/config/api-key.json
                 fi
       - script@1:

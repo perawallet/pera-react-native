@@ -278,34 +278,57 @@ platform :android do
     end
   end
 
-  desc "Build and publish to Play Store"
+  desc "Build AAB, upload to Play internal track, and distribute APK to Firebase"
   lane :deploy_internal do |options|
     flavor = options[:flavor] || "staging"
     clean = options[:clean].nil? ? true : options[:clean]
 
-    # TODO: Switch back to "aab" once Play Store deployment is enabled
+    # Resolve the publishing package from CI env so WB-1/WB-2 identity changes
+    # flow through bitrise.yml's ANDROID_PACKAGE_NAME, not this file.
+    package_name = ENV["ANDROID_PACKAGE_NAME"] ||
+      (flavor == "production" ? "com.algorand.android" : "com.algorand.perarn.staging")
+
+    # 1) Build the AAB and upload it to the Play internal track.
     build_android(
       flavor: flavor,
       build_type: "Release",
       clean: clean,
-      artifact_type: "apk"
+      artifact_type: "aab"
     )
 
-    package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
+    upload_to_play_store(
+      track: "internal",
+      package_name: package_name,
+      aab: android_artifact_path(flavor, "aab"),
+      version_code: resolve_build_number,
+      release_status: "completed",
+      json_key: "config/api-key.json",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
 
-    # upload_to_play_store(
-    #   track: "internal",
-    #   package_name: package_name,
-    #   aab: android_artifact_path(flavor, "aab"),
-    #   version_code: resolve_build_number,
-    #   skip_upload_metadata: true,
-    #   skip_upload_images: true,
-    #   skip_upload_screenshots: true,
-    #   json_key: "config/api-key.json"
-    # )
+    # 2) Also distribute an APK to Firebase App Distribution for dogfooding.
+    #    clean:false so the AAB build above is not wiped.
+    #
+    #    Disable screen-capture prevention for THIS build only: the Firebase APK
+    #    feeds BrowserStack, whose device mirroring can't drive a FLAG_SECURE
+    #    surface. The Play AAB built above keeps protection on, so store users
+    #    are unaffected. Scoped to the APK build and restored immediately after.
+    previous_disable_capture = ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"]
+    ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"] = "true"
+    begin
+      build_android(
+        flavor: flavor,
+        build_type: "Release",
+        clean: false,
+        artifact_type: "apk"
+      )
+    ensure
+      ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"] = previous_disable_capture
+    end
 
-    # We are deploying production builds to Firebase for the purpose of testing also
-    # Unescape literal \n to real newlines for Firebase release notes
     notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
 
     firebase_app_distribution(
