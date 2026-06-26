@@ -286,7 +286,7 @@ platform :android do
     # Resolve the publishing package from CI env so WB-1/WB-2 identity changes
     # flow through bitrise.yml's ANDROID_PACKAGE_NAME, not this file.
     package_name = ENV["ANDROID_PACKAGE_NAME"] ||
-      (flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging")
+      (flavor == "production" ? "com.algorand.android" : "com.algorand.perarn.staging")
 
     # 1) Build the AAB and upload it to the Play internal track.
     build_android(
@@ -311,12 +311,23 @@ platform :android do
 
     # 2) Also distribute an APK to Firebase App Distribution for dogfooding.
     #    clean:false so the AAB build above is not wiped.
-    build_android(
-      flavor: flavor,
-      build_type: "Release",
-      clean: false,
-      artifact_type: "apk"
-    )
+    #
+    #    Disable screen-capture prevention for THIS build only: the Firebase APK
+    #    feeds BrowserStack, whose device mirroring can't drive a FLAG_SECURE
+    #    surface. The Play AAB built above keeps protection on, so store users
+    #    are unaffected. Scoped to the APK build and restored immediately after.
+    previous_disable_capture = ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"]
+    ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"] = "true"
+    begin
+      build_android(
+        flavor: flavor,
+        build_type: "Release",
+        clean: false,
+        artifact_type: "apk"
+      )
+    ensure
+      ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"] = previous_disable_capture
+    end
 
     notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
 
