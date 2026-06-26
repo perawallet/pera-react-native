@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # tools/create-nightly-tag.sh
-# Mints a nightly tag (vX.Y.Z-nightly.A) on the current HEAD and pushes it to
+# Mints a nightly tag (vX.Y.Z-alpha.N) on the current HEAD and pushes it to
 # origin, which triggers the release-builds pipeline. Runs in the qa-builds
 # pipeline (scheduled on main). Idempotent: if there are no new commits since
 # the last nightly tag, exits 0 without creating a tag.
@@ -25,21 +25,33 @@ if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
   exit 1
 fi
 
-# --- Change gate: any new commits since the last nightly tag? ---
-LAST_NIGHTLY=$(git tag --list 'v*-nightly.*' --sort=-creatordate | head -n 1)
-if [ -n "$LAST_NIGHTLY" ]; then
-  NEW_COMMITS=$(git rev-list "${LAST_NIGHTLY}..HEAD" --count)
+# --- Base version: the version nightlies are cut against ---
+# Start from package.json. If that version has already shipped as a STABLE tag
+# (vX.Y.Z, no suffix), the next dev cycle is the next patch, so nightlies roll to
+# vX.Y.(Z+1). Until that stable tag exists, stay on the package.json version — so
+# the first nightly is v7.0.0-alpha.1, not v7.0.1-alpha.1.
+BASE="$VERSION"
+if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+  IFS='.' read -r _maj _min _pat <<<"$VERSION"
+  BASE="${_maj}.${_min}.$((_pat + 1))"
+  echo "Stable tag v${VERSION} exists — nightlies target next patch v${BASE}."
+fi
+
+# --- Change gate: any new commits since the last nightly (alpha) tag? ---
+LAST_ALPHA=$(git tag --list 'v*-alpha.*' --sort=-creatordate | head -n 1)
+if [ -n "$LAST_ALPHA" ]; then
+  NEW_COMMITS=$(git rev-list "${LAST_ALPHA}..HEAD" --count)
   if [ "$NEW_COMMITS" -eq 0 ]; then
-    echo "No new commits since last nightly tag $LAST_NIGHTLY — skipping."
+    echo "No new commits since last nightly tag $LAST_ALPHA — skipping."
     exit 0
   fi
-  echo "$NEW_COMMITS new commit(s) since $LAST_NIGHTLY."
+  echo "$NEW_COMMITS new commit(s) since $LAST_ALPHA."
 else
   echo "No existing nightly tags — creating the first one."
 fi
 
-# --- Counter: max existing v${VERSION}-nightly.N + 1 (numeric), reset per version ---
-PREFIX="v${VERSION}-nightly."
+# --- Counter: max existing v${BASE}-alpha.N + 1 (numeric), reset per base version ---
+PREFIX="v${BASE}-alpha."
 MAX=0
 while IFS= read -r tag; do
   [ -n "$tag" ] || continue
@@ -54,7 +66,7 @@ while IFS= read -r tag; do
 done < <(git tag --list "${PREFIX}*")
 A=$((MAX + 1))
 
-TAG="v${VERSION}-nightly.${A}"
+TAG="v${BASE}-alpha.${A}"
 echo "Next nightly tag: $TAG"
 
 if [ "${DRY_RUN:-}" = "1" ]; then
