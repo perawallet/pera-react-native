@@ -43,9 +43,13 @@ stages:
     workflows:
       - ios-production: {}
       - android-production: {}
+      - ios-staging: {}
+      - android-staging: {}
 workflows:
   check-changes:
     description: Check if there are changes since the last successful build
+    envs:
+      - VALIDATE_PROFILE: check-changes
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
@@ -54,6 +58,12 @@ workflows:
           inputs:
             - fetch_tags: "yes"
             - clone_depth: -1
+      - script@1:
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           title: Check for changes
           inputs:
@@ -167,8 +177,15 @@ workflows:
         stack: linux-docker-android-22.04
     envs:
       - ENVIRONMENT: production
+      - VALIDATE_PROFILE: test
     steps:
       - git-clone@8: {}
+      - script@1:
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - restore-cache@2:
           inputs:
             - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -217,21 +234,13 @@ workflows:
     description: Build and deploy iOS Staging to TestFlight
     envs:
       - ENVIRONMENT: staging
-      # APP_ENV must be set at workflow level (not just inside individual
-      # steps) so every generate-config.sh run + Expo prebuild bakes the
-      # correct appEnvironment. Step-level `export`s don't persist across
-      # Bitrise steps, which previously let "Build packages" regenerate the
-      # config blank (appEnvironment fell back to development).
       - APP_ENV: staging
-      # QA-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
-      # Deliberately absent from ios-production so release builds keep
-      # seed-screen capture protection. Workflow-level (see APP_ENV) so
-      # generate-config.sh bakes it.
       - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
       - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build
+      - VALIDATE_PROFILE: ios
     steps:
       - script@1:
           title: Check pipeline outputs
@@ -258,7 +267,6 @@ workflows:
     description: Build and deploy iOS Production to TestFlight
     envs:
       - ENVIRONMENT: production
-      # See ios-staging: APP_ENV must be a workflow-level env.
       - APP_ENV: production
       - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
       - IOS_PROFILE_NAME: Pera React Native Prod
@@ -266,6 +274,7 @@ workflows:
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
       - SKIP_BUILD: "false"
+      - VALIDATE_PROFILE: ios
     after_run:
       - _ios-build
       - _slack-notify-ios
@@ -280,6 +289,13 @@ workflows:
           inputs:
             - fetch_tags: "yes"
             - clone_depth: 0
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
@@ -490,12 +506,7 @@ workflows:
     description: Build and deploy Android Staging to Firebase App Distribution
     envs:
       - ENVIRONMENT: staging
-      # See ios-staging: APP_ENV must be a workflow-level env.
       - APP_ENV: staging
-      # QA-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
-      # Deliberately absent from android-production so release builds keep
-      # seed-screen capture protection. Workflow-level (see APP_ENV) so
-      # generate-config.sh bakes it.
       - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
       - ANDROID_FLAVOR: staging
       - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
@@ -503,6 +514,7 @@ workflows:
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build
       - DISTRIBUTION: firebase
+      - VALIDATE_PROFILE: android
     steps:
       - script@1:
           title: Check pipeline outputs
@@ -523,19 +535,40 @@ workflows:
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
+  android-staging-test:
+    description: Android Staging with LEGACY ids (installs over legacy app) → Firebase
+    envs:
+      - ENVIRONMENT: staging
+      - APP_ENV: staging
+      - ANDROID_FLAVOR: staging
+      - ANDROID_APPLICATION_ID: com.algorand.android.staging
+      - BUILD_NUMBER_OFFSET: "6000"
+      - FIREBASE_TESTER_GROUPS: pera
+      - NOTIFICATION_TITLE_PREFIX: QA Build (Migration Test)
+      - USE_CACHE: "true"
+      - PARENT_WORKFLOW: qa-build
+      - DISTRIBUTION: firebase
+      - SKIP_BUILD: "false"
+      - VALIDATE_PROFILE: android
+    after_run:
+      - _android-build
+      - _slack-notify-android
+    meta:
+      bitrise.io:
+        stack: linux-docker-android-22.04
   android-production:
     description: Build and deploy Android Production to Play Store Internal
     envs:
       - ENVIRONMENT: production
-      # See ios-staging: APP_ENV must be a workflow-level env.
       - APP_ENV: production
       - ANDROID_FLAVOR: production
       - ANDROID_PACKAGE_NAME: com.algorand.perarn
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
-      - DISTRIBUTION: play
+      - DISTRIBUTION: firebase
       - SKIP_BUILD: "false"
+      - VALIDATE_PROFILE: android
     after_run:
       - _android-build
       - _slack-notify-android
@@ -549,6 +582,13 @@ workflows:
           inputs:
             - fetch_tags: "yes"
             - clone_depth: 0
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
@@ -683,7 +723,7 @@ workflows:
                 set -ex
                 VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
                 envman add --key APP_VERSION --value "$VERSION"
-                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+                envman add --key BUILD_NUMBER --value "$((BITRISE_BUILD_NUMBER + ${BUILD_NUMBER_OFFSET:-0}))"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Expo Prebuild
@@ -755,14 +795,9 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
-                # Firebase creds are always written when present — the play
-                # route distributes to Firebase in parallel as well.
-                if [ -n "$FIREBASE_SERVICE_ACCOUNT_BASE64" ]; then
+                if [ "$DISTRIBUTION" == "firebase" ]; then
                   echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/config/firebase-service-account.json
-                fi
-
-                # Play service-account JSON, needed by the play route.
-                if [ "$DISTRIBUTION" == "play" ]; then
+                else
                   echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/config/api-key.json
                 fi
       - script@1:
