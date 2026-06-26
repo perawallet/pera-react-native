@@ -43,6 +43,8 @@ stages:
     workflows:
       - ios-production: {}
       - android-production: {}
+      - ios-staging: {}
+      - android-staging: {}
 workflows:
   check-changes:
     description: Check if there are changes since the last successful build
