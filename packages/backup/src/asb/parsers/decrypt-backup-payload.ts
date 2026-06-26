@@ -11,7 +11,7 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
 import { backupMnemonicToKey, generateBackupCipherKey } from '../crypto'
 import {
     decodePrivateKeyBytes,
@@ -24,6 +24,11 @@ import {
     type AsbBackupEnvelope,
     type AsbBackupPayload,
 } from '../models'
+
+// Defence-in-depth cap on the encrypted payload before decode/decrypt/parse.
+// The decrypted plaintext is never larger than the ciphertext, so this also
+// bounds the downstream JSON.parse. Generous relative to any real backup.
+const MAX_ASB_CIPHERTEXT_BYTES = 5 * 1024 * 1024
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -105,7 +110,11 @@ export const decryptBackupPayload = (
 
         let ciphertext: Uint8Array
         try {
-            ciphertext = decodeFromBase64(envelope.ciphertext)
+            ciphertext = decodeBoundedBase64(
+                envelope.ciphertext,
+                MAX_ASB_CIPHERTEXT_BYTES,
+                'asb ciphertext',
+            )
         } catch {
             throw new AsbImportError(AsbErrorReason.MalformedEnvelope)
         }

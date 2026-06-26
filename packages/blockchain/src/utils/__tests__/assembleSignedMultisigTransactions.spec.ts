@@ -288,6 +288,22 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
+    test('rejects an oversized raw transaction (defence-in-depth byte cap)', () => {
+        const result = assembleSignedMultisigTransactions({
+            // ~128 KB of base64 → ~96 KB decoded, over the 64 KB cap.
+            rawTransactionsBase64: ['A'.repeat(128 * 1024)],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 1,
+            responses: [buildResponse(ADDR_1, 'signed', [SIG_1])],
+        })
+
+        expect(result.kind).toBe('error')
+        if (result.kind === 'error') {
+            expect(result.reason).toMatch(/invalid base64 raw transaction/i)
+        }
+    })
+
     test('produces empty list for empty input', () => {
         const result = assembleSignedMultisigTransactions({
             rawTransactionsBase64: [],

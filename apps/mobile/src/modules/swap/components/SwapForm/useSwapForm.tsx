@@ -11,7 +11,6 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { Keyboard } from 'react-native'
 import { type Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
@@ -20,34 +19,27 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
-    baseUnitsToDisplayUnits,
-    displayUnitsToBaseUnits,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    percentToApiSlippage,
     useCalculateSwapAmountMutation,
-    useCreateQuotesMutation,
     usePrefetchProviders,
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
-import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     ALGO_ASSET_NAME,
     isAlgoAssetName,
     isDecimalEqual,
     uint64IdToNumber,
-    useDebouncedValue,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { pickBestByAmountOut } from '../../hooks/swapQuoteHelpers'
+import { useSwapQuotes } from '../../hooks/useSwapQuotes'
 import { SwapAssetSelectionContent } from '../SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '../SwapConfigurationContent'
 import {
@@ -81,8 +73,6 @@ type UseSwapFormResult = {
     handleOpenConfirm: () => void
 }
 
-const QUOTE_DEBOUNCE_MS = 500
-
 export const useSwapForm = (): UseSwapFormResult => {
     const {
         fromAsset,
@@ -92,18 +82,14 @@ export const useSwapForm = (): UseSwapFormResult => {
         setToAsset,
         setSlippage,
     } = useSwaps()
-    const { network } = useNetwork()
     const { preferredCurrency, setPreferredCurrency, fallbackCurrency } =
         useCurrency()
     const [payAmount, setPayAmount] = useState<Nullable<Decimal>>(null)
     const [receiveAmount, setReceiveAmount] = useState<Nullable<Decimal>>(null)
-    const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
-    const [quotedAmount, setQuotedAmount] = useState<Nullable<Decimal>>(null)
     const [selectedProviderName, setSelectedProviderName] =
         useState<Nullable<string>>(null)
     const { request: requestBottomSheet } = useBottomSheet()
     const selectedAccount = useSelectedAccount()
-    const deviceId = useDeviceID(network)
     const prefetchProviders = usePrefetchProviders()
 
     useEffect(() => {
@@ -114,15 +100,6 @@ export const useSwapForm = (): UseSwapFormResult => {
         useCalculateSwapAmountMutation()
     const calculateSwapAmountRef = useRef(calculateSwapAmount)
     calculateSwapAmountRef.current = calculateSwapAmount
-
-    const {
-        mutateAsync: createQuotes,
-        isPending: isQuoteLoading,
-        isError: isQuoteError,
-        reset: resetQuoteMutation,
-    } = useCreateQuotesMutation()
-    const createQuotesRef = useRef(createQuotes)
-    createQuotesRef.current = createQuotes
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
@@ -141,86 +118,20 @@ export const useSwapForm = (): UseSwapFormResult => {
         toAsset,
     )
 
-    const debouncedPayAmount = useDebouncedValue(
+    const {
+        allQuotes,
+        quotedAmount,
+        isQuoteFetching,
+        isQuoteError,
+        reset: resetQuotes,
+    } = useSwapQuotes({
+        swapperAddress: selectedAccount?.address ?? null,
+        fromAssetId: fromAsset,
+        toAssetId: toAsset,
         payAmount,
-        QUOTE_DEBOUNCE_MS,
-        isDecimalEqual,
-    )
-
-    const isDebouncing = !isDecimalEqual(payAmount, debouncedPayAmount)
-    const hasUnresolvedQuote =
-        payAmount !== null &&
-        !payAmount.isZero() &&
-        !payAmount.isNeg() &&
-        !isDecimalEqual(payAmount, quotedAmount) &&
-        !isQuoteError
-    const isQuoteFetching = isQuoteLoading || isDebouncing || hasUnresolvedQuote
-
-    const payAssetDecimals = payAsset?.decimals
-
-    useEffect(() => {
-        if (
-            !selectedAccount ||
-            !debouncedPayAmount ||
-            debouncedPayAmount.isZero() ||
-            debouncedPayAmount.isNeg() ||
-            payAssetDecimals === undefined
-        ) {
-            setAllQuotes([])
-            setQuotedAmount(null)
-            return
-        }
-
-        const amountInBaseUnits = displayUnitsToBaseUnits(
-            debouncedPayAmount,
-            payAssetDecimals,
-        )
-
-        let cancelled = false
-
-        const fetchQuotes = async () => {
-            try {
-                const result = await createQuotesRef.current({
-                    swapper_address: selectedAccount.address,
-                    swap_type: 'fixed-input',
-                    // uint64IdToNumber (not Number()): throws on ids above
-                    // 2^53 - 1 instead of silently quoting a different asset.
-                    asset_in_id: uint64IdToNumber(fromAsset),
-                    asset_out_id: uint64IdToNumber(toAsset),
-                    amount: amountInBaseUnits.toFixed(0),
-                    slippage:
-                        slippage !== null
-                            ? percentToApiSlippage(slippage)
-                            : undefined,
-                    device: deviceId ?? null,
-                })
-
-                if (cancelled) return
-
-                setAllQuotes(result)
-                setQuotedAmount(debouncedPayAmount)
-                Keyboard.dismiss()
-            } catch {
-                if (cancelled) return
-                setAllQuotes([])
-                setQuotedAmount(null)
-            }
-        }
-
-        void fetchQuotes()
-
-        return () => {
-            cancelled = true
-        }
-    }, [
-        debouncedPayAmount,
+        payDecimals: payAsset?.decimals ?? null,
         slippage,
-        selectedAccount,
-        deviceId,
-        fromAsset,
-        toAsset,
-        payAssetDecimals,
-    ])
+    })
 
     const bestQuote = useMemo(() => pickBestByAmountOut(allQuotes), [allQuotes])
 
@@ -275,12 +186,11 @@ export const useSwapForm = (): UseSwapFormResult => {
         (amount: Nullable<Decimal>) => {
             setPayAmount(amount)
             if (!isDecimalEqual(amount, quotedAmount)) {
-                setAllQuotes([])
-                setQuotedAmount(null)
+                resetQuotes()
                 setReceiveAmount(null)
             }
         },
-        [quotedAmount],
+        [quotedAmount, resetQuotes],
     )
 
     const handleSwapDirection = useCallback(() => {
@@ -288,9 +198,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         setToAsset(fromAsset)
         setPayAmount(receiveAmount)
         setReceiveAmount(payAmount)
-        setAllQuotes([])
         setSelectedProviderName(null)
-        resetQuoteMutation()
+        resetQuotes()
     }, [
         fromAsset,
         toAsset,
@@ -298,7 +207,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         receiveAmount,
         setFromAsset,
         setToAsset,
-        resetQuoteMutation,
+        resetQuotes,
     ])
 
     const applyPercentageAmount = useCallback(
@@ -351,17 +260,9 @@ export const useSwapForm = (): UseSwapFormResult => {
         if (!assetId) return
         setFromAsset(assetId)
         setReceiveAmount(null)
-        setAllQuotes([])
-        setQuotedAmount(null)
         setSelectedProviderName(null)
-        resetQuoteMutation()
-    }, [
-        requestBottomSheet,
-        toAsset,
-        setFromAsset,
-        fromAsset,
-        resetQuoteMutation,
-    ])
+        resetQuotes()
+    }, [requestBottomSheet, toAsset, setFromAsset, fromAsset, resetQuotes])
 
     const handleOpenReceiveAssetSelection = useCallback(async () => {
         trackEvent(SwapEvent.SelectToToken, {
@@ -384,11 +285,9 @@ export const useSwapForm = (): UseSwapFormResult => {
         if (!assetId) return
         setToAsset(assetId)
         setReceiveAmount(null)
-        setAllQuotes([])
-        setQuotedAmount(null)
         setSelectedProviderName(null)
-        resetQuoteMutation()
-    }, [requestBottomSheet, fromAsset, setToAsset, toAsset, resetQuoteMutation])
+        resetQuotes()
+    }, [requestBottomSheet, fromAsset, setToAsset, toAsset, resetQuotes])
 
     const handleOpenProvider = useCallback(async () => {
         trackEvent(SwapEvent.SelectProviderOpen, {
@@ -467,9 +366,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         )
         setPayAmount(null)
         setReceiveAmount(null)
-        setAllQuotes([])
         setSelectedProviderName(null)
-        resetQuoteMutation()
+        resetQuotes()
     }, [
         selectedQuote,
         requestBottomSheet,
@@ -477,7 +375,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         successToast,
         errorToast,
         t,
-        resetQuoteMutation,
+        resetQuotes,
     ])
 
     const handleOpenConfig = useCallback(async () => {

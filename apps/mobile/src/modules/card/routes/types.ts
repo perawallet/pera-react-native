@@ -18,4 +18,6 @@ export type PeraCardStackParamList = {
     CardSignIn: undefined
     CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
     PeraCardAccount: undefined
+    CardAddFunds: undefined
+    CardConfirmSwap: { sourceAssetId: string; amount: string }
 }

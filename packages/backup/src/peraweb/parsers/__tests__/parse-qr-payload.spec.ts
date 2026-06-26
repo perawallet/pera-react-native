@@ -69,6 +69,18 @@ describe('parsePeraWebQrPayload', () => {
         }
     })
 
+    it('rejects an oversized QR string before parsing (defence-in-depth)', () => {
+        try {
+            parsePeraWebQrPayload('A'.repeat(8 * 1024 + 1))
+            throw new Error('expected throw')
+        } catch (e) {
+            expect(e).toBeInstanceOf(PeraWebImportError)
+            expect((e as PeraWebImportError).reason).toBe(
+                PeraWebImportErrorReason.MalformedQr,
+            )
+        }
+    })
+
     it('rejects payloads missing backupId', () => {
         const qr = JSON.stringify({
             encryptionKey: encodeToBase64(KEY_BYTES),

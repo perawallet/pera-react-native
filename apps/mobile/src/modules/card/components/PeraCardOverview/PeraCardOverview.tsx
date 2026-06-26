@@ -11,6 +11,7 @@
  */
 
 import { PWScrollView } from '@components/core'
+import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardBalanceSection } from './PeraCardBalanceSection'
 import { PeraCardActionButtons } from './PeraCardActionButtons'
 import { PeraCardCreditsSection } from './PeraCardCreditsSection'
@@ -37,6 +38,8 @@ export const PeraCardOverview = () => {
 
     return (
         <PWScrollView contentContainerStyle={styles.content}>
+            <CardFrozenBanner />
+
             <PeraCardBalanceSection
                 balance={balance}
                 currency={currency}

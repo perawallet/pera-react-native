@@ -1,6 +1,7 @@
 {
   "name": "mobile",
   "version": "7.0.0-alpha",
+  "versionCodeBase": 10000,
   "private": true,
   "main": "index.js",
   "scripts": {
@@ -10,6 +11,9 @@
     "ios:device": "expo run:ios --device",
     "expo:prebuild": "expo prebuild --no-install && node scripts/fix-development-team.js && npx pod-install ios",
     "expo:prebuild:clean": "expo prebuild --clean --no-install && node scripts/fix-development-team.js && npx pod-install ios",
+    "verify:ios-identity": "node scripts/verify-ios-identity.mjs",
+    "verify:android-identity": "node scripts/verify-android-identity.mjs",
+    "generate:production-icons": "node scripts/generate-production-icons.mjs",
     "ios:fix-development-team": "node scripts/fix-development-team.js",
     "lint": "oxlint --config .oxlintrc.json .",
     "test": "bash ../../tools/rebuild-native.sh && vitest run",

@@ -60,6 +60,9 @@ export const PaymentSummaryHeader = ({
                     value={microAlgosToAlgos(
                         transaction.paymentTransaction?.amount ?? 0n,
                     )}
+                    // The signer authorizes an outgoing payment, so the amount
+                    // leaves their account.
+                    sign='-'
                     showSymbol
                     variant='h1'
                     style={styles.amountValue}

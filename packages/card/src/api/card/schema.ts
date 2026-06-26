@@ -16,8 +16,11 @@ import { z } from 'zod'
 // known enum members by the transformer so a new Baanx value never throws.
 export const cardStatusResponseSchema = z.object({
     id: z.string(),
-    holderName: z.string(),
-    expiryDate: z.string(),
+    // Not part of the /v1/card/status payload — optional so the response still
+    // validates without them (a missing required field would fail the whole
+    // parse and drop the card status, hiding the frozen state).
+    holderName: z.string().optional(),
+    expiryDate: z.string().optional(),
     panLast4: z.string(),
     status: z.string(),
     type: z.string(),

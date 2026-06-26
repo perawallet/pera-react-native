@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
+import { useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     DEFAULT_CARD_CURRENCY,
     FundingType,
@@ -19,6 +21,7 @@ import {
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
 import { useCardComingSoonToast } from '../../hooks'
+import { type PeraCardStackParamList } from '../../routes/types'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -45,6 +48,8 @@ type UsePeraCardOverviewResult = {
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
+    const navigation =
+        useNavigation<NativeStackNavigationProp<PeraCardStackParamList>>()
     const selectedFundingType = useCardStore(state => state.selectedFundingType)
     const { transactions, isLoading } = useCardTransactionsQuery()
 
@@ -62,6 +67,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
 
     const showComingSoon = useCardComingSoonToast()
 
+    const onAddFunds = useCallback(() => {
+        navigation.navigate('CardAddFunds')
+    }, [navigation])
+
     return {
         isAutoFunding: selectedFundingType === FundingType.Auto,
         currency: DEFAULT_CARD_CURRENCY,
@@ -71,7 +80,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         isLoadingTransactions: isLoading,
         onFundingPress: showComingSoon,
         onWithdraw: showComingSoon,
-        onAddFunds: showComingSoon,
+        onAddFunds,
         onGetUsdc: showComingSoon,
         onShowAllTransactions: showComingSoon,
         onCreditPress: showComingSoon,

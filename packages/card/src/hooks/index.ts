@@ -20,6 +20,7 @@ export * from './useCardStatusQuery'
 export * from './useOrderCardMutation'
 export * from './useFreezeCardMutation'
 export * from './useUnfreezeCardMutation'
+export * from './useIsCardUnfreezing'
 
 // User / profile
 export * from './useCardUserQuery'
@@ -32,6 +33,9 @@ export * from './useSetCardPinMutation'
 // Transactions
 export * from './useCardTransactionsQuery'
 export * from './useExportCardStatementMutation'
+
+// Funding (deposit / top-up)
+export * from './useDepositToCardMutation'
 
 // Onboarding / KYC
 export * from './useSendEmailVerificationMutation'

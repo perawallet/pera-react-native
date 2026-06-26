@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
 import { AsbImportError, AsbErrorReason } from '../errors'
 import {
     ASB_BACKUP_CIPHER_SUITE,
@@ -22,6 +22,13 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const isString = (value: unknown): value is string => typeof value === 'string'
+
+// Defence-in-depth cap on an imported ASB backup file before we base64-decode
+// and JSON-parse it. A real backup is well under this even with thousands of
+// accounts; the bound exists to reject a hostile/corrupt blob before it forces
+// an oversized allocation. Oversize maps to NotBase64 (the existing
+// decode-failure reason) so no new locale copy is required.
+const MAX_ASB_BACKUP_FILE_BYTES = 5 * 1024 * 1024
 
 /**
  * Parse the on-disk backup file (base64 of an ARC-35 envelope JSON) into a
@@ -40,7 +47,11 @@ export const parseBackupEnvelope = (raw: string): AsbBackupEnvelope => {
 
     let outerBytes: Uint8Array
     try {
-        outerBytes = decodeFromBase64(trimmed)
+        outerBytes = decodeBoundedBase64(
+            trimmed,
+            MAX_ASB_BACKUP_FILE_BYTES,
+            'asb backup file',
+        )
     } catch {
         throw new AsbImportError(AsbErrorReason.NotBase64)
     }

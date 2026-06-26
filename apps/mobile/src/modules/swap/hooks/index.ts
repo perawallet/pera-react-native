@@ -16,3 +16,4 @@ export type {
     SwapExecutionStatus,
     SwapExecutionError,
 } from './useSwapExecution'
+export { useSwapQuotes } from './useSwapQuotes'

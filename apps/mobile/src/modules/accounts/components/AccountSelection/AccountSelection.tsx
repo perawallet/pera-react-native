@@ -15,6 +15,7 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { hasCardSession } from '@perawallet/wallet-core-card'
 import { useStyles } from './styles'
 import {
     AccountMenuContent,
@@ -116,7 +117,11 @@ export const AccountSelection = ({
                 return
             }
             case 'pera-card-open': {
-                navigation.navigate('PeraCard', { screen: 'PeraCardAccount' })
+                // The connected row shows off the persisted auth flag, which can
+                // outlive the real session — require a live token, else log in.
+                navigation.navigate('PeraCard', {
+                    screen: hasCardSession() ? 'PeraCardAccount' : 'CardSignIn',
+                })
                 return
             }
             case 'sort': {

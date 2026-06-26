@@ -130,6 +130,11 @@ vi.mock('@perawallet/wallet-core-card', () => ({
     useCardSession: () => mockUseCardSession(),
 }))
 
+const mockPeraCardFlag = vi.hoisted(() => ({ enabled: true }))
+vi.mock('@hooks/useIsPeraCardEnabled', () => ({
+    useIsPeraCardEnabled: () => mockPeraCardFlag.enabled,
+}))
+
 const HD_ACCOUNT = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
@@ -148,6 +153,7 @@ describe('useAddAccountScreen', () => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
         mockUseCardSession.mockReturnValue({ isAuthenticated: false })
+        mockPeraCardFlag.enabled = true
     })
 
     it('mainOptions excludes add account option when no HD wallet exists', () => {
@@ -341,6 +347,18 @@ describe('useAddAccountScreen', () => {
 
     it('mainOptions excludes pera card option when the user has an authenticated card session', () => {
         mockUseCardSession.mockReturnValue({ isAuthenticated: true })
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.mainOptions.find(
+                o => o.testID === 'add_account_pera_card_button',
+            ),
+        ).toBeUndefined()
+    })
+
+    it('mainOptions excludes pera card option when the feature flag is disabled', () => {
+        mockPeraCardFlag.enabled = false
 
         const { result } = renderHook(() => useAddAccountScreen())
 

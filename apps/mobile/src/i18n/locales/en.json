@@ -724,11 +724,42 @@
             "set_pin": "Set PIN",
             "freeze_card": "Freeze Card",
             "unfreeze_card": "Unfreeze Card",
+            "frozen_banner_title": "Card Frozen",
+            "frozen_banner_body": "Your card is frozen. Unfreeze it anytime to continue spending.",
+            "reactivate_card": "Reactivate Card",
+            "freeze_sheet_title": "Freeze Card",
+            "freeze_sheet_body": "Freeze your card if it's misplaced or you want to temporarily prevent new transactions. You can unfreeze it instantly whenever you're ready to use it again.",
+            "freeze_sheet_confirm": "Freeze Card",
             "report_lost_stolen": "Report Lost/Stolen Card",
             "report_suspicious": "Report Suspicious Activity",
             "cancel_card": "Cancel Card",
             "error_title": "Something went wrong",
             "error_body": "Please try again."
+        },
+        "add_funds": {
+            "navigation_title": "Add Funds",
+            "subtitle": "Add USDC or swap assets to USDC in your linked Pera account to add more funds.",
+            "fund_address": "Fund address",
+            "amount": "Amount",
+            "balance": "Balance: {{amount}}",
+            "deposit": "Deposit",
+            "select_asset": "Select asset",
+            "select_asset_search": "Search by name or ID",
+            "select_asset_empty_title": "No matching assets",
+            "select_asset_empty_body": "No assets matched your search term",
+            "swap_success_title": "Swap complete",
+            "swap_success_body": "Your assets were swapped to USDC.",
+            "swap_error_title": "Swap failed"
+        },
+        "confirm_swap": {
+            "navigation_title": "Confirm Swap",
+            "price": "Price",
+            "slippage": "Slippage Tolerance",
+            "price_impact": "Price Impact",
+            "minimum_received": "Minimum Received",
+            "exchange_fee": "Exchange Fee",
+            "pera_fee": "Pera Fee",
+            "confirm": "Confirm"
         },
         "account_details": {
             "title": "Account Details",
@@ -1956,6 +1987,11 @@
     },
     "signing": {
         "view_details": "View Transaction Details",
+        "balance_impact": {
+            "receive_title": "You will receive",
+            "spend_title": "You will spend",
+            "analyzing": "Analyzing transaction…"
+        },
         "arbitrary_data_view": {
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",

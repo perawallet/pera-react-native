@@ -30,8 +30,7 @@
  * `expo:prebuild*` npm scripts run `expo prebuild --no-install`, then this, then
  * `pod install`.
  *
- * Defaults to an empty team (`""`) so a clean prebuild works with NO
- * `APPLE_TEAM_ID` (CI-safe); honors `APPLE_TEAM_ID` when set.
+ * Resolves the team from IOS_TEAM_ID (fallback APPLE_TEAM_ID), defaulting to an empty team ("") so a clean prebuild works with no team set (CI-safe).
  *
  * DELETE alongside `plugins/withPasskeyAutofillFixes.js` once the upstream
  * package ships a quoted DEVELOPMENT_TEAM.
@@ -41,6 +40,31 @@ const fs = require('fs')
 const path = require('path')
 
 const iosRoot = path.join(__dirname, '..', 'ios')
+
+/**
+ * Resolve the Apple Developer Team ID from the environment. Prefers
+ * IOS_TEAM_ID (the project-wide secret used by app.config.js, the Fastfile
+ * and CI); falls back to the legacy APPLE_TEAM_ID, then an empty team so a
+ * clean prebuild still works with no team set.
+ *
+ * @param {Record<string, string | undefined>} env
+ * @returns {string}
+ */
+const resolveTeamId = env => env.IOS_TEAM_ID || env.APPLE_TEAM_ID || ''
+
+/**
+ * Quote any unquoted `$(DEVELOPMENT_TEAM)` placeholder to the given team id so
+ * the pbxproj parses (parens in an unquoted value break CocoaPods).
+ *
+ * @param {string} contents
+ * @param {string} teamId
+ * @returns {string}
+ */
+const sanitizeDevelopmentTeam = (contents, teamId) =>
+    contents.replace(
+        /DEVELOPMENT_TEAM\s*=\s*"?\$\(DEVELOPMENT_TEAM\)"?\s*;/g,
+        `DEVELOPMENT_TEAM = "${teamId}";`,
+    )
 
 const main = () => {
     if (!fs.existsSync(iosRoot)) {
@@ -56,7 +80,7 @@ const main = () => {
     }
     const pbxPath = path.join(iosRoot, xcodeprojDir, 'project.pbxproj')
 
-    const teamId = process.env.APPLE_TEAM_ID || ''
+    const teamId = resolveTeamId(process.env)
     let contents
     try {
         contents = fs.readFileSync(pbxPath, 'utf8')
@@ -67,10 +91,7 @@ const main = () => {
         }
         throw err
     }
-    const sanitized = contents.replace(
-        /DEVELOPMENT_TEAM\s*=\s*"?\$\(DEVELOPMENT_TEAM\)"?\s*;/g,
-        `DEVELOPMENT_TEAM = "${teamId}";`,
-    )
+    const sanitized = sanitizeDevelopmentTeam(contents, teamId)
     if (sanitized === contents) {
         console.log('[fix-development-team] nothing to sanitize')
         return
@@ -81,4 +102,9 @@ const main = () => {
     )
 }
 
-main()
+module.exports = { resolveTeamId, sanitizeDevelopmentTeam }
+
+// Run only when invoked directly (the expo:prebuild scripts), not on import.
+if (require.main === module) {
+    main()
+}

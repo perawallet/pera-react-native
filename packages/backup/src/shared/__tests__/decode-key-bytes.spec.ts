@@ -44,6 +44,11 @@ describe('decodePrivateKeyBytes — base64', () => {
         const csv = Array.from({ length: 32 }, () => '1').join(',')
         expect(decodePrivateKeyBytes(csv)).toBeNull()
     })
+
+    it('returns null for an oversized string before attempting to decode', () => {
+        // Well beyond any valid key encoding — rejected by the length guard.
+        expect(decodePrivateKeyBytes('A'.repeat(513))).toBeNull()
+    })
 })
 
 describe('decodePrivateKeyBytes — legacy comma-separated', () => {

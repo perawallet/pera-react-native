@@ -59,6 +59,9 @@ export const AssetTransferSummaryHeader = ({
                     <AssetAmount
                         asset={asset}
                         value={amount}
+                        // The signer authorizes an outgoing transfer, so the
+                        // amount leaves their account.
+                        sign='-'
                         showSymbol
                         variant='h1'
                         style={styles.amountValue}

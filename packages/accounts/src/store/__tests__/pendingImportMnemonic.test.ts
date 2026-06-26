@@ -18,7 +18,10 @@ import {
     usePendingImportMnemonicStore,
 } from '../pendingImportMnemonic'
 
-const MNEMONIC = new Array(24).fill('word').join(' ')
+// Every token is a real wordlist word, so this takes the indexed path.
+const VALID_MNEMONIC = new Array(24).fill('word').join(' ')
+// Contains a non-wordlist token, so this falls back to raw UTF-8 bytes.
+const RAW_MNEMONIC = 'notaword abandon ability'
 
 describe('pendingImportMnemonic store', () => {
     beforeEach(() => {
@@ -26,45 +29,105 @@ describe('pendingImportMnemonic store', () => {
     })
 
     it('starts empty', () => {
-        expect(
-            usePendingImportMnemonicStore.getState().pendingMnemonicBytes,
-        ).toBeNull()
+        const state = usePendingImportMnemonicStore.getState()
+        expect(state.pendingIndices).toBeNull()
+        expect(state.pendingRawBytes).toBeNull()
     })
 
-    it('set stores the mnemonic as UTF-8 bytes', () => {
-        setPendingImportMnemonic(MNEMONIC)
+    it('set stores a valid phrase as wordlist indices, not raw bytes', () => {
+        setPendingImportMnemonic(VALID_MNEMONIC)
 
-        const bytes =
-            usePendingImportMnemonicStore.getState().pendingMnemonicBytes
-        // `instanceof Uint8Array` is unreliable here — TextEncoder may return a
-        // Uint8Array from a different realm than the test global — so assert on
-        // the byte-view-ness and the decoded contents instead.
-        expect(ArrayBuffer.isView(bytes!)).toBe(true)
-        expect(new TextDecoder().decode(bytes!)).toBe(MNEMONIC)
+        const state = usePendingImportMnemonicStore.getState()
+        expect(state.pendingRawBytes).toBeNull()
+        expect(ArrayBuffer.isView(state.pendingIndices!)).toBe(true)
+        // Indices are 16-bit: 24 words → 48 bytes, far less than the UTF-8 phrase.
+        expect(state.pendingIndices!.length).toBe(24)
     })
 
-    it('consume returns the mnemonic and clears the store in the same call', () => {
-        setPendingImportMnemonic(MNEMONIC)
+    it('retains no readable dictionary words for an indexed phrase', () => {
+        setPendingImportMnemonic(VALID_MNEMONIC)
 
-        const consumed = consumePendingImportMnemonic()
-
-        expect(consumed).toBe(MNEMONIC)
-        // Cleared immediately so the secret does not linger in the store.
-        expect(
-            usePendingImportMnemonicStore.getState().pendingMnemonicBytes,
-        ).toBeNull()
+        const indices = usePendingImportMnemonicStore.getState().pendingIndices!
+        const asBytes = new Uint8Array(
+            indices.buffer,
+            indices.byteOffset,
+            indices.byteLength,
+        )
+        expect(new TextDecoder().decode(asBytes)).not.toContain('word')
     })
 
-    it('consume zeroes the buffer the store held (not just drops the reference)', () => {
-        setPendingImportMnemonic(MNEMONIC)
-        // Hold a reference to the very buffer the store retains.
+    it('set falls back to UTF-8 bytes when a token is not a wordlist word', () => {
+        setPendingImportMnemonic(RAW_MNEMONIC)
+
+        const state = usePendingImportMnemonicStore.getState()
+        expect(state.pendingIndices).toBeNull()
+        expect(ArrayBuffer.isView(state.pendingRawBytes!)).toBe(true)
+        expect(new TextDecoder().decode(state.pendingRawBytes!)).toBe(
+            RAW_MNEMONIC,
+        )
+    })
+
+    it('consume round-trips an indexed phrase and clears the store', () => {
+        setPendingImportMnemonic(VALID_MNEMONIC)
+
+        expect(consumePendingImportMnemonic()).toBe(VALID_MNEMONIC)
+
+        const state = usePendingImportMnemonicStore.getState()
+        expect(state.pendingIndices).toBeNull()
+        expect(state.pendingRawBytes).toBeNull()
+    })
+
+    it('consume round-trips a raw-fallback phrase and clears the store', () => {
+        setPendingImportMnemonic(RAW_MNEMONIC)
+
+        expect(consumePendingImportMnemonic()).toBe(RAW_MNEMONIC)
+
+        const state = usePendingImportMnemonicStore.getState()
+        expect(state.pendingIndices).toBeNull()
+        expect(state.pendingRawBytes).toBeNull()
+    })
+
+    it('consume zeroes the indexed buffer the store held', () => {
+        setPendingImportMnemonic(VALID_MNEMONIC)
         const retained =
-            usePendingImportMnemonicStore.getState().pendingMnemonicBytes!
+            usePendingImportMnemonicStore.getState().pendingIndices!
 
         consumePendingImportMnemonic()
 
-        // The decoded value was handed back, but the retained bytes are wiped.
-        expect(retained.every(b => b === 0)).toBe(true)
+        expect(retained.every(value => value === 0)).toBe(true)
+    })
+
+    it('consume zeroes the raw buffer the store held', () => {
+        setPendingImportMnemonic(RAW_MNEMONIC)
+        const retained =
+            usePendingImportMnemonicStore.getState().pendingRawBytes!
+
+        consumePendingImportMnemonic()
+
+        expect(retained.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('set zeroes the previously-held buffer before overwriting it', () => {
+        setPendingImportMnemonic(VALID_MNEMONIC)
+        const retained =
+            usePendingImportMnemonicStore.getState().pendingIndices!
+
+        setPendingImportMnemonic(VALID_MNEMONIC)
+
+        expect(retained.every(value => value === 0)).toBe(true)
+    })
+
+    it('set zeroes the previous buffer when switching indexed → raw', () => {
+        setPendingImportMnemonic(VALID_MNEMONIC)
+        const retained =
+            usePendingImportMnemonicStore.getState().pendingIndices!
+
+        setPendingImportMnemonic(RAW_MNEMONIC)
+
+        expect(retained.every(value => value === 0)).toBe(true)
+        expect(
+            usePendingImportMnemonicStore.getState().pendingIndices,
+        ).toBeNull()
     })
 
     it('consume returns null and stays cleared when nothing is pending', () => {
@@ -72,16 +135,16 @@ describe('pendingImportMnemonic store', () => {
         expect(consumePendingImportMnemonic()).toBeNull()
     })
 
-    it('clear zeroes and removes a pending mnemonic without returning it', () => {
-        setPendingImportMnemonic(MNEMONIC)
+    it('clear zeroes and removes a pending phrase without returning it', () => {
+        setPendingImportMnemonic(VALID_MNEMONIC)
         const retained =
-            usePendingImportMnemonicStore.getState().pendingMnemonicBytes!
+            usePendingImportMnemonicStore.getState().pendingIndices!
 
         clearPendingImportMnemonic()
 
-        expect(retained.every(b => b === 0)).toBe(true)
+        expect(retained.every(value => value === 0)).toBe(true)
         expect(
-            usePendingImportMnemonicStore.getState().pendingMnemonicBytes,
+            usePendingImportMnemonicStore.getState().pendingIndices,
         ).toBeNull()
     })
 })

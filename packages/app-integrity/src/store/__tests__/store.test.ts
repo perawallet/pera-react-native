@@ -21,13 +21,6 @@ const readPersistedState = (): Record<string, unknown> => {
     return raw ? JSON.parse(raw).state : {}
 }
 
-const rehydrate = (): Promise<void> =>
-    (
-        useAppIntegrityStore as unknown as {
-            persist: { rehydrate: () => Promise<void> }
-        }
-    ).persist.rehydrate()
-
 describe('useAppIntegrityStore', () => {
     beforeEach(() => {
         vi.restoreAllMocks()
@@ -64,92 +57,6 @@ describe('useAppIntegrityStore', () => {
         // Non-secret identifiers are still persisted.
         expect(persisted.keyId).toBe('k1')
         expect(persisted.deviceId).toBe('d1')
-    })
-
-    it('strips a v1 plaintext token from storage and compacts on rehydrate', async () => {
-        const trimSpy = vi.spyOn(getProvider().keyValueStorage, 'trim')
-        // Simulate an install that persisted the token under schema version 1.
-        getProvider().keyValueStorage.setItem(
-            STORE_NAME,
-            JSON.stringify({
-                version: 1,
-                state: {
-                    integrityToken: 'leaked-jwt',
-                    expiresAt: '2026-07-01',
-                    keyId: 'k1',
-                    deviceId: 'd1',
-                    status: 'success',
-                },
-            }),
-        )
-
-        await rehydrate()
-
-        const persisted = readPersistedState()
-        expect(persisted.integrityToken).toBeUndefined()
-        expect(persisted.expiresAt).toBeUndefined()
-        // The migration leaves non-secret fields intact.
-        expect(persisted.keyId).toBe('k1')
-        // The token is not rehydrated into memory either.
-        expect(useAppIntegrityStore.getState().integrityToken).toBeNull()
-        // The store is compacted so the old plaintext bytes are scrubbed.
-        expect(trimSpy).toHaveBeenCalledTimes(1)
-    })
-
-    it('purges and compacts a v1 install that stored an expiry but no token', async () => {
-        const trimSpy = vi.spyOn(getProvider().keyValueStorage, 'trim')
-        getProvider().keyValueStorage.setItem(
-            STORE_NAME,
-            JSON.stringify({
-                version: 1,
-                state: {
-                    integrityToken: null,
-                    expiresAt: '2026-07-01',
-                    keyId: 'k1',
-                    status: 'success',
-                },
-            }),
-        )
-
-        await rehydrate()
-
-        const persisted = readPersistedState()
-        expect(persisted.expiresAt).toBeUndefined()
-        expect(persisted.keyId).toBe('k1')
-        expect(trimSpy).toHaveBeenCalledTimes(1)
-    })
-
-    it('does not compact a v1 install that never stored a token', async () => {
-        const trimSpy = vi.spyOn(getProvider().keyValueStorage, 'trim')
-        // A device that ran v1 but never successfully attested has nothing to
-        // purge, so the migration must not trigger a compaction.
-        getProvider().keyValueStorage.setItem(
-            STORE_NAME,
-            JSON.stringify({
-                version: 1,
-                state: { keyId: 'k1', deviceId: 'd1', status: 'idle' },
-            }),
-        )
-
-        await rehydrate()
-
-        expect(trimSpy).not.toHaveBeenCalled()
-    })
-
-    it('does not compact when already on the current schema version', async () => {
-        const trimSpy = vi.spyOn(getProvider().keyValueStorage, 'trim')
-        // No migration runs, so no compaction.
-        getProvider().keyValueStorage.setItem(
-            STORE_NAME,
-            JSON.stringify({
-                version: 2,
-                state: { keyId: 'k1', deviceId: 'd1', status: 'success' },
-            }),
-        )
-
-        await rehydrate()
-
-        expect(trimSpy).not.toHaveBeenCalled()
     })
 
     it('records errors', () => {

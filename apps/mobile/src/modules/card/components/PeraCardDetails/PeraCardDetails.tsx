@@ -11,6 +11,7 @@
  */
 
 import { PWScrollView, PWView } from '@components/core'
+import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardVisual } from './PeraCardVisual'
 import { RevealCardDetailsButton } from './RevealCardDetailsButton'
 import { CardFundingAccountSection } from './CardFundingAccountSection'
@@ -45,6 +46,8 @@ export const PeraCardDetails = () => {
 
     return (
         <PWScrollView contentContainerStyle={styles.content}>
+            <CardFrozenBanner />
+
             <PWView style={styles.cardBlock}>
                 <PeraCardVisual
                     maskedPan={maskedPan}

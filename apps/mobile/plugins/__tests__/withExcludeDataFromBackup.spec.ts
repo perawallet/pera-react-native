@@ -11,7 +11,10 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { injectBackupExclusion } from '../withExcludeDataFromBackup'
+import {
+    injectBackupExclusion,
+    setAndroidBackupAttributes,
+} from '../withExcludeDataFromBackup'
 
 const CALL = 'excludePeraDataFromBackupIfNeeded()'
 
@@ -75,6 +78,31 @@ describe('injectBackupExclusion', () => {
 
         expect(() => injectBackupExclusion(noLaunch)).toThrow(
             /could not find the didFinishLaunchingWithOptions anchor/,
+        )
+    })
+})
+
+describe('setAndroidBackupAttributes', () => {
+    const manifestWithApp = () => ({
+        manifest: {
+            application: [{ $: { 'android:name': '.MainApplication' } }],
+        },
+    })
+
+    it('wires allowBackup=false and the exclude-all rule resources', () => {
+        const result = setAndroidBackupAttributes(manifestWithApp())
+        const app = result.manifest.application[0].$
+
+        expect(app['android:allowBackup']).toBe('false')
+        expect(app['android:dataExtractionRules']).toBe(
+            '@xml/pera_data_extraction_rules',
+        )
+        expect(app['android:fullBackupContent']).toBe('@xml/pera_backup_rules')
+    })
+
+    it('throws loudly if the <application> node is missing', () => {
+        expect(() => setAndroidBackupAttributes({ manifest: {} })).toThrow(
+            /no <application>/,
         )
     })
 })

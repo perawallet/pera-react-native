@@ -27,9 +27,10 @@ export type CardType = (typeof CardType)[keyof typeof CardType]
 /** Non-sensitive card summary from GET /v1/card/status. */
 export type Card = {
     id: string
-    holderName: string
-    /** Display value, e.g. "2027/05". Non-sensitive. */
-    expiryDate: string
+    /** Optional — not returned by GET /v1/card/status. */
+    holderName?: string
+    /** Display value, e.g. "2027/05". Optional — not in the status payload. */
+    expiryDate?: string
     /** Last 4 PAN digits — the only PAN data safe to retain. */
     panLast4: string
     status: CardStatus

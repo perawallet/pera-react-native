@@ -25,6 +25,7 @@ import { parseCoinbaseFormat } from './coinbase-parser'
 import {
     ALGO_SCHEME,
     ALGORAND_SCHEME,
+    ALGORAND_WC_SCHEME,
     FIDO_SCHEME,
     LIQUID_SCHEME,
     PERAWALLET_SCHEME,
@@ -189,7 +190,8 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
 
     if (
         normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)
+        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
+        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
     ) {
         return parseWalletConnectUri(url)
     }

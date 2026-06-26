@@ -12,6 +12,7 @@
 
 import {
     commitSecret,
+    hasSecret,
     removeSecret,
     withSecret,
     zeroBytes,
@@ -53,6 +54,13 @@ export const setCardSession = async (
     }
     useCardSessionStore.getState().setAuthenticated(true)
 }
+
+/**
+ * Whether a usable card access token is in the keystore. Unlike the persisted
+ * `isAuthenticated` flag, this reflects the real session — use it to gate
+ * entry into authenticated card screens (a stale flag can outlive the token).
+ */
+export const hasCardSession = (): boolean => hasSecret(ACCESS_TOKEN_SECRET_ID)
 
 /** Removes the tokens from the keystore and resets the auth flag. */
 export const clearCardSession = async (): Promise<void> => {

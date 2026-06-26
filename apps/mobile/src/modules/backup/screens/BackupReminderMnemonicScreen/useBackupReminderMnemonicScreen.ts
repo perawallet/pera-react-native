@@ -18,13 +18,14 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderMnemonicScreenResult = {
-    words: string[]
+    wordIndices: Uint16Array | null
     isLoading: boolean
     error: Error | null
     isPinVisible: boolean
@@ -52,7 +53,7 @@ export const useBackupReminderMnemonicScreen =
         const [isPinGateResolved, setIsPinGateResolved] = useState(false)
         const [isPinVisible, setIsPinVisible] = useState(false)
         const { executeWithMnemonic } = useMnemonicForAddress(address, account)
-        const [words, setWords] = useState<string[]>([])
+        const [indices, setIndices] = useState<Uint16Array | null>(null)
         const [isLoading, setIsLoading] = useState(true)
         const [error, setError] = useState<Error | null>(null)
 
@@ -80,8 +81,11 @@ export const useBackupReminderMnemonicScreen =
             let cancelled = false
             setIsLoading(true)
             setError(null)
-            executeWithMnemonic(resolvedWords => {
-                if (!cancelled) setWords(resolvedWords)
+            executeWithMnemonic(src => {
+                // Retain a zeroable copy of the index buffer; the words are
+                // derived at render and never put into state. executeWithMnemonic
+                // wipes its own copy once this handler returns.
+                if (!cancelled) setIndices(src.slice())
             })
                 .catch(err => {
                     logger.error(
@@ -104,18 +108,18 @@ export const useBackupReminderMnemonicScreen =
             }
         }, [isPinGateResolved, executeWithMnemonic])
 
-        // Overwrite each slot in the existing array before dereferencing so the
-        // previously decoded phrase doesn't linger in memory waiting on GC.
-        const clearWords = useCallback(() => {
-            setWords(previous => {
-                previous.fill('')
-                return []
+        // Zero the retained index buffer before dropping it so the phrase
+        // doesn't linger in memory waiting on GC.
+        const clearIndices = useCallback(() => {
+            setIndices(previous => {
+                zeroBytes(previous)
+                return null
             })
         }, [])
 
-        // Clear the decoded words when the host unmounts so the phrase doesn't
-        // linger on a detached fiber.
-        useEffect(() => () => clearWords(), [clearWords])
+        // Clear the buffer when the host unmounts so the phrase doesn't linger
+        // on a detached fiber.
+        useEffect(() => () => clearIndices(), [clearIndices])
 
         const handlePinVerified = useCallback(() => {
             setIsPinVisible(false)
@@ -128,12 +132,15 @@ export const useBackupReminderMnemonicScreen =
             // unmount cleanup won't fire yet — clear eagerly here. The
             // verification screen pulls only the N words it needs from the KMS,
             // so we don't carry the full phrase through flow state.
-            clearWords()
+            clearIndices()
             navigation.navigate('BackupVerification', { address })
-        }, [address, navigation, clearWords])
+        }, [address, navigation, clearIndices])
 
         return {
-            words,
+            // The component resolves each word from the index buffer at render
+            // (see mnemonicIndexToWord); the full phrase is never held as a
+            // string array here.
+            wordIndices: indices,
             isLoading,
             error,
             isPinVisible,

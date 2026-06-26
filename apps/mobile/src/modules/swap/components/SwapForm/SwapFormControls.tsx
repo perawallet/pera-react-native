@@ -42,6 +42,7 @@ export const SwapFormControls = ({
                 size='sm'
                 style={styles.swapDirectionIcon}
                 onPress={onSwapPress}
+                testID='swap-flip-button'
             />
 
             <PWView style={styles.maxRow}>

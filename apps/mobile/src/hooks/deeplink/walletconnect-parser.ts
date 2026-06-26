@@ -12,11 +12,15 @@
 
 import { DeeplinkType, type WalletConnectDeeplink } from './types'
 import { normalizeUrl } from './utils'
-import { PERAWALLET_WC_SCHEME, WC_SCHEME } from './constants'
+import {
+    ALGORAND_WC_SCHEME,
+    PERAWALLET_WC_SCHEME,
+    WC_SCHEME,
+} from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
- * Parse WalletConnect URIs: wc:// or perawallet-wc://
+ * Parse WalletConnect URIs: wc://, perawallet-wc://, or algorand-wc://
  * These are NOT parsed, just wrapped and normalized for the WalletConnect library to handle
  */
 export const parseWalletConnectUri = (
@@ -26,7 +30,8 @@ export const parseWalletConnectUri = (
 
     if (
         !normalizedUrl.startsWith(`${WC_SCHEME}:`) &&
-        !normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)
+        !normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) &&
+        !normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
     ) {
         return null
     }
@@ -47,6 +52,9 @@ export const parseWalletConnectUri = (
             `${PERAWALLET_WC_SCHEME}:`,
             `${WC_SCHEME}:`,
         )
+    } else if (normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)) {
+        // Native-parity format: algorand-wc:topic@1?...  →  wc:topic@1?...
+        wcUri = normalizedUrl.replace(`${ALGORAND_WC_SCHEME}:`, `${WC_SCHEME}:`)
     }
 
     // Re-validate after unwrap/rewrite so a wrapper like

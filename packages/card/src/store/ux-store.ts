@@ -98,7 +98,6 @@ export const useCardStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             // `verificationCode` and `phoneVerificationCode` are intentionally
             // omitted — transient OTPs that should never be written to disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
@@ -119,27 +118,6 @@ export const useCardStore: UseBoundStore<
                 lastKnownPanLast4: state.lastKnownPanLast4,
                 transactionFilters: state.transactionFilters,
             }),
-            // v2: earlier builds persisted these KYC PII fields to unencrypted
-            // MMKV. `partialize` now excludes them, but that only governs future
-            // writes — strip any values already on disk so existing installs are
-            // cleaned on upgrade instead of carrying PII until the next write.
-            migrate: (persistedState: unknown) => {
-                if (
-                    persistedState == null ||
-                    typeof persistedState !== 'object'
-                ) {
-                    return persistedState
-                }
-                // Omit the PII keys by destructuring into a fresh object
-                // rather than mutating the input, keeping `migrate` pure.
-                const {
-                    email: _email,
-                    phoneCountryCode: _phoneCountryCode,
-                    phoneNumber: _phoneNumber,
-                    ...rest
-                } = persistedState as Record<string, unknown>
-                return rest
-            },
         },
     ),
 )

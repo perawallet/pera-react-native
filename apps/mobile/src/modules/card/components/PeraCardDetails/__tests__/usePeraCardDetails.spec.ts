@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     freezeMutateAsync: vi.fn(),
     freezePending: false,
     unfreezeMutateAsync: vi.fn(),
+    isUnfreezing: false,
     setPinMutateAsync: vi.fn(),
     setPinPending: false,
     pushWebView: vi.fn(),
@@ -67,6 +68,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             mutationResult(mocks.freezeMutateAsync, mocks.freezePending),
         useUnfreezeCardMutation: () =>
             mutationResult(mocks.unfreezeMutateAsync),
+        useIsCardUnfreezing: () => mocks.isUnfreezing,
         useSetCardPinMutation: () =>
             mutationResult(mocks.setPinMutateAsync, mocks.setPinPending),
     }
@@ -107,6 +109,9 @@ describe('usePeraCardDetails', () => {
         mocks.status = 'ACTIVE'
         mocks.setPinPending = false
         mocks.freezePending = false
+        mocks.isUnfreezing = false
+        // The freeze sheet runs the freeze itself; opening it just resolves.
+        mocks.request.mockResolvedValue(undefined)
     })
 
     it('masks the PAN with the last 4 when known', () => {
@@ -208,8 +213,7 @@ describe('usePeraCardDetails', () => {
         )
     })
 
-    it('freezes when active and unfreezes when frozen', async () => {
-        mocks.freezeMutateAsync.mockResolvedValue(undefined)
+    it('opens the freeze sheet when active, and unfreezes directly when frozen', async () => {
         mocks.unfreezeMutateAsync.mockResolvedValue(undefined)
 
         const { result, rerender } = renderHook(() => usePeraCardDetails())
@@ -220,7 +224,10 @@ describe('usePeraCardDetails', () => {
         await act(async () => {
             await result.current.onToggleFreeze()
         })
-        expect(mocks.freezeMutateAsync).toHaveBeenCalledTimes(1)
+        // Active → opens the confirmation sheet; the freeze runs inside it, not here.
+        expect(mocks.request).toHaveBeenCalledTimes(1)
+        expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
+        expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
         expect(mocks.unfreezeMutateAsync).not.toHaveBeenCalled()
 
         mocks.status = 'FROZEN'
@@ -233,7 +240,9 @@ describe('usePeraCardDetails', () => {
         await act(async () => {
             await result.current.onToggleFreeze()
         })
+        // Frozen → unfreezes directly, no sheet.
         expect(mocks.unfreezeMutateAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.request).toHaveBeenCalledTimes(1)
     })
 
     it('allows the freeze toggle for an active or frozen card', () => {
@@ -252,8 +261,9 @@ describe('usePeraCardDetails', () => {
         expect(result.current.canToggleFreeze).toBe(false)
     })
 
-    it('surfaces an error toast when freezing fails', async () => {
-        mocks.freezeMutateAsync.mockRejectedValue(new Error('boom'))
+    it('surfaces an error toast when unfreezing fails', async () => {
+        mocks.status = 'FROZEN'
+        mocks.unfreezeMutateAsync.mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(() => usePeraCardDetails())
         await act(async () => {
@@ -263,15 +273,15 @@ describe('usePeraCardDetails', () => {
         expect(mocks.errorToast).toHaveBeenCalledTimes(1)
     })
 
-    it('does not start a second freeze request while one is pending', async () => {
-        mocks.freezePending = true
+    it('does not start a second unfreeze request while one is in flight', async () => {
+        mocks.status = 'FROZEN'
+        mocks.isUnfreezing = true
 
         const { result } = renderHook(() => usePeraCardDetails())
         await act(async () => {
-            result.current.onToggleFreeze()
+            await result.current.onToggleFreeze()
         })
 
-        expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
         expect(mocks.unfreezeMutateAsync).not.toHaveBeenCalled()
     })
 

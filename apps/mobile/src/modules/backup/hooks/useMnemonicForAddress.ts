@@ -24,10 +24,11 @@ import { type Optional } from '@perawallet/wallet-core-shared'
 
 export type UseMnemonicForAddressResult = {
     /**
-     * Runs `handler` with the mnemonic words for `address`. The raw bytes are
-     * zeroed inside the KMS session before this returns, so the full phrase
-     * never lives in React state — callers opt in to holding any derived
-     * values (e.g. sliced word pairs) by storing them explicitly.
+     * Runs `handler` with the mnemonic for `address` as a zeroable
+     * `Uint16Array` of wordlist indices. The index buffer (and the raw bytes it
+     * was built from) are zeroed inside the KMS session before this returns, so
+     * the phrase never lives in React state — callers opt in to holding any
+     * derived values (e.g. sliced word pairs) by storing them explicitly.
      */
     executeWithMnemonic: <T>(
         handler: ExecuteWithMnemonicHandler<T>,

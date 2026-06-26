@@ -55,6 +55,34 @@ describe('CurrencyAmount', () => {
         expect(container.textContent).toContain('+')
     })
 
+    it('renders the sign after the Algo glyph', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.5')}
+                currency='ALGO'
+                precision='preferredFull'
+                sign='-'
+            />,
+        )
+        const text = container.textContent ?? ''
+        // "¦ -0.5" — glyph, then sign.
+        expect(text.indexOf('¦')).toBeLessThan(text.indexOf('-'))
+    })
+
+    it('renders the sign after the unit for an ASA (not before it)', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1000)}
+                currency='HIPO'
+                precision='compact'
+                sign='+'
+            />,
+        )
+        const text = container.textContent ?? ''
+        // "HIPO +1000" — unit symbol precedes the sign, unlike a prefix.
+        expect(text.indexOf('HIPO')).toBeLessThan(text.indexOf('+'))
+    })
+
     it('renders the Algo symbol as a text glyph for ALGO', () => {
         const { container } = render(
             <CurrencyAmount

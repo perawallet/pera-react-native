@@ -51,6 +51,12 @@ describe('parseBackupEnvelope', () => {
         expectReason('   \n  ', AsbErrorReason.EmptyFile)
     })
 
+    it('rejects an oversized file before decoding (defence-in-depth)', () => {
+        // ~7 MB of base64 → ~5.25 MB decoded, over the 5 MB cap. Maps to the
+        // existing decode-failure reason.
+        expectReason('A'.repeat(7 * 1024 * 1024), AsbErrorReason.NotBase64)
+    })
+
     it('rejects non-base64 input that decodes to non-JSON', () => {
         // base64-js silently drops invalid characters, so a string of only
         // illegal chars decodes to empty bytes and the JSON parse step is

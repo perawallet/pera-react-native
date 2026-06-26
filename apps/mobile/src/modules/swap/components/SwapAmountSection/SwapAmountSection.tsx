@@ -129,6 +129,11 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     variant={variant}
                     onPress={onAssetPress}
                     fallbackLabel={t('swap.form.select_asset')}
+                    testID={
+                        isPay
+                            ? 'swap-pay-asset-selector'
+                            : 'swap-receive-asset-selector'
+                    }
                 />
             }
             fiat={

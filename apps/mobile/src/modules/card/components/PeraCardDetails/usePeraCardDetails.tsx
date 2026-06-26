@@ -14,11 +14,10 @@ import { useCallback, useState } from 'react'
 import { Platform } from 'react-native'
 import {
     CardStatus,
-    getCardApiError,
     useCardDetailsMutation,
     useCardStatusQuery,
     useCardStore,
-    useFreezeCardMutation,
+    useIsCardUnfreezing,
     useSetCardPinMutation,
     useUnfreezeCardMutation,
 } from '@perawallet/wallet-core-card'
@@ -26,8 +25,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useCardComingSoonToast } from '../../hooks'
+import { useCardComingSoonToast, useCardErrorToast } from '../../hooks'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
+import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
 import {
     WalletInstructionsSheet,
     type WalletPlatform,
@@ -49,7 +49,8 @@ type UsePeraCardDetailsResult = {
     onChangeFunding: () => void
     isFrozen: boolean
     freezeLabel: string
-    /** True while a freeze or unfreeze request is in flight. */
+    /** True while an unfreeze request is in flight (freezing's pending state
+     * lives on the confirmation sheet's button). */
     isFreezing: boolean
     /** False when the card is BLOCKED — the freeze toggle is then hidden. */
     canToggleFreeze: boolean
@@ -86,26 +87,17 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const walletPlatform = Platform.OS === 'ios' ? 'apple' : 'google'
 
     const cardDetails = useCardDetailsMutation()
-    const freeze = useFreezeCardMutation()
     const unfreeze = useUnfreezeCardMutation()
+    // Shared with the Card Frozen banner so the two unfreeze entry points
+    // can't fire concurrently.
+    const isUnfreezing = useIsCardUnfreezing()
     const setPin = useSetCardPinMutation()
 
     // The single-use secure image is held only in memory and discarded when the
     // user hides it again — never persisted.
     const [secureImageUrl, setSecureImageUrl] = useState<string | null>(null)
 
-    // Surface the backend's message (e.g. "user doesn't have a card") rather
-    // than a generic toast; fall back to the generic body when it's absent.
-    const showError = useCallback(
-        async (error: unknown) => {
-            const apiError = await getCardApiError(error)
-            errorToast(
-                t('peraCard.account.error_title'),
-                apiError.message ?? t('peraCard.account.error_body'),
-            )
-        },
-        [errorToast, t],
-    )
+    const showError = useCardErrorToast()
 
     const showComingSoon = useCardComingSoonToast()
 
@@ -138,19 +130,28 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     }, [errorToast, t])
 
     const toggleFreeze = useCallback(async () => {
-        // Guard re-entry so a double-tap can't double-fire or flip the freeze
-        // state back before the status query has refetched.
-        if (freeze.isPending || unfreeze.isPending) return
+        if (!isFrozen) {
+            // Freezing is confirmed AND executed inside the sheet, so its button
+            // owns the pending state; here we only open it. Content-sized sheet
+            // (default autoCreateContainer) so it grows to fit, no scroll.
+            void request({
+                contents: <FreezeCardConfirmationSheet />,
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                },
+            })
+            return
+        }
+        // Unfreezing is immediate. Guard re-entry against a double-tap (shared
+        // with the banner via useIsCardUnfreezing).
+        if (isUnfreezing) return
         try {
-            if (isFrozen) {
-                await unfreeze.mutateAsync()
-            } else {
-                await freeze.mutateAsync()
-            }
+            await unfreeze.mutateAsync()
         } catch (error) {
             await showError(error)
         }
-    }, [isFrozen, freeze, unfreeze, showError])
+    }, [isFrozen, isUnfreezing, unfreeze, request, showError])
     const onToggleFreeze = useCallback(() => {
         void toggleFreeze()
     }, [toggleFreeze])
@@ -203,7 +204,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         freezeLabel: isFrozen
             ? t('peraCard.account.unfreeze_card')
             : t('peraCard.account.freeze_card'),
-        isFreezing: freeze.isPending || unfreeze.isPending,
+        isFreezing: isUnfreezing,
         canToggleFreeze,
         onToggleFreeze,
         onSetPin,
