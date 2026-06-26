@@ -16,8 +16,7 @@ app:
 pipelines:
   qa-builds:
     stages:
-      - check-changes-stage: {}
-      - qa-build-stage:
+      - create-nightly-tag-stage:
           abort_on_fail: true
   release-builds:
     stages:
@@ -29,13 +28,9 @@ pipelines:
         - name:
             regex: v.*
 stages:
-  check-changes-stage:
+  create-nightly-tag-stage:
     workflows:
-      - check-changes: {}
-  qa-build-stage:
-    workflows:
-      - ios-staging: {}
-      - android-staging: {}
+      - create-nightly-tag: {}
   test-stage:
     workflows:
       - test: {}
@@ -46,10 +41,10 @@ stages:
       - ios-staging: {}
       - android-staging: {}
 workflows:
-  check-changes:
-    description: Check if there are changes since the last successful build
+  create-nightly-tag:
+    description: Mint a vX.Y.Z-nightly.A tag on main HEAD to trigger release-builds
     envs:
-      - VALIDATE_PROFILE: check-changes
+      - VALIDATE_PROFILE: create-nightly-tag
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
@@ -65,111 +60,11 @@ workflows:
                 #!/usr/bin/env bash
                 ./tools/validate-env.sh
       - script@1:
-          title: Check for changes
+          title: Create nightly tag
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                set -ex
-
-                LAST_BUILD_TIME=""
-
-                if [ -n "$BITRISE_API_TOKEN" ]; then
-                  # Get last successful iOS build
-                  IOS_RESPONSE=$(curl -s -H "Authorization: $BITRISE_API_TOKEN" \
-                    "https://api.bitrise.io/v0.1/apps/$BITRISE_APP_SLUG/builds?workflow=ios-staging&status=1&limit=1")
-                  IOS_FINISHED_AT=$(echo "$IOS_RESPONSE" | jq -r '.data[0].finished_at // empty' 2>/dev/null || echo "")
-
-                  # Get last successful Android build
-                  ANDROID_RESPONSE=$(curl -s -H "Authorization: $BITRISE_API_TOKEN" \
-                    "https://api.bitrise.io/v0.1/apps/$BITRISE_APP_SLUG/builds?workflow=android-staging&status=1&limit=1")
-                  ANDROID_FINISHED_AT=$(echo "$ANDROID_RESPONSE" | jq -r '.data[0].finished_at // empty' 2>/dev/null || echo "")
-
-                  echo "Last successful iOS build: ${IOS_FINISHED_AT:-none}"
-                  echo "Last successful Android build: ${ANDROID_FINISHED_AT:-none}"
-
-                  # Use the earlier timestamp (so changelog includes all changes since both platforms last succeeded)
-                  if [ -n "$IOS_FINISHED_AT" ] && [ -n "$ANDROID_FINISHED_AT" ]; then
-                    if [[ "$IOS_FINISHED_AT" < "$ANDROID_FINISHED_AT" ]]; then
-                      LAST_BUILD_TIME="$IOS_FINISHED_AT"
-                      echo "Using iOS timestamp (earlier)"
-                    else
-                      LAST_BUILD_TIME="$ANDROID_FINISHED_AT"
-                      echo "Using Android timestamp (earlier)"
-                    fi
-                  elif [ -n "$IOS_FINISHED_AT" ]; then
-                    LAST_BUILD_TIME="$IOS_FINISHED_AT"
-                    echo "Using iOS timestamp (only one available)"
-                  elif [ -n "$ANDROID_FINISHED_AT" ]; then
-                    LAST_BUILD_TIME="$ANDROID_FINISHED_AT"
-                    echo "Using Android timestamp (only one available)"
-                  fi
-                fi
-
-                if [ -z "$LAST_BUILD_TIME" ]; then
-                  echo "No previous successful build found, treating as having changes"
-                  HAS_CHANGES="true"
-                  CHANGELOG_REF_SHA=""
-                else
-                  # Check if there are commits since the last successful build
-                  COMMITS_SINCE=$(git log --since="$LAST_BUILD_TIME" --oneline 2>/dev/null || echo "")
-                  if [ -z "$COMMITS_SINCE" ]; then
-                    echo "No commits since last successful build at $LAST_BUILD_TIME"
-                    HAS_CHANGES="false"
-                    CHANGELOG_REF_SHA=""
-                  else
-                    echo "Commits since $LAST_BUILD_TIME:"
-                    echo "$COMMITS_SINCE"
-                    HAS_CHANGES="true"
-
-                    # Get the oldest commit since the last build and find its parent for changelog reference
-                    OLDEST_NEW_SHA=$(git log --since="$LAST_BUILD_TIME" --format="%H" --reverse | head -1)
-                    if [ -n "$OLDEST_NEW_SHA" ]; then
-                      # Use git log %P to get parent SHA - returns empty if commit is root (no parent)
-                      CHANGELOG_REF_SHA=$(git log --pretty=%P -n 1 "$OLDEST_NEW_SHA" | awk '{print $1}')
-                      echo "Changelog reference SHA (parent of oldest new commit): ${CHANGELOG_REF_SHA:-none (root commit)}"
-                    else
-                      CHANGELOG_REF_SHA=""
-                    fi
-                  fi
-                fi
-
-                envman add --key HAS_CHANGES --value "$HAS_CHANGES"
-                envman add --key LAST_BUILD_TIME --value "${LAST_BUILD_TIME:-}"
-                envman add --key CHANGELOG_REF_SHA --value "${CHANGELOG_REF_SHA:-}"
-
-                if [ "$HAS_CHANGES" == "false" ]; then
-                  echo "No changes detected - subsequent build stages will be skipped"
-                fi
-      - script@1:
-          title: Generate Changelog
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-
-                # Generate changelog using the reference SHA found in check-changes step
-                if [ -n "$CHANGELOG_REF_SHA" ]; then
-                  echo "Generating changelog from reference SHA: $CHANGELOG_REF_SHA"
-                  CHANGELOG=$(./tools/generate_changelog.sh "$CHANGELOG_REF_SHA")
-                elif [ "$HAS_CHANGES" == "true" ]; then
-                  echo "No reference SHA but changes detected, generating full changelog"
-                  CHANGELOG=$(./tools/generate_changelog.sh "")
-                else
-                  echo "No changes detected"
-                  CHANGELOG="No changes since last build"
-                fi
-
-                # Escape changelog for JSON using jq for proper escaping
-                CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//'  | sed 's/\n/\\n/g')
-
-                envman add --key CHANGELOG --value "$CHANGELOG"
-      - share-pipeline-variable@1:
-          inputs:
-            - variables: |-
-                HAS_CHANGES=$HAS_CHANGES
-                LAST_BUILD_TIME=$LAST_BUILD_TIME
-                CHANGELOG_REF_SHA=$CHANGELOG_REF_SHA
-                CHANGELOG=$CHANGELOG
+                ./tools/create-nightly-tag.sh
   test:
     description: Run tests before release
     meta:
@@ -248,10 +143,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                # Get HAS_CHANGES from pipeline outputs (from check-changes workflow)
                 # In Bitrise pipelines, outputs from previous stages are available via env vars
                 if [ "${HAS_CHANGES:-true}" == "false" ]; then
-                  echo "No changes detected in check-changes stage, skipping build"
+                  echo "No changes detected in previous stage, skipping build"
                   envman add --key SKIP_BUILD --value "true"
                 else
                   envman add --key SKIP_BUILD --value "false"
@@ -304,7 +198,7 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
-                # Skip if CHANGELOG was already set by check-changes stage
+                # Skip if CHANGELOG was already set by a prior stage
                 if [ -n "$CHANGELOG" ]; then
                   echo "Changelog already set from pipeline, skipping generation"
                   exit 0
@@ -522,9 +416,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                # Get HAS_CHANGES from pipeline outputs (from check-changes workflow)
+                # In Bitrise pipelines, outputs from previous stages are available via env vars
                 if [ "${HAS_CHANGES:-true}" == "false" ]; then
-                  echo "No changes detected in check-changes stage, skipping build"
+                  echo "No changes detected in previous stage, skipping build"
                   envman add --key SKIP_BUILD --value "true"
                 else
                   envman add --key SKIP_BUILD --value "false"
@@ -597,7 +491,7 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
-                # Skip if CHANGELOG was already set by check-changes stage
+                # Skip if CHANGELOG was already set by a prior stage
                 if [ -n "$CHANGELOG" ]; then
                   echo "Changelog already set from pipeline, skipping generation"
                   exit 0

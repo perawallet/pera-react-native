@@ -46,6 +46,9 @@ case "$PROFILE" in
   test)
     : # runs `pnpm test` only — no secrets required
     ;;
+  create-nightly-tag)
+    : # SSH-origin push uses the Bitrise app key; no secrets to validate here
+    ;;
   ios)
     required_global+=(
       "APP_STORE_CONNECT_API_KEY_CONTENT"
