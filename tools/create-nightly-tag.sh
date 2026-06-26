@@ -2,12 +2,15 @@
 set -euo pipefail
 
 # tools/create-nightly-tag.sh
-# Mints a nightly tag (vX.Y.Z-alpha.N) on the current HEAD and pushes it to
-# origin, which triggers the release-builds pipeline. Runs in the qa-builds
-# pipeline (scheduled on main). Idempotent: if there are no new commits since
-# the last nightly tag, exits 0 without creating a tag.
+# Mints a prerelease tag (vX.Y.Z-<channel>.N) on the current HEAD and pushes it
+# to origin, which triggers the release-builds pipeline (prod + staging). Run
+# from GitHub Actions: nightly on the alpha channel, weekly on the rc channel.
+# Idempotent: if there are no new commits since the last tag of the same
+# channel, exits 0 without creating a tag.
 #
 # Env:
+#   CHANNEL  prerelease channel: "alpha" (nightly, default) or "rc" (weekly
+#            release candidate). Both share the same base-version logic.
 #   DRY_RUN  when "1": compute and print the tag + gate decision but do NOT
 #            create or push the tag (used by tests).
 #   PKG_JSON override path to package.json (used by tests; defaults to the
@@ -25,33 +28,45 @@ if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
   exit 1
 fi
 
-# --- Base version: the version nightlies are cut against ---
+# --- Prerelease channel: alpha (nightly, default) or rc (weekly) ---
+CHANNEL="${CHANNEL:-alpha}"
+case "$CHANNEL" in
+  alpha | rc) ;;
+  *)
+    echo "ERROR: CHANNEL must be 'alpha' or 'rc' (got '$CHANNEL')" >&2
+    exit 1
+    ;;
+esac
+
+# --- Base version: the version prereleases are cut against ---
 # Start from package.json. If that version has already shipped as a STABLE tag
-# (vX.Y.Z, no suffix), the next dev cycle is the next patch, so nightlies roll to
-# vX.Y.(Z+1). Until that stable tag exists, stay on the package.json version — so
-# the first nightly is v7.0.0-alpha.1, not v7.0.1-alpha.1.
+# (vX.Y.Z, no suffix), the next dev cycle is the next patch, so prereleases roll
+# to vX.Y.(Z+1). Until that stable tag exists, stay on the package.json version —
+# so the first prerelease is v7.0.0-alpha.1, not v7.0.1-alpha.1. alpha and rc
+# share this base, so an rc is always a candidate for the same version the
+# nightlies are building toward.
 BASE="$VERSION"
 if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null 2>&1; then
   IFS='.' read -r _maj _min _pat <<<"$VERSION"
   BASE="${_maj}.${_min}.$((_pat + 1))"
-  echo "Stable tag v${VERSION} exists — nightlies target next patch v${BASE}."
+  echo "Stable tag v${VERSION} exists — prereleases target next patch v${BASE}."
 fi
 
-# --- Change gate: any new commits since the last nightly (alpha) tag? ---
-LAST_ALPHA=$(git tag --list 'v*-alpha.*' --sort=-creatordate | head -n 1)
-if [ -n "$LAST_ALPHA" ]; then
-  NEW_COMMITS=$(git rev-list "${LAST_ALPHA}..HEAD" --count)
+# --- Change gate: any new commits since the last tag of this channel? ---
+LAST_TAG=$(git tag --list "v*-${CHANNEL}.*" --sort=-creatordate | head -n 1)
+if [ -n "$LAST_TAG" ]; then
+  NEW_COMMITS=$(git rev-list "${LAST_TAG}..HEAD" --count)
   if [ "$NEW_COMMITS" -eq 0 ]; then
-    echo "No new commits since last nightly tag $LAST_ALPHA — skipping."
+    echo "No new commits since last ${CHANNEL} tag $LAST_TAG — skipping."
     exit 0
   fi
-  echo "$NEW_COMMITS new commit(s) since $LAST_ALPHA."
+  echo "$NEW_COMMITS new commit(s) since $LAST_TAG."
 else
-  echo "No existing nightly tags — creating the first one."
+  echo "No existing ${CHANNEL} tags — creating the first one."
 fi
 
-# --- Counter: max existing v${BASE}-alpha.N + 1 (numeric), reset per base version ---
-PREFIX="v${BASE}-alpha."
+# --- Counter: max existing v${BASE}-${CHANNEL}.N + 1 (numeric), reset per base+channel ---
+PREFIX="v${BASE}-${CHANNEL}."
 MAX=0
 while IFS= read -r tag; do
   [ -n "$tag" ] || continue
@@ -66,8 +81,8 @@ while IFS= read -r tag; do
 done < <(git tag --list "${PREFIX}*")
 A=$((MAX + 1))
 
-TAG="v${BASE}-alpha.${A}"
-echo "Next nightly tag: $TAG"
+TAG="v${BASE}-${CHANNEL}.${A}"
+echo "Next ${CHANNEL} tag: $TAG"
 
 if [ "${DRY_RUN:-}" = "1" ]; then
   echo "DRY_RUN=1 — not creating or pushing $TAG."
@@ -76,6 +91,6 @@ fi
 
 git config user.name "Pera CI"
 git config user.email "ci@perawallet.app"
-git tag -a "$TAG" -m "Nightly build $TAG"
+git tag -a "$TAG" -m "$TAG"
 git push origin "$TAG"
 echo "✓ Created and pushed $TAG"
