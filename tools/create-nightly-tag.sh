@@ -47,6 +47,7 @@ while IFS= read -r tag; do
   case "$suffix" in
     '' | *[!0-9]*) continue ;; # skip non-numeric / malformed suffixes
   esac
+  suffix=$((10#$suffix)) # force base-10 (a leading-zero suffix like 09 is NOT octal)
   if [ "$suffix" -gt "$MAX" ]; then
     MAX="$suffix"
   fi
