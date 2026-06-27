@@ -10,13 +10,15 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
 import { PWWebView } from '@modules/webview/components/PWWebView'
 import { useBidaliWebViewScreen } from './useBidaliWebViewScreen'
 import { useStyles } from './styles'
 
 export const BidaliWebViewScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { url, bidaliProviderJS, onClose, handleMessage, webviewRef } =
         useBidaliWebViewScreen()
 
