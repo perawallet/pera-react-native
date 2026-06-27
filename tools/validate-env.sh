@@ -7,7 +7,7 @@ set -euo pipefail
 # env, reports, exits. Never mutates env, never prints secret values.
 #
 # Inputs (env):
-#   VALIDATE_PROFILE  check-changes | test | ios | android   (required)
+#   VALIDATE_PROFILE  check-changes | test | ios | android | create-nightly-tag   (required)
 #   ENVIRONMENT       staging | production   (selects secret prefix)
 #   DISTRIBUTION      firebase | play        (android distribution credential)
 #
@@ -45,6 +45,9 @@ case "$PROFILE" in
     ;;
   test)
     : # runs `pnpm test` only — no secrets required
+    ;;
+  create-nightly-tag)
+    : # SSH-origin push uses the Bitrise app key; no secrets to validate here
     ;;
   ios)
     required_global+=(

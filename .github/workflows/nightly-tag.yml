@@ -1,0 +1,42 @@
+name: Nightly Tag
+
+# Mints a vX.Y.Z-alpha.N tag on main each night and pushes it. The pushed tag
+# fires Bitrise's `v.*` release-builds pipeline (test → TestFlight + Firebase,
+# production + staging). Pushing from here avoids giving Bitrise's checkout
+# token git-write access — GITHUB_TOKEN already has it.
+#
+# Idempotent: tools/create-nightly-tag.sh exits without tagging when there are
+# no new commits since the last nightly tag.
+
+on:
+  schedule:
+    # ~01:00 UTC daily. GitHub may delay scheduled runs under load, so the
+    # exact wall-clock time isn't guaranteed; for nightly QA that's fine.
+    - cron: "0 1 * * *"
+  # Allow minting a tag on demand from the Actions tab.
+  workflow_dispatch: {}
+
+# Least-privilege default; the mint job elevates to write so it can push.
+permissions:
+  contents: read
+
+jobs:
+  mint:
+    name: Mint nightly tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Full history + tags: the script diffs against the last nightly tag
+          # and derives the next counter from existing v*-alpha.* tags.
+          fetch-depth: 0
+          fetch-tags: true
+          # Keep the GITHUB_TOKEN credential so the script's `git push` works.
+          persist-credentials: true
+
+      - name: Mint and push nightly tag
+        run: ./tools/create-nightly-tag.sh
