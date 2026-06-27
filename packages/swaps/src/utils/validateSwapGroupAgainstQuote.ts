@@ -12,7 +12,7 @@
 
 import { type Decimal } from 'decimal.js'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapQuote } from '../models'
 
 const ALGO_ASSET_ID = '0'
 
@@ -46,14 +46,18 @@ const ceilToBig = (value: Decimal | undefined): bigint =>
  * skip the standard signing review sheet, so this guards against a
  * compromised/buggy backend exfiltrating funds.
  *
- * Verified over the user-signable transactions (those sent by the swapper):
+ * Verified over the user-signable transactions (those sent by the swapper) —
+ * which are the *complete* set of ways the swapper's funds can leave. Inner
+ * transactions produced by the DEX app spend the pool/app's funds, not the
+ * user's, so they need no inspection here (and the minimum received is enforced
+ * on-chain by the router). The checks:
+ *  - no rekey of the swapper's account (would hand control to a third party);
  *  - no close-remainder / close-to (a swap must never empty the account/asset);
  *  - no outflow of an asset other than the quoted input, ALGO (fees), or the
  *    Pera fee asset (an unexpected asset gets a 0 bound, so it trips over-spend);
  *  - the input / ALGO / Pera-fee asset is not spent beyond the quoted amounts.
- *
- * It does NOT verify the minimum received — that floor is enforced on-chain by
- * the swap router (the atomic group fails if the output is below it).
+ *    Bounds are additive, so when the input and Pera-fee asset are the same the
+ *    allowance is correctly their sum.
  *
  * Throws {@link SwapQuoteMismatchError} on any violation; callers must treat a
  * throw as "do not sign".
@@ -76,7 +80,9 @@ export const validateSwapGroupAgainstQuote = (
 
     // Upper bound the swapper may spend per asset. Anything not listed gets a 0
     // bound, so both an unexpected-asset outflow and an over-spend trip the same
-    // check. Bounds are rounded up so rounding can never falsely reject.
+    // check. Bounds are summed: if the input and Pera-fee asset are the same,
+    // the allowance is `maxInput + maxPeraFee` (both are spent in that asset).
+    // Rounded up so rounding can never falsely reject.
     const boundFor = (assetId: string): bigint =>
         (assetId === inputAssetId ? maxInput : 0n) +
         (assetId === peraFeeAssetId ? maxPeraFee : 0n) +
@@ -90,6 +96,12 @@ export const validateSwapGroupAgainstQuote = (
     for (const tx of signableTransactions) {
         // Only the swapper's own transactions move the swapper's funds.
         if (tx.sender !== swapper) continue
+
+        if (tx.rekeyTo) {
+            throw new SwapQuoteMismatchError(
+                'Swap transaction rekeys the account',
+            )
+        }
 
         const payment = tx.paymentTransaction
         if (payment) {

@@ -25,6 +25,7 @@ import {
 import {
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
+    validateSwapGroupAgainstQuote,
     type PrepareTransactionsResult,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
@@ -44,7 +45,6 @@ import {
     requestSwapSignatures,
     reportSwapFailure,
 } from './swapExecutionHelpers'
-import { validateSwapGroupAgainstQuote } from './validateSwapGroupAgainstQuote'
 
 export type SwapExecutionStatus =
     | 'idle'

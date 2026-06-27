@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapQuote } from '../../models'
 import {
     validateSwapGroupAgainstQuote,
     SwapQuoteMismatchError,
@@ -41,10 +41,12 @@ const axfer = (
         amount: bigint
         receiver: string
         closeTo: string
+        rekeyTo: string
     }> = {},
 ): PeraDisplayableTransaction =>
     ({
         sender: overrides.sender ?? SWAPPER,
+        rekeyTo: overrides.rekeyTo,
         assetTransferTransaction: {
             assetId: overrides.assetId ?? 31_566_704n,
             amount: overrides.amount ?? 5_000_000n,
@@ -59,16 +61,25 @@ const payment = (
         amount: bigint
         receiver: string
         closeRemainderTo: string
+        rekeyTo: string
     }> = {},
 ): PeraDisplayableTransaction =>
     ({
         sender: overrides.sender ?? SWAPPER,
+        rekeyTo: overrides.rekeyTo,
         paymentTransaction: {
             amount: overrides.amount ?? 0n,
             receiver: overrides.receiver ?? POOL,
             closeRemainderTo: overrides.closeRemainderTo,
         },
     }) as unknown as PeraDisplayableTransaction
+
+const withPeraFeeAsset = (assetId: string, amount: number): SwapQuote =>
+    ({
+        ...baseQuote,
+        peraFeeAsset: { assetId, decimals: 6 },
+        peraFeeAmount: new Decimal(amount),
+    }) as unknown as SwapQuote
 
 describe('validateSwapGroupAgainstQuote', () => {
     it('passes a swap that spends exactly the quoted input', () => {
@@ -132,6 +143,24 @@ describe('validateSwapGroupAgainstQuote', () => {
         ).toThrow(SwapQuoteMismatchError)
     })
 
+    it('rejects a transaction that rekeys the swapper account', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer({ rekeyTo: POOL })],
+                baseQuote,
+            ),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    it('ignores a rekey on a transaction not sent by the swapper', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer(), axfer({ sender: POOL, rekeyTo: POOL })],
+                baseQuote,
+            ),
+        ).not.toThrow()
+    })
+
     it('rejects a large ALGO payment beyond the network-fee allowance', () => {
         expect(() =>
             validateSwapGroupAgainstQuote(
@@ -151,18 +180,32 @@ describe('validateSwapGroupAgainstQuote', () => {
     })
 
     it('allows the Pera fee in its own asset up to the quoted amount', () => {
-        const quote = {
-            ...baseQuote,
-            peraFeeAsset: { assetId: '111', decimals: 6 },
-            peraFeeAmount: new Decimal(10_000),
-        } as unknown as SwapQuote
-
         expect(() =>
             validateSwapGroupAgainstQuote(
                 [axfer(), axfer({ assetId: 111n, amount: 10_000n })],
-                quote,
+                withPeraFeeAsset('111', 10_000),
             ),
         ).not.toThrow()
+    })
+
+    it('allows input + Pera fee in the same asset up to their combined bound', () => {
+        // Pera fee charged in the input asset: total outflow = input + fee, and
+        // the bound is the sum of both (not just one of them).
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer({ amount: 5_000_000n }), axfer({ amount: 100_000n })],
+                withPeraFeeAsset('31566704', 100_000),
+            ),
+        ).not.toThrow()
+    })
+
+    it('rejects exceeding the combined input + Pera fee bound for a shared asset', () => {
+        expect(() =>
+            validateSwapGroupAgainstQuote(
+                [axfer({ amount: 5_100_001n })],
+                withPeraFeeAsset('31566704', 100_000),
+            ),
+        ).toThrow(SwapQuoteMismatchError)
     })
 
     it('rejects a quote with no swapper address', () => {

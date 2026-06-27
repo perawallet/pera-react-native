@@ -34,6 +34,9 @@ const mockEncodeSignedTransactions = vi.fn()
 const mockSendRawTransaction = vi.fn()
 const mockPrepareTransactions = vi.fn()
 const mockUpdateSwapStatus = vi.fn()
+// Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
+// runs during the package import.
+const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
 
 // We deliberately do NOT delegate to the real `submitAndAutoRefresh`
 // via `vi.importActual` here. Importing the signing package transitively
@@ -104,17 +107,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
                 { raw: err instanceof Error ? err.message : String(err) },
                 err instanceof Error ? err : undefined,
             ),
-        // Minimal mapping for the pre-sign quote validation. The default decoded
-        // txn has sender 'SENDER' (≠ the test quote's swapper), so validation is
-        // a no-op. A test can attach `__display` to its decoded txn to drive the
-        // validator with a specific displayable shape.
+        // Minimal mapping so the pre-sign quote validation has displayable txns;
+        // the validator itself is mocked (`mockValidate`), so the shape is inert.
         mapToDisplayableTransaction: (tx: {
-            __display?: unknown
             sender?: { toString?: () => string }
-        }) => tx?.__display ?? { sender: tx?.sender?.toString?.() ?? 'SENDER' },
+        }) => ({ sender: tx?.sender?.toString?.() ?? 'SENDER' }),
     }
 })
 
+// `validateSwapGroupAgainstQuote` is a controllable collaborator here — its real
+// behavior is covered by the swaps package's own unit tests. Default: passes
+// (no-op); a test opts into a rejection via `mockValidate.mockImplementationOnce`.
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     usePrepareTransactionsMutation: () => ({
         mutateAsync: mockPrepareTransactions,
@@ -122,6 +125,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useUpdateSwapStatusMutation: () => ({
         mutateAsync: mockUpdateSwapStatus,
     }),
+    validateSwapGroupAgainstQuote: mockValidate,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -557,19 +561,11 @@ describe('useSwapExecution', () => {
     })
 
     it('fails closed (no signing) when the prepared group violates the quote', async () => {
-        // The swapper sends an asset the quote never mentions.
-        mockDecodeTransaction.mockImplementation(
-            () =>
-                ({
-                    __display: {
-                        sender: 'SWAPPER',
-                        assetTransferTransaction: {
-                            assetId: 7n,
-                            amount: 1n,
-                        },
-                    },
-                }) as unknown as PeraTransaction,
-        )
+        // The validator rejects the prepared group (its real logic is covered by
+        // the swaps package tests); the flow must not sign and must report failed.
+        mockValidate.mockImplementationOnce(() => {
+            throw new Error('Swap spends more of asset 7 than the quote allows')
+        })
 
         const { result } = renderHook(() => useSwapExecution())
 
