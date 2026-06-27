@@ -11,17 +11,23 @@
  */
 
 import { useCallback } from 'react'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { type PromptViewProps } from '@modules/prompts/models'
 import { TermsAcceptanceView } from './TermsAcceptanceView'
 
+/** Prompt-queue id for the Terms & Conditions re-acceptance prompt. */
+export const TERMS_ACCEPTANCE_PROMPT_ID = 'terms_acceptance_prompt'
+
 /**
- * Bottom-sheet presenter for the Terms & Conditions, used by the welcome-screen
- * gate. Resolves the sheet once the user agrees. The host opens it blocking
- * (no backdrop close) — see `useOnboardingScreen`.
+ * Prompt-container presenter for the Terms & Conditions, shown to already-
+ * onboarded users when the required terms version no longer matches what they
+ * last accepted. Agreeing records the new version (inside the view) and hides
+ * the prompt; there is no skip — re-acceptance is required.
  */
-export const TermsAndConditionsSheet = () => {
-    const { resolve } = useBottomSheetResult<boolean>()
-    const onAccepted = useCallback(() => resolve(true), [resolve])
+export const TermsAcceptancePrompt = ({ onHide }: PromptViewProps) => {
+    const onAccepted = useCallback(
+        () => onHide(TERMS_ACCEPTANCE_PROMPT_ID),
+        [onHide],
+    )
 
     return <TermsAcceptanceView onAccepted={onAccepted} />
 }

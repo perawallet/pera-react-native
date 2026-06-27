@@ -13,7 +13,6 @@
 import { useCallback, useState } from 'react'
 import type { WebViewMessageEvent } from 'react-native-webview'
 import { config } from '@perawallet/wallet-core-config'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useTermsAcceptance } from '../../hooks/useTermsAcceptance'
 import embeddedTerms from './embedded-terms.json'
 
@@ -44,7 +43,7 @@ true;
 
 type TermsWebViewSource = { html: string; baseUrl: string } | { uri: string }
 
-export type UseTermsAndConditionsSheetResult = {
+export type UseTermsAcceptanceViewResult = {
     /** Bundled HTML when the embedded copy matches the required version (no
      * spinner); otherwise the remote URL. */
     source: TermsWebViewSource
@@ -58,39 +57,42 @@ export type UseTermsAndConditionsSheetResult = {
 }
 
 /**
- * Drives the Terms & Conditions sheet: picks the bundled copy when it matches the
- * required version (instant, no spinner) and falls back to the remote URL only
- * when the version was bumped beyond what shipped with the app; gates "I Agree"
- * on scrolling to the bottom; records acceptance on agree.
+ * Drives the Terms & Conditions view, independent of how it's presented (bottom
+ * sheet on the welcome screen, or full-screen prompt for already-onboarded users
+ * after a version bump). Picks the bundled copy when it matches the required
+ * version (instant, no spinner) and falls back to the remote URL only when the
+ * version was bumped beyond what shipped; gates "I Agree" on scrolling to the
+ * bottom; records acceptance and then invokes `onAccepted` (the presenter's
+ * close/resolve) on agree.
  */
-export const useTermsAndConditionsSheet =
-    (): UseTermsAndConditionsSheetResult => {
-        const { resolve } = useBottomSheetResult<boolean>()
-        const { acceptCurrentTerms, currentVersion } = useTermsAcceptance()
-        const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
+export const useTermsAcceptanceView = (
+    onAccepted: () => void,
+): UseTermsAcceptanceViewResult => {
+    const { acceptCurrentTerms, currentVersion } = useTermsAcceptance()
+    const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false)
 
-        const useEmbedded = currentVersion === embeddedTerms.version
-        const source: TermsWebViewSource = useEmbedded
-            ? { html: embeddedTerms.html, baseUrl: config.termsOfServiceUrl }
-            : { uri: config.termsOfServiceUrl }
+    const useEmbedded = currentVersion === embeddedTerms.version
+    const source: TermsWebViewSource = useEmbedded
+        ? { html: embeddedTerms.html, baseUrl: config.termsOfServiceUrl }
+        : { uri: config.termsOfServiceUrl }
 
-        const onMessage = useCallback((event: WebViewMessageEvent) => {
-            if (event.nativeEvent.data === SCROLLED_TO_BOTTOM_MESSAGE) {
-                setHasScrolledToBottom(true)
-            }
-        }, [])
-
-        const onAgree = useCallback(() => {
-            acceptCurrentTerms()
-            resolve(true)
-        }, [acceptCurrentTerms, resolve])
-
-        return {
-            source,
-            showLoading: !useEmbedded,
-            injectedJavaScript: SCROLL_TO_BOTTOM_JS,
-            onMessage,
-            isAgreeDisabled: !hasScrolledToBottom,
-            onAgree,
+    const onMessage = useCallback((event: WebViewMessageEvent) => {
+        if (event.nativeEvent.data === SCROLLED_TO_BOTTOM_MESSAGE) {
+            setHasScrolledToBottom(true)
         }
+    }, [])
+
+    const onAgree = useCallback(() => {
+        acceptCurrentTerms()
+        onAccepted()
+    }, [acceptCurrentTerms, onAccepted])
+
+    return {
+        source,
+        showLoading: !useEmbedded,
+        injectedJavaScript: SCROLL_TO_BOTTOM_JS,
+        onMessage,
+        isAgreeDisabled: !hasScrolledToBottom,
+        onAgree,
     }
+}

@@ -17,15 +17,11 @@ import type { WebViewMessageEvent } from 'react-native-webview'
 const mocks = vi.hoisted(() => ({
     currentVersion: '1',
     acceptCurrentTerms: vi.fn(),
-    resolve: vi.fn(),
+    onAccepted: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { termsOfServiceUrl: 'https://perawallet.app/terms-and-services/' },
-}))
-
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheetResult: () => ({ resolve: mocks.resolve }),
 }))
 
 vi.mock('../../../hooks/useTermsAcceptance', () => ({
@@ -35,21 +31,23 @@ vi.mock('../../../hooks/useTermsAcceptance', () => ({
     }),
 }))
 
-import { useTermsAndConditionsSheet } from '../useTermsAndConditionsSheet'
+import { useTermsAcceptanceView } from '../useTermsAcceptanceView'
 import embeddedTerms from '../embedded-terms.json'
 
 const bottomMessage = {
     nativeEvent: { data: 'pera-terms-scrolled-to-bottom' },
 } as WebViewMessageEvent
 
-describe('useTermsAndConditionsSheet', () => {
+describe('useTermsAcceptanceView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.currentVersion = embeddedTerms.version
     })
 
     it('serves the bundled copy (no spinner) when the version matches', () => {
-        const { result } = renderHook(() => useTermsAndConditionsSheet())
+        const { result } = renderHook(() =>
+            useTermsAcceptanceView(mocks.onAccepted),
+        )
 
         expect('html' in result.current.source).toBe(true)
         expect(result.current.showLoading).toBe(false)
@@ -58,14 +56,18 @@ describe('useTermsAndConditionsSheet', () => {
     it('falls back to the remote URL (with spinner) when the version differs', () => {
         mocks.currentVersion = 'version-not-bundled'
 
-        const { result } = renderHook(() => useTermsAndConditionsSheet())
+        const { result } = renderHook(() =>
+            useTermsAcceptanceView(mocks.onAccepted),
+        )
 
         expect('uri' in result.current.source).toBe(true)
         expect(result.current.showLoading).toBe(true)
     })
 
     it('keeps agree disabled until the terms are scrolled to the bottom', () => {
-        const { result } = renderHook(() => useTermsAndConditionsSheet())
+        const { result } = renderHook(() =>
+            useTermsAcceptanceView(mocks.onAccepted),
+        )
         expect(result.current.isAgreeDisabled).toBe(true)
 
         act(() => {
@@ -76,7 +78,9 @@ describe('useTermsAndConditionsSheet', () => {
     })
 
     it('ignores unrelated WebView messages', () => {
-        const { result } = renderHook(() => useTermsAndConditionsSheet())
+        const { result } = renderHook(() =>
+            useTermsAcceptanceView(mocks.onAccepted),
+        )
 
         act(() => {
             result.current.onMessage({
@@ -87,14 +91,16 @@ describe('useTermsAndConditionsSheet', () => {
         expect(result.current.isAgreeDisabled).toBe(true)
     })
 
-    it('records acceptance and resolves on agree', () => {
-        const { result } = renderHook(() => useTermsAndConditionsSheet())
+    it('records acceptance and invokes onAccepted on agree', () => {
+        const { result } = renderHook(() =>
+            useTermsAcceptanceView(mocks.onAccepted),
+        )
 
         act(() => {
             result.current.onAgree()
         })
 
         expect(mocks.acceptCurrentTerms).toHaveBeenCalledTimes(1)
-        expect(mocks.resolve).toHaveBeenCalledWith(true)
+        expect(mocks.onAccepted).toHaveBeenCalledTimes(1)
     })
 })

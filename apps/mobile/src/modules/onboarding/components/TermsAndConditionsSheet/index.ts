@@ -11,3 +11,7 @@
  */
 
 export { TermsAndConditionsSheet } from './TermsAndConditionsSheet'
+export {
+    TermsAcceptancePrompt,
+    TERMS_ACCEPTANCE_PROMPT_ID,
+} from './TermsAcceptancePrompt'
