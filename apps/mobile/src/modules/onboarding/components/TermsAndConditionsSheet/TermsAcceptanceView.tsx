@@ -12,15 +12,16 @@
 
 import { ActivityIndicator } from 'react-native'
 import { WebView } from 'react-native-webview'
-import { PWButton, PWScreen, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWToolbar, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader } from '@modules/bottom-sheet'
 import { useTermsAcceptanceView } from './useTermsAcceptanceView'
 import { useStyles } from './styles'
 
 type TermsAcceptanceViewProps = {
     /** Invoked after acceptance is recorded — the presenter closes/resolves. */
     onAccepted: () => void
+    /** Header title. Defaults to the standard "Terms and Conditions" copy. */
+    title?: string
 }
 
 /**
@@ -33,6 +34,7 @@ type TermsAcceptanceViewProps = {
  */
 export const TermsAcceptanceView = ({
     onAccepted,
+    title,
 }: TermsAcceptanceViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -50,9 +52,16 @@ export const TermsAcceptanceView = ({
             scroll='never'
             horizontalPadding='none'
             header={
-                <SheetHeader
-                    title={t('onboarding.terms_sheet.title')}
-                    showClose={false}
+                <PWToolbar
+                    paddingStyle='dense'
+                    center={
+                        <PWText
+                            variant='h4'
+                            truncate
+                        >
+                            {title ?? t('onboarding.terms_sheet.title')}
+                        </PWText>
+                    }
                 />
             }
             footer={

@@ -1244,6 +1244,7 @@
         },
         "terms_sheet": {
             "title": "Terms and Conditions",
+            "updated_title": "Updated Terms and Conditions",
             "agree": "I Agree"
         },
         "name_account": {

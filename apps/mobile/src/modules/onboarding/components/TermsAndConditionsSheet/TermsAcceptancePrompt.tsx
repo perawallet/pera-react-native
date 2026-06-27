@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { useLanguage } from '@hooks/useLanguage'
 import { type PromptViewProps } from '@modules/prompts/models'
 import { TermsAcceptanceView } from './TermsAcceptanceView'
 
@@ -24,10 +25,16 @@ export const TERMS_ACCEPTANCE_PROMPT_ID = 'terms_acceptance_prompt'
  * the prompt; there is no skip — re-acceptance is required.
  */
 export const TermsAcceptancePrompt = ({ onHide }: PromptViewProps) => {
+    const { t } = useLanguage()
     const onAccepted = useCallback(
         () => onHide(TERMS_ACCEPTANCE_PROMPT_ID),
         [onHide],
     )
 
-    return <TermsAcceptanceView onAccepted={onAccepted} />
+    return (
+        <TermsAcceptanceView
+            onAccepted={onAccepted}
+            title={t('onboarding.terms_sheet.updated_title')}
+        />
+    )
 }
