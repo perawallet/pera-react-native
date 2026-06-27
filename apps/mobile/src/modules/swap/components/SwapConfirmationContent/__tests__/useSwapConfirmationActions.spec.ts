@@ -83,7 +83,9 @@ describe('useSwapConfirmationActions', () => {
             await result.current.handleSlideConfirm()
         })
 
-        expect(mockExecute).toHaveBeenCalledWith('quote-1')
+        expect(mockExecute).toHaveBeenCalledWith(
+            expect.objectContaining({ quoteIdStr: 'quote-1' }),
+        )
         expect(mockSchedule).toHaveBeenCalled()
         expect(mockResolve).toHaveBeenCalledWith({ kind: 'confirm' })
     })

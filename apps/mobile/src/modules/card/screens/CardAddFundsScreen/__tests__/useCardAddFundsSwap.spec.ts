@@ -102,7 +102,9 @@ describe('useCardAddFundsSwap', () => {
         const { result } = renderHook(() => useCardAddFundsSwap(baseParams))
 
         const success = await result.current.executeSwap()
-        expect(mockExecute).toHaveBeenCalledWith('q1')
+        expect(mockExecute).toHaveBeenCalledWith(
+            expect.objectContaining({ quoteIdStr: 'q1' }),
+        )
         expect(success).toEqual({ kind: 'success' })
 
         mockExecute.mockResolvedValue({
