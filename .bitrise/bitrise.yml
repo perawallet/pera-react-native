@@ -186,6 +186,11 @@ workflows:
                   CHANGELOG="Release build - see git history for changes"
                 fi
 
+                # JSON-escape (newlines -> \n, quotes) so the changelog embeds
+                # cleanly in the Slack payload "text" field; without it the raw
+                # newlines collapse the list (and section headers) onto one line.
+                CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
+
                 envman add --key CHANGELOG --value "$CHANGELOG"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
@@ -466,6 +471,11 @@ workflows:
                   echo "No previous tag found"
                   CHANGELOG="Release build - see git history for changes"
                 fi
+
+                # JSON-escape (newlines -> \n, quotes) so the changelog embeds
+                # cleanly in the Slack payload "text" field; without it the raw
+                # newlines collapse the list (and section headers) onto one line.
+                CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
 
                 envman add --key CHANGELOG --value "$CHANGELOG"
       - script@1:
