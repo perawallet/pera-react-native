@@ -1990,7 +1990,9 @@
         "balance_impact": {
             "receive_title": "You will receive",
             "spend_title": "You will spend",
-            "analyzing": "Analyzing transaction…"
+            "analyzing": "Analyzing transaction…",
+            "entire_balance": "Entire {{unit}} balance",
+            "closes_balance": "Your full remaining balance is sent"
         },
         "arbitrary_data_view": {
             "body": "Data Signing Request",
