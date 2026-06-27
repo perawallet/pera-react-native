@@ -664,14 +664,16 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                # Production publishes to Play Console only on a STABLE tag
-                # (vX.Y.Z). Nightly (-alpha) and rc (-rc) builds, plus all staging
-                # builds, go to Firebase. Non-tag builds keep the workflow default.
+                # Production publishes to Play Console (internal track) on an rc
+                # (-rc) or STABLE (vX.Y.Z) tag — deploy_internal uploads the AAB to
+                # Play and an APK to Firebase. Nightly (-alpha) builds, plus all
+                # staging builds, go to Firebase only. Non-tag builds keep the
+                # workflow default.
                 DIST="$DISTRIBUTION"
                 if [ "$ENVIRONMENT" = "production" ]; then
                   case "$BITRISE_GIT_TAG" in
-                    *-alpha.* | *-rc.*) DIST="firebase" ;;
-                    v*) DIST="play" ;;
+                    *-alpha.*) DIST="firebase" ;;
+                    *-rc.* | v*) DIST="play" ;;
                   esac
                 fi
                 envman add --key DISTRIBUTION --value "$DIST"
