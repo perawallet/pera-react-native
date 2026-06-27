@@ -119,9 +119,8 @@ platform :ios do
       xcodeproj: get_xcodeproj_path
     )
 
-    # Determine Bundle ID for export options. Must match app.config.builder.js's
-    # bundleIdentifiers: production ships the legacy store id (in-place upgrade),
-    # staging/dev ship the .staging id.
+    # Bundle ID for export options. Must match app.config.builder.js's
+    # bundleIdentifiers (production vs staging/dev).
     bundle_id = case options[:scheme]
     when "PeraAlgoWallet" then "com.algorandllc.algorand"
     else "com.algorandllc.perarn.staging"
