@@ -94,6 +94,29 @@ export const usePinEditView = ({
     // (PERA-4193)
     const lastPromptedModeRef = useRef<Nullable<PinEntryMode>>(null)
 
+    // The prompt's collaborators are read through a ref so the effect depends
+    // only on `currentMode`. Otherwise an unrelated re-render (e.g. the host
+    // bottom sheet finishing its open animation) — which changes the inline
+    // `onSuccess` identity — would run the effect cleanup mid-prompt, drop the
+    // in-flight biometric success, and force the user onto the PIN pad after
+    // already passing biometrics. (PERA-4466)
+    const promptRef = useRef({
+        checkBiometricsEnabled,
+        authenticateWithBiometrics,
+        resetFailedAttempts,
+        onSuccess,
+        t,
+        showError,
+    })
+    promptRef.current = {
+        checkBiometricsEnabled,
+        authenticateWithBiometrics,
+        resetFailedAttempts,
+        onSuccess,
+        t,
+        showError,
+    }
+
     useEffect(() => {
         if (!isVerifyMode(currentMode)) {
             lastPromptedModeRef.current = null
@@ -105,36 +128,33 @@ export const usePinEditView = ({
         let cancelled = false
         try {
             void (async () => {
-                const enabled = await checkBiometricsEnabled()
+                const enabled = await promptRef.current.checkBiometricsEnabled()
                 if (cancelled || !enabled) return
-                const success = await authenticateWithBiometrics({
-                    title: t('security.biometric.unlock_prompt_title'),
-                    cancelLabel: t('security.biometric.cancel_label'),
-                })
+                const success =
+                    await promptRef.current.authenticateWithBiometrics({
+                        title: promptRef.current.t(
+                            'security.biometric.unlock_prompt_title',
+                        ),
+                        cancelLabel: promptRef.current.t(
+                            'security.biometric.cancel_label',
+                        ),
+                    })
                 if (cancelled || !success) return
-                void resetFailedAttempts()
+                void promptRef.current.resetFailedAttempts()
                 setHasError(false)
                 if (currentMode === 'verify') {
-                    onSuccess?.()
+                    promptRef.current.onSuccess?.()
                 } else if (currentMode === 'change_old') {
                     setCurrentMode('setup')
                 }
             })()
         } catch (error) {
-            showError(error)
+            promptRef.current.showError(error)
         }
         return () => {
             cancelled = true
         }
-    }, [
-        currentMode,
-        checkBiometricsEnabled,
-        authenticateWithBiometrics,
-        resetFailedAttempts,
-        onSuccess,
-        t,
-        showError,
-    ])
+    }, [currentMode])
 
     const handlePinComplete = useCallback(
         async (pin: string) => {
