@@ -42,6 +42,12 @@ export type PWImageProps = {
     transition?: boolean | number
     width?: number
     height?: number
+    /**
+     * expo-image cache policy. Defaults to `'memory-disk'`. Pass `'none'` for
+     * sensitive, single-use images (e.g. the card secure-view PAN/CVV) so they
+     * are never written to the on-disk cache.
+     */
+    cachePolicy?: ImageProps['cachePolicy']
 }
 
 const RESIZE_MODE_TO_CONTENT_FIT: Record<string, ImageContentFit> = {
@@ -63,6 +69,7 @@ export const PWImage = ({
     transition = true,
     width,
     height,
+    cachePolicy = 'memory-disk',
 }: PWImageProps) => {
     const styles = useStyles()
     const [isLoading, setIsLoading] = useState(true)
@@ -109,7 +116,7 @@ export const PWImage = ({
                 onLoad={handleLoad}
                 onError={handleError}
                 transition={transitionDuration}
-                cachePolicy='memory-disk'
+                cachePolicy={cachePolicy}
                 recyclingKey={
                     typeof source === 'object' &&
                     source !== null &&

@@ -38,10 +38,13 @@ export const PeraCardVisual = ({
             <PWView style={styles.cardContainer}>
                 {/* `contain` so the server-rendered PAN/CVC/expiry can never be
                     cropped, even if its aspect ratio differs from the box. */}
+                {/* `none` so the server-rendered PAN/CVC/expiry is never
+                    written to the on-disk image cache. */}
                 <PWImage
                     source={{ uri: secureImageUrl }}
                     style={styles.cardImage}
                     resizeMode='contain'
+                    cachePolicy='none'
                     onError={onSecureImageError}
                 />
             </PWView>
