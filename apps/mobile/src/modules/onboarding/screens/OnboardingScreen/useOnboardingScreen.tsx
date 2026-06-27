@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
-import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { useIsOnboarding, useTermsAcceptance } from '@modules/onboarding/hooks'
+import { TermsAndConditionsSheet } from '../../components/TermsAndConditionsSheet'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
@@ -24,7 +26,6 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 type UseOnboardingScreenResult = {
-    handleTermsPress: () => void
     handlePrivacyPress: () => void
     handleCreateAccount: () => void
     handleImportAccount: () => void
@@ -44,13 +45,26 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const { buildHdWalletAccount } = useCreateAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
+    const { request: requestBottomSheet } = useBottomSheet()
+    const { needsAcceptance } = useTermsAcceptance()
 
-    const handleTermsPress = useCallback(() => {
-        pushWebView({
-            url: config.termsOfServiceUrl,
-            id: 'terms-of-service',
+    // Terms & Conditions gate: on first launch (or after a `terms_version` bump)
+    // pop the blocking acceptance sheet over the welcome screen. The sheet is
+    // non-dismissable; "I Agree" records the version and closes it. Guarded so a
+    // re-render can't stack a second sheet.
+    const termsPromptedRef = useRef(false)
+    useEffect(() => {
+        if (!needsAcceptance || termsPromptedRef.current) return
+        termsPromptedRef.current = true
+        void requestBottomSheet({
+            contents: <TermsAndConditionsSheet />,
+            options: {
+                size: 'full',
+                enablePanDownToClose: false,
+                enableCloseOnBackdropPress: false,
+            },
         })
-    }, [pushWebView])
+    }, [needsAcceptance, requestBottomSheet])
 
     const handlePrivacyPress = useCallback(() => {
         pushWebView({
@@ -104,7 +118,6 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     }, [navigation, setIsOnboarding])
 
     return {
-        handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
         handleImportAccount,

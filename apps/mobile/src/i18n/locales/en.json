@@ -1240,7 +1240,11 @@
             "create_wallet": "Create a new wallet",
             "already_have_account": "Already have an account?",
             "import_account": "Import an account",
-            "terms_and_privacy": "By creating a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>"
+            "privacy_agreement": "By creating a wallet, you agree to Pera Wallet's <0>Privacy Policy</0>"
+        },
+        "terms_sheet": {
+            "title": "Terms and Conditions",
+            "agree": "I Agree"
         },
         "name_account": {
             "title": "Name your account",

@@ -23,3 +23,8 @@ export type {
     UseMnemonicWordEntryParams,
     UseMnemonicWordEntryResult,
 } from './useMnemonicWordEntry'
+export {
+    useTermsAcceptance,
+    ACCEPTED_TERMS_VERSION_KEY,
+    type UseTermsAcceptanceResult,
+} from './useTermsAcceptance'
