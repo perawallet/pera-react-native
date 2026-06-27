@@ -102,7 +102,7 @@ describe('Flow: Card frozen state', () => {
         expect(screen.queryByTestId('card_frozen_banner')).toBeNull()
     })
 
-    it('reactivates a frozen card from the banner and hides it', async () => {
+    it('reactivates a frozen card from the banner via the confirmation sheet and hides it', async () => {
         const { ref, handler } = statefulStatus('FROZEN')
         const unfreeze = vi.fn(() => {
             ref.status = 'ACTIVE'
@@ -112,9 +112,19 @@ describe('Flow: Card frozen state', () => {
 
         renderDetails()
 
+        // Tapping reactivate opens the confirmation sheet — it does not unfreeze
+        // immediately.
         fireEvent.click(
             await screen.findByTestId('pera_card_reactivate_button'),
         )
+        const confirm = await screen.findByTestId('unfreeze_confirm_button')
+        expect(
+            screen.getByTestId('unfreeze_card_confirmation_sheet'),
+        ).toBeTruthy()
+        expect(unfreeze).not.toHaveBeenCalled()
+
+        // Confirming runs the unfreeze, closes the sheet, and hides the banner.
+        fireEvent.click(confirm)
 
         await waitFor(() => expect(unfreeze).toHaveBeenCalled())
         await waitFor(() =>
