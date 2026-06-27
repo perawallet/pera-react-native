@@ -19,7 +19,6 @@ import {
     useCardStore,
     useIsCardUnfreezing,
     useSetCardPinMutation,
-    useUnfreezeCardMutation,
 } from '@perawallet/wallet-core-card'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -28,6 +27,7 @@ import { useWebView } from '@modules/webview'
 import { useCardComingSoonToast, useCardErrorToast } from '../../hooks'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
 import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
+import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 import {
     WalletInstructionsSheet,
     type WalletPlatform,
@@ -87,9 +87,8 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const walletPlatform = Platform.OS === 'ios' ? 'apple' : 'google'
 
     const cardDetails = useCardDetailsMutation()
-    const unfreeze = useUnfreezeCardMutation()
-    // Shared with the Card Frozen banner so the two unfreeze entry points
-    // can't fire concurrently.
+    // Shared with the Card Frozen banner so the in-flight unfreeze state (driven
+    // by the confirmation sheet) reflects on both entry points.
     const isUnfreezing = useIsCardUnfreezing()
     const setPin = useSetCardPinMutation()
 
@@ -129,32 +128,22 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         )
     }, [errorToast, t])
 
-    const toggleFreeze = useCallback(async () => {
-        if (!isFrozen) {
-            // Freezing is confirmed AND executed inside the sheet, so its button
-            // owns the pending state; here we only open it. Content-sized sheet
-            // (default autoCreateContainer) so it grows to fit, no scroll.
-            void request({
-                contents: <FreezeCardConfirmationSheet />,
-                options: {
-                    size: 'auto',
-                    enablePanDownToClose: true,
-                },
-            })
-            return
-        }
-        // Unfreezing is immediate. Guard re-entry against a double-tap (shared
-        // with the banner via useIsCardUnfreezing).
-        if (isUnfreezing) return
-        try {
-            await unfreeze.mutateAsync()
-        } catch (error) {
-            await showError(error)
-        }
-    }, [isFrozen, isUnfreezing, unfreeze, request, showError])
+    // Both freeze and unfreeze are confirmed AND executed inside their sheet, so
+    // the sheet's button owns the pending state; here we only open it.
+    // Content-sized sheet (default autoCreateContainer) so it grows to fit.
     const onToggleFreeze = useCallback(() => {
-        void toggleFreeze()
-    }, [toggleFreeze])
+        void request({
+            contents: isFrozen ? (
+                <UnfreezeCardConfirmationSheet />
+            ) : (
+                <FreezeCardConfirmationSheet />
+            ),
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+            },
+        })
+    }, [isFrozen, request])
 
     const submitSetPin = useCallback(async () => {
         // Guard re-entry so a slow token request can't stack a second WebView.
