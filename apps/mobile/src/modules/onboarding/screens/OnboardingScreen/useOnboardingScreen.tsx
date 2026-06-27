@@ -61,6 +61,10 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
                 size: 'modal',
                 enablePanDownToClose: false,
                 enableCloseOnBackdropPress: false,
+                // Fill the sheet (definite height) so the PWScreen body/webview
+                // gets real height and the footer pins to the bottom instead of
+                // the content collapsing to its intrinsic size.
+                autoCreateContainer: false,
             },
         })
         return accepted === true
