@@ -10,6 +10,15 @@ def get_package_version
   package_data["version"].split("-").first
 end
 
+# Marketing version (CFBundleShortVersionString / versionName). The git tag is
+# the source of truth on CI — the bitrise version step derives APP_VERSION from
+# it (tag base, e.g. v7.0.1-alpha.3 -> 7.0.1). Falls back to package.json for
+# local/manual runs where APP_VERSION isn't set.
+def resolve_marketing_version
+  env = ENV["APP_VERSION"]
+  (env && !env.empty?) ? env : get_package_version
+end
+
 # Helper to read the committed version-code base (PERA-4451). Added to the CI
 # BUILD_NUMBER to floor the iOS build number / Android versionCode above the
 # live store values. Mirrors app.config.builder.js's resolveBuildNumber.
@@ -97,7 +106,7 @@ platform :ios do
     clean = true if clean.nil?
 
     # Inject version from package.json
-    version = get_package_version
+    version = resolve_marketing_version
     increment_version_number(
       version_number: version,
       xcodeproj: get_xcodeproj_path
@@ -110,20 +119,15 @@ platform :ios do
       xcodeproj: get_xcodeproj_path
     )
 
-    # Determine Bundle ID for export options. Must match app.config.builder.js's
-    # bundleIdentifiers: production ships the legacy store id (in-place upgrade),
-    # staging/dev ship the .staging id.
+    # Bundle ID for export options. Must match app.config.builder.js's
+    # bundleIdentifiers (production vs staging/dev).
     bundle_id = case options[:scheme]
-    when "Pera7Production" then "com.algorandllc.algorand"
+    when "PeraAlgoWallet" then "com.algorandllc.algorand"
     else "com.algorandllc.perarn.staging"
     end
-    # AutoFill credential-provider extension. Production matches the shipping
-    # native app's extension id (.autofill-extension) so it reuses that App ID's
-    # existing App Store profile; staging/dev use the autofill plugin's default.
-    # Must mirror withPasskeyAutofillFixes.js.
-    extension_suffix =
-      options[:scheme] == "Pera7Production" ? "autofill-extension" : "PasskeyAutofillCredentialProvider"
-    extension_bundle_id = "#{bundle_id}.#{extension_suffix}"
+    # AutoFill credential-provider extension (added by the passkey plugin).
+    # Same suffix for every variant; each has its own App ID + App Store profile.
+    extension_bundle_id = "#{bundle_id}.PasskeyAutofillCredentialProvider"
 
     app_profile = ENV["IOS_PROVISIONING_PROFILE_NAME"]
     extension_profile = ENV["IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"]
@@ -186,7 +190,7 @@ platform :ios do
     # Map scheme to configuration
     configuration = case scheme
     when "Pera7Staging" then "Staging"
-    when "Pera7Production" then "Production"
+    when "PeraAlgoWallet" then "Production"
     when "Pera-Dev" then "Dev"
     else "Staging"
     end
@@ -260,7 +264,7 @@ platform :android do
     clean = options[:clean].nil? ? true : options[:clean]
     artifact_type = options[:artifact_type] || "aab"
 
-    version = get_package_version
+    version = resolve_marketing_version
     gradle_task = artifact_type == "apk" ? "assemble" : "bundle"
     task = clean ? "clean #{gradle_task}" : gradle_task
 

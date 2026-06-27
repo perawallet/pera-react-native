@@ -122,6 +122,14 @@ export const configSchema = z.object({
     appEnvironment: z
         .enum(['development', 'staging', 'production'])
         .default('development'),
+
+    /**
+     * Full git release tag baked at build time (e.g. "v7.0.0-alpha.9"), shown
+     * in-app so QA can see the exact prerelease they're testing. Sourced from
+     * BITRISE_GIT_TAG; empty for local/non-tag builds (the version display then
+     * falls back to the native store version).
+     */
+    releaseTag: z.string().default(''),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -235,6 +243,7 @@ const productionConfig = {
 
     defaultNetwork: 'mainnet',
     appEnvironment: 'development',
+    releaseTag: '',
 }
 
 // A map of which environment variable (if any) to read config overrides from
@@ -302,6 +311,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',
+    releaseTag: 'BITRISE_GIT_TAG',
 }
 
 /**
