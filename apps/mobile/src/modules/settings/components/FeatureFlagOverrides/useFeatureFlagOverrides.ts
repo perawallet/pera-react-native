@@ -23,13 +23,12 @@ export const useFeatureFlagOverrides = () => {
     // This screen renders each flag as a boolean toggle, so only surface
     // remote-config values that are actually booleans. String/number values
     // (e.g. terms_version, thresholds) can't be toggled and are hidden here.
-    const booleanFlagKeys = useMemo(
-        () =>
-            Object.keys(RemoteConfigKeys).filter(
-                key => typeof RemoteConfigDefaults[key] === 'boolean',
-            ),
-        [],
-    )
+    const booleanFlagKeys = useMemo(() => {
+        const defaults = RemoteConfigDefaults as Record<string, unknown>
+        return Object.keys(RemoteConfigKeys).filter(
+            key => typeof defaults[key] === 'boolean',
+        )
+    }, [])
 
     const expanded = useMemo(
         () => Object.keys(configOverrides),
