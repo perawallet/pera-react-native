@@ -13,19 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    webViewContainer: {
-        flex: 1,
-        marginTop: theme.spacing.sm,
-    },
     webView: {
         flex: 1,
         backgroundColor: theme.colors.background,
     },
     footer: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.md,
     },
 }))

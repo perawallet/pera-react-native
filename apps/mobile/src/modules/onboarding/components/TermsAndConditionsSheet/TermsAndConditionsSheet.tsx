@@ -12,21 +12,21 @@
 
 import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview'
 import { config } from '@perawallet/wallet-core-config'
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useTermsAcceptance } from '../../hooks/useTermsAcceptance'
 import { useStyles } from './styles'
 
 /**
- * Blocking Terms & Conditions gate shown on launch when the user hasn't accepted
- * the current `terms_version`. Renders the terms inline from the configured URL
- * and offers a single "I Agree" action that records acceptance and closes. It is
- * intentionally non-dismissable (no close affordance, no pan-to-close) — the
- * host opens it with those options off.
+ * Blocking Terms & Conditions gate shown when the user hasn't accepted the
+ * current `terms_version`. Renders the terms inline from the configured URL with
+ * a single "I Agree" action pinned to the bottom that records acceptance and
+ * closes. It is intentionally non-dismissable: no close affordance (header has
+ * none), and the host opens it with pan-to-close / backdrop-close disabled — the
+ * only way out is to agree.
  */
 export const TermsAndConditionsSheet = () => {
     const styles = useStyles()
@@ -40,27 +40,32 @@ export const TermsAndConditionsSheet = () => {
     }, [acceptCurrentTerms, resolve])
 
     return (
-        <SafeAreaView
-            edges={['bottom']}
-            style={styles.container}
+        <PWScreen
+            scroll='never'
+            horizontalPadding='none'
+            header={
+                <SheetHeader
+                    title={t('onboarding.terms_sheet.title')}
+                    showClose={false}
+                />
+            }
+            footer={
+                <PWView style={styles.footer}>
+                    <PWButton
+                        variant='primary'
+                        title={t('onboarding.terms_sheet.agree')}
+                        onPress={handleAgree}
+                        testID='terms_agree_button'
+                    />
+                </PWView>
+            }
         >
-            <SheetHeader title={t('onboarding.terms_sheet.title')} />
-            <PWView style={styles.webViewContainer}>
-                <WebView
-                    source={{ uri: config.termsOfServiceUrl }}
-                    style={styles.webView}
-                    startInLoadingState
-                    renderLoading={() => <ActivityIndicator />}
-                />
-            </PWView>
-            <PWView style={styles.footer}>
-                <PWButton
-                    variant='primary'
-                    title={t('onboarding.terms_sheet.agree')}
-                    onPress={handleAgree}
-                    testID='terms_agree_button'
-                />
-            </PWView>
-        </SafeAreaView>
+            <WebView
+                source={{ uri: config.termsOfServiceUrl }}
+                style={styles.webView}
+                startInLoadingState
+                renderLoading={() => <ActivityIndicator />}
+            />
+        </PWScreen>
     )
 }

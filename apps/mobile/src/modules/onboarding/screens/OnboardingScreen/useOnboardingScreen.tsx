@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
@@ -48,22 +48,22 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const { needsAcceptance } = useTermsAcceptance()
 
-    // Terms & Conditions gate: on first launch (or after a `terms_version` bump)
-    // pop the blocking acceptance sheet over the welcome screen. The sheet is
-    // non-dismissable; "I Agree" records the version and closes it. Guarded so a
-    // re-render can't stack a second sheet.
-    const termsPromptedRef = useRef(false)
-    useEffect(() => {
-        if (!needsAcceptance || termsPromptedRef.current) return
-        termsPromptedRef.current = true
-        void requestBottomSheet({
+    // Terms & Conditions gate. Deferred until the user actually starts onboarding
+    // (create or import) rather than auto-popping on mount. Returns whether the
+    // user may proceed. The sheet is blocking (no close, not dismissable) and
+    // only resolves `true` via "I Agree", so a falsy result means "don't
+    // proceed". Skipped entirely once the current terms version is accepted.
+    const ensureTermsAccepted = useCallback(async (): Promise<boolean> => {
+        if (!needsAcceptance) return true
+        const accepted = await requestBottomSheet<boolean>({
             contents: <TermsAndConditionsSheet />,
             options: {
-                size: 'full',
+                size: 'modal',
                 enablePanDownToClose: false,
                 enableCloseOnBackdropPress: false,
             },
         })
+        return accepted === true
     }, [needsAcceptance, requestBottomSheet])
 
     const handlePrivacyPress = useCallback(() => {
@@ -74,33 +74,37 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     }, [pushWebView])
 
     const handleCreateAccount = useCallback(() => {
-        trackEvent(OnboardingEvent.CreateNewWallet)
-        setIsOnboarding(true)
-        openCreatingAccount()
-        void deferToNextCycle(async () => {
-            try {
-                const newAccount = await buildHdWalletAccount({
-                    account: 0,
-                    keyIndex: 0,
-                })
-                if (!isMounted()) return
-                navigation.push('NameAccount', { account: newAccount })
-            } catch (error) {
-                if (!isMounted()) return
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                showToast({
-                    title: t('onboarding.create_account.error_title'),
-                    body: t('onboarding.create_account.error_message', {
-                        error: `${error}`,
-                    }),
-                    type: 'error',
-                })
-                setIsOnboarding(false)
-            } finally {
-                if (isMounted()) closeCreatingAccount()
-            }
-        })
+        void (async () => {
+            if (!(await ensureTermsAccepted())) return
+            trackEvent(OnboardingEvent.CreateNewWallet)
+            setIsOnboarding(true)
+            openCreatingAccount()
+            await deferToNextCycle(async () => {
+                try {
+                    const newAccount = await buildHdWalletAccount({
+                        account: 0,
+                        keyIndex: 0,
+                    })
+                    if (!isMounted()) return
+                    navigation.push('NameAccount', { account: newAccount })
+                } catch (error) {
+                    if (!isMounted()) return
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
+                    showToast({
+                        title: t('onboarding.create_account.error_title'),
+                        body: t('onboarding.create_account.error_message', {
+                            error: `${error}`,
+                        }),
+                        type: 'error',
+                    })
+                    setIsOnboarding(false)
+                } finally {
+                    if (isMounted()) closeCreatingAccount()
+                }
+            })
+        })()
     }, [
+        ensureTermsAccepted,
         isMounted,
         setIsOnboarding,
         openCreatingAccount,
@@ -112,10 +116,13 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     ])
 
     const handleImportAccount = useCallback(() => {
-        trackEvent(OnboardingEvent.ImportAccount)
-        setIsOnboarding(true)
-        navigation.push('ImportAccountOptions')
-    }, [navigation, setIsOnboarding])
+        void (async () => {
+            if (!(await ensureTermsAccepted())) return
+            trackEvent(OnboardingEvent.ImportAccount)
+            setIsOnboarding(true)
+            navigation.push('ImportAccountOptions')
+        })()
+    }, [ensureTermsAccepted, navigation, setIsOnboarding])
 
     return {
         handlePrivacyPress,
