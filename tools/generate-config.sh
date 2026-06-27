@@ -77,6 +77,10 @@ append_config "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" "playIntegrityCloudProjectNu
 # Build channel (development | staging | production)
 append_config "APP_ENV" "appEnvironment" "string"
 
+# Full git release tag (e.g. v7.0.0-alpha.9) for the in-app QA version display.
+# Set by Bitrise on tag builds; absent locally/off-tag.
+append_config "BITRISE_GIT_TAG" "releaseTag" "string"
+
 # Explorer URLs
 append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"
 append_config "TESTNET_EXPLORER_URL" "testnetExplorerUrl" "string"
