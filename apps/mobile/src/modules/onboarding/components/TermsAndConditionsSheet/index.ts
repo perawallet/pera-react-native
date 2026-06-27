@@ -10,13 +10,8 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-remote-config'
-
+export { TermsAndConditionsSheet } from './TermsAndConditionsSheet'
 export {
-    RemoteConfigKeys,
-    RemoteConfigDefaults,
-} from '@perawallet/wallet-extension-platform'
-
-export * from './models'
-export * from './store'
-export * from './hooks'
+    TermsAcceptancePrompt,
+    TERMS_ACCEPTANCE_PROMPT_ID,
+} from './TermsAcceptancePrompt'

@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-remote-config'
+import { makeStyles } from '@rneui/themed'
 
-export {
-    RemoteConfigKeys,
-    RemoteConfigDefaults,
-} from '@perawallet/wallet-extension-platform'
-
-export * from './models'
-export * from './store'
-export * from './hooks'
+export const useStyles = makeStyles(theme => ({
+    webView: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    footer: {
+        paddingHorizontal: theme.spacing.lg,
+    },
+}))
