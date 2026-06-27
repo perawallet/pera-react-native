@@ -144,13 +144,32 @@ describe('computeBalanceImpact', () => {
         expect(deltas).toEqual([{ assetId: '7', amount: -100n }])
     })
 
-    it('flags a close-remainder sweep from the user', () => {
-        const { hasCloseRemainder } = computeBalanceImpact(
+    it('flags a close-remainder sweep from the user and records the ALGO id', () => {
+        const { hasCloseRemainder, closedAssetIds } = computeBalanceImpact(
             [payment({ amount: 0n, closeRemainderTo: OTHER })],
             users,
         )
 
         expect(hasCloseRemainder).toBe(true)
+        expect(closedAssetIds).toEqual(['0'])
+    })
+
+    it('records the asset id of an asset-transfer close-to sweep', () => {
+        const { hasCloseRemainder, closedAssetIds } = computeBalanceImpact(
+            [
+                assetTransfer({
+                    sender: USER,
+                    receiver: OTHER,
+                    assetId: 42n,
+                    amount: 1n,
+                    closeTo: OTHER,
+                }),
+            ],
+            users,
+        )
+
+        expect(hasCloseRemainder).toBe(true)
+        expect(closedAssetIds).toEqual(['42'])
     })
 
     it('produces no delta for a zero-amount self opt-in', () => {

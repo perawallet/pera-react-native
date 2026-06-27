@@ -37,6 +37,12 @@ export type BalanceImpactItem = {
     direction: BalanceImpactDirection
     /** Absolute amount in display units. The direction carries the sign. */
     amount: Decimal
+    /**
+     * The transaction sweeps this asset's entire remaining balance (a
+     * close-remainder/close-to), so `amount` understates the true outflow. The
+     * row must present it as the full balance rather than the partial figure.
+     */
+    isFullBalance: boolean
     /** USD unit price, when known — lets the fiat row convert without a lookup. */
     usdPrice?: Decimal
     /** Collectible only. */
@@ -65,10 +71,15 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
 
     const assetIds = useMemo(
         () =>
-            impact.deltas
-                .map(d => d.assetId)
-                .filter(id => id !== ALGO_ASSET_ID),
-        [impact.deltas],
+            [
+                ...new Set([
+                    ...impact.deltas.map(d => d.assetId),
+                    // A close-only sweep (no explicit transfer) has no delta but
+                    // still needs metadata to render its "entire balance" row.
+                    ...impact.closedAssetIds,
+                ]),
+            ].filter(id => id !== ALGO_ASSET_ID),
+        [impact.deltas, impact.closedAssetIds],
     )
 
     // The signed group can touch assets the user doesn't hold (e.g. a swap
@@ -78,7 +89,19 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
     const { data: prices } = useAssetPricesQuery([ALGO_ASSET_ID, ...assetIds])
 
     return useMemo(() => {
-        const items = impact.deltas.map<SortableItem>(({ assetId, amount }) => {
+        const closedAssetIds = new Set(impact.closedAssetIds)
+        const deltaAssetIds = new Set(impact.deltas.map(d => d.assetId))
+        // A close-remainder/close-to with no explicit transfer produces no
+        // delta, yet still empties the account — synthesize a zero-amount spend
+        // row so the sweep is never invisible. Its amount is unused: the row
+        // renders "entire balance" rather than the figure.
+        const movements = [
+            ...impact.deltas,
+            ...impact.closedAssetIds
+                .filter(id => !deltaAssetIds.has(id))
+                .map(assetId => ({ assetId, amount: 0n })),
+        ]
+        const items = movements.map<SortableItem>(({ assetId, amount }) => {
             const isAlgo = assetId === ALGO_ASSET_ID
             const asset: PeraAsset | undefined = isAlgo
                 ? ALGO_ASSET
@@ -114,6 +137,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 isCollectible,
                 direction: amount > 0n ? 'receive' : 'spend',
                 amount: displayAbs,
+                isFullBalance: closedAssetIds.has(assetId),
                 usdPrice,
                 collectibleTitle: isCollectible
                     ? (collectible?.title ?? asset?.name ?? `#${assetId}`)

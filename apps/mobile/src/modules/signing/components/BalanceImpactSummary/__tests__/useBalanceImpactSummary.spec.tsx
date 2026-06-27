@@ -74,6 +74,18 @@ const receiveNft = {
     },
 } as unknown as PeraDisplayableTransaction
 
+// Close-remainder with no explicit transfer: sweeps the whole ALGO balance but
+// produces no delta on its own.
+const closeAlgo = {
+    sender: USER,
+    fee: 1000n,
+    paymentTransaction: {
+        amount: 0n,
+        receiver: OTHER,
+        closeRemainderTo: OTHER,
+    },
+} as unknown as PeraDisplayableTransaction
+
 const mockTransactions = (
     transactions: PeraDisplayableTransaction[],
     isSimulating = false,
@@ -143,6 +155,17 @@ describe('useBalanceImpactSummary', () => {
         const { result } = renderHook(() => useBalanceImpactSummary())
 
         expect(result.current.isSimulating).toBe(true)
+    })
+
+    it('surfaces a close-remainder sweep as a full-balance spend row', () => {
+        mockTransactions([closeAlgo])
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        expect(result.current.spend).toHaveLength(1)
+        const algo = result.current.spend[0]
+        expect(algo.assetId).toBe('0')
+        expect(algo.isFullBalance).toBe(true)
     })
 
     it('reports no impact when nothing touches the user’s accounts', () => {
