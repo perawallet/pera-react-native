@@ -14,6 +14,8 @@ import { useState, useCallback } from 'react'
 import {
     useTransactionEncoder,
     useAlgorandClient,
+    mapToDisplayableTransaction,
+    type PeraDisplayableTransaction,
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -24,6 +26,7 @@ import {
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
     type PrepareTransactionsResult,
+    type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import {
     logger,
@@ -41,6 +44,7 @@ import {
     requestSwapSignatures,
     reportSwapFailure,
 } from './swapExecutionHelpers'
+import { validateSwapGroupAgainstQuote } from './validateSwapGroupAgainstQuote'
 
 export type SwapExecutionStatus =
     | 'idle'
@@ -71,7 +75,7 @@ export type SwapExecutionOutcome =
     | { kind: 'error'; phase: SwapExecutionErrorPhase; message: string }
 
 type UseSwapExecutionResult = {
-    execute: (quoteIdStr: string) => Promise<SwapExecutionOutcome>
+    execute: (quote: SwapQuote) => Promise<SwapExecutionOutcome>
     status: SwapExecutionStatus
     error: Nullable<SwapExecutionError>
     txIds: string[]
@@ -97,9 +101,17 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
 
     const execute = useCallback(
-        async (quoteIdStr: string): Promise<SwapExecutionOutcome> => {
+        async (quote: SwapQuote): Promise<SwapExecutionOutcome> => {
             setError(null)
             setTxIds([])
+
+            const quoteIdStr = quote.quoteIdStr
+            if (!quoteIdStr) {
+                const message = 'Swap quote is missing its id'
+                setError({ phase: 'prepare', message })
+                setStatus('error')
+                return { kind: 'error', phase: 'prepare', message }
+            }
 
             let prepareResult: Optional<PrepareTransactionsResult>
 
@@ -139,6 +151,28 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     decodeSignedTransaction,
                 },
             )
+
+            // Fail-closed: the prepared group is backend-built and these flows
+            // skip the standard signing review sheet, so verify it only spends
+            // what the reviewed quote implies before signing it.
+            try {
+                const signableDisplayable = unsignedTxs
+                    .map(mapToDisplayableTransaction)
+                    .filter(
+                        (tx): tx is PeraDisplayableTransaction => tx !== null,
+                    )
+                validateSwapGroupAgainstQuote(signableDisplayable, quote)
+            } catch (e) {
+                const message =
+                    e instanceof Error ? e.message : 'Swap validation failed'
+                setError({ phase: 'prepare', message })
+                setStatus('error')
+                void reportSwapFailure(
+                    updateSwapStatus,
+                    prepareResult.swapIdStr,
+                )
+                return { kind: 'error', phase: 'prepare', message }
+            }
 
             // Phase 2: Sign transactions via the signing pipeline.
             // Skip the pipeline entirely when every txn is already pre-signed.

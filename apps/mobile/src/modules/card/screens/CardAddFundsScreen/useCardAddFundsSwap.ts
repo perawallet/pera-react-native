@@ -98,7 +98,7 @@ export const useCardAddFundsSwap = ({
             if (!quote?.quoteIdStr) {
                 return { kind: 'error', message: '' }
             }
-            const outcome = await execute(quote.quoteIdStr)
+            const outcome = await execute(quote)
             if (outcome.kind === 'success') return { kind: 'success' }
             if (outcome.kind === 'cancelled') return { kind: 'cancelled' }
             return { kind: 'error', message: outcome.message }

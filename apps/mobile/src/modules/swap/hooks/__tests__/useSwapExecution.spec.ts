@@ -16,7 +16,10 @@ import {
     useSwapExecution,
     type SwapExecutionOutcome,
 } from '../useSwapExecution'
-import type { PrepareTransactionsResult } from '@perawallet/wallet-core-swaps'
+import type {
+    PrepareTransactionsResult,
+    SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
@@ -101,6 +104,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
                 { raw: err instanceof Error ? err.message : String(err) },
                 err instanceof Error ? err : undefined,
             ),
+        // Minimal mapping for the pre-sign quote validation. The default decoded
+        // txn has sender 'SENDER' (≠ the test quote's swapper), so validation is
+        // a no-op. A test can attach `__display` to its decoded txn to drive the
+        // validator with a specific displayable shape.
+        mapToDisplayableTransaction: (tx: {
+            __display?: unknown
+            sender?: { toString?: () => string }
+        }) => tx?.__display ?? { sender: tx?.sender?.toString?.() ?? 'SENDER' },
     }
 })
 
@@ -152,6 +163,14 @@ const makePrepareResult = (
     swapVersion: 'v2',
     ...overrides,
 })
+
+const makeQuote = (quoteIdStr: string): SwapQuote =>
+    ({
+        quoteIdStr,
+        swapperAddress: 'SWAPPER',
+        assetIn: { assetId: '0' },
+        assetOut: { assetId: '999' },
+    }) as unknown as SwapQuote
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
     ({
@@ -230,7 +249,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-123')
+            outcome = await result.current.execute(makeQuote('quote-123'))
         })
 
         expect(outcome).toEqual({ kind: 'success' })
@@ -296,7 +315,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-mixed')
+            await result.current.execute(makeQuote('quote-mixed'))
         })
 
         expect(result.current.status).toBe('success')
@@ -342,7 +361,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-multi')
+            await result.current.execute(makeQuote('quote-multi'))
         })
 
         expect(result.current.status).toBe('success')
@@ -367,7 +386,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-presigned')
+            await result.current.execute(makeQuote('quote-presigned'))
         })
 
         expect(result.current.status).toBe('success')
@@ -383,7 +402,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-789')
+            outcome = await result.current.execute(makeQuote('quote-789'))
         })
 
         // Prepare maps the error through getMessage like the submission phase,
@@ -407,7 +426,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-reject')
+            outcome = await result.current.execute(makeQuote('quote-reject'))
         })
 
         expect(outcome).toEqual({ kind: 'cancelled' })
@@ -428,7 +447,9 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-pipeline-error')
+            outcome = await result.current.execute(
+                makeQuote('quote-pipeline-error'),
+            )
         })
 
         expect(outcome).toEqual({
@@ -456,7 +477,9 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-submit-fail')
+            outcome = await result.current.execute(
+                makeQuote('quote-submit-fail'),
+            )
         })
 
         expect(outcome?.kind).toBe('error')
@@ -481,7 +504,9 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-status-fail')
+            outcome = await result.current.execute(
+                makeQuote('quote-status-fail'),
+            )
         })
 
         expect(outcome).toEqual({ kind: 'success' })
@@ -494,7 +519,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-reset')
+            await result.current.execute(makeQuote('quote-reset'))
         })
 
         expect(result.current.status).toBe('error')
@@ -517,7 +542,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-empty')
+            outcome = await result.current.execute(makeQuote('quote-empty'))
         })
 
         expect(outcome).toEqual({
@@ -528,6 +553,37 @@ describe('useSwapExecution', () => {
         expect(result.current.error?.phase).toBe('prepare')
         expect(result.current.error?.message).toBe(
             'No transaction groups returned',
+        )
+    })
+
+    it('fails closed (no signing) when the prepared group violates the quote', async () => {
+        // The swapper sends an asset the quote never mentions.
+        mockDecodeTransaction.mockImplementation(
+            () =>
+                ({
+                    __display: {
+                        sender: 'SWAPPER',
+                        assetTransferTransaction: {
+                            assetId: 7n,
+                            amount: 1n,
+                        },
+                    },
+                }) as unknown as PeraTransaction,
+        )
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-bad'))
+        })
+
+        expect(outcome?.kind).toBe('error')
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockUpdateSwapStatus).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ status: 'failed' }),
+            }),
         )
     })
 })

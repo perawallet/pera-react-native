@@ -76,7 +76,7 @@ export const useSwapConfirmationActions = ({
         trackEvent(SwapEvent.Confirm)
         inFlightRef.current = true
         try {
-            const outcome = await execute(quoteIdStr)
+            const outcome = await execute(quote)
             if (outcome.kind === 'success') {
                 trackEvent(SwapEvent.Completed, {
                     ...buildSwapStatusPayload(quote),
