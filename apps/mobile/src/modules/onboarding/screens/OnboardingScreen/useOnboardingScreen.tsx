@@ -59,7 +59,12 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
             contents: <TermsAndConditionsSheet />,
             options: {
                 size: 'modal',
-                enablePanDownToClose: false,
+                // Drag-to-close is allowed: dismissing without agreeing just
+                // cancels this action, and the gate re-appears next time the
+                // user taps create/import. Backdrop-close stays off (a stricter
+                // affordance than the explicit drag handle). There is no close
+                // button in the header.
+                enablePanDownToClose: true,
                 enableCloseOnBackdropPress: false,
                 // Fill the sheet (definite height) so the PWScreen body/webview
                 // gets real height and the footer pins to the bottom instead of

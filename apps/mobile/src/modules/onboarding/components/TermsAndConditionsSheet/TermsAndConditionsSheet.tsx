@@ -10,34 +10,32 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { WebView } from 'react-native-webview'
-import { config } from '@perawallet/wallet-core-config'
 import { PWButton, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { useTermsAcceptance } from '../../hooks/useTermsAcceptance'
+import { SheetHeader } from '@modules/bottom-sheet'
+import { useTermsAndConditionsSheet } from './useTermsAndConditionsSheet'
 import { useStyles } from './styles'
 
 /**
- * Blocking Terms & Conditions gate shown when the user hasn't accepted the
- * current `terms_version`. Renders the terms inline from the configured URL with
- * a single "I Agree" action pinned to the bottom that records acceptance and
- * closes. It is intentionally non-dismissable: no close affordance (header has
- * none), and the host opens it with pan-to-close / backdrop-close disabled — the
- * only way out is to agree.
+ * Blocking Terms & Conditions gate. Renders the terms inline — from the copy
+ * bundled with the app when it matches the required version (no spinner), or the
+ * remote URL when the version was bumped. The "I Agree" action is pinned to the
+ * bottom and stays disabled until the user scrolls to the end. No close
+ * affordance in the header; the host controls drag/backdrop dismissal.
  */
 export const TermsAndConditionsSheet = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { resolve } = useBottomSheetResult<boolean>()
-    const { acceptCurrentTerms } = useTermsAcceptance()
-
-    const handleAgree = useCallback(() => {
-        acceptCurrentTerms()
-        resolve(true)
-    }, [acceptCurrentTerms, resolve])
+    const {
+        source,
+        showLoading,
+        injectedJavaScript,
+        onMessage,
+        isAgreeDisabled,
+        onAgree,
+    } = useTermsAndConditionsSheet()
 
     return (
         <PWScreen
@@ -54,17 +52,22 @@ export const TermsAndConditionsSheet = () => {
                     <PWButton
                         variant='primary'
                         title={t('onboarding.terms_sheet.agree')}
-                        onPress={handleAgree}
+                        onPress={onAgree}
+                        isDisabled={isAgreeDisabled}
                         testID='terms_agree_button'
                     />
                 </PWView>
             }
         >
             <WebView
-                source={{ uri: config.termsOfServiceUrl }}
+                source={source}
                 style={styles.webView}
-                startInLoadingState
-                renderLoading={() => <ActivityIndicator />}
+                injectedJavaScript={injectedJavaScript}
+                onMessage={onMessage}
+                startInLoadingState={showLoading}
+                renderLoading={
+                    showLoading ? () => <ActivityIndicator /> : undefined
+                }
             />
         </PWScreen>
     )
