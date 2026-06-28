@@ -21,6 +21,9 @@
         "remove_assets": "Remove Assets"
     },
     "age_gate": {
+        "loading": {
+            "title": "Confirming age…"
+        },
         "declare": {
             "title": "Confirm your age",
             "body": "We are required by law in some jurisdictions to confirm your age to allow access to some kinds of content.  This information remains on your device.  Please confirm whether you are 18 or older.",
