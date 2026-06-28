@@ -294,10 +294,10 @@ function buildAppConfig(env) {
             flipper: false,
           },
           android: {
-            minSdkVersion: 24,
+            minSdkVersion: 29,
             targetSdkVersion: 36,
             compileSdkVersion: 36,
-            buildToolsVersion: '35.0.0',
+            buildToolsVersion: '36.0.0',
             enableProguardInReleaseBuilds: false,
             kotlinVersion: '2.1.20',
           },
