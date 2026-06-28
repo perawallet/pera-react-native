@@ -10,17 +10,22 @@
  limitations under the License
  */
 
+import { ActivityIndicator } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { useTheme } from '@rneui/themed'
 
 import { PWText, PWView } from '@components/core'
-import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
 
 // Shown while the platform age check (or self-declaration) is in flight. The
 // native age sheet can take a few seconds to appear on iOS, so this stands in
-// for the restricted fallback until a decision is reached.
+// for the restricted fallback until a decision is reached. Uses ActivityIndicator
+// directly rather than LoadingView so the spinner and label stay grouped and
+// centered (LoadingView's circle variant fills its parent with flex: 1, which
+// pushes the label to the bottom of the screen).
 export const AgeGateLoading = () => {
     const { t } = useTranslation()
+    const { theme } = useTheme()
     const styles = useStyles()
 
     return (
@@ -28,9 +33,9 @@ export const AgeGateLoading = () => {
             style={styles.container}
             testID='age-gate-loading'
         >
-            <LoadingView
-                variant='circle'
-                size='lg'
+            <ActivityIndicator
+                size='large'
+                color={theme.colors.linkPrimary}
             />
             <PWText
                 variant='body'
