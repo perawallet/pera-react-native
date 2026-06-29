@@ -48,24 +48,21 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     entropyToMnemonic: entropyToMnemonicMock,
-    // Models the entropy resolver: the `${seedId}-bip39-entropy` child when
-    // present, else the legacy `metadata.entropy` (hex) on the seed, else null.
-    withBip39Entropy: async (
+    // Locate the entropy child by metadata, mirroring the real entropyChildIdOf.
+    entropyChildIdOf: (
         seedKeyId: string,
-        handler: (bytes: Uint8Array) => unknown,
-    ) => {
-        if (
-            keystoreState.keys.some(k => k.id === `${seedKeyId}-bip39-entropy`)
-        ) {
-            return handler(Uint8Array.from([0xaa, 0xbb, 0xcc]))
-        }
-        const seed = keystoreState.keys.find(k => k.id === seedKeyId)
-        const legacyHex = (seed?.metadata as { entropy?: unknown } | undefined)
-            ?.entropy
-        return typeof legacyHex === 'string' && legacyHex.length > 0
-            ? handler(Uint8Array.from(Buffer.from(legacyHex, 'hex')))
-            : null
-    },
+        keys: Array<{ id: string; metadata?: Record<string, unknown> }>,
+    ) =>
+        keys.find(
+            k =>
+                k.metadata?.parentKeyId === seedKeyId &&
+                k.metadata?.entropyKey === true,
+        )?.id,
+    // Resolves the mnemonic only when that child's entry is in the keystore.
+    withSecret: async (id: string, handler: (bytes: Uint8Array) => unknown) =>
+        keystoreState.keys.some(k => k.id === id)
+            ? handler(Uint8Array.from([0xaa, 0xbb, 0xcc]))
+            : null,
     zeroBytes: (...buffers: Array<Uint8Array | null | undefined>) => {
         for (const buf of buffers) if (buf) buf.fill(0)
     },
@@ -157,7 +154,7 @@ beforeEach(() => {
         {
             id: `${SEED_ID}-bip39-entropy`,
             type: 'secret-key',
-            metadata: { parentKeyId: SEED_ID },
+            metadata: { parentKeyId: SEED_ID, entropyKey: true },
         },
         {
             id: DERIVED_KEY_ID,
@@ -354,29 +351,6 @@ describe('migratePasskeys', () => {
         expect(deriveCredentialMock).not.toHaveBeenCalled()
         expect(writeEntryMock).not.toHaveBeenCalled()
         expect(loggerMock.warn).toHaveBeenCalled()
-    })
-
-    it('migrates a passkey whose seed carries only legacy metadata entropy (no child)', async () => {
-        // Pre-split seed: entropy lives in metadata, not in a `-bip39-entropy`
-        // child. The fallback must still recover the mnemonic so the passkey
-        // migrates.
-        keystoreState.keys = [
-            {
-                id: SEED_ID,
-                type: 'seed',
-                metadata: { scheme: 'bip39', entropy: 'aabbcc' },
-            },
-            {
-                id: DERIVED_KEY_ID,
-                type: 'hd-derived-ed25519',
-                metadata: { parentKeyId: SEED_ID },
-            },
-        ]
-
-        const result = await migratePasskeys([buildPasskey()])
-
-        expect(result).toEqual({ imported: 1, skipped: 0 })
-        expect(writeEntryMock).toHaveBeenCalled()
     })
 
     it('skips (does not persist) when the derived id does not match the legacy id', async () => {

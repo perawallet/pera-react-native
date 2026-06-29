@@ -23,7 +23,8 @@ import {
     algo25AddressOf,
     buildSeedMetadata,
     createdAtOf,
-    entropyKeyId,
+    entropyChildIdOf,
+    entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
     isSeedKey,
@@ -208,9 +209,41 @@ describe('buildSeedMetadata', () => {
     })
 })
 
-describe('entropyKeyId', () => {
-    test('derives the entropy secret-key id from the seed id', () => {
-        expect(entropyKeyId('seed-123')).toBe('seed-123-bip39-entropy')
+describe('entropyChildMetadata', () => {
+    test('stamps parentKeyId and the entropyKey marker', () => {
+        expect(entropyChildMetadata('seed-123')).toEqual({
+            parentKeyId: 'seed-123',
+            entropyKey: true,
+        })
+    })
+})
+
+describe('entropyChildIdOf', () => {
+    const keys = [
+        { id: 'seed-123', type: 'seed', metadata: { scheme: 'bip39' } },
+        {
+            id: 'random-child-id',
+            type: 'secret-key',
+            metadata: entropyChildMetadata('seed-123'),
+        },
+        {
+            id: 'derived',
+            type: 'hd-derived-ed25519',
+            metadata: { parentKeyId: 'seed-123' },
+        },
+    ] as unknown as Key[]
+
+    test('finds the entropy child by its metadata, regardless of id', () => {
+        expect(entropyChildIdOf('seed-123', keys)).toBe('random-child-id')
+    })
+
+    test('ignores non-entropy children of the same seed', () => {
+        const onlyDerived = keys.filter(k => k.id !== 'random-child-id')
+        expect(entropyChildIdOf('seed-123', onlyDerived)).toBeUndefined()
+    })
+
+    test('returns undefined when the seed has no entropy child', () => {
+        expect(entropyChildIdOf('other-seed', keys)).toBeUndefined()
     })
 })
 

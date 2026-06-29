@@ -42,7 +42,8 @@ export {
     aclOf,
     algo25AddressOf,
     createdAtOf,
-    entropyKeyId,
+    entropyChildIdOf,
+    entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
     isSeedKey,
@@ -53,7 +54,6 @@ export {
     commitSecret,
     hasSecret,
     removeSecret,
-    withBip39Entropy,
     withSecret,
 } from './storage/secrets'
 

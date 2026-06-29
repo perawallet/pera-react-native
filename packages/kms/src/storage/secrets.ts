@@ -16,7 +16,6 @@ import {
     getProvider,
 } from '@perawallet/wallet-extension-provider'
 import { zeroBytes } from '../crypto/secure-memory'
-import { entropyKeyId, hexToBytes } from '../utils'
 
 /**
  * Stores an arbitrary byte payload in the keystore as a canonical
@@ -89,41 +88,6 @@ export const withSecret = async <T>(
         return await handler(bytes)
     } finally {
         zeroBytes(bytes)
-    }
-}
-
-/**
- * Resolves a bip39 seed's BIP39 entropy and runs `handler` with the bytes,
- * zeroing them in `finally`. Prefers the dedicated `secret-key` child; falls
- * back to the legacy `metadata.entropy` (hex) carried by seeds created before
- * the entropy was split into its own child, so those wallets keep mnemonic
- * recovery and passkey migration. Returns `null` (without invoking `handler`)
- * when neither source has entropy.
- *
- * The legacy value is read in place, not migrated into a child: backfilling
- * would leave the secret in two places, and removing it from the seed metadata
- * needs a seed re-import — which re-exports the XHD root the split exists to
- * stop exporting. A pure read keeps the single existing copy and adds no write.
- */
-export const withBip39Entropy = async <T>(
-    seedKeyId: string,
-    handler: (entropy: Uint8Array) => T | Promise<T>,
-): Promise<Nullable<T>> => {
-    const childId = entropyKeyId(seedKeyId)
-    if (hasSecret(childId)) {
-        return withSecret(childId, handler)
-    }
-
-    const seedKey = getKeystoreStore().state.keys.find(k => k.id === seedKeyId)
-    const legacyHex = (seedKey?.metadata as { entropy?: unknown } | undefined)
-        ?.entropy
-    if (typeof legacyHex !== 'string' || legacyHex.length === 0) return null
-
-    const entropy = hexToBytes(legacyHex)
-    try {
-        return await handler(entropy)
-    } finally {
-        zeroBytes(entropy)
     }
 }
 

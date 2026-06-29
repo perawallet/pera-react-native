@@ -16,11 +16,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 // module is evaluated, so they can only see variables declared via
 // vi.hoisted.
 const mocks = vi.hoisted(() => ({
-    keys: [] as Array<{
-        id: string
-        type: string
-        metadata?: Record<string, unknown>
-    }>,
+    keys: [] as Array<{ id: string; type: string }>,
     generate: vi.fn(),
     remove: vi.fn(),
     exportKey: vi.fn(),
@@ -34,18 +30,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
         setState: (
             updater: (prev: {
-                keys: Array<{
-                    id: string
-                    type: string
-                    metadata?: Record<string, unknown>
-                }>
+                keys: Array<{ id: string; type: string }>
                 status: 'idle'
             }) => {
-                keys: Array<{
-                    id: string
-                    type: string
-                    metadata?: Record<string, unknown>
-                }>
+                keys: Array<{ id: string; type: string }>
                 status: 'idle'
             },
         ) => {
@@ -66,13 +54,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import {
-    commitSecret,
-    hasSecret,
-    removeSecret,
-    withBip39Entropy,
-    withSecret,
-} from '../secrets'
+import { commitSecret, hasSecret, removeSecret, withSecret } from '../secrets'
 
 describe('secrets', () => {
     beforeEach(() => {
@@ -282,64 +264,6 @@ describe('secrets', () => {
             mocks.remove.mockRejectedValueOnce(new Error('KeyNotFoundError'))
 
             await expect(removeSecret('pera.pinCode')).resolves.toBeUndefined()
-        })
-    })
-
-    describe('withBip39Entropy', () => {
-        test('reads the entropy child when present', async () => {
-            mocks.keys.push({ id: 'hd-1-bip39-entropy', type: 'secret-key' })
-            const bytes = new Uint8Array([1, 2, 3])
-            mocks.exportKey.mockResolvedValueOnce({ privateKey: bytes })
-
-            const result = await withBip39Entropy('hd-1', b => Array.from(b))
-
-            expect(result).toEqual([1, 2, 3])
-            // withSecret zeros the exported bytes after the handler.
-            expect(Array.from(bytes)).toEqual([0, 0, 0])
-        })
-
-        test('falls back to legacy metadata.entropy when no child exists', async () => {
-            mocks.keys.push({
-                id: 'hd-1',
-                type: 'seed',
-                metadata: { scheme: 'bip39', entropy: 'abcdef01' },
-            })
-
-            const result = await withBip39Entropy('hd-1', b => Array.from(b))
-
-            expect(result).toEqual([0xab, 0xcd, 0xef, 0x01])
-            // Pure read from metadata — the seed root is never exported.
-            expect(mocks.exportKey).not.toHaveBeenCalled()
-        })
-
-        test('zeroes the legacy entropy bytes after the handler runs', async () => {
-            mocks.keys.push({
-                id: 'hd-1',
-                type: 'seed',
-                metadata: { entropy: 'abcdef01' },
-            })
-            let captured: Uint8Array | undefined
-
-            await withBip39Entropy('hd-1', b => {
-                captured = b
-                return null
-            })
-
-            expect(Array.from(captured!)).toEqual([0, 0, 0, 0])
-        })
-
-        test('returns null without invoking the handler when neither child nor legacy entropy exists', async () => {
-            mocks.keys.push({
-                id: 'hd-1',
-                type: 'seed',
-                metadata: { scheme: 'bip39' },
-            })
-            const handler = vi.fn()
-
-            const result = await withBip39Entropy('hd-1', handler)
-
-            expect(result).toBeNull()
-            expect(handler).not.toHaveBeenCalled()
         })
     })
 })

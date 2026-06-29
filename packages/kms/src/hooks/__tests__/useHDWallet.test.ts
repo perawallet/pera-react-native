@@ -152,12 +152,13 @@ describe('useHDWallet', () => {
             expect('entropy' in arg.metadata).toBe(false)
             expect(arg.metadata.pera.createdAt).toBeDefined()
 
-            // Entropy goes to a `secret-key` child keyed off the seed id.
+            // Entropy goes to a `secret-key` child tagged with metadata that
+            // ties it to the seed; the child's own id is opaque.
             expect(mockCommitSecret).toHaveBeenCalledTimes(1)
             expect(committedEntropy).toEqual({
-                id: 'hd-1-bip39-entropy',
+                id: expect.any(String),
                 bytes: [0xab, 0xcd, 0xef, 0x01],
-                metadata: { parentKeyId: 'hd-1' },
+                metadata: { parentKeyId: 'hd-1', entropyKey: true },
             })
         })
 
