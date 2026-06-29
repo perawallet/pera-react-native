@@ -154,7 +154,19 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? false
             }
-            return getValue(this.remoteConfig, key).asBoolean()
+            const value = getValue(this.remoteConfig, key)
+            // `initializeRemoteConfig` seeds every boolean flag via
+            // `setDefaults`, so `getValue` resolves without throwing even when
+            // nothing has been fetched — it just returns the baked-in default
+            // (source 'default'), or 'static' when the key is unknown. Treating
+            // that as a real value would silently override the caller's
+            // fallback (e.g. hiding Pera Card in dev/staging, where the fallback
+            // is meant to enable it). Only trust a genuinely fetched value;
+            // otherwise honour the caller's fallback.
+            if (value.getSource() === 'remote') {
+                return value.asBoolean()
+            }
+            return fallback ?? false
         } catch {
             return fallback ?? false
         }
