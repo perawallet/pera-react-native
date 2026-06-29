@@ -27,7 +27,10 @@ import {
     HardwareWalletError,
     SigningError,
 } from '../pipeline/errors'
-import { validateTransactionGroupIntegrity } from '../utils/validateTransactionGroupIntegrity'
+import {
+    validateCosignSubsetIntegrity,
+    validateTransactionGroupIntegrity,
+} from '../utils/validateTransactionGroupIntegrity'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import type {
     GroupSignerTypeMap,
@@ -259,12 +262,15 @@ const buildSignableGroups = (
         // Multisig co-sign is the exception: the co-signer's device only holds
         // the signable subset of the proposed group (a swap's backend
         // pre-signed pool/fee slots never reach them), so the full-group hash
-        // can't match. Skip the recompute for cosign — contiguity is still
-        // enforced, and full-group integrity is verified on the submitter and
-        // by algod at submission.
-        validateTransactionGroupIntegrity(request.groupContext ?? request.txs, {
-            recomputeGroupHash: request.sourceType !== 'multisig-cosign',
-        })
+        // can't match. The dedicated cosign validator skips the recompute —
+        // contiguity is still enforced, and full-group integrity is verified on
+        // the submitter and by algod at submission.
+        const txsToValidate = request.groupContext ?? request.txs
+        if (request.sourceType === 'multisig-cosign') {
+            validateCosignSubsetIntegrity(txsToValidate)
+        } else {
+            validateTransactionGroupIntegrity(txsToValidate)
+        }
 
         const knownAddresses = new Set(allAccounts.map(a => a.address))
         const rawBytes = request.rawTransactionsBase64
