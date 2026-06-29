@@ -27,6 +27,8 @@ import { encodeAddress } from '@algorandfoundation/algokit-utils'
  *
  * Derivation path: m/44'/283'/0'/0/0 with Peikert derivation type.
  * This must produce the same address as the native iOS/Android Pera apps.
+ *
+ * THROWAWAY TEST VECTOR — published in source; NEVER fund EXPECTED_ADDRESS.
  */
 
 const TEST_MNEMONIC =

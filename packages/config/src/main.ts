@@ -146,9 +146,10 @@ const productionConfig = {
     testnetGenesisHash: 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
-    //Dev API Key only - not suitable for production use
-    backendAPIKey:
-        'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
+    // Injected at build time from the BACKEND_API_KEY env var via
+    // tools/generate-config.sh (bitrise secrets in CI, .env locally). Empty
+    // here so no key literal ships in the open-source source tree.
+    backendAPIKey: '',
     algodApiKey: '',
     indexerApiKey: '',
 
@@ -257,7 +258,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetBackendUrl: 'MAINNET_BACKEND_URL',
     testnetBackendUrl: 'TESTNET_BACKEND_URL',
 
-    //Dev API Key only - not suitable for production use
     backendAPIKey: 'BACKEND_API_KEY',
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',
