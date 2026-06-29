@@ -38,7 +38,7 @@ enum LegacyUserBlob {
         let jointAccountParticipants: [String]?
         let jointAccountThreshold: Int?
         let jointAccountVersion: Int?
-        let rekeyDetail: [String: RekeyDetailEntry]?
+        let rekeyDetail: [String: LedgerDetail]?
     }
 
     struct HDWalletAddressDetail: Decodable {
@@ -60,8 +60,6 @@ enum LegacyUserBlob {
         let threshold: Int?
         let version: Int?
     }
-
-    struct RekeyDetailEntry: Decodable {}
 
     struct AnyCodable: Decodable {
         let value: Any?
