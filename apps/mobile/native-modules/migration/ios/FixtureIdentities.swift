@@ -48,6 +48,16 @@ enum FixtureIdentities {
     static let ledgerNullIdAddress = FixtureCrypto.LEDGER_2_ADDRESS
     static let ledgerNullIdIndex = 3
 
+    // MARK: - Rekeyed to Ledger (auth account not held locally)
+
+    static let rekeyedToLedgerAddress =
+        "REKEYEDTOLEDGERACCOUNT" + String(repeating: "A", count: 36)
+    static let rekeyAuthLedgerAddress =
+        "REKEYAUTHLEDGERACCOUNT" + String(repeating: "A", count: 36)
+    static let rekeyAuthLedgerPeripheralId = "C7E2B3D4-2345-4E6F-9B0C-1234567890BC"
+    static let rekeyAuthLedgerName = "Ledger Nano S Plus"
+    static let rekeyAuthLedgerIndex = 1
+
     // MARK: - Joint (multisig)
 
     static let jointAddress = FixtureCrypto.WATCH_2_ADDRESS

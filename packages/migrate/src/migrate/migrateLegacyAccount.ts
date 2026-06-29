@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { logger, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { addKeylessAccountToStore } from './accountStoreOps'
 import {
@@ -39,7 +39,16 @@ export const migrateLegacyAccount = async (
     if (account.secretKey !== null && account.secretKey.length > 0)
         return migrateAlgo25Account(args)
 
-    throw new Error(buildUnroutableAccountError(account))
+    return migrateAccountWithoutSigningMaterial(account)
+}
+
+const migrateAccountWithoutSigningMaterial = (
+    account: LegacyAccount,
+): WalletAccount => {
+    logger.warn('Legacy account has no signing material; migrating as watch', {
+        detail: buildUnroutableAccountError(account),
+    })
+    return addKeylessAccountToStore(buildWatchAccount(account))
 }
 
 export const isKeylessLegacyAccount = (account: LegacyAccount): boolean =>

@@ -33,7 +33,6 @@ private object Fields {
     const val SECRET_KEY = "secretKey"
     const val HD_WALLET_ID = "hdWalletId"
     const val LEDGER = "ledger"
-    const val REKEY = "rekey"
     const val JOINT = "joint"
 }
 
@@ -197,7 +196,6 @@ private fun newAccountMap(
     map.putBytesOrNull(Fields.SECRET_KEY, secretKey)
     map.putStringOrNull(Fields.HD_WALLET_ID, hdWalletId)
     if (ledger != null) map.putMap(Fields.LEDGER, ledger) else map.putNull(Fields.LEDGER)
-    map.putNull(Fields.REKEY)
     if (joint != null) map.putMap(Fields.JOINT, joint) else map.putNull(Fields.JOINT)
     return map
 }
