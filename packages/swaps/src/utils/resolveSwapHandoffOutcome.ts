@@ -10,15 +10,17 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
-import type { TerminalHandoffOutcome } from '@perawallet/wallet-core-signing'
+import {
+    completeMultisigHandoff,
+    type TerminalHandoffOutcome,
+} from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '../api'
 import type { SwapHandoffRecord } from '../models'
 
 /**
  * Side-effecting collaborators the swap-handoff resolution needs. Injected so
- * the orchestration below stays a pure function of its inputs and is unit
- * testable without React, algod, or the multisig API.
+ * the orchestration stays a pure function of its inputs and is unit testable
+ * without React, algod, or the multisig API.
  */
 export type SwapHandoffResolutionDeps = {
     /** Submit one atomic group's ordered raw signed bytes to algod → txIds. */
@@ -82,16 +84,13 @@ const buildGroupBytes = (
  * Completes a shared-account swap once the co-signer's signatures have been
  * collected (or fails it cleanly on decline / expiry / error).
  *
- * On `ready`: per group, interleave the persisted pre-signed slots with the
- * assembled composite-multisig bytes and submit to algod; then mark the swap
- * `in_progress` with the resulting txIds and best-effort `markConfirmed` so the
- * backend doesn't also broadcast.
- *
- * On any failure (submit rejected, assembly error, backend `failed`) the swap
- * is marked `failed`, the user is notified with the (algod-mapped) reason, and
- * the still-live sign-request is cancelled so the pending-signatures sheet/inbox
- * stop showing "Submitting…" instead of lingering until expiry. Either way the
- * handoff is removed so it isn't retried endlessly (no retry by design).
+ * A swap adapter over the shared {@link completeMultisigHandoff}: that owns the
+ * completion sequence and its error-handling discipline (submit → record →
+ * mark-confirmed, decline-on-failure, single cleanup, best-effort side effects);
+ * this supplies only the swap-specific bits — interleaving the persisted
+ * pre-signed slots with the assembled composite-multisig bytes and submitting
+ * each group to algod, and mapping outcomes to the swap's backend status
+ * (`in_progress` with txIds / `cancelled` / `failed`).
  */
 export const resolveSwapHandoffOutcome = async ({
     outcome,
@@ -104,123 +103,68 @@ export const resolveSwapHandoffOutcome = async ({
 }): Promise<void> => {
     const { signRequestId, swapIdStr, network, deviceId, plan } = record
 
-    if (outcome.kind === 'soft-reject') {
-        // declined → user cancelled; expired → timed out.
-        await safeUpdateSwapStatus(deps, swapIdStr, {
-            status: outcome.reason === 'declined' ? 'cancelled' : 'failed',
-            reason: outcome.reason === 'declined' ? 'user_cancelled' : 'other',
-            swap_version: 'v2',
-        })
-        deps.removeHandoff(signRequestId)
-        return
-    }
-
-    if (outcome.kind === 'error') {
-        // Not every error reason carries a backend display string.
-        const displayReason =
-            'displayReason' in outcome.reason
-                ? outcome.reason.displayReason
-                : undefined
-        await failSwap(
-            deps,
-            record,
-            new Error(displayReason ?? 'Swap could not be completed'),
-        )
-        deps.removeHandoff(signRequestId)
-        return
-    }
-
-    // outcome.kind === 'ready'
-    try {
-        const txIds: string[] = []
-        for (const group of plan) {
-            const groupBytes = buildGroupBytes(
-                group,
-                outcome.assembledBytes,
-                deps.decodeBase64,
-            )
-            if (groupBytes.length === 0) continue
-            const ids = await deps.submitGroup(groupBytes)
-            txIds.push(...ids)
-        }
-
-        await safeUpdateSwapStatus(deps, swapIdStr, {
-            status: 'in_progress',
-            submitted_transaction_ids: txIds,
-            swap_version: 'v2',
-        })
-
-        // Best-effort: a failure here is non-fatal (txns are already on chain).
-        try {
-            await deps.markConfirmed({
-                network,
-                deviceId,
-                signRequestIds: [signRequestId],
-            })
-        } catch (error) {
-            logger.warn('Swap handoff mark-confirmed failed (non-fatal)', {
-                signRequestId,
-                error: error instanceof Error ? error.message : String(error),
-            })
-        }
-    } catch (error) {
-        await failSwap(deps, record, error)
-    } finally {
-        deps.removeHandoff(signRequestId)
-    }
-}
-
-/**
- * Common terminal-failure path: notify the user, cancel the still-live
- * sign-request (best-effort) so the pending sheet/inbox don't hang, and mark
- * the swap failed. Does NOT remove the handoff — the caller owns that so the
- * `ready` path can keep its single `finally` cleanup.
- */
-const failSwap = async (
-    deps: SwapHandoffResolutionDeps,
-    record: SwapHandoffRecord,
-    error: unknown,
-): Promise<void> => {
-    logger.warn('Shared-account swap submission failed', {
-        signRequestId: record.signRequestId,
-        error: error instanceof Error ? error.message : String(error),
+    await completeMultisigHandoff({
+        outcome,
+        deps: {
+            // Interleave each group's pre-signed slots with the assembled
+            // bytes and submit, collecting the resulting txIds in order. A
+            // missing assembled slot throws here → the shared orchestrator
+            // treats it as a terminal submission failure (no partial group).
+            submit: async assembledBytes => {
+                const txIds: string[] = []
+                for (const group of plan) {
+                    const groupBytes = buildGroupBytes(
+                        group,
+                        assembledBytes,
+                        deps.decodeBase64,
+                    )
+                    if (groupBytes.length === 0) continue
+                    const ids = await deps.submitGroup(groupBytes)
+                    txIds.push(...ids)
+                }
+                return txIds
+            },
+            markConfirmed: () =>
+                deps.markConfirmed({
+                    network,
+                    deviceId,
+                    signRequestIds: [signRequestId],
+                }),
+            decline: () => deps.declineSignRequest(signRequestId),
+            removeHandoff: () => deps.removeHandoff(signRequestId),
+            reportError: deps.reportError,
+            onSubmitted: async txIds => {
+                await deps.updateSwapStatus({
+                    swapId: swapIdStr,
+                    data: {
+                        status: 'in_progress',
+                        submitted_transaction_ids: txIds,
+                        swap_version: 'v2',
+                    },
+                })
+            },
+            // declined → user cancelled; expired → timed out.
+            onSoftRejected: async reason => {
+                await deps.updateSwapStatus({
+                    swapId: swapIdStr,
+                    data: {
+                        status: reason === 'declined' ? 'cancelled' : 'failed',
+                        reason:
+                            reason === 'declined' ? 'user_cancelled' : 'other',
+                        swap_version: 'v2',
+                    },
+                })
+            },
+            onFailed: async () => {
+                await deps.updateSwapStatus({
+                    swapId: swapIdStr,
+                    data: {
+                        status: 'failed',
+                        reason: 'blockchain_error',
+                        swap_version: 'v2',
+                    },
+                })
+            },
+        },
     })
-    deps.reportError(error)
-    await safeDecline(deps, record.signRequestId)
-    await safeUpdateSwapStatus(deps, record.swapIdStr, {
-        status: 'failed',
-        reason: 'blockchain_error',
-        swap_version: 'v2',
-    })
-}
-
-/** Decline is best-effort cleanup — never let it throw past us. */
-const safeDecline = async (
-    deps: SwapHandoffResolutionDeps,
-    signRequestId: string,
-): Promise<void> => {
-    try {
-        await deps.declineSignRequest(signRequestId)
-    } catch (error) {
-        logger.warn('Swap handoff cancel (decline) failed (non-fatal)', {
-            signRequestId,
-            error: error instanceof Error ? error.message : String(error),
-        })
-    }
-}
-
-/** Status update is best-effort reporting — never let it throw past us. */
-const safeUpdateSwapStatus = async (
-    deps: SwapHandoffResolutionDeps,
-    swapId: string,
-    data: SwapStatusUpdateRequest,
-): Promise<void> => {
-    try {
-        await deps.updateSwapStatus({ swapId, data })
-    } catch (error) {
-        logger.warn('Swap handoff status update failed (non-fatal)', {
-            swapId,
-            error: error instanceof Error ? error.message : String(error),
-        })
-    }
 }

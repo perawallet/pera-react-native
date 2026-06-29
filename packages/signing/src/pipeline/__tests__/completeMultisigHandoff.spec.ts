@@ -1,0 +1,156 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, vi, beforeEach } from 'vitest'
+
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+}))
+
+import {
+    completeMultisigHandoff,
+    type MultisigHandoffCompletionDeps,
+} from '../completeMultisigHandoff'
+
+const ASSEMBLED = new Uint8Array([1, 2, 3])
+
+const makeDeps = (): {
+    [K in keyof MultisigHandoffCompletionDeps]: ReturnType<typeof vi.fn>
+} => ({
+    submit: vi.fn().mockResolvedValue(['txid-1']),
+    markConfirmed: vi.fn().mockResolvedValue(undefined),
+    decline: vi.fn().mockResolvedValue(undefined),
+    removeHandoff: vi.fn(),
+    reportError: vi.fn(),
+    onSubmitted: vi.fn().mockResolvedValue(undefined),
+    onSoftRejected: vi.fn().mockResolvedValue(undefined),
+    onFailed: vi.fn().mockResolvedValue(undefined),
+})
+
+describe('completeMultisigHandoff', () => {
+    let deps: ReturnType<typeof makeDeps>
+
+    beforeEach(() => {
+        deps = makeDeps()
+    })
+
+    const run = (
+        outcome: Parameters<typeof completeMultisigHandoff>[0]['outcome'],
+    ) =>
+        completeMultisigHandoff({
+            outcome,
+            deps: deps as unknown as MultisigHandoffCompletionDeps,
+        })
+
+    test('ready: submits, records the tx ids, marks confirmed, then cleans up', async () => {
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.submit).toHaveBeenCalledWith([ASSEMBLED])
+        expect(deps.onSubmitted).toHaveBeenCalledWith(['txid-1'])
+        expect(deps.markConfirmed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+        // The happy path neither reports an error nor declines.
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.decline).not.toHaveBeenCalled()
+        expect(deps.onFailed).not.toHaveBeenCalled()
+    })
+
+    test('ready: a submit failure reports, declines, marks failed, cleans up once', async () => {
+        const error = new Error('algod 400')
+        deps.submit.mockRejectedValueOnce(error)
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.reportError).toHaveBeenCalledWith(error)
+        expect(deps.decline).toHaveBeenCalledTimes(1)
+        expect(deps.onFailed).toHaveBeenCalledTimes(1)
+        expect(deps.onSubmitted).not.toHaveBeenCalled()
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+    })
+
+    test('ready: a failing onSubmitted is best-effort — markConfirmed and cleanup still run', async () => {
+        deps.onSubmitted.mockRejectedValueOnce(new Error('status 500'))
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.markConfirmed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+        // A best-effort status failure is not a submission failure.
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.onFailed).not.toHaveBeenCalled()
+    })
+
+    test('ready: a failing markConfirmed is swallowed (txns are already on chain)', async () => {
+        deps.markConfirmed.mockRejectedValueOnce(new Error('network'))
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.onSubmitted).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+        expect(deps.reportError).not.toHaveBeenCalled()
+    })
+
+    test('soft-reject (declined): records the rejection and cleans up, nothing else', async () => {
+        await run({ kind: 'soft-reject', reason: 'declined' })
+
+        expect(deps.onSoftRejected).toHaveBeenCalledWith('declined')
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+        expect(deps.submit).not.toHaveBeenCalled()
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.decline).not.toHaveBeenCalled()
+    })
+
+    test('soft-reject: a failing onSoftRejected is best-effort — cleanup still runs', async () => {
+        deps.onSoftRejected.mockRejectedValueOnce(new Error('status 500'))
+
+        await run({ kind: 'soft-reject', reason: 'expired' })
+
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+    })
+
+    test('error: reports, declines, marks failed, cleans up — never submits', async () => {
+        await run({
+            kind: 'error',
+            reason: { kind: 'backend-failed', displayReason: null },
+        })
+
+        expect(deps.submit).not.toHaveBeenCalled()
+        expect(deps.reportError).toHaveBeenCalledTimes(1)
+        expect(deps.decline).toHaveBeenCalledTimes(1)
+        expect(deps.onFailed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+    })
+
+    test('error: surfaces the backend display reason to the user', async () => {
+        await run({
+            kind: 'error',
+            reason: {
+                kind: 'backend-failed',
+                displayReason: 'insufficient balance',
+            },
+        })
+
+        const reported = deps.reportError.mock.calls[0][0]
+        expect(reported).toBeInstanceOf(Error)
+        expect((reported as Error).message).toBe('insufficient balance')
+    })
+
+    test('failure: a failing decline is swallowed — the swap is still marked failed', async () => {
+        deps.submit.mockRejectedValueOnce(new Error('algod 400'))
+        deps.decline.mockRejectedValueOnce(new Error('backend 409'))
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.onFailed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+    })
+})

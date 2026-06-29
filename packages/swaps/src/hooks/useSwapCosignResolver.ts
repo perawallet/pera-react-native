@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useAlgorandClient,
     useNetwork,
@@ -19,16 +19,27 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
     addSignature,
+    getSignRequestsWithSignatures,
+    getSignRequestsWithSignaturesQueryKey,
     useMarkSignRequestsConfirmedMutation,
+    type SignRequestResponse,
 } from '@perawallet/wallet-core-multisig'
 import {
     classifyHandoffPoll,
     submitRawSignedTransactionGroup,
+    useHandoffResolver,
+    type TerminalHandoffOutcome,
 } from '@perawallet/wallet-core-signing'
 import { resolveSwapHandoffOutcome } from '../utils'
 import { useSwapHandoffStore } from '../store'
+import type { SwapHandoffRecord } from '../models'
 import { useUpdateSwapStatusMutation } from './useUpdateSwapStatusMutation'
-import { useSwapHandoffPolls } from './useSwapHandoffPolls'
+
+/** Stable accessors (module-level so the core's filter memo isn't busted). */
+const handoffKey = (handoff: SwapHandoffRecord): string => handoff.signRequestId
+const handoffNetwork = (
+    handoff: SwapHandoffRecord,
+): SwapHandoffRecord['network'] => handoff.network
 
 export type UseSwapCosignResolverArgs = {
     /** Polling pauses when false (e.g. app backgrounded — iOS suspends timers). */
@@ -43,19 +54,18 @@ export type UseSwapCosignResolverArgs = {
 /**
  * Completes shared-account (multisig) swaps once the co-signer has signed.
  *
- * Structurally the swap analogue of `useWalletConnectHandoffResolver`: it polls
- * each persisted handoff on the active network (via {@link useSwapHandoffPolls})
- * and, on a terminal status, hands the classified outcome to
+ * The swap analogue of `useWalletConnectHandoffResolver`: a thin adapter over
+ * the shared {@link useHandoffResolver}. It sources handoffs from the
+ * **persisted** store (so a swap co-signed while the proposer's app was closed
+ * is finished on next launch — iOS can't keep a background service alive the
+ * way Android does), opts into the active-network filter (submission must never
+ * target the wrong algod after a network switch — others wait until the user
+ * switches back), and on a terminal outcome hands off to
  * {@link resolveSwapHandoffOutcome}, which assembles the composite multisig,
  * interleaves the pre-signed slots, submits to algod, and reports swap status.
- * Unlike the WC resolver the registry is **persisted**, so a swap co-signed
- * while the proposer's app was closed is finished on next launch (iOS can't
- * keep a background service alive the way Android does).
  *
  * Mounted once at the app root (the app wraps this with `AppState` →
- * `isAppActive` and an error-toast → `reportError`). Only handoffs on the
- * active network are processed, so submission never targets the wrong algod
- * after a network switch — others wait until the user switches back.
+ * `isAppActive` and an error-toast → `reportError`).
  */
 export const useSwapCosignResolver = ({
     isAppActive,
@@ -70,47 +80,48 @@ export const useSwapCosignResolver = ({
     const handoffsMap = useSwapHandoffStore(s => s.handoffs)
     const removeHandoff = useSwapHandoffStore(s => s.removeHandoff)
 
-    // Only the active network's handoffs are pollable + submittable here.
-    const handoffs = useMemo(
-        () =>
-            Object.values(handoffsMap).filter(
-                handoff => handoff.network === network,
+    const handoffs = useMemo(() => Object.values(handoffsMap), [handoffsMap])
+
+    const poll = useCallback(
+        (handoff: SwapHandoffRecord) => ({
+            queryKey: getSignRequestsWithSignaturesQueryKey(
+                handoff.network,
+                handoff.signRequestId,
             ),
-        [handoffsMap, network],
+            queryFn: () =>
+                getSignRequestsWithSignatures(handoff.network, {
+                    device_id: deviceId ?? '',
+                    proposed_sign_request_ids: [handoff.signRequestId],
+                }),
+            select: (data: SignRequestResponse[]) =>
+                data.find(item => item.id === handoff.signRequestId),
+            enabled: isAppActive && !!deviceId,
+        }),
+        [deviceId, isAppActive],
     )
 
-    // Sign-request ids already resolved — guards against a late poll
-    // re-submitting before the store-remove re-render lands.
-    const resolvedRef = useRef<Set<string>>(new Set())
-
-    const polls = useSwapHandoffPolls({ handoffs, deviceId, isAppActive })
-
-    useEffect(() => {
-        const activeIds = new Set(handoffs.map(h => h.signRequestId))
-        for (const id of resolvedRef.current) {
-            if (!activeIds.has(id)) resolvedRef.current.delete(id)
-        }
-
-        polls.forEach(({ handoff, detail }) => {
-            if (!handoff) return
-            if (resolvedRef.current.has(handoff.signRequestId)) return
-            if (!detail) return
-
-            const outcome = classifyHandoffPoll(detail, {
+    const classify = useCallback(
+        (detail: SignRequestResponse, handoff: SwapHandoffRecord) =>
+            classifyHandoffPoll(detail, {
                 multisigAddress: handoff.multisigAddress,
                 msigMetadata: handoff.msigMetadata,
                 expectedRawTransactionsBase64:
                     handoff.expectedRawTransactionsBase64,
-            })
-            if (outcome.kind === 'keep-polling') return
+            }),
+        [],
+    )
 
+    const resolve = useCallback(
+        (
+            outcome: TerminalHandoffOutcome,
+            handoff: SwapHandoffRecord,
+            detail: SignRequestResponse,
+        ) => {
             // Proposer address from the poll — the only local participant
             // allowed to cancel the request on a terminal failure.
             const proposerAddress = detail.proposer_address ?? undefined
 
-            // Claim synchronously so a re-render can't double-submit.
-            resolvedRef.current.add(handoff.signRequestId)
-            void resolveSwapHandoffOutcome({
+            return resolveSwapHandoffOutcome({
                 outcome,
                 record: handoff,
                 deps: {
@@ -137,15 +148,28 @@ export const useSwapCosignResolver = ({
                     },
                 },
             })
-        })
-    }, [
-        polls,
+        },
+        [
+            algorandClient,
+            deviceId,
+            updateSwapStatus,
+            markConfirmed,
+            removeHandoff,
+            reportError,
+        ],
+    )
+
+    useHandoffResolver<
+        SwapHandoffRecord,
+        SignRequestResponse[],
+        SignRequestResponse
+    >({
         handoffs,
-        algorandClient,
-        deviceId,
-        updateSwapStatus,
-        markConfirmed,
-        removeHandoff,
-        reportError,
-    ])
+        keyOf: handoffKey,
+        poll,
+        classify,
+        resolve,
+        activeNetwork: network,
+        networkOf: handoffNetwork,
+    })
 }
