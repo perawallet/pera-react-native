@@ -10,10 +10,13 @@ set -ex
 #
 # Optional env vars (per-environment, prefixed with PRODUCTION_ or STAGING_):
 #   MAINNET_BACKEND_URL, TESTNET_BACKEND_URL, BACKEND_API_KEY,
+#   ALGOD_API_KEY, INDEXER_API_KEY,
 #   IOS_GOOGLE_SERVICE_INFO_BASE64, DISCOVER_BASE_URL, STAKING_BASE_URL,
 #   ONRAMP_BASE_URL, IOS_PROVISIONING_PROFILE_NAME,
 #   IOS_AUTOFILL_PROVISIONING_PROFILE_NAME, FIREBASE_APP_ID_ANDROID,
-#   APP_STORE_APPLE_ID, TESTNET_BAANX_CLIENT_KEY
+#   APP_STORE_APPLE_ID, PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER,
+#   MAINNET_BIDALI_API_KEY, TESTNET_BIDALI_API_KEY,
+#   MAINNET_BAANX_CLIENT_KEY, TESTNET_BAANX_CLIENT_KEY, MAINNET_BAANX_TENANT_ID
 
 echo "Setting up secrets for environment: $ENVIRONMENT"
 
@@ -23,11 +26,17 @@ else
   PREFIX="STAGING_"
 fi
 
-# List of secrets to alias
+# List of secrets to alias. Must cover every productionConfig field that
+# defaults to '' (i.e. has no usable OSS default and must be injected) — see
+# packages/config/src/main.ts and its overrideEnvironmentMap. A secret set in
+# Bitrise but missing here is silently dropped: the build falls back to the
+# empty default.
 SECRETS=(
   "MAINNET_BACKEND_URL"
   "TESTNET_BACKEND_URL"
   "BACKEND_API_KEY"
+  "ALGOD_API_KEY"
+  "INDEXER_API_KEY"
   "IOS_GOOGLE_SERVICE_INFO_BASE64"
   "ANDROID_GOOGLE_SERVICES_BASE64"
   "DISCOVER_BASE_URL"
@@ -37,7 +46,12 @@ SECRETS=(
   "IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"
   "FIREBASE_APP_ID_ANDROID"
   "APP_STORE_APPLE_ID"
+  "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER"
+  "MAINNET_BIDALI_API_KEY"
+  "TESTNET_BIDALI_API_KEY"
+  "MAINNET_BAANX_CLIENT_KEY"
   "TESTNET_BAANX_CLIENT_KEY"
+  "MAINNET_BAANX_TENANT_ID"
 )
 
 for SECRET in "${SECRETS[@]}"; do
