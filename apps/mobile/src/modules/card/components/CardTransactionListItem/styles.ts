@@ -10,15 +10,27 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
+import { makeStyles } from '@rneui/themed'
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardSignIn: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-    PeraCardAccount: undefined
-    CardAddFunds: undefined
-    CardConfirmSwap: { sourceAssetId: string; amount: string }
-    CardTransactions: undefined
-}
+export const useStyles = makeStyles(theme => ({
+    txRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    txTextBlock: {
+        flex: 1,
+        minWidth: 0,
+    },
+    txSubtitle: {
+        color: theme.colors.textGray,
+    },
+    txAmountDebit: {
+        color: theme.colors.negative,
+    },
+    txAmountCredit: {
+        color: theme.colors.positive,
+    },
+}))

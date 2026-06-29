@@ -160,6 +160,7 @@ import TxReceiveIcon from '@assets/icons/transactions/receive.svg'
 import TxSendIcon from '@assets/icons/transactions/send.svg'
 import TxSwapIcon from '@assets/icons/transactions/swap.svg'
 import DocumentDownloadIcon from '@assets/icons/document-download.svg'
+import DownloadIcon from '@assets/icons/download.svg'
 import GridViewIcon from '@assets/icons/grid-view.svg'
 import ListViewIcon from '@assets/icons/list-view.svg'
 
@@ -190,6 +191,7 @@ export const ICON_LIBRARY = {
     delete: DeleteIcon,
     dollar: DollarIcon,
     'document-download': DocumentDownloadIcon,
+    download: DownloadIcon,
     'grid-view': GridViewIcon,
     'list-view': ListViewIcon,
     'dot-stack': DotStackIcon,

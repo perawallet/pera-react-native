@@ -12,12 +12,8 @@
 
 import { PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
-import {
-    type CardTransaction,
-    TransactionSign,
-} from '@perawallet/wallet-core-card'
-import { useLanguage } from '@hooks/useLanguage'
-import { formatCardTransactionDate } from './utils'
+import { type CardTransaction } from '@perawallet/wallet-core-card'
+import { useCardTransactionListItem } from './useCardTransactionListItem'
 import { useStyles } from './styles'
 
 type CardTransactionListItemProps = {
@@ -27,16 +23,8 @@ type CardTransactionListItemProps = {
 export const CardTransactionListItem = ({
     transaction,
 }: CardTransactionListItemProps) => {
-    const { t } = useLanguage()
     const styles = useStyles()
-
-    const isDebit = transaction.sign === TransactionSign.Debit
-    const subtitle = [
-        transaction.mccCategory,
-        formatCardTransactionDate(transaction.dateTime),
-    ]
-        .filter(Boolean)
-        .join(' • ')
+    const { title, subtitle, isDebit } = useCardTransactionListItem(transaction)
 
     return (
         <PWView style={styles.txRow}>
@@ -46,8 +34,7 @@ export const CardTransactionListItem = ({
                     weight={500}
                     numberOfLines={1}
                 >
-                    {transaction.merchantName ??
-                        t('peraCard.account.transaction_fallback')}
+                    {title}
                 </PWText>
                 <PWText
                     variant='footnoteMedium'
