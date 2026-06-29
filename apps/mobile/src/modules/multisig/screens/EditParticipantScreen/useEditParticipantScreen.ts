@@ -20,7 +20,6 @@ import {
     type Contact,
 } from '@perawallet/wallet-core-contacts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import type { PermissionDeniedState } from '@hooks/useImagePicker'
 import { useContactForm } from '@modules/contacts/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import type { MultisigStackParamList } from '../../routes/types'
@@ -32,7 +31,6 @@ type UseEditParticipantScreenResult = {
     imageUri: Optional<string>
     isDoneDisabled: boolean
     onPickImage: () => Promise<void>
-    permissionDenied: PermissionDeniedState
     handleDone: () => Promise<void>
     handleRemove: () => void
 }
@@ -66,15 +64,8 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
         [existingContact, address],
     )
 
-    const {
-        control,
-        handleSubmit,
-        setError,
-        isValid,
-        imageUri,
-        onPickImage,
-        permissionDenied,
-    } = useContactForm(initialContact)
+    const { control, handleSubmit, setError, isValid, imageUri, onPickImage } =
+        useContactForm(initialContact)
 
     const onDone = useCallback(
         (data: Contact) => {
@@ -129,7 +120,6 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
         imageUri,
         isDoneDisabled: !isValid,
         onPickImage,
-        permissionDenied,
         handleDone,
         handleRemove,
     }

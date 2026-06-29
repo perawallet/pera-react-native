@@ -12,7 +12,6 @@
 
 import { PWButton, PWScreen } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
-import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddContactForm } from '@modules/contacts/hooks'
 import { useStyles } from './styles'
@@ -31,7 +30,6 @@ export const AddContactScreen = () => {
         nfd,
         onAddressInputChange,
         onPickImage,
-        permissionDenied,
         save,
     } = useAddContactForm()
 
@@ -61,11 +59,6 @@ export const AddContactScreen = () => {
                 rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
                 onPickImage={() => void onPickImage()}
-            />
-            <PhotoPermissionDeniedSheet
-                isVisible={permissionDenied.isVisible}
-                onClose={permissionDenied.close}
-                onOpenSettings={permissionDenied.openSettings}
             />
         </PWScreen>
     )

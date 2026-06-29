@@ -187,8 +187,6 @@ function buildAppConfig(env) {
       // RECORD_AUDIO from expo-image-picker; READ_MEDIA_AUDIO + READ_MEDIA_VIDEO
       // from expo-media-library; SYSTEM_ALERT_WINDOW is a debug-only react-native
       // overlay permission (never in release — blocked defensively).
-      // READ_MEDIA_IMAGES is intentionally NOT blocked — expo-media-library /
-      // expo-image-picker need it for the contact-photo flow.
       // Confirm the final set against the native pera-android manifest (WB-7).
       blockedPermissions: [
         'android.permission.RECORD_AUDIO',
@@ -200,6 +198,11 @@ function buildAppConfig(env) {
         // that needs no permission). Play classifies any app requesting it as
         // a health app and gates it behind the Health apps policy, so strip it.
         'android.permission.ACTIVITY_RECOGNITION',
+        // READ_MEDIA_IMAGES: image pick uses the system photo picker (no
+        // permission) and NFT save uses MediaLibrary write-only, so the app
+        // needs no broad media access. Play gates this permission under its
+        // Photo & Video Permissions policy, so strip it.
+        'android.permission.READ_MEDIA_IMAGES',
       ],
       intentFilters: [
         {

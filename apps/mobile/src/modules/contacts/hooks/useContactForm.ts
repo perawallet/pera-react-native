@@ -21,10 +21,7 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod'
 import { contactSchema, type Contact } from '@perawallet/wallet-core-contacts'
 
-import {
-    useImagePicker,
-    type PermissionDeniedState,
-} from '@hooks/useImagePicker'
+import { useImagePicker } from '@hooks/useImagePicker'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 
 import { type Optional } from '@perawallet/wallet-core-shared'
@@ -47,11 +44,6 @@ export type UseContactFormResult = {
     nfd: NfdState
     onAddressInputChange: (text: string) => void
     onPickImage: () => Promise<void>
-    /**
-     * State + handlers for the "photo library permission denied" bottom
-     * sheet. Pair with `<PhotoPermissionDeniedSheet />` at the screen root.
-     */
-    permissionDenied: PermissionDeniedState
 }
 
 /**
@@ -63,7 +55,7 @@ export type UseContactFormResult = {
 export const useContactForm = (
     initialContact: Contact | null,
 ): UseContactFormResult => {
-    const { pickFromGallery, permissionDenied } = useImagePicker()
+    const { pickFromGallery } = useImagePicker()
 
     const {
         control,
@@ -127,7 +119,6 @@ export const useContactForm = (
             nfd,
             onAddressInputChange,
             onPickImage,
-            permissionDenied,
         }),
         [
             control,
@@ -140,7 +131,6 @@ export const useContactForm = (
             nfd,
             onAddressInputChange,
             onPickImage,
-            permissionDenied,
         ],
     )
 }

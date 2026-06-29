@@ -12,7 +12,6 @@
 
 import { PWButton, PWScreen } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
-import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useEditParticipantScreen } from './useEditParticipantScreen'
@@ -27,7 +26,6 @@ export const EditParticipantScreen = () => {
         imageUri,
         isDoneDisabled,
         onPickImage,
-        permissionDenied,
         handleDone,
         handleRemove,
     } = useEditParticipantScreen()
@@ -62,11 +60,6 @@ export const EditParticipantScreen = () => {
                     style={styles.removeButton}
                 />
             </ContactForm>
-            <PhotoPermissionDeniedSheet
-                isVisible={permissionDenied.isVisible}
-                onClose={permissionDenied.close}
-                onOpenSettings={permissionDenied.openSettings}
-            />
         </PWScreen>
     )
 }

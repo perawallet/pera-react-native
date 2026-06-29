@@ -405,7 +405,7 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
         ).toBe(false)
     })
 
-    it('blocks the unused auto-added permissions, keeping image access', () => {
+    it('blocks the unused auto-added permissions, including the Play-gated media perms', () => {
         const { blockedPermissions, permissions } = build({
             APP_ENV: 'production',
         }).android
@@ -417,13 +417,12 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
             'android.permission.READ_MEDIA_VIDEO',
             // Stripped so Play doesn't classify the app as a health app.
             'android.permission.ACTIVITY_RECOGNITION',
+            // Stripped — pick uses the system photo picker, save is write-only;
+            // Play gates this under the Photo & Video Permissions policy.
+            'android.permission.READ_MEDIA_IMAGES',
         ]) {
             expect(blockedPermissions).toContain(blocked)
         }
-        // image-picker still needs image access — must NOT be blocked.
-        expect(blockedPermissions).not.toContain(
-            'android.permission.READ_MEDIA_IMAGES',
-        )
         expect(permissions).not.toContain('android.permission.RECORD_AUDIO')
     })
 })
