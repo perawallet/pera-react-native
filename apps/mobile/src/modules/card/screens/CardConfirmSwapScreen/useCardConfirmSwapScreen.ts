@@ -181,6 +181,14 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
                 )
                 invalidateBalances()
                 navigation.goBack()
+            } else if (outcome.kind === 'pending-cosign') {
+                // Shared-account swap proposed; co-signer must approve before it
+                // submits. Inform the user and leave the screen.
+                successToast(
+                    t('swap.execution.pending_cosign_title'),
+                    t('swap.execution.pending_cosign_body'),
+                )
+                navigation.goBack()
             } else if (outcome.kind === 'error') {
                 errorToast(
                     t('peraCard.add_funds.swap_error_title'),

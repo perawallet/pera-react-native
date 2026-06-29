@@ -94,6 +94,12 @@ export const useSwapConfirmationActions = ({
                 resolve({ kind: 'cancelled' })
                 return
             }
+            if (outcome.kind === 'pending-cosign') {
+                // Proposed to the backend; co-signer approval pending. Close
+                // immediately — the cosign resolver finishes submission later.
+                resolve({ kind: 'pending-cosign' })
+                return
+            }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
             resolve({ kind: 'error', message: outcome.message })
         } finally {

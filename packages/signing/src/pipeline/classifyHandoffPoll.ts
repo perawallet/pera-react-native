@@ -81,6 +81,18 @@ export type TerminalHandoffOutcome = Exclude<
 >
 
 /**
+ * The subset of a handoff the classifier needs to assemble + trust-anchor the
+ * poll. Narrower than {@link PendingWalletConnectHandoff} (no callbacks /
+ * deviceId) so non-WC consumers — the shared-account swap resolver — can reuse
+ * the classification + assembly logic without fabricating WC-only fields.
+ */
+export type HandoffAssemblyContext = {
+    multisigAddress: string
+    msigMetadata: { version: number; threshold: number; addresses: string[] }
+    expectedRawTransactionsBase64: string[]
+}
+
+/**
  * Pure classification of a single `with-signatures` poll result.
  *
  * Returns `keep-polling` for non-terminal statuses, and — importantly —
@@ -92,7 +104,7 @@ export type TerminalHandoffOutcome = Exclude<
  */
 export const classifyHandoffPoll = (
     detail: HandoffPollDetail,
-    handoff: PendingWalletConnectHandoff,
+    handoff: HandoffAssemblyContext,
 ): HandoffPollOutcome => {
     switch (detail.status) {
         case 'ready':
@@ -123,7 +135,7 @@ export const classifyHandoffPoll = (
 
 const classifyReadyPoll = (
     detail: HandoffPollDetail,
-    handoff: PendingWalletConnectHandoff,
+    handoff: HandoffAssemblyContext,
 ): HandoffPollOutcome => {
     const lists = detail.transaction_lists
 

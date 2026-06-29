@@ -34,6 +34,9 @@ const mockEncodeSignedTransactions = vi.fn()
 const mockSendRawTransaction = vi.fn()
 const mockPrepareTransactions = vi.fn()
 const mockUpdateSwapStatus = vi.fn()
+const mockRegisterHandoff = vi.fn()
+const mockUseSelectedAccount = vi.fn()
+const mockIsMultisigAccount = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
 // runs during the package import.
 const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
@@ -100,6 +103,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
                 },
             },
         }),
+        useNetwork: () => ({ network: 'mainnet' }),
         AlgodError: MockAlgodError,
         toAlgodError: (err: unknown) =>
             new MockAlgodError(
@@ -126,6 +130,29 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         mutateAsync: mockUpdateSwapStatus,
     }),
     validateSwapGroupAgainstQuote: mockValidate,
+    useSwapHandoffStore: (
+        selector: (state: {
+            handoffs: Record<string, unknown>
+            registerHandoff: typeof mockRegisterHandoff
+            removeHandoff: () => void
+            resetState: () => void
+        }) => unknown,
+    ) =>
+        selector({
+            handoffs: {},
+            registerHandoff: mockRegisterHandoff,
+            removeHandoff: vi.fn(),
+            resetState: vi.fn(),
+        }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useSelectedAccount: () => mockUseSelectedAccount(),
+    isMultisigAccount: (account: unknown) => mockIsMultisigAccount(account),
+}))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useDeviceID: () => 'device-1',
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -141,6 +168,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
     decodeFromBase64: (b64: string) =>
         new Uint8Array(Buffer.from(b64, 'base64')),
+    encodeToBase64: (bytes: Uint8Array) =>
+        Buffer.from(bytes).toString('base64'),
     generateOrderedUniqueId: () => 'mock-id',
     logger: {
         warn: vi.fn(),
@@ -238,6 +267,11 @@ describe('useSwapExecution', () => {
 
         // Default: status update succeeds
         mockUpdateSwapStatus.mockResolvedValue({ status: 'in_progress' })
+
+        // Default: single-signer account — the normal inline sign → submit
+        // flow. The shared-account branch only triggers for multisig senders.
+        mockUseSelectedAccount.mockReturnValue(undefined)
+        mockIsMultisigAccount.mockReturnValue(false)
     })
 
     it('starts with idle status', () => {
@@ -581,5 +615,100 @@ describe('useSwapExecution', () => {
                 data: expect.objectContaining({ status: 'failed' }),
             }),
         )
+    })
+
+    describe('shared-account (multisig) swaps', () => {
+        const multisigAccount = {
+            address: 'JOINT_ADDR',
+            multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
+        }
+
+        /** Fire the request's onProposed as the propose transport would. */
+        const autoPropose = (info: {
+            signRequestId: string
+            rawTransactionsBase64: string[]
+        }) => {
+            mockAddSignRequest.mockImplementation(
+                (request: TransactionSignRequest) => {
+                    void Promise.resolve().then(() =>
+                        request.onProposed?.({
+                            signRequestId: info.signRequestId,
+                            status: 'pending',
+                            rawTransactionsBase64: info.rawTransactionsBase64,
+                        }),
+                    )
+                },
+            )
+        }
+
+        beforeEach(() => {
+            mockUseSelectedAccount.mockReturnValue(multisigAccount)
+            mockIsMultisigAccount.mockReturnValue(true)
+            autoPropose({
+                signRequestId: 'sign-req-1',
+                rawTransactionsBase64: ['cmF3MQ==', 'cmF3Mg=='],
+            })
+        })
+
+        it('proposes a sync sign-request and returns pending-cosign without submitting', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(makeQuote('quote-msig'))
+            })
+
+            expect(outcome).toEqual({ kind: 'pending-cosign' })
+            expect(result.current.status).toBe('pending-cosign')
+
+            const request = mockAddSignRequest.mock
+                .calls[0][0] as TransactionSignRequest
+            expect(request.transportOptions?.multisig?.proposeMode).toBe('sync')
+            // Proposer does NOT submit — the cosign resolver does that later.
+            expect(mockSendRawTransaction).not.toHaveBeenCalled()
+        })
+
+        it('registers a handoff with the backend signRequestId and proposed raw txns', async () => {
+            const { result } = renderHook(() => useSwapExecution())
+
+            await act(async () => {
+                await result.current.execute(makeQuote('quote-msig'))
+            })
+
+            expect(mockRegisterHandoff).toHaveBeenCalledTimes(1)
+            const record = mockRegisterHandoff.mock.calls[0][0]
+            expect(record).toMatchObject({
+                swapIdStr: '12345',
+                signRequestId: 'sign-req-1',
+                network: 'mainnet',
+                multisigAddress: 'JOINT_ADDR',
+                deviceId: 'device-1',
+                msigMetadata: {
+                    version: 1,
+                    threshold: 2,
+                    addresses: ['A', 'B'],
+                },
+                expectedRawTransactionsBase64: ['cmF3MQ==', 'cmF3Mg=='],
+            })
+        })
+
+        it('a single-signer account still takes the normal inline submit flow', async () => {
+            mockUseSelectedAccount.mockReturnValue(undefined)
+            mockIsMultisigAccount.mockReturnValue(false)
+            autoApproveWith([makeSignedTxn('tx-1'), makeSignedTxn('tx-2')])
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(
+                    makeQuote('quote-single-signer'),
+                )
+            })
+
+            expect(outcome).toEqual({ kind: 'success' })
+            expect(mockRegisterHandoff).not.toHaveBeenCalled()
+            expect(mockSendRawTransaction).toHaveBeenCalled()
+        })
     })
 })

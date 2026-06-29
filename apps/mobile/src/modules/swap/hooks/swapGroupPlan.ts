@@ -15,7 +15,10 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import type { TransactionGroup } from '@perawallet/wallet-core-swaps'
+import type {
+    SerializedGroupPlan,
+    TransactionGroup,
+} from '@perawallet/wallet-core-swaps'
 
 /**
  * A slot in a group's submission order. Either a backend pre-signed
@@ -106,6 +109,30 @@ export const scatterSigned = (
                 : flatSigned[slot.flatIndex],
         ),
     )
+
+/**
+ * Serialize the submission plans for persistence in the swap-handoff store.
+ * Pre-signed slots are encoded to base64 (no `PeraSignedTransaction` in
+ * persisted state); to-sign slots keep their flat index, which the resolver
+ * later fills from the assembled composite-multisig bytes.
+ */
+export const serializeGroupPlans = (
+    plans: GroupPlan[],
+    encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[],
+    encodeToBase64: (bytes: Uint8Array) => string,
+): SerializedGroupPlan[] =>
+    plans.map(plan => ({
+        slots: plan.slots.map(slot =>
+            slot.kind === 'preSigned'
+                ? {
+                      kind: 'preSigned' as const,
+                      signedTxnBase64: encodeToBase64(
+                          encodeSignedTransactions([slot.signed])[0],
+                      ),
+                  }
+                : { kind: 'toSign' as const, flatIndex: slot.flatIndex },
+        ),
+    }))
 
 /**
  * Sentinel error so the swap execution flow can distinguish a user-initiated

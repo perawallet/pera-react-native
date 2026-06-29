@@ -158,6 +158,25 @@ export const isExternalCallbackSource = (
     (EXTERNAL_CALLBACK_SOURCES as readonly SourceType[]).includes(sourceType)
 
 /**
+ * Optional, transport-routing hints for a sign request. Namespaced by concern
+ * so the generic pipeline types don't accumulate one-off top-level flags;
+ * everything here is advisory to the transport layer (absence = defaults).
+ */
+export interface SignRequestTransportOptions {
+    /** Multisig-propose route tuning. */
+    multisig?: {
+        /**
+         * Propose `type` sent to the backend. Local in-app sends default to
+         * `'async'` (backend broadcasts once threshold is met); external
+         * handoffs default to `'sync'`. Shared-account swaps set `'sync'` so the
+         * backend does NOT broadcast — the proposer assembles the composite
+         * multisig, interleaves the pre-signed slots, and submits to algod.
+         */
+        proposeMode?: 'sync' | 'async'
+    }
+}
+
+/**
  * Metadata about where signable data came from
  */
 export interface SourceMetadata {
@@ -190,6 +209,12 @@ export interface SourceMetadata {
 
     /** For multisig co-sign: the sign request ID */
     signRequestId?: string
+
+    /**
+     * Optional transport-routing hints (e.g. multisig propose mode). Namespaced
+     * by concern so this generic type stays free of one-off flags.
+     */
+    transportOptions?: SignRequestTransportOptions
 
     /** Original request ID for callbacks */
     requestId?: string
@@ -233,6 +258,18 @@ export interface SourceCallbacks {
      * the original `algo_signTxn` request before responding.
      */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
+    /**
+     * Fired by the multisig propose transport once the backend sign-request
+     * is created, before the headless propose flow resolves. Lets an in-app
+     * proposer that delivers asynchronously — the shared-account swap flow —
+     * capture the backend `signRequestId` and the exact raw transactions sent,
+     * so it can register a handoff to finish the swap once threshold is met.
+     */
+    onProposed?: (info: {
+        signRequestId: string
+        status: SignRequestStatus
+        rawTransactionsBase64: string[]
+    }) => Promise<void>
 }
 
 /**

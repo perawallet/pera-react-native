@@ -585,6 +585,30 @@ describe('createMultisigProposeTransport', () => {
         expect(walletConnectHandoffs.list()).toEqual([])
     })
 
+    test('honors transportOptions.multisig.proposeMode (sync) for a local source', async () => {
+        // Shared-account swaps propose locally but must use the sync protocol
+        // so the backend doesn't broadcast — the proposer submits to algod.
+        const proposeSignRequest = vi.fn().mockResolvedValue({
+            signRequestId: 'swap-req',
+            status: 'pending',
+            rawTransactionsBase64: [],
+        })
+        const transport = buildPropose(proposeSignRequest)
+
+        await transport.send(
+            transactionResult,
+            {
+                type: 'local',
+                transportOptions: { multisig: { proposeMode: 'sync' } },
+            },
+            'JOINT_ADDR',
+        )
+
+        expect(proposeSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'sync' }),
+        )
+    })
+
     test('throws when multisigAddress is missing', async () => {
         const transport = buildPropose()
 

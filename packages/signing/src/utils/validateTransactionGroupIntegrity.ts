@@ -53,6 +53,37 @@ import { InvalidSignableDataError } from '../pipeline/errors'
 export const validateTransactionGroupIntegrity = (
     transactions: PeraTransaction[],
 ): void => {
+    validateGroupStructure(transactions, { recomputeGroupHash: true })
+}
+
+/**
+ * Co-sign variant of {@link validateTransactionGroupIntegrity}: validates
+ * partitioning and ARC-0001 contiguity but **skips the full-group hash
+ * recompute**.
+ *
+ * This is the ONLY sanctioned way to relax the group-hash check, and it exists
+ * for exactly one caller: the multisig **co-sign** path. The co-signer's device
+ * holds only the multisig-signable subset of a larger atomic group (a swap
+ * mixes in backend pre-signed pool/fee slots that never reach the co-signer),
+ * so the full-group hash can never match over the subset. Full-group integrity
+ * is enforced instead on the proposer/submitter — which holds the complete
+ * group — and ultimately by algod at submission.
+ *
+ * Exposed as a dedicated, intent-revealing function (rather than a boolean on
+ * the strict validator) so the relaxation can't be switched on by accident.
+ *
+ * Throws `InvalidSignableDataError` (non-retryable) on any violation.
+ */
+export const validateCosignSubsetIntegrity = (
+    transactions: PeraTransaction[],
+): void => {
+    validateGroupStructure(transactions, { recomputeGroupHash: false })
+}
+
+const validateGroupStructure = (
+    transactions: PeraTransaction[],
+    { recomputeGroupHash }: { recomputeGroupHash: boolean },
+): void => {
     // Partition by claimed group ID. Ungrouped transactions are independent
     // — ARC-0001 allows them alongside grouped txs in the same request.
     // Per spec, txns sharing a group ID must also be CONTIGUOUS in the
@@ -91,6 +122,11 @@ export const validateTransactionGroupIntegrity = (
     }
 
     if (partitions.size === 0) return
+
+    // Co-sign subsets legitimately fail a full-group recompute (members are
+    // missing), but contiguity above still guards against scattered/tampered
+    // groups. Stop here when the caller opts out of the hash recompute.
+    if (!recomputeGroupHash) return
 
     for (const { group: claimed, txs } of partitions.values()) {
         let computed: Optional<Uint8Array>
