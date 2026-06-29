@@ -208,6 +208,38 @@ describe('validateSwapGroupAgainstQuote', () => {
         ).toThrow(SwapQuoteMismatchError)
     })
 
+    it('coerces a numeric (non-bigint) amount and bounds it like a bigint', () => {
+        // Some provider payloads surface amounts as JS numbers rather than
+        // bigints; they must be coerced and bounded identically.
+        const numericAxfer = {
+            sender: SWAPPER,
+            assetTransferTransaction: {
+                assetId: 31_566_704n,
+                amount: 6_000_000, // number, over the 5_000_000 input bound
+                receiver: POOL,
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        expect(() =>
+            validateSwapGroupAgainstQuote([numericAxfer], baseQuote),
+        ).toThrow(SwapQuoteMismatchError)
+    })
+
+    it('truncates a fractional numeric amount within the bound', () => {
+        const numericAxfer = {
+            sender: SWAPPER,
+            assetTransferTransaction: {
+                assetId: 31_566_704n,
+                amount: 4_999_999.9, // trunc → 4_999_999, within bound
+                receiver: POOL,
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        expect(() =>
+            validateSwapGroupAgainstQuote([numericAxfer], baseQuote),
+        ).not.toThrow()
+    })
+
     it('rejects a quote with no swapper address', () => {
         const quote = {
             ...baseQuote,

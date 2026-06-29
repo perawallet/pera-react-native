@@ -253,6 +253,19 @@ describe('resolveSwapHandoffOutcome', () => {
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
+    test('a failing status update is swallowed — the handoff is still cleaned up', async () => {
+        deps.updateSwapStatus.mockRejectedValueOnce(new Error('status 500'))
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'soft-reject', reason: 'expired' },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        // Reporting status is best-effort; a rejection must not block teardown.
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
     test('error: fails the swap and removes the handoff', async () => {
         await resolveSwapHandoffOutcome({
             outcome: {

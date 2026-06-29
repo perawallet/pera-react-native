@@ -91,6 +91,25 @@ describe('swaps/swapHandoffStore', () => {
         expect(Object.keys(result.current.handoffs)).toEqual(['b'])
     })
 
+    test('registers clearStorage + resetState hooks that drive the store', () => {
+        const [registration] = registerStoreMock.mock.calls.at(-1) as [
+            {
+                name: string
+                clearStorage: () => void
+                resetState: () => void
+            },
+        ]
+
+        expect(registration.name).toBe('swap-handoff-store')
+
+        useSwapHandoffStore.getState().registerHandoff(makeRecord())
+        registration.resetState()
+        expect(useSwapHandoffStore.getState().handoffs).toEqual({})
+
+        // clearStorage delegates to persist middleware — just prove it runs.
+        expect(() => registration.clearStorage()).not.toThrow()
+    })
+
     test('resetState clears all handoffs', () => {
         const { result } = renderHook(() => useSwapHandoffStore())
 
