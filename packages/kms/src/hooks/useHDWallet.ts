@@ -16,10 +16,12 @@ import {
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
-import { buildSeedMetadata } from '../utils'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { buildSeedMetadata, entropyChildMetadata } from '../utils'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
 import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
+import { commitSecret } from '../storage/secrets'
 import { zeroBytes } from '../crypto/secure-memory'
 import { SeedScheme } from '../constants'
 
@@ -49,10 +51,7 @@ export const useHDWallet = () => {
     }): Promise<HDWalletKeyResult> => {
         const { keyId, rootKey, entropy } = prepared
 
-        const metadata = buildSeedMetadata({
-            scheme: SeedScheme.Bip39,
-            entropy,
-        })
+        const metadata = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
 
         try {
             // The seed entry holds the 96-byte XHD root in `privateKey`.
@@ -88,6 +87,26 @@ export const useHDWallet = () => {
             }
 
             await keyStore.import(seed, 'raw')
+
+            // Entropy lives in a separate `secret-key` child, not in the seed
+            // metadata, so it never leaks through the seed's reactive snapshot
+            // or `keyStore.export()`. The child is found later by its metadata
+            // (`entropyChildMetadata`), not a derived id. `commitSecret` copies
+            // the bytes; the originals are zeroed below.
+            //
+            // Transactional: a seed without its entropy child can't rebuild its
+            // mnemonic, so it's unrecoverable. If the commit fails, roll back
+            // the just-imported seed rather than persist that partial state.
+            try {
+                await commitSecret({
+                    id: generateOrderedUniqueId(),
+                    bytes: entropy,
+                    metadata: entropyChildMetadata(keyId),
+                })
+            } catch (error) {
+                await keyStore.remove(keyId).catch(() => {})
+                throw error
+            }
         } finally {
             zeroBytes(rootKey, entropy)
         }

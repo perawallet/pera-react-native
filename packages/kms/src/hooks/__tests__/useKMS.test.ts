@@ -85,15 +85,20 @@ vi.mock('../../crypto/algo25-utils', () => ({
     algo25SeedToIndices: (...args: any[]) => mockAlgo25SeedToIndices(...args),
 }))
 
+const mockWithSecret = vi.fn()
+vi.mock('../../storage/secrets', () => ({
+    withSecret: (...args: any[]) => mockWithSecret(...args),
+}))
+
 import { useKMS } from '../useKMS'
 
-const seedBip39Root = (id: string, entropy = '00ff'): Key => {
+const seedBip39Root = (id: string): Key => {
     const key: Key = {
         id,
         type: 'seed',
         algorithm: 'raw',
         extractable: true,
-        metadata: { scheme: SeedScheme.Bip39, entropy, pera: {} },
+        metadata: { scheme: SeedScheme.Bip39, pera: {} },
     }
     mockKeystoreKeys.push(key)
     return key
@@ -118,6 +123,23 @@ const childOf = (childId: string, parentId: string, type = 'ed25519'): Key => {
         algorithm: 'EdDSA',
         extractable: false,
         metadata: { parentKeyId: parentId },
+    }
+    mockKeystoreKeys.push(key)
+    return key
+}
+
+// The entropy secret-key child, located by metadata (parentKeyId + entropyKey),
+// not its id — the id is opaque on purpose.
+const entropyChildOf = (
+    parentId: string,
+    childId = `${parentId}-entropy`,
+): Key => {
+    const key: Key = {
+        id: childId,
+        type: 'secret-key',
+        algorithm: 'raw',
+        extractable: true,
+        metadata: { parentKeyId: parentId, entropyKey: true },
     }
     mockKeystoreKeys.push(key)
     return key
@@ -276,13 +298,16 @@ describe('useKMS', () => {
         ).rejects.toThrow(InvalidKeyError)
     })
 
-    it('executeWithMnemonic for a bip39 seed derives indices straight from entropy', async () => {
-        seedBip39Root('hd-1', 'abcdef01')
+    it('executeWithMnemonic for a bip39 seed derives indices from the entropy secret-key', async () => {
+        seedBip39Root('hd-1')
         const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+        const entropy = entropyChildOf('hd-1')
         mockEntropyToIndices.mockReturnValue(Uint16Array.from([1, 2, 3]))
-        mockKeyStoreExport.mockResolvedValueOnce({
-            metadata: { scheme: SeedScheme.Bip39, entropy: 'abcdef01' },
-        })
+        // withSecret hands the entropy bytes to the handler; the seed's XHD
+        // root is never exported on the bip39 path.
+        mockWithSecret.mockImplementation(async (_id, handler) =>
+            handler(new Uint8Array([0xab, 0xcd, 0xef, 0x01])),
+        )
 
         const { result } = renderHook(() => useKMS())
         let received: Optional<string[]>
@@ -293,8 +318,31 @@ describe('useKMS', () => {
                 indices => Array.from(indices, mnemonicIndexToWord),
             )
         })
-        expect(mockKeyStoreExport).toHaveBeenCalledWith('hd-1')
+        // The entropy child is resolved by metadata, then read by its id.
+        expect(mockWithSecret).toHaveBeenCalledWith(
+            entropy.id,
+            expect.any(Function),
+        )
+        expect(mockKeyStoreExport).not.toHaveBeenCalled()
         expect(received).toEqual(['ability', 'able', 'about'])
+    })
+
+    it('executeWithMnemonic throws when the bip39 entropy secret is missing', async () => {
+        seedBip39Root('hd-1')
+        // No entropy child in the keystore → nothing to resolve.
+        const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await expect(
+                result.current.executeWithMnemonic(
+                    child.id,
+                    'backup',
+                    () => 'unused',
+                ),
+            ).rejects.toThrow('missing its entropy secret')
+        })
+        expect(mockWithSecret).not.toHaveBeenCalled()
     })
 
     it('executeWithMnemonic for an algo25 seed derives indices from the seed', async () => {
@@ -319,12 +367,13 @@ describe('useKMS', () => {
     })
 
     it('executeWithMnemonic zeroes the index buffer after the handler returns', async () => {
-        seedBip39Root('hd-1', 'abcdef01')
+        seedBip39Root('hd-1')
         const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+        entropyChildOf('hd-1')
         mockEntropyToIndices.mockReturnValue(Uint16Array.from([1, 2, 3]))
-        mockKeyStoreExport.mockResolvedValueOnce({
-            metadata: { scheme: SeedScheme.Bip39, entropy: 'abcdef01' },
-        })
+        mockWithSecret.mockImplementation(async (_id, handler) =>
+            handler(new Uint8Array([0xab, 0xcd, 0xef, 0x01])),
+        )
 
         const { result } = renderHook(() => useKMS())
         let captured: Optional<Uint16Array>
@@ -366,6 +415,8 @@ describe('useKMS', () => {
         seedBip39Root('hd-1')
         childOf('child-a', 'hd-1', 'hd-derived-ed25519')
         childOf('child-b', 'hd-1', 'hd-derived-ed25519')
+        // The entropy secret-key is a parentKeyId child too, so it cascades.
+        childOf('hd-1-bip39-entropy', 'hd-1', 'secret-key')
         seedBip39Root('hd-2')
         childOf('child-c', 'hd-2', 'hd-derived-ed25519')
 
@@ -374,9 +425,10 @@ describe('useKMS', () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
 
-        // child-a and child-b removed first, then the seed
+        // children removed first, then the seed
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('child-a')
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('child-b')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-bip39-entropy')
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
         // child-c (under hd-2) is left alone
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('child-c')

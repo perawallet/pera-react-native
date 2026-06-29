@@ -23,6 +23,8 @@ import {
     algo25AddressOf,
     buildSeedMetadata,
     createdAtOf,
+    entropyChildIdOf,
+    entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
     isSeedKey,
@@ -201,25 +203,53 @@ describe('buildSeedMetadata', () => {
         expect(created).toBeGreaterThanOrEqual(before)
     })
 
-    test('stashes entropy as a lowercase hex string when provided', () => {
-        const entropy = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
-        expect(meta.entropy).toBe('deadbeef')
-    })
-
-    test('omits the entropy field entirely when not provided', () => {
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
+    test('never stores entropy in the metadata, even for a bip39 seed', () => {
+        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
         expect('entropy' in meta).toBe(false)
     })
 })
 
+describe('entropyChildMetadata', () => {
+    test('stamps parentKeyId and the entropyKey marker', () => {
+        expect(entropyChildMetadata('seed-123')).toEqual({
+            parentKeyId: 'seed-123',
+            entropyKey: true,
+        })
+    })
+})
+
+describe('entropyChildIdOf', () => {
+    const keys = [
+        { id: 'seed-123', type: 'seed', metadata: { scheme: 'bip39' } },
+        {
+            id: 'random-child-id',
+            type: 'secret-key',
+            metadata: entropyChildMetadata('seed-123'),
+        },
+        {
+            id: 'derived',
+            type: 'hd-derived-ed25519',
+            metadata: { parentKeyId: 'seed-123' },
+        },
+    ] as unknown as Key[]
+
+    test('finds the entropy child by its metadata, regardless of id', () => {
+        expect(entropyChildIdOf('seed-123', keys)).toBe('random-child-id')
+    })
+
+    test('ignores non-entropy children of the same seed', () => {
+        const onlyDerived = keys.filter(k => k.id !== 'random-child-id')
+        expect(entropyChildIdOf('seed-123', onlyDerived)).toBeUndefined()
+    })
+
+    test('returns undefined when the seed has no entropy child', () => {
+        expect(entropyChildIdOf('other-seed', keys)).toBeUndefined()
+    })
+})
+
 describe('hexToBytes', () => {
-    test('round-trips with the hex emitted by buildSeedMetadata', () => {
-        const entropy = new Uint8Array([1, 2, 3, 255])
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
-        expect(Array.from(hexToBytes(meta.entropy!))).toEqual(
-            Array.from(entropy),
-        )
+    test('decodes a lowercase hex string to its bytes', () => {
+        expect(Array.from(hexToBytes('010203ff'))).toEqual([1, 2, 3, 255])
     })
 
     test('throws on an odd-length string instead of dropping the last nibble', () => {

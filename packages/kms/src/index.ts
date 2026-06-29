@@ -42,6 +42,8 @@ export {
     aclOf,
     algo25AddressOf,
     createdAtOf,
+    entropyChildIdOf,
+    entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
     isSeedKey,

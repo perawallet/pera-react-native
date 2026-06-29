@@ -12,7 +12,6 @@
 
 import type { Key } from '@algorandfoundation/keystore'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
 import nacl from 'tweetnacl'
 import { AccessControlPermission, type AccessControl } from './models'
 import {
@@ -36,29 +35,27 @@ export type SeedPeraMetadata = {
 
 export type SeedMetadata = {
     scheme?: SeedScheme
-    /** Hex-encoded BIP39 entropy. Only present when scheme === 'bip39'. */
-    entropy?: string
     pera?: SeedPeraMetadata
     [key: string]: unknown
 }
 
 /**
  * Builds the metadata payload for `keyStore.import({ type: 'seed', ... })`.
- * Caller supplies the scheme and (for bip39) the entropy bytes; Pera-domain
- * extras are nested under `pera` so they don't collide with keystore-defined
- * fields.
+ * Caller supplies the scheme; Pera-domain extras are nested under `pera` so
+ * they don't collide with keystore-defined fields. A bip39 seed's entropy is
+ * never stored here — it lives in a separate `secret-key` child (see
+ * {@link entropyChildMetadata}) so it can't leak through the seed's exported
+ * metadata.
  */
 export const buildSeedMetadata = (params: {
     scheme: SeedScheme
-    entropy?: Uint8Array
     acl?: AccessControl[]
     createdAt?: Date
     expiresAt?: Date
 }): SeedMetadata => {
-    const { scheme, entropy, acl, createdAt, expiresAt } = params
+    const { scheme, acl, createdAt, expiresAt } = params
     return {
         scheme,
-        ...(entropy ? { entropy: bytesToHex(entropy) } : {}),
         pera: {
             acl,
             createdAt: (createdAt ?? new Date()).toISOString(),
@@ -66,6 +63,37 @@ export const buildSeedMetadata = (params: {
         },
     }
 }
+
+/**
+ * Metadata stamped on the `secret-key` child that holds a bip39 seed's BIP39
+ * entropy: `parentKeyId` ties it to the seed and `entropyKey` marks it as the
+ * entropy holder. Locating the child by this metadata (see
+ * {@link entropyChildIdOf}) avoids depending on a derived id format. The
+ * entropy is stored apart from the seed so it never rides along in the seed's
+ * reactive snapshot or its `keyStore.export()` metadata.
+ */
+export const entropyChildMetadata = (
+    seedKeyId: string,
+): { parentKeyId: string; entropyKey: true } => ({
+    parentKeyId: seedKeyId,
+    entropyKey: true,
+})
+
+/**
+ * Finds the keystore id of a seed's entropy `secret-key` child by its metadata
+ * ({@link entropyChildMetadata}), or `undefined` if it has none.
+ */
+export const entropyChildIdOf = (
+    seedKeyId: string,
+    keys: readonly Key[],
+): string | undefined =>
+    keys.find(k => {
+        const meta = (k.metadata ?? {}) as {
+            parentKeyId?: unknown
+            entropyKey?: unknown
+        }
+        return meta.parentKeyId === seedKeyId && meta.entropyKey === true
+    })?.id
 
 const seedMetadata = (key: Key): SeedMetadata =>
     (key.metadata ?? {}) as SeedMetadata
