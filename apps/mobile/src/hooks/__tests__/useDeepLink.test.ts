@@ -241,6 +241,21 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+const { mockShowSignRequest, mockIsPeraCardEnabled } = vi.hoisted(() => ({
+    mockShowSignRequest: vi.fn(),
+    mockIsPeraCardEnabled: vi.fn(() => true),
+}))
+
+vi.mock('@modules/multisig/hooks/usePendingSignaturesSheet', () => ({
+    usePendingSignaturesSheet: () => ({
+        showSignRequest: mockShowSignRequest,
+    }),
+}))
+
+vi.mock('../useIsPeraCardEnabled', () => ({
+    useIsPeraCardEnabled: mockIsPeraCardEnabled,
+}))
+
 // Mock SendFundsContent / BidaliContent so the deeplink test doesn't pull in
 // their full navigator trees (heavy imports not needed for these assertions).
 vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
@@ -847,7 +862,8 @@ describe('useDeepLink', () => {
         // Success case (infoPost called)
     })
 
-    it('should handle CARDS deeplink', async () => {
+    it('navigates to Pera Card for a CARDS deeplink when enabled', async () => {
+        mockIsPeraCardEnabled.mockReturnValue(true)
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.CARDS,
             path: '/cards',
@@ -862,7 +878,46 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case (infoPost called)
+        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+            screen: 'PeraCardIntro',
+        })
+    })
+
+    it('ignores a CARDS deeplink when Pera Card is disabled', async () => {
+        mockIsPeraCardEnabled.mockReturnValue(false)
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.CARDS,
+            path: '/cards',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/cards',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('opens the pending-signatures sheet for a SIGN_REQUEST deeplink', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.SIGN_REQUEST,
+            signRequestId: 'req-123',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/sign-request/?signRequestId=req-123',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockShowSignRequest).toHaveBeenCalledWith('req-123')
     })
 
     it('should open Bidali bottom sheet for SELL deeplink', async () => {

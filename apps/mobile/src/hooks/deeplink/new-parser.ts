@@ -36,6 +36,7 @@ import {
     type AccountDetailDeeplink,
     type InternalBrowserDeeplink,
     type SharedAccountImportDeeplink,
+    type SignRequestDeeplink,
     type HomeDeeplink,
 } from './types'
 import {
@@ -311,6 +312,22 @@ export function parsePerawalletAppUri(
             sourceUrl: url,
             address: params.address,
         } as SharedAccountImportDeeplink
+    }
+
+    // Both the multisig (`joint-`) and react-native (`shared-`) account
+    // sign-request paths, plus the bare `sign-request` form, carry the same
+    // `signRequestId` and open the same pending-signatures sheet.
+    if (
+        cleanPath === 'sign-request' ||
+        cleanPath === 'joint-account-sign-request' ||
+        cleanPath === 'shared-account-sign-request'
+    ) {
+        if (!params.signRequestId) return null
+        return {
+            type: DeeplinkType.SIGN_REQUEST,
+            sourceUrl: url,
+            signRequestId: params.signRequestId,
+        } as SignRequestDeeplink
     }
 
     if (cleanPath === 'internal-browser') {

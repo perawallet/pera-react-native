@@ -21,6 +21,7 @@ import {
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
+import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
 import {
     useWalletConnect,
     useWalletConnectStore,
@@ -35,6 +36,7 @@ import {
     hasStrongBiometricOrCredential,
 } from '@perawallet/wallet-core-security'
 import { useLanguage } from './useLanguage'
+import { useIsPeraCardEnabled } from './useIsPeraCardEnabled'
 import { navigateToScreen } from './deeplink/navigateToScreen'
 import {
     buildAccountDeeplink,
@@ -105,6 +107,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { t } = useLanguage()
     const { connect } = useWalletConnect(network)
     const { requestByType } = useBottomSheetStore()
+    const { showSignRequest } = usePendingSignaturesSheet()
+    const isPeraCardEnabled = useIsPeraCardEnabled()
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
@@ -354,8 +358,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.CARDS: {
-                    // TODO: Navigate to cards screen
-                    infoToast('Cards', 'Cards screen not implemented yet')
+                    // Mirrors native's feature-gate: the PeraCard navigator is
+                    // only registered when the remote-config flag is on, so a
+                    // deeplink to it is a no-op while the feature is hidden.
+                    // The `path` carries no destination yet (parity with the
+                    // unused Staking path), so we land on the card intro.
+                    if (!isPeraCardEnabled) return
+                    navigateToScreen(replaceCurrentScreen, 'PeraCard', {
+                        screen: 'PeraCardIntro',
+                    })
                     break
                 }
 
@@ -425,6 +436,11 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         screen: 'ImportSharedAccount',
                         params: { address: parsedData.address },
                     })
+                    break
+                }
+
+                case DeeplinkType.SIGN_REQUEST: {
+                    showSignRequest(parsedData.signRequestId)
                     break
                 }
 

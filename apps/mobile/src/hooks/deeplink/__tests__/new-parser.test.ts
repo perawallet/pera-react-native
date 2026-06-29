@@ -194,6 +194,29 @@ describe('Deeplink Parser - New Format', () => {
         })
     })
 
+    describe('Sign request', () => {
+        it('parses sign-request and its joint/shared aliases', () => {
+            for (const path of [
+                'sign-request',
+                'joint-account-sign-request',
+                'shared-account-sign-request',
+            ]) {
+                const result = parseDeeplink(
+                    `perawallet://app/${path}/?signRequestId=req-123`,
+                )
+                expect(result?.type).toBe(DeeplinkType.SIGN_REQUEST)
+                if (result?.type === DeeplinkType.SIGN_REQUEST) {
+                    expect(result.signRequestId).toBe('req-123')
+                }
+            }
+        })
+
+        it('rejects a sign request without a signRequestId', () => {
+            const result = parseDeeplink('perawallet://app/sign-request/')
+            expect(result?.type).not.toBe(DeeplinkType.SIGN_REQUEST)
+        })
+    })
+
     describe('Internal browser', () => {
         it('parses internal-browser with base64 URL', () => {
             const encodedUrl = btoa('https://perawallet.app/')
