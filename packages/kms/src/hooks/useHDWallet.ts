@@ -91,11 +91,20 @@ export const useHDWallet = () => {
             // metadata, so it never leaks through the seed's reactive snapshot
             // or `keyStore.export()`. `commitSecret` copies the bytes; the
             // originals are zeroed below.
-            await commitSecret({
-                id: entropyKeyId(keyId),
-                bytes: entropy,
-                metadata: { parentKeyId: keyId },
-            })
+            //
+            // Transactional: a seed without its entropy child can't rebuild its
+            // mnemonic, so it's unrecoverable. If the commit fails, roll back
+            // the just-imported seed rather than persist that partial state.
+            try {
+                await commitSecret({
+                    id: entropyKeyId(keyId),
+                    bytes: entropy,
+                    metadata: { parentKeyId: keyId },
+                })
+            } catch (error) {
+                await keyStore.remove(keyId).catch(() => {})
+                throw error
+            }
         } finally {
             zeroBytes(rootKey, entropy)
         }

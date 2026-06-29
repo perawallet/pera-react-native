@@ -97,6 +97,7 @@ describe('useHDWallet', () => {
             })
             mockFromSeed.mockReturnValue(new Uint8Array(rootBytes))
             mockKeyStoreImport.mockResolvedValue('hd-1')
+            mockKeyStoreRemove.mockResolvedValue(undefined)
             mockCommitSecret.mockImplementation(async (params: any) => {
                 committedEntropy = {
                     id: params.id,
@@ -158,6 +159,25 @@ describe('useHDWallet', () => {
                 bytes: [0xab, 0xcd, 0xef, 0x01],
                 metadata: { parentKeyId: 'hd-1' },
             })
+        })
+
+        test('removes the orphaned seed when committing the entropy child fails', async () => {
+            // A seed without its entropy child is unrecoverable, so a failed
+            // commit must not leave a partial write behind.
+            mockCommitSecret.mockRejectedValueOnce(new Error('commit boom'))
+            const { result } = renderHook(() => useHDWallet())
+
+            await expect(
+                act(async () => {
+                    await result.current.createHDWalletKey({
+                        id: 'hd-1',
+                        mnemonic: 'mnemonic words here',
+                    })
+                }),
+            ).rejects.toThrow('commit boom')
+
+            expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
+            expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
         })
     })
 

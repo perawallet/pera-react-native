@@ -13,9 +13,8 @@
 import { Platform } from 'react-native'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
-    entropyKeyId,
     entropyToMnemonic,
-    withSecret,
+    withBip39Entropy,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { bytesEqual, bytesToHex, logger } from '@perawallet/wallet-core-shared'
@@ -118,7 +117,7 @@ type MigrationContext = {
     hasAccount: (address: string) => boolean
     /** Walk address → account → derived key → the HD seed that owns it. */
     resolveSeedKeyId: (address: string) => string | undefined
-    /** Recover a seed's BIP39 mnemonic from its entropy `secret-key` child. */
+    /** Recover a seed's BIP39 mnemonic from its entropy child (legacy seeds fall back to seed metadata). */
     resolveMnemonic: (seedKeyId: string) => Promise<string | undefined>
     /** Derived main key per seed; PBKDF2 (210k) runs once and is reused. */
     getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
@@ -153,7 +152,7 @@ const createMigrationContext = (): MigrationContext => {
             return typeof parentKeyId === 'string' ? parentKeyId : undefined
         },
         resolveMnemonic: async seedKeyId =>
-            (await withSecret(entropyKeyId(seedKeyId), entropy =>
+            (await withBip39Entropy(seedKeyId, entropy =>
                 entropyToMnemonic(entropy),
             )) ?? undefined,
         getMainKey: (seedKeyId, mnemonic) => {

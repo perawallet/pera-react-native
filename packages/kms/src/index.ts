@@ -53,6 +53,7 @@ export {
     commitSecret,
     hasSecret,
     removeSecret,
+    withBip39Entropy,
     withSecret,
 } from './storage/secrets'
 

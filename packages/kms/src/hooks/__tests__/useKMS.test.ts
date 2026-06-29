@@ -85,9 +85,9 @@ vi.mock('../../crypto/algo25-utils', () => ({
     algo25SeedToIndices: (...args: any[]) => mockAlgo25SeedToIndices(...args),
 }))
 
-const mockWithSecret = vi.fn()
+const mockWithBip39Entropy = vi.fn()
 vi.mock('../../storage/secrets', () => ({
-    withSecret: (...args: any[]) => mockWithSecret(...args),
+    withBip39Entropy: (...args: any[]) => mockWithBip39Entropy(...args),
 }))
 
 import { useKMS } from '../useKMS'
@@ -287,7 +287,7 @@ describe('useKMS', () => {
         mockEntropyToIndices.mockReturnValue(Uint16Array.from([1, 2, 3]))
         // withSecret hands the entropy bytes to the handler; the seed's XHD
         // root is never exported on the bip39 path.
-        mockWithSecret.mockImplementation(async (_id, handler) =>
+        mockWithBip39Entropy.mockImplementation(async (_id, handler) =>
             handler(new Uint8Array([0xab, 0xcd, 0xef, 0x01])),
         )
 
@@ -300,8 +300,8 @@ describe('useKMS', () => {
                 indices => Array.from(indices, mnemonicIndexToWord),
             )
         })
-        expect(mockWithSecret).toHaveBeenCalledWith(
-            'hd-1-bip39-entropy',
+        expect(mockWithBip39Entropy).toHaveBeenCalledWith(
+            'hd-1',
             expect.any(Function),
         )
         expect(mockKeyStoreExport).not.toHaveBeenCalled()
@@ -311,7 +311,7 @@ describe('useKMS', () => {
     it('executeWithMnemonic throws when the bip39 entropy secret is missing', async () => {
         seedBip39Root('hd-1')
         const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
-        mockWithSecret.mockResolvedValue(null)
+        mockWithBip39Entropy.mockResolvedValue(null)
 
         const { result } = renderHook(() => useKMS())
         await act(async () => {
@@ -350,7 +350,7 @@ describe('useKMS', () => {
         seedBip39Root('hd-1')
         const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
         mockEntropyToIndices.mockReturnValue(Uint16Array.from([1, 2, 3]))
-        mockWithSecret.mockImplementation(async (_id, handler) =>
+        mockWithBip39Entropy.mockImplementation(async (_id, handler) =>
             handler(new Uint8Array([0xab, 0xcd, 0xef, 0x01])),
         )
 

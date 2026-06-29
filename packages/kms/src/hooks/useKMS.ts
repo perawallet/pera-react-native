@@ -18,7 +18,7 @@ import {
     KeyNotFoundError,
 } from '../errors'
 import { zeroBytes } from '../crypto/secure-memory'
-import { entropyKeyId, expiresAtOf, isSeedKey, seedSchemeOf } from '../utils'
+import { expiresAtOf, isSeedKey, seedSchemeOf } from '../utils'
 import { SeedScheme } from '../constants'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
@@ -29,7 +29,7 @@ import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
 import { entropyToIndices } from '../crypto/hdwallet-utils'
 import { algo25SeedToIndices } from '../crypto/algo25-utils'
-import { withSecret } from '../storage/secrets'
+import { withBip39Entropy } from '../storage/secrets'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -208,12 +208,12 @@ export const useKMS = () => {
         }
 
         if (scheme === SeedScheme.Bip39) {
-            // The HD entropy lives in its own `secret-key` child, so the seed's
-            // XHD root is never exported just to recover the phrase. entropy →
-            // indices directly: the phrase is never a string on the heap.
-            const indices = await withSecret(
-                entropyKeyId(seedKey.id),
-                entropy => entropyToIndices(entropy),
+            // The HD entropy lives in its own `secret-key` child (with a
+            // legacy fallback to seed metadata), so the seed's XHD root is
+            // never exported just to recover the phrase. entropy → indices
+            // directly: the phrase is never a string on the heap.
+            const indices = await withBip39Entropy(seedKey.id, entropy =>
+                entropyToIndices(entropy),
             )
             if (!indices) {
                 throw new KeyManagementError(
