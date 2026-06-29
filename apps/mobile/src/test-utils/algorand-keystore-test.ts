@@ -197,7 +197,10 @@ export const WithKeyStore = (_provider: any, options: any) => {
                 context?: number
                 derivation?: number
                 value?: Uint8Array | string
-                params?: { value?: Uint8Array | string }
+                params?: {
+                    value?: Uint8Array | string
+                    metadata?: Record<string, unknown>
+                }
             }
         }): Promise<string> {
             const type = options?.type
@@ -206,10 +209,11 @@ export const WithKeyStore = (_provider: any, options: any) => {
             if (!reactiveStore) throw new Error('Keystore store missing')
 
             if (type === 'secret-key') {
-                // Mirrors `generateSecretKey` in the real keystore: read
-                // the value from `params.params.value` (the rn-keystore
-                // wraps caller params under `metadata.params`) and
-                // commit a secret-key entry. No parent required.
+                // Mirrors `generateSecretKey` in the real keystore: read the
+                // value and metadata from `params.params` (the rn-keystore
+                // wraps caller params there) and commit a secret-key entry,
+                // carrying the metadata onto the key so it's queryable on the
+                // reactive snapshot. No parent required.
                 const valueSrc = params.params?.value ?? params.value
                 const value =
                     typeof valueSrc === 'string'
@@ -222,6 +226,9 @@ export const WithKeyStore = (_provider: any, options: any) => {
                     id,
                     type: 'secret-key',
                     privateKey: new Uint8Array(value),
+                    ...(params.params?.metadata
+                        ? { metadata: params.params.metadata }
+                        : {}),
                 }
                 await commit({ store: reactiveStore, keyData: entry })
                 return id
