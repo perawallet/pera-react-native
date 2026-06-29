@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
-import { WebView } from 'react-native-webview'
-import { PWButton, PWScreen, PWText, PWToolbar, PWView } from '@components/core'
+import {
+    PWButton,
+    PWScreen,
+    PWStaticWebView,
+    PWText,
+    PWToolbar,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTermsAcceptanceView } from './useTermsAcceptanceView'
 import { useStyles } from './styles'
@@ -27,10 +32,9 @@ type TermsAcceptanceViewProps = {
 /**
  * Presentation-agnostic Terms & Conditions view: terms rendered inline (bundled
  * copy when it matches the required version, else the remote URL), with an
- * "I Agree" action pinned to the bottom that stays disabled until the user
- * scrolls to the end. No close affordance — the presenter (bottom sheet or
- * prompt) owns dismissal. Used both by `TermsAndConditionsSheet` (welcome
- * screen) and `TermsAcceptancePrompt` (already-onboarded re-acceptance).
+ * "I Agree" action pinned to the bottom. No close affordance — the presenter
+ * (bottom sheet or prompt) owns dismissal. Used both by `TermsAndConditionsSheet`
+ * (welcome screen) and `TermsAcceptancePrompt` (already-onboarded re-acceptance).
  */
 export const TermsAcceptanceView = ({
     onAccepted,
@@ -38,14 +42,7 @@ export const TermsAcceptanceView = ({
 }: TermsAcceptanceViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        source,
-        showLoading,
-        injectedJavaScript,
-        onMessage,
-        isAgreeDisabled,
-        onAgree,
-    } = useTermsAcceptanceView(onAccepted)
+    const { source, showLoading, onAgree } = useTermsAcceptanceView(onAccepted)
 
     return (
         <PWScreen
@@ -70,21 +67,14 @@ export const TermsAcceptanceView = ({
                         variant='primary'
                         title={t('onboarding.terms_sheet.agree')}
                         onPress={onAgree}
-                        isDisabled={isAgreeDisabled}
                         testID='terms_agree_button'
                     />
                 </PWView>
             }
         >
-            <WebView
+            <PWStaticWebView
                 source={source}
-                style={styles.webView}
-                injectedJavaScript={injectedJavaScript}
-                onMessage={onMessage}
                 startInLoadingState={showLoading}
-                renderLoading={
-                    showLoading ? () => <ActivityIndicator /> : undefined
-                }
             />
         </PWScreen>
     )

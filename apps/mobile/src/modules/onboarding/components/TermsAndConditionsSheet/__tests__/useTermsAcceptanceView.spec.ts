@@ -12,7 +12,6 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { WebViewMessageEvent } from 'react-native-webview'
 
 const mocks = vi.hoisted(() => ({
     currentVersion: '1',
@@ -33,10 +32,6 @@ vi.mock('../../../hooks/useTermsAcceptance', () => ({
 
 import { useTermsAcceptanceView } from '../useTermsAcceptanceView'
 import embeddedTerms from '../embedded-terms.json'
-
-const bottomMessage = {
-    nativeEvent: { data: 'pera-terms-scrolled-to-bottom' },
-} as WebViewMessageEvent
 
 describe('useTermsAcceptanceView', () => {
     beforeEach(() => {
@@ -62,33 +57,6 @@ describe('useTermsAcceptanceView', () => {
 
         expect('uri' in result.current.source).toBe(true)
         expect(result.current.showLoading).toBe(true)
-    })
-
-    it('keeps agree disabled until the terms are scrolled to the bottom', () => {
-        const { result } = renderHook(() =>
-            useTermsAcceptanceView(mocks.onAccepted),
-        )
-        expect(result.current.isAgreeDisabled).toBe(true)
-
-        act(() => {
-            result.current.onMessage(bottomMessage)
-        })
-
-        expect(result.current.isAgreeDisabled).toBe(false)
-    })
-
-    it('ignores unrelated WebView messages', () => {
-        const { result } = renderHook(() =>
-            useTermsAcceptanceView(mocks.onAccepted),
-        )
-
-        act(() => {
-            result.current.onMessage({
-                nativeEvent: { data: 'something-else' },
-            } as WebViewMessageEvent)
-        })
-
-        expect(result.current.isAgreeDisabled).toBe(true)
     })
 
     it('records acceptance and invokes onAccepted on agree', () => {
