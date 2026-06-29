@@ -57,3 +57,12 @@ export {
     type HandoffPollOutcome,
     type TerminalHandoffOutcome,
 } from './classifyHandoffPoll'
+
+// Multisig-handoff completion orchestration. Owns the submit → record →
+// mark-confirmed / decline-on-failure sequence shared by submit-type
+// consumers (the shared-account swap resolver today); consumers supply only
+// their submission + status semantics as deps.
+export {
+    completeMultisigHandoff,
+    type MultisigHandoffCompletionDeps,
+} from './completeMultisigHandoff'

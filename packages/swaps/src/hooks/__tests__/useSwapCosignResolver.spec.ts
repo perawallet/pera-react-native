@@ -21,12 +21,14 @@ const mocks = vi.hoisted(() => ({
     useDeviceID: vi.fn(),
     decodeFromBase64: vi.fn(),
     addSignature: vi.fn(),
+    getSignRequestsWithSignatures: vi.fn(),
+    getSignRequestsWithSignaturesQueryKey: vi.fn(),
     useMarkSignRequestsConfirmedMutation: vi.fn(),
     classifyHandoffPoll: vi.fn(),
     submitRawSignedTransactionGroup: vi.fn(),
+    useHandoffResolver: vi.fn(),
     resolveSwapHandoffOutcome: vi.fn(),
     useUpdateSwapStatusMutation: vi.fn(),
-    useSwapHandoffPolls: vi.fn(),
     removeHandoff: vi.fn(),
     handoffs: {} as Record<string, SwapHandoffRecord>,
 }))
@@ -43,12 +45,16 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     addSignature: mocks.addSignature,
+    getSignRequestsWithSignatures: mocks.getSignRequestsWithSignatures,
+    getSignRequestsWithSignaturesQueryKey:
+        mocks.getSignRequestsWithSignaturesQueryKey,
     useMarkSignRequestsConfirmedMutation:
         mocks.useMarkSignRequestsConfirmedMutation,
 }))
 vi.mock('@perawallet/wallet-core-signing', () => ({
     classifyHandoffPoll: mocks.classifyHandoffPoll,
     submitRawSignedTransactionGroup: mocks.submitRawSignedTransactionGroup,
+    useHandoffResolver: mocks.useHandoffResolver,
 }))
 vi.mock('../../utils', () => ({
     resolveSwapHandoffOutcome: mocks.resolveSwapHandoffOutcome,
@@ -62,9 +68,6 @@ vi.mock('../../store', () => ({
 }))
 vi.mock('../useUpdateSwapStatusMutation', () => ({
     useUpdateSwapStatusMutation: mocks.useUpdateSwapStatusMutation,
-}))
-vi.mock('../useSwapHandoffPolls', () => ({
-    useSwapHandoffPolls: mocks.useSwapHandoffPolls,
 }))
 
 const ALGORAND_CLIENT = { id: 'algod' }
@@ -91,8 +94,9 @@ const render = (isAppActive = true) =>
         initialProps: { isAppActive, reportError },
     })
 
-// The deps object the hook builds and hands to resolveSwapHandoffOutcome.
-const capturedDeps = () => mocks.resolveSwapHandoffOutcome.mock.calls[0][0].deps
+// The config object the hook hands to the shared resolver core.
+type ResolverConfig = Parameters<typeof mocks.useHandoffResolver>[0]
+const config = (): ResolverConfig => mocks.useHandoffResolver.mock.calls[0][0]
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -100,134 +104,142 @@ beforeEach(() => {
     mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
     mocks.useAlgorandClient.mockReturnValue(ALGORAND_CLIENT)
     mocks.useDeviceID.mockReturnValue('device-1')
+    mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
+        (network: string, id: string) => ['msig', network, id],
+    )
     mocks.useMarkSignRequestsConfirmedMutation.mockReturnValue({
         markConfirmed: vi.fn(),
     })
     mocks.useUpdateSwapStatusMutation.mockReturnValue({ mutateAsync: vi.fn() })
     mocks.resolveSwapHandoffOutcome.mockResolvedValue(undefined)
-    mocks.classifyHandoffPoll.mockReturnValue({ kind: 'keep-polling' })
-    mocks.useSwapHandoffPolls.mockReturnValue([])
 })
 
 describe('swaps/useSwapCosignResolver', () => {
-    it('polls only the handoffs on the active network', () => {
+    it('drives the shared resolver over all handoffs, opting into the active-network filter', () => {
         const onMainnet = makeRecord({ signRequestId: 'a', network: 'mainnet' })
         const onTestnet = makeRecord({ signRequestId: 'b', network: 'testnet' })
         mocks.handoffs = { a: onMainnet, b: onTestnet }
 
         render()
 
-        expect(mocks.useSwapHandoffPolls).toHaveBeenCalledWith(
-            expect.objectContaining({ handoffs: [onMainnet] }),
-        )
+        const cfg = config()
+        // The core owns the filter; the wrapper just supplies all handoffs plus
+        // the active network and a per-handoff network accessor.
+        expect(cfg.handoffs).toEqual([onMainnet, onTestnet])
+        expect(cfg.activeNetwork).toBe('mainnet')
+        expect(cfg.networkOf(onTestnet)).toBe('testnet')
+        expect(cfg.keyOf(onMainnet)).toBe('a')
     })
 
-    it('resolves a terminal outcome exactly once with the matching record', () => {
+    it('builds a with-signatures poll keyed by network + id, gated on foreground and device id', () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        mocks.useSwapHandoffPolls.mockReturnValue([
-            { handoff, detail: { proposer_address: 'PROPOSER' } },
-        ])
-        mocks.classifyHandoffPoll.mockReturnValue({
-            kind: 'ready',
-            assembledBytes: [],
-        })
 
         render()
 
-        expect(mocks.resolveSwapHandoffOutcome).toHaveBeenCalledTimes(1)
+        const descriptor = config().poll(handoff)
+        expect(descriptor.queryKey).toEqual(['msig', 'mainnet', 'req-1'])
+        expect(descriptor.enabled).toBe(true)
+
+        descriptor.queryFn()
+        expect(mocks.getSignRequestsWithSignatures).toHaveBeenCalledWith(
+            'mainnet',
+            { device_id: 'device-1', proposed_sign_request_ids: ['req-1'] },
+        )
+
+        const match = { id: 'req-1' }
+        expect(descriptor.select([{ id: 'other' }, match])).toBe(match)
+    })
+
+    it('disables the poll while backgrounded or before a device id is set', () => {
+        const handoff = makeRecord()
+        mocks.handoffs = { 'req-1': handoff }
+
+        render(false)
+        expect(config().poll(handoff).enabled).toBe(false)
+
+        vi.clearAllMocks()
+        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        mocks.useAlgorandClient.mockReturnValue(ALGORAND_CLIENT)
+        mocks.useDeviceID.mockReturnValue(null)
+        mocks.getSignRequestsWithSignaturesQueryKey.mockImplementation(
+            (network: string, id: string) => ['msig', network, id],
+        )
+        mocks.useMarkSignRequestsConfirmedMutation.mockReturnValue({
+            markConfirmed: vi.fn(),
+        })
+        mocks.useUpdateSwapStatusMutation.mockReturnValue({
+            mutateAsync: vi.fn(),
+        })
+        render(true)
+        expect(config().poll(handoff).enabled).toBe(false)
+    })
+
+    it('classifies a poll with the record assembly context', () => {
+        const handoff = makeRecord()
+        mocks.handoffs = { 'req-1': handoff }
+        const detail = { id: 'req-1' }
+
+        render()
+
+        config().classify(detail, handoff)
+        expect(mocks.classifyHandoffPoll).toHaveBeenCalledWith(detail, {
+            multisigAddress: 'JOINT_ADDR',
+            msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
+            expectedRawTransactionsBase64: ['cmF3'],
+        })
+    })
+
+    it('resolves a terminal outcome through resolveSwapHandoffOutcome with the record', () => {
+        const handoff = makeRecord()
+        mocks.handoffs = { 'req-1': handoff }
+        const outcome = { kind: 'ready', assembledBytes: [] }
+
+        render()
+
+        config().resolve(outcome, handoff, { proposer_address: 'PROPOSER' })
         expect(mocks.resolveSwapHandoffOutcome).toHaveBeenCalledWith(
-            expect.objectContaining({
-                outcome: { kind: 'ready', assembledBytes: [] },
-                record: handoff,
-            }),
+            expect.objectContaining({ outcome, record: handoff }),
         )
-    })
-
-    it('keeps polling without resolving while the outcome is non-terminal', () => {
-        const handoff = makeRecord()
-        mocks.handoffs = { 'req-1': handoff }
-        mocks.useSwapHandoffPolls.mockReturnValue([
-            { handoff, detail: { proposer_address: 'PROPOSER' } },
-        ])
-        mocks.classifyHandoffPoll.mockReturnValue({ kind: 'keep-polling' })
-
-        render()
-
-        expect(mocks.resolveSwapHandoffOutcome).not.toHaveBeenCalled()
-    })
-
-    it('skips polls with no result yet, and never classifies them', () => {
-        const handoff = makeRecord()
-        mocks.handoffs = { 'req-1': handoff }
-        mocks.useSwapHandoffPolls.mockReturnValue([
-            { handoff, detail: undefined },
-        ])
-
-        render()
-
-        expect(mocks.classifyHandoffPoll).not.toHaveBeenCalled()
-        expect(mocks.resolveSwapHandoffOutcome).not.toHaveBeenCalled()
-    })
-
-    it('does not re-resolve the same handoff on a later re-render', () => {
-        const handoff = makeRecord()
-        mocks.handoffs = { 'req-1': handoff }
-        mocks.classifyHandoffPoll.mockReturnValue({
-            kind: 'ready',
-            assembledBytes: [],
-        })
-        // Distinct array references force the effect to re-run each render.
-        mocks.useSwapHandoffPolls
-            .mockReturnValueOnce([
-                { handoff, detail: { proposer_address: 'PROPOSER' } },
-            ])
-            .mockReturnValueOnce([
-                { handoff, detail: { proposer_address: 'PROPOSER' } },
-            ])
-
-        const { rerender } = render()
-        rerender({ isAppActive: true, reportError })
-
-        expect(mocks.resolveSwapHandoffOutcome).toHaveBeenCalledTimes(1)
     })
 
     it('wires submitGroup through to the algod submission helper', async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        mocks.useSwapHandoffPolls.mockReturnValue([
-            { handoff, detail: { proposer_address: 'PROPOSER' } },
-        ])
-        mocks.classifyHandoffPoll.mockReturnValue({
-            kind: 'ready',
-            assembledBytes: [],
-        })
         mocks.submitRawSignedTransactionGroup.mockResolvedValue(['txid'])
 
         render()
 
+        config().resolve({ kind: 'ready', assembledBytes: [] }, handoff, {
+            proposer_address: 'PROPOSER',
+        })
+        const { deps } = mocks.resolveSwapHandoffOutcome.mock.calls[0][0]
+
         const bytes = [new Uint8Array([1])]
-        await capturedDeps().submitGroup(bytes)
+        await deps.submitGroup(bytes)
         expect(mocks.submitRawSignedTransactionGroup).toHaveBeenCalledWith(
             ALGORAND_CLIENT,
             bytes,
         )
     })
 
-    it('declines the proposer request on the proposer address from the poll', async () => {
+    it('declines on the proposer address carried by the poll detail', async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        mocks.useSwapHandoffPolls.mockReturnValue([
-            { handoff, detail: { proposer_address: 'PROPOSER' } },
-        ])
-        mocks.classifyHandoffPoll.mockReturnValue({
-            kind: 'error',
-            reason: { kind: 'backend-failed', displayReason: null },
-        })
 
         render()
 
-        await capturedDeps().declineSignRequest('req-1')
+        config().resolve(
+            {
+                kind: 'error',
+                reason: { kind: 'backend-failed', displayReason: null },
+            },
+            handoff,
+            { proposer_address: 'PROPOSER' },
+        )
+        const { deps } = mocks.resolveSwapHandoffOutcome.mock.calls[0][0]
+
+        await deps.declineSignRequest('req-1')
         expect(mocks.addSignature).toHaveBeenCalledWith('mainnet', 'req-1', [
             {
                 address: 'PROPOSER',
@@ -240,15 +252,20 @@ describe('swaps/useSwapCosignResolver', () => {
     it('skips the decline when the poll carried no proposer address', async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        mocks.useSwapHandoffPolls.mockReturnValue([{ handoff, detail: {} }])
-        mocks.classifyHandoffPoll.mockReturnValue({
-            kind: 'error',
-            reason: { kind: 'backend-failed', displayReason: null },
-        })
 
         render()
 
-        await capturedDeps().declineSignRequest('req-1')
+        config().resolve(
+            {
+                kind: 'error',
+                reason: { kind: 'backend-failed', displayReason: null },
+            },
+            handoff,
+            {},
+        )
+        const { deps } = mocks.resolveSwapHandoffOutcome.mock.calls[0][0]
+
+        await deps.declineSignRequest('req-1')
         expect(mocks.addSignature).not.toHaveBeenCalled()
     })
 })
