@@ -34,7 +34,6 @@ export const useStyles = makeStyles(theme => ({
         flexShrink: 1,
         flexWrap: 'nowrap',
         overflow: 'hidden',
-        width: '100%',
         minWidth: 0,
     },
     detailRow: {
