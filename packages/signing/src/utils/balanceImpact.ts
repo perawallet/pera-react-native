@@ -37,6 +37,13 @@ export type BalanceImpact = {
      * must flag it rather than imply the delta is the full story.
      */
     hasCloseRemainder: boolean
+    /**
+     * Asset ids (`'0'` = ALGO) whose entire remaining balance is swept from a
+     * user account by a close-remainder/close-to. The explicit `amount` in
+     * `deltas` understates the true outflow for these, so the UI must present
+     * them as the full balance rather than the partial figure.
+     */
+    closedAssetIds: string[]
 }
 
 const toBig = (value: bigint | number | undefined): bigint => {
@@ -65,7 +72,7 @@ export const computeBalanceImpact = (
 ): BalanceImpact => {
     const net = new Map<string, bigint>()
     let totalFeeMicroAlgos = 0n
-    let hasCloseRemainder = false
+    const closedAssets = new Set<string>()
 
     const move = (assetId: string, amount: bigint): void => {
         if (amount === 0n) return
@@ -89,7 +96,7 @@ export const computeBalanceImpact = (
                 move(ALGO_BALANCE_IMPACT_ASSET_ID, amount)
             }
             if (payment.closeRemainderTo && senderIsUser) {
-                hasCloseRemainder = true
+                closedAssets.add(ALGO_BALANCE_IMPACT_ASSET_ID)
             }
         }
 
@@ -105,7 +112,7 @@ export const computeBalanceImpact = (
                 move(assetId, amount)
             }
             if (axfer.closeTo && debited && userAddresses.has(debited)) {
-                hasCloseRemainder = true
+                closedAssets.add(assetId)
             }
         }
     }
@@ -114,5 +121,10 @@ export const computeBalanceImpact = (
         .filter(([, amount]) => amount !== 0n)
         .map(([assetId, amount]) => ({ assetId, amount }))
 
-    return { deltas, totalFeeMicroAlgos, hasCloseRemainder }
+    return {
+        deltas,
+        totalFeeMicroAlgos,
+        hasCloseRemainder: closedAssets.size > 0,
+        closedAssetIds: [...closedAssets],
+    }
 }

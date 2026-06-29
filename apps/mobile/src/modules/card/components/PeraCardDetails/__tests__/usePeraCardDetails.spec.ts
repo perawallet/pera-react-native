@@ -213,9 +213,7 @@ describe('usePeraCardDetails', () => {
         )
     })
 
-    it('opens the freeze sheet when active, and unfreezes directly when frozen', async () => {
-        mocks.unfreezeMutateAsync.mockResolvedValue(undefined)
-
+    it('opens the freeze sheet when active and the unfreeze sheet when frozen', async () => {
         const { result, rerender } = renderHook(() => usePeraCardDetails())
         expect(result.current.isFrozen).toBe(false)
         // The test i18n returns raw keys, so assert on the key, not the copy.
@@ -240,9 +238,10 @@ describe('usePeraCardDetails', () => {
         await act(async () => {
             await result.current.onToggleFreeze()
         })
-        // Frozen → unfreezes directly, no sheet.
-        expect(mocks.unfreezeMutateAsync).toHaveBeenCalledTimes(1)
-        expect(mocks.request).toHaveBeenCalledTimes(1)
+        // Frozen → opens the unfreeze confirmation sheet; the unfreeze runs
+        // inside it, not here.
+        expect(mocks.request).toHaveBeenCalledTimes(2)
+        expect(mocks.unfreezeMutateAsync).not.toHaveBeenCalled()
     })
 
     it('allows the freeze toggle for an active or frozen card', () => {
@@ -261,29 +260,8 @@ describe('usePeraCardDetails', () => {
         expect(result.current.canToggleFreeze).toBe(false)
     })
 
-    it('surfaces an error toast when unfreezing fails', async () => {
-        mocks.status = 'FROZEN'
-        mocks.unfreezeMutateAsync.mockRejectedValue(new Error('boom'))
-
-        const { result } = renderHook(() => usePeraCardDetails())
-        await act(async () => {
-            await result.current.onToggleFreeze()
-        })
-
-        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
-    })
-
-    it('does not start a second unfreeze request while one is in flight', async () => {
-        mocks.status = 'FROZEN'
-        mocks.isUnfreezing = true
-
-        const { result } = renderHook(() => usePeraCardDetails())
-        await act(async () => {
-            await result.current.onToggleFreeze()
-        })
-
-        expect(mocks.unfreezeMutateAsync).not.toHaveBeenCalled()
-    })
+    // Unfreeze confirmation + execution now live in UnfreezeCardConfirmationSheet
+    // (see its own spec); the options row only opens that sheet.
 
     it('opens the hosted page in a WebView on Set PIN', async () => {
         mocks.setPinMutateAsync.mockResolvedValue({

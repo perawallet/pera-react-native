@@ -12,7 +12,10 @@
 
 export const name = '@perawallet/wallet-core-remote-config'
 
-export { RemoteConfigKeys } from '@perawallet/wallet-extension-platform'
+export {
+    RemoteConfigKeys,
+    RemoteConfigDefaults,
+} from '@perawallet/wallet-extension-platform'
 
 export * from './models'
 export * from './store'

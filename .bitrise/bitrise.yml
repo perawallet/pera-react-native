@@ -6,7 +6,7 @@ app:
   envs:
     - BITRISE_PROJECT_PATH: apps/mobile/ios/pera.xcworkspace
     - BITRISE_SCHEME_STAGING: Pera7Staging
-    - BITRISE_SCHEME_PRODUCTION: Pera7Production
+    - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
     - BITRISE_EXPORT_METHOD_STAGING: app-store
     - BITRISE_EXPORT_METHOD_PRODUCTION: app-store
     - ANDROID_MODULE: app
@@ -14,11 +14,6 @@ app:
     - GRADLE_BUILD_FILE_PATH: apps/mobile/android/build.gradle
     - JIRA_BASE_URL: https://algorandfoundation.atlassian.net
 pipelines:
-  qa-builds:
-    stages:
-      - check-changes-stage: {}
-      - qa-build-stage:
-          abort_on_fail: true
   release-builds:
     stages:
       - test-stage: {}
@@ -29,13 +24,6 @@ pipelines:
         - name:
             regex: v.*
 stages:
-  check-changes-stage:
-    workflows:
-      - check-changes: {}
-  qa-build-stage:
-    workflows:
-      - ios-staging: {}
-      - android-staging: {}
   test-stage:
     workflows:
       - test: {}
@@ -43,123 +31,9 @@ stages:
     workflows:
       - ios-production: {}
       - android-production: {}
+      - ios-staging: {}
+      - android-staging: {}
 workflows:
-  check-changes:
-    description: Check if there are changes since the last successful build
-    meta:
-      bitrise.io:
-        stack: linux-docker-android-22.04
-    steps:
-      - git-clone@8:
-          inputs:
-            - fetch_tags: "yes"
-            - clone_depth: -1
-      - script@1:
-          title: Check for changes
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-
-                LAST_BUILD_TIME=""
-
-                if [ -n "$BITRISE_API_TOKEN" ]; then
-                  # Get last successful iOS build
-                  IOS_RESPONSE=$(curl -s -H "Authorization: $BITRISE_API_TOKEN" \
-                    "https://api.bitrise.io/v0.1/apps/$BITRISE_APP_SLUG/builds?workflow=ios-staging&status=1&limit=1")
-                  IOS_FINISHED_AT=$(echo "$IOS_RESPONSE" | jq -r '.data[0].finished_at // empty' 2>/dev/null || echo "")
-
-                  # Get last successful Android build
-                  ANDROID_RESPONSE=$(curl -s -H "Authorization: $BITRISE_API_TOKEN" \
-                    "https://api.bitrise.io/v0.1/apps/$BITRISE_APP_SLUG/builds?workflow=android-staging&status=1&limit=1")
-                  ANDROID_FINISHED_AT=$(echo "$ANDROID_RESPONSE" | jq -r '.data[0].finished_at // empty' 2>/dev/null || echo "")
-
-                  echo "Last successful iOS build: ${IOS_FINISHED_AT:-none}"
-                  echo "Last successful Android build: ${ANDROID_FINISHED_AT:-none}"
-
-                  # Use the earlier timestamp (so changelog includes all changes since both platforms last succeeded)
-                  if [ -n "$IOS_FINISHED_AT" ] && [ -n "$ANDROID_FINISHED_AT" ]; then
-                    if [[ "$IOS_FINISHED_AT" < "$ANDROID_FINISHED_AT" ]]; then
-                      LAST_BUILD_TIME="$IOS_FINISHED_AT"
-                      echo "Using iOS timestamp (earlier)"
-                    else
-                      LAST_BUILD_TIME="$ANDROID_FINISHED_AT"
-                      echo "Using Android timestamp (earlier)"
-                    fi
-                  elif [ -n "$IOS_FINISHED_AT" ]; then
-                    LAST_BUILD_TIME="$IOS_FINISHED_AT"
-                    echo "Using iOS timestamp (only one available)"
-                  elif [ -n "$ANDROID_FINISHED_AT" ]; then
-                    LAST_BUILD_TIME="$ANDROID_FINISHED_AT"
-                    echo "Using Android timestamp (only one available)"
-                  fi
-                fi
-
-                if [ -z "$LAST_BUILD_TIME" ]; then
-                  echo "No previous successful build found, treating as having changes"
-                  HAS_CHANGES="true"
-                  CHANGELOG_REF_SHA=""
-                else
-                  # Check if there are commits since the last successful build
-                  COMMITS_SINCE=$(git log --since="$LAST_BUILD_TIME" --oneline 2>/dev/null || echo "")
-                  if [ -z "$COMMITS_SINCE" ]; then
-                    echo "No commits since last successful build at $LAST_BUILD_TIME"
-                    HAS_CHANGES="false"
-                    CHANGELOG_REF_SHA=""
-                  else
-                    echo "Commits since $LAST_BUILD_TIME:"
-                    echo "$COMMITS_SINCE"
-                    HAS_CHANGES="true"
-
-                    # Get the oldest commit since the last build and find its parent for changelog reference
-                    OLDEST_NEW_SHA=$(git log --since="$LAST_BUILD_TIME" --format="%H" --reverse | head -1)
-                    if [ -n "$OLDEST_NEW_SHA" ]; then
-                      # Use git log %P to get parent SHA - returns empty if commit is root (no parent)
-                      CHANGELOG_REF_SHA=$(git log --pretty=%P -n 1 "$OLDEST_NEW_SHA" | awk '{print $1}')
-                      echo "Changelog reference SHA (parent of oldest new commit): ${CHANGELOG_REF_SHA:-none (root commit)}"
-                    else
-                      CHANGELOG_REF_SHA=""
-                    fi
-                  fi
-                fi
-
-                envman add --key HAS_CHANGES --value "$HAS_CHANGES"
-                envman add --key LAST_BUILD_TIME --value "${LAST_BUILD_TIME:-}"
-                envman add --key CHANGELOG_REF_SHA --value "${CHANGELOG_REF_SHA:-}"
-
-                if [ "$HAS_CHANGES" == "false" ]; then
-                  echo "No changes detected - subsequent build stages will be skipped"
-                fi
-      - script@1:
-          title: Generate Changelog
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-
-                # Generate changelog using the reference SHA found in check-changes step
-                if [ -n "$CHANGELOG_REF_SHA" ]; then
-                  echo "Generating changelog from reference SHA: $CHANGELOG_REF_SHA"
-                  CHANGELOG=$(./tools/generate_changelog.sh "$CHANGELOG_REF_SHA")
-                elif [ "$HAS_CHANGES" == "true" ]; then
-                  echo "No reference SHA but changes detected, generating full changelog"
-                  CHANGELOG=$(./tools/generate_changelog.sh "")
-                else
-                  echo "No changes detected"
-                  CHANGELOG="No changes since last build"
-                fi
-
-                # Escape changelog for JSON using jq for proper escaping
-                CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//'  | sed 's/\n/\\n/g')
-
-                envman add --key CHANGELOG --value "$CHANGELOG"
-      - share-pipeline-variable@1:
-          inputs:
-            - variables: |-
-                HAS_CHANGES=$HAS_CHANGES
-                LAST_BUILD_TIME=$LAST_BUILD_TIME
-                CHANGELOG_REF_SHA=$CHANGELOG_REF_SHA
-                CHANGELOG=$CHANGELOG
   test:
     description: Run tests before release
     meta:
@@ -167,8 +41,15 @@ workflows:
         stack: linux-docker-android-22.04
     envs:
       - ENVIRONMENT: production
+      - VALIDATE_PROFILE: test
     steps:
       - git-clone@8: {}
+      - script@1:
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - restore-cache@2:
           inputs:
             - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
@@ -217,21 +98,13 @@ workflows:
     description: Build and deploy iOS Staging to TestFlight
     envs:
       - ENVIRONMENT: staging
-      # APP_ENV must be set at workflow level (not just inside individual
-      # steps) so every generate-config.sh run + Expo prebuild bakes the
-      # correct appEnvironment. Step-level `export`s don't persist across
-      # Bitrise steps, which previously let "Build packages" regenerate the
-      # config blank (appEnvironment fell back to development).
       - APP_ENV: staging
-      # QA-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
-      # Deliberately absent from ios-production so release builds keep
-      # seed-screen capture protection. Workflow-level (see APP_ENV) so
-      # generate-config.sh bakes it.
       - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
       - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
       - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build
+      - VALIDATE_PROFILE: ios
     steps:
       - script@1:
           title: Check pipeline outputs
@@ -239,10 +112,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                # Get HAS_CHANGES from pipeline outputs (from check-changes workflow)
                 # In Bitrise pipelines, outputs from previous stages are available via env vars
                 if [ "${HAS_CHANGES:-true}" == "false" ]; then
-                  echo "No changes detected in check-changes stage, skipping build"
+                  echo "No changes detected in previous stage, skipping build"
                   envman add --key SKIP_BUILD --value "true"
                 else
                   envman add --key SKIP_BUILD --value "false"
@@ -258,13 +130,14 @@ workflows:
     description: Build and deploy iOS Production to TestFlight
     envs:
       - ENVIRONMENT: production
-      # See ios-staging: APP_ENV must be a workflow-level env.
       - APP_ENV: production
       - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
       - IOS_PROFILE_NAME: Pera React Native Prod
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
+      - VALIDATE_PROFILE: ios
+      # Every release tag (alpha / rc / stable) builds production alongside staging.
       - SKIP_BUILD: "false"
     after_run:
       - _ios-build
@@ -279,7 +152,14 @@ workflows:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - fetch_tags: "yes"
-            - clone_depth: 0
+            - clone_depth: -1
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
@@ -288,7 +168,7 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
-                # Skip if CHANGELOG was already set by check-changes stage
+                # Skip if CHANGELOG was already set by a prior stage
                 if [ -n "$CHANGELOG" ]; then
                   echo "Changelog already set from pipeline, skipping generation"
                   exit 0
@@ -305,6 +185,11 @@ workflows:
                   echo "No previous tag found"
                   CHANGELOG="Release build - see git history for changes"
                 fi
+
+                # JSON-escape (newlines -> \n, quotes) so the changelog embeds
+                # cleanly in the Slack payload "text" field; without it the raw
+                # newlines collapse the list (and section headers) onto one line.
+                CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
 
                 envman add --key CHANGELOG --value "$CHANGELOG"
       - script@1:
@@ -435,12 +320,20 @@ workflows:
                 ios-derived-data-
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Get version from package.json
+          title: Resolve marketing version (tag-driven)
           inputs:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+                # Marketing version: the git tag is the source of truth (strip
+                # leading v + any -prerelease suffix). Fall back to package.json
+                # for manual/non-tag builds.
+                if [ -n "$BITRISE_GIT_TAG" ]; then
+                  VERSION="${BITRISE_GIT_TAG#v}"
+                  VERSION="${VERSION%%-*}"
+                else
+                  VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+                fi
                 envman add --key APP_VERSION --value "$VERSION"
                 envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
       - certificate-and-profile-installer@1:
@@ -490,12 +383,7 @@ workflows:
     description: Build and deploy Android Staging to Firebase App Distribution
     envs:
       - ENVIRONMENT: staging
-      # See ios-staging: APP_ENV must be a workflow-level env.
       - APP_ENV: staging
-      # QA-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
-      # Deliberately absent from android-production so release builds keep
-      # seed-screen capture protection. Workflow-level (see APP_ENV) so
-      # generate-config.sh bakes it.
       - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
       - ANDROID_FLAVOR: staging
       - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
@@ -503,6 +391,7 @@ workflows:
       - USE_CACHE: "true"
       - PARENT_WORKFLOW: qa-build
       - DISTRIBUTION: firebase
+      - VALIDATE_PROFILE: android
     steps:
       - script@1:
           title: Check pipeline outputs
@@ -510,9 +399,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                # Get HAS_CHANGES from pipeline outputs (from check-changes workflow)
+                # In Bitrise pipelines, outputs from previous stages are available via env vars
                 if [ "${HAS_CHANGES:-true}" == "false" ]; then
-                  echo "No changes detected in check-changes stage, skipping build"
+                  echo "No changes detected in previous stage, skipping build"
                   envman add --key SKIP_BUILD --value "true"
                 else
                   envman add --key SKIP_BUILD --value "false"
@@ -527,14 +416,15 @@ workflows:
     description: Build and deploy Android Production to Play Store Internal
     envs:
       - ENVIRONMENT: production
-      # See ios-staging: APP_ENV must be a workflow-level env.
       - APP_ENV: production
       - ANDROID_FLAVOR: production
-      - ANDROID_PACKAGE_NAME: com.algorand.perarn
+      - ANDROID_PACKAGE_NAME: com.algorand.android
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
       - DISTRIBUTION: firebase
+      - VALIDATE_PROFILE: android
+      # Every release tag (alpha / rc / stable) builds production alongside staging.
       - SKIP_BUILD: "false"
     after_run:
       - _android-build
@@ -548,7 +438,14 @@ workflows:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - fetch_tags: "yes"
-            - clone_depth: 0
+            - clone_depth: -1
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
@@ -557,7 +454,7 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
-                # Skip if CHANGELOG was already set by check-changes stage
+                # Skip if CHANGELOG was already set by a prior stage
                 if [ -n "$CHANGELOG" ]; then
                   echo "Changelog already set from pipeline, skipping generation"
                   exit 0
@@ -574,6 +471,11 @@ workflows:
                   echo "No previous tag found"
                   CHANGELOG="Release build - see git history for changes"
                 fi
+
+                # JSON-escape (newlines -> \n, quotes) so the changelog embeds
+                # cleanly in the Slack payload "text" field; without it the raw
+                # newlines collapse the list (and section headers) onto one line.
+                CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
 
                 envman add --key CHANGELOG --value "$CHANGELOG"
       - script@1:
@@ -676,14 +578,22 @@ workflows:
                 echo "$ANDROID_GOOGLE_SERVICES_BASE64" | base64 --decode > apps/mobile/config/google-services.json
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Get version from package.json
+          title: Resolve marketing version (tag-driven)
           inputs:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+                # Marketing version: the git tag is the source of truth (strip
+                # leading v + any -prerelease suffix). Fall back to package.json
+                # for manual/non-tag builds.
+                if [ -n "$BITRISE_GIT_TAG" ]; then
+                  VERSION="${BITRISE_GIT_TAG#v}"
+                  VERSION="${VERSION%%-*}"
+                else
+                  VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+                fi
                 envman add --key APP_VERSION --value "$VERSION"
-                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+                envman add --key BUILD_NUMBER --value "$((BITRISE_BUILD_NUMBER + ${BUILD_NUMBER_OFFSET:-0}))"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Expo Prebuild
@@ -747,6 +657,24 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
                 echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > apps/mobile/config/release.keystore
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Resolve distribution channel
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                # Production publishes to Play Console only on a STABLE tag
+                # (vX.Y.Z). Nightly (-alpha) and rc (-rc) builds, plus all staging
+                # builds, go to Firebase. Non-tag builds keep the workflow default.
+                DIST="$DISTRIBUTION"
+                if [ "$ENVIRONMENT" = "production" ]; then
+                  case "$BITRISE_GIT_TAG" in
+                    *-alpha.* | *-rc.*) DIST="firebase" ;;
+                    v*) DIST="play" ;;
+                  esac
+                fi
+                envman add --key DISTRIBUTION --value "$DIST"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Setup distribution credentials
@@ -821,6 +749,15 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
+                # Prefix + version reflect the tag's channel (every release tag
+                # builds prod+staging); non-tag/manual builds keep the defaults.
+                case "$BITRISE_GIT_TAG" in
+                  *-alpha.*) NOTIFICATION_TITLE_PREFIX="QA Build (Nightly)" ;;
+                  *-rc.*)    NOTIFICATION_TITLE_PREFIX="Release Candidate" ;;
+                  v*)        NOTIFICATION_TITLE_PREFIX="Store Release" ;;
+                esac
+                VERSION_LABEL="${BITRISE_GIT_TAG:-$APP_VERSION}"
+
                 if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
                   STATUS_EMOJI="✅"
                   STATUS_TEXT="Available on TestFlight"
@@ -869,7 +806,7 @@ workflows:
                             },
                             {
                               "type": "mrkdwn",
-                              "text": "*Version:*\n${APP_VERSION} (${BUILD_NUMBER})"
+                              "text": "*Version:*\n${VERSION_LABEL} (${BUILD_NUMBER})"
                             },
                             {
                               "type": "mrkdwn",
@@ -917,12 +854,21 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
+                # Prefix + version reflect the tag's channel (every release tag
+                # builds prod+staging); non-tag/manual builds keep the defaults.
+                case "$BITRISE_GIT_TAG" in
+                  *-alpha.*) NOTIFICATION_TITLE_PREFIX="QA Build (Nightly)" ;;
+                  *-rc.*)    NOTIFICATION_TITLE_PREFIX="Release Candidate" ;;
+                  v*)        NOTIFICATION_TITLE_PREFIX="Store Release" ;;
+                esac
+                VERSION_LABEL="${BITRISE_GIT_TAG:-$APP_VERSION}"
+
                 if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
                   STATUS_EMOJI="✅"
                   if [ "$DISTRIBUTION" == "firebase" ]; then
                     STATUS_TEXT="Available on Firebase App Distribution"
                   else
-                    STATUS_TEXT="Available on Play Store"
+                    STATUS_TEXT="Available on Play Console for Distribution"
                   fi
                   COLOR="#36a64f"
                   STATUS="success"
@@ -969,7 +915,7 @@ workflows:
                             },
                             {
                               "type": "mrkdwn",
-                              "text": "*Version:*\n${APP_VERSION} (${BUILD_NUMBER})"
+                              "text": "*Version:*\n${VERSION_LABEL} (${BUILD_NUMBER})"
                             },
                             {
                               "type": "mrkdwn",

@@ -116,7 +116,7 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 ## Tooling
 
 - Task runner/cache: Turborepo (scripts in [`package.json`](package.json))
-- Formatting: Prettier
+- Formatting: oxfmt
 - Linting: Oxlint via root config [`.oxlintrc.json`](.oxlintrc.json)
 - Dead code / cycles / duplication: fallow via [`.fallowrc.jsonc`](.fallowrc.jsonc)
 - TypeScript project references via [`packages/devtools/tsconfig`](packages/devtools/tsconfig)

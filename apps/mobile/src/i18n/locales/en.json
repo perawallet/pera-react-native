@@ -21,6 +21,9 @@
         "remove_assets": "Remove Assets"
     },
     "age_gate": {
+        "loading": {
+            "title": "Confirming age…"
+        },
         "declare": {
             "title": "Confirm your age",
             "body": "We are required by law in some jurisdictions to confirm your age to allow access to some kinds of content.  This information remains on your device.  Please confirm whether you are 18 or older.",
@@ -730,6 +733,9 @@
             "freeze_sheet_title": "Freeze Card",
             "freeze_sheet_body": "Freeze your card if it's misplaced or you want to temporarily prevent new transactions. You can unfreeze it instantly whenever you're ready to use it again.",
             "freeze_sheet_confirm": "Freeze Card",
+            "unfreeze_sheet_title": "Unfreeze Card",
+            "unfreeze_sheet_body": "Unfreezing your card lets it be used for new transactions again. You can freeze it again at any time.",
+            "unfreeze_sheet_confirm": "Unfreeze Card",
             "report_lost_stolen": "Report Lost/Stolen Card",
             "report_suspicious": "Report Suspicious Activity",
             "cancel_card": "Cancel Card",
@@ -1240,7 +1246,12 @@
             "create_wallet": "Create a new wallet",
             "already_have_account": "Already have an account?",
             "import_account": "Import an account",
-            "terms_and_privacy": "By creating a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>"
+            "privacy_agreement": "By creating a wallet, you agree to Pera Wallet's <0>Privacy Policy</0>"
+        },
+        "terms_sheet": {
+            "title": "Terms and Conditions",
+            "updated_title": "Updated Terms and Conditions",
+            "agree": "I Agree"
         },
         "name_account": {
             "title": "Name your account",
@@ -1990,7 +2001,9 @@
         "balance_impact": {
             "receive_title": "You will receive",
             "spend_title": "You will spend",
-            "analyzing": "Analyzing transaction…"
+            "analyzing": "Analyzing transaction…",
+            "entire_balance": "Entire {{unit}} balance",
+            "closes_balance": "Your full remaining balance is sent"
         },
         "arbitrary_data_view": {
             "body": "Data Signing Request",

@@ -13,3 +13,4 @@
 export * from './isSwappableAsset'
 export * from './slippage'
 export * from './resolveSwapHandoffOutcome'
+export * from './validateSwapGroupAgainstQuote'

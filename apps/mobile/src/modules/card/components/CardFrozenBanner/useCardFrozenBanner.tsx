@@ -15,9 +15,9 @@ import {
     CardStatus,
     useCardStatusQuery,
     useIsCardUnfreezing,
-    useUnfreezeCardMutation,
 } from '@perawallet/wallet-core-card'
-import { useCardErrorToast } from '../../hooks'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 
 type UseCardFrozenBannerResult = {
     /** True only when the card status is FROZEN — the banner self-hides otherwise. */
@@ -31,24 +31,21 @@ export const useCardFrozenBanner = (): UseCardFrozenBannerResult => {
     const { data: card } = useCardStatusQuery()
     const isFrozen = card?.status === CardStatus.Frozen
 
-    const unfreeze = useUnfreezeCardMutation()
-    // Shared across the banner + the Card Details options row so the two
-    // unfreeze entry points can't fire concurrently and both reflect the
-    // in-flight state.
+    // Shared across the banner + the Card Details options row so the in-flight
+    // unfreeze state (driven by the confirmation sheet) reflects on both.
     const isReactivating = useIsCardUnfreezing()
-    const showError = useCardErrorToast()
+    const { request } = useBottomSheet()
 
-    const reactivate = useCallback(async () => {
-        if (isReactivating) return
-        try {
-            await unfreeze.mutateAsync()
-        } catch (error) {
-            await showError(error)
-        }
-    }, [isReactivating, unfreeze, showError])
+    // Unfreezing is confirmed AND executed inside the sheet; here we only open it.
     const onReactivate = useCallback(() => {
-        void reactivate()
-    }, [reactivate])
+        void request({
+            contents: <UnfreezeCardConfirmationSheet />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+            },
+        })
+    }, [request])
 
     return {
         isFrozen,

@@ -15,7 +15,7 @@
 // imports aren't bound when they run. The SVG mocks below have to use
 // `require('react')` for the same reason vitest.setup.ts does.
 
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 
 // Inherit every RN runtime, native module, navigation, and PW component mock
 // from the unit setup. Integration tests need those — running real
@@ -63,6 +63,17 @@ vi.unmock('@perawallet/wallet-core-polling')
 vi.unmock('@perawallet/wallet-core-background')
 vi.unmock('@perawallet/wallet-core-settings')
 vi.unmock('@perawallet/wallet-core-contacts')
+
+// Onboarding flows render the welcome screen, which gates on Terms & Conditions
+// acceptance (PERA-4468). Pre-accept the default `terms_version` so the blocking
+// sheet doesn't pop over unrelated onboarding flow tests. The literals mirror
+// ACCEPTED_TERMS_VERSION_KEY and the default terms version without pulling app
+// modules into the harness.
+beforeEach(async () => {
+    const { useSettingsStore } =
+        await import('@perawallet/wallet-core-settings')
+    useSettingsStore.getState().setPreference('acceptedTermsVersion', '1')
+})
 
 // The provider singleton + the KMS keystore now have working in-memory test
 // implementations (apps/mobile/src/test-utils/{platform-driver-test,

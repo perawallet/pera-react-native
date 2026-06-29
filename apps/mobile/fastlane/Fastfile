@@ -10,6 +10,15 @@ def get_package_version
   package_data["version"].split("-").first
 end
 
+# Marketing version (CFBundleShortVersionString / versionName). The git tag is
+# the source of truth on CI — the bitrise version step derives APP_VERSION from
+# it (tag base, e.g. v7.0.1-alpha.3 -> 7.0.1). Falls back to package.json for
+# local/manual runs where APP_VERSION isn't set.
+def resolve_marketing_version
+  env = ENV["APP_VERSION"]
+  (env && !env.empty?) ? env : get_package_version
+end
+
 # Helper to read the committed version-code base (PERA-4451). Added to the CI
 # BUILD_NUMBER to floor the iOS build number / Android versionCode above the
 # live store values. Mirrors app.config.builder.js's resolveBuildNumber.
@@ -97,7 +106,7 @@ platform :ios do
     clean = true if clean.nil?
 
     # Inject version from package.json
-    version = get_package_version
+    version = resolve_marketing_version
     increment_version_number(
       version_number: version,
       xcodeproj: get_xcodeproj_path
@@ -110,12 +119,14 @@ platform :ios do
       xcodeproj: get_xcodeproj_path
     )
 
-    # Determine Bundle ID for export options
+    # Bundle ID for export options. Must match app.config.builder.js's
+    # bundleIdentifiers (production vs staging/dev).
     bundle_id = case options[:scheme]
-    when "Pera7Production" then "com.algorandllc.perarn"
+    when "PeraAlgoWallet" then "com.algorandllc.algorand"
     else "com.algorandllc.perarn.staging"
     end
     # AutoFill credential-provider extension (added by the passkey plugin).
+    # Same suffix for every variant; each has its own App ID + App Store profile.
     extension_bundle_id = "#{bundle_id}.PasskeyAutofillCredentialProvider"
 
     app_profile = ENV["IOS_PROVISIONING_PROFILE_NAME"]
@@ -179,7 +190,7 @@ platform :ios do
     # Map scheme to configuration
     configuration = case scheme
     when "Pera7Staging" then "Staging"
-    when "Pera7Production" then "Production"
+    when "PeraAlgoWallet" then "Production"
     when "Pera-Dev" then "Dev"
     else "Staging"
     end
@@ -253,7 +264,7 @@ platform :android do
     clean = options[:clean].nil? ? true : options[:clean]
     artifact_type = options[:artifact_type] || "aab"
 
-    version = get_package_version
+    version = resolve_marketing_version
     gradle_task = artifact_type == "apk" ? "assemble" : "bundle"
     task = clean ? "clean #{gradle_task}" : gradle_task
 
@@ -278,34 +289,57 @@ platform :android do
     end
   end
 
-  desc "Build and publish to Play Store"
+  desc "Build AAB, upload to Play internal track, and distribute APK to Firebase"
   lane :deploy_internal do |options|
     flavor = options[:flavor] || "staging"
     clean = options[:clean].nil? ? true : options[:clean]
 
-    # TODO: Switch back to "aab" once Play Store deployment is enabled
+    # Resolve the publishing package from CI env so WB-1/WB-2 identity changes
+    # flow through bitrise.yml's ANDROID_PACKAGE_NAME, not this file.
+    package_name = ENV["ANDROID_PACKAGE_NAME"] ||
+      (flavor == "production" ? "com.algorand.android" : "com.algorand.perarn.staging")
+
+    # 1) Build the AAB and upload it to the Play internal track.
     build_android(
       flavor: flavor,
       build_type: "Release",
       clean: clean,
-      artifact_type: "apk"
+      artifact_type: "aab"
     )
 
-    package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
+    upload_to_play_store(
+      track: "internal",
+      package_name: package_name,
+      aab: android_artifact_path(flavor, "aab"),
+      version_code: resolve_build_number,
+      release_status: "completed",
+      json_key: "config/api-key.json",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs: true
+    )
 
-    # upload_to_play_store(
-    #   track: "internal",
-    #   package_name: package_name,
-    #   aab: android_artifact_path(flavor, "aab"),
-    #   version_code: resolve_build_number,
-    #   skip_upload_metadata: true,
-    #   skip_upload_images: true,
-    #   skip_upload_screenshots: true,
-    #   json_key: "config/api-key.json"
-    # )
+    # 2) Also distribute an APK to Firebase App Distribution for dogfooding.
+    #    clean:false so the AAB build above is not wiped.
+    #
+    #    Disable screen-capture prevention for THIS build only: the Firebase APK
+    #    feeds BrowserStack, whose device mirroring can't drive a FLAG_SECURE
+    #    surface. The Play AAB built above keeps protection on, so store users
+    #    are unaffected. Scoped to the APK build and restored immediately after.
+    previous_disable_capture = ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"]
+    ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"] = "true"
+    begin
+      build_android(
+        flavor: flavor,
+        build_type: "Release",
+        clean: false,
+        artifact_type: "apk"
+      )
+    ensure
+      ENV["DISABLE_SCREEN_CAPTURE_PREVENTION"] = previous_disable_capture
+    end
 
-    # We are deploying production builds to Firebase for the purpose of testing also
-    # Unescape literal \n to real newlines for Firebase release notes
     notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
 
     firebase_app_distribution(

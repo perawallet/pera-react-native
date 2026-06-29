@@ -12,9 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     container: {
         backgroundColor: theme.colors.background,
         flex: 1,
+        // The Bidali page renders to the bottom edge; pad by the safe-area inset
+        // so its content/controls aren't hidden behind the home indicator.
+        paddingBottom: bottomInset,
     },
 }))

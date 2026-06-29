@@ -1,0 +1,41 @@
+name: Release Candidate Tag
+
+# Mints a vX.Y.Z-rc.N tag every Friday and pushes it. The pushed tag fires
+# Bitrise's `v.*` release-builds pipeline (test → TestFlight + Firebase,
+# production + staging) — same path as the nightly alpha tags, just on the rc
+# channel and the same base version. Idempotent: tools/create-nightly-tag.sh
+# exits without tagging when there are no new commits since the last rc tag.
+
+on:
+  schedule:
+    # Fridays 12:00 UTC. GitHub cron is UTC-only (no DST).
+    - cron: "0 12 * * 5"
+  # Allow cutting an rc on demand from the Actions tab.
+  workflow_dispatch: {}
+
+# Least-privilege default; the mint job elevates to write so it can push.
+permissions:
+  contents: read
+
+jobs:
+  mint:
+    name: Mint release-candidate tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Full history + tags: the script diffs against the last rc tag and
+          # derives the next counter from existing v*-rc.* tags.
+          fetch-depth: 0
+          fetch-tags: true
+          # Keep the GITHUB_TOKEN credential so the script's `git push` works.
+          persist-credentials: true
+
+      - name: Mint and push rc tag
+        env:
+          CHANNEL: rc
+        run: ./tools/create-nightly-tag.sh

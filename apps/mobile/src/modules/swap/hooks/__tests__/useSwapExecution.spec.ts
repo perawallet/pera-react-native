@@ -16,7 +16,10 @@ import {
     useSwapExecution,
     type SwapExecutionOutcome,
 } from '../useSwapExecution'
-import type { PrepareTransactionsResult } from '@perawallet/wallet-core-swaps'
+import type {
+    PrepareTransactionsResult,
+    SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import type {
     PeraSignedTransaction,
     PeraTransaction,
@@ -34,6 +37,9 @@ const mockUpdateSwapStatus = vi.fn()
 const mockRegisterHandoff = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockIsMultisigAccount = vi.fn()
+// Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
+// runs during the package import.
+const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
 
 // We deliberately do NOT delegate to the real `submitAndAutoRefresh`
 // via `vi.importActual` here. Importing the signing package transitively
@@ -105,9 +111,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
                 { raw: err instanceof Error ? err.message : String(err) },
                 err instanceof Error ? err : undefined,
             ),
+        // Minimal mapping so the pre-sign quote validation has displayable txns;
+        // the validator itself is mocked (`mockValidate`), so the shape is inert.
+        mapToDisplayableTransaction: (tx: {
+            sender?: { toString?: () => string }
+        }) => ({ sender: tx?.sender?.toString?.() ?? 'SENDER' }),
     }
 })
 
+// `validateSwapGroupAgainstQuote` is a controllable collaborator here — its real
+// behavior is covered by the swaps package's own unit tests. Default: passes
+// (no-op); a test opts into a rejection via `mockValidate.mockImplementationOnce`.
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     usePrepareTransactionsMutation: () => ({
         mutateAsync: mockPrepareTransactions,
@@ -115,6 +129,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useUpdateSwapStatusMutation: () => ({
         mutateAsync: mockUpdateSwapStatus,
     }),
+    validateSwapGroupAgainstQuote: mockValidate,
     useSwapHandoffStore: (
         selector: (state: {
             handoffs: Record<string, unknown>
@@ -181,6 +196,14 @@ const makePrepareResult = (
     swapVersion: 'v2',
     ...overrides,
 })
+
+const makeQuote = (quoteIdStr: string): SwapQuote =>
+    ({
+        quoteIdStr,
+        swapperAddress: 'SWAPPER',
+        assetIn: { assetId: '0' },
+        assetOut: { assetId: '999' },
+    }) as unknown as SwapQuote
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
     ({
@@ -264,7 +287,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-123')
+            outcome = await result.current.execute(makeQuote('quote-123'))
         })
 
         expect(outcome).toEqual({ kind: 'success' })
@@ -330,7 +353,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-mixed')
+            await result.current.execute(makeQuote('quote-mixed'))
         })
 
         expect(result.current.status).toBe('success')
@@ -376,7 +399,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-multi')
+            await result.current.execute(makeQuote('quote-multi'))
         })
 
         expect(result.current.status).toBe('success')
@@ -401,7 +424,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-presigned')
+            await result.current.execute(makeQuote('quote-presigned'))
         })
 
         expect(result.current.status).toBe('success')
@@ -417,7 +440,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-789')
+            outcome = await result.current.execute(makeQuote('quote-789'))
         })
 
         // Prepare maps the error through getMessage like the submission phase,
@@ -441,7 +464,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-reject')
+            outcome = await result.current.execute(makeQuote('quote-reject'))
         })
 
         expect(outcome).toEqual({ kind: 'cancelled' })
@@ -462,7 +485,9 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-pipeline-error')
+            outcome = await result.current.execute(
+                makeQuote('quote-pipeline-error'),
+            )
         })
 
         expect(outcome).toEqual({
@@ -490,7 +515,9 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-submit-fail')
+            outcome = await result.current.execute(
+                makeQuote('quote-submit-fail'),
+            )
         })
 
         expect(outcome?.kind).toBe('error')
@@ -515,7 +542,9 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-status-fail')
+            outcome = await result.current.execute(
+                makeQuote('quote-status-fail'),
+            )
         })
 
         expect(outcome).toEqual({ kind: 'success' })
@@ -528,7 +557,7 @@ describe('useSwapExecution', () => {
         const { result } = renderHook(() => useSwapExecution())
 
         await act(async () => {
-            await result.current.execute('quote-reset')
+            await result.current.execute(makeQuote('quote-reset'))
         })
 
         expect(result.current.status).toBe('error')
@@ -551,7 +580,7 @@ describe('useSwapExecution', () => {
 
         let outcome: Optional<SwapExecutionOutcome>
         await act(async () => {
-            outcome = await result.current.execute('quote-empty')
+            outcome = await result.current.execute(makeQuote('quote-empty'))
         })
 
         expect(outcome).toEqual({
@@ -562,6 +591,29 @@ describe('useSwapExecution', () => {
         expect(result.current.error?.phase).toBe('prepare')
         expect(result.current.error?.message).toBe(
             'No transaction groups returned',
+        )
+    })
+
+    it('fails closed (no signing) when the prepared group violates the quote', async () => {
+        // The validator rejects the prepared group (its real logic is covered by
+        // the swaps package tests); the flow must not sign and must report failed.
+        mockValidate.mockImplementationOnce(() => {
+            throw new Error('Swap spends more of asset 7 than the quote allows')
+        })
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-bad'))
+        })
+
+        expect(outcome?.kind).toBe('error')
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockUpdateSwapStatus).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ status: 'failed' }),
+            }),
         )
     })
 
@@ -603,7 +655,7 @@ describe('useSwapExecution', () => {
 
             let outcome: Optional<SwapExecutionOutcome>
             await act(async () => {
-                outcome = await result.current.execute('quote-msig')
+                outcome = await result.current.execute(makeQuote('quote-msig'))
             })
 
             expect(outcome).toEqual({ kind: 'pending-cosign' })
@@ -620,7 +672,7 @@ describe('useSwapExecution', () => {
             const { result } = renderHook(() => useSwapExecution())
 
             await act(async () => {
-                await result.current.execute('quote-msig')
+                await result.current.execute(makeQuote('quote-msig'))
             })
 
             expect(mockRegisterHandoff).toHaveBeenCalledTimes(1)
@@ -649,7 +701,9 @@ describe('useSwapExecution', () => {
 
             let outcome: Optional<SwapExecutionOutcome>
             await act(async () => {
-                outcome = await result.current.execute('quote-single-signer')
+                outcome = await result.current.execute(
+                    makeQuote('quote-single-signer'),
+                )
             })
 
             expect(outcome).toEqual({ kind: 'success' })
