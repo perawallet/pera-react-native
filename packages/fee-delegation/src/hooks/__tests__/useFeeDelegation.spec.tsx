@@ -84,7 +84,8 @@ import { useFeeDelegation } from '../useFeeDelegation'
 const ACCOUNT = 'TESTADDRESS'
 const ASSET_ID = 31566704n
 
-const toBase64 = (text: string) => Buffer.from(text, 'utf8').toString('base64')
+// Inputs are ASCII, so btoa is byte-exact and needs no Node Buffer global.
+const toBase64 = (text: string) => btoa(text)
 
 const validAttestation = () => ({
     integrityToken: 'valid-token',

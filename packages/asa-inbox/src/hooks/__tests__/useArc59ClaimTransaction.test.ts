@@ -76,6 +76,7 @@ describe('useArc59ClaimTransaction', () => {
         addAssetOptIn: Mock
         build: Mock
     }
+    let mockAccountDo: Mock
     let mockAccountInformation: Mock
     let mockAlgokit: {
         newGroup: Mock
@@ -102,9 +103,10 @@ describe('useArc59ClaimTransaction', () => {
         mockParamsClaim = vi.fn().mockResolvedValue({ method: 'arc59_claim' })
         mockParamsReject = vi.fn().mockResolvedValue({ method: 'arc59_reject' })
 
-        mockAccountInformation = vi.fn().mockResolvedValue({
+        mockAccountDo = vi.fn().mockResolvedValue({
             assets: [{ assetId: 12345n, amount: 0n, isFrozen: false }],
         })
+        mockAccountInformation = vi.fn().mockReturnValue({ do: mockAccountDo })
 
         mockAlgokit = {
             newGroup: vi.fn().mockReturnValue(mockComposer),
@@ -175,7 +177,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('adds asset opt-in with staticFee 0 when sender is not opted in', async () => {
-            mockAccountInformation.mockResolvedValue({ assets: [] })
+            mockAccountDo.mockResolvedValue({ assets: [] })
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 
@@ -191,9 +193,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('treats account info error as not opted in', async () => {
-            mockAccountInformation.mockRejectedValue(
-                new Error('account not found'),
-            )
+            mockAccountDo.mockRejectedValue(new Error('account not found'))
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 
@@ -242,7 +242,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('adds 1 * minFee to claim fee when not opted in', async () => {
-            mockAccountInformation.mockResolvedValue({ assets: [] })
+            mockAccountDo.mockResolvedValue({ assets: [] })
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 
@@ -283,7 +283,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('treats accountInfo with no assets field as not opted in', async () => {
-            mockAccountInformation.mockResolvedValue({})
+            mockAccountDo.mockResolvedValue({})
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 

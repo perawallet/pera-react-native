@@ -35,7 +35,11 @@ describe('endpoints', () => {
 
     describe('fetchOnChainAccountInformation', () => {
         it('calls algod.accountInformation with the given address', () => {
-            const mockAccountInformation = vi.fn().mockReturnValue('result')
+            // algosdk v9 builder: `accountInformation(addr).do()`.
+            const mockDo = vi.fn().mockReturnValue('result')
+            const mockAccountInformation = vi
+                .fn()
+                .mockReturnValue({ do: mockDo })
             const algokit = {
                 client: {
                     algod: { accountInformation: mockAccountInformation },
@@ -46,6 +50,7 @@ describe('endpoints', () => {
             const result = fetchOnChainAccountInformation(algokit, 'ADDR1')
 
             expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
+            expect(mockDo).toHaveBeenCalled()
             expect(result).toBe('result')
         })
     })

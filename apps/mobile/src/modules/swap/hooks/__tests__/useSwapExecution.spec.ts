@@ -70,8 +70,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         }
         if (ids.length === 0) {
             for (const signedTxn of signedTxns) {
-                if (signedTxn.txn.txId) {
-                    ids.push(signedTxn.txn.txId())
+                if (signedTxn.txn.txID) {
+                    ids.push(signedTxn.txn.txID())
                 }
             }
         }
@@ -207,7 +207,7 @@ const makeQuote = (quoteIdStr: string): SwapQuote =>
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
     ({
-        txn: { txId: () => id },
+        txn: { txID: () => id },
         sig: new Uint8Array([1]),
     }) as unknown as PeraSignedTransaction
 
@@ -246,7 +246,7 @@ describe('useSwapExecution', () => {
                         toString: () => 'SENDER',
                         publicKey: new Uint8Array(),
                     },
-                    txId: () => 'mock-tx-id',
+                    txID: () => 'mock-tx-id',
                 }) as unknown as PeraTransaction,
         )
 

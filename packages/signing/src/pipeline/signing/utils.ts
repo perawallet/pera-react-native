@@ -21,7 +21,7 @@ import {
     RekeyTargetNotFoundError,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import { SignedTransaction } from 'algosdk'
 import type { AnalyzedSignableGroup, SigningResult } from '../types'
 
 /**
@@ -151,7 +151,7 @@ export const buildDeferredProposeSigningResult = (
             // The transport in deferred mode reads `stx.txn` only — no sig
             // or msig is needed because nothing is actually signed yet.
             signed: group.data.transactions.map(
-                txn => ({ txn }) as PeraSignedTransaction,
+                txn => new SignedTransaction({ txn }),
             ),
         },
         signers: [],

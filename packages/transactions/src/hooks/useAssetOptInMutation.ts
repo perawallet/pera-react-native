@@ -62,8 +62,9 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
             setError(null)
 
             try {
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(sender)
+                const accountInfo = await algokit.client.algod
+                    .accountInformation(sender)
+                    .do()
                 const isOptedIn = accountInfo.assets?.some(
                     a => a.assetId === assetId,
                 )
@@ -73,7 +74,9 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
 
                 const suggestedParams = await algokit.getSuggestedParams()
                 const balanceNeeded =
-                    accountInfo.minBalance + ASSET_MBR + suggestedParams.minFee
+                    accountInfo.minBalance +
+                    ASSET_MBR +
+                    BigInt(suggestedParams.minFee)
                 if (accountInfo.amount < balanceNeeded) {
                     throw new InsufficientBalanceForOptInError()
                 }

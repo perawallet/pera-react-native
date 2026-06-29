@@ -12,13 +12,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
     mnemonicFromSeed: vi.fn(
         (seed: Uint8Array) => `mnemonic-from-${seed.length}-bytes`,
     ),
 }))
 
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import { mnemonicFromSeed } from 'algosdk'
 import { algo25SecretKeyToMnemonic } from '../algo25-utils'
 
 beforeEach(() => {

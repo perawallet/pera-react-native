@@ -16,7 +16,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { validateTransactionRoundTrip } from '../validateTransactionRoundTrip'
 import { TransactionRoundTripError } from '../../pipeline/errors'
 
-const encodeTransactionRawMock = vi.fn<[PeraTransaction], Uint8Array>()
+const encodeTransactionRawMock = vi.fn<(tx: PeraTransaction) => Uint8Array>()
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const original =

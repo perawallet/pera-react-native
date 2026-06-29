@@ -14,14 +14,20 @@ import { describe, it, expect } from 'vitest'
 import { mapOnChainAccountInformation } from '../mappers'
 import type { OnChainAccountInformationResponse } from '../endpoints'
 
+// algosdk v9's `modelsv2.Account.address` is a plain string; the mapper
+// promotes it to an algosdk `Address` to satisfy the blockchain
+// `AccountInformation` contract, so fixtures use a real, round-trippable
+// address.
+const VALID_ADDRESS =
+    'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
+
 const buildResponse = (
-    overrides: Partial<OnChainAccountInformationResponse> & {
-        authAddr?: { toString(): string }
-    } = {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    overrides: Record<string, any> = {},
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): OnChainAccountInformationResponse =>
     ({
-        address: 'ADDR1',
+        address: VALID_ADDRESS,
         amount: 1000n,
         minBalance: 100n,
         status: 'Online',
@@ -35,13 +41,21 @@ describe('mapOnChainAccountInformation', () => {
     it('maps top-level fields and empty asset list', () => {
         const mapped = mapOnChainAccountInformation(buildResponse())
 
-        expect(mapped).toEqual({
-            address: 'ADDR1',
+        expect(mapped.address.toString()).toBe(VALID_ADDRESS)
+        expect({
+            amount: mapped.amount,
+            minBalance: mapped.minBalance,
+            status: mapped.status,
+            rewards: mapped.rewards,
+            assets: mapped.assets,
+            authAddress: mapped.authAddress,
+        }).toEqual({
             amount: 1000n,
             minBalance: 100n,
             status: 'Online',
             rewards: 0n,
             assets: [],
+            authAddress: undefined,
         })
     })
 

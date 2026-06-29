@@ -43,9 +43,9 @@ export const submitSignedTransactionGroup = async (
     const encoded = encodeSignedTransactions(signedTxns)
     const concatenated = concatBytes(...encoded)
 
-    const response = (await algokit.client.algod.sendRawTransaction(
-        concatenated,
-    )) as { txid?: string | string[] }
+    const response = (await algokit.client.algod
+        .sendRawTransaction(concatenated)
+        .do()) as { txid?: string | string[] }
 
     const ids: string[] = []
     if (typeof response?.txid === 'string') {
@@ -56,8 +56,8 @@ export const submitSignedTransactionGroup = async (
 
     if (ids.length === 0) {
         for (const signedTxn of signedTxns) {
-            if (signedTxn.txn.txId) {
-                ids.push(signedTxn.txn.txId())
+            if (signedTxn.txn.txID) {
+                ids.push(signedTxn.txn.txID())
             }
         }
     }

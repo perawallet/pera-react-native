@@ -13,7 +13,8 @@
 import { describe, test, expect, vi } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore'
 
-vi.mock('@algorandfoundation/algokit-utils', () => ({
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
     encodeAddress: (bytes: Uint8Array) =>
         `ADDR_${Buffer.from(bytes).toString('hex')}`,
 }))

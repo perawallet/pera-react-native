@@ -52,7 +52,7 @@ export default defineConfig({
                 '@algorandfoundation/react-native-keystore',
                 '@scure/bip39',
                 '@scure/bip39/wordlists/english.js',
-                '@algorandfoundation/algokit-utils/algo25',
+                'algosdk',
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-assets',
                 '@perawallet/wallet-core-blockchain',

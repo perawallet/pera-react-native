@@ -11,13 +11,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-    encodeTransaction,
-    groupTransactions,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
+import { encodeTransaction, groupTransactions } from '../../utils/transact'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { resolveArc0001SignTxnRequest } from '../resolve'
@@ -26,18 +21,19 @@ const sender = new Address(new Uint8Array(32).fill(1))
 const receiver = new Address(new Uint8Array(32).fill(2))
 const baseSP = {
     fee: 1000n,
+    minFee: 1000n,
     firstValid: 1n,
     lastValid: 1000n,
     genesisHash: new Uint8Array(32).fill(0xab),
-    genesisId: 'testnet-v1.0',
+    genesisID: 'testnet-v1.0',
 }
 
 const mkPay = (amount: bigint): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender,
-        payment: { receiver, amount },
-        ...baseSP,
+        paymentParams: { receiver, amount },
+        suggestedParams: baseSP,
     })
 
 describe('ARC-0001 Format 2 — multiple groups concatenated in one request', () => {

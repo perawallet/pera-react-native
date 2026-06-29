@@ -17,7 +17,7 @@ import {
     encodeTransaction,
     encodeTransactionRaw,
     groupTransactions,
-} from '@algorandfoundation/algokit-utils/transact'
+} from './transact'
 
 export * from './algorandClient'
 export * from './addresses'
@@ -26,6 +26,7 @@ export * from './rawTransactions'
 export * from './json'
 export * from './multisig'
 export * from './assembleSignedMultisigTransactions'
+export * from './transact'
 
 /**
  * Converts an amount from base units (smallest indivisible unit) to display units.

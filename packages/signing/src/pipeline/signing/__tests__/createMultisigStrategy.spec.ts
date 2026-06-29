@@ -232,13 +232,13 @@ describe('createMultisigStrategy', () => {
                     signed: [
                         {
                             msig: {
-                                version: 1,
-                                threshold: 2,
-                                subsigs: [
-                                    { publicKey: new Uint8Array([0]) },
+                                v: 1,
+                                thr: 2,
+                                subsig: [
+                                    { pk: new Uint8Array([0]) },
                                     {
-                                        publicKey: new Uint8Array([1]),
-                                        sig: subsigSig,
+                                        pk: new Uint8Array([1]),
+                                        s: subsigSig,
                                     },
                                 ],
                             },

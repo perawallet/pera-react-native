@@ -41,7 +41,9 @@ describe('submitAndAutoRefreshCore', () => {
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX1') => ({
         client: {
             algod: {
-                sendRawTransaction: vi.fn().mockResolvedValue({ txid }),
+                sendRawTransaction: vi.fn().mockReturnValue({
+                    do: vi.fn().mockResolvedValue({ txid }),
+                }),
             },
         },
     })
@@ -124,7 +126,9 @@ describe('submitAndAutoRefreshCore', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi.fn().mockResolvedValue({}),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockResolvedValue({}),
+                    }),
                 },
             },
         }
@@ -178,9 +182,11 @@ describe('submitAndAutoRefreshCore', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi
-                        .fn()
-                        .mockRejectedValue(new Error('algod rejected')),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi
+                            .fn()
+                            .mockRejectedValue(new Error('algod rejected')),
+                    }),
                 },
             },
         }

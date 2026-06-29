@@ -17,12 +17,10 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 const mockSeedFromMnemonic = vi.fn()
 const mockEncodeAddress = vi.fn()
 
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
     seedFromMnemonic: (...args: any[]) => mockSeedFromMnemonic(...args),
     mnemonicFromSeed: vi.fn(),
-}))
-
-vi.mock('@algorandfoundation/algokit-utils', () => ({
     encodeAddress: (...args: any[]) => mockEncodeAddress(...args),
 }))
 

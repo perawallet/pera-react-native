@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
     "@algorandfoundation/keystore": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",

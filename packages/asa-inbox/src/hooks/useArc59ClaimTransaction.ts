@@ -48,8 +48,9 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
     const isOptedInToAsset = useCallback(
         async (address: string, assetId: bigint): Promise<boolean> => {
             try {
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(address)
+                const accountInfo = await algokit.client.algod
+                    .accountInformation(address)
+                    .do()
                 return (accountInfo.assets ?? []).some(
                     a => BigInt(a.assetId) === assetId,
                 )
@@ -80,10 +81,11 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
 
             // Calculate main call fee dynamically
             // Base: 3 * minFee (claim itself + 2 inner txns)
-            let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * suggestedParams.minFee
+            const minFee = BigInt(suggestedParams.minFee)
+            let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * minFee
             if (shouldClaimAlgo)
-                claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
-            if (!optedIn) claimFee += suggestedParams.minFee
+                claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
+            if (!optedIn) claimFee += minFee
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
@@ -134,11 +136,10 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
 
             // Calculate main call fee dynamically
             // Base: 3 * minFee (reject itself + 2 inner txns)
-            let rejectFee =
-                BigInt(BASE_REJECT_TX_COUNT) * suggestedParams.minFee
+            const minFee = BigInt(suggestedParams.minFee)
+            let rejectFee = BigInt(BASE_REJECT_TX_COUNT) * minFee
             if (shouldClaimAlgo)
-                rejectFee +=
-                    BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+                rejectFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(

@@ -18,7 +18,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { algo25SignKeyId } from '../models'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import { seedFromMnemonic } from 'algosdk'
 import { useKMSService } from './useKMSServices'
 import { algo25SeedToAddress, buildSeedMetadata } from '../utils'
 import { zeroBytes } from '../crypto/secure-memory'

@@ -11,7 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 import nacl from 'tweetnacl'
 import { AccessControlPermission, type AccessControl } from './models'
 import {

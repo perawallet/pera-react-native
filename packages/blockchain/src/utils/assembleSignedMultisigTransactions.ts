@@ -10,13 +10,11 @@
  limitations under the License
  */
 
-import { Address } from '@algorandfoundation/algokit-utils'
 import {
-    decodeMsgpack,
-    encodeMsgpack,
-    PUBLIC_KEY_BYTE_LENGTH,
-    SIGNATURE_BYTE_LENGTH,
-} from '@algorandfoundation/algokit-utils/common'
+    Address,
+    msgpackRawDecode,
+    msgpackRawEncode as encodeMsgpack,
+} from 'algosdk'
 import nacl from 'tweetnacl'
 import {
     bytesEqual,
@@ -32,6 +30,10 @@ import { addTxPrefix } from './rawTransactions'
 // transaction. Oversize is treated as a malformed entry, not a hard failure.
 const MAX_SIGNATURE_B64_BYTES = 128
 const MAX_RAW_TXN_B64_BYTES = 64 * 1024
+
+// Ed25519 sizes — an address public key is 32 bytes, a signature 64.
+const PUBLIC_KEY_BYTE_LENGTH = 32
+const SIGNATURE_BYTE_LENGTH = 64
 
 /**
  * Per-participant response from the multisig backend. `signatures[i]` is
@@ -86,31 +88,20 @@ const SIGNED_TXN_MAP_HEADER = new Uint8Array([0x82])
  */
 const SIGNED_TXN_MAP_HEADER_WITH_SIGNER = new Uint8Array([0x83])
 
-/** The transaction `snd` field key, as its raw UTF-8 bytes. */
-const SND_FIELD_KEY = new Uint8Array([0x73, 0x6e, 0x64]) // "snd"
-
 /**
  * Reads the 32-byte sender public key (`snd`) from raw transaction msgpack
  * bytes. Decodes only to inspect the sender — the raw bytes are still embedded
- * verbatim in the envelope, never re-encoded. `decodeMsgpack` returns a Map
- * keyed by the raw field-name bytes (Algorand's canonical decode), so we match
- * the key bytes directly. Returns `null` when the field is absent or the bytes
- * can't be decoded. Mirrors pera-android's
+ * verbatim in the envelope, never re-encoded. `msgpackRawDecode` yields a plain
+ * object keyed by the transaction's string field names, so we read `snd`
+ * directly. Returns `null` when the field is absent (e.g. canonical msgpack
+ * omits a zero sender) or the bytes can't be decoded. Mirrors pera-android's
  * `MultisigTransactionAssembler.extractSenderPublicKey`.
  */
 const extractSenderPublicKey = (rawTxBytes: Uint8Array): Uint8Array | null => {
     try {
-        const decoded = decodeMsgpack(rawTxBytes)
-        for (const [key, value] of decoded) {
-            if (
-                key instanceof Uint8Array &&
-                bytesEqual(key, SND_FIELD_KEY) &&
-                value instanceof Uint8Array
-            ) {
-                return value
-            }
-        }
-        return null
+        const decoded = msgpackRawDecode(rawTxBytes) as Record<string, unknown>
+        const snd = decoded.snd
+        return snd instanceof Uint8Array ? snd : null
     } catch {
         return null
     }

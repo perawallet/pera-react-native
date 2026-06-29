@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { encodeAddress, decodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress, decodeAddress } from 'algosdk'
 
 export const encodeAlgorandAddress = (bytes: Uint8Array): string => {
     return encodeAddress(bytes)

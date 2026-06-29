@@ -35,10 +35,9 @@ export const useTransactionDetailQuery = ({
     return useQuery({
         queryKey: getTransactionDetailQueryKey(transactionId, network),
         queryFn: async () => {
-            const response =
-                await algokit.client.indexer.lookupTransactionById(
-                    transactionId,
-                )
+            const response = await algokit.client.indexer
+                .lookupTransactionByID(transactionId)
+                .do()
             return mapIndexerTxToDisplayableTransaction(response.transaction)
         },
         enabled: isEnabled && !!transactionId,

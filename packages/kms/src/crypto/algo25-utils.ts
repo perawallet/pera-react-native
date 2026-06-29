@@ -11,7 +11,7 @@
  */
 
 import { createHash } from 'crypto'
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import { mnemonicFromSeed } from 'algosdk'
 import { ALGO25_SEED_LENGTH } from '../constants'
 import {
     BITS_PER_BYTE,

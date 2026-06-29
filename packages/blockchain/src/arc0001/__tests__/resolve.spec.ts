@@ -11,12 +11,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-    encodeTransaction,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
+import { encodeTransaction } from '../../utils/transact'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { resolveArc0001SignTxnRequest } from '../resolve'
@@ -29,18 +25,19 @@ const addrC = new Address(new Uint8Array(32).fill(3))
 
 const baseParams = {
     fee: 1000n,
+    minFee: 1000n,
     firstValid: 1000n,
     lastValid: 2000n,
-    genesisId: 'mainnet-v1.0',
+    genesisID: 'mainnet-v1.0',
     genesisHash: new Uint8Array(32).fill(0xab),
 }
 
 const makePayment = (sender: Address, amount: bigint = 1n): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender,
-        ...baseParams,
-        payment: { receiver: addrB, amount },
+        suggestedParams: baseParams,
+        paymentParams: { receiver: addrB, amount },
     })
 
 const wrap = (

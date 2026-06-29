@@ -28,8 +28,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
         useAlgorandClient: () => ({
             client: {
                 algod: {
-                    accountInformation: (addr: string) =>
-                        mockAccountInformation(addr),
+                    // algosdk's builder shape: accountInformation(addr).do()
+                    accountInformation: (addr: string) => ({
+                        do: () => mockAccountInformation(addr),
+                    }),
                 },
             },
         }),

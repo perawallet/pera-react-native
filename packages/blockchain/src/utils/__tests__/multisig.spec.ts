@@ -12,7 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { generateMultisigAddress } from '../multisig'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 
 const makeAddress = (fill: number) => {
     const bytes = new Uint8Array(32).fill(fill)

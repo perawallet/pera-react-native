@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 import { describe, test, expect } from 'vitest'
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import { mnemonicFromSeed } from 'algosdk'
 import { algo25SeedToIndices } from '../algo25-utils'
 import { mnemonicWordsToIndices } from '../mnemonic-indices'
 

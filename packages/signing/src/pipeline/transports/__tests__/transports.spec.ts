@@ -57,7 +57,9 @@ describe('createAlgodTransport', () => {
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX_ID') => ({
         client: {
             algod: {
-                sendRawTransaction: vi.fn().mockResolvedValue({ txid }),
+                sendRawTransaction: vi.fn().mockReturnValue({
+                    do: vi.fn().mockResolvedValue({ txid }),
+                }),
             },
         },
     })
@@ -96,14 +98,14 @@ describe('createAlgodTransport', () => {
         expect(result).toEqual({ type: 'submitted', txIds: ['TX1', 'TX2'] })
     })
 
-    test('falls back to signedTxn.txn.txId() when response omits txid', async () => {
+    test('falls back to signedTxn.txn.txID() when response omits txid', async () => {
         const txIdFn = vi.fn().mockReturnValue('COMPUTED_ID')
         const signedWithId = {
             signedData: {
                 type: 'transactions',
                 signed: [
                     {
-                        txn: { txId: txIdFn },
+                        txn: { txID: txIdFn },
                         blob: new Uint8Array(),
                     } as never,
                 ],
@@ -113,7 +115,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi.fn().mockResolvedValue({}),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockResolvedValue({}),
+                    }),
                 },
             },
         }
@@ -151,9 +155,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi
-                        .fn()
-                        .mockRejectedValue(new Error('algod down')),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(new Error('algod down')),
+                    }),
                 },
             },
         }
@@ -172,7 +176,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi.fn().mockRejectedValue('boom'),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue('boom'),
+                    }),
                 },
             },
         }
@@ -245,9 +251,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi
-                        .fn()
-                        .mockRejectedValue(new Error('algod down')),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(new Error('algod down')),
+                    }),
                 },
             },
         }

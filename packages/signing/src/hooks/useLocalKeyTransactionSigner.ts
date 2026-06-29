@@ -12,6 +12,7 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
+import { SignedTransaction } from 'algosdk'
 import {
     Address,
     encodeAlgorandAddress,
@@ -109,14 +110,16 @@ export const useLocalKeyTransactionSigner =
                         const senderPublicKey = encodeAlgorandAddress(
                             txn.sender.publicKey,
                         )
-                        signed.push({
-                            txn,
-                            sig: signatures[idx],
-                            authAddress:
-                                account.address !== senderPublicKey
-                                    ? Address.fromString(account.address)
-                                    : undefined,
-                        })
+                        signed.push(
+                            new SignedTransaction({
+                                txn,
+                                sig: signatures[idx],
+                                sgnr:
+                                    account.address !== senderPublicKey
+                                        ? Address.fromString(account.address)
+                                        : undefined,
+                            }),
+                        )
                     })
                 }
 
@@ -131,9 +134,9 @@ export const useLocalKeyTransactionSigner =
                 indexesToSign: number[],
                 account: WalletAccount,
             ): Promise<PeraSignedTransaction[]> => {
-                const result = txnGroup.map(txn => ({
-                    txn,
-                })) as PeraSignedTransaction[]
+                const result = txnGroup.map(
+                    txn => new SignedTransaction({ txn }),
+                )
 
                 const toSign = indexesToSign.map(i => txnGroup[i])
                 const signedTxns = await signSingleAccountTransactions(

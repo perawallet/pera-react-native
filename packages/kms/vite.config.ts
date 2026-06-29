@@ -50,7 +50,7 @@ export default defineConfig({
                 '@algorandfoundation/react-native-keystore',
                 '@algorandfoundation/xhd-wallet-api',
                 '@algorandfoundation/algokit-utils',
-                '@algorandfoundation/algokit-utils/algo25',
+                'algosdk',
                 '@scure/bip39',
                 '@scure/bip39/wordlists/english',
                 'tweetnacl',

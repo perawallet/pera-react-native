@@ -4,7 +4,7 @@ packages:
   - extensions/*
 
 catalog:
-  "@algorandfoundation/algokit-utils": 10.0.0-beta.4
+  "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/keystore": 1.0.0-canary.16
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.12
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
@@ -22,6 +22,7 @@ catalog:
   "@vitejs/plugin-react": 6.0.2
   "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
+  algosdk: ^3.5.2
   before-after-hook: ^4.0.0
   decimal.js: ^10.6.0
   drizzle-orm: ^0.45.2

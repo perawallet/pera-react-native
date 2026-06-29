@@ -18,6 +18,7 @@
     },
     "dependencies": {
         "@algorandfoundation/algokit-utils": "catalog:",
+        "algosdk": "catalog:",
         "@algorandfoundation/dp256": "1.1.0",
         "@algorandfoundation/react-native-keystore": "catalog:",
         "@babel/runtime": "catalog:",

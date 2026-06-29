@@ -30,11 +30,7 @@ import React, { useEffect, useRef } from 'react'
 import { createHash } from 'crypto'
 import { expect, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
 import {
     useSigningRequest,
     type Arc60SignRequest,
@@ -67,13 +63,18 @@ export const REVIEW_SIGNER_ADDRESS = ALGO25_TEST_ADDRESS
 export const REVIEW_RECEIVER_ADDRESS = HD_TEST_ADDRESS
 
 const BASE_TX_PARAMS = {
-    fee: 1000n,
+    minFee: 1000n,
+    // flatFee so the txn fee equals the passed `fee` exactly (matches the prior
+    // behaviour of setting fee directly on the transaction).
+    flatFee: true,
     firstValid: 1000n,
     lastValid: 2000n,
-    genesisId: 'mainnet-v1.0',
+    genesisID: 'mainnet-v1.0',
     // Must match the harness's active network (mainnet); the genesis-hash check rejects any txn that doesn't.
-    genesisHash: decodeFromBase64(
-        'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
+    // Re-wrap in a Uint8Array so it's the same realm algosdk's Transaction
+    // constructor validates against (base64-js returns a foreign-realm view).
+    genesisHash: new Uint8Array(
+        decodeFromBase64('wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8='),
     ),
 }
 
@@ -119,12 +120,11 @@ export const buildPaymentTransaction = ({
     rekeyTo?: string
 } = {}): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: Address.fromString(sender),
-        ...BASE_TX_PARAMS,
-        fee,
+        suggestedParams: { ...BASE_TX_PARAMS, fee },
         ...(rekeyTo ? { rekeyTo: Address.fromString(rekeyTo) } : {}),
-        payment: {
+        paymentParams: {
             receiver: Address.fromString(receiver),
             amount,
             ...(closeRemainderTo

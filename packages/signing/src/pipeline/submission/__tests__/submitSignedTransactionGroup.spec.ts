@@ -18,14 +18,17 @@ import type { AlgokitClientInterface } from '../types'
 const makeAlgokit = (response: unknown): AlgokitClientInterface => ({
     client: {
         algod: {
-            sendRawTransaction: vi.fn().mockResolvedValue(response),
+            // algosdk's builder shape: sendRawTransaction(...).do()
+            sendRawTransaction: vi.fn().mockReturnValue({
+                do: vi.fn().mockResolvedValue(response),
+            }),
         },
     },
 })
 
-const signedTxn = (txId?: () => string): PeraSignedTransaction =>
+const signedTxn = (txID?: () => string): PeraSignedTransaction =>
     ({
-        txn: txId ? { txId } : {},
+        txn: txID ? { txID } : {},
         blob: new Uint8Array([1]),
     }) as unknown as PeraSignedTransaction
 

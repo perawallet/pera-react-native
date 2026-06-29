@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LogicError } from '@algorandfoundation/algokit-utils/logic-error'
+import { LogicError } from '@algorandfoundation/algokit-utils/types/logic-error'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { AlgodError } from './AlgodError'
 import { parseAlgodMessage } from './parseAlgodMessage'

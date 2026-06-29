@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    type PeraTransaction,
-    Transaction,
-    groupTransactions,
-} from '@perawallet/wallet-core-blockchain'
+import { type PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { Transaction, computeGroupID } from 'algosdk'
 import {
     bytesEqual,
     bytesToHex,
@@ -131,10 +128,16 @@ const validateGroupStructure = (
     for (const { group: claimed, txs } of partitions.values()) {
         let computed: Optional<Uint8Array>
         try {
-            const ungrouped = txs.map(
-                tx => new Transaction({ ...tx, group: undefined }),
-            )
-            computed = groupTransactions(ungrouped)[0].group
+            // Clone each transaction and clear its group ID so the recompute
+            // hashes the ungrouped form — the txID (and therefore the group
+            // ID) folds in the `grp` field, so computing over the already
+            // grouped txns would not reproduce the original group ID.
+            const ungrouped = txs.map(tx => {
+                const clone = Transaction.fromEncodingData(tx.toEncodingData())
+                clone.group = undefined
+                return clone
+            })
+            computed = computeGroupID(ungrouped)
         } catch (e) {
             throw new InvalidSignableDataError(
                 `failed to recompute transaction group ID: ${

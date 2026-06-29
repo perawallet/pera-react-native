@@ -17,7 +17,7 @@ import React from 'react'
 
 import { useTransactionEncoder } from '../useTransactionEncoder'
 
-vi.mock('@algorandfoundation/algokit-utils/transact', () => ({
+vi.mock('../../utils/transact', () => ({
     encodeTransaction: vi.fn(() => new Uint8Array([0])),
     decodeTransaction: vi.fn(() => ({})),
     encodeSignedTransaction: vi.fn(() => new Uint8Array([1])),

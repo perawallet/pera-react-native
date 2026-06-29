@@ -46,6 +46,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 : config.arc59.testnet
 
             const suggestedParams = await algokit.getSuggestedParams()
+            const minFee = BigInt(suggestedParams.minFee)
 
             const appClient = new ARC59Client({
                 appId: arc59Config.appId,
@@ -73,7 +74,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 composer.addAppCallMethodCall(
                     await appClient.params.arc59_optRouterIn({
                         args: [assetId],
-                        extraFee: suggestedParams.minFee.microAlgo(),
+                        extraFee: minFee.microAlgo(),
                     }),
                 )
             }
@@ -93,7 +94,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                         0,
                     ],
                     extraFee: (
-                        suggestedParams.minFee * BigInt(summary.inner_tx_count)
+                        minFee * BigInt(summary.inner_tx_count)
                     ).microAlgo(),
                 }),
             )

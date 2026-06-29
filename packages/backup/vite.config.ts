@@ -33,7 +33,7 @@ export default defineConfig({
                 'react/jsx-runtime',
                 'zustand',
                 '@algorandfoundation/algokit-utils',
-                '@algorandfoundation/algokit-utils/algo25',
+                'algosdk',
                 '@noble/hashes',
                 '@noble/hashes/hmac.js',
                 '@noble/hashes/sha2.js',

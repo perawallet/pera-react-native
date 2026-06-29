@@ -27,7 +27,8 @@ const mocks = vi.hoisted(() => ({
     zeroBytes: vi.fn(),
 }))
 
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
     mnemonicFromSeed: mocks.mnemonicFromSeed,
 }))
 
