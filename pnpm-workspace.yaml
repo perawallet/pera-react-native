@@ -37,7 +37,7 @@ catalog:
   tsx: ^4.22.3
   typescript: ^5.9.3
   util: ^0.12.5
-  uuid: 14.0.0
+  uuid: 14.0.1
   msw: ^2.14.6
   vite: ^8.0.8
   vite-plugin-dts: ^5.0.0
