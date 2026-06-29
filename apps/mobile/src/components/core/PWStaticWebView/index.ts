@@ -10,10 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    footer: {
-        paddingHorizontal: theme.spacing.lg,
-    },
-}))
+export { PWStaticWebView } from './PWStaticWebView'
+export type { PWStaticWebViewProps } from './PWStaticWebView'
