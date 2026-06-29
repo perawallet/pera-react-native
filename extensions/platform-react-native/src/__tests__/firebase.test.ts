@@ -61,6 +61,8 @@ vi.mock('@react-native-firebase/messaging', () => ({
     registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
     getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
     onMessage: vi.fn(() => vi.fn()),
+    onNotificationOpenedApp: vi.fn(() => vi.fn()),
+    getInitialNotification: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('@notifee/react-native', () => ({
@@ -428,38 +430,50 @@ describe('RNFirebaseService', () => {
                 })
             })
 
-            it('should handle onForegroundEvent callback for PRESS event', async () => {
+            it('routes a foreground PRESS tap to the notification-open listener', async () => {
                 mockNotifee.requestPermission.mockResolvedValue({
                     authorizationStatus: 1, //AUTHORIZED
                 })
+                const listener = vi.fn()
+                service.addNotificationOpenListener(listener)
                 await service.initializeNotifications()
 
-                // Get the callback that was passed to onForegroundEvent
                 const onForegroundEventCallback = (
                     notifee.onForegroundEvent as any
                 ).mock.calls[0][0] as (event: any) => Promise<void>
                 expect(onForegroundEventCallback).toBeDefined()
 
-                await onForegroundEventCallback({ type: 0 }) // EventType.PRESS
+                await onForegroundEventCallback({
+                    type: 0, // EventType.PRESS
+                    detail: {
+                        notification: { data: { url: 'pera://deeplink' } },
+                    },
+                })
 
-                // Should not throw, currently no-op
+                expect(listener).toHaveBeenCalledWith('pera://deeplink')
             })
 
-            it('should handle onForegroundEvent callback for ACTION_PRESS event', async () => {
+            it('routes a foreground ACTION_PRESS tap to the notification-open listener', async () => {
                 mockNotifee.requestPermission.mockResolvedValue({
                     authorizationStatus: 1, //AUTHORIZED
                 })
+                const listener = vi.fn()
+                service.addNotificationOpenListener(listener)
                 await service.initializeNotifications()
 
-                // Get the callback that was passed to onForegroundEvent
                 const onForegroundEventCallback = (
                     mockNotifee.onForegroundEvent as any
                 ).mock.calls[0][0] as (event: any) => Promise<void>
                 expect(onForegroundEventCallback).toBeDefined()
 
-                await onForegroundEventCallback({ type: 1 }) // EventType.ACTION_PRESS
+                await onForegroundEventCallback({
+                    type: 1, // EventType.ACTION_PRESS
+                    detail: {
+                        notification: { data: { url: 'pera://action' } },
+                    },
+                })
 
-                // Should not throw, currently no-op
+                expect(listener).toHaveBeenCalledWith('pera://action')
             })
 
             it('should handle onForegroundEvent callback for unknown event type', async () => {

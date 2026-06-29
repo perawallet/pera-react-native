@@ -30,6 +30,7 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
@@ -60,6 +61,9 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
 
     // Initialize FCM token (replaces TokenInitializer)
     useTokenListener(fcmToken)
+
+    // Route tapped push notifications through the deeplink dispatcher.
+    useNotificationDeeplinkListener()
 
     const handleBoundaryError = (error: string | Error) => {
         logger.critical(error, {
