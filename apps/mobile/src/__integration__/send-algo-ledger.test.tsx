@@ -41,6 +41,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    LedgerTimeoutError,
+    LedgerUserRejectedError,
+} from '@perawallet/wallet-core-ledger'
 import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
@@ -67,14 +71,17 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 type Deferred<T> = {
     promise: Promise<T>
     resolve: (value: T) => void
+    reject: (reason: unknown) => void
 }
 
 const createDeferred = <T,>(): Deferred<T> => {
     let resolveFn!: (value: T) => void
-    const promise = new Promise<T>(res => {
+    let rejectFn!: (reason: unknown) => void
+    const promise = new Promise<T>((res, rej) => {
         resolveFn = res
+        rejectFn = rej
     })
-    return { promise, resolve: resolveFn }
+    return { promise, resolve: resolveFn, reject: rejectFn }
 }
 
 // Module-scoped so the per-call deferred outlives the closure that
@@ -292,6 +299,169 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
             expect(useAccountsStore.getState().selectedAccountAddress).toBe(
                 sender.address,
             )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a Ledger sender, when the device rejects the transaction, then the signing sheet shows the user-rejected error, never POSTs to algod, and never reaches success',
+        async () => {
+            seedLedgerSender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // Must never be hit — a device rejection aborts before submission.
+            const sendSpy = vi.fn(() =>
+                HttpResponse.json({ txId: 'unused' }, { status: 200 }),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderSendConfirmationStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            // Pause at the device-confirm step, same as the happy path.
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('ledger-signing-overlay-lottie'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            expect(sendSpy).not.toHaveBeenCalled()
+
+            // The user declines on the device: `signTransaction` rejects with
+            // the typed LedgerUserRejectedError. The strategy classifies it as
+            // a genuine Ledger error, the hardware child machine parks in its
+            // `error` state, and the signing sheet swaps the awaiting-approval
+            // content for the LedgerErrorContent (user_rejected is non-BLE, so
+            // it renders inline rather than deferring to the troubleshooting
+            // sheet). The translation layer is uninitialised under test, so
+            // `t(key)` echoes the key — assert on the error title key.
+            expect(pendingSignature).not.toBeNull()
+            pendingSignature!.reject(new LedgerUserRejectedError())
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText('ledger.errors.user_rejected_title'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+
+            // The awaiting-approval Lottie is gone (replaced by the error
+            // content), algod was never hit, and success never rendered.
+            expect(
+                screen.queryByTestId('ledger-signing-overlay-lottie'),
+            ).toBeNull()
+            expect(sendSpy).not.toHaveBeenCalled()
+            expect(screen.queryByTestId('PWResultView')).toBeNull()
+
+            // Dismiss the error to drain the signing actor. The hardware child
+            // parks in its non-terminal `error` state until the user
+            // acknowledges; Cancel sends ACKNOWLEDGE_HARDWARE_ERROR, which
+            // transitions it to `done` and lets the lifecycle remove it from
+            // the module-scoped actor registry. Without this, the leftover
+            // actor trips the single-flight queue guard and the next test's
+            // sign request never starts.
+            fireEvent.click(screen.getByText('ledger.signing.cancel'))
+            await waitFor(
+                () => {
+                    expect(
+                        screen.queryByText('ledger.errors.user_rejected_title'),
+                    ).toBeNull()
+                },
+                { timeout: 10_000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a Ledger sender, when signing times out mid-confirmation, then the signing sheet shows the timeout error, never POSTs to algod, and never reaches success',
+        async () => {
+            seedLedgerSender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            const sendSpy = vi.fn(() =>
+                HttpResponse.json({ txId: 'unused' }, { status: 200 }),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderSendConfirmationStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('ledger-signing-overlay-lottie'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            expect(sendSpy).not.toHaveBeenCalled()
+
+            // A dropped BLE link mid-confirmation surfaces as a
+            // LedgerTimeoutError (distinct preset kind `timeout`, also non-BLE
+            // so it renders inline). Reject the deferred signature with it
+            // instead of waiting out the real 30s confirmation timeout.
+            expect(pendingSignature).not.toBeNull()
+            pendingSignature!.reject(
+                new LedgerTimeoutError('Sign Ledger transaction'),
+            )
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText('ledger.errors.timeout_title'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+
+            expect(
+                screen.queryByTestId('ledger-signing-overlay-lottie'),
+            ).toBeNull()
+            expect(sendSpy).not.toHaveBeenCalled()
+            expect(screen.queryByTestId('PWResultView')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
