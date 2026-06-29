@@ -69,4 +69,44 @@ describe('scopeBlePermissions', () => {
             'android:name': 'android.permission.CAMERA',
         })
     })
+
+    it('emits tools:node="remove" markers for the library uses-permission-sdk-23 fine + coarse location', () => {
+        const result = scopeBlePermissions(
+            manifestWith(['android.permission.ACCESS_FINE_LOCATION']),
+        ) as {
+            manifest: {
+                $: Record<string, string>
+                'uses-permission-sdk-23': { $: Record<string, string> }[]
+            }
+        }
+
+        expect(result.manifest.$['xmlns:tools']).toBe(
+            'http://schemas.android.com/tools',
+        )
+        expect(result.manifest['uses-permission-sdk-23']).toEqual([
+            {
+                $: {
+                    'android:name': 'android.permission.ACCESS_FINE_LOCATION',
+                    'tools:node': 'remove',
+                },
+            },
+            {
+                $: {
+                    'android:name': 'android.permission.ACCESS_COARSE_LOCATION',
+                    'tools:node': 'remove',
+                },
+            },
+        ])
+    })
+
+    it('does not add duplicate remove markers when run twice', () => {
+        const once = scopeBlePermissions(
+            manifestWith(['android.permission.ACCESS_FINE_LOCATION']),
+        )
+        const twice = scopeBlePermissions(once) as {
+            manifest: { 'uses-permission-sdk-23': unknown[] }
+        }
+
+        expect(twice.manifest['uses-permission-sdk-23']).toHaveLength(2)
+    })
 })

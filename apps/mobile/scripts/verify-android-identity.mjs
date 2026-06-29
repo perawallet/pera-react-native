@@ -168,6 +168,25 @@ for (const scoped of [
         `${scoped} is not scoped to maxSdkVersion 30`,
     )
 }
+// rxandroidble (via react-native-ble-plx) injects UNSCOPED
+// <uses-permission-sdk-23> nodes for fine + coarse location at merge time. For
+// FINE, combined with the scoped <uses-permission> above, it declares the
+// permission twice with different maxSdkVersions — which Google Play rejects on
+// upload. COARSE is never usable for BLE scanning at minSdk 29 and should not
+// be requested at all. withAndroidBlePermissionScoping drops both library nodes
+// via tools:node=remove — assert neither survived the merge.
+for (const leaked of [
+    'android.permission.ACCESS_FINE_LOCATION',
+    'android.permission.ACCESS_COARSE_LOCATION',
+]) {
+    const escaped = escapeRegExp(leaked)
+    assert(
+        !new RegExp(
+            `<uses-permission-sdk-23[^>]*android:name="${escaped}"`,
+        ).test(manifest),
+        `unscoped uses-permission-sdk-23 ${leaked} leaked into the merged manifest — Google Play may reject the upload`,
+    )
+}
 assert(/android:allowBackup="false"/.test(manifest), 'allowBackup is not false')
 assert(
     /android:dataExtractionRules="@xml\/pera_data_extraction_rules"/.test(

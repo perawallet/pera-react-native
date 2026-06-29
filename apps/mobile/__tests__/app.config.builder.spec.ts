@@ -385,11 +385,13 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
         return (entry[1] as { android: Record<string, unknown> }).android
     }
 
-    it('targets Android SDK 36', () => {
-        expect(
-            buildPropsAndroid(build({ APP_ENV: 'production' }))
-                .targetSdkVersion,
-        ).toBe(36)
+    it('pins the Android SDK and build-tools levels', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.minSdkVersion).toBe(29)
+        expect(android.targetSdkVersion).toBe(36)
+        expect(android.compileSdkVersion).toBe(36)
+        expect(android.buildToolsVersion).toBe('36.0.0')
     })
 
     it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {
