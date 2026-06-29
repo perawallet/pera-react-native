@@ -14,6 +14,12 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Address } from '@algorandfoundation/algokit-utils/common'
+import {
+    Transaction,
+    TransactionType,
+    groupTransactions,
+} from '@algorandfoundation/algokit-utils/transact'
 import type {
     PeraDisplayableTransaction,
     PeraTransaction,
@@ -21,11 +27,33 @@ import type {
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
 
 const mockSimulate = vi.fn()
-const mockAddTransaction = vi.fn()
+// Faithful to the real composer: it rejects any transaction that already
+// carries a group id (composer.addTransaction → "already in a group").
+const mockAddTransaction = vi.fn((txn?: { group?: unknown }) => {
+    if (txn?.group) {
+        throw new Error(
+            'Cannot add a transaction to the composer because it is already in a group',
+        )
+    }
+})
 const mockNewGroup = vi.fn(() => ({
     addTransaction: mockAddTransaction,
     simulate: mockSimulate,
 }))
+
+const SENDER = Address.zeroAddress()
+const RECEIVER = new Address(new Uint8Array(32).fill(7))
+
+const payment = (amount: bigint): Transaction =>
+    new Transaction({
+        type: TransactionType.Payment,
+        sender: SENDER,
+        fee: 1000n,
+        firstValid: 1000n,
+        lastValid: 2000n,
+        genesisHash: new Uint8Array(32),
+        payment: { receiver: RECEIVER, amount },
+    })
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<object>(
@@ -124,6 +152,34 @@ describe('useGroupSimulationQuery', () => {
             skipSignatures: true,
             allowUnnamedResources: true,
         })
+        const data = result.current.data as PeraDisplayableTransaction[]
+        expect(data).toHaveLength(2)
+    })
+
+    test('simulates dApp groups by stripping the existing group id', async () => {
+        // Real dApp interactions arrive already grouped — every txn carries a
+        // group id. The composer rejects grouped txns, so the hook must clone
+        // and clear the group before adding, or simulation never runs and the
+        // receive side is lost. [PERA-4464]
+        const grouped = groupTransactions([payment(1n), payment(2n)])
+        expect(grouped[0].group).toBeDefined()
+
+        const { result } = renderHook(
+            () =>
+                useGroupSimulationQuery({
+                    requestId: 'req-1',
+                    groupTxs: grouped as unknown as PeraTransaction[],
+                    enabled: true,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        // Every transaction handed to the composer must be ungrouped.
+        for (const call of mockAddTransaction.mock.calls) {
+            expect(call[0]?.group).toBeUndefined()
+        }
         const data = result.current.data as PeraDisplayableTransaction[]
         expect(data).toHaveLength(2)
     })

@@ -2018,6 +2018,7 @@
             "receive_title": "You will receive",
             "spend_title": "You will spend",
             "analyzing": "Analyzing transaction…",
+            "unavailable": "Unable to preview balance impact — review the transaction details carefully before signing.",
             "entire_balance": "Entire {{unit}} balance",
             "closes_balance": "Your full remaining balance is sent"
         },
