@@ -415,6 +415,8 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
             'android.permission.SYSTEM_ALERT_WINDOW',
             'android.permission.READ_MEDIA_AUDIO',
             'android.permission.READ_MEDIA_VIDEO',
+            // Stripped so Play doesn't classify the app as a health app.
+            'android.permission.ACTIVITY_RECOGNITION',
         ]) {
             expect(blockedPermissions).toContain(blocked)
         }

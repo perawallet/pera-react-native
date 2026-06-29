@@ -195,6 +195,11 @@ function buildAppConfig(env) {
         'android.permission.SYSTEM_ALERT_WINDOW',
         'android.permission.READ_MEDIA_AUDIO',
         'android.permission.READ_MEDIA_VIDEO',
+        // expo-sensors injects ACTIVITY_RECOGNITION for its Pedometer API,
+        // which we don't use (only the Accelerometer, for shake detection —
+        // that needs no permission). Play classifies any app requesting it as
+        // a health app and gates it behind the Health apps policy, so strip it.
+        'android.permission.ACTIVITY_RECOGNITION',
       ],
       intentFilters: [
         {
