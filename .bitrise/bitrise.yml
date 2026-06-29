@@ -664,19 +664,9 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                # Production publishes to Play Console (internal track) on an rc
-                # (-rc) or STABLE (vX.Y.Z) tag — deploy_internal uploads the AAB to
-                # Play and an APK to Firebase. Nightly (-alpha) builds, plus all
-                # staging builds, go to Firebase only. Non-tag builds keep the
-                # workflow default.
-                DIST="$DISTRIBUTION"
-                if [ "$ENVIRONMENT" = "production" ]; then
-                  case "$BITRISE_GIT_TAG" in
-                    *-alpha.*) DIST="firebase" ;;
-                    *-rc.* | v*) DIST="play" ;;
-                  esac
-                fi
-                envman add --key DISTRIBUTION --value "$DIST"
+                # Channel logic lives in tools/resolve-distribution.sh so the
+                # validate step and this step can't drift (see that script).
+                envman add --key DISTRIBUTION --value "$(./tools/resolve-distribution.sh)"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Setup distribution credentials
@@ -685,9 +675,11 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
 
-                if [ "$DISTRIBUTION" == "firebase" ]; then
-                  echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/config/firebase-service-account.json
-                else
+                # deploy_internal (play: rc/stable) uploads the AAB to Play AND
+                # an APK to Firebase, so the play path needs BOTH credentials.
+                # deploy_firebase needs only the Firebase service account.
+                echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/config/firebase-service-account.json
+                if [ "$DISTRIBUTION" != "firebase" ]; then
                   echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/config/api-key.json
                 fi
       - script@1:

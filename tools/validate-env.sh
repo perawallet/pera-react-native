@@ -81,9 +81,13 @@ case "$PROFILE" in
       "TESTNET_BACKEND_URL"
       "BACKEND_API_KEY"
     )
-    if [ "${DISTRIBUTION:-firebase}" = "firebase" ]; then
-      required_global+=( "FIREBASE_SERVICE_ACCOUNT_BASE64" )
-    else
+    # deploy_firebase needs only the Firebase service account. deploy_internal
+    # (play: rc/stable) uploads the AAB to Play AND an APK to Firebase, so it
+    # needs both. Resolve the effective channel here — validation can run before
+    # the bitrise "Resolve distribution channel" step, so a play build must fail
+    # fast on a missing Play key rather than after the Play upload succeeds.
+    required_global+=( "FIREBASE_SERVICE_ACCOUNT_BASE64" )
+    if [ "$("$(dirname "${BASH_SOURCE[0]}")/resolve-distribution.sh")" = "play" ]; then
       required_global+=( "ANDROID_JSON_KEY_FILE" )
     fi
     optional_prefixed+=(
