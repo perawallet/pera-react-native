@@ -221,4 +221,12 @@ describe('hexToBytes', () => {
             Array.from(entropy),
         )
     })
+
+    test('throws on an odd-length string instead of dropping the last nibble', () => {
+        expect(() => hexToBytes('abc')).toThrow()
+    })
+
+    test('throws on non-hex characters instead of decoding them to 0', () => {
+        expect(() => hexToBytes('zz')).toThrow()
+    })
 })

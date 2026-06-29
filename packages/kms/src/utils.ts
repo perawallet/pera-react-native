@@ -20,6 +20,7 @@ import {
     SIGNING_ACCESS_DOMAIN,
     BACKUP_ACCESS_DOMAIN,
 } from './constants'
+import { KeyManagementError } from './errors'
 
 /**
  * Pera-domain extras (acl, timestamps) round-trip through a seed entry's
@@ -131,6 +132,12 @@ export const expiresAtOf = (key: Key): Date | undefined => {
 }
 
 export const hexToBytes = (hex: string): Uint8Array => {
+    // Reject malformed input up front: an odd length or a non-hex character
+    // would otherwise decode silently (`parseInt` yields NaN → 0), producing
+    // wrong key/entropy bytes instead of a clear failure.
+    if (hex.length % 2 !== 0 || /[^0-9a-fA-F]/.test(hex)) {
+        throw new KeyManagementError('hexToBytes: input is not valid hex')
+    }
     const out = new Uint8Array(hex.length / 2)
     for (let i = 0; i < out.length; i++) {
         out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16)
