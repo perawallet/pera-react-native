@@ -27,8 +27,14 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
 
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import type {
+    TransactionHistoryItem,
+    TransactionBalanceImpact,
+} from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+
+/** Maximum number of stacked amounts shown in a list row before overflow. */
+const MAX_VISIBLE_AMOUNTS = 2
 
 type TFunction = ReturnType<typeof useLanguage>['t']
 
@@ -51,6 +57,8 @@ export type UseTransactionListItemResult = {
     title: string
     subtitle: Nullable<string>
     amounts: AmountDisplay[]
+    /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
+    amountsOverflowCount: number
     handlePress: () => void
 }
 
@@ -90,6 +98,30 @@ const createAssetAmount = (
         value: absValue,
         currency: unitName,
         prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
+    }
+}
+
+/**
+ * Creates an AmountDisplay from a backend-computed balance impact. The impact
+ * amount is signed (negative = sent, positive = received), so the direction is
+ * read from its sign rather than from the account being sender/receiver.
+ */
+const createBalanceImpactAmount = (
+    impact: TransactionBalanceImpact,
+): AmountDisplay => {
+    const safeDecimals = isNaN(impact.fractionDecimals)
+        ? 0
+        : Math.max(0, Math.min(19, impact.fractionDecimals))
+    const absValue = baseUnitsToDisplayUnits(impact.amount.abs(), safeDecimals)
+
+    return {
+        value: absValue,
+        currency: impact.unitName,
+        prefix: impact.amount.isZero()
+            ? undefined
+            : impact.amount.isNegative()
+              ? '-'
+              : '+',
     }
 }
 
@@ -224,7 +256,7 @@ export const useTransactionListItem = ({
         return null
     }, [transaction, counterpartyAddress, counterpartyDisplayName])
 
-    const amounts = useMemo((): AmountDisplay[] => {
+    const allAmounts = useMemo((): AmountDisplay[] => {
         const result: AmountDisplay[] = []
 
         // Handle swap transactions
@@ -264,28 +296,28 @@ export const useTransactionListItem = ({
             }
         }
 
-        // Handle app calls with inner transactions (may have asset result)
-        if (
-            transaction.txType === 'appl' &&
-            transaction.asset &&
-            transaction.amount
-        ) {
-            const decimals =
-                assetDetails?.decimals ?? transaction.asset.decimals
-            const unitName =
-                assetDetails?.unitName ?? transaction.asset.unitName
-            result.push(
-                createAssetAmount(
-                    transaction.amount,
-                    decimals,
-                    unitName,
-                    false,
-                ),
-            )
+        // For app calls, surface the account's net per-asset balance impact
+        // (sent/received) across the call and its inner transactions. The
+        // backend already nets these, so we render them directly with the sign
+        // determining direction.
+        if (transaction.txType === 'appl') {
+            transaction.balanceImpacts.forEach(impact => {
+                result.push(createBalanceImpactAmount(impact))
+            })
         }
 
         return result
     }, [transaction, isOutgoing, assetDetails])
+
+    const amounts = useMemo(
+        () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),
+        [allAmounts],
+    )
+
+    const amountsOverflowCount = Math.max(
+        0,
+        allAmounts.length - MAX_VISIBLE_AMOUNTS,
+    )
 
     const handlePress = useCallback(() => {
         onPress?.(transaction)
@@ -296,6 +328,7 @@ export const useTransactionListItem = ({
         title,
         subtitle,
         amounts,
+        amountsOverflowCount,
         handlePress,
     }
 }

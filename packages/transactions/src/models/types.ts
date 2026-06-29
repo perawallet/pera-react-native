@@ -77,6 +77,26 @@ export interface TransactionAssetSummary {
 }
 
 /**
+ * Represents the net balance impact of a transaction on a single asset for the
+ * requesting account.
+ *
+ * The Pera API nets these across the top-level transaction and all of its inner
+ * transactions, so a single application call can yield several impacts (e.g. an
+ * asset sent and ALGO received). ALGO is represented with `assetId` "0" and its
+ * impact includes the transaction fee when the account is the sender.
+ */
+export interface TransactionBalanceImpact {
+    /** The impacted asset ID. Decimal string; "0" for ALGO. */
+    assetId: string
+    /** The unit name/ticker symbol of the asset (e.g., "ALGO", "USDC") */
+    unitName: string
+    /** Number of decimal places for the asset (0-19) */
+    fractionDecimals: number
+    /** Signed net amount in base units. Negative = sent, positive = received. */
+    amount: Decimal
+}
+
+/**
  * Represents the interpreted meaning of a transaction.
  *
  * The Pera API enriches transaction data by interpreting what the transaction
@@ -125,6 +145,12 @@ export interface TransactionHistoryItem {
     applicationId: Nullable<string>
     /** Number of inner transactions if this is an application call */
     innerTransactionCount: Nullable<number>
+    /**
+     * Net per-asset balance impact on the requesting account, aggregated across
+     * this transaction and its inner transactions. Empty when the API returns
+     * none. Used to surface the balance impact of application calls in the list.
+     */
+    balanceImpacts: TransactionBalanceImpact[]
 }
 
 /**

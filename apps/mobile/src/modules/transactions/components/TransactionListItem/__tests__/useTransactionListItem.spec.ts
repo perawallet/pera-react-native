@@ -84,6 +84,7 @@ const createPaymentTx = (
         innerTransactionCount: null,
         groupId: null,
         closeTo: null,
+        balanceImpacts: [],
         ...overrides,
     }) as TransactionHistoryItem
 
@@ -111,6 +112,30 @@ const createAssetTransferTx = (
         innerTransactionCount: null,
         groupId: null,
         closeTo: null,
+        balanceImpacts: [],
+        ...overrides,
+    }) as TransactionHistoryItem
+
+const createAppCallTx = (
+    overrides: Partial<TransactionHistoryItem> = {},
+): TransactionHistoryItem =>
+    ({
+        id: 'tx3',
+        txType: 'appl',
+        sender: USER_ADDRESS,
+        receiver: null,
+        amount: null,
+        fee: new Decimal('1000'),
+        confirmedRound: 100,
+        roundTime: 1_700_000_000,
+        asset: null,
+        swapGroupDetail: null,
+        interpretedMeaning: null,
+        applicationId: '123',
+        innerTransactionCount: 2,
+        groupId: null,
+        closeTo: null,
+        balanceImpacts: [],
         ...overrides,
     }) as TransactionHistoryItem
 
@@ -349,6 +374,113 @@ describe('useTransactionListItem', () => {
                 useTransactionListItem({ transaction: tx }),
             )
             expect(result.current.amounts[0].prefix).toBe('+')
+        })
+    })
+
+    describe('app call balance impacts', () => {
+        it('stacks each balance impact with sign-derived direction', () => {
+            const tx = createAppCallTx({
+                balanceImpacts: [
+                    {
+                        assetId: '0',
+                        unitName: 'ALGO',
+                        fractionDecimals: 6,
+                        amount: new Decimal('-1500000'),
+                    },
+                    {
+                        assetId: '31566704',
+                        unitName: 'USDC',
+                        fractionDecimals: 6,
+                        amount: new Decimal('2000000'),
+                    },
+                ],
+            })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+
+            expect(result.current.amounts).toHaveLength(2)
+            expect(result.current.amounts[0]).toMatchObject({
+                currency: 'ALGO',
+                prefix: '-',
+            })
+            expect(result.current.amounts[0].value.toNumber()).toBe(1.5)
+            expect(result.current.amounts[1]).toMatchObject({
+                currency: 'USDC',
+                prefix: '+',
+            })
+            expect(result.current.amounts[1].value.toNumber()).toBe(2)
+            expect(result.current.amountsOverflowCount).toBe(0)
+        })
+
+        it('shows a negative ALGO amount for a fee-only app call', () => {
+            const tx = createAppCallTx({
+                balanceImpacts: [
+                    {
+                        assetId: '0',
+                        unitName: 'ALGO',
+                        fractionDecimals: 6,
+                        amount: new Decimal('-1000'),
+                    },
+                ],
+            })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+
+            expect(result.current.amounts).toHaveLength(1)
+            expect(result.current.amounts[0]).toMatchObject({
+                currency: 'ALGO',
+                prefix: '-',
+            })
+            expect(result.current.amounts[0].value.toNumber()).toBe(0.001)
+        })
+
+        it('caps stacked amounts at two and reports the overflow count', () => {
+            const tx = createAppCallTx({
+                balanceImpacts: [
+                    {
+                        assetId: '0',
+                        unitName: 'ALGO',
+                        fractionDecimals: 6,
+                        amount: new Decimal('-1000000'),
+                    },
+                    {
+                        assetId: '1',
+                        unitName: 'USDC',
+                        fractionDecimals: 6,
+                        amount: new Decimal('2000000'),
+                    },
+                    {
+                        assetId: '2',
+                        unitName: 'USDT',
+                        fractionDecimals: 6,
+                        amount: new Decimal('3000000'),
+                    },
+                    {
+                        assetId: '3',
+                        unitName: 'GORA',
+                        fractionDecimals: 6,
+                        amount: new Decimal('4000000'),
+                    },
+                ],
+            })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+
+            expect(result.current.amounts).toHaveLength(2)
+            expect(result.current.amountsOverflowCount).toBe(2)
+        })
+
+        it('shows no amounts when an app call has no balance impacts', () => {
+            const tx = createAppCallTx({ balanceImpacts: [] })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+
+            expect(result.current.amounts).toEqual([])
+            expect(result.current.amountsOverflowCount).toBe(0)
         })
     })
 })

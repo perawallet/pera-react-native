@@ -58,6 +58,7 @@ describe('transaction repository', () => {
         asset: null,
         swapGroupDetail: null,
         interpretedMeaning: null,
+        balanceImpacts: [],
         ...overrides,
     })
 
@@ -251,6 +252,55 @@ describe('transaction repository', () => {
         expect(result[0].asset).toEqual(asset)
         expect(result[0].swapGroupDetail).toEqual(swapGroupDetail)
         expect(result[0].interpretedMeaning).toEqual(interpretedMeaning)
+    })
+
+    it('round-trips balance impacts, preserving signed Decimal amounts', async () => {
+        const balanceImpacts = [
+            {
+                assetId: '0',
+                unitName: 'ALGO',
+                fractionDecimals: 6,
+                amount: new Decimal('-1500000'),
+            },
+            {
+                assetId: '31566704',
+                unitName: 'USDC',
+                fractionDecimals: 6,
+                amount: new Decimal('2000000'),
+            },
+        ]
+
+        await upsertTransactions({
+            db,
+            items: [makeTx({ txType: 'appl', balanceImpacts })],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        expect(result[0].balanceImpacts).toEqual(balanceImpacts)
+    })
+
+    it('defaults balance impacts to an empty array for legacy rows', async () => {
+        await upsertTransactions({
+            db,
+            items: [makeTx()],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        expect(result[0].balanceImpacts).toEqual([])
     })
 
     it('supports beforeRoundTime pagination', async () => {

@@ -48,6 +48,22 @@ export const transactionAssetSummarySchema = z.object({
 })
 
 /**
+ * Schema for a single balance-impact entry from the API response.
+ *
+ * The backend returns one entry per asset whose balance changes for the
+ * requesting account, netted across the top-level transaction AND all of its
+ * inner transactions. `amount` is signed in base units: negative = sent,
+ * positive = received. ALGO is represented with `asset_id` 0 and includes the
+ * transaction fee for the sender.
+ */
+export const transactionBalanceImpactSchema = z.object({
+    asset_id: uint64IdSchema,
+    unit_name: z.string().optional().default(''),
+    fraction_decimals: z.number().optional().default(0),
+    amount: z.string(),
+})
+
+/**
  * Schema for interpreted meaning from API response
  */
 export const transactionInterpretedMeaningSchema = z.object({
@@ -76,6 +92,10 @@ export const transactionHistoryItemResponseSchema = z.object({
     asset: transactionAssetSummarySchema.nullable().optional(),
     application_id: uint64IdSchema.nullable().optional(),
     inner_transaction_count: coerceNumber.nullable().optional(),
+    balance_impacts: z
+        .array(transactionBalanceImpactSchema)
+        .nullable()
+        .optional(),
 })
 
 /**
