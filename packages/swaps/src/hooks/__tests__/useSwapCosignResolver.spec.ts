@@ -229,16 +229,18 @@ describe('swaps/useSwapCosignResolver', () => {
 
         await capturedDeps().declineSignRequest('req-1')
         expect(mocks.addSignature).toHaveBeenCalledWith('mainnet', 'req-1', [
-            { address: 'PROPOSER', response: 'declined', device_id: 'device-1' },
+            {
+                address: 'PROPOSER',
+                response: 'declined',
+                device_id: 'device-1',
+            },
         ])
     })
 
     it('skips the decline when the poll carried no proposer address', async () => {
         const handoff = makeRecord()
         mocks.handoffs = { 'req-1': handoff }
-        mocks.useSwapHandoffPolls.mockReturnValue([
-            { handoff, detail: {} },
-        ])
+        mocks.useSwapHandoffPolls.mockReturnValue([{ handoff, detail: {} }])
         mocks.classifyHandoffPoll.mockReturnValue({
             kind: 'error',
             reason: { kind: 'backend-failed', displayReason: null },
