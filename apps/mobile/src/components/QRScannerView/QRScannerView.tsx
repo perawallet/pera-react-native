@@ -12,13 +12,24 @@
 
 import { useStyles } from './styles'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
-import { Camera } from 'react-native-vision-camera'
 import { Modal } from 'react-native'
+import { Suspense, lazy } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton, PWText, PWTouchableIcon } from '@components/core'
 import { useQRScannerView } from './useQRScannerView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
+// Loaded lazily and only when a camera device exists. QRCameraScanner is the
+// sole importer of `react-native-vision-camera-barcode-scanner`, which pulls in
+// MLKit at import time — MLKit is excluded from the iOS simulator build (no
+// arm64-simulator slice), and there is no camera device on a simulator, so this
+// module is never imported there. The `.then` keeps named exports (repo convention).
+const QRCameraScanner = lazy(() =>
+    import('./QRCameraScanner').then(module => ({
+        default: module.QRCameraScanner,
+    })),
+)
 
 export type QRScannerViewProps = {
     title?: string
@@ -36,10 +47,11 @@ export const QRScannerView = (props: QRScannerViewProps) => {
 
     const {
         device,
-        scannerOutput,
         scanningEnabled,
         permissionDenied,
         hasPermission,
+        onBarcodeScanned,
+        onError,
     } = useQRScannerView({
         isVisible: props.isVisible,
         onSuccess: props.onSuccess,
@@ -76,12 +88,15 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                         onPress={props.onClose}
                         containerStyle={styles.icon}
                     />
-                    <Camera
-                        style={styles.camera}
-                        outputs={[scannerOutput]}
-                        device={device}
-                        isActive={scanningEnabled}
-                    />
+                    <Suspense fallback={null}>
+                        <QRCameraScanner
+                            device={device}
+                            isActive={scanningEnabled}
+                            style={styles.camera}
+                            onBarcodeScanned={onBarcodeScanned}
+                            onError={onError}
+                        />
+                    </Suspense>
                     <CameraOverlay style={styles.overlay} />
                     <PWText
                         variant='h2'

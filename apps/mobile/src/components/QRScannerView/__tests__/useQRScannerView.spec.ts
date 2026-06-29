@@ -12,27 +12,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useBarcodeScannerOutput } from 'react-native-vision-camera-barcode-scanner'
 import { useQRScannerView } from '../useQRScannerView'
 
 const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn(() => true)
-let capturedOnBarcodeScanned:
-    | ((barcodes: { rawValue: string }[]) => void)
-    | null = null
 
 vi.mock('react-native-vision-camera', () => ({
     useCameraDevice: vi.fn(() => ({ id: 'mock-device' })),
     useCameraPermission: () => ({
         hasPermission: true,
         requestPermission: vi.fn(),
-    }),
-}))
-
-vi.mock('react-native-vision-camera-barcode-scanner', () => ({
-    useBarcodeScannerOutput: vi.fn(({ onBarcodeScanned }) => {
-        capturedOnBarcodeScanned = onBarcodeScanned
-        return {}
     }),
 }))
 
@@ -49,31 +38,19 @@ const VALID_ADDRESS =
 describe('useQRScannerView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        capturedOnBarcodeScanned = null
-    })
-
-    it('scans from the full-resolution buffer so dense QR codes decode on Android', () => {
-        renderHook(() =>
-            useQRScannerView({
-                isVisible: true,
-                onSuccess: vi.fn(),
-            }),
-        )
-        expect(useBarcodeScannerOutput).toHaveBeenCalledWith(
-            expect.objectContaining({ outputResolution: 'full' }),
-        )
+        mockIsValidDeepLink.mockReturnValue(true)
     })
 
     it('calls handleDeepLink when skipDeepLinkHandler is false', () => {
         const onSuccess = vi.fn()
-        renderHook(() =>
+        const { result } = renderHook(() =>
             useQRScannerView({
                 isVisible: true,
                 onSuccess,
                 skipDeepLinkHandler: false,
             }),
         )
-        capturedOnBarcodeScanned?.([{ rawValue: VALID_ADDRESS }])
+        result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
         expect(mockHandleDeepLink).toHaveBeenCalledWith(
             VALID_ADDRESS,
             false,
@@ -86,18 +63,32 @@ describe('useQRScannerView', () => {
 
     it('skips handleDeepLink and calls onSuccess directly when skipDeepLinkHandler is true', () => {
         const onSuccess = vi.fn()
-        renderHook(() =>
+        const { result } = renderHook(() =>
             useQRScannerView({
                 isVisible: true,
                 onSuccess,
                 skipDeepLinkHandler: true,
             }),
         )
-        capturedOnBarcodeScanned?.([{ rawValue: VALID_ADDRESS }])
+        result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
         expect(mockHandleDeepLink).not.toHaveBeenCalled()
         expect(onSuccess).toHaveBeenCalledWith(
             VALID_ADDRESS,
             expect.any(Function),
         )
+    })
+
+    it('ignores re-entrant scans while one is already being handled', () => {
+        const onSuccess = vi.fn()
+        const { result } = renderHook(() =>
+            useQRScannerView({
+                isVisible: true,
+                onSuccess,
+                skipDeepLinkHandler: true,
+            }),
+        )
+        result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+        result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+        expect(onSuccess).toHaveBeenCalledTimes(1)
     })
 })

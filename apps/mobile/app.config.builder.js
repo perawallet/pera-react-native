@@ -346,6 +346,12 @@ function buildAppConfig(env) {
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',
 
+      // Custom plugin: drop device-only GoogleMLKit from the iOS *simulator*
+      // build so Apple Silicon arm64 simulators (iOS 26+) can build. MUST run
+      // after withPodfileModifications so its post_install edits land in the
+      // same generated Podfile.
+      './plugins/withMLKitSimulatorExclusion.js',
+
       // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
       './plugins/withPublicSwiftImports.js',
 
