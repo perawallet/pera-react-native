@@ -56,12 +56,18 @@ export type UseBalanceImpactSummaryResult = {
     hasImpact: boolean
     /** True while the transaction simulation is still resolving inner txns. */
     isSimulating: boolean
+    /**
+     * Simulation of an app-call group failed, so the impact is incomplete
+     * (the receive side is unknown). The view shows an error instead of a
+     * partial impact.
+     */
+    simulationFailed: boolean
 }
 
 type SortableItem = BalanceImpactItem & { sortValue: Decimal }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
-    const { transactions, signableAddresses, isSimulating } =
+    const { transactions, signableAddresses, isSimulating, simulationFailed } =
         useImpactTransactions()
 
     const impact = useMemo(
@@ -167,6 +173,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             spend,
             hasImpact: receive.length > 0 || spend.length > 0,
             isSimulating,
+            simulationFailed,
         }
-    }, [impact, assets, prices, isSimulating])
+    }, [impact, assets, prices, isSimulating, simulationFailed])
 }

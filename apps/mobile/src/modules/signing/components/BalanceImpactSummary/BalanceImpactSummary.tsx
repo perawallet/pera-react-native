@@ -52,8 +52,27 @@ const Section = ({ title, items }: SectionProps) => {
 export const BalanceImpactSummary = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { receive, spend, hasImpact, isSimulating } =
+    const { receive, spend, hasImpact, isSimulating, simulationFailed } =
         useBalanceImpactSummary()
+
+    // Simulation resolves the inner txns that carry the receive side. If it
+    // failed, the impact is incomplete (spend may show, receive is unknown) —
+    // show an honest message rather than a partial impact that reads complete.
+    if (simulationFailed) {
+        return (
+            <PWView
+                style={styles.container}
+                testID='balance-impact-summary'
+            >
+                <PWText
+                    variant='caption'
+                    style={styles.unavailableText}
+                >
+                    {t('signing.balance_impact.unavailable')}
+                </PWText>
+            </PWView>
+        )
+    }
 
     if (!hasImpact) {
         // App-call movements only appear once simulation resolves the inner

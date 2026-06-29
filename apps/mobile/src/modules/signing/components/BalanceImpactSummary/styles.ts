@@ -24,6 +24,9 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         textTransform: 'uppercase',
     },
+    unavailableText: {
+        color: theme.colors.warningText,
+    },
     row: {
         flexDirection: 'row',
         alignItems: 'center',
