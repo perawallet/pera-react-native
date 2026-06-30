@@ -7,24 +7,23 @@ set -euo pipefail
 # distribution channel" step and validate-env.sh agree without duplicating the
 # tag-matching logic (which would drift).
 #
-# Production publishes to the Play Console (internal track) on an rc (-rc) or
-# STABLE (vX.Y.Z) tag — deploy_internal uploads the AAB to Play and an APK to
-# Firebase. Nightly (-alpha) builds, plus all staging builds, go to Firebase
-# only. Non-production / non-tag builds keep the caller's DISTRIBUTION default.
+# Both production AND staging publish to their respective Play Console internal
+# tracks on an rc (-rc) or STABLE (vX.Y.Z) tag: deploy_internal uploads the AAB
+# to Play — the package is ANDROID_PACKAGE_NAME (com.algorand.android for prod,
+# com.algorand.perarn.staging for staging) — and an APK to Firebase. Nightly
+# (-alpha) builds go to Firebase only. Non-tag builds keep the caller's
+# DISTRIBUTION default.
 #
 # Inputs (env):
-#   ENVIRONMENT       staging | production
 #   BITRISE_GIT_TAG   the release tag, when building from one
-#   DISTRIBUTION      firebase | play   (fallback for non-production/non-tag)
+#   DISTRIBUTION      firebase | play   (fallback for non-tag builds)
 #
 # bash 3.2 safe: shared with the macOS iOS validate step.
 
 dist="${DISTRIBUTION:-firebase}"
-if [ "${ENVIRONMENT:-}" = "production" ]; then
-  case "${BITRISE_GIT_TAG:-}" in
-    *-alpha.*) dist="firebase" ;;
-    *-rc.* | v*) dist="play" ;;
-  esac
-fi
+case "${BITRISE_GIT_TAG:-}" in
+  *-alpha.*) dist="firebase" ;;
+  *-rc.* | v*) dist="play" ;;
+esac
 
 printf '%s\n' "$dist"
