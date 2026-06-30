@@ -13,7 +13,6 @@
 import { useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 
 import {
     type AmountDisplay,
@@ -21,6 +20,7 @@ import {
     createAlgoAmount,
     createAssetAmount,
     createBalanceImpactAmount,
+    createSwapAmount,
 } from './amounts'
 
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
@@ -55,13 +55,7 @@ export const useTransactionAmounts = (
         // Handle swap transactions
         if (transaction.swapGroupDetail) {
             const { amountOut, assetOutUnitName } = transaction.swapGroupDetail
-            const absValue = baseUnitsToDisplayUnits(amountOut || 0, 6).abs()
-
-            result.push({
-                value: absValue,
-                currency: assetOutUnitName,
-                prefix: absValue.isZero() ? undefined : '+',
-            })
+            result.push(createSwapAmount(amountOut, assetOutUnitName))
             return result
         }
 

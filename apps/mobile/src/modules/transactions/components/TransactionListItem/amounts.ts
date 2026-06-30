@@ -90,3 +90,20 @@ export const createBalanceImpactAmount = (
               : '+',
     }
 }
+
+/**
+ * Creates an AmountDisplay for a swap's output amount, always shown as received
+ * (positive). Swap group amounts are reported in a fixed 6-decimal display unit.
+ */
+export const createSwapAmount = (
+    amountOut: Decimal,
+    unitName: string,
+): AmountDisplay => {
+    const absValue = baseUnitsToDisplayUnits(amountOut, 6).abs()
+
+    return {
+        value: absValue,
+        currency: unitName,
+        prefix: absValue.isZero() ? undefined : '+',
+    }
+}
