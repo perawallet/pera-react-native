@@ -367,6 +367,7 @@ workflows:
             - paths: "~/Library/Developer/Xcode/DerivedData"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          is_always_run: true
           title: Collect signed artifact
           inputs:
             - content: |
@@ -375,6 +376,8 @@ workflows:
                 # Surface the signed IPA as a downloadable build artifact — it's
                 # otherwise only piped to TestFlight and discarded. Copying it
                 # into $BITRISE_DEPLOY_DIR makes deploy-to-bitrise-io upload it.
+                # is_always_run: the binary is built before the upload, so a
+                # failed TestFlight upload should still yield a downloadable IPA.
                 IPA="apps/mobile/build/ios/${BITRISE_SCHEME}.ipa"
                 if [ ! -f "$IPA" ]; then
                   echo "No IPA at $IPA — skipping artifact collection"
@@ -386,6 +389,7 @@ workflows:
                 envman add --key BITRISE_IPA_PATH --value "$DEST"
       - deploy-to-bitrise-io@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          is_always_run: true
           inputs:
             - notify_user_groups: none
             - is_enable_public_page: "true"
@@ -739,6 +743,7 @@ workflows:
             - paths: "~/.ccache"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          is_always_run: true
           title: Collect signed artifacts
           inputs:
             - content: |
@@ -748,6 +753,8 @@ workflows:
                 # they're otherwise only piped to Play/Firebase and discarded.
                 # Copying into $BITRISE_DEPLOY_DIR makes deploy-to-bitrise-io
                 # upload them. deploy_internal produces both; deploy_firebase, an APK.
+                # is_always_run: the AAB is built before the Play upload, so a
+                # failed upload (e.g. a Play policy gate) still yields the AAB.
                 SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
                 BASE="pera-android-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}"
                 AAB="apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
@@ -765,6 +772,7 @@ workflows:
                 fi
       - deploy-to-bitrise-io@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          is_always_run: true
           inputs:
             - notify_user_groups: none
             - is_enable_public_page: "true"
