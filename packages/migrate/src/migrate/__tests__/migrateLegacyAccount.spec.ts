@@ -160,21 +160,25 @@ describe('migrateLegacyAccount dispatch', () => {
         expect(result).toEqual({ kind: 'algo25-imported' })
     })
 
-    it('treats an empty secretKey as unroutable', async () => {
+    it('migrates an empty-secretKey account as a watch account instead of dropping it', async () => {
         const account = buildAccount({ secretKey: new Uint8Array(0) })
 
-        await expect(migrateLegacyAccount(buildArgs(account))).rejects.toThrow(
-            /Cannot migrate ADDR/,
-        )
+        await migrateLegacyAccount(buildArgs(account))
+
+        expect(buildWatchAccount).toHaveBeenCalledWith(account)
+        expect(addKeylessAccountToStore).toHaveBeenCalledWith({
+            kind: 'watch-built',
+        })
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
     })
 
-    it('throws an unroutable error mentioning the address when no branch matches', async () => {
+    it('migrates a no-signing-material account as a watch account when no branch matches', async () => {
         const account = buildAccount({ address: 'ADDR_BAD' })
 
-        await expect(migrateLegacyAccount(buildArgs(account))).rejects.toThrow(
-            /Cannot migrate ADDR_BAD/,
-        )
+        const result = await migrateLegacyAccount(buildArgs(account))
+
+        expect(buildWatchAccount).toHaveBeenCalledWith(account)
+        expect(result).toEqual({ kind: 'watch-built' })
     })
 })
 

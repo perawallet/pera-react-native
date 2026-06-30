@@ -742,6 +742,22 @@
             "error_title": "Something went wrong",
             "error_body": "Please try again."
         },
+        "transactions": {
+            "navigation_title": "Transactions",
+            "kind_payment": "Payment",
+            "kind_refund": "Refund",
+            "kind_deposit": "Deposit",
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "days_ago": "{{days}} days ago",
+            "status_pending": "Pending",
+            "status_declined": "Declined",
+            "status_reverted": "Reverted",
+            "export_accessibility_label": "Export statement",
+            "error_title": "Couldn't load transactions",
+            "error_body": "Please try again.",
+            "retry": "Try again"
+        },
         "add_funds": {
             "navigation_title": "Add Funds",
             "subtitle": "Add USDC or swap assets to USDC in your linked Pera account to add more funds.",
@@ -2002,6 +2018,7 @@
             "receive_title": "You will receive",
             "spend_title": "You will spend",
             "analyzing": "Analyzing transaction…",
+            "unavailable": "Unable to preview balance impact — review the transaction details carefully before signing.",
             "entire_balance": "Entire {{unit}} balance",
             "closes_balance": "Your full remaining balance is sent"
         },

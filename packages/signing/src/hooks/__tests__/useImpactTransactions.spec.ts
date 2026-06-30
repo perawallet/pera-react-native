@@ -90,4 +90,22 @@ describe('useImpactTransactions', () => {
 
         expect(result.current.isSimulating).toBe(true)
     })
+
+    test('flags simulationFailed when an app-call group simulation errors', () => {
+        mockPipeline([appCall])
+        mockSimulation({ isError: true, error: new Error('simulate failed') })
+
+        const { result } = renderHook(() => useImpactTransactions())
+
+        expect(result.current.simulationFailed).toBe(true)
+    })
+
+    test('does not flag simulationFailed without an app call', () => {
+        mockPipeline([payment])
+        mockSimulation({ isError: true })
+
+        const { result } = renderHook(() => useImpactTransactions())
+
+        expect(result.current.simulationFailed).toBe(false)
+    })
 })

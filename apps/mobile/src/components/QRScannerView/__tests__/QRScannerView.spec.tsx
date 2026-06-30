@@ -11,8 +11,9 @@
  */
 
 import React from 'react'
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
+import { useCameraDevice } from 'react-native-vision-camera'
 import { QRScannerView } from '../QRScannerView'
 
 vi.mock('react-native-vision-camera', () => ({
@@ -45,29 +46,37 @@ vi.mock('@hooks/useDeepLink', () => ({
     })),
 }))
 
+const CUSTOM_TITLE = 'Scan WalletConnect QR'
+
 describe('QRScannerView', () => {
-    it('renders camera when visible and device is available', () => {
-        const { container } = render(
+    it('shows the camera overlay with the title when a device is available', () => {
+        vi.mocked(useCameraDevice).mockReturnValue({
+            id: 'mock-device',
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- minimal device stub
+        } as any)
+        render(
             <QRScannerView
                 isVisible={true}
                 animationType='none'
+                title={CUSTOM_TITLE}
                 onClose={vi.fn()}
                 onSuccess={vi.fn()}
             />,
         )
-        expect(container).toBeTruthy()
+        expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
     })
 
-    it('displays custom title when provided', () => {
-        const { container } = render(
+    it('shows the empty state (not the camera overlay) when no device is available', () => {
+        vi.mocked(useCameraDevice).mockReturnValue(undefined)
+        render(
             <QRScannerView
                 isVisible={true}
                 animationType='none'
-                title='Scan WalletConnect QR'
+                title={CUSTOM_TITLE}
                 onClose={vi.fn()}
                 onSuccess={vi.fn()}
             />,
         )
-        expect(container.textContent).toContain('Scan WalletConnect QR')
+        expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
     })
 })

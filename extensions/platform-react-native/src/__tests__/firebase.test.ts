@@ -182,6 +182,7 @@ describe('RNFirebaseService', () => {
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
+                    getSource: () => 'remote',
                 } as any)
                 const result = service.getBooleanValue('welcome_message')
                 expect(result).toEqual(true)
@@ -192,6 +193,7 @@ describe('RNFirebaseService', () => {
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
+                    getSource: () => 'remote',
                 } as any)
                 const result = service.getBooleanValue('welcome_message', false)
                 expect(result).toEqual(true)
@@ -210,6 +212,39 @@ describe('RNFirebaseService', () => {
                     throw new Error('no value')
                 })
                 const result = service.getBooleanValue('welcome_message')
+                expect(result).toEqual(false)
+            })
+
+            it('returns the fallback when the value is a baked-in setDefaults default rather than a remote fetch', () => {
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
+                    asString: () => 'false',
+                    asBoolean: () => false,
+                    asNumber: () => 0,
+                    getSource: () => 'default',
+                } as any)
+                const result = service.getBooleanValue('enable_pera_card', true)
+                expect(result).toEqual(true)
+            })
+
+            it('returns the fallback when the value is only a static default', () => {
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
+                    asString: () => 'false',
+                    asBoolean: () => false,
+                    asNumber: () => 0,
+                    getSource: () => 'static',
+                } as any)
+                const result = service.getBooleanValue('enable_pera_card', true)
+                expect(result).toEqual(true)
+            })
+
+            it('returns the remote value when the source is a real remote fetch, ignoring the fallback', () => {
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
+                    asString: () => 'false',
+                    asBoolean: () => false,
+                    asNumber: () => 0,
+                    getSource: () => 'remote',
+                } as any)
+                const result = service.getBooleanValue('enable_pera_card', true)
                 expect(result).toEqual(false)
             })
         })

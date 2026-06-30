@@ -12,20 +12,18 @@
 
 import { useDeepLink } from '@hooks/useDeepLink'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     useCameraDevice,
     useCameraPermission,
 } from 'react-native-vision-camera'
-import {
-    useBarcodeScannerOutput,
-    type TargetBarcodeFormat,
-} from 'react-native-vision-camera-barcode-scanner'
+import { type ScannedBarcode } from './QRCameraScanner'
 
-// Hoisted to a stable reference: useBarcodeScannerOutput memoizes the native
-// output on this array's identity, so an inline literal would recreate the
-// output every render.
-const BARCODE_FORMATS: TargetBarcodeFormat[] = ['qr-code', 'ean-13']
+// NOTE: this hook intentionally does NOT import
+// `react-native-vision-camera-barcode-scanner`. That package pulls in MLKit at
+// import time, which is excluded from the iOS simulator build. The scanner hook
+// lives in QRCameraScanner, lazily mounted only when a camera device exists.
+// We expose `onBarcodeScanned`/`onError` here and wire them up there.
 
 export type UseQRScannerViewProps = {
     isVisible: boolean
@@ -75,19 +73,11 @@ export const useQRScannerView = ({
         }
     }, [isVisible])
 
-    const scannerOutput = useBarcodeScannerOutput({
-        barcodeFormats: BARCODE_FORMATS,
-        // Scan from the full-resolution camera buffer rather than the
-        // default 'preview' buffer. On Android the 'preview' path caps the
-        // ML Kit analysis frame at ~720p (see the package's
-        // HybridBarcodeScannerOutput), which lacks the pixels-per-module to
-        // decode dense QR codes (high version / long WalletConnect URIs) —
-        // they silently fail to scan while sparse codes still work. 'full'
-        // selects the highest available buffer, restoring the v4
-        // `useCodeScanner` reliability. iOS was unaffected (preview buffers
-        // there are preview-layer sized), but the option is cross-platform.
-        outputResolution: 'full',
-        onBarcodeScanned: barcodes => {
+    // Handlers passed down to QRCameraScanner, which wires them into the native
+    // barcode-scanner output. Memoised so the native output isn't recreated on
+    // every render.
+    const onBarcodeScanned = useCallback(
+        (barcodes: ScannedBarcode[]) => {
             try {
                 if (handlingRef.current) return
                 const url = barcodes.at(0)?.rawValue
@@ -140,10 +130,18 @@ export const useQRScannerView = ({
                 logger.error('QRScannerView: QR scanner error:', { error })
             }
         },
-        onError: error => {
-            logger.error('QRScannerView: barcode scanner failed:', { error })
-        },
-    })
+        [
+            isValidDeepLink,
+            handleDeepLink,
+            skipDeepLinkHandler,
+            onSuccess,
+            onClose,
+        ],
+    )
+
+    const onError = useCallback((error: Error) => {
+        logger.error('QRScannerView: barcode scanner failed:', { error })
+    }, [])
 
     useEffect(() => {
         if (hasPermission) {
@@ -165,9 +163,10 @@ export const useQRScannerView = ({
 
     return {
         hasPermission,
-        scannerOutput,
         scanningEnabled,
         permissionDenied,
         device,
+        onBarcodeScanned,
+        onError,
     }
 }

@@ -119,6 +119,14 @@ describe('usePeraCardOverview', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CardAddFunds')
     })
 
+    it('navigates to the full Transactions screen from "Show all"', () => {
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        result.current.onShowAllTransactions()
+
+        expect(mockNavigate).toHaveBeenCalledWith('CardTransactions')
+    })
+
     it('unwired action handlers surface the coming-soon toast', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 

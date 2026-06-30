@@ -10,15 +10,8 @@
  limitations under the License
  */
 
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import { type CardOnboardingStackParamList } from './card-onboarding/types'
-
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardSignIn: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
-    PeraCardAccount: undefined
-    CardAddFunds: undefined
-    CardConfirmSwap: { sourceAssetId: string; amount: string }
-    CardTransactions: undefined
-}
+export { installCardDevMocks } from './installCardDevMocks'
+export {
+    buildMockCardTransactions,
+    type MockCardTransaction,
+} from './mockCardTransactions'

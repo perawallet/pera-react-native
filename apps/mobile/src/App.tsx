@@ -69,6 +69,15 @@ import { RootComponent } from '@components/RootComponent'
 import '@modules/bottom-sheet/registrations'
 import * as SplashScreen from 'expo-splash-screen'
 
+// TODO(card): remove once the Baanx transactions sandbox returns data. Dev-only
+// transport mock so the card transaction list shows data; the dynamic import is
+// dead code in release builds (`__DEV__` is statically false), so it never ships.
+if (__DEV__) {
+    void import('@modules/card/devMocks').then(({ installCardDevMocks }) => {
+        installCardDevMocks()
+    })
+}
+
 // Keep the splash screen visible while we fetch resources
 void SplashScreen.preventAutoHideAsync()
 

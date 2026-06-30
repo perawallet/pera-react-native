@@ -13,29 +13,26 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        width: '100%',
-        gap: theme.spacing.lg,
-    },
-    section: {
-        gap: theme.spacing.md,
-    },
-    sectionTitle: {
-        color: theme.colors.textGray,
-        textTransform: 'uppercase',
-    },
-    unavailableText: {
-        color: theme.colors.warningText,
-    },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    rowText: {
+    list: {
         flex: 1,
     },
-    subtitle: {
-        color: theme.colors.textGray,
+    // flexGrow lets the empty/loading view fill the screen and center.
+    listContent: {
+        flexGrow: 1,
+        paddingBottom: theme.spacing.xl,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: theme.spacing['3xl'],
+    },
+    // PWScreen already insets the body horizontally; zero EmptyView's gutter.
+    emptyView: {
+        paddingHorizontal: 0,
+    },
+    loadingFooter: {
+        paddingVertical: theme.spacing.lg,
+        alignItems: 'center',
     },
 }))

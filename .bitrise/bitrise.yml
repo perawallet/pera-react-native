@@ -365,6 +365,25 @@ workflows:
                 ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
                 }}-{{ checksum "pnpm-lock.yaml" }}
             - paths: "~/Library/Developer/Xcode/DerivedData"
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Collect signed artifact
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                # Surface the signed IPA as a downloadable build artifact — it's
+                # otherwise only piped to TestFlight and discarded. Copying it
+                # into $BITRISE_DEPLOY_DIR makes deploy-to-bitrise-io upload it.
+                IPA="apps/mobile/build/ios/${BITRISE_SCHEME}.ipa"
+                if [ ! -f "$IPA" ]; then
+                  echo "No IPA at $IPA — skipping artifact collection"
+                  exit 0
+                fi
+                SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
+                DEST="${BITRISE_DEPLOY_DIR}/pera-ios-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}.ipa"
+                cp "$IPA" "$DEST"
+                envman add --key BITRISE_IPA_PATH --value "$DEST"
       - deploy-to-bitrise-io@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
@@ -718,6 +737,32 @@ workflows:
           inputs:
             - key: android-ccache-{{ checksum "pnpm-lock.yaml" }}
             - paths: "~/.ccache"
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Collect signed artifacts
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                # Surface the signed AAB/APK as downloadable build artifacts —
+                # they're otherwise only piped to Play/Firebase and discarded.
+                # Copying into $BITRISE_DEPLOY_DIR makes deploy-to-bitrise-io
+                # upload them. deploy_internal produces both; deploy_firebase, an APK.
+                SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
+                BASE="pera-android-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}"
+                AAB="apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
+                APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+                if [ -f "$AAB" ]; then
+                  cp "$AAB" "${BITRISE_DEPLOY_DIR}/${BASE}.aab"
+                  envman add --key BITRISE_AAB_PATH --value "${BITRISE_DEPLOY_DIR}/${BASE}.aab"
+                fi
+                if [ -f "$APK" ]; then
+                  cp "$APK" "${BITRISE_DEPLOY_DIR}/${BASE}.apk"
+                  envman add --key BITRISE_APK_PATH --value "${BITRISE_DEPLOY_DIR}/${BASE}.apk"
+                fi
+                if [ ! -f "$AAB" ] && [ ! -f "$APK" ]; then
+                  echo "No AAB/APK found — skipping artifact collection"
+                fi
       - deploy-to-bitrise-io@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
