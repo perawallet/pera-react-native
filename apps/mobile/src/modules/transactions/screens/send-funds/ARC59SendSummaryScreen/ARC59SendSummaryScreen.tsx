@@ -40,7 +40,7 @@ export const ARC59SendSummaryScreen = () => {
         handleSend,
         handleClose,
         handleReadMore,
-        sliderResetKey,
+        isProcessing,
     } = useARC59SendSummaryScreen()
 
     if (isLoading) {
@@ -52,9 +52,9 @@ export const ARC59SendSummaryScreen = () => {
             footer={
                 <PWView style={styles.footer}>
                     <PWSlideToConfirm
-                        key={sliderResetKey}
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleSend}
+                        isLoading={isProcessing}
                         isDisabled={!summary}
                         testID='arc59_send_confirm_slide'
                     />

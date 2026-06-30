@@ -11,7 +11,7 @@
  */
 
 import { type FC, useCallback, useEffect, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     useArc59SendSummaryQuery,
@@ -56,7 +56,7 @@ type UseARC59SendSummaryScreenResult = {
     handleSend: () => void
     handleClose: () => void
     handleReadMore: () => void
-    sliderResetKey: number
+    isProcessing: boolean
 }
 
 export const useARC59SendSummaryScreen =
@@ -117,16 +117,29 @@ export const useARC59SendSummaryScreen =
             ? toWholeUnits(summary.total_protocol_and_mbr_fee, ALGO_ASSET)
             : null
 
-        const [sliderResetKey, setSliderResetKey] = useState(0)
+        const [isProcessing, setIsProcessing] = useState(false)
+
+        // Returning to this screen (e.g. after the send fails on the processing
+        // screen) unlocks the slider so the user can try again.
+        useFocusEffect(
+            useCallback(() => {
+                setIsProcessing(false)
+            }, []),
+        )
 
         const showWarningSheet = useCallback(async () => {
-            setSliderResetKey(k => k + 1)
+            // Hold the slider in its slid/loading state while the warning sheet
+            // is open and through to the processing screen; only return it to
+            // idle if the user backs out (dismisses the warning).
+            setIsProcessing(true)
             const result = await requestBottomSheet<'confirm'>({
                 contents: <ARC59WarningContent />,
                 options: { size: 'auto', enablePanDownToClose: true },
             })
             if (result === 'confirm') {
                 navigation.navigate('TransactionProcessing')
+            } else {
+                setIsProcessing(false)
             }
         }, [requestBottomSheet, navigation])
 
@@ -156,6 +169,6 @@ export const useARC59SendSummaryScreen =
             handleSend,
             handleClose,
             handleReadMore,
-            sliderResetKey,
+            isProcessing,
         }
     }
