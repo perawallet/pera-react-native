@@ -22,6 +22,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: vi.fn(),
     useNetwork: vi.fn(),
 }))
+vi.mock('@algorandfoundation/algokit-utils', () => ({
+    // Identity passthrough: the populated ATC is the one we hand back from
+    // composer.build(), so buildGroup() resolves to the stub transactions.
+    populateAppCallResources: vi.fn(async (atc: unknown) => atc),
+}))
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         arc59: {
@@ -88,6 +93,7 @@ describe('useArc59SendTransaction', () => {
         newGroup: Mock
         getSuggestedParams: Mock
         createTransaction: { assetTransfer: Mock }
+        client: { algod: object }
     }
 
     const mockSuggestedParams = { minFee: 1000n }
@@ -96,12 +102,13 @@ describe('useArc59SendTransaction', () => {
         vi.clearAllMocks()
         arc59ClientConstructorArgs = []
 
+        const mockAtc = {
+            buildGroup: vi.fn().mockReturnValue([{ txn: STUB_TXN }]),
+        }
         mockComposer = {
             addPayment: vi.fn().mockReturnThis(),
             addAppCallMethodCall: vi.fn().mockReturnThis(),
-            build: vi
-                .fn()
-                .mockResolvedValue({ transactions: [{ txn: STUB_TXN }] }),
+            build: vi.fn().mockResolvedValue({ atc: mockAtc }),
         }
 
         mockParamsOptRouterIn = vi
@@ -117,6 +124,7 @@ describe('useArc59SendTransaction', () => {
             createTransaction: {
                 assetTransfer: vi.fn().mockResolvedValue('mock-axfer-txn'),
             },
+            client: { algod: {} },
         }
         ;(useAlgorandClient as Mock).mockReturnValue(mockAlgokit)
         ;(useNetwork as Mock).mockReturnValue({ isMainnet: false })

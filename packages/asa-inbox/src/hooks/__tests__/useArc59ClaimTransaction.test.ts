@@ -21,6 +21,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: vi.fn(),
     useNetwork: vi.fn(),
 }))
+vi.mock('@algorandfoundation/algokit-utils', () => ({
+    // Identity passthrough: the populated ATC is the one composer.build()
+    // returns, so buildGroup() resolves to the stub transactions.
+    populateAppCallResources: vi.fn(async (atc: unknown) => atc),
+}))
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         arc59: {
@@ -89,12 +94,13 @@ describe('useArc59ClaimTransaction', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
+        const mockAtc = {
+            buildGroup: vi.fn().mockReturnValue([{ txn: STUB_TXN }]),
+        }
         mockComposer = {
             addAppCallMethodCall: vi.fn().mockReturnThis(),
             addAssetOptIn: vi.fn().mockReturnThis(),
-            build: vi
-                .fn()
-                .mockResolvedValue({ transactions: [{ txn: STUB_TXN }] }),
+            build: vi.fn().mockResolvedValue({ atc: mockAtc }),
         }
 
         mockParamsClaimAlgo = vi
