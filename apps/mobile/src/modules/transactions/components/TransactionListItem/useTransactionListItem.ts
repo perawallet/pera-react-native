@@ -13,39 +13,18 @@
 import { useCallback, useMemo } from 'react'
 import { type Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import {
-    microAlgosToAlgos,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    ALGO_ASSET_NAME,
-    formatNumber,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
+import { type AmountDisplay } from './amounts'
+import { useTransactionAmounts } from './useTransactionAmounts'
 
-import type {
-    TransactionHistoryItem,
-    TransactionBalanceImpact,
-} from '@perawallet/wallet-core-transactions'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 
-/** Maximum number of stacked amounts shown in a list row before overflow. */
-const MAX_VISIBLE_AMOUNTS = 2
-
 type TFunction = ReturnType<typeof useLanguage>['t']
-
-export type AmountDisplay = {
-    /** Raw amount value for CurrencyAmount */
-    value: Decimal
-    /** Currency code (e.g., 'ALGO', 'USDC') */
-    currency: string
-    /** Prefix to show (e.g., '+', '-'). Also determines styling: '+' = positive (green), '-' = negative (red). Undefined for zero values. */
-    prefix?: '+' | '-'
-}
 
 export type UseTransactionListItemParams = {
     transaction: TransactionHistoryItem
@@ -60,69 +39,6 @@ export type UseTransactionListItemResult = {
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
     handlePress: () => void
-}
-
-/**
- * Creates an AmountDisplay for an ALGO amount.
- */
-const createAlgoAmount = (
-    microAlgos: Decimal,
-    isOutgoing: boolean,
-): AmountDisplay => {
-    const rawAmount = microAlgosToAlgos(microAlgos)
-    const absValue = rawAmount.abs()
-
-    return {
-        value: absValue,
-        currency: ALGO_ASSET_NAME,
-        prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
-    }
-}
-
-/**
- * Creates an AmountDisplay for an asset amount.
- */
-const createAssetAmount = (
-    amount: Decimal,
-    decimals: number,
-    unitName: string,
-    isOutgoing: boolean,
-): AmountDisplay => {
-    const safeDecimals = isNaN(decimals)
-        ? 0
-        : Math.max(0, Math.min(19, decimals))
-    const rawAmount = baseUnitsToDisplayUnits(amount, safeDecimals)
-    const absValue = rawAmount.abs()
-
-    return {
-        value: absValue,
-        currency: unitName,
-        prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
-    }
-}
-
-/**
- * Creates an AmountDisplay from a backend-computed balance impact. The impact
- * amount is signed (negative = sent, positive = received), so the direction is
- * read from its sign rather than from the account being sender/receiver.
- */
-const createBalanceImpactAmount = (
-    impact: TransactionBalanceImpact,
-): AmountDisplay => {
-    const safeDecimals = isNaN(impact.fractionDecimals)
-        ? 0
-        : Math.max(0, Math.min(19, impact.fractionDecimals))
-    const absValue = baseUnitsToDisplayUnits(impact.amount.abs(), safeDecimals)
-
-    return {
-        value: absValue,
-        currency: impact.unitName,
-        prefix: impact.amount.isZero()
-            ? undefined
-            : impact.amount.isNegative()
-              ? '-'
-              : '+',
-    }
 }
 
 const formatAmount = (baseUnits: Decimal, decimals: number): string => {
@@ -195,8 +111,6 @@ export const useTransactionListItem = ({
     const account = useSelectedAccount()
     const { t } = useLanguage()
     const userAddress = account?.address ?? ''
-    const assetId = transaction.asset?.assetId?.toString() ?? ''
-    const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
 
     const isOutgoing = useMemo(
         () => transaction.sender === userAddress,
@@ -256,68 +170,7 @@ export const useTransactionListItem = ({
         return null
     }, [transaction, counterpartyAddress, counterpartyDisplayName])
 
-    const allAmounts = useMemo((): AmountDisplay[] => {
-        const result: AmountDisplay[] = []
-
-        // Handle swap transactions
-        if (transaction.swapGroupDetail) {
-            const { amountOut, assetOutUnitName } = transaction.swapGroupDetail
-            const rawAmount = baseUnitsToDisplayUnits(amountOut || 0, 6)
-            const absValue = rawAmount.abs()
-
-            result.push({
-                value: absValue,
-                currency: assetOutUnitName,
-                prefix: absValue.isZero() ? undefined : '+',
-            })
-            return result
-        }
-
-        // Handle payment transactions
-        if (transaction.txType === 'pay' && transaction.amount) {
-            result.push(createAlgoAmount(transaction.amount, isOutgoing))
-        }
-
-        // Handle asset transfers
-        if (transaction.txType === 'axfer' && transaction.asset) {
-            const decimals =
-                assetDetails?.decimals ?? transaction.asset.decimals
-            const unitName =
-                assetDetails?.unitName ?? transaction.asset.unitName
-            if (transaction.amount) {
-                result.push(
-                    createAssetAmount(
-                        transaction.amount,
-                        decimals,
-                        unitName,
-                        isOutgoing,
-                    ),
-                )
-            }
-        }
-
-        // For app calls, surface the account's net per-asset balance impact
-        // (sent/received) across the call and its inner transactions. The
-        // backend already nets these, so we render them directly with the sign
-        // determining direction.
-        if (transaction.txType === 'appl') {
-            transaction.balanceImpacts.forEach(impact => {
-                result.push(createBalanceImpactAmount(impact))
-            })
-        }
-
-        return result
-    }, [transaction, isOutgoing, assetDetails])
-
-    const amounts = useMemo(
-        () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),
-        [allAmounts],
-    )
-
-    const amountsOverflowCount = Math.max(
-        0,
-        allAmounts.length - MAX_VISIBLE_AMOUNTS,
-    )
+    const { amounts, amountsOverflowCount } = useTransactionAmounts(transaction)
 
     const handlePress = useCallback(() => {
         onPress?.(transaction)

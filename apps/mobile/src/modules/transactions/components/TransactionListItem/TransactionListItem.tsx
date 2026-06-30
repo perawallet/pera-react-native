@@ -16,10 +16,8 @@ import { TransactionIcon } from '@modules/transactions/components/TransactionIco
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import {
-    useTransactionListItem,
-    type AmountDisplay,
-} from './useTransactionListItem'
+import { useTransactionListItem } from './useTransactionListItem'
+import { type AmountDisplay } from './amounts'
 
 export type TransactionListItemProps = {
     /** The transaction data to display */
