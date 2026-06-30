@@ -14,11 +14,10 @@ import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import {
-    useTransactionListItem,
-    type AmountDisplay,
-} from './useTransactionListItem'
+import { useTransactionListItem } from './useTransactionListItem'
+import { type AmountDisplay } from './amounts'
 
 export type TransactionListItemProps = {
     /** The transaction data to display */
@@ -32,11 +31,18 @@ export const TransactionListItem = ({
     onPress,
 }: TransactionListItemProps) => {
     const styles = useStyles()
-    const { iconType, title, subtitle, amounts, handlePress } =
-        useTransactionListItem({
-            transaction,
-            onPress,
-        })
+    const { t } = useLanguage()
+    const {
+        iconType,
+        title,
+        subtitle,
+        amounts,
+        amountsOverflowCount,
+        handlePress,
+    } = useTransactionListItem({
+        transaction,
+        onPress,
+    })
 
     const getAmountStyle = (amount: AmountDisplay) => {
         if (amount.prefix === '+') return styles.amountPositive
@@ -70,6 +76,13 @@ export const TransactionListItem = ({
                             variant='h4'
                         />
                     ))}
+                    {amountsOverflowCount > 0 && (
+                        <PWText style={styles.amountOverflow}>
+                            {t('transactions.list_item.more_impacts', {
+                                count: amountsOverflowCount,
+                            })}
+                        </PWText>
+                    )}
                 </PWView>
             }
         >

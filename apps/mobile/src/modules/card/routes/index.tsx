@@ -22,6 +22,7 @@ import { CardSignInScreen } from '../screens/CardSignInScreen'
 import { PeraCardAccountScreen } from '../screens/PeraCardAccountScreen'
 import { CardAddFundsScreen } from '../screens/CardAddFundsScreen'
 import { CardConfirmSwapScreen } from '../screens/CardConfirmSwapScreen'
+import { CardTransactionsScreen } from '../screens/CardTransactionsScreen'
 import { CardOnboardingStackNavigator } from './card-onboarding'
 import { type PeraCardStackParamList } from './types'
 
@@ -71,6 +72,11 @@ export const PeraCardStackNavigator = () => {
                 name='CardConfirmSwap'
                 options={{ title: 'peraCard.confirm_swap.navigation_title' }}
                 component={CardConfirmSwapScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardTransactions'
+                options={{ title: 'peraCard.transactions.navigation_title' }}
+                component={CardTransactionsScreen}
             />
         </PeraCardStack.Navigator>
     )

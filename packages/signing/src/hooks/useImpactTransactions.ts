@@ -22,6 +22,13 @@ type UseImpactTransactionsResult = {
     transactions: PeraDisplayableTransaction[]
     signableAddresses: Set<string>
     isSimulating: boolean
+    /**
+     * Simulation was needed (the group has an app call) but failed, so the
+     * inner transactions are missing and the computed impact is incomplete —
+     * the spend side may be shown but the receive side is unknown. Consumers
+     * should surface this rather than present a partial impact as complete.
+     */
+    simulationFailed: boolean
 }
 
 /**
@@ -70,5 +77,6 @@ export const useImpactTransactions = (): UseImpactTransactionsResult => {
         transactions,
         signableAddresses,
         isSimulating: hasAppCall && simulation.isFetching,
+        simulationFailed: hasAppCall && simulation.isError,
     }
 }

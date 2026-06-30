@@ -50,11 +50,6 @@ vi.mock('@hooks/useAppNavigation', () => ({
 vi.mock('@hooks/useImagePicker', () => ({
     useImagePicker: () => ({
         pickFromGallery: mockPickFromGallery,
-        permissionDenied: {
-            isVisible: false,
-            close: vi.fn(),
-            openSettings: vi.fn(),
-        },
     }),
 }))
 

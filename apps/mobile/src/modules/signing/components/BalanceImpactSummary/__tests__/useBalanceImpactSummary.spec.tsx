@@ -89,11 +89,13 @@ const closeAlgo = {
 const mockTransactions = (
     transactions: PeraDisplayableTransaction[],
     isSimulating = false,
+    simulationFailed = false,
 ) => {
     vi.mocked(useImpactTransactions).mockReturnValue({
         transactions,
         signableAddresses: new Set([USER]),
         isSimulating,
+        simulationFailed,
     })
 }
 
@@ -155,6 +157,14 @@ describe('useBalanceImpactSummary', () => {
         const { result } = renderHook(() => useBalanceImpactSummary())
 
         expect(result.current.isSimulating).toBe(true)
+    })
+
+    it('passes through the simulation-failed flag', () => {
+        mockTransactions([spendAlgo], false, true)
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        expect(result.current.simulationFailed).toBe(true)
     })
 
     it('surfaces a close-remainder sweep as a full-balance spend row', () => {

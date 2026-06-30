@@ -20,4 +20,5 @@ export type PeraCardStackParamList = {
     PeraCardAccount: undefined
     CardAddFunds: undefined
     CardConfirmSwap: { sourceAssetId: string; amount: string }
+    CardTransactions: undefined
 }

@@ -662,13 +662,6 @@
             "unsupported_url": "Unsupported URL: {{url}}"
         }
     },
-    "image_picker": {
-        "permission_title": "Photo library access needed",
-        "permission_body": "Pera needs permission to access your photo library so you can pick a contact avatar. Open Settings to enable it.",
-        "open_settings": {
-            "label": "Open Settings"
-        }
-    },
     "menu": {
         "title": "Menu",
         "staking": "Staking",
@@ -741,6 +734,22 @@
             "cancel_card": "Cancel Card",
             "error_title": "Something went wrong",
             "error_body": "Please try again."
+        },
+        "transactions": {
+            "navigation_title": "Transactions",
+            "kind_payment": "Payment",
+            "kind_refund": "Refund",
+            "kind_deposit": "Deposit",
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "days_ago": "{{days}} days ago",
+            "status_pending": "Pending",
+            "status_declined": "Declined",
+            "status_reverted": "Reverted",
+            "export_accessibility_label": "Export statement",
+            "error_title": "Couldn't load transactions",
+            "error_body": "Please try again.",
+            "retry": "Try again"
         },
         "add_funds": {
             "navigation_title": "Add Funds",
@@ -2002,6 +2011,7 @@
             "receive_title": "You will receive",
             "spend_title": "You will spend",
             "analyzing": "Analyzing transaction…",
+            "unavailable": "Unable to preview balance impact — review the transaction details carefully before signing.",
             "entire_balance": "Entire {{unit}} balance",
             "closes_balance": "Your full remaining balance is sent"
         },
@@ -2127,7 +2137,8 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "key_registration": "Key Registration",
-            "default": "Transaction"
+            "default": "Transaction",
+            "more_impacts": "Show {{count}} more"
         },
         "type": {
             "pay": "Payment Transaction",

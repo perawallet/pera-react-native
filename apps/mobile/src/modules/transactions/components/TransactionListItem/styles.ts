@@ -41,5 +41,9 @@ export const useStyles = makeStyles(theme => {
         amountNegative: {
             color: theme.colors.negative,
         },
+        amountOverflow: {
+            color: theme.colors.textGray,
+            marginTop: theme.spacing.xxs,
+        },
     }
 })

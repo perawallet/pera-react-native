@@ -89,6 +89,7 @@ const TX_PAYMENT: TransactionHistoryItem = {
     asset: null,
     applicationId: null,
     innerTransactionCount: null,
+    balanceImpacts: [],
 }
 
 const TX_ASSET_TRANSFER: TransactionHistoryItem = {
@@ -112,6 +113,7 @@ const TX_ASSET_TRANSFER: TransactionHistoryItem = {
     },
     applicationId: null,
     innerTransactionCount: null,
+    balanceImpacts: [],
 }
 
 describe('Flow: View transactions → tap into details', () => {
@@ -283,6 +285,7 @@ describe('Flow: View transactions → tap into details', () => {
                     asset: null,
                     applicationId: null,
                     innerTransactionCount: null,
+                    balanceImpacts: [],
                 }),
             )
             await upsertTransactions({
