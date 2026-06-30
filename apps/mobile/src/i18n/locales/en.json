@@ -2144,7 +2144,8 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "key_registration": "Key Registration",
-            "default": "Transaction"
+            "default": "Transaction",
+            "more_impacts": "Show {{count}} more"
         },
         "type": {
             "pay": "Payment Transaction",

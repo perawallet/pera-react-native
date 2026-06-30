@@ -30,6 +30,7 @@ export const TransactionsSchema = sqliteTable('transactions', {
     assetJson: text('asset_json'),
     swapGroupDetailJson: text('swap_group_detail_json'),
     interpretedMeaningJson: text('interpreted_meaning_json'),
+    balanceImpactsJson: text('balance_impacts_json'),
     updatedAt: integer('updated_at').notNull(),
 })
 

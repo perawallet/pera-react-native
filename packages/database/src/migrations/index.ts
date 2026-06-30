@@ -13,9 +13,11 @@
 import type { MigrationConfig } from '../migrator'
 
 import m0000 from './0000_initial.sql?raw'
+import m0001 from './0001_add_balance_impacts.sql?raw'
 
 const migrations: MigrationConfig = {
     '0000_initial': m0000,
+    '0001_add_balance_impacts': m0001,
 }
 
 export default migrations

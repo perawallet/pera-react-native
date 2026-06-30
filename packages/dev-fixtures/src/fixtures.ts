@@ -250,4 +250,5 @@ export const mockTransaction: TransactionHistoryItem = {
     asset: null,
     applicationId: null,
     innerTransactionCount: null,
+    balanceImpacts: [],
 }
