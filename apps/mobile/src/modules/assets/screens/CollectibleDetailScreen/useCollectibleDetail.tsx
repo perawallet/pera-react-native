@@ -246,7 +246,11 @@ export const useCollectibleDetail = (
         if (!saveableMediaUrl) return
 
         try {
-            const { status } = await MediaLibrary.requestPermissionsAsync()
+            // writeOnly: we only save to the gallery, never read it. On
+            // Android 13+ this needs no runtime permission (scoped MediaStore
+            // write), so the app doesn't request READ_MEDIA_IMAGES — which Play
+            // gates under its Photo & Video Permissions policy.
+            const { status } = await MediaLibrary.requestPermissionsAsync(true)
 
             if (status !== 'granted') {
                 showToast({

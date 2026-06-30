@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import * as ImagePicker from 'expo-image-picker'
-import { Linking } from 'react-native'
 import { useImagePicker } from '../useImagePicker'
 
+// Only the system photo picker is mocked. The hook requests no media-library
+// permission, so if it tried to, the (undefined) permission fns would throw —
+// these tests passing is itself proof the permission path is gone.
 vi.mock('expo-image-picker', () => ({
-    getMediaLibraryPermissionsAsync: vi.fn(),
-    requestMediaLibraryPermissionsAsync: vi.fn(),
     launchImageLibraryAsync: vi.fn(),
 }))
 
@@ -27,15 +27,7 @@ describe('useImagePicker', () => {
         vi.clearAllMocks()
     })
 
-    it('returns the picked URI when permission is granted and user selects', async () => {
-        vi.mocked(
-            ImagePicker.getMediaLibraryPermissionsAsync,
-        ).mockResolvedValue({
-            granted: true,
-            canAskAgain: true,
-        } as Awaited<
-            ReturnType<typeof ImagePicker.getMediaLibraryPermissionsAsync>
-        >)
+    it('opens the system photo picker and returns the picked URI', async () => {
         vi.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
             canceled: false,
             assets: [{ uri: 'file:///tmp/photo.jpg' }],
@@ -45,95 +37,16 @@ describe('useImagePicker', () => {
         const uri = await result.current.pickFromGallery()
 
         expect(uri).toBe('file:///tmp/photo.jpg')
+        expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledTimes(1)
     })
 
-    it('returns null when user cancels the picker', async () => {
-        vi.mocked(
-            ImagePicker.getMediaLibraryPermissionsAsync,
-        ).mockResolvedValue({
-            granted: true,
-            canAskAgain: true,
-        } as Awaited<
-            ReturnType<typeof ImagePicker.getMediaLibraryPermissionsAsync>
-        >)
+    it('returns null when the user cancels the picker', async () => {
         vi.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({
             canceled: true,
         } as Awaited<ReturnType<typeof ImagePicker.launchImageLibraryAsync>>)
 
         const { result } = renderHook(() => useImagePicker())
-        const uri = await result.current.pickFromGallery()
 
-        expect(uri).toBeNull()
-    })
-
-    it('exposes the permission-denied state when permission is not reprompt-able', async () => {
-        vi.mocked(
-            ImagePicker.getMediaLibraryPermissionsAsync,
-        ).mockResolvedValue({
-            granted: false,
-            canAskAgain: false,
-        } as Awaited<
-            ReturnType<typeof ImagePicker.getMediaLibraryPermissionsAsync>
-        >)
-
-        const { result } = renderHook(() => useImagePicker())
-        expect(result.current.permissionDenied.isVisible).toBe(false)
-
-        let uri: string | null = null
-        await act(async () => {
-            uri = await result.current.pickFromGallery()
-        })
-
-        expect(uri).toBeNull()
-        expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled()
-        expect(result.current.permissionDenied.isVisible).toBe(true)
-    })
-
-    it('hides the permission-denied state when close is called', async () => {
-        vi.mocked(
-            ImagePicker.getMediaLibraryPermissionsAsync,
-        ).mockResolvedValue({
-            granted: false,
-            canAskAgain: false,
-        } as Awaited<
-            ReturnType<typeof ImagePicker.getMediaLibraryPermissionsAsync>
-        >)
-
-        const { result } = renderHook(() => useImagePicker())
-        await act(async () => {
-            await result.current.pickFromGallery()
-        })
-        expect(result.current.permissionDenied.isVisible).toBe(true)
-
-        act(() => {
-            result.current.permissionDenied.close()
-        })
-        expect(result.current.permissionDenied.isVisible).toBe(false)
-    })
-
-    it('invokes Linking.openSettings and hides the sheet when openSettings is called', async () => {
-        vi.mocked(
-            ImagePicker.getMediaLibraryPermissionsAsync,
-        ).mockResolvedValue({
-            granted: false,
-            canAskAgain: false,
-        } as Awaited<
-            ReturnType<typeof ImagePicker.getMediaLibraryPermissionsAsync>
-        >)
-        const openSettingsSpy = vi
-            .spyOn(Linking, 'openSettings')
-            .mockResolvedValue(undefined)
-
-        const { result } = renderHook(() => useImagePicker())
-        await act(async () => {
-            await result.current.pickFromGallery()
-        })
-
-        act(() => {
-            result.current.permissionDenied.openSettings()
-        })
-
-        expect(openSettingsSpy).toHaveBeenCalledTimes(1)
-        expect(result.current.permissionDenied.isVisible).toBe(false)
+        expect(await result.current.pickFromGallery()).toBeNull()
     })
 })

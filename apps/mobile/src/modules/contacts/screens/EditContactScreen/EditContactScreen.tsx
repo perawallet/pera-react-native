@@ -16,7 +16,6 @@ import { Keyboard } from 'react-native'
 import { PWButton, PWScreen } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { ContactForm } from '@components/ContactForm'
-import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -35,7 +34,6 @@ export const EditContactScreen = () => {
         nfd,
         onAddressInputChange,
         onPickImage,
-        permissionDenied,
         save,
         removeContact,
     } = useEditContactForm()
@@ -104,11 +102,6 @@ export const EditContactScreen = () => {
                 rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
                 onPickImage={() => void onPickImage()}
-            />
-            <PhotoPermissionDeniedSheet
-                isVisible={permissionDenied.isVisible}
-                onClose={permissionDenied.close}
-                onOpenSettings={permissionDenied.openSettings}
             />
         </PWScreen>
     )
