@@ -15,12 +15,9 @@ import { Platform } from 'react-native'
 
 // PWText disables Android's font padding globally, which clips glyph descenders
 // (g, y, p) on the final line of a multi-line/centered message. Re-enable it
-// for the empty-state text so descenders aren't cut off.
-const androidFontPaddingFix = Platform.select({
-    android: { includeFontPadding: true },
-    default: {},
-})
-
+// for the empty-state text so descenders aren't cut off. Computed inside
+// `makeStyles` (render time) rather than at module scope so importing this file
+// never evaluates `Platform.select` at import time.
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
@@ -49,13 +46,13 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         width: '100%',
         minWidth: 0,
-        ...androidFontPaddingFix,
+        ...Platform.select({ android: { includeFontPadding: true } }),
     },
     titleText: {
         color: theme.colors.textMain,
         textAlign: 'center',
         width: '100%',
         minWidth: 0,
-        ...androidFontPaddingFix,
+        ...Platform.select({ android: { includeFontPadding: true } }),
     },
 }))
