@@ -57,6 +57,7 @@ describe('useQRScannerView', () => {
             'qr',
             expect.any(Function),
             expect.any(Function),
+            expect.any(Function),
         )
         expect(onSuccess).not.toHaveBeenCalled()
     })
