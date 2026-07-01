@@ -36,10 +36,10 @@ export const useVerifyEmailMutation = (): UseVerifyEmailMutationResult => {
         VerifyEmailVariables
     >({
         mutationFn: variables => verifyEmail({ ...variables, network }),
-        // Store the onboarding id every later step requires. The step does NOT
-        // advance here: the phone screens already ran (UI order is phone →
-        // password), and the deferred phone/verify that follows this call at
-        // the password step advances to Verification.
+        // Store the onboarding id every later step requires. The step isn't
+        // advanced here — this runs on the password screen (right after email
+        // verification, before the phone steps); the phone/send and phone/verify
+        // that follow move the step forward.
         onSuccess: ({ onboardingId }) => {
             useCardStore.getState().setOnboardingId(onboardingId)
         },

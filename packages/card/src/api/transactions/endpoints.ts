@@ -57,6 +57,7 @@ export const fetchCardTransactions = async (
         network,
         method: 'GET',
         path: '/v1/card/transactions',
+        authenticated: true,
         params: { page, ...buildFilterParams(filters) },
         signal,
     })
@@ -90,6 +91,7 @@ export const exportCardStatement = async (
         network,
         method: 'GET',
         path: '/v1/card/transactions/statement',
+        authenticated: true,
         params: dateParams,
         headers: { Accept: STATEMENT_ACCEPT[format] },
         responseType: 'blob',

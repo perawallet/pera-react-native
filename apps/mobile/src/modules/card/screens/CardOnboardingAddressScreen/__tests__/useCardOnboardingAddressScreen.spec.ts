@@ -24,7 +24,6 @@ const mockMutateAsync = vi.fn()
 const mockConsentMutateAsync = vi.fn()
 const mockLinkMutateAsync = vi.fn()
 const mockSetCountryIso = vi.fn()
-const mockSetAllowMarketing = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockOnboardingStep: OnboardingStep = OnboardingStep.EmailSend
 let mockCountryIso: string | null = 'GB'
@@ -86,8 +85,8 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 onboardingStep: OnboardingStep
                 countryIso: string | null
                 allowMarketing: boolean
+                allowSms: boolean
                 setCountryIso: (iso: string) => void
-                setAllowMarketing: (allow: boolean) => void
             }) => unknown,
         ) =>
             selector({
@@ -95,8 +94,8 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 onboardingStep: mockOnboardingStep,
                 countryIso: mockCountryIso,
                 allowMarketing: true,
+                allowSms: true,
                 setCountryIso: mockSetCountryIso,
-                setAllowMarketing: mockSetAllowMarketing,
             }),
     }
 })
@@ -219,19 +218,15 @@ describe('useCardOnboardingAddressScreen', () => {
         )
     })
 
-    it('toggles the consent checkboxes', () => {
+    it('toggles the T&C checkboxes', () => {
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
 
-        expect(result.current.allowMarketing).toBe(true)
         expect(result.current.cardTermsAccepted).toBe(false)
         expect(result.current.platformTermsAccepted).toBe(false)
 
-        act(() => result.current.handleToggleMarketing())
         act(() => result.current.handleToggleCardTerms())
         act(() => result.current.handleTogglePlatformTerms())
 
-        // Marketing consent is persisted to the card store, not local state.
-        expect(mockSetAllowMarketing).toHaveBeenCalledWith(false)
         expect(result.current.cardTermsAccepted).toBe(true)
         expect(result.current.platformTermsAccepted).toBe(true)
     })

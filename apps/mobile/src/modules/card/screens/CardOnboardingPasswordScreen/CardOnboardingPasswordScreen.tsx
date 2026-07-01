@@ -12,6 +12,7 @@
 
 import { Controller } from 'react-hook-form'
 import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
+import { CardConsentCheckboxRow } from '@modules/card/components/CardConsentCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { PasswordRequirements } from './PasswordRequirements'
 import { useCardOnboardingPasswordScreen } from './useCardOnboardingPasswordScreen'
@@ -20,8 +21,18 @@ import { useStyles } from './styles'
 export const CardOnboardingPasswordScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { control, errors, password, isValid, isSubmitting, handleConfirm } =
-        useCardOnboardingPasswordScreen()
+    const {
+        control,
+        errors,
+        password,
+        isValid,
+        isSubmitting,
+        allowMarketing,
+        allowSms,
+        handleToggleMarketing,
+        handleToggleSms,
+        handleConfirm,
+    } = useCardOnboardingPasswordScreen()
 
     return (
         <PWScreen>
@@ -79,6 +90,26 @@ export const CardOnboardingPasswordScreen = () => {
                         />
 
                         <PasswordRequirements password={password} />
+                    </PWView>
+
+                    <PWView style={styles.checkboxes}>
+                        {/* SMS consent is required by Baanx (gates Continue), so
+                            it comes first; marketing is optional. */}
+                        <CardConsentCheckboxRow
+                            checked={allowSms}
+                            onPress={handleToggleSms}
+                            testID='card-onboarding-password-sms-checkbox'
+                        >
+                            {t('peraCard.create_password.sms_opt_in')}
+                        </CardConsentCheckboxRow>
+
+                        <CardConsentCheckboxRow
+                            checked={allowMarketing}
+                            onPress={handleToggleMarketing}
+                            testID='card-onboarding-password-marketing-checkbox'
+                        >
+                            {t('peraCard.create_password.marketing_opt_in')}
+                        </CardConsentCheckboxRow>
                     </PWView>
                 </PWView>
 

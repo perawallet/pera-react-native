@@ -39,6 +39,7 @@ export const fetchCardDetailsToken = async (
         network: params.network,
         method: 'POST',
         path: '/v1/card/details/token',
+        authenticated: true,
         signal: params.signal,
     })
     return transformCardSecureView(
@@ -54,6 +55,7 @@ export const fetchCardPinToken = async (
         network: params.network,
         method: 'POST',
         path: '/v1/card/pin/token',
+        authenticated: true,
         signal: params.signal,
     })
     return transformCardSecureView(
@@ -72,6 +74,7 @@ export const createSetPinSession = async (
         network: params.network,
         method: 'POST',
         path: '/v1/card/set-pin/token',
+        authenticated: true,
         signal: params.signal,
     })
     return transformCardSetPinSession(

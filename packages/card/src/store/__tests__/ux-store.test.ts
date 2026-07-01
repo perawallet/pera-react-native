@@ -66,18 +66,16 @@ describe('useCardStore', () => {
         expect(result.current.phoneNumber).toBe('7400846282')
     })
 
-    test('the verification codes are transient — never persisted', async () => {
+    test('the verification code is transient — never persisted', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
 
         act(() => {
             result.current.setVerificationCode('123456')
-            result.current.setPhoneVerificationCode('654321')
         })
 
         expect(result.current.verificationCode).toBe('123456')
-        expect(result.current.phoneVerificationCode).toBe('654321')
-        // The persisted snapshot must exclude both OTPs.
+        // The persisted snapshot must exclude the OTP.
         const persisted = (
             useCardStore as unknown as {
                 persist: {
@@ -90,7 +88,6 @@ describe('useCardStore', () => {
             .getOptions()
             .partialize?.(useCardStore.getState())
         expect(persisted).not.toHaveProperty('verificationCode')
-        expect(persisted).not.toHaveProperty('phoneVerificationCode')
     })
 
     test('setCodeVerificationError is transient and clears on reset', async () => {
@@ -171,15 +168,21 @@ describe('useCardStore', () => {
         expect(result.current.phoneNumber).toBeNull()
     })
 
-    test('setAllowMarketing updates the consent flag (defaults to opted-in)', async () => {
+    test('setAllowMarketing / setAllowSms update the consent flags (default off)', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
 
-        expect(result.current.allowMarketing).toBe(true)
-
-        act(() => result.current.setAllowMarketing(false))
-
+        // Consent opt-ins default OFF — ticked explicitly on the Set-Password screen.
         expect(result.current.allowMarketing).toBe(false)
+        expect(result.current.allowSms).toBe(false)
+
+        act(() => {
+            result.current.setAllowMarketing(true)
+            result.current.setAllowSms(true)
+        })
+
+        expect(result.current.allowMarketing).toBe(true)
+        expect(result.current.allowSms).toBe(true)
     })
 
     test('setSelectedFundingType stores (and persists) the chosen funding type', async () => {
@@ -249,7 +252,8 @@ describe('useCardStore', () => {
             result.current.setConsentSetId('cs_1')
             result.current.setConnectedFundingSourceAddress('ADDR1')
             result.current.setSelectedFundingType(FundingType.Auto)
-            result.current.setAllowMarketing(false)
+            result.current.setAllowMarketing(true)
+            result.current.setAllowSms(true)
             // Card-snapshot / filters should survive a fresh sign-up.
             result.current.setCardSnapshot({
                 cardId: 'card_1',
@@ -281,7 +285,8 @@ describe('useCardStore', () => {
         expect(result.current.consentSetId).toBeNull()
         expect(result.current.connectedFundingSourceAddress).toBeNull()
         expect(result.current.selectedFundingType).toBeNull()
-        expect(result.current.allowMarketing).toBe(true)
+        expect(result.current.allowMarketing).toBe(false)
+        expect(result.current.allowSms).toBe(false)
         // Card snapshot / filters preserved.
         expect(result.current.cardId).toBe('card_1')
         expect(result.current.lastKnownStatus).toBe(CardStatus.Active)

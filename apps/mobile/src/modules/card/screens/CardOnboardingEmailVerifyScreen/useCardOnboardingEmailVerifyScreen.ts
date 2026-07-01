@@ -101,15 +101,15 @@ export const useCardOnboardingEmailVerifyScreen =
         }, [sendEmailVerification, email, restart, errorToast, t])
 
         // This screen can't validate the code itself: the real email/verify
-        // (which also sets the password) only fires on the password screen. So a
-        // full code is just stashed and the flow continues with the phone steps;
-        // a wrong code surfaces later when email/verify runs.
+        // (which also sets the password) only fires on the password screen — the
+        // very next step. So the full code is stashed for it to submit while the
+        // code is still fresh; a wrong code surfaces there.
         const handleConfirm = useCallback(
             (submittedCode?: string) => {
                 const value = (submittedCode ?? code).trim()
                 if (value.length !== CARD_VERIFICATION_CODE_LENGTH) return
                 setVerificationCode(value)
-                navigation.navigate('CardOnboardingPhone')
+                navigation.navigate('CardOnboardingPassword')
             },
             [code, navigation, setVerificationCode],
         )

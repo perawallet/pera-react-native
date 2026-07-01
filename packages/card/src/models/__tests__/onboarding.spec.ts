@@ -26,7 +26,7 @@ const parse = (password: string, confirmPassword = password) =>
 
 describe('passwordSetSchema', () => {
     it('accepts a password meeting every rule', () => {
-        expect(parse('Passw0rd!').success).toBe(true)
+        expect(parse('Passw0rd!Longer1').success).toBe(true)
     })
 
     it.each([
@@ -40,7 +40,7 @@ describe('passwordSetSchema', () => {
     })
 
     it('rejects when the confirmation does not match', () => {
-        const result = parse('Passw0rd!', 'Passw0rd?')
+        const result = parse('Passw0rd!Longer1', 'Passw0rd!Longer2')
 
         expect(result.success).toBe(false)
         if (!result.success) {
@@ -51,7 +51,9 @@ describe('passwordSetSchema', () => {
 
 describe('PASSWORD_RULES', () => {
     it('every rule passes for a fully valid password', () => {
-        expect(PASSWORD_RULES.every(rule => rule.test('Passw0rd!'))).toBe(true)
+        expect(
+            PASSWORD_RULES.every(rule => rule.test('Passw0rd!Longer1')),
+        ).toBe(true)
     })
 
     it.each([
@@ -70,7 +72,7 @@ describe('PASSWORD_RULES', () => {
     it('stays in lockstep with passwordSetSchema', () => {
         // A password that satisfies every rule must parse, and one that fails a
         // rule must not — guarding the derived-schema parity.
-        expect(parse('Passw0rd!').success).toBe(true)
+        expect(parse('Passw0rd!Longer1').success).toBe(true)
         expect(parse('passw0rd!').success).toBe(false)
     })
 })

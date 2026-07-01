@@ -58,9 +58,6 @@ export const useCardOnboardingPhoneVerifyScreen =
         const contactVerificationId = useCardStore(
             state => state.contactVerificationId,
         )
-        const setPhoneVerificationCode = useCardStore(
-            state => state.setPhoneVerificationCode,
-        )
         const codeVerificationError = useCardStore(
             state => state.codeVerificationError,
         )
@@ -130,11 +127,9 @@ export const useCardOnboardingPhoneVerifyScreen =
             t,
         ])
 
-        // The real phone/verify call needs the onboardingId email/verify
-        // returns, and email/verify fires at the PASSWORD step (it carries the
-        // password) — so on the first pass the code is stashed for the password
-        // screen to verify. After the password step (retry path: the deferred
-        // verify failed), onboardingId exists and the call fires here directly.
+        // email/verify (which issues the onboardingId phone/verify needs) runs
+        // on the password screen, before these phone steps — so the onboardingId
+        // is already set and the code is verified directly with a fresh OTP.
         const handleConfirm = useCallback(
             (submittedCode?: string) => {
                 const value = (submittedCode ?? code).trim()
@@ -152,8 +147,12 @@ export const useCardOnboardingPhoneVerifyScreen =
                     return
                 }
                 if (onboardingId === null) {
-                    // First pass: stash the code; the password step verifies it.
-                    setPhoneVerificationCode(value)
+                    // Shouldn't happen (the password step sets it), but without
+                    // it phone/verify can't run — send the user back to it.
+                    errorToast(
+                        t('peraCard.verify_phone.verify_error_title'),
+                        t('peraCard.verify_phone.verify_error_body'),
+                    )
                     navigation.navigate('CardOnboardingPassword')
                     return
                 }
@@ -192,7 +191,6 @@ export const useCardOnboardingPhoneVerifyScreen =
                 phoneCountryCode,
                 phoneNumber,
                 contactVerificationId,
-                setPhoneVerificationCode,
                 setCodeVerificationError,
                 verifyPhone,
                 errorToast,

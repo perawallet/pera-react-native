@@ -37,11 +37,12 @@ describe('buildOnboardingConsentBody', () => {
         termsAccepted: true,
     }
 
-    it('builds the global policy consents (no eSignAct) with marketing granted', () => {
+    it('builds the global policy consents (no eSignAct) with everything granted', () => {
         const body = buildOnboardingConsentBody({
             ...base,
             policyType: 'global',
             allowMarketing: true,
+            allowSms: true,
         })
 
         expect(body).toEqual({
@@ -60,33 +61,34 @@ describe('buildOnboardingConsentBody', () => {
         })
     })
 
-    it('denies every notification channel when marketing is off', () => {
+    it('maps the SMS consent independently of marketing', () => {
+        // Marketing off but SMS on: only smsNotifications is granted among the
+        // notification channels (marketing + email follow allowMarketing).
         const body = buildOnboardingConsentBody({
             ...base,
             policyType: 'global',
             allowMarketing: false,
+            allowSms: true,
         })
 
-        const denied = body.consents.filter(
-            consent => consent.consentStatus === 'denied',
+        const byType = Object.fromEntries(
+            body.consents.map(consent => [
+                consent.consentType,
+                consent.consentStatus,
+            ]),
         )
-        expect(denied.map(consent => consent.consentType)).toEqual([
-            'marketingNotifications',
-            'smsNotifications',
-            'emailNotifications',
-        ])
-        // Terms is still granted.
-        expect(body.consents[0]).toEqual({
-            consentType: 'termsAndPrivacy',
-            consentStatus: 'granted',
-        })
+        expect(byType.marketingNotifications).toBe('denied')
+        expect(byType.emailNotifications).toBe('denied')
+        expect(byType.smsNotifications).toBe('granted')
+        expect(byType.termsAndPrivacy).toBe('granted')
     })
 
     it('adds the eSignAct consent for the US policy', () => {
         const body = buildOnboardingConsentBody({
             ...base,
-            policyType: 'us',
+            policyType: 'US',
             allowMarketing: false,
+            allowSms: false,
         })
 
         expect(body.consents).toContainEqual({
@@ -127,6 +129,8 @@ describe('onboarding endpoints', () => {
             verificationCode: '123456',
             contactVerificationId: 'cv_1',
             countryOfResidence: 'GB',
+            allowMarketing: true,
+            allowSms: false,
             network: 'mainnet',
         })
 
@@ -142,6 +146,9 @@ describe('onboarding endpoints', () => {
                 verificationCode: '123456',
                 contactVerificationId: 'cv_1',
                 countryOfResidence: 'GB',
+                // Baanx requires both consent flags on this call.
+                allowMarketing: true,
+                allowSms: false,
             }),
         )
         // network/signal must not leak into the request body

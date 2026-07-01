@@ -22,7 +22,6 @@ let mockPhoneNumber: string | null = '7400846282'
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockContactVerificationId: string | null = 'mock-contact-id'
 let mockCodeVerificationError: 'email' | 'phone' | null = null
-const mockSetPhoneVerificationCode = vi.fn()
 const mockSetCodeVerificationError = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -58,7 +57,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 onboardingId: string | null
                 contactVerificationId: string | null
                 codeVerificationError: 'email' | 'phone' | null
-                setPhoneVerificationCode: (code: string | null) => void
                 setCodeVerificationError: (
                     target: 'email' | 'phone' | null,
                 ) => void
@@ -70,7 +68,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 onboardingId: mockOnboardingId,
                 contactVerificationId: mockContactVerificationId,
                 codeVerificationError: mockCodeVerificationError,
-                setPhoneVerificationCode: mockSetPhoneVerificationCode,
                 setCodeVerificationError: mockSetCodeVerificationError,
             }),
     }
@@ -200,10 +197,10 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockSetCodeVerificationError).toHaveBeenCalledWith(null)
     })
 
-    it('stashes the code for the password step when there is no onboarding id yet', async () => {
-        // First pass: email/verify (which returns the onboardingId the real
-        // phone/verify needs) only fires at the password step, so the code is
-        // stashed and the flow continues there.
+    it('routes back to the password step (no verify) when there is no onboarding id', async () => {
+        // email/verify (which issues the onboardingId phone/verify needs) runs
+        // on the password step before this screen; without it the code can't be
+        // verified, so the user is routed back rather than POSTing blind.
         mockOnboardingId = null
         const { result } = renderVerifyHook()
 
@@ -213,7 +210,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         })
 
         expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
-        expect(mockSetPhoneVerificationCode).toHaveBeenCalledWith(VALID_CODE)
+        expect(mockErrorToast).toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
     })
 

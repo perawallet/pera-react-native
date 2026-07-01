@@ -114,14 +114,14 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         expect(result.current.isValid).toBe(true)
     })
 
-    it('stashes a full code and navigates to the phone screen', () => {
+    it('stashes a full code and navigates to the password screen', () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(VALID_CODE))
         act(() => result.current.handleConfirm())
 
         expect(mockSetVerificationCode).toHaveBeenCalledWith(VALID_CODE)
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
     })
 
     it('does not navigate on an incomplete code', () => {
