@@ -118,7 +118,21 @@ const makeMockActor = (requestId: string) => {
     // Drives `getSnapshot().matches(...)`; rejectRequest reads this to decide
     // between the approval gate and a direct USER_REJECTED send. Defaults to a
     // pre-approval state so the gate path is exercised unless a test opts in.
-    let currentState = 'awaiting_user'
+    // A string models a top-level state (`awaiting_user`, `failed`); an object
+    // models a nested value (`{ signing: 'hardware' }`).
+    let currentState: string | Record<string, string> = 'awaiting_user'
+
+    // Minimal stand-in for XState's `matches`: string arg compares against a
+    // top-level state, object arg against a single-key nested value.
+    const matches = (target: string | Record<string, string>): boolean => {
+        if (typeof target === 'string') {
+            return currentState === target
+        }
+        if (typeof currentState !== 'object') return false
+        return Object.entries(target).every(
+            ([key, value]) => currentState[key] === value,
+        )
+    }
 
     const actor = {
         id: requestId,
@@ -130,10 +144,10 @@ const makeMockActor = (requestId: string) => {
         send: vi.fn(),
         getSnapshot: () => ({
             value: currentState,
-            matches: (s: string) => s === currentState,
+            matches,
         }),
         // Test helper: set the state reported by getSnapshot().
-        setState: (state: string) => {
+        setState: (state: string | Record<string, string>) => {
             currentState = state
         },
         // Test helper: simulate actor reaching a terminal state
@@ -374,6 +388,34 @@ describe('useSigningRequest', () => {
                 result.current.addSignRequest(request)
             })
             actor.setState('failed')
+
+            act(() => {
+                result.current.rejectRequest(request)
+            })
+
+            expect(actor.send).toHaveBeenCalledWith({ type: 'USER_REJECTED' })
+        })
+
+        test('sends USER_REJECTED directly during hardware signing (gate already spent)', () => {
+            // Hardware signing runs in `signing.hardware`, past the approval
+            // gate the user resolved when they confirmed the send. The gate is
+            // one-shot, so `approvalGate.reject` here is a no-op and the Cancel
+            // tap on the Ledger sheet was silently dropped. rejectRequest must
+            // send USER_REJECTED straight to the actor, which the parent
+            // forwards to the hardware child as USER_REJECTED_ON_DEVICE.
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
+            const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest({
+                transport: 'algod',
+                sourceType: 'walletconnect',
+            })
+
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+            actor.setState({ signing: 'hardware' })
 
             act(() => {
                 result.current.rejectRequest(request)
