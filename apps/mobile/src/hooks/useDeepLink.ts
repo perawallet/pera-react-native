@@ -12,7 +12,11 @@
 
 import { Linking } from 'react-native'
 import { useToast } from './useToast'
-import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import {
@@ -55,33 +59,55 @@ import {
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 import { withTimeout } from './deeplink/handlers/timeout'
 
+type WalletConnectSessionOutcome =
+    | { type: 'session' }
+    | { type: 'error'; error: Error }
+    | { type: 'timeout' }
+
 /**
- * Subscribe to the WalletConnect store and resolve `true` as soon as a
- * session_request lands whose `clientId` wasn't in `beforeIds`. Resolves
- * `false` if none arrives within `timeoutMs`. Used by the WC deeplink
- * dispatcher to detect dead bridges (no event ever fires) and surface
- * an actionable error instead of silently leaving the user staring at
- * the screen they came from.
+ * Subscribe to the WalletConnect store and resolve as soon as one of three
+ * things happens after a `connect`:
+ *   - a new session_request lands (`clientId` not in `beforeIds`) → `session`
+ *   - a NEW `connectionError` is surfaced                         → `error`
+ *   - neither happens within `timeoutMs`                          → `timeout`
+ *
+ * The `error` branch matters for the QR flow: when a handshake is rejected
+ * (most commonly the QR was scanned on the wrong network) the dApp DID
+ * respond, so we must react immediately instead of blocking for the full
+ * timeout and then reporting a misleading "no response" error. The
+ * `timeout` branch still detects genuinely dead bridges (no event ever
+ * fires) so we can surface an actionable error.
  */
-const waitForNewSessionRequest = (
+const waitForSessionOutcome = (
     beforeIds: Set<string>,
+    beforeError: Nullable<Error>,
     timeoutMs: number,
-): Promise<boolean> =>
+): Promise<WalletConnectSessionOutcome> =>
     new Promise(resolve => {
-        const timer = setTimeout(() => {
+        const settle = (outcome: WalletConnectSessionOutcome) => {
+            clearTimeout(timer)
             unsub()
-            resolve(false)
-        }, timeoutMs)
-        const unsub = useWalletConnectStore.subscribe(state => {
-            const nowNew = state.sessionRequests.find(
-                r => !beforeIds.has(r.clientId),
-            )
-            if (nowNew) {
-                clearTimeout(timer)
-                unsub()
-                resolve(true)
+            resolve(outcome)
+        }
+        const evaluate = (
+            state: ReturnType<typeof useWalletConnectStore.getState>,
+        ) => {
+            if (
+                state.connectionError &&
+                state.connectionError !== beforeError
+            ) {
+                settle({ type: 'error', error: state.connectionError })
+                return
             }
-        })
+            if (state.sessionRequests.some(r => !beforeIds.has(r.clientId))) {
+                settle({ type: 'session' })
+            }
+        }
+        const timer = setTimeout(() => settle({ type: 'timeout' }), timeoutMs)
+        const unsub = useWalletConnectStore.subscribe(evaluate)
+        // Guard against the store settling synchronously in the gap between
+        // `connect` resolving and this subscription being registered.
+        evaluate(useWalletConnectStore.getState())
     })
 
 type LinkSource = 'qr' | 'deeplink'
@@ -94,6 +120,7 @@ type UseDeepLinkResult = {
         source: LinkSource,
         onError?: () => void,
         onSuccess?: () => void,
+        onConnectionError?: () => void,
     ) => Promise<void>
     parseDeeplink: typeof parseDeeplink
     buildAccountDeeplink: typeof buildAccountDeeplink
@@ -130,6 +157,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
         source: LinkSource,
         onError?: () => void,
         onSuccess?: () => void,
+        onConnectionError?: () => void,
     ) => {
         const parsedData = parseDeeplink(url)
 
@@ -272,11 +300,26 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             .getState()
                             .sessionRequests.map(r => r.clientId),
                     )
-                    const sawNewSessionRequest = await waitForNewSessionRequest(
+                    const beforeError =
+                        useWalletConnectStore.getState().connectionError
+                    const outcome = await waitForSessionOutcome(
                         beforeIds,
+                        beforeError,
                         8000,
                     )
-                    if (!sawNewSessionRequest) {
+                    if (outcome.type === 'error') {
+                        // The dApp responded but the handshake was rejected —
+                        // most commonly the QR was scanned on the wrong
+                        // network. The WalletConnect provider surfaces this as
+                        // a toast, routed to the scanner's own notifier when
+                        // the scanner is open so it shows on top of the live
+                        // camera. Keep the scanner open and re-armed rather
+                        // than closing it or firing the misleading "no
+                        // response" error below.
+                        onConnectionError?.()
+                        return
+                    }
+                    if (outcome.type === 'timeout') {
                         showError({
                             variant: 'walletconnect',
                             sourceUrl: parsedData.sourceUrl,
