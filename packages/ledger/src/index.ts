@@ -31,6 +31,7 @@ export {
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
     LedgerDisconnectedError,
+    LedgerLocationServicesDisabledError,
     LedgerNetworkError,
     LedgerNoAccountsFoundError,
     LedgerPermissionDeniedError,

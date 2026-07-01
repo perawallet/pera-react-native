@@ -20,6 +20,7 @@ import {
     LedgerTimeoutError,
     LedgerConnectionError,
     LedgerBluetoothDisabledError,
+    LedgerLocationServicesDisabledError,
     LedgerPermissionDeniedError,
     LedgerScanTimeoutError,
     LedgerSigningFailedError,
@@ -112,6 +113,72 @@ describe('classifyLedgerError with @zondax/ledger-js returnCode', () => {
         expect(
             classifyLedgerError({ statusCode: 0x6986, returnCode: 0x9000 }),
         ).toBeInstanceOf(LedgerUserRejectedError)
+    })
+})
+
+describe('classifyLedgerError with HwTransportError (BLE scan/connect)', () => {
+    // Mirrors what @ledgerhq/react-native-hw-transport-ble emits after
+    // remapping a react-native-ble-plx BleError: name === 'HwTransportError',
+    // an optional `.type`, and the numeric BleErrorCode appended to the message.
+    const createHwTransportError = (
+        type: string | undefined,
+        originCode: number,
+        message = 'BleError',
+    ): Error => {
+        const error = new Error(`${message}. Origin: ${originCode}`)
+        error.name = 'HwTransportError'
+        if (type !== undefined) {
+            ;(error as unknown as { type: string }).type = type
+        }
+        return error
+    }
+
+    it('classifies LocationServicesDisabled type as LedgerLocationServicesDisabledError', () => {
+        const result = classifyLedgerError(
+            createHwTransportError('LocationServicesDisabled', 601),
+        )
+        expect(result).toBeInstanceOf(LedgerLocationServicesDisabledError)
+    })
+
+    it('classifies BleErrorCode 601 by message origin even without a typed .type', () => {
+        const result = classifyLedgerError(
+            createHwTransportError(undefined, 601),
+        )
+        expect(result).toBeInstanceOf(LedgerLocationServicesDisabledError)
+    })
+
+    it('classifies LocationServicesUnauthorized type as LedgerPermissionDeniedError', () => {
+        const result = classifyLedgerError(
+            createHwTransportError('LocationServicesUnauthorized', 101),
+        )
+        expect(result).toBeInstanceOf(LedgerPermissionDeniedError)
+    })
+
+    it('classifies BleErrorCode 102 (BluetoothPoweredOff) as LedgerBluetoothDisabledError', () => {
+        const result = classifyLedgerError(
+            createHwTransportError('Unknown', 102),
+        )
+        expect(result).toBeInstanceOf(LedgerBluetoothDisabledError)
+    })
+
+    it('falls back to LedgerConnectionError for unmapped transport errors', () => {
+        const result = classifyLedgerError(
+            createHwTransportError('Unknown', 600),
+        )
+        expect(result).toBeInstanceOf(LedgerConnectionError)
+    })
+
+    it('still routes an unmapped transport error through the disconnect heuristic', () => {
+        const result = classifyLedgerError(
+            createHwTransportError('Unknown', 201, 'Device was disconnected'),
+        )
+        expect(result).toBeInstanceOf(LedgerDisconnectedError)
+    })
+
+    it('preserves the original error reference', () => {
+        const original = createHwTransportError('LocationServicesDisabled', 601)
+        const result = classifyLedgerError(original)
+        expect(result.originalError).toBe(original)
     })
 })
 

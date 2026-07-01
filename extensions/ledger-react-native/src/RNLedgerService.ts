@@ -277,16 +277,19 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<LedgerTransport> {
-                // Pre-flight: is BLE turned on at the OS level?
-                // TransportBLE.isSupported returns false when the platform
-                // refuses to initialize the BLE module (typically because
-                // Bluetooth is disabled). Throwing a typed error here lets
-                // the overlay render the matching "enable Bluetooth" copy
-                // instead of a generic connection failure.
-                const bleSupported = await TransportBLE.isSupported().catch(
-                    () => false,
-                )
-                if (!bleSupported) {
+                // Pre-flight: is Bluetooth powered on at the OS level?
+                // NOTE: `TransportBLE.isSupported()` only reports whether the
+                // native BLE module is linked — it resolves `true` whenever the
+                // module is bundled, regardless of adapter state — so it can
+                // NOT detect a disabled radio (the previous check here was dead
+                // code). Read the observed adapter state instead: the scan
+                // screen keeps the shared observer running, so by connect time
+                // it reflects the real state. Only block on a definitive
+                // `poweredOff`; `unknown` (no observer yet, e.g. cold-start
+                // signing) falls through so `TransportBLE.open` surfaces the
+                // failure — `classifyLedgerError` now maps the ble-plx
+                // "powered off" code (102) to the same typed error.
+                if (latestBluetoothState === 'poweredOff') {
                     throw new LedgerBluetoothDisabledError()
                 }
 
@@ -318,11 +321,14 @@ export class RNLedgerService implements HardwareWalletService {
 
             async isSupported(): Promise<boolean> {
                 try {
+                    // Reports whether the native BLE module is linked on this
+                    // platform (true on iOS + Android). It does NOT reflect the
+                    // adapter's on/off state — a disabled radio is handled at
+                    // connect time and via the scan error classification.
                     return await TransportBLE.isSupported()
                 } catch {
-                    // The native BLE module may be missing or refuse to
-                    // initialize on environments where Bluetooth is
-                    // disabled at the OS level. Treat as unsupported
+                    // The native BLE module may be absent (e.g. an environment
+                    // where the extension isn't linked). Treat as unsupported
                     // rather than letting the rejection bubble up.
                     return false
                 }

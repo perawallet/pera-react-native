@@ -21,8 +21,11 @@ const {
     mockOpenSettings,
     mockErrorToast,
     mockRequestEnable,
+    mockSendIntent,
     blePermissionsState,
     bluetoothState,
+    connectionState,
+    platformState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockStartScan: vi.fn(),
@@ -31,6 +34,7 @@ const {
     mockOpenSettings: vi.fn(),
     mockErrorToast: vi.fn(),
     mockRequestEnable: vi.fn(),
+    mockSendIntent: vi.fn(),
     blePermissionsState: {
         hasPermissions: true,
         isChecking: false,
@@ -44,6 +48,20 @@ const {
             | 'unsupported'
             | 'resetting'
             | 'unknown',
+    },
+    connectionState: { error: null as Error | null },
+    platformState: { os: 'android' as 'android' | 'ios' },
+}))
+
+vi.mock('react-native', () => ({
+    Platform: {
+        get OS() {
+            return platformState.os
+        },
+    },
+    Linking: {
+        sendIntent: mockSendIntent,
+        openSettings: mockOpenSettings,
     },
 }))
 
@@ -65,7 +83,7 @@ vi.mock('../../../hooks', () => ({
         isScanning: true,
         startScan: mockStartScan,
         stopScan: mockStopScan,
-        error: null,
+        error: connectionState.error,
     }),
     useBlePermissions: () => ({
         hasPermissions: blePermissionsState.hasPermissions,
@@ -87,6 +105,10 @@ vi.mock('../../../hooks', () => ({
 }))
 
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    LedgerConnectionError,
+    LedgerLocationServicesDisabledError,
+} from '@perawallet/wallet-core-ledger'
 
 import { useLedgerScanScreen } from '../useLedgerScanScreen'
 
@@ -106,7 +128,11 @@ describe('useLedgerScanScreen', () => {
         blePermissionsState.isChecking = false
         blePermissionsState.isBlocked = false
         bluetoothState.adapterState = 'poweredOn'
+        connectionState.error = null
+        platformState.os = 'android'
         mockRequestPermissions.mockResolvedValue(true)
+        mockSendIntent.mockResolvedValue(undefined)
+        mockOpenSettings.mockResolvedValue(undefined)
     })
 
     it('starts scanning on mount and stops on unmount when permissions are granted', () => {
@@ -306,5 +332,61 @@ describe('useLedgerScanScreen', () => {
         // (timed-out) scan, then start fresh.
         expect(mockStopScan).toHaveBeenCalled()
         expect(mockStartScan).toHaveBeenCalled()
+    })
+
+    it('flags isLocationServicesDisabled for a location-services scan error', () => {
+        connectionState.error = new LedgerLocationServicesDisabledError()
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isLocationServicesDisabled).toBe(true)
+    })
+
+    it('does not flag isLocationServicesDisabled for other scan errors', () => {
+        connectionState.error = new LedgerConnectionError('generic ble failure')
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isLocationServicesDisabled).toBe(false)
+    })
+
+    it('never flags isLocationServicesDisabled on iOS (Android-only copy)', () => {
+        platformState.os = 'ios'
+        connectionState.error = new LedgerLocationServicesDisabledError()
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isLocationServicesDisabled).toBe(false)
+    })
+
+    it('deep-links to Android location settings via handleOpenLocationSettings', async () => {
+        platformState.os = 'android'
+        connectionState.error = new LedgerLocationServicesDisabledError()
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        await act(async () => {
+            result.current.handleOpenLocationSettings()
+        })
+
+        expect(mockSendIntent).toHaveBeenCalledWith(
+            'android.settings.LOCATION_SOURCE_SETTINGS',
+        )
+        expect(mockOpenSettings).not.toHaveBeenCalled()
+    })
+
+    it('falls back to app settings when the location intent is unavailable', async () => {
+        platformState.os = 'android'
+        mockSendIntent.mockRejectedValue(new Error('no activity'))
+        connectionState.error = new LedgerLocationServicesDisabledError()
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        await act(async () => {
+            result.current.handleOpenLocationSettings()
+        })
+
+        expect(mockSendIntent).toHaveBeenCalled()
+        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
     })
 })
