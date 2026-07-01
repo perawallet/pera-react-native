@@ -35,6 +35,7 @@ export const useStyles = makeStyles(theme => ({
     },
     title: {
         marginTop: theme.spacing.xl,
+        textAlign: 'center',
     },
     subtitle: {
         marginTop: theme.spacing.sm,

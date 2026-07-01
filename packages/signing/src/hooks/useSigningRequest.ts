@@ -141,14 +141,19 @@ export const useSigningRequest = (): UseSigningRequestResult => {
         (request: SignRequest) => {
             const actor = getActorRef(request.id)
             if (actor) {
-                // A retryable failure leaves the actor parked in `failed`,
-                // past the approval gate — which was already resolved when
-                // the user approved, so `approvalGate.reject` would be a
-                // no-op and the cancel tap would be silently dropped. Send
-                // USER_REJECTED straight to the actor instead (the `failed`
-                // state transitions to `rejected` on it). Mirrors how
-                // `next()` sends RETRY directly to a failed actor.
-                if (actor.getSnapshot().matches('failed')) {
+                // Both `failed` and `signing.hardware` sit *past* the approval
+                // gate: the gate was already resolved when the user approved,
+                // so `approvalGate.reject` would be a no-op (a resolved deferred
+                // can't re-resolve) and the cancel tap would be silently
+                // dropped. Send USER_REJECTED straight to the actor instead —
+                // `failed` transitions to `rejected`, and `signing.hardware`
+                // forwards it to the hardware child as USER_REJECTED_ON_DEVICE.
+                // Mirrors how `next()` sends RETRY directly to a failed actor.
+                const snapshot = actor.getSnapshot()
+                if (
+                    snapshot.matches('failed') ||
+                    snapshot.matches({ signing: 'hardware' })
+                ) {
                     actor.send({ type: 'USER_REJECTED' })
                     return
                 }
