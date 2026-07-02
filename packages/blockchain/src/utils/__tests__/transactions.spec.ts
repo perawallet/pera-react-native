@@ -25,8 +25,7 @@ import {
     getAssetTransferType,
     getAssetConfigType,
 } from '../transactions'
-import { TransactionType } from '@algorandfoundation/algokit-utils/transact'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { TransactionType, encodeAddress } from 'algosdk'
 import type { PeraTransaction, PeraDisplayableTransaction } from '../../models'
 
 // Helper to create mock Address
@@ -38,14 +37,9 @@ const mockFee = 1000n
 
 describe('transactions utils', () => {
     describe('mapToDisplayableTransaction', () => {
-        it('should return null for unknown transaction type', () => {
-            const tx = { type: TransactionType.Unknown } as any
-            expect(mapToDisplayableTransaction(tx)).toBeNull()
-        })
-
         it('should map common fields correctly', () => {
             const tx = {
-                type: TransactionType.Payment, // Must be a valid type to enter switch or at least pass check
+                type: TransactionType.pay, // Must be a valid type to enter switch or at least pass check
                 payment: {
                     // Mock payment prop to avoid error access
                     amount: 5000n,
@@ -55,7 +49,7 @@ describe('transactions utils', () => {
                 firstValid: 100n,
                 lastValid: 200n,
                 sender: mockAddress(1),
-                genesisId: 'testnet-v1.0',
+                genesisID: 'testnet-v1.0',
                 note: new Uint8Array([1, 2, 3]),
                 rekeyTo: mockAddress(5), // RekeyTo should stay as object
                 receiver: mockAddress(2),
@@ -76,7 +70,7 @@ describe('transactions utils', () => {
 
         it('should map Payment transaction', () => {
             const tx = {
-                type: TransactionType.Payment,
+                type: TransactionType.pay,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
@@ -103,13 +97,13 @@ describe('transactions utils', () => {
 
         it('should map Asset Transfer transaction', () => {
             const tx = {
-                type: TransactionType.AssetTransfer,
+                type: TransactionType.axfer,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetTransfer: {
-                    assetId: 123n,
+                    assetIndex: 123n,
                     amount: 50n,
                     receiver: mockAddress(2),
                     closeRemainderTo: mockAddress(3), // mapped to closeTo
@@ -136,20 +130,22 @@ describe('transactions utils', () => {
 
         it('should map App Call transaction', () => {
             const tx = {
-                type: TransactionType.AppCall,
+                type: TransactionType.appl,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
-                appCall: {
-                    appId: 99n,
+                applicationCall: {
+                    appIndex: 99n,
                     onComplete: 'noop',
-                    args: [new Uint8Array([1])],
-                    accountReferences: [mockAddress(2)],
-                    appReferences: [10n],
-                    assetReferences: [20n],
-                    globalStateSchema: { numByteSlices: 1, numUints: 2 },
-                    localStateSchema: { numByteSlices: 3, numUints: 4 },
+                    appArgs: [new Uint8Array([1])],
+                    accounts: [mockAddress(2)],
+                    foreignApps: [10n],
+                    foreignAssets: [20n],
+                    numGlobalByteSlices: 1,
+                    numGlobalInts: 2,
+                    numLocalByteSlices: 3,
+                    numLocalInts: 4,
                 },
             } as any
 
@@ -170,11 +166,10 @@ describe('transactions utils', () => {
                 1,
             )
             expect(
-                result?.applicationTransaction?.globalStateSchema
-                    ?.numByteSlices,
+                result?.applicationTransaction?.globalStateSchema?.numByteSlice,
             ).toBe(1)
             expect(
-                result?.applicationTransaction?.globalStateSchema?.numUints,
+                result?.applicationTransaction?.globalStateSchema?.numUint,
             ).toBe(2)
         })
     })
@@ -227,13 +222,13 @@ describe('transactions utils', () => {
     describe('mapToDisplayableTransaction additional types', () => {
         it('should map Asset Config transaction', () => {
             const tx = {
-                type: TransactionType.AssetConfig,
+                type: TransactionType.acfg,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetConfig: {
-                    assetId: 100n,
+                    assetIndex: 100n,
                     assetName: 'Test Asset',
                     unitName: 'TST',
                     total: 1000000n,
@@ -243,8 +238,8 @@ describe('transactions utils', () => {
                     reserve: mockAddress(4),
                     freeze: mockAddress(5),
                     clawback: mockAddress(6),
-                    url: 'https://test.com',
-                    metadataHash: new Uint8Array([1, 2, 3]),
+                    assetURL: 'https://test.com',
+                    assetMetadataHash: new Uint8Array([1, 2, 3]),
                 },
             } as any
 
@@ -267,14 +262,14 @@ describe('transactions utils', () => {
 
         it('should map Asset Freeze transaction', () => {
             const tx = {
-                type: TransactionType.AssetFreeze,
+                type: TransactionType.afrz,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetFreeze: {
-                    assetId: 200n,
-                    freezeTarget: mockAddress(2),
+                    assetIndex: 200n,
+                    freezeAccount: mockAddress(2),
                     frozen: true,
                 },
             } as any
@@ -292,12 +287,12 @@ describe('transactions utils', () => {
 
         it('should map Key Registration transaction', () => {
             const tx = {
-                type: TransactionType.KeyRegistration,
+                type: TransactionType.keyreg,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
-                keyRegistration: {
+                keyreg: {
                     voteFirst: 1000n,
                     voteLast: 2000n,
                     voteKeyDilution: 10n,
@@ -320,7 +315,7 @@ describe('transactions utils', () => {
 
         it('should map StateProof transaction', () => {
             const tx = {
-                type: TransactionType.StateProof,
+                type: TransactionType.stpf,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
@@ -332,7 +327,7 @@ describe('transactions utils', () => {
 
         it('should map Heartbeat transaction', () => {
             const tx = {
-                type: TransactionType.Heartbeat,
+                type: TransactionType.hb,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
@@ -361,11 +356,11 @@ describe('transactions utils', () => {
 
         it('should map numeric OnCompletion in AppCall', () => {
             const tx = {
-                type: TransactionType.AppCall,
+                type: TransactionType.appl,
                 fee: 1000n,
                 sender: mockAddress(1),
-                appCall: {
-                    appId: 99n,
+                applicationCall: {
+                    appIndex: 99n,
                     onComplete: 0, // NoOp
                 },
             } as any
@@ -375,10 +370,10 @@ describe('transactions utils', () => {
             // Test other values
             const makeTx = (oc: number) =>
                 ({
-                    type: TransactionType.AppCall,
+                    type: TransactionType.appl,
                     fee: 1000n,
                     sender: mockAddress(1),
-                    appCall: { appId: 99n, onComplete: oc },
+                    applicationCall: { appIndex: 99n, onComplete: oc },
                 }) as any
 
             expect(
@@ -507,7 +502,7 @@ describe('transactions utils', () => {
     describe('classifyPeraTransaction', () => {
         it('should classify payment transaction', () => {
             const tx = {
-                type: TransactionType.Payment,
+                type: TransactionType.pay,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
@@ -522,13 +517,13 @@ describe('transactions utils', () => {
 
         it('should classify app call transaction', () => {
             const tx = {
-                type: TransactionType.AppCall,
+                type: TransactionType.appl,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
-                appCall: {
-                    appId: 1n,
+                applicationCall: {
+                    appIndex: 1n,
                 },
             } as any
             expect(classifyPeraTransaction(tx)).toBe('app-call')
@@ -536,13 +531,13 @@ describe('transactions utils', () => {
 
         it('should classify asset config transaction', () => {
             const tx = {
-                type: TransactionType.AssetConfig,
+                type: TransactionType.acfg,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetConfig: {
-                    assetId: 100n,
+                    assetIndex: 100n,
                     params: { manager: mockAddress(2) },
                 },
             } as any
@@ -551,14 +546,14 @@ describe('transactions utils', () => {
 
         it('should classify asset freeze transaction', () => {
             const tx = {
-                type: TransactionType.AssetFreeze,
+                type: TransactionType.afrz,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetFreeze: {
-                    assetId: 100n,
-                    freezeAddress: mockAddress(2),
+                    assetIndex: 100n,
+                    freezeAccount: mockAddress(2),
                     frozen: true,
                 },
             } as any
@@ -567,12 +562,12 @@ describe('transactions utils', () => {
 
         it('should classify key registration transaction', () => {
             const tx = {
-                type: TransactionType.KeyRegistration,
+                type: TransactionType.keyreg,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
-                keyRegistration: {
+                keyreg: {
                     voteFirst: 1n,
                     voteLast: 1000n,
                     voteKeyDilution: 10n,
@@ -583,13 +578,13 @@ describe('transactions utils', () => {
 
         it('should classify regular asset transfer', () => {
             const tx = {
-                type: TransactionType.AssetTransfer,
+                type: TransactionType.axfer,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetTransfer: {
-                    assetId: 123n,
+                    assetIndex: 123n,
                     amount: 50n,
                     receiver: mockAddress(2),
                 },
@@ -599,13 +594,13 @@ describe('transactions utils', () => {
 
         it('should classify asset opt-in (sender === receiver, amount 0)', () => {
             const tx = {
-                type: TransactionType.AssetTransfer,
+                type: TransactionType.axfer,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetTransfer: {
-                    assetId: 123n,
+                    assetIndex: 123n,
                     amount: 0n,
                     receiver: mockAddress(1), // same as sender
                 },
@@ -615,13 +610,13 @@ describe('transactions utils', () => {
 
         it('should classify asset opt-out (has closeRemainderTo)', () => {
             const tx = {
-                type: TransactionType.AssetTransfer,
+                type: TransactionType.axfer,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetTransfer: {
-                    assetId: 123n,
+                    assetIndex: 123n,
                     amount: 0n,
                     receiver: mockAddress(2),
                     closeRemainderTo: mockAddress(3),
@@ -632,24 +627,19 @@ describe('transactions utils', () => {
 
         it('should classify asset clawback (has assetSender)', () => {
             const tx = {
-                type: TransactionType.AssetTransfer,
+                type: TransactionType.axfer,
                 fee: 1000n,
                 firstValid: 1n,
                 lastValid: 2n,
                 sender: mockAddress(1),
                 assetTransfer: {
-                    assetId: 123n,
+                    assetIndex: 123n,
                     amount: 50n,
                     receiver: mockAddress(2),
                     assetSender: mockAddress(3),
                 },
             } as any
             expect(classifyPeraTransaction(tx)).toBe('asset-clawback')
-        })
-
-        it('should return unknown for unknown transaction type', () => {
-            const tx = { type: TransactionType.Unknown } as any
-            expect(classifyPeraTransaction(tx)).toBe('unknown')
         })
     })
 

@@ -11,11 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
 import { flattenSimulatedInnerTransactions } from '../simulateImpact'
 
 const SENDER = Address.zeroAddress()
@@ -23,13 +19,16 @@ const RECEIVER = new Address(new Uint8Array(32).fill(7))
 
 const payment = (amount: bigint): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: SENDER,
-        fee: 1000n,
-        firstValid: 1000n,
-        lastValid: 2000n,
-        genesisHash: new Uint8Array(32),
-        payment: {
+        suggestedParams: {
+            fee: 1000n,
+            minFee: 1000n,
+            firstValid: 1000n,
+            lastValid: 2000n,
+            genesisHash: new Uint8Array(32),
+        },
+        paymentParams: {
             receiver: RECEIVER,
             amount,
         },
@@ -37,9 +36,12 @@ const payment = (amount: bigint): Transaction =>
 
 // Shape mirrors algosdk's SimulateResponse: txnGroups[].txnResults[].txnResult
 // is a PendingTransactionResponse whose .innerTxns recurse the same way.
-const responseWith = (innerTxns: unknown[]) => ({
-    txnGroups: [{ txnResults: [{ txnResult: { innerTxns } }] }],
-})
+// flattenSimulatedInnerTransactions reads structurally; the cast bridges the
+// loosely-typed fixture nodes to the function's narrow structural param.
+const responseWith = (innerTxns: unknown[]) =>
+    ({
+        txnGroups: [{ txnResults: [{ txnResult: { innerTxns } }] }],
+    }) as Parameters<typeof flattenSimulatedInnerTransactions>[0]
 
 describe('flattenSimulatedInnerTransactions', () => {
     it('returns an empty list when there are no inner transactions', () => {

@@ -200,7 +200,9 @@ async function fetchAccountSnapshot(
 ) {
     if (priorResourceCount < MAX_INLINE_RESOURCES) {
         try {
-            const info = await algokit.client.algod.accountInformation(address)
+            const info = await algokit.client.algod
+                .accountInformation(address)
+                .do()
             const holdings: HoldingInput[] = (info.assets ?? []).map(asset => ({
                 assetId: `${asset.assetId}`,
                 amount: new Decimal((asset.amount ?? 0n).toString()),
@@ -211,9 +213,10 @@ async function fetchAccountSnapshot(
         }
     }
 
-    const info = await algokit.client.algod.accountInformation(address, {
-        exclude: 'all',
-    })
+    const info = await algokit.client.algod
+        .accountInformation(address)
+        .exclude('all')
+        .do()
     const { holdings, currentRound } = await fetchAllHoldings(algokit, address)
     return {
         info,
@@ -231,10 +234,11 @@ async function fetchAllHoldings(
     let next: Optional<string>
 
     do {
-        const page = await algokit.client.indexer.lookupAccountAssets(address, {
-            limit: HOLDINGS_PAGE_LIMIT,
-            next,
-        })
+        let request = algokit.client.indexer
+            .lookupAccountAssets(address)
+            .limit(HOLDINGS_PAGE_LIMIT)
+        if (next) request = request.nextToken(next)
+        const page = await request.do()
         currentRound = minRound(currentRound, toRound(page.currentRound))
         for (const asset of page.assets ?? []) {
             holdings.push({

@@ -11,18 +11,15 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-    groupTransactions,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
+import { groupTransactions } from '@perawallet/wallet-core-blockchain'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
 import type {
     ArbitraryDataSignRequest,
     Arc60SignRequest,
+    SignRequest,
     TransactionSignRequest,
 } from '../../models'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -35,9 +32,10 @@ import {
 
 const baseParams = {
     fee: 1000n,
+    minFee: 1000n,
     firstValid: 1000n,
     lastValid: 2000n,
-    genesisId: 'mainnet-v1.0',
+    genesisID: 'mainnet-v1.0',
     genesisHash: new Uint8Array(32).fill(0xab),
 }
 
@@ -46,10 +44,10 @@ const dappAddr = new Address(new Uint8Array(32).fill(2))
 
 const makePayment = (sender: Address, amount: bigint): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender,
-        ...baseParams,
-        payment: { receiver: dappAddr, amount },
+        suggestedParams: baseParams,
+        paymentParams: { receiver: dappAddr, amount },
     })
 
 const userAccount = {
@@ -58,7 +56,7 @@ const userAccount = {
     keyPairId: 'key-1',
 } as unknown as WalletAccount
 
-const baseInput = (request: TransactionSignRequest): SigningMachineInput =>
+const baseInput = (request: SignRequest): SigningMachineInput =>
     ({
         request,
         allAccounts: [userAccount],

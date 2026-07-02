@@ -33,6 +33,7 @@ describe('useGroupTransactionsQuery', () => {
     let queryClient: QueryClient
     let wrapper: React.FC<{ children: React.ReactNode }>
     let mockSearchForTransactions: Mock
+    let mockDo: Mock
 
     const mockTransactions = [
         {
@@ -76,13 +77,16 @@ describe('useGroupTransactionsQuery', () => {
                 children,
             )
 
-        mockSearchForTransactions = vi
-            .fn()
-            .mockResolvedValue({ transactions: mockTransactions })
+        mockDo = vi.fn().mockResolvedValue({ transactions: mockTransactions })
+        // mockSearchForTransactions stands in for the `.groupid(id)` builder
+        // call — it receives the groupId and returns the `.do()` executor.
+        mockSearchForTransactions = vi.fn(() => ({ do: mockDo }))
         ;(useAlgorandClient as Mock).mockReturnValue({
             client: {
                 indexer: {
-                    searchForTransactions: mockSearchForTransactions,
+                    searchForTransactions: () => ({
+                        groupid: mockSearchForTransactions,
+                    }),
                 },
             },
         })
@@ -101,9 +105,7 @@ describe('useGroupTransactionsQuery', () => {
             expect(result.current.groupTransactions.length).toBe(2),
         )
 
-        expect(mockSearchForTransactions).toHaveBeenCalledWith({
-            groupId: 'GROUP123',
-        })
+        expect(mockSearchForTransactions).toHaveBeenCalledWith('GROUP123')
         expect(result.current.groupTransactions[0]).toEqual(
             expect.objectContaining({
                 id: 'TX1',
@@ -132,7 +134,7 @@ describe('useGroupTransactionsQuery', () => {
 
     test('handles errors', async () => {
         const mockError = new Error('Group not found')
-        mockSearchForTransactions.mockRejectedValue(mockError)
+        mockDo.mockRejectedValue(mockError)
 
         const { result } = renderHook(
             () =>

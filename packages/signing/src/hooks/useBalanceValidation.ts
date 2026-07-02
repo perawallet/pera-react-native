@@ -51,8 +51,9 @@ export const useBalanceValidation = (
             addresses.map(address => ({
                 queryKey: getAccountInformationQueryKey(address),
                 queryFn: async (): Promise<AccountOnChainState> => {
-                    const info =
-                        await algokit.client.algod.accountInformation(address)
+                    const info = await algokit.client.algod
+                        .accountInformation(address)
+                        .do()
                     return {
                         address: info.address.toString(),
                         amount: info.amount,

@@ -47,6 +47,8 @@ vi.mock('@react-navigation/native', () => ({
         goBack: mockGoBack,
         replace: mockReplace,
     }),
+    // Focus reset is exercised at the integration level; no-op here.
+    useFocusEffect: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -194,6 +196,9 @@ describe('useARC59SendSummaryScreen', () => {
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
+        // Slider stays in its slid/loading state through to the processing
+        // screen — it is not reset on confirm.
+        expect(result.current.isProcessing).toBe(true)
     })
 
     it('does not navigate when warning is dismissed', async () => {
@@ -205,6 +210,8 @@ describe('useARC59SendSummaryScreen', () => {
         })
 
         expect(mockNavigate).not.toHaveBeenCalled()
+        // Dismissing the warning returns the slider to idle so the user can retry.
+        expect(result.current.isProcessing).toBe(false)
     })
 
     it('goes back on handleClose', () => {

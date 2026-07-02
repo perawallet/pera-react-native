@@ -11,8 +11,7 @@
  */
 
 import nacl from 'tweetnacl'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import { encodeAddress, seedFromMnemonic } from 'algosdk'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { ALGO25_TEST_ADDRESS, ALGO25_TEST_MNEMONIC } from './onboarding'

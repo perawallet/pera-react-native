@@ -15,7 +15,7 @@ import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { mnemonicToEntropy } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import { seedFromMnemonic } from 'algosdk'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { ALGO25_TEST_MNEMONIC, ALGO25_TEST_ADDRESS } from './onboarding'

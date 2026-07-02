@@ -25,6 +25,7 @@ import type {
     PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { Address } from '@perawallet/wallet-core-blockchain'
+import { SignedTransaction } from 'algosdk'
 import {
     encodeToBase64,
     withTimeout,
@@ -190,7 +191,7 @@ const signTransactions = async (
         const txn = transactions[index]
 
         if (!indicesToSign.includes(index)) {
-            signed.push({ txn } as PeraSignedTransaction)
+            signed.push(new SignedTransaction({ txn }))
             continue
         }
 
@@ -221,11 +222,13 @@ const signTransactions = async (
                 ? Address.fromString(hwAccount.address)
                 : undefined
 
-        signed.push({
-            txn,
-            sig: signature,
-            authAddress,
-        } as PeraSignedTransaction)
+        signed.push(
+            new SignedTransaction({
+                txn,
+                sig: signature,
+                sgnr: authAddress,
+            }),
+        )
     }
 
     callbacks?.onSigningComplete?.()

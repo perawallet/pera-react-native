@@ -21,9 +21,15 @@ export type EncodeSignedTransactionsFn = (
 
 /**
  * Algod client interface for submitting raw transactions.
+ *
+ * Mirrors algosdk v9's fluent builder shape: `sendRawTransaction(...)` returns
+ * a request builder whose `.do()` performs the network call. The real
+ * `AlgorandClient.client.algod` returns a `SendRawTransaction` builder here.
  */
 export interface AlgodClientInterface {
-    sendRawTransaction(rawTxns: Uint8Array): Promise<unknown>
+    sendRawTransaction(rawTxns: Uint8Array | Uint8Array[]): {
+        do(): Promise<unknown>
+    }
 }
 
 /**

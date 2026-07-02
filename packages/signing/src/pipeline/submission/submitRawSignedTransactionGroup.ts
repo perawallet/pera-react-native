@@ -34,9 +34,9 @@ export const submitRawSignedTransactionGroup = async (
 ): Promise<string[]> => {
     const concatenated = concatBytes(...rawSignedTransactions)
 
-    const response = (await algokit.client.algod.sendRawTransaction(
-        concatenated,
-    )) as { txid?: string | string[] }
+    const response = (await algokit.client.algod
+        .sendRawTransaction(concatenated)
+        .do()) as { txid?: string | string[] }
 
     const ids: string[] = []
     if (typeof response?.txid === 'string') {

@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { encodeAlgorandAddress, isValidAlgorandAddress } from '../addresses'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 
 describe('addresses utils', () => {
     describe('encodeAlgorandAddress', () => {

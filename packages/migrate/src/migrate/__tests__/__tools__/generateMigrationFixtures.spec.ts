@@ -28,7 +28,7 @@ import {
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 
 const HD_ENTROPY_HEX =
     '6d6967726174696f6e2d73696d756c61746f722d68642d77616c6c65742d3031'

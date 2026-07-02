@@ -14,15 +14,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Address } from '@algorandfoundation/algokit-utils/common'
+import { Address, Transaction, TransactionType } from 'algosdk'
 import {
-    Transaction,
-    TransactionType,
     groupTransactions,
-} from '@algorandfoundation/algokit-utils/transact'
-import type {
-    PeraDisplayableTransaction,
-    PeraTransaction,
+    type PeraDisplayableTransaction,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useGroupSimulationQuery } from '../useGroupSimulationQuery'
 
@@ -46,13 +42,17 @@ const RECEIVER = new Address(new Uint8Array(32).fill(7))
 
 const payment = (amount: bigint): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: SENDER,
-        fee: 1000n,
-        firstValid: 1000n,
-        lastValid: 2000n,
-        genesisHash: new Uint8Array(32),
-        payment: { receiver: RECEIVER, amount },
+        suggestedParams: {
+            fee: 1000n,
+            minFee: 1000n,
+            firstValid: 1000n,
+            lastValid: 2000n,
+            genesisHash: new Uint8Array(32),
+            genesisID: 'testnet-v1.0',
+        },
+        paymentParams: { receiver: RECEIVER, amount },
     })
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {

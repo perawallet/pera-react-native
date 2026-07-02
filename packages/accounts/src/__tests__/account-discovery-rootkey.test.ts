@@ -19,7 +19,7 @@ import {
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 
 const USER_MNEMONIC =
     'achieve plunge scare have music possible will garden expect kangaroo impulse deny obvious inhale expand process betray voice crash insane electric mean test rude'

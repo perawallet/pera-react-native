@@ -12,8 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import nacl from 'tweetnacl'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { seedFromMnemonic, encodeAddress } from 'algosdk'
 
 /**
  * Integration test for Algo25 (standard Algorand 25-word mnemonic) key derivation.

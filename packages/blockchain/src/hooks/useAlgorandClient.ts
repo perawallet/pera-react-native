@@ -19,7 +19,7 @@ import {
     type PeraTransactionGroup,
     type PeraTransactionSigner,
 } from '../models'
-import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/transact'
+import { encodeSignedTransactions } from '../utils/transact'
 import { logger } from '@perawallet/wallet-core-shared'
 import { toAlgodError } from '../errors'
 

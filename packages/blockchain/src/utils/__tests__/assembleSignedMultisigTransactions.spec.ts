@@ -11,11 +11,11 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { Address } from '@algorandfoundation/algokit-utils'
 import {
-    decodeMsgpack,
-    encodeMsgpack,
-} from '@algorandfoundation/algokit-utils/common'
+    Address,
+    msgpackRawDecode as decodeMsgpack,
+    msgpackRawEncode as encodeMsgpack,
+} from 'algosdk'
 import nacl from 'tweetnacl'
 import {
     assembleSignedMultisigTransactions,
@@ -102,14 +102,13 @@ describe('assembleSignedMultisigTransactions', () => {
 
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
 
         expect(Object.keys(decoded).sort()).toEqual(['msig', 'txn'])
 
         const msig = decoded.msig as Record<string, unknown>
-        expect(msig.v).toBe(1)
-        expect(msig.thr).toBe(2)
+        expect(Number(msig.v)).toBe(1)
+        expect(Number(msig.thr)).toBe(2)
         const subsigs = msig.subsig as Array<{
             pk: Uint8Array
             s?: Uint8Array
@@ -139,10 +138,10 @@ describe('assembleSignedMultisigTransactions', () => {
         if (result.kind !== 'success') throw new Error('expected success')
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
-        // The inner txn map was `{ "x": 1 }` — survives roundtrip.
-        expect(decoded.txn).toEqual({ x: 1 })
+        // The inner txn map was `{ "x": 1 }` — survives roundtrip. msgpack
+        // ints decode to bigint.
+        expect(decoded.txn).toEqual({ x: 1n })
     })
 
     test('rejects a signature paired with transaction bytes the participant never signed', () => {
@@ -381,7 +380,6 @@ describe('assembleSignedMultisigTransactions', () => {
         if (result.kind !== 'success') return
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
 
         expect(Object.keys(decoded).sort()).toEqual(['msig', 'sgnr', 'txn'])
@@ -411,7 +409,6 @@ describe('assembleSignedMultisigTransactions', () => {
         if (result.kind !== 'success') return
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
         expect(Object.keys(decoded).sort()).toEqual(['msig', 'txn'])
     })

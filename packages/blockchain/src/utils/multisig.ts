@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    MultisigAccount,
-    type MultisigMetadata,
-} from '@algorandfoundation/algokit-utils/transact'
-import { Address } from '@algorandfoundation/algokit-utils'
+import { multisigAddress, type MultisigMetadata } from 'algosdk'
 
 export const generateMultisigAddress = (
     version: number,
@@ -24,9 +20,8 @@ export const generateMultisigAddress = (
     const params: MultisigMetadata = {
         version,
         threshold,
-        addrs: addresses.map(addr => Address.fromString(addr)),
+        addrs: addresses,
     }
 
-    const msig = new MultisigAccount(params, [])
-    return msig.addr.toString()
+    return multisigAddress(params).toString()
 }

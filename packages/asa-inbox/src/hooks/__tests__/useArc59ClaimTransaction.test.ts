@@ -21,6 +21,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: vi.fn(),
     useNetwork: vi.fn(),
 }))
+vi.mock('@algorandfoundation/algokit-utils', () => ({
+    // Identity passthrough: the populated ATC is the one composer.build()
+    // returns, so buildGroup() resolves to the stub transactions.
+    populateAppCallResources: vi.fn(async (atc: unknown) => atc),
+}))
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         arc59: {
@@ -76,6 +81,7 @@ describe('useArc59ClaimTransaction', () => {
         addAssetOptIn: Mock
         build: Mock
     }
+    let mockAccountDo: Mock
     let mockAccountInformation: Mock
     let mockAlgokit: {
         newGroup: Mock
@@ -88,12 +94,13 @@ describe('useArc59ClaimTransaction', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
+        const mockAtc = {
+            buildGroup: vi.fn().mockReturnValue([{ txn: STUB_TXN }]),
+        }
         mockComposer = {
             addAppCallMethodCall: vi.fn().mockReturnThis(),
             addAssetOptIn: vi.fn().mockReturnThis(),
-            build: vi
-                .fn()
-                .mockResolvedValue({ transactions: [{ txn: STUB_TXN }] }),
+            build: vi.fn().mockResolvedValue({ atc: mockAtc }),
         }
 
         mockParamsClaimAlgo = vi
@@ -102,9 +109,10 @@ describe('useArc59ClaimTransaction', () => {
         mockParamsClaim = vi.fn().mockResolvedValue({ method: 'arc59_claim' })
         mockParamsReject = vi.fn().mockResolvedValue({ method: 'arc59_reject' })
 
-        mockAccountInformation = vi.fn().mockResolvedValue({
+        mockAccountDo = vi.fn().mockResolvedValue({
             assets: [{ assetId: 12345n, amount: 0n, isFrozen: false }],
         })
+        mockAccountInformation = vi.fn().mockReturnValue({ do: mockAccountDo })
 
         mockAlgokit = {
             newGroup: vi.fn().mockReturnValue(mockComposer),
@@ -175,7 +183,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('adds asset opt-in with staticFee 0 when sender is not opted in', async () => {
-            mockAccountInformation.mockResolvedValue({ assets: [] })
+            mockAccountDo.mockResolvedValue({ assets: [] })
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 
@@ -191,9 +199,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('treats account info error as not opted in', async () => {
-            mockAccountInformation.mockRejectedValue(
-                new Error('account not found'),
-            )
+            mockAccountDo.mockRejectedValue(new Error('account not found'))
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 
@@ -242,7 +248,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('adds 1 * minFee to claim fee when not opted in', async () => {
-            mockAccountInformation.mockResolvedValue({ assets: [] })
+            mockAccountDo.mockResolvedValue({ assets: [] })
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 
@@ -283,7 +289,7 @@ describe('useArc59ClaimTransaction', () => {
         })
 
         test('treats accountInfo with no assets field as not opted in', async () => {
-            mockAccountInformation.mockResolvedValue({})
+            mockAccountDo.mockResolvedValue({})
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 

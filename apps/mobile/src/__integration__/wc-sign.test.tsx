@@ -43,12 +43,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'
 import { act, renderHook, screen, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-    encodeTransaction,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
+import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
 
 import { createTestQueryClient, render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -84,9 +80,11 @@ const senderB = new Address(new Uint8Array(32).fill(2))
 
 const baseTxParams = {
     fee: 1000n,
+    minFee: 1000n,
+    flatFee: true,
     firstValid: 1000n,
     lastValid: 2000n,
-    genesisId: 'mainnet-v1.0',
+    genesisID: 'mainnet-v1.0',
     genesisHash: new Uint8Array(32).fill(0xab),
 }
 
@@ -99,19 +97,19 @@ const TESTNET_GENESIS_HASH = new Uint8Array(
 /** User's payment transaction — will be in `txs` (signable) */
 const makeTx0 = () =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: senderA,
-        ...baseTxParams,
-        payment: { receiver: senderB, amount: 1_000_000n },
+        suggestedParams: baseTxParams,
+        paymentParams: { receiver: senderB, amount: 1_000_000n },
     })
 
 /** External party's payment transaction — only in `groupContext` (index 1) */
 const makeTx1 = () =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: senderB,
-        ...baseTxParams,
-        payment: { receiver: senderA, amount: 500_000n },
+        suggestedParams: baseTxParams,
+        paymentParams: { receiver: senderA, amount: 500_000n },
     })
 
 const SIGNING_ACCOUNT: WalletAccount = {
@@ -391,14 +389,18 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
             // places the transaction in `toSign` (an empty toSign short-circuits
             // before analysis, bypassing the genesis-hash check entirely).
             const foreignNetworkTx = new Transaction({
-                type: TransactionType.Payment,
+                type: TransactionType.pay,
                 sender: Address.fromString(SIGNING_ACCOUNT.address),
-                fee: 1000n,
-                firstValid: 1000n,
-                lastValid: 2000n,
-                genesisId: 'testnet-v1.0',
-                genesisHash: TESTNET_GENESIS_HASH,
-                payment: { receiver: senderB, amount: 1_000_000n },
+                suggestedParams: {
+                    fee: 1000n,
+                    minFee: 1000n,
+                    flatFee: true,
+                    firstValid: 1000n,
+                    lastValid: 2000n,
+                    genesisID: 'testnet-v1.0',
+                    genesisHash: TESTNET_GENESIS_HASH,
+                },
+                paymentParams: { receiver: senderB, amount: 1_000_000n },
             })
             const txnBase64 = encodeToBase64(
                 encodeTransaction(foreignNetworkTx),

@@ -139,7 +139,7 @@ const extractSignatures = (signedData: SignedData): Nullable<string>[] => {
     }
     return signedData.signed.map(stx => {
         if (stx.sig) return encodeToBase64(stx.sig)
-        const msigSig = stx.msig?.subsigs.find(s => s.sig)?.sig
+        const msigSig = stx.msig?.subsig.find(s => s.s)?.s
         if (msigSig) return encodeToBase64(msigSig)
         return null
     })

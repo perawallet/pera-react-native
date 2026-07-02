@@ -62,51 +62,16 @@ import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC,
 } from './__fixtures__/onboarding'
+import { modelsv2, encodeMsgpack, decodeMsgpack } from 'algosdk'
 
 // AlgoKit's transaction composer auto-runs a `POST /v2/transactions/simulate`
 // (msgpack) to populate app-call resources whenever the group contains an app
 // call — which every ARC-59 claim/reject group does. There is no shared handler
 // factory for it, so we synthesize a faithful success response by echoing the
 // request's own transactions back (no extra resources to populate → the group
-// is built and submitted as-is). The codec + metas come from AlgoKit's own
-// algod-client model layer (reached via the package's `./*` export), so the
-// bytes round-trip through the same decoder the client uses. These internal
-// modules ship `.mjs` without `.d.ts`, so they're loaded untyped at runtime
-// (dynamic import) rather than imported at the type level.
-const ALGOD_MODEL_RUNTIME =
-    '@algorandfoundation/algokit-utils/packages/algod_client/src/core/model-runtime'
-const ALGOD_SIMULATE_REQUEST_MODEL =
-    '@algorandfoundation/algokit-utils/packages/algod_client/src/models/simulate-request'
-const ALGOD_SIMULATE_RESPONSE_MODEL =
-    '@algorandfoundation/algokit-utils/packages/algod_client/src/models/simulate-response'
-
-type AlgodMsgpackCodec = {
-    decodeMsgpack: (bytes: Uint8Array, meta: unknown) => unknown
-    encodeMsgpack: (value: unknown, meta: unknown) => Uint8Array
-}
-
-const loadSimulateCodec = async (): Promise<{
-    codec: AlgodMsgpackCodec
-    requestMeta: unknown
-    responseMeta: unknown
-}> => {
-    const [runtime, requestModel, responseModel] = await Promise.all([
-        import(
-            /* @vite-ignore */ ALGOD_MODEL_RUNTIME
-        ) as Promise<AlgodMsgpackCodec>,
-        import(/* @vite-ignore */ ALGOD_SIMULATE_REQUEST_MODEL) as Promise<{
-            SimulateRequestMeta: unknown
-        }>,
-        import(/* @vite-ignore */ ALGOD_SIMULATE_RESPONSE_MODEL) as Promise<{
-            SimulateResponseMeta: unknown
-        }>,
-    ])
-    return {
-        codec: runtime,
-        requestMeta: requestModel.SimulateRequestMeta,
-        responseMeta: responseModel.SimulateResponseMeta,
-    }
-}
+// is built and submitted as-is), decoding the request and encoding the response
+// through algosdk's `modelsv2` simulate types so the bytes round-trip through
+// the same codec the client uses.
 
 // ---------------------------------------------------------------------------
 // Navigation model
@@ -256,22 +221,27 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
 // resolves and the group proceeds to signing + submission.
 const mockAlgodSimulate = () =>
     http.post('*/v2/transactions/simulate', async ({ request }) => {
-        const { codec, requestMeta, responseMeta } = await loadSimulateCodec()
         const reqBytes = new Uint8Array(await request.arrayBuffer())
-        const decoded = codec.decodeMsgpack(reqBytes, requestMeta) as {
-            round?: bigint
-            txnGroups: Array<{ txns: Array<{ txn: unknown }> }>
-        }
-        const response = {
-            version: 2,
+        const decoded = decodeMsgpack(reqBytes, modelsv2.SimulateRequest)
+        const response = new modelsv2.SimulateResponse({
+            version: 2n,
             lastRound: decoded.round ?? 1n,
-            txnGroups: decoded.txnGroups.map(group => ({
-                txnResults: group.txns.map(entry => ({
-                    txnResult: { poolError: '', txn: entry.txn },
-                })),
-            })),
-        }
-        const responseBytes = codec.encodeMsgpack(response, responseMeta)
+            txnGroups: decoded.txnGroups.map(
+                group =>
+                    new modelsv2.SimulateTransactionGroupResult({
+                        txnResults: group.txns.map(
+                            stxn =>
+                                new modelsv2.SimulateTransactionResult({
+                                    txnResult:
+                                        new modelsv2.PendingTransactionResponse(
+                                            { poolError: '', txn: stxn },
+                                        ),
+                                }),
+                        ),
+                    }),
+            ),
+        })
+        const responseBytes = encodeMsgpack(response)
         return HttpResponse.arrayBuffer(
             responseBytes.buffer.slice(
                 responseBytes.byteOffset,

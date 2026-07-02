@@ -48,7 +48,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
     useAlgorandClient: () => ({
         client: {
-            algod: { accountInformation: mockAccountInformation },
+            algod: {
+                accountInformation: () => ({ do: mockAccountInformation }),
+            },
         },
         getSuggestedParams: mockGetSuggestedParams,
         newGroup: mockNewGroup,

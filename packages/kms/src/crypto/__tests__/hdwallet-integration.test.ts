@@ -19,7 +19,7 @@ import {
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 
 /**
  * Integration test for HD wallet (BIP39 24-word mnemonic) key derivation.

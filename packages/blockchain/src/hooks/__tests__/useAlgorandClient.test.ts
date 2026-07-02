@@ -45,18 +45,9 @@ vi.mock('../useNetwork', () => ({
     })),
 }))
 
-// Mock encodeSignedTransactions and TransactionType
-vi.mock('@algorandfoundation/algokit-utils/transact', () => ({
+// Mock encodeSignedTransactions
+vi.mock('../../utils/transact', () => ({
     encodeSignedTransactions: vi.fn(txs => txs),
-    TransactionType: {
-        Payment: 'pay',
-        AssetTransfer: 'axfer',
-        AssetConfig: 'acfg',
-        AssetFreeze: 'afrz',
-        ApplicationCall: 'appl',
-        KeyRegistration: 'keyreg',
-        StateProof: 'stpf',
-    },
 }))
 
 describe('services/blockchain/hooks', () => {

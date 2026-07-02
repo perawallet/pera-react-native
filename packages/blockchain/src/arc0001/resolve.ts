@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { decodeTransactions } from '@algorandfoundation/algokit-utils/transact'
+import { decodeTransactions } from '../utils/transact'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { ZodError } from 'zod'
 

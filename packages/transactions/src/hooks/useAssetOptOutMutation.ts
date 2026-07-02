@@ -115,8 +115,9 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
 
                 const sender = paramsList[0].sender
 
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(sender)
+                const accountInfo = await algokit.client.algod
+                    .accountInformation(sender)
+                    .do()
                 const assets = accountInfo.assets ?? []
 
                 // Skip txn-building for assets the chain shows as already

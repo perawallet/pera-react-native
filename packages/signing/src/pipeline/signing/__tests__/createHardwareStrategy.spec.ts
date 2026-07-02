@@ -326,7 +326,7 @@ describe('createHardwareStrategy', () => {
             const result = await strategy.sign(group, account)
 
             if (result.signedData.type === 'transactions') {
-                expect(result.signedData.signed[0].authAddress).toBeDefined()
+                expect(result.signedData.signed[0].sgnr).toBeDefined()
             }
         })
 
@@ -342,7 +342,7 @@ describe('createHardwareStrategy', () => {
             const result = await strategy.sign(group, account)
 
             if (result.signedData.type === 'transactions') {
-                expect(result.signedData.signed[0].authAddress).toBeUndefined()
+                expect(result.signedData.signed[0].sgnr).toBeUndefined()
             }
         })
 

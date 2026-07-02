@@ -53,7 +53,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({
         client: {
             algod: {
-                accountInformation: accountInformationMock,
+                accountInformation: () => ({ do: accountInformationMock }),
             },
         },
         getSuggestedParams: getSuggestedParamsMock,

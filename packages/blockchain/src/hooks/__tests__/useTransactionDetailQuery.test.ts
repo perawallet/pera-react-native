@@ -33,6 +33,7 @@ describe('useTransactionDetailQuery', () => {
     let queryClient: QueryClient
     let wrapper: React.FC<{ children: React.ReactNode }>
     let mockLookupTransactionById: Mock
+    let mockDo: Mock
 
     const mockTransaction = {
         id: 'TX123',
@@ -62,13 +63,14 @@ describe('useTransactionDetailQuery', () => {
                 children,
             )
 
-        mockLookupTransactionById = vi
-            .fn()
-            .mockResolvedValue({ transaction: mockTransaction })
+        mockDo = vi.fn().mockResolvedValue({ transaction: mockTransaction })
+        // mockLookupTransactionById stands in for the `.lookupTransactionByID(id)`
+        // builder call — it receives the id and returns the `.do()` executor.
+        mockLookupTransactionById = vi.fn(() => ({ do: mockDo }))
         ;(useAlgorandClient as Mock).mockReturnValue({
             client: {
                 indexer: {
-                    lookupTransactionById: mockLookupTransactionById,
+                    lookupTransactionByID: mockLookupTransactionById,
                 },
             },
         })
@@ -108,7 +110,7 @@ describe('useTransactionDetailQuery', () => {
 
     test('handles errors', async () => {
         const mockError = new Error('Transaction not found')
-        mockLookupTransactionById.mockRejectedValue(mockError)
+        mockDo.mockRejectedValue(mockError)
 
         const { result } = renderHook(
             () =>

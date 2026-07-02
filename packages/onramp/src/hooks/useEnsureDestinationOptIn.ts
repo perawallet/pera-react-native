@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { AlgoAmount } from '@algorandfoundation/algokit-utils'
+import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import {
     ASSET_MBR,
     useAlgorandClient,
@@ -85,8 +85,9 @@ export const useEnsureDestinationOptIn =
                 const assetId = destinationAssetId
 
                 // 2. Already opted in → nothing to do.
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(address)
+                const accountInfo = await algokit.client.algod
+                    .accountInformation(address)
+                    .do()
                 const isOptedIn = accountInfo.assets?.some(
                     a => a.assetId === assetId,
                 )
@@ -98,7 +99,9 @@ export const useEnsureDestinationOptIn =
                 // balance formula used by useAssetOptInMutation).
                 const suggestedParams = await algokit.getSuggestedParams()
                 const balanceNeeded =
-                    accountInfo.minBalance + ASSET_MBR + suggestedParams.minFee
+                    accountInfo.minBalance +
+                    ASSET_MBR +
+                    BigInt(suggestedParams.minFee)
                 const isSponsored = accountInfo.amount < balanceNeeded
 
                 if (confirmOptIn) {

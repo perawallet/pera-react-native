@@ -16,6 +16,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 import { config } from '@perawallet/wallet-core-config'
 import { ARC59Client } from '../clients'
 import {
@@ -48,8 +49,9 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
     const isOptedInToAsset = useCallback(
         async (address: string, assetId: bigint): Promise<boolean> => {
             try {
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(address)
+                const accountInfo = await algokit.client.algod
+                    .accountInformation(address)
+                    .do()
                 return (accountInfo.assets ?? []).some(
                     a => BigInt(a.assetId) === assetId,
                 )
@@ -80,10 +82,11 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
 
             // Calculate main call fee dynamically
             // Base: 3 * minFee (claim itself + 2 inner txns)
-            let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * suggestedParams.minFee
+            const minFee = BigInt(suggestedParams.minFee)
+            let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * minFee
             if (shouldClaimAlgo)
-                claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
-            if (!optedIn) claimFee += suggestedParams.minFee
+                claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
+            if (!optedIn) claimFee += minFee
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
@@ -109,8 +112,15 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 }),
             )
 
-            const { transactions } = await composer.build()
-            return transactions.map(t => t.txn)
+            // v9's composer.build() doesn't populate app-call resources (only
+            // .send() does); populate them via simulate so the ARC59 router's
+            // dynamic resource accesses are available when the pipeline submits.
+            const { atc } = await composer.build()
+            const populatedAtc = await populateAppCallResources(
+                atc,
+                algokit.client.algod,
+            )
+            return populatedAtc.buildGroup().map(t => t.txn)
         },
         [algokit, isMainnet, isOptedInToAsset],
     )
@@ -134,11 +144,10 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
 
             // Calculate main call fee dynamically
             // Base: 3 * minFee (reject itself + 2 inner txns)
-            let rejectFee =
-                BigInt(BASE_REJECT_TX_COUNT) * suggestedParams.minFee
+            const minFee = BigInt(suggestedParams.minFee)
+            let rejectFee = BigInt(BASE_REJECT_TX_COUNT) * minFee
             if (shouldClaimAlgo)
-                rejectFee +=
-                    BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+                rejectFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
@@ -156,8 +165,15 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 }),
             )
 
-            const { transactions } = await composer.build()
-            return transactions.map(t => t.txn)
+            // v9's composer.build() doesn't populate app-call resources (only
+            // .send() does); populate them via simulate so the ARC59 router's
+            // dynamic resource accesses are available when the pipeline submits.
+            const { atc } = await composer.build()
+            const populatedAtc = await populateAppCallResources(
+                atc,
+                algokit.client.algod,
+            )
+            return populatedAtc.buildGroup().map(t => t.txn)
         },
         [algokit, isMainnet],
     )

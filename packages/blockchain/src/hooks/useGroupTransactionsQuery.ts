@@ -40,11 +40,10 @@ export const useGroupTransactionsQuery = ({
     const query = useQuery({
         queryKey: getGroupTransactionsQueryKey(groupId ?? '', network),
         queryFn: async () => {
-            const response = await algokit.client.indexer.searchForTransactions(
-                {
-                    groupId: groupId!,
-                },
-            )
+            const response = await algokit.client.indexer
+                .searchForTransactions()
+                .groupid(groupId!)
+                .do()
             return response.transactions.map(
                 mapIndexerTxToDisplayableTransaction,
             )

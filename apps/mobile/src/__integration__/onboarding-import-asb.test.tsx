@@ -54,7 +54,7 @@ import {
     buildMixedAsbBackup,
     buildSingleAccountAsbBackup,
 } from './__fixtures__/asb'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import { seedFromMnemonic } from 'algosdk'
 
 // Backup decryption is synchronous but the screen yields to React after
 // setting `isProcessing` so the loading overlay can paint; together with

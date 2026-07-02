@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import {
-    waitForConfirmation as algokitWaitForConfirmation,
-    type AlgorandClient,
-} from '@algorandfoundation/algokit-utils'
+import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -142,12 +140,13 @@ export const submitAndAutoRefresh = async (
         encodeSignedTransactions,
         waitForConfirmation: txId =>
             // The runtime instance is always an AlgorandClient whose
-            // .client.algod is the SDK Algodv2; the cast bridges the
+            // .client.algod is the SDK AlgodClient; the cast bridges the
             // intentionally-narrow AlgokitClientInterface used for testing.
-            algokitWaitForConfirmation(
+            // algosdk's signature is (client, txid, waitRounds).
+            algosdkWaitForConfirmation(
+                (algokit as unknown as AlgorandClient).client.algod,
                 txId,
                 DEFAULT_ROUNDS_TO_WAIT,
-                (algokit as unknown as AlgorandClient).client.algod,
             ).then(() => undefined),
         walletAddresses,
         network,

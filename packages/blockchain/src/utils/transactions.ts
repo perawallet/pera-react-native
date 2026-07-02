@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-import {
-    TransactionType,
-    type PaymentTransactionFields,
-    type AssetTransferTransactionFields,
-    type AssetConfigTransactionFields,
-    type AssetFreezeTransactionFields,
-    type KeyRegistrationTransactionFields,
-    type AppCallTransactionFields,
-    type OnApplicationComplete,
-} from '@algorandfoundation/algokit-utils/transact'
+import { TransactionType, type OnApplicationComplete } from 'algosdk'
 import type {
     AssetConfigType,
     AssetTransferType,
@@ -29,28 +20,20 @@ import type {
 } from '../models'
 import { encodeAlgorandAddress } from './addresses'
 
-import {
-    type OnCompletion,
-    type Transaction as IndexerTransaction,
-} from '@algorandfoundation/algokit-utils/indexer-client'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const mapIndexerTxToDisplayableTransaction = (
-    tx: IndexerTransaction,
+    tx: PeraDisplayableTransaction,
 ): PeraDisplayableTransaction => {
     return {
         ...tx,
-        roundTimeMillis: tx.roundTime ? tx.roundTime * 1000 : undefined,
+        roundTimeMillis: tx.roundTime ? Number(tx.roundTime) * 1000 : undefined,
     }
 }
 
 export const mapToDisplayableTransaction = (
     tx: PeraTransaction,
 ): Nullable<PeraDisplayableTransaction> => {
-    if (tx.type === TransactionType.Unknown) {
-        return null
-    }
-
     const displayTx: PeraDisplayableTransaction = {
         fee: tx.fee ?? 0n,
         firstValid: tx.firstValid,
@@ -65,7 +48,7 @@ export const mapToDisplayableTransaction = (
             | 'appl'
             | 'stpf'
             | 'hb',
-        genesisId: tx.genesisId,
+        genesisId: tx.genesisID,
         genesisHash: tx.genesisHash,
         group: tx.group,
         lease: tx.lease,
@@ -76,8 +59,8 @@ export const mapToDisplayableTransaction = (
 
     // Map specific fields based on type
     switch (tx.type) {
-        case TransactionType.Payment: {
-            const paymentTx = tx.payment as PaymentTransactionFields
+        case TransactionType.pay: {
+            const paymentTx = tx.payment!
             displayTx.paymentTransaction = {
                 amount: paymentTx.amount,
                 receiver: encodeAlgorandAddress(paymentTx.receiver.publicKey),
@@ -89,10 +72,10 @@ export const mapToDisplayableTransaction = (
             }
             break
         }
-        case TransactionType.AssetTransfer: {
-            const axferTx = tx.assetTransfer as AssetTransferTransactionFields
+        case TransactionType.axfer: {
+            const axferTx = tx.assetTransfer!
             displayTx.assetTransferTransaction = {
-                assetId: axferTx.assetId,
+                assetId: axferTx.assetIndex,
                 amount: axferTx.amount,
                 receiver: encodeAlgorandAddress(axferTx.receiver.publicKey),
                 closeTo: axferTx.closeRemainderTo
@@ -104,10 +87,10 @@ export const mapToDisplayableTransaction = (
             }
             break
         }
-        case TransactionType.AssetConfig: {
-            const acfgTx = tx.assetConfig as AssetConfigTransactionFields
+        case TransactionType.acfg: {
+            const acfgTx = tx.assetConfig!
             displayTx.assetConfigTransaction = {
-                assetId: acfgTx.assetId,
+                assetId: acfgTx.assetIndex,
                 params: {
                     name: acfgTx.assetName,
                     unitName: acfgTx.unitName,
@@ -126,27 +109,26 @@ export const mapToDisplayableTransaction = (
                     clawback: acfgTx.clawback
                         ? encodeAlgorandAddress(acfgTx.clawback.publicKey)
                         : undefined,
-                    url: acfgTx.url,
-                    metadataHash: acfgTx.metadataHash,
+                    url: acfgTx.assetURL,
+                    metadataHash: acfgTx.assetMetadataHash,
                     creator: '',
                 },
             }
             break
         }
-        case TransactionType.AssetFreeze: {
-            const afrzTx = tx.assetFreeze as AssetFreezeTransactionFields
+        case TransactionType.afrz: {
+            const afrzTx = tx.assetFreeze!
             displayTx.assetFreezeTransaction = {
-                assetId: afrzTx.assetId,
-                address: afrzTx.freezeTarget
-                    ? encodeAlgorandAddress(afrzTx.freezeTarget.publicKey)
+                assetId: afrzTx.assetIndex,
+                address: afrzTx.freezeAccount
+                    ? encodeAlgorandAddress(afrzTx.freezeAccount.publicKey)
                     : '',
                 newFreezeStatus: afrzTx.frozen,
             }
             break
         }
-        case TransactionType.KeyRegistration: {
-            const keyregTx =
-                tx.keyRegistration as KeyRegistrationTransactionFields
+        case TransactionType.keyreg: {
+            const keyregTx = tx.keyreg!
             displayTx.keyregTransaction = {
                 voteFirstValid: keyregTx.voteFirst,
                 voteLastValid: keyregTx.voteLast,
@@ -157,41 +139,27 @@ export const mapToDisplayableTransaction = (
             }
             break
         }
-        case TransactionType.AppCall: {
-            const applTx = tx.appCall as AppCallTransactionFields
+        case TransactionType.appl: {
+            const applTx = tx.applicationCall!
             displayTx.applicationTransaction = {
-                applicationId: applTx.appId,
-                onCompletion: mapOnCompletion(
-                    applTx.onComplete,
-                ) as OnCompletion,
-                applicationArgs: applTx.args ? [...applTx.args] : [],
-                accounts: applTx.accountReferences
-                    ? [...applTx.accountReferences]
-                    : [],
-                foreignApps: applTx.appReferences
-                    ? [...applTx.appReferences]
-                    : [],
-                foreignAssets: applTx.assetReferences
-                    ? [...applTx.assetReferences]
+                applicationId: applTx.appIndex,
+                onCompletion: mapOnCompletion(applTx.onComplete),
+                applicationArgs: applTx.appArgs ? [...applTx.appArgs] : [],
+                accounts: applTx.accounts ? [...applTx.accounts] : [],
+                foreignApps: applTx.foreignApps ? [...applTx.foreignApps] : [],
+                foreignAssets: applTx.foreignAssets
+                    ? [...applTx.foreignAssets]
                     : [],
                 approvalProgram: applTx.approvalProgram,
-                clearStateProgram: applTx.clearStateProgram,
-                globalStateSchema: applTx.globalStateSchema
-                    ? {
-                          numByteSlices: Number(
-                              applTx.globalStateSchema.numByteSlices,
-                          ),
-                          numUints: Number(applTx.globalStateSchema.numUints),
-                      }
-                    : undefined,
-                localStateSchema: applTx.localStateSchema
-                    ? {
-                          numByteSlices: Number(
-                              applTx.localStateSchema.numByteSlices,
-                          ),
-                          numUints: Number(applTx.localStateSchema.numUints),
-                      }
-                    : undefined,
+                clearStateProgram: applTx.clearProgram,
+                globalStateSchema: {
+                    numByteSlice: Number(applTx.numGlobalByteSlices),
+                    numUint: Number(applTx.numGlobalInts),
+                },
+                localStateSchema: {
+                    numByteSlice: Number(applTx.numLocalByteSlices),
+                    numUint: Number(applTx.numLocalInts),
+                },
             }
             break
         }
@@ -204,15 +172,14 @@ const transactionTypeMap: Record<
     TransactionType,
     'pay' | 'keyreg' | 'acfg' | 'axfer' | 'afrz' | 'appl' | 'stpf' | 'hb'
 > = {
-    [TransactionType.Payment]: 'pay',
-    [TransactionType.AssetTransfer]: 'axfer',
-    [TransactionType.AssetConfig]: 'acfg',
-    [TransactionType.AssetFreeze]: 'afrz',
-    [TransactionType.KeyRegistration]: 'keyreg',
-    [TransactionType.AppCall]: 'appl',
-    [TransactionType.StateProof]: 'stpf',
-    [TransactionType.Heartbeat]: 'hb',
-    [TransactionType.Unknown]: 'pay', // Fallback
+    [TransactionType.pay]: 'pay',
+    [TransactionType.axfer]: 'axfer',
+    [TransactionType.acfg]: 'acfg',
+    [TransactionType.afrz]: 'afrz',
+    [TransactionType.keyreg]: 'keyreg',
+    [TransactionType.appl]: 'appl',
+    [TransactionType.stpf]: 'stpf',
+    [TransactionType.hb]: 'hb',
 }
 
 const mapTransactionType = (
@@ -304,7 +271,7 @@ const txTypeToPeraTypeMap: Record<string, PeraTransactionType> = {
 export const getTransactionType = (
     tx: PeraDisplayableTransaction,
 ): PeraTransactionType => {
-    return txTypeToPeraTypeMap[tx.txType] ?? 'unknown'
+    return txTypeToPeraTypeMap[tx.txType ?? ''] ?? 'unknown'
 }
 
 /**

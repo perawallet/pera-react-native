@@ -49,13 +49,16 @@ import {
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { QueryClient } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
-import { Address } from '@algorandfoundation/algokit-utils/common'
 import {
+    Address,
+    SignedTransaction,
     Transaction,
     TransactionType,
+} from 'algosdk'
+import {
     encodeTransaction,
     encodeSignedTransaction,
-} from '@algorandfoundation/algokit-utils/transact'
+} from '@perawallet/wallet-core-blockchain'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -361,14 +364,18 @@ const SPONSOR_ADDRESS = new Address(new Uint8Array(32).fill(7))
 // the pooled fee.
 const buildSponsorTxn = (mbrFunding: bigint): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: SPONSOR_ADDRESS,
-        fee: 2000n,
-        firstValid: 1000n,
-        lastValid: 2000n,
-        genesisId: 'mainnet-v1.0',
-        genesisHash: new Uint8Array(32).fill(0xab),
-        payment: {
+        suggestedParams: {
+            fee: 2000n,
+            minFee: 1000n,
+            flatFee: true,
+            firstValid: 1000n,
+            lastValid: 2000n,
+            genesisID: 'mainnet-v1.0',
+            genesisHash: new Uint8Array(32).fill(0xab),
+        },
+        paymentParams: {
             receiver:
                 mbrFunding > 0n
                     ? Address.fromString(ALGO25_TEST_ADDRESS)
@@ -402,10 +409,12 @@ const mockFeeDelegationEcho = (
                     txn: encodeToBase64(encodeTransaction(sponsor)),
                     signers: [],
                     stxn: encodeToBase64(
-                        encodeSignedTransaction({
-                            txn: sponsor,
-                            sig: new Uint8Array(64),
-                        }),
+                        encodeSignedTransaction(
+                            new SignedTransaction({
+                                txn: sponsor,
+                                sig: new Uint8Array(64),
+                            }),
+                        ),
                     ),
                 },
                 { txn: body.txnGroup[0]!.txn, signers: [ALGO25_TEST_ADDRESS] },

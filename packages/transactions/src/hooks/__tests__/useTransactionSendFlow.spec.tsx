@@ -56,7 +56,11 @@ vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({
-        client: { algod: { accountInformation: mockAccountInformation } },
+        client: {
+            algod: {
+                accountInformation: () => ({ do: mockAccountInformation }),
+            },
+        },
         getSuggestedParams: mockGetSuggestedParams,
         newGroup: () => {
             const group = {

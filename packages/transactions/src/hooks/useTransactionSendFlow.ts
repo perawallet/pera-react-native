@@ -106,13 +106,13 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
 
             // Look up receiver's current balance to determine funding needed
             const { amount: currentBalance, minBalance: currentMbr } =
-                await algokit.client.algod.accountInformation(receiver)
+                await algokit.client.algod.accountInformation(receiver).do()
 
             // After opt-in the receiver's MBR increases by ASSET_MBR.
             // The opt-in tx fee is also paid from the receiver's balance.
             const suggestedParams = await algokit.getSuggestedParams()
             const mbrAfterOptIn = currentMbr + ASSET_MBR
-            const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+            const balanceNeeded = mbrAfterOptIn + BigInt(suggestedParams.minFee)
             const fundingNeeded =
                 balanceNeeded > currentBalance
                     ? balanceNeeded - currentBalance

@@ -29,7 +29,8 @@ const mockZeroBytes = vi.fn()
 
 let storeAccounts: WalletAccount[] = []
 
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
     mnemonicFromSeed: (...args: unknown[]) => mockMnemonicFromSeed(...args),
 }))
 

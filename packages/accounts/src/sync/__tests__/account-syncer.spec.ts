@@ -13,22 +13,31 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Network } from '@perawallet/wallet-core-shared'
 
+// algosdk v9 builders: `accountInformation(addr).do()` and
+// `lookupAccountAssets(addr).limit(n).do()`.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     getAlgorandClient: vi.fn(() => ({
         client: {
             algod: {
-                accountInformation: vi.fn().mockResolvedValue({
-                    amount: 0n,
-                    minBalance: 0n,
-                    totalAssetsOptedIn: 0,
-                    totalCreatedAssets: 0,
-                    totalAppsOptedIn: 0,
-                    status: 'Offline',
-                    authAddr: { toString: () => 'S' },
-                }),
+                accountInformation: vi.fn(() => ({
+                    exclude: vi.fn().mockReturnThis(),
+                    do: vi.fn().mockResolvedValue({
+                        amount: 0n,
+                        minBalance: 0n,
+                        totalAssetsOptedIn: 0,
+                        totalCreatedAssets: 0,
+                        totalAppsOptedIn: 0,
+                        status: 'Offline',
+                        authAddr: { toString: () => 'S' },
+                    }),
+                })),
             },
             indexer: {
-                lookupAccountAssets: vi.fn().mockResolvedValue({ assets: [] }),
+                lookupAccountAssets: vi.fn(() => ({
+                    limit: vi.fn().mockReturnThis(),
+                    nextToken: vi.fn().mockReturnThis(),
+                    do: vi.fn().mockResolvedValue({ assets: [] }),
+                })),
             },
         },
     })),

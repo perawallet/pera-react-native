@@ -52,7 +52,7 @@ type useTransactionConfirmationScreenResult = {
     destination: Optional<string>
     selectedAccount: Nullable<WalletAccount>
     selectedAssetId: Optional<string>
-    params: Optional<{ minFee: bigint }>
+    params: Optional<{ minFee: number | bigint }>
     paramsPending: boolean
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
