@@ -10,8 +10,14 @@
  limitations under the License
  */
 
+import { useCallback, useRef } from 'react'
 import { type StyleProp, type ViewStyle } from 'react-native'
-import { Camera, type CameraDevice } from 'react-native-vision-camera'
+import {
+    Camera,
+    createNormalizedMeteringPoint,
+    type CameraDevice,
+    type CameraRef,
+} from 'react-native-vision-camera'
 import {
     useBarcodeScannerOutput,
     type TargetBarcodeFormat,
@@ -49,6 +55,8 @@ export const QRCameraScanner = ({
     onBarcodeScanned,
     onError,
 }: QRCameraScannerProps) => {
+    const cameraRef = useRef<CameraRef>(null)
+
     const scannerOutput = useBarcodeScannerOutput({
         barcodeFormats: BARCODE_FORMATS,
         // Scan from the full-resolution camera buffer rather than the default
@@ -65,12 +73,32 @@ export const QRCameraScanner = ({
         onError,
     })
 
+    // Auto-focus the centre once the preview is streaming. On Android the v5
+    // pipeline doesn't reliably continuous-autofocus a QR held close to the
+    // lens, so codes stay blurry and fail to decode (iOS is unaffected). Since
+    // the reticle is centred, meter there: 'continuous' keeps re-adapting as the
+    // user moves a code into frame, and autoResetAfter:null stops it reverting to
+    // whole-scene AF. Rejects on devices without focus metering — swallowed so we
+    // fall back to native continuous AF plus the tap-to-focus gesture. See PERA-4402.
+    const focusCenter = useCallback(() => {
+        cameraRef.current?.controller
+            ?.focusTo(createNormalizedMeteringPoint(0.5, 0.5), {
+                adaptiveness: 'continuous',
+                autoResetAfter: null,
+            })
+            .catch(() => {})
+    }, [])
+
     return (
         <Camera
+            ref={cameraRef}
             style={style}
             outputs={[scannerOutput]}
             device={device}
             isActive={isActive}
+            onPreviewStarted={focusCenter}
+            // Manual override so the user can also tap to focus elsewhere.
+            enableNativeTapToFocusGesture
         />
     )
 }

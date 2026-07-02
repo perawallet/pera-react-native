@@ -16,13 +16,37 @@ import { describe, it, expect, vi } from 'vitest'
 import { useBarcodeScannerOutput } from 'react-native-vision-camera-barcode-scanner'
 import { QRCameraScanner } from '../QRCameraScanner'
 
+import type { CameraDevice } from 'react-native-vision-camera'
+
+const cameraProps = vi.hoisted(() => ({
+    current: undefined as Record<string, unknown> | undefined,
+}))
+
+// Minimal stub for the mocked Camera, which never reads device internals.
+const mockDevice = { id: 'mock-device' } as unknown as CameraDevice
+
 vi.mock('react-native-vision-camera', () => ({
-    Camera: () => <div data-testid='camera'>Camera</div>,
+    Camera: (props: Record<string, unknown>) => {
+        cameraProps.current = props
+        return <div data-testid='camera'>Camera</div>
+    },
+    createNormalizedMeteringPoint: vi.fn(() => ({})),
 }))
 
 vi.mock('react-native-vision-camera-barcode-scanner', () => ({
     useBarcodeScannerOutput: vi.fn(() => ({})),
 }))
+
+const renderScanner = () =>
+    render(
+        <QRCameraScanner
+            device={mockDevice}
+            isActive={true}
+            style={undefined}
+            onBarcodeScanned={vi.fn()}
+            onError={vi.fn()}
+        />,
+    )
 
 describe('QRCameraScanner', () => {
     it('scans from the full-resolution buffer so dense QR codes decode on Android', () => {
@@ -30,8 +54,7 @@ describe('QRCameraScanner', () => {
         const onError = vi.fn()
         render(
             <QRCameraScanner
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- minimal device stub for the mocked Camera
-                device={{ id: 'mock-device' } as any}
+                device={mockDevice}
                 isActive={true}
                 style={undefined}
                 onBarcodeScanned={onBarcodeScanned}
@@ -45,5 +68,19 @@ describe('QRCameraScanner', () => {
                 onError,
             }),
         )
+    })
+
+    it('enables native tap-to-focus so blurry QR codes can be focused on Android', () => {
+        renderScanner()
+        expect(cameraProps.current?.enableNativeTapToFocusGesture).toBe(true)
+    })
+
+    it('auto-focuses the centre once the preview starts, without throwing before the camera is ready', () => {
+        renderScanner()
+        const onPreviewStarted = cameraProps.current?.onPreviewStarted
+        expect(onPreviewStarted).toBeTypeOf('function')
+        // Camera ref is unset in the mock (no controller yet) — the handler must
+        // no-op rather than crash.
+        expect(() => (onPreviewStarted as () => void)()).not.toThrow()
     })
 })
