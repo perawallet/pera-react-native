@@ -13,24 +13,36 @@
 import { describe, expect, it } from 'vitest'
 import { setProperty } from '../withAndroidGradleHeap'
 
+// Shape of a gradle.properties entry, as produced by Expo's withGradleProperties.
+// setProperty is a plain-JS helper, so annotate here to keep tsc's noImplicitAny happy.
+type GradleProperty = { type: string; key: string; value?: string }
+
 describe('setProperty', () => {
     it('overwrites an existing property in place', () => {
-        const items = [
+        const items: GradleProperty[] = [
             { type: 'property', key: 'org.gradle.jvmargs', value: '-Xmx2048m' },
         ]
 
-        const result = setProperty(items, 'org.gradle.jvmargs', '-Xmx6144m')
+        const result: GradleProperty[] = setProperty(
+            items,
+            'org.gradle.jvmargs',
+            '-Xmx6144m',
+        )
 
         expect(result).toHaveLength(1)
         expect(result[0].value).toBe('-Xmx6144m')
     })
 
     it('appends a property that is not present', () => {
-        const items = [
+        const items: GradleProperty[] = [
             { type: 'property', key: 'org.gradle.jvmargs', value: '-Xmx6144m' },
         ]
 
-        const result = setProperty(items, 'kotlin.daemon.jvmargs', '-Xmx3072m')
+        const result: GradleProperty[] = setProperty(
+            items,
+            'kotlin.daemon.jvmargs',
+            '-Xmx3072m',
+        )
 
         expect(result).toHaveLength(2)
         expect(
@@ -39,7 +51,7 @@ describe('setProperty', () => {
     })
 
     it('is idempotent across repeated prebuilds', () => {
-        let items = [
+        let items: GradleProperty[] = [
             { type: 'property', key: 'org.gradle.jvmargs', value: '-Xmx2048m' },
         ]
 
