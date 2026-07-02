@@ -378,6 +378,10 @@ function buildAppConfig(env) {
       // monorepo's Android build. Must run after expo-build-properties so ours wins.
       './plugins/withAndroidGradleHeap',
 
+      // Limit *debug* builds to arm64-v8a (matches native Pera Android) so local
+      // builds don't compile all four ABIs. Release keeps every ABI.
+      './plugins/withAndroidAbiFilters',
+
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',
 
