@@ -15,24 +15,43 @@ app:
     - JIRA_BASE_URL: https://algorandfoundation.atlassian.net
 pipelines:
   release-builds:
-    stages:
-      - test-stage: {}
-      - release-build-stage:
-          abort_on_fail: true
+    # Graph pipeline: `test` and `generate-changelog` run first (in parallel);
+    # the four platform/env builds fan out from both and run independently, so a
+    # failed/cancelled build never aborts the others. `notify-release` depends on
+    # every build and is should_always_run, so it posts a single consolidated
+    # Slack card (per-build statuses + changelog) once per release, whatever the
+    # individual build outcomes.
+    workflows:
+      test: {}
+      generate-changelog: {}
+      ios-production:
+        depends_on:
+          - test
+      android-production:
+        depends_on:
+          - test
+          - generate-changelog
+      ios-staging:
+        depends_on:
+          - test
+      android-staging:
+        depends_on:
+          - test
+          - generate-changelog
+      notify-release:
+        depends_on:
+          - generate-changelog
+          - ios-production
+          - android-production
+          - ios-staging
+          - android-staging
+        should_always_run: workflow
     triggers:
       tag:
+        # Fire only on the three release tag shapes: vX.Y.Z, vX.Y.Z-alpha.N,
+        # vX.Y.Z-rc.N. Fully anchored so nothing else can trigger a release.
         - name:
-            regex: v.*
-stages:
-  test-stage:
-    workflows:
-      - test: {}
-  release-build-stage:
-    workflows:
-      - ios-production: {}
-      - android-production: {}
-      - ios-staging: {}
-      - android-staging: {}
+            regex: '^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|rc)\.[0-9]+)?$'
 workflows:
   test:
     description: Run tests before release
@@ -94,95 +113,31 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
                 pnpm run test
-  ios-staging:
-    description: Build and deploy iOS Staging to TestFlight
-    envs:
-      - ENVIRONMENT: staging
-      - APP_ENV: staging
-      - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
-      - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
-      - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
-      - USE_CACHE: "true"
-      - PARENT_WORKFLOW: qa-build
-      - VALIDATE_PROFILE: ios
-    steps:
-      - script@1:
-          title: Check pipeline outputs
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                # In Bitrise pipelines, outputs from previous stages are available via env vars
-                if [ "${HAS_CHANGES:-true}" == "false" ]; then
-                  echo "No changes detected in previous stage, skipping build"
-                  envman add --key SKIP_BUILD --value "true"
-                else
-                  envman add --key SKIP_BUILD --value "false"
-                fi
-    after_run:
-      - _ios-build
-      - _slack-notify-ios
+  generate-changelog:
+    description: Generate the release changelog once and share it with the build workflows
     meta:
       bitrise.io:
-        stack: osx-xcode-26.2.x-edge
-        machine_type_id: g2.mac.large
-  ios-production:
-    description: Build and deploy iOS Production to TestFlight
-    envs:
-      - ENVIRONMENT: production
-      - APP_ENV: production
-      - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
-      - IOS_PROFILE_NAME: Pera React Native Prod
-      - NOTIFICATION_TITLE_PREFIX: Release Candidate
-      - USE_CACHE: "false"
-      - PARENT_WORKFLOW: release
-      - VALIDATE_PROFILE: ios
-      # Every release tag (alpha / rc / stable) builds production alongside staging.
-      - SKIP_BUILD: "false"
-    after_run:
-      - _ios-build
-      - _slack-notify-ios
-    meta:
-      bitrise.io:
-        stack: osx-xcode-26.2.x-edge
-        machine_type_id: g2.mac.large
-  _ios-build:
+        stack: linux-docker-android-22.04
     steps:
       - git-clone@8:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - fetch_tags: "yes"
             - clone_depth: -1
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Validate environment
+          title: Generate Changelog
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                ./tools/validate-env.sh
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Generate Changelog (if not from pipeline)
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
+                set -e
 
-                # Skip if CHANGELOG was already set by a prior stage
-                if [ -n "$CHANGELOG" ]; then
-                  echo "Changelog already set from pipeline, skipping generation"
-                  exit 0
-                fi
-
-                echo "Generating changelog (not available from pipeline)"
-
-                # For production builds, generate changelog from the last tag
+                # Changelog is best-effort: never fail the release over it.
                 LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
                 if [ -n "$LAST_TAG" ]; then
                   echo "Generating changelog since tag: $LAST_TAG"
-                  CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG")
-                else
-                  echo "No previous tag found"
+                  CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+                fi
+                if [ -z "${CHANGELOG:-}" ]; then
+                  echo "No previous tag / empty changelog; using fallback"
                   CHANGELOG="Release build - see git history for changes"
                 fi
 
@@ -192,8 +147,56 @@ workflows:
                 CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
 
                 envman add --key CHANGELOG --value "$CHANGELOG"
+      - share-pipeline-variable@1:
+          inputs:
+            - variables: CHANGELOG
+  ios-staging:
+    description: Build and deploy iOS Staging to TestFlight
+    envs:
+      - ENVIRONMENT: staging
+      - APP_ENV: staging
+      - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
+      - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
+      - USE_CACHE: "true"
+      - VALIDATE_PROFILE: ios
+      - ROW_ID: IOS_STAGING
+    after_run:
+      - _ios-build
+      - _publish-result
+    meta:
+      bitrise.io:
+        stack: osx-xcode-26.2.x
+        machine_type_id: g2.mac.large
+  ios-production:
+    description: Build and deploy iOS Production to TestFlight
+    envs:
+      - ENVIRONMENT: production
+      - APP_ENV: production
+      - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
+      - IOS_PROFILE_NAME: Pera React Native Prod
+      - USE_CACHE: "false"
+      - VALIDATE_PROFILE: ios
+      - ROW_ID: IOS_PRODUCTION
+    after_run:
+      - _ios-build
+      - _publish-result
+    meta:
+      bitrise.io:
+        stack: osx-xcode-26.2.x
+        machine_type_id: g2.mac.large
+  _ios-build:
+    steps:
+      - git-clone@8:
+          inputs:
+            - fetch_tags: "yes"
+            - clone_depth: -1
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Validate environment
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/validate-env.sh
+      - script@1:
           title: Install Ruby via asdf
           inputs:
             - content: |
@@ -202,11 +205,9 @@ workflows:
                 asdf plugin add ruby || true
                 asdf install ruby
       - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install Bundler gems
           inputs:
             - content: |
@@ -215,20 +216,18 @@ workflows:
                 cd apps/mobile
                 bundle install
       - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
             - paths: apps/mobile/vendor/bundle
       - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
-            - key: node-modules-ios-{{ checksum "pnpm-lock.yaml" }}
+            - key: |-
+                node-modules-ios-{{ checksum "pnpm-lock.yaml" }}
+                node-modules-ios-
       - nvm@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - node_version_file: ".tool-versions"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install pnpm
           inputs:
             - content: |
@@ -236,7 +235,6 @@ workflows:
                 set -ex
                 npm install -g pnpm
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install dependencies
           inputs:
             - content: |
@@ -244,22 +242,21 @@ workflows:
                 set -ex
                 pnpm install --frozen-lockfile --prefer-offline
       - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
-            - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+            # iOS runs on macOS; keep its node_modules cache separate from the
+            # linux (test/android) builds so platform-specific binaries don't mix.
+            - key: node-modules-ios-{{ checksum "pnpm-lock.yaml" }}
             - paths: |-
                 node_modules
                 apps/mobile/node_modules
                 packages/*/node_modules
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Setup Env Secrets
           inputs:
             - content: |
                 #!/usr/bin/env bash
                 ./tools/setup-env-secrets.sh
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Config
           inputs:
             - content: |
@@ -270,7 +267,6 @@ workflows:
                 export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build packages
           inputs:
             - content: |
@@ -283,15 +279,14 @@ workflows:
                 export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run build:packages
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Inject Google Service Info
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                set -ex
+                set -e
+                # no -x: keep the decoded secret out of the build trace log
                 echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/config/GoogleService-Info.plist
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Expo Prebuild
           inputs:
             - content: |
@@ -300,26 +295,22 @@ workflows:
                 export APP_ENV=$ENVIRONMENT
                 pnpm --filter mobile expo:prebuild
       - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
-            - key: ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
-            - keys: ios-pods-
+            - key: |-
+                ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
+                ios-pods-
       - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
             - paths: apps/mobile/ios/Pods
       - restore-cache@2:
-          run_if: '{{and (enveq "SKIP_BUILD" "false") (enveq "USE_CACHE" "true")}}'
+          run_if: '{{enveq "USE_CACHE" "true"}}'
           inputs:
-            - key:
-                ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
-                }}-{{ checksum "pnpm-lock.yaml" }}
-            - keys: |-
+            - key: |-
+                ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock" }}-{{ checksum "pnpm-lock.yaml" }}
                 ios-derived-data-$BITRISE_SCHEME-
                 ios-derived-data-
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Resolve marketing version (tag-driven)
           inputs:
             - content: |
@@ -337,9 +328,7 @@ workflows:
                 envman add --key APP_VERSION --value "$VERSION"
                 envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
       - certificate-and-profile-installer@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build & Deploy iOS
           inputs:
             - content: |
@@ -347,9 +336,11 @@ workflows:
                 set -ex
                 cd apps/mobile
 
-                # Write API key to file
+                # Write API key to file (disable trace so the key isn't logged)
+                set +x
                 echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > api_key.p8
                 export APP_STORE_CONNECT_API_KEY_CONTENT=$(cat api_key.p8)
+                set -x
 
                 # Determine if we should clean
                 CLEAN="true"
@@ -359,14 +350,13 @@ workflows:
 
                 bundle exec fastlane ios deploy_testflight scheme:$BITRISE_SCHEME clean:$CLEAN
       - save-cache@1:
-          run_if: '{{and (enveq "SKIP_BUILD" "false") (enveq "USE_CACHE" "true")}}'
+          run_if: '{{enveq "USE_CACHE" "true"}}'
           inputs:
             - key:
                 ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
                 }}-{{ checksum "pnpm-lock.yaml" }}
             - paths: "~/Library/Developer/Xcode/DerivedData"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           is_always_run: true
           title: Collect signed artifact
           inputs:
@@ -388,13 +378,11 @@ workflows:
                 cp "$IPA" "$DEST"
                 envman add --key BITRISE_IPA_PATH --value "$DEST"
       - deploy-to-bitrise-io@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           is_always_run: true
           inputs:
             - notify_user_groups: none
             - is_enable_public_page: "true"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Capture artifact URLs
           inputs:
             - content: |
@@ -410,28 +398,13 @@ workflows:
       - DISABLE_SCREEN_CAPTURE_PREVENTION: "true"
       - ANDROID_FLAVOR: staging
       - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
-      - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
       - USE_CACHE: "true"
-      - PARENT_WORKFLOW: qa-build
       - DISTRIBUTION: firebase
       - VALIDATE_PROFILE: android
-    steps:
-      - script@1:
-          title: Check pipeline outputs
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                # In Bitrise pipelines, outputs from previous stages are available via env vars
-                if [ "${HAS_CHANGES:-true}" == "false" ]; then
-                  echo "No changes detected in previous stage, skipping build"
-                  envman add --key SKIP_BUILD --value "true"
-                else
-                  envman add --key SKIP_BUILD --value "false"
-                fi
+      - ROW_ID: ANDROID_STAGING
     after_run:
       - _android-build
-      - _slack-notify-android
+      - _publish-result
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
@@ -442,35 +415,29 @@ workflows:
       - APP_ENV: production
       - ANDROID_FLAVOR: production
       - ANDROID_PACKAGE_NAME: com.algorand.android
-      - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
-      - PARENT_WORKFLOW: release
       - DISTRIBUTION: firebase
       - VALIDATE_PROFILE: android
-      # Every release tag (alpha / rc / stable) builds production alongside staging.
-      - SKIP_BUILD: "false"
+      - ROW_ID: ANDROID_PRODUCTION
     after_run:
       - _android-build
-      - _slack-notify-android
+      - _publish-result
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
   _android-build:
     steps:
       - git-clone@8:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - fetch_tags: "yes"
             - clone_depth: -1
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Validate environment
           inputs:
             - content: |
                 #!/usr/bin/env bash
                 ./tools/validate-env.sh
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
           inputs:
             - content: |
@@ -502,7 +469,6 @@ workflows:
 
                 envman add --key CHANGELOG --value "$CHANGELOG"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install Ruby via asdf
           inputs:
             - content: |
@@ -511,11 +477,9 @@ workflows:
                 asdf plugin add ruby || true
                 asdf install ruby
       - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install Bundler gems
           inputs:
             - content: |
@@ -524,20 +488,16 @@ workflows:
                 cd apps/mobile
                 bundle install
       - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
             - paths: apps/mobile/vendor/bundle
       - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
       - nvm@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - node_version_file: ".tool-versions"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install pnpm
           inputs:
             - content: |
@@ -545,7 +505,6 @@ workflows:
                 set -ex
                 npm install -g pnpm
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install dependencies
           inputs:
             - content: |
@@ -553,7 +512,6 @@ workflows:
                 set -ex
                 pnpm install --frozen-lockfile --prefer-offline
       - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
             - paths: |-
@@ -561,14 +519,12 @@ workflows:
                 apps/mobile/node_modules
                 packages/*/node_modules
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Setup Env Secrets
           inputs:
             - content: |
                 #!/usr/bin/env bash
                 ./tools/setup-env-secrets.sh
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Config
           inputs:
             - content: |
@@ -579,7 +535,6 @@ workflows:
                 export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run generate:config
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build packages
           inputs:
             - content: |
@@ -592,15 +547,14 @@ workflows:
                 export APP_ENV="${ENVIRONMENT:-development}"
                 pnpm run build:packages
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Inject Google Services JSON
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                set -ex
+                set -e
+                # no -x: keep the decoded secret out of the build trace log
                 echo "$ANDROID_GOOGLE_SERVICES_BASE64" | base64 --decode > apps/mobile/config/google-services.json
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Resolve marketing version (tag-driven)
           inputs:
             - content: |
@@ -618,7 +572,6 @@ workflows:
                 envman add --key APP_VERSION --value "$VERSION"
                 envman add --key BUILD_NUMBER --value "$((BITRISE_BUILD_NUMBER + ${BUILD_NUMBER_OFFSET:-0}))"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Expo Prebuild
           inputs:
             - content: |
@@ -631,13 +584,11 @@ workflows:
                 # We use envman to make sure it persists for the Fastlane step
                 envman add --key GRADLE_OPTS --value "-Dorg.gradle.jvmargs='-Xmx6g -XX:MaxMetaspaceSize=1g' -Dorg.gradle.daemon=false"
       - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
-            - key: android-gradle-{{ checksum "pnpm-lock.yaml" }}-{{ checksum
-                "apps/mobile/android/build.gradle" }}
-            - keys: android-gradle-
+            - key: |-
+                android-gradle-{{ checksum "pnpm-lock.yaml" }}-{{ checksum "apps/mobile/android/build.gradle" }}
+                android-gradle-
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install and configure ccache
           inputs:
             - content: |
@@ -652,16 +603,14 @@ workflows:
                 echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $BITRISE_SOURCE_DIR/.env
                 echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $BITRISE_SOURCE_DIR/.env
       - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
-            - key: android-ccache-{{ checksum "pnpm-lock.yaml" }}
-            - keys: android-ccache-
+            - key: |-
+                android-ccache-{{ checksum "pnpm-lock.yaml" }}
+                android-ccache-
       - set-java-version@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - java_version: "17"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Install Java via asdf
           inputs:
             - content: |
@@ -673,15 +622,14 @@ workflows:
                 JAVA_HOME=$(asdf where java)
                 envman add --key JAVA_HOME --value "$JAVA_HOME"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Android KeyStore
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                set -ex
+                set -e
+                # no -x: keep the decoded keystore out of the build trace log
                 echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > apps/mobile/config/release.keystore
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Resolve distribution channel
           inputs:
             - content: |
@@ -691,12 +639,12 @@ workflows:
                 # validate step and this step can't drift (see that script).
                 envman add --key DISTRIBUTION --value "$(./tools/resolve-distribution.sh)"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Setup distribution credentials
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                set -ex
+                set -e
+                # no -x: keep the decoded credentials out of the build trace log
 
                 # deploy_internal (play: rc/stable) uploads the AAB to Play AND
                 # an APK to Firebase, so the play path needs BOTH credentials.
@@ -706,7 +654,6 @@ workflows:
                   echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/config/api-key.json
                 fi
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build & Deploy Android
           inputs:
             - content: |
@@ -729,7 +676,6 @@ workflows:
                   bundle exec fastlane android deploy_internal flavor:$ANDROID_FLAVOR clean:$CLEAN
                 fi
       - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: android-gradle-{{ checksum "pnpm-lock.yaml" }}-{{ checksum
                 "apps/mobile/android/build.gradle" }}
@@ -737,12 +683,10 @@ workflows:
                 ~/.gradle/caches
                 ~/.gradle/wrapper
       - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: android-ccache-{{ checksum "pnpm-lock.yaml" }}
             - paths: "~/.ccache"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           is_always_run: true
           title: Collect signed artifacts
           inputs:
@@ -771,13 +715,11 @@ workflows:
                   echo "No AAB/APK found — skipping artifact collection"
                 fi
       - deploy-to-bitrise-io@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           is_always_run: true
           inputs:
             - notify_user_groups: none
             - is_enable_public_page: "true"
       - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Capture artifact URLs
           inputs:
             - content: |
@@ -785,153 +727,89 @@ workflows:
                 set -ex
                 # BITRISE_PUBLIC_INSTALL_PAGE_URL is set by deploy-to-bitrise-io
                 envman add --key INSTALL_PAGE_URL --value "${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
-  _slack-notify-ios:
+  _publish-result:
+    # Each build (identified by ROW_ID) publishes its own status + links as
+    # pipeline variables so notify-release can render one consolidated card.
+    # is_always_run so a failed build still reports its ❌ row.
     steps:
       - script@1:
-          title: Send Slack Notification
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           is_always_run: true
+          title: Publish build result
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                set -ex
+                set -e
+                if [ "$BITRISE_BUILD_STATUS" = "0" ]; then STATUS=ok; else STATUS=fail; fi
+                envman add --key "${ROW_ID}_STATUS" --value "$STATUS"
+                envman add --key "${ROW_ID}_URL" --value "${BITRISE_BUILD_URL:-}"
+                envman add --key "${ROW_ID}_INSTALL" --value "${INSTALL_PAGE_URL:-}"
+      - share-pipeline-variable@1:
+          is_always_run: true
+          inputs:
+            - variables: |-
+                ${ROW_ID}_STATUS
+                ${ROW_ID}_URL
+                ${ROW_ID}_INSTALL
+  notify-release:
+    description: Post one consolidated release card (all build statuses + changelog)
+    meta:
+      bitrise.io:
+        stack: linux-docker-android-22.04
+    steps:
+      - script@1:
+          is_always_run: true
+          title: Send Release Slack Notification
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                # set -e without -x: keep the Slack webhook URL out of the trace log.
+                set -e
 
-                # Prefix + version reflect the tag's channel (every release tag
-                # builds prod+staging); non-tag/manual builds keep the defaults.
+                # Non-tag / manual runs have no release to announce.
+                if [ -z "${BITRISE_GIT_TAG:-}" ]; then
+                  echo "No release tag; skipping release notification"
+                  exit 0
+                fi
+
+                # Channel label from the tag shape.
                 case "$BITRISE_GIT_TAG" in
-                  *-alpha.*) NOTIFICATION_TITLE_PREFIX="QA Build (Nightly)" ;;
-                  *-rc.*)    NOTIFICATION_TITLE_PREFIX="Release Candidate" ;;
-                  v*)        NOTIFICATION_TITLE_PREFIX="Store Release" ;;
+                  *-alpha.*) CHANNEL="Nightly" ;;
+                  *-rc.*)    CHANNEL="RC" ;;
+                  v*)        CHANNEL="Release" ;;
                 esac
-                VERSION_LABEL="${BITRISE_GIT_TAG:-$APP_VERSION}"
 
-                if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
-                  STATUS_EMOJI="✅"
-                  STATUS_TEXT="Available on TestFlight"
-                  COLOR="#36a64f"
-                  STATUS="success"
-                else
-                  STATUS_EMOJI="❌"
-                  STATUS_TEXT="Failed"
-                  COLOR="#ec0000"
-                  STATUS="failure"
-                fi
-
-                # Build context elements with optional install page link
-                CONTEXT_ELEMENTS="[{\"type\": \"mrkdwn\", \"text\": \"<${BITRISE_BUILD_URL}|View Build>\"}"
-                if [ -n "$INSTALL_PAGE_URL" ]; then
-                  CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}, {\"type\": \"mrkdwn\", \"text\": \"<${INSTALL_PAGE_URL}|Download IPA>\"}"
-                fi
-                CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}]"
-
-                curl -X POST "$SLACK_WEBHOOK_URL" \
-                  -H "Content-Type: application/json" \
-                  -d @- << EOF
-                {
-                  "username": "Bitrise",
-                  "icon_emoji": ":bitrise:",
-                  "blocks": [
-                    {
-                      "type": "header",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "${STATUS_EMOJI} RN ${NOTIFICATION_TITLE_PREFIX}: iOS ${ENVIRONMENT} ${STATUS_TEXT}",
-                        "emoji": true
-                      }
-                    }
-                  ],
-                  "attachments": [
-                    {
-                      "color": "${COLOR}",
-                      "blocks": [
-                        {
-                          "type": "section",
-                          "fields": [
-                            {
-                              "type": "mrkdwn",
-                              "text": "*Platform:*\niOS"
-                            },
-                            {
-                              "type": "mrkdwn",
-                              "text": "*Version:*\n${VERSION_LABEL} (${BUILD_NUMBER})"
-                            },
-                            {
-                              "type": "mrkdwn",
-                              "text": "*Status:*\n${STATUS}"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "divider"
-                        },
-                        {
-                          "type": "section",
-                          "text": {
-                            "type": "mrkdwn",
-                            "text": "*Changes since last build:*"
-                          }
-                        },
-                        {
-                          "type": "section",
-                          "text": {
-                            "type": "mrkdwn",
-                            "text": "${CHANGELOG}"
-                          }
-                        },
-                        {
-                          "type": "divider"
-                        },
-                        {
-                          "type": "context",
-                          "elements": ${CONTEXT_ELEMENTS}
-                        }
-                      ]
-                    }
-                  ]
+                # One mrkdwn row per build. Platform/env/destination are static;
+                # status + links come from each build's shared pipeline variables
+                # (empty status = the build never ran). Literal \n separates rows.
+                row() { # $1 status  $2 build_url  $3 install_url  $4 artifact_label  $5 label  $6 dest
+                  local e
+                  case "$1" in
+                    ok)   e="✅" ;;
+                    fail) e="❌" ;;
+                    *)    e="⏭️" ;;
+                  esac
+                  local r="${e}  *${5}*  →  ${6}"
+                  if [ -n "$2" ]; then r="${r}  ·  <${2}|Build>"; fi
+                  if [ -n "$3" ] && [ -n "$4" ]; then r="${r}  ·  <${3}|${4}>"; fi
+                  printf '%s' "$r"
                 }
-                EOF
-  _slack-notify-android:
-    steps:
-      - script@1:
-          title: Send Slack Notification
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          is_always_run: true
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
 
-                # Prefix + version reflect the tag's channel (every release tag
-                # builds prod+staging); non-tag/manual builds keep the defaults.
-                case "$BITRISE_GIT_TAG" in
-                  *-alpha.*) NOTIFICATION_TITLE_PREFIX="QA Build (Nightly)" ;;
-                  *-rc.*)    NOTIFICATION_TITLE_PREFIX="Release Candidate" ;;
-                  v*)        NOTIFICATION_TITLE_PREFIX="Store Release" ;;
+                ROWS="$(row "${ANDROID_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_URL:-}" "${ANDROID_PRODUCTION_INSTALL:-}" "APK" "Android production" "Play internal")"
+                ROWS="${ROWS}\n$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
+                ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "" "" "iOS production" "TestFlight")"
+                ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "" "" "iOS staging" "TestFlight")"
+
+                # Header icon per channel on success (any failed build flips it
+                # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly.
+                case "$CHANNEL" in
+                  Release) OVERALL="🚀" ;;
+                  RC)      OVERALL="⭐" ;;
+                  Nightly) OVERALL="🌙" ;;
                 esac
-                VERSION_LABEL="${BITRISE_GIT_TAG:-$APP_VERSION}"
-
-                if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
-                  STATUS_EMOJI="✅"
-                  if [ "$DISTRIBUTION" == "firebase" ]; then
-                    STATUS_TEXT="Available on Firebase App Distribution"
-                  else
-                    STATUS_TEXT="Available on Play Console for Distribution"
-                  fi
-                  COLOR="#36a64f"
-                  STATUS="success"
-                else
-                  STATUS_EMOJI="❌"
-                  STATUS_TEXT="Failed"
-                  COLOR="#ec0000"
-                  STATUS="failure"
-                fi
-
-                # Build context elements with optional install page link
-                CONTEXT_ELEMENTS="[{\"type\": \"mrkdwn\", \"text\": \"<${BITRISE_BUILD_URL}|View Build>\"}"
-                if [ -n "$INSTALL_PAGE_URL" ]; then
-                  CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}, {\"type\": \"mrkdwn\", \"text\": \"<${INSTALL_PAGE_URL}|Download APK>\"}"
-                fi
-                CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}]"
+                COLOR="#36a64f"
+                for s in "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}"; do
+                  if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
+                done
 
                 curl -X POST "$SLACK_WEBHOOK_URL" \
                   -H "Content-Type: application/json" \
@@ -944,7 +822,7 @@ workflows:
                       "type": "header",
                       "text": {
                         "type": "plain_text",
-                        "text": "${STATUS_EMOJI} RN ${NOTIFICATION_TITLE_PREFIX}: Android ${ENVIRONMENT} ${STATUS_TEXT}",
+                        "text": "${OVERALL} RN ${CHANNEL} ${BITRISE_GIT_TAG}",
                         "emoji": true
                       }
                     }
@@ -955,20 +833,10 @@ workflows:
                       "blocks": [
                         {
                           "type": "section",
-                          "fields": [
-                            {
-                              "type": "mrkdwn",
-                              "text": "*Platform:*\nAndroid"
-                            },
-                            {
-                              "type": "mrkdwn",
-                              "text": "*Version:*\n${VERSION_LABEL} (${BUILD_NUMBER})"
-                            },
-                            {
-                              "type": "mrkdwn",
-                              "text": "*Status:*\n${STATUS}"
-                            }
-                          ]
+                          "text": {
+                            "type": "mrkdwn",
+                            "text": "${ROWS}"
+                          }
                         },
                         {
                           "type": "divider"
@@ -977,22 +845,8 @@ workflows:
                           "type": "section",
                           "text": {
                             "type": "mrkdwn",
-                            "text": "*Changes since last build:*"
+                            "text": "*Changes since last build:*\n${CHANGELOG}"
                           }
-                        },
-                        {
-                          "type": "section",
-                          "text": {
-                            "type": "mrkdwn",
-                            "text": "${CHANGELOG}"
-                          }
-                        },
-                        {
-                          "type": "divider"
-                        },
-                        {
-                          "type": "context",
-                          "elements": ${CONTEXT_ELEMENTS}
                         }
                       ]
                     }

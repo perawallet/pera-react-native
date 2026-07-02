@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -ex
+# set -e without -x: the loop below expands secret values, and -x would print
+# them into the build log. Progress is logged by name via echo instead.
+set -e
 
 # Sets up environment-specific secrets for Bitrise builds.
 # Aliases prefixed secret vars (PRODUCTION_* or STAGING_*) to unprefixed names
