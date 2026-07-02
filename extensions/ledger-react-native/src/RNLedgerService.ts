@@ -286,9 +286,10 @@ export class RNLedgerService implements HardwareWalletService {
                 // screen keeps the shared observer running, so by connect time
                 // it reflects the real state. Only block on a definitive
                 // `poweredOff`; `unknown` (no observer yet, e.g. cold-start
-                // signing) falls through so `TransportBLE.open` surfaces the
-                // failure — `classifyLedgerError` now maps the ble-plx
-                // "powered off" code (102) to the same typed error.
+                // signing) falls through to `TransportBLE.open`, whose failure
+                // is classified as a generic connection error — the ble-plx
+                // "powered off" (102) → typed-error mapping only applies to the
+                // scan path (`listen`), not `open`.
                 if (latestBluetoothState === 'poweredOff') {
                     throw new LedgerBluetoothDisabledError()
                 }

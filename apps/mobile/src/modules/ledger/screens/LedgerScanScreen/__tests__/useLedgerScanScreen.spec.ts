@@ -19,9 +19,9 @@ const {
     mockStopScan,
     mockRequestPermissions,
     mockOpenSettings,
+    mockOpenLocationSettings,
     mockErrorToast,
     mockRequestEnable,
-    mockSendIntent,
     blePermissionsState,
     bluetoothState,
     connectionState,
@@ -32,9 +32,9 @@ const {
     mockStopScan: vi.fn(),
     mockRequestPermissions: vi.fn(),
     mockOpenSettings: vi.fn(),
+    mockOpenLocationSettings: vi.fn(),
     mockErrorToast: vi.fn(),
     mockRequestEnable: vi.fn(),
-    mockSendIntent: vi.fn(),
     blePermissionsState: {
         hasPermissions: true,
         isChecking: false,
@@ -58,10 +58,6 @@ vi.mock('react-native', () => ({
         get OS() {
             return platformState.os
         },
-    },
-    Linking: {
-        sendIntent: mockSendIntent,
-        openSettings: mockOpenSettings,
     },
 }))
 
@@ -91,6 +87,7 @@ vi.mock('../../../hooks', () => ({
         isBlocked: blePermissionsState.isBlocked,
         requestPermissions: mockRequestPermissions,
         openSettings: mockOpenSettings,
+        openLocationSettings: mockOpenLocationSettings,
     }),
     useBluetoothState: () => ({
         adapterState: bluetoothState.adapterState,
@@ -131,8 +128,8 @@ describe('useLedgerScanScreen', () => {
         connectionState.error = null
         platformState.os = 'android'
         mockRequestPermissions.mockResolvedValue(true)
-        mockSendIntent.mockResolvedValue(undefined)
         mockOpenSettings.mockResolvedValue(undefined)
+        mockOpenLocationSettings.mockResolvedValue(undefined)
     })
 
     it('starts scanning on mount and stops on unmount when permissions are granted', () => {
@@ -359,34 +356,13 @@ describe('useLedgerScanScreen', () => {
         expect(result.current.isLocationServicesDisabled).toBe(false)
     })
 
-    it('deep-links to Android location settings via handleOpenLocationSettings', async () => {
-        platformState.os = 'android'
-        connectionState.error = new LedgerLocationServicesDisabledError()
-
+    it('delegates handleOpenLocationSettings to the permissions hook', () => {
         const { result } = renderHook(() => useLedgerScanScreen())
 
-        await act(async () => {
+        act(() => {
             result.current.handleOpenLocationSettings()
         })
 
-        expect(mockSendIntent).toHaveBeenCalledWith(
-            'android.settings.LOCATION_SOURCE_SETTINGS',
-        )
-        expect(mockOpenSettings).not.toHaveBeenCalled()
-    })
-
-    it('falls back to app settings when the location intent is unavailable', async () => {
-        platformState.os = 'android'
-        mockSendIntent.mockRejectedValue(new Error('no activity'))
-        connectionState.error = new LedgerLocationServicesDisabledError()
-
-        const { result } = renderHook(() => useLedgerScanScreen())
-
-        await act(async () => {
-            result.current.handleOpenLocationSettings()
-        })
-
-        expect(mockSendIntent).toHaveBeenCalled()
-        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
+        expect(mockOpenLocationSettings).toHaveBeenCalledTimes(1)
     })
 })

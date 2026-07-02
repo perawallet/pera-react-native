@@ -11,9 +11,7 @@
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react'
-// `Linking.sendIntent` is Android-only and guarded by a Platform check below.
-// eslint-disable-next-line react-native/split-platform-components
-import { Linking, Platform } from 'react-native'
+import { Platform } from 'react-native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -84,6 +82,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         isBlocked: isPermissionBlocked,
         requestPermissions,
         openSettings,
+        openLocationSettings,
     } = useBlePermissions()
     const { adapterState, isBluetoothReady, requestEnable } =
         useBluetoothState()
@@ -191,24 +190,8 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     }, [isPermissionBlocked, openSettings, requestPermissions])
 
     const handleOpenLocationSettings = useCallback(() => {
-        // There's no runtime prompt to toggle location services (unlike
-        // Bluetooth's enable dialog), so deep-link straight to the OS location
-        // screen on Android, falling back to app settings if the intent is
-        // unavailable.
-        void (async () => {
-            if (Platform.OS === 'android') {
-                try {
-                    await Linking.sendIntent(
-                        'android.settings.LOCATION_SOURCE_SETTINGS',
-                    )
-                    return
-                } catch {
-                    // Fall through to the generic settings screen.
-                }
-            }
-            await openSettings()
-        })()
-    }, [openSettings])
+        void openLocationSettings()
+    }, [openLocationSettings])
 
     const handleTroubleshoot = useCallback(() => {
         navigation.navigate('LedgerTroubleshooting')

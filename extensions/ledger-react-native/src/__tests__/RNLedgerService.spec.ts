@@ -527,10 +527,27 @@ describe('RNLedgerService', () => {
         expect(received.length).toBe(before)
     })
 
-    // Runs after the observer test above so the shared observer exists; drives
-    // it via the captured holder. `connect` reads the observed adapter state
-    // (not `TransportBLE.isSupported`, which can't detect a disabled radio).
+    // `connect` reads the observed adapter state (not `TransportBLE.isSupported`,
+    // which can't detect a disabled radio). Self-contained: seed the shared
+    // observer here so the block passes in isolation (`-t`/`.only`) as well as
+    // in a full-file run.
     describe('connect adapter-state pre-flight', () => {
+        beforeEach(() => {
+            // Capture the module-scope observer on registration, then ensure it
+            // exists (lazy creation is a no-op if a prior test already made it).
+            transportObserveStateMock.mockImplementation(
+                (o: {
+                    next: (e: { type: string; available: boolean }) => void
+                }) => {
+                    btObserverHolder.current = o
+                    return { unsubscribe: () => {} }
+                },
+            )
+            new RNLedgerService()
+                .createTransportProvider()
+                .observeBluetoothState?.(() => {})
+        })
+
         it('throws LedgerBluetoothDisabledError when the adapter is powered off', async () => {
             btObserverHolder.current?.next({
                 type: 'PoweredOff',
