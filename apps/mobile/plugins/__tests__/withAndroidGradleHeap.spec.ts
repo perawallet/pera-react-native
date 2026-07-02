@@ -34,7 +34,7 @@ describe('setProperty', () => {
 
         expect(result).toHaveLength(2)
         expect(
-            result.find((item) => item.key === 'kotlin.daemon.jvmargs')?.value,
+            result.find(item => item.key === 'kotlin.daemon.jvmargs')?.value,
         ).toBe('-Xmx3072m')
     })
 
@@ -47,7 +47,7 @@ describe('setProperty', () => {
         items = setProperty(items, 'org.gradle.jvmargs', '-Xmx6144m')
 
         const heapEntries = items.filter(
-            (item) => item.key === 'org.gradle.jvmargs',
+            item => item.key === 'org.gradle.jvmargs',
         )
         expect(heapEntries).toHaveLength(1)
         expect(heapEntries[0].value).toBe('-Xmx6144m')
