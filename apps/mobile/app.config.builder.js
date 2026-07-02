@@ -306,7 +306,26 @@ function buildAppConfig(env) {
             targetSdkVersion: 36,
             compileSdkVersion: 36,
             buildToolsVersion: '36.0.0',
-            enableProguardInReleaseBuilds: false,
+            // R8 minification + resource shrinking for release builds.
+            // Obfuscates native (Java/Kotlin) symbols and strips unused code/resources,
+            // reducing APK/AAB size and hardening the native layer. `enableProguardInReleaseBuilds`
+            // is the deprecated alias for this flag. shrinkResources requires minify enabled
+            // (validated by expo-build-properties, else prebuild throws).
+            enableMinifyInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+            // Most RN/Expo libraries ship their own consumer ProGuard rules, so R8 respects
+            // them automatically. This baseline only keeps JNI bindings and suppresses common
+            // optional-dependency warnings. Add module-specific `-keep` rules from the actual
+            // release smoke-test / R8 `missing_rules.txt` output rather than speculating —
+            // over-keeping silently defeats both the obfuscation and the size reduction.
+            extraProguardRules: [
+              '# --- Release R8 keep rules (see docs/SECURITY_OBFUSCATION_AUDIT.md) ---',
+              '-keepclasseswithmembernames class * { native <methods>; }',
+              '-dontwarn okhttp3.**',
+              '-dontwarn okio.**',
+              '-dontwarn javax.annotation.**',
+              '-dontwarn org.conscrypt.**',
+            ].join('\n'),
             kotlinVersion: '2.1.20',
           },
         },
@@ -350,6 +369,14 @@ function buildAppConfig(env) {
       // Wire release signing to the Bitrise-injected config/release.keystore
       // (stock Expo template signs release with the debug keystore)
       './plugins/withAndroidReleaseSigning',
+
+      // Emit FULL native debug symbols on release and upload them to Crashlytics
+      // so Android native (.so) crashes are symbolicated (iOS dSYM counterpart)
+      './plugins/withAndroidNativeSymbolUpload',
+
+      // Raise the Gradle/Kotlin daemon heap — the -Xmx2048m default OOMs this
+      // monorepo's Android build. Must run after expo-build-properties so ours wins.
+      './plugins/withAndroidGradleHeap',
 
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',

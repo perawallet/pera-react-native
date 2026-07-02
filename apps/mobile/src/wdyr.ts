@@ -15,7 +15,11 @@ import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
-if (config.profilingEnabled) {
+// `__DEV__` is a compile-time constant Metro inlines to `false` in release
+// builds, so this whole branch (and the why-did-you-render require) is
+// dead-code-eliminated from production bundles. Guarding only on the runtime
+// `config.profilingEnabled` would ship the dev-only profiler to users.
+if (__DEV__ && config.profilingEnabled) {
     logger.debug('Enabling Why Did You Render')
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const whyDidYouRender = require('@welldone-software/why-did-you-render')
