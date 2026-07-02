@@ -374,6 +374,10 @@ function buildAppConfig(env) {
       // so Android native (.so) crashes are symbolicated (iOS dSYM counterpart)
       './plugins/withAndroidNativeSymbolUpload',
 
+      // Raise the Gradle/Kotlin daemon heap — the -Xmx2048m default OOMs this
+      // monorepo's Android build. Must run after expo-build-properties so ours wins.
+      './plugins/withAndroidGradleHeap',
+
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',
 

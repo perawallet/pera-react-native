@@ -46,36 +46,61 @@ const withAndroidNativeSymbolUpload = (config) => {
 };
 
 function addNativeSymbolUpload(buildGradle) {
-  // Idempotent: prebuild re-runs mods, and we must not inject twice.
-  if (buildGradle.includes('debugSymbolLevel')) {
-    return buildGradle;
+  let patched = buildGradle;
+
+  // Idempotent: prebuild re-runs mods, and we must not inject the block twice.
+  if (!patched.includes('debugSymbolLevel')) {
+    const injected = [
+      '            // Native debug symbols for release crash symbolication (see',
+      '            // docs/SECURITY_OBFUSCATION_AUDIT.md). Uploaded to Crashlytics /',
+      '            // Play Console metadata, not shipped to devices.',
+      "            ndk {\n                debugSymbolLevel 'FULL'\n            }",
+      '            firebaseCrashlytics {\n                nativeSymbolUploadEnabled true\n            }',
+      '',
+    ]
+      .map((line) => (line ? `${line}` : line))
+      .join('\n');
+
+    // Anchor inside `buildTypes { ... release { ` so only the release buildType is
+    // touched, and inject immediately after the release block opens.
+    patched = patched.replace(
+      /(buildTypes\s*\{[\s\S]*?release\s*\{\n)/,
+      (match) => `${match}${injected}\n`,
+    );
+
+    if (patched === buildGradle) {
+      throw new Error(
+        '[withAndroidNativeSymbolUpload] could not find the release buildType to patch',
+      );
+    }
   }
 
-  const injected = [
-    '            // Native debug symbols for release crash symbolication (see',
-    '            // docs/SECURITY_OBFUSCATION_AUDIT.md). Uploaded to Crashlytics /',
-    '            // Play Console metadata, not shipped to devices.',
-    "            ndk {\n                debugSymbolLevel 'FULL'\n            }",
-    '            firebaseCrashlytics {\n                nativeSymbolUploadEnabled true\n            }',
+  // The injected `firebaseCrashlytics {}` DSL is evaluated while the `android {}`
+  // block is configured, so `com.google.firebase.crashlytics` must be applied
+  // BEFORE that block. @react-native-firebase/crashlytics appends the apply at
+  // the END of app/build.gradle (too late), producing a "Could not find method
+  // firebaseCrashlytics()" failure. Hoist it above `android {`. Idempotent.
+  return hoistCrashlyticsApply(patched);
+}
+
+function hoistCrashlyticsApply(buildGradle) {
+  const APPLY = "apply plugin: 'com.google.firebase.crashlytics'";
+  // Remove every existing apply of the crashlytics plugin, wherever it sits,
+  // along with any blank line it left behind (keeps the transform idempotent).
+  const stripped = buildGradle.replace(
+    /^[ \t]*apply plugin: ['"]com\.google\.firebase\.crashlytics['"].*\n(?:[ \t]*\n)*/gm,
     '',
-  ]
-    .map((line) => (line ? `${line}` : line))
-    .join('\n');
-
-  // Anchor inside `buildTypes { ... release { ` so only the release buildType is
-  // touched, and inject immediately after the release block opens.
-  const patched = buildGradle.replace(
-    /(buildTypes\s*\{[\s\S]*?release\s*\{\n)/,
-    (match) => `${match}${injected}\n`,
   );
+  // Re-insert exactly one, immediately before the top-level `android {` block.
+  const hoisted = stripped.replace(/^android\s*\{/m, `${APPLY}\n\nandroid {`);
 
-  if (patched === buildGradle) {
+  if (hoisted === stripped) {
     throw new Error(
-      '[withAndroidNativeSymbolUpload] could not find the release buildType to patch',
+      '[withAndroidNativeSymbolUpload] could not find `android {` to hoist the crashlytics apply',
     );
   }
 
-  return patched;
+  return hoisted;
 }
 
 module.exports = withAndroidNativeSymbolUpload;

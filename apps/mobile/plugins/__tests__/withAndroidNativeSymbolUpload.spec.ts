@@ -57,4 +57,31 @@ describe('addNativeSymbolUpload', () => {
             /could not find the release buildType/,
         )
     })
+
+    it('applies the crashlytics gradle plugin before the android block', () => {
+        const result = addNativeSymbolUpload(TEMPLATE)
+
+        const applyIdx = result.indexOf(
+            "apply plugin: 'com.google.firebase.crashlytics'",
+        )
+        expect(applyIdx).toBeGreaterThanOrEqual(0)
+        // The firebaseCrashlytics {} DSL is evaluated during android {}
+        // configuration, so the plugin must be applied before that block.
+        expect(applyIdx).toBeLessThan(result.indexOf('android {'))
+    })
+
+    it('hoists a bottom-applied crashlytics plugin above the android block', () => {
+        // Mirrors reality: @react-native-firebase/crashlytics appends the apply
+        // at the end of the file.
+        const withBottomApply = `${TEMPLATE}\n\napply plugin: 'com.google.gms.google-services'\napply plugin: 'com.google.firebase.crashlytics'\n`
+
+        const result = addNativeSymbolUpload(withBottomApply)
+
+        expect(
+            result.match(/apply plugin: 'com\.google\.firebase\.crashlytics'/g),
+        ).toHaveLength(1)
+        expect(
+            result.indexOf("apply plugin: 'com.google.firebase.crashlytics'"),
+        ).toBeLessThan(result.indexOf('android {'))
+    })
 })
