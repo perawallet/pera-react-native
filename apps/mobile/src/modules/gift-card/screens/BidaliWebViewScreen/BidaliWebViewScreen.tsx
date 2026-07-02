@@ -28,6 +28,7 @@ export const BidaliWebViewScreen = () => {
                 url={url}
                 enablePeraConnect={false}
                 showControls
+                showFooterBar={false}
                 onClose={onClose}
                 customJavaScript={bidaliProviderJS}
                 onCustomMessage={handleMessage}

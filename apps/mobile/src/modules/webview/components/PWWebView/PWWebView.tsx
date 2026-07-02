@@ -64,6 +64,11 @@ export type PWWebViewProps = {
     enablePeraConnect: boolean
     requestId?: string
     showControls?: boolean
+    // Gates the bottom back/forward/home bar independently of showControls (which
+    // also drives the top close/reload bar). Defaults to true; set false for
+    // single-page-app hosts (e.g. Bidali) where the WebView history-based
+    // navigation the bar relies on never tracks in-app routing.
+    showFooterBar?: boolean
     onClose?: () => void
     onBack?: () => void
     inBottomSheet?: boolean
@@ -84,6 +89,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         enablePeraConnect,
         requestId,
         showControls = false,
+        showFooterBar = true,
         onClose,
         onBack,
         customJavaScript,
@@ -374,7 +380,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 {renderWebView()}
             </PWScrollView>
 
-            {showControls && (
+            {showControls && showFooterBar && (
                 <WebViewFooterBar
                     webview={webview}
                     homeUrl={url}
