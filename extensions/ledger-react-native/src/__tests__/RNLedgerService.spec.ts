@@ -17,6 +17,19 @@ const transportOpenMock = vi.hoisted(() => vi.fn())
 const transportIsSupportedMock = vi.hoisted(() => vi.fn())
 const transportObserveStateMock = vi.hoisted(() => vi.fn())
 const transportCloseMock = vi.hoisted(() => vi.fn())
+
+// Captures the single module-scope observer RNLedgerService registers via
+// TransportBLE.observeState (created lazily on first use, shared for the
+// process lifetime, unsubscribe is a no-op). Lets tests that run after the
+// observer exists drive adapter-state changes from one place.
+const btObserverHolder = vi.hoisted(
+    () =>
+        ({ current: null }) as {
+            current: null | {
+                next: (e: { type: string; available: boolean }) => void
+            }
+        },
+)
 const algorandGetAddressMock = vi.hoisted(() => vi.fn())
 const algorandSignMock = vi.hoisted(() => vi.fn())
 const algorandGetVersionMock = vi.hoisted(() => vi.fn())
@@ -253,15 +266,6 @@ describe('RNLedgerService', () => {
             vi.clearAllMocks()
         })
 
-        it('throws LedgerBluetoothDisabledError when TransportBLE.isSupported returns false', async () => {
-            vi.mocked(transportIsSupportedMock).mockResolvedValueOnce(false)
-            const service = new RNLedgerService()
-            const provider = service.createTransportProvider()
-            await expect(provider.connect('device-id')).rejects.toBeInstanceOf(
-                LedgerBluetoothDisabledError,
-            )
-        })
-
         it('throws LedgerPermissionDeniedError on Android when BLE scan permission is missing', async () => {
             vi.mocked(transportIsSupportedMock).mockResolvedValueOnce(true)
             // Force android with API 31+ and missing scan permission
@@ -486,6 +490,7 @@ describe('RNLedgerService', () => {
         } = { next: () => {} }
         transportObserveStateMock.mockImplementation((o: typeof observer) => {
             observer = o
+            btObserverHolder.current = o
             return { unsubscribe: () => {} }
         })
 
@@ -520,6 +525,53 @@ describe('RNLedgerService', () => {
         const before = received.length
         observer.next({ type: 'PoweredOff', available: false })
         expect(received.length).toBe(before)
+    })
+
+    // `connect` reads the observed adapter state (not `TransportBLE.isSupported`,
+    // which can't detect a disabled radio). Self-contained: seed the shared
+    // observer here so the block passes in isolation (`-t`/`.only`) as well as
+    // in a full-file run.
+    describe('connect adapter-state pre-flight', () => {
+        beforeEach(() => {
+            // Capture the module-scope observer on registration, then ensure it
+            // exists (lazy creation is a no-op if a prior test already made it).
+            transportObserveStateMock.mockImplementation(
+                (o: {
+                    next: (e: { type: string; available: boolean }) => void
+                }) => {
+                    btObserverHolder.current = o
+                    return { unsubscribe: () => {} }
+                },
+            )
+            new RNLedgerService()
+                .createTransportProvider()
+                .observeBluetoothState?.(() => {})
+        })
+
+        it('throws LedgerBluetoothDisabledError when the adapter is powered off', async () => {
+            btObserverHolder.current?.next({
+                type: 'PoweredOff',
+                available: false,
+            })
+
+            const provider = new RNLedgerService().createTransportProvider()
+            await expect(provider.connect('device-id')).rejects.toBeInstanceOf(
+                LedgerBluetoothDisabledError,
+            )
+        })
+
+        it('proceeds past the pre-flight when the adapter is powered on', async () => {
+            btObserverHolder.current?.next({
+                type: 'PoweredOn',
+                available: true,
+            })
+            transportOpenMock.mockResolvedValue({ close: transportCloseMock })
+
+            const provider = new RNLedgerService().createTransportProvider()
+            await provider.connect('device-id')
+
+            expect(transportOpenMock).toHaveBeenCalledWith('device-id')
+        })
     })
 
     describe('requestBluetoothEnable', () => {

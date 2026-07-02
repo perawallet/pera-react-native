@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react'
+import { Platform } from 'react-native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -18,6 +19,7 @@ import type {
     HardwareWalletAdapterState,
     HardwareWalletDevice,
 } from '@perawallet/wallet-core-hardware-wallet'
+import { LedgerLocationServicesDisabledError } from '@perawallet/wallet-core-ledger'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import {
@@ -55,9 +57,16 @@ type UseLedgerScanScreenResult = {
     hasPermissions: boolean
     isPermissionDenied: boolean
     isPermissionBlocked: boolean
+    /**
+     * True when the scan failed because the OS location toggle is off (Android
+     * ≤ 11 needs it on for BLE discovery). Lets the screen render an
+     * actionable "turn on Location" state instead of a generic retry.
+     */
+    isLocationServicesDisabled: boolean
     handleDevicePress: (device: HardwareWalletDevice) => void
     handleRetry: () => void
     handleRequestPermissions: () => void
+    handleOpenLocationSettings: () => void
     handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
@@ -73,6 +82,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         isBlocked: isPermissionBlocked,
         requestPermissions,
         openSettings,
+        openLocationSettings,
     } = useBlePermissions()
     const { adapterState, isBluetoothReady, requestEnable } =
         useBluetoothState()
@@ -179,12 +189,24 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         void requestPermissions()
     }, [isPermissionBlocked, openSettings, requestPermissions])
 
+    const handleOpenLocationSettings = useCallback(() => {
+        void openLocationSettings()
+    }, [openLocationSettings])
+
     const handleTroubleshoot = useCallback(() => {
         navigation.navigate('LedgerTroubleshooting')
     }, [navigation])
 
     const isPermissionDenied =
         !isCheckingPermissions && !hasPermissions && hasRequestedPermissions
+
+    // Location services are only a BLE-scan prerequisite on Android (≤ 11).
+    // Prompting an iOS user to turn on Location would be wrong advice, so keep
+    // this actionable state Android-scoped (the error can't originate on iOS
+    // anyway — this is defensive).
+    const isLocationServicesDisabled =
+        Platform.OS === 'android' &&
+        error instanceof LedgerLocationServicesDisabledError
 
     return {
         devices,
@@ -193,9 +215,11 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         hasPermissions,
         isPermissionDenied,
         isPermissionBlocked,
+        isLocationServicesDisabled,
         handleDevicePress,
         handleRetry,
         handleRequestPermissions,
+        handleOpenLocationSettings,
         handleTroubleshoot,
         t,
     }

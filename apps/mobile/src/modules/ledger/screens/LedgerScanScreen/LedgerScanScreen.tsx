@@ -45,9 +45,11 @@ export const LedgerScanScreen = () => {
         error,
         isPermissionDenied,
         isPermissionBlocked,
+        isLocationServicesDisabled,
         handleDevicePress,
         handleRetry,
         handleRequestPermissions,
+        handleOpenLocationSettings,
         handleTroubleshoot,
         t,
     } = useLedgerScanScreen()
@@ -79,6 +81,22 @@ export const LedgerScanScreen = () => {
     const renderEmptyState = () => {
         if (!error) {
             return null
+        }
+        if (isLocationServicesDisabled) {
+            return (
+                <EmptyView
+                    icon='warning'
+                    body={t('ledger.scan.location_services_disabled')}
+                    button={
+                        <PWButton
+                            testID='ledger_scan_location_settings_button'
+                            title={t('ledger.scan.open_location_settings')}
+                            onPress={handleOpenLocationSettings}
+                            variant='link'
+                        />
+                    }
+                />
+            )
         }
         return (
             <EmptyView
