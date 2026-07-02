@@ -25,6 +25,7 @@ export const PeraCardOverview = () => {
         isAutoFunding,
         currency,
         balance,
+        isBalanceLoading,
         credits,
         transactionSections,
         isLoadingTransactions,
@@ -42,6 +43,7 @@ export const PeraCardOverview = () => {
 
             <PeraCardBalanceSection
                 balance={balance}
+                isLoading={isBalanceLoading}
                 currency={currency}
                 isAutoFunding={isAutoFunding}
                 onFundingPress={onFundingPress}

@@ -10,6 +10,5 @@
  limitations under the License
  */
 
-export { NumberPad } from './NumberPad'
-export type { NumberPadProps } from './NumberPad'
-export { useNumberPadAmount } from './useNumberPadAmount'
+/** USDC is a USD stablecoin — display amounts to 2 decimals like the design. */
+export const USDC_DISPLAY_PRECISION = 2

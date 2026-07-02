@@ -37,6 +37,10 @@ export * from './useExportCardStatementMutation'
 // Funding (deposit / top-up)
 export * from './useDepositToCardMutation'
 
+// Internal wallet (balance / withdraw)
+export * from './useCardInternalWalletsQuery'
+export * from './useWithdrawFromCardMutation'
+
 // Onboarding / KYC
 export * from './useSendEmailVerificationMutation'
 export * from './useVerifyEmailMutation'

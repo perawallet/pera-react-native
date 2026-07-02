@@ -10,6 +10,18 @@
  limitations under the License
  */
 
-export { NumberPad } from './NumberPad'
-export type { NumberPadProps } from './NumberPad'
-export { useNumberPadAmount } from './useNumberPadAmount'
+import { toDecimal } from '@perawallet/wallet-core-shared'
+import type { CardInternalWallet } from '../../models'
+import type { InternalWalletApiResponse } from './schema'
+
+export const transformInternalWallet = (
+    response: InternalWalletApiResponse,
+): CardInternalWallet => ({
+    id: response.id,
+    balance: toDecimal(response.balance),
+    currency: response.currency,
+    address: response.address ?? '',
+    addressMemo: response.addressMemo ?? null,
+    addressId: response.addressId ?? '',
+    type: response.type ?? '',
+})

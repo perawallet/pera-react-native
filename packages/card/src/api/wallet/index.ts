@@ -10,6 +10,9 @@
  limitations under the License
  */
 
-export { NumberPad } from './NumberPad'
-export type { NumberPadProps } from './NumberPad'
-export { useNumberPadAmount } from './useNumberPadAmount'
+export {
+    fetchInternalWallets,
+    withdrawFromCard,
+    type FetchInternalWalletsParams,
+    type WithdrawFromCardParams,
+} from './endpoints'

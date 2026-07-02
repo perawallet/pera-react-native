@@ -17,6 +17,7 @@ import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     DEFAULT_CARD_CURRENCY,
     FundingType,
+    useCardInternalWalletsQuery,
     useCardStore,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
@@ -32,10 +33,13 @@ type PeraCardCredits = {
     refunds: Decimal
 }
 
+const ZERO_BALANCE = new Decimal(0)
+
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
     currency: string
     balance: Decimal
+    isBalanceLoading: boolean
     credits: PeraCardCredits
     transactionSections: CardTransactionSection[]
     isLoadingTransactions: boolean
@@ -58,8 +62,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [transactions],
     )
 
-    // TODO(card): balance and credits are stubbed — no Baanx API exposes them yet.
-    const balance = useMemo(() => new Decimal(0), [])
+    const { usdcWallet, isLoading: isBalanceLoading } =
+        useCardInternalWalletsQuery()
+    const balance = usdcWallet?.balance ?? ZERO_BALANCE
+
+    // TODO(card): credits are stubbed — no Baanx API exposes them yet.
     const credits = useMemo<PeraCardCredits>(
         () => ({ cashbacks: new Decimal(0), refunds: new Decimal(0) }),
         [],
@@ -71,6 +78,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         navigation.navigate('CardAddFunds')
     }, [navigation])
 
+    const onWithdraw = useCallback(() => {
+        navigation.navigate('CardWithdraw')
+    }, [navigation])
+
     const onShowAllTransactions = useCallback(() => {
         navigation.navigate('CardTransactions')
     }, [navigation])
@@ -79,11 +90,12 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         isAutoFunding: selectedFundingType === FundingType.Auto,
         currency: DEFAULT_CARD_CURRENCY,
         balance,
+        isBalanceLoading,
         credits,
         transactionSections,
         isLoadingTransactions: isLoading,
         onFundingPress: showComingSoon,
-        onWithdraw: showComingSoon,
+        onWithdraw,
         onAddFunds,
         onGetUsdc: showComingSoon,
         onShowAllTransactions,

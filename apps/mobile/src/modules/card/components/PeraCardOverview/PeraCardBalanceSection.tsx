@@ -14,6 +14,7 @@ import { type Decimal } from 'decimal.js'
 import {
     PWIcon,
     PWImage,
+    PWSkeleton,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -23,8 +24,13 @@ import peraCardImage from '@assets/images/pera-card.png'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
+const BALANCE_SKELETON_WIDTH = 160
+const BALANCE_SKELETON_HEIGHT = 34
+
 type PeraCardBalanceSectionProps = {
     balance: Decimal
+    /** True while the card balance is still being fetched. */
+    isLoading: boolean
     currency: string
     isAutoFunding: boolean
     onFundingPress: () => void
@@ -32,6 +38,7 @@ type PeraCardBalanceSectionProps = {
 
 export const PeraCardBalanceSection = ({
     balance,
+    isLoading,
     currency,
     isAutoFunding,
     onFundingPress,
@@ -55,13 +62,20 @@ export const PeraCardBalanceSection = ({
                 </PWText>
             </PWView>
 
-            <CurrencyAmount
-                value={balance}
-                currency={currency}
-                precision='compact'
-                symbolPosition='end'
-                variant='h1'
-            />
+            {isLoading ? (
+                <PWSkeleton
+                    width={BALANCE_SKELETON_WIDTH}
+                    height={BALANCE_SKELETON_HEIGHT}
+                />
+            ) : (
+                <CurrencyAmount
+                    value={balance}
+                    currency={currency}
+                    precision='compact'
+                    symbolPosition='end'
+                    variant='h1'
+                />
+            )}
 
             <PWTouchableOpacity
                 style={styles.fundingRow}

@@ -1575,6 +1575,7 @@ vi.mock('@react-navigation/native', () => ({
         setOptions: vi.fn(),
         push: vi.fn(),
         canGoBack: vi.fn(() => false),
+        isFocused: vi.fn(() => true),
     }),
     useRoute: vi.fn(() => ({
         params: {},

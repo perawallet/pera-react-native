@@ -61,6 +61,7 @@ type NavigationApi = {
     canGoBack: () => boolean
     setParams: (params: Record<string, unknown>) => void
     isReady: () => boolean
+    isFocused: () => boolean
     addListener: (event: string, listener: () => void) => () => void
     dispatch: (action: unknown) => void
     reset: (state: unknown) => void
@@ -103,6 +104,7 @@ const noopApi: NavigationApi = {
     canGoBack: () => false,
     setParams: () => {},
     isReady: () => true,
+    isFocused: () => true,
     addListener: () => () => {},
     dispatch: () => {},
     reset: () => {},
@@ -211,6 +213,8 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
         canGoBack,
         setParams,
         isReady: () => true,
+        // The harness only renders the top route, so running code is focused.
+        isFocused: () => true,
         addListener: () => () => {},
         dispatch: () => {},
         reset,

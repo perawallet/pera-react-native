@@ -766,6 +766,19 @@
             "swap_success_body": "Your assets were swapped to USDC.",
             "swap_error_title": "Swap failed"
         },
+        "withdraw": {
+            "navigation_title": "Withdraw",
+            "subtitle": "Withdraw USDC from your Pera Card back to your linked Pera account.",
+            "to_account": "To account",
+            "amount": "Amount",
+            "balance": "Balance: {{amount}}",
+            "withdraw": "Withdraw",
+            "confirm_title": "Confirm Withdrawal",
+            "confirm_body": "You are about to withdraw {{amount}} USDC from your Pera Card to the account below.",
+            "confirm_button": "Confirm",
+            "success_title": "Withdrawal initiated",
+            "success_body": "{{amount}} USDC is on its way to your account."
+        },
         "confirm_swap": {
             "navigation_title": "Confirm Swap",
             "price": "Price",

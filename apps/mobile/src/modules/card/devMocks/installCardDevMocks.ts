@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-// TODO(card): remove once the Baanx transactions sandbox returns data. This is
+// TODO(card): remove once the Baanx transactions sandbox returns data and the
+// internal-wallet routes are enabled for Pera (sandbox rejects them with "This
+// route is only available for CUSTODIAL" — platform is non-custodial). This is
 // dev-only — installed behind `__DEV__` from App.tsx, so it never ships.
 
 import {
@@ -22,14 +24,22 @@ import {
     type CardTransportResponse,
 } from '@perawallet/wallet-core-card'
 import { buildMockCardTransactions } from './mockCardTransactions'
+import {
+    applyMockWithdrawal,
+    buildMockInternalWallets,
+} from './mockInternalWallets'
 
 const TRANSACTIONS_PATH = '/v1/card/transactions'
+const INTERNAL_WALLETS_PATH = '/v1/wallet/internal'
+const WITHDRAW_PATH = '/v1/wallet/internal/withdraw'
 
 /**
  * Swaps in a transport that serves mock transactions for
  * `GET /v1/card/transactions` (page 0; later pages are empty so the infinite
- * query terminates) and delegates every other request to the real transport.
- * Returns a disposer that restores the default transport.
+ * query terminates) and a mock USDC internal wallet for the custodial-only
+ * wallet routes (list + withdraw, with a stateful balance), delegating every
+ * other request to the real transport. Returns a disposer that restores the
+ * default transport.
  */
 export const installCardDevMocks = (): (() => void) => {
     const baseTransport = getCardTransport()
@@ -43,6 +53,16 @@ export const installCardDevMocks = (): (() => void) => {
                 const data = (
                     page === 0 ? buildMockCardTransactions() : []
                 ) as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (req.method === 'GET' && req.path === INTERNAL_WALLETS_PATH) {
+                const data = buildMockInternalWallets() as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (req.method === 'POST' && req.path === WITHDRAW_PATH) {
+                const { amount } = req.data as { amount: string }
+                applyMockWithdrawal(amount)
+                const data = { success: true } as TData
                 return Promise.resolve({ data, status: 200, statusText: 'OK' })
             }
             return baseTransport.request<TData, TVars>(req)
