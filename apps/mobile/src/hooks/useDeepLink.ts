@@ -12,11 +12,7 @@
 
 import { Linking } from 'react-native'
 import { useToast } from './useToast'
-import {
-    ALGO_ASSET_ID,
-    logger,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import {
@@ -27,6 +23,7 @@ import {
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
 import {
+    getConnectionErrorClientId,
     useWalletConnect,
     useWalletConnectStore,
 } from '@perawallet/wallet-core-walletconnect'
@@ -66,21 +63,25 @@ type WalletConnectSessionOutcome =
 
 /**
  * Subscribe to the WalletConnect store and resolve as soon as one of three
- * things happens after a `connect`:
- *   - a new session_request lands (`clientId` not in `beforeIds`) → `session`
- *   - a NEW `connectionError` is surfaced                         → `error`
- *   - neither happens within `timeoutMs`                          → `timeout`
+ * things happens after a `connect`, all scoped to `pairingClientId` — the
+ * connector this QR pairing created:
+ *   - a session_request lands for this connector       → `session`
+ *   - a connection error is surfaced for this connector → `error`
+ *   - neither happens within `timeoutMs`                → `timeout`
+ *
+ * Scoping to the connector is essential: `connectionError` / `sessionRequests`
+ * are shared across every active connector, so an unrelated dApp session that
+ * errors (or a stale request) during the wait must NOT be mistaken for this
+ * pairing being rejected.
  *
  * The `error` branch matters for the QR flow: when a handshake is rejected
  * (most commonly the QR was scanned on the wrong network) the dApp DID
- * respond, so we must react immediately instead of blocking for the full
- * timeout and then reporting a misleading "no response" error. The
- * `timeout` branch still detects genuinely dead bridges (no event ever
- * fires) so we can surface an actionable error.
+ * respond, so we react immediately instead of blocking for the full timeout
+ * and then reporting a misleading "no response" error. The `timeout` branch
+ * still detects genuinely dead bridges (no event ever fires).
  */
 const waitForSessionOutcome = (
-    beforeIds: Set<string>,
-    beforeError: Nullable<Error>,
+    pairingClientId: string,
     timeoutMs: number,
 ): Promise<WalletConnectSessionOutcome> =>
     new Promise(resolve => {
@@ -92,14 +93,17 @@ const waitForSessionOutcome = (
         const evaluate = (
             state: ReturnType<typeof useWalletConnectStore.getState>,
         ) => {
+            const { connectionError } = state
             if (
-                state.connectionError &&
-                state.connectionError !== beforeError
+                connectionError &&
+                getConnectionErrorClientId(connectionError) === pairingClientId
             ) {
-                settle({ type: 'error', error: state.connectionError })
+                settle({ type: 'error', error: connectionError })
                 return
             }
-            if (state.sessionRequests.some(r => !beforeIds.has(r.clientId))) {
+            if (
+                state.sessionRequests.some(r => r.clientId === pairingClientId)
+            ) {
                 settle({ type: 'session' })
             }
         }
@@ -270,11 +274,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // including the legacy pera bridge that older QR
                     // codes embed. The client doesn't surface this as a
                     // sync throw, so we have to detect it ourselves:
-                    // snapshot the session-request store before connect,
-                    // wait briefly for a NEW request to land, and toast
-                    // a clear error if it never does.
+                    // `connect` returns the new connector's clientId; we then
+                    // wait briefly for a session_request / error on THAT
+                    // connector and toast a clear error if neither lands.
+                    let pairingClientId: string
                     try {
-                        await withTimeout(
+                        pairingClientId = await withTimeout(
                             'walletConnect.connect',
                             10_000,
                             connect({
@@ -295,16 +300,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         onError?.()
                         return
                     }
-                    const beforeIds = new Set(
-                        useWalletConnectStore
-                            .getState()
-                            .sessionRequests.map(r => r.clientId),
-                    )
-                    const beforeError =
-                        useWalletConnectStore.getState().connectionError
                     const outcome = await waitForSessionOutcome(
-                        beforeIds,
-                        beforeError,
+                        pairingClientId,
                         8000,
                     )
                     if (outcome.type === 'error') {

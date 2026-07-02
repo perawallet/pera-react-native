@@ -215,7 +215,7 @@ const { mockWcConnect, wcStore, wcStoreControls } = vi.hoisted(() => {
     const listeners = new Set<(next: typeof state) => void>()
     const notify = () => listeners.forEach(listener => listener(state))
     return {
-        mockWcConnect: vi.fn(async () => undefined),
+        mockWcConnect: vi.fn(async () => 'pairing-client'),
         wcStore: {
             getState: () => state,
             subscribe: (listener: (next: typeof state) => void) => {
@@ -246,6 +246,8 @@ const { mockWcConnect, wcStore, wcStoreControls } = vi.hoisted(() => {
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockWcConnect }),
     useWalletConnectStore: wcStore,
+    getConnectionErrorClientId: (error: { clientId?: unknown } | null) =>
+        typeof error?.clientId === 'string' ? error.clientId : undefined,
 }))
 
 const {
@@ -471,9 +473,9 @@ describe('useDeepLink', () => {
                 onConnectionError,
             )
             // Let connect() resolve and `waitForSessionOutcome` subscribe,
-            // then land a session_request the way the WC handler would.
+            // then land a session_request for the connector connect() created.
             await new Promise(resolve => setTimeout(resolve, 0))
-            wcStoreControls.addSessionRequest('client-1')
+            wcStoreControls.addSessionRequest('pairing-client')
             await done
         })
 
@@ -504,8 +506,13 @@ describe('useDeepLink', () => {
             )
             await new Promise(resolve => setTimeout(resolve, 0))
             // The session_request handler rejects a wrong-network dApp and
-            // surfaces the error on the store instead of adding a request.
-            wcStoreControls.setConnectionError(new Error('wrong network'))
+            // surfaces an error stamped with THIS pairing's connector id
+            // instead of adding a request.
+            wcStoreControls.setConnectionError(
+                Object.assign(new Error('wrong network'), {
+                    clientId: 'pairing-client',
+                }),
+            )
             await done
         })
 
@@ -515,6 +522,43 @@ describe('useDeepLink', () => {
         expect(onConnectionError).toHaveBeenCalledTimes(1)
         expect(onError).not.toHaveBeenCalled()
         expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    it('ignores a connection error from an unrelated connector while pairing', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.WALLET_CONNECT,
+            uri: 'wc:123',
+        })
+        const { result } = renderHook(() => useDeepLink())
+        const onError = vi.fn()
+        const onSuccess = vi.fn()
+        const onConnectionError = vi.fn()
+
+        await act(async () => {
+            const done = result.current.handleDeepLink(
+                'perawallet://app/wallet-connect?uri=wc:123',
+                false,
+                'qr',
+                onError,
+                onSuccess,
+                onConnectionError,
+            )
+            await new Promise(resolve => setTimeout(resolve, 0))
+            // An already-connected dApp on a different connector errors mid
+            // pairing — it must NOT be treated as this pairing's rejection.
+            wcStoreControls.setConnectionError(
+                Object.assign(new Error('some other session failed'), {
+                    clientId: 'other-connector',
+                }),
+            )
+            // This pairing's own session_request then lands → success.
+            wcStoreControls.addSessionRequest('pairing-client')
+            await done
+        })
+
+        expect(onSuccess).toHaveBeenCalledTimes(1)
+        expect(onConnectionError).not.toHaveBeenCalled()
+        expect(onError).not.toHaveBeenCalled()
     })
 
     it('should open send-funds bottom sheet for ALGO_TRANSFER deeplink', async () => {

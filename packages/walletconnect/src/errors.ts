@@ -15,6 +15,7 @@ import {
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 /**
@@ -92,4 +93,20 @@ export class WalletConnectConnectionTimeoutError extends WalletConnectError {
             { retryable: true },
         )
     }
+}
+
+/**
+ * Read the originating connector's `clientId` off a surfaced WalletConnect
+ * error, if one was stamped on it (see `surfaceError`). `connectionError` is a
+ * single shared store field written from several connectors, so consumers that
+ * only care about a specific pairing/session (the QR pairing waiter, the
+ * provider's pending-request cleanup) use this to ignore errors that belong to
+ * a different connector. Reads structurally so it works for both
+ * {@link WalletConnectError} and raw `Error`s that were tagged.
+ */
+export const getConnectionErrorClientId = (
+    error: Nullable<Error>,
+): string | undefined => {
+    const clientId = (error as { clientId?: unknown } | null)?.clientId
+    return typeof clientId === 'string' ? clientId : undefined
 }

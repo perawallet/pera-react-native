@@ -45,10 +45,16 @@ import {
  * app's `WalletConnectProvider` reads `connectionError` and dispatches
  * (toast for network mismatch, bottom sheet otherwise).
  */
-const surfaceError = (error: Error) => {
+const surfaceError = (error: Error, clientId?: string) => {
     logger.error('An error occurred when handling a wallet connect message', {
         error,
     })
+    // Stamp the originating connector so consumers can scope handling to a
+    // single pairing/session (see `getConnectionErrorClientId`). `connectionError`
+    // is one shared store field written from every connector.
+    if (clientId) {
+        ;(error as { clientId?: string }).clientId = clientId
+    }
     useWalletConnectStore.getState().setConnectionError(error)
 }
 
@@ -118,6 +124,10 @@ export const useWalletConnect = (network: Network) => {
             // so its socket liveness is tracked for delivery recovery.
             bindRequestHandlersRef.current(connector)
             registerConnector(connector.clientId, connector)
+            // Return the connector id so a caller pairing via QR can scope its
+            // wait to this connector's session_request / connection error
+            // rather than reacting to any WalletConnect activity.
+            return connector.clientId
         },
         [],
     )
@@ -295,7 +305,7 @@ export const useWalletConnect = (network: Network) => {
                     id: payload?.id,
                     error: e as Error,
                 })
-                surfaceError(e as Error)
+                surfaceError(e as Error, connector.clientId)
             }
         })
 
@@ -317,7 +327,7 @@ export const useWalletConnect = (network: Network) => {
                     id: payload?.id,
                     error: e as Error,
                 })
-                surfaceError(e as Error)
+                surfaceError(e as Error, connector.clientId)
             }
         })
 
@@ -329,7 +339,7 @@ export const useWalletConnect = (network: Network) => {
         connector.on('session_request', (error, payload) => {
             if (error) {
                 logger.error(error)
-                surfaceError(error)
+                surfaceError(error, connector.clientId)
                 return
             }
             const { peerMeta, chainId, permissions } = payload.params[0]
@@ -353,7 +363,10 @@ export const useWalletConnect = (network: Network) => {
                     network: currentNetwork,
                 })
                 connector.rejectSession()
-                surfaceError(new WalletConnectInvalidNetworkError())
+                surfaceError(
+                    new WalletConnectInvalidNetworkError(),
+                    connector.clientId,
+                )
                 return
             }
 
@@ -372,7 +385,7 @@ export const useWalletConnect = (network: Network) => {
         connector.on('error', error => {
             logger.error('WC error received', { error })
             if (error) {
-                surfaceError(error)
+                surfaceError(error, connector.clientId)
             }
         })
     }

@@ -12,6 +12,7 @@
 
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
+    getConnectionErrorClientId,
     useWalletConnect,
     useWalletConnectForegroundReconnect,
     useWalletConnectSessionRequests,
@@ -136,15 +137,23 @@ export const useWalletConnectProvider = () => {
             },
             { notifier: scannerNotifier.current ?? undefined },
         )
-        if (nextRequest) {
-            removeSessionRequest(nextRequest)
+        // Only drop the pending request belonging to the connector that
+        // errored — not whatever happens to be first in the queue — so an
+        // error from one dApp can't discard another dApp's still-valid
+        // pending approval.
+        const erroredClientId = getConnectionErrorClientId(connectionError)
+        const erroredRequest = erroredClientId
+            ? sessionRequests.find(r => r.clientId === erroredClientId)
+            : undefined
+        if (erroredRequest) {
+            removeSessionRequest(erroredRequest)
         }
         setConnectionError(null)
     }, [
         connectionError,
         showToast,
         t,
-        nextRequest,
+        sessionRequests,
         removeSessionRequest,
         setConnectionError,
     ])
