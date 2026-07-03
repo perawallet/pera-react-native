@@ -75,4 +75,34 @@ describe('addDebugAbiFilter', () => {
             addDebugAbiFilter('android {\n    buildTypes {\n    }\n}'),
         ).toThrow(/could not find the debug buildType/)
     })
+
+    it('still scopes debug when an unrelated abiFilters already exists elsewhere', () => {
+        // A release-side ndk filter (or any other abiFilters usage) must not
+        // make the idempotency guard think debug is already patched — a bare
+        // 'abiFilters' substring check would silently no-op here and leave
+        // debug unscoped.
+        const withReleaseAbiFilters = `android {
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            signingConfig signingConfigs.release
+            ndk {
+                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+            }
+        }
+    }
+}`
+
+        const result = addDebugAbiFilter(withReleaseAbiFilters)
+
+        const buildTypes = result.slice(result.indexOf('buildTypes {'))
+        const debugBlock = buildTypes.slice(
+            buildTypes.indexOf('debug {'),
+            buildTypes.indexOf('release {'),
+        )
+
+        expect(debugBlock).toContain("abiFilters 'arm64-v8a'")
+    })
 })

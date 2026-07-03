@@ -46,12 +46,16 @@ const withAndroidAbiFilters = (config) => {
 };
 
 function addDebugAbiFilter(buildGradle) {
+  const block = `            ndk {\n                abiFilters '${DEBUG_ABI}'\n            }`;
+
   // Idempotent: prebuild re-runs mods, and we must not inject the block twice.
-  if (buildGradle.includes('abiFilters')) {
+  // Anchored to our exact injected block rather than a bare 'abiFilters'
+  // substring, so an unrelated abiFilters usage elsewhere (a `splits { abi }`
+  // block, a release-side ndk filter, …) can't cause a silent no-op that
+  // leaves debug unscoped.
+  if (buildGradle.includes(block)) {
     return buildGradle;
   }
-
-  const block = `            ndk {\n                abiFilters '${DEBUG_ABI}'\n            }`;
 
   // Anchor inside `buildTypes { ... debug { ` — `debug` precedes `release` in
   // the RN template, and the lazy match starts at `buildTypes` so it skips the
