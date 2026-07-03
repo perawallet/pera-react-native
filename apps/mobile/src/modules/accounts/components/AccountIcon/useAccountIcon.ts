@@ -52,7 +52,7 @@ const BASE_GLYPH: Record<AccountType, AccountGlyph> = {
         variant: 'accountPink',
     },
     // Temporary algo25 glyph until PQ-010 delivers the quantum visuals.
-    [AccountTypes.falcon]: {
+    [AccountTypes.quantum]: {
         name: 'accounts/glyph/algo25-account',
         variant: 'accountTurquoise',
     },

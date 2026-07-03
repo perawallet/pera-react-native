@@ -29,7 +29,7 @@ export const AccountTypes = {
     hardware: 'hardware',
     multisig: 'multisig',
     watch: 'watch',
-    falcon: 'falcon',
+    quantum: 'quantum',
 } as const
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
@@ -68,7 +68,7 @@ export type WalletAccount =
     | MultiSigAccount
     | HardwareWalletAccount
     | WatchAccount
-    | FalconAccount
+    | QuantumAccount
 
 export type BaseWalletAccount = {
     /**
@@ -98,12 +98,15 @@ export type Algo25Account = BaseWalletAccount & {
 }
 
 /**
- * Post-quantum account signing with a Falcon keypair. Flat and single-key
+ * Account backed by a post-quantum signature keypair. Flat and single-key
  * like {@link Algo25Account}: the key material lives in the KMS under
- * `keyPairId`; there is no derivation path or device metadata.
+ * `keyPairId`; there is no derivation path or device metadata. The concrete
+ * signature scheme (Falcon today) is a KMS / signing-pipeline detail that the
+ * model deliberately does not encode, so the scheme can change without a
+ * data migration.
  */
-export type FalconAccount = BaseWalletAccount & {
-    type: typeof AccountTypes.falcon
+export type QuantumAccount = BaseWalletAccount & {
+    type: typeof AccountTypes.quantum
     address: string
     keyPairId: string
 }

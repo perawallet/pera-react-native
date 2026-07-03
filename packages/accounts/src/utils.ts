@@ -19,7 +19,7 @@ import {
     type HardwareWalletAccount,
     type HDWalletAccount,
     type Algo25Account,
-    type FalconAccount,
+    type QuantumAccount,
     type MultiSigAccount,
     type WatchAccount,
     type ImportAccountType,
@@ -65,10 +65,10 @@ export const isAlgo25Account = (
     return account.type === AccountTypes.algo25
 }
 
-export const isFalconAccount = (
+export const isQuantumAccount = (
     account: WalletAccount,
-): account is FalconAccount => {
-    return account.type === AccountTypes.falcon
+): account is QuantumAccount => {
+    return account.type === AccountTypes.quantum
 }
 
 export const isWatchAccount = (
@@ -102,8 +102,8 @@ const canSignDirectly = (account: WalletAccount): boolean =>
  * propose-based, so one local signable participant is enough. A participant
  * counts only with its OWN key — slots bind to the participant's pubkey, so
  * rekey indirection is not followed and watch-only participants don't count.
- * Falcon participants don't count either: multisig slots verify Ed25519
- * signatures only, so a Falcon key can never satisfy a slot.
+ * Quantum participants don't count either: multisig slots verify Ed25519
+ * signatures only, so a post-quantum key can never satisfy a slot.
  */
 export const canSignViaParticipants = (
     participantAddresses: string[],
@@ -113,7 +113,7 @@ export const canSignViaParticipants = (
         const participant = accounts.find(a => a.address === addr)
         return (
             !!participant &&
-            !isFalconAccount(participant) &&
+            !isQuantumAccount(participant) &&
             canSignDirectly(participant)
         )
     })
@@ -335,7 +335,7 @@ export const rekeyTransitionFor = (
  * standard account" flow originating from `sourceAddress`. Mirrors Android
  * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`:
  * the target must be a standard signing account (algo25 / HD wallet) or a
- * falcon account (the rekey-in migration path to post-quantum keys),
+ * quantum account (the rekey-in migration path to post-quantum keys),
  * not the source itself, hold its own signing keys, and not already be
  * rekeyed away.
  */
@@ -347,7 +347,7 @@ export const isEligibleRekeyTarget = (
     if (
         target.type !== AccountTypes.algo25 &&
         target.type !== AccountTypes.hdWallet &&
-        target.type !== AccountTypes.falcon
+        target.type !== AccountTypes.quantum
     )
         return false
     if (!hasSigningKeys(target)) return false

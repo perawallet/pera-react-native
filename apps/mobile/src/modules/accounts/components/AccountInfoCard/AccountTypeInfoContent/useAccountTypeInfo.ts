@@ -64,7 +64,7 @@ const TYPE_I18N: Record<AccountType, { title: string; description: string }> = {
         description: 'account_type_info.watch_description',
     },
     // Temporary standard copy until PQ-010 delivers quantum copy.
-    [AccountTypes.falcon]: {
+    [AccountTypes.quantum]: {
         title: 'account_type_info.standard_title',
         description: 'account_type_info.standard_description',
     },

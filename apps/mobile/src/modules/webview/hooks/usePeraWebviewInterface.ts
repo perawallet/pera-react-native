@@ -101,9 +101,9 @@ const BASE_WEBVIEW_TYPE: Record<
     [AccountTypes.hardware]: 'Hardware',
     [AccountTypes.multisig]: 'Multisig',
     [AccountTypes.watch]: 'Unsignable',
-    // The Pera SDK has no falcon identifier yet and falcon signing routing
-    // lands with PQ-006, so don't advertise falcon accounts as signable.
-    [AccountTypes.falcon]: 'Unsignable',
+    // The Pera SDK has no quantum identifier yet and quantum signing routing
+    // lands with PQ-006, so don't advertise quantum accounts as signable.
+    [AccountTypes.quantum]: 'Unsignable',
 }
 
 /**
