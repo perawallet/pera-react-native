@@ -53,6 +53,16 @@ export default defineConfig({
                 ),
             },
             {
+                // react-native-error-boundary ships untranspiled JSX that
+                // vitest can't parse; the stub mirrors its catch/resetError
+                // contract so boundary specs stay behavioral.
+                find: 'react-native-error-boundary',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/error-boundary-stub.tsx',
+                ),
+            },
+            {
                 // `@perawallet/walletconnect` (WC v1 fork) opens a relay
                 // socket on construction — no good in jsdom. Route every
                 // consumer (including the deep
