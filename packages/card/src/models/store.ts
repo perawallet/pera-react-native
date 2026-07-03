@@ -32,8 +32,9 @@ export type CardUxState = BaseStoreState & {
      */
     verificationCode: Nullable<string>
     /**
-     * Set when a deferred email/phone code is rejected at the password step, so
-     * the matching verify screen can show an inline "code invalid" error.
+     * Set when a verification code is rejected — 'email' by the Set-Password
+     * step (where `email/verify` fires), 'phone' by the phone-verify screen —
+     * so the matching verify screen can show an inline "code invalid" error.
      * Transient — never persisted; cleared once the user edits the code.
      */
     codeVerificationError: Nullable<CodeVerificationTarget>

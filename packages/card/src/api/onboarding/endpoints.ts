@@ -345,6 +345,9 @@ export const submitOnboardingConsent = async (
 // Step 2 of Baanx's two-step consent flow: link the consent set created above to
 // the permanent user id the address step issues. Idempotent — Baanx returns 409
 // Conflict if the set is already linked (the desired end state), which we swallow.
+// Deliberately NOT `authenticated`: per the Baanx api-reference
+// (api-reference/consent/link-user-to-consent) this endpoint uses API-key
+// headers only — no user Bearer — even though it runs after the token exists.
 export type LinkOnboardingConsentParams = NetworkParams & {
     consentSetId: string
     userId: string
