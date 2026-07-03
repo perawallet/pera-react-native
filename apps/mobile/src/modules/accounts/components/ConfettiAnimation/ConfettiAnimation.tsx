@@ -87,7 +87,10 @@ const ConfettiField = ({ onFinish }: ConfettiFieldProps) => {
     }, [onFinish, totalDurationMs])
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='confetti_animation'
+        >
             {pieces.map(piece => (
                 <ConfettiPiece
                     key={piece.id}
