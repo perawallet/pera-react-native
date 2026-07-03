@@ -11,8 +11,11 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { useNavigation } from '@react-navigation/native'
+import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCardTransactionsQuery } from '@perawallet/wallet-core-card'
 import { useCardComingSoonToast } from '../../hooks'
+import { type PeraCardStackParamList } from '../../routes/types'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -27,9 +30,12 @@ type UseCardTransactionsResult = {
     handleLoadMore: () => void
     handleRetry: () => void
     onExport: () => void
+    onPressTransaction: (id: string) => void
 }
 
 export const useCardTransactions = (): UseCardTransactionsResult => {
+    const navigation =
+        useNavigation<NativeStackNavigationProp<PeraCardStackParamList>>()
     const {
         transactions,
         isLoading,
@@ -56,6 +62,13 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
         void refetch()
     }, [refetch])
 
+    const onPressTransaction = useCallback(
+        (id: string) => {
+            navigation.navigate('CardTransactionDetail', { id })
+        },
+        [navigation],
+    )
+
     return {
         sections,
         isLoading,
@@ -66,5 +79,6 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
         handleRetry,
         // TODO(card): wire to exportCardStatement + a share sheet; stubbed for now.
         onExport: showComingSoon,
+        onPressTransaction,
     }
 }

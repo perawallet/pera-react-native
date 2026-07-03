@@ -18,6 +18,9 @@ import {
 import {
     CardTransactionKind,
     formatCardTransactionDate,
+    formatCardTransactionDateTime,
+    getCardMccCategoryLabelKey,
+    getCardMerchantTypeLabelKey,
     getCardTransactionKind,
     getCardTransactionRelativeDate,
     groupCardTransactionsByMonth,
@@ -54,6 +57,71 @@ describe('groupCardTransactionsByMonth', () => {
 describe('formatCardTransactionDate', () => {
     it('formats as "D Mon" using UTC', () => {
         expect(formatCardTransactionDate('2026-07-12T23:30:00Z')).toBe('12 Jul')
+    })
+})
+
+describe('formatCardTransactionDateTime', () => {
+    it('formats as "Mon D, YYYY at HH:MM AM/PM" using UTC', () => {
+        expect(formatCardTransactionDateTime('2024-12-24T13:10:00Z')).toBe(
+            'Dec 24, 2024 at 01:10 PM',
+        )
+    })
+
+    it('returns empty for an unparseable date', () => {
+        expect(formatCardTransactionDateTime('')).toBe('')
+        expect(formatCardTransactionDateTime('not-a-date')).toBe('')
+    })
+})
+
+describe('getCardMerchantTypeLabelKey', () => {
+    it('maps documented Baanx values case-insensitively', () => {
+        expect(getCardMerchantTypeLabelKey('InStore')).toBe(
+            'peraCard.transactions.merchant_type_in_store',
+        )
+        expect(getCardMerchantTypeLabelKey('InStoreWithPin')).toBe(
+            'peraCard.transactions.merchant_type_in_store_with_pin',
+        )
+        expect(getCardMerchantTypeLabelKey('OutOfWalletOnline')).toBe(
+            'peraCard.transactions.merchant_type_online',
+        )
+        expect(getCardMerchantTypeLabelKey('atm')).toBe(
+            'peraCard.transactions.merchant_type_atm',
+        )
+    })
+
+    it('returns undefined for unknown values (open set — caller shows raw)', () => {
+        expect(getCardMerchantTypeLabelKey('SomeNewBaanxValue')).toBeUndefined()
+    })
+
+    it('does not resolve Object.prototype members for hostile wire values', () => {
+        expect(getCardMerchantTypeLabelKey('Constructor')).toBeUndefined()
+        expect(getCardMerchantTypeLabelKey('__proto__')).toBeUndefined()
+        expect(getCardMerchantTypeLabelKey('hasOwnProperty')).toBeUndefined()
+    })
+})
+
+describe('getCardMccCategoryLabelKey', () => {
+    it('maps every documented category case-insensitively', () => {
+        expect(getCardMccCategoryLabelKey('FOOD')).toBe(
+            'peraCard.transactions.mcc_category_food',
+        )
+        expect(getCardMccCategoryLabelKey('misc')).toBe(
+            'peraCard.transactions.mcc_category_misc',
+        )
+        for (const category of [
+            'SUBSCRIPTIONS',
+            'TRAVEL',
+            'ENTERTAINMENT',
+            'HEALTH',
+            'ATM',
+            'UTILITIES',
+        ]) {
+            expect(getCardMccCategoryLabelKey(category)).toBeDefined()
+        }
+    })
+
+    it('returns undefined for unknown values', () => {
+        expect(getCardMccCategoryLabelKey('NOT_A_CATEGORY')).toBeUndefined()
     })
 })
 

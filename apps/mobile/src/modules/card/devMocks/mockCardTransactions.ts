@@ -63,6 +63,12 @@ const DAY = 24 * HOUR
 const isoAgo = (now: number, offsetMs: number): string =>
     new Date(now - offsetMs).toISOString()
 
+// Realistic 52-char Algorand txids so the detail screen's hash row exercises
+// middle-truncation and the explorer link with plausible values.
+const SESAME_FUNDING_TX_HASH =
+    'H2KQF3YLVJZP4W6XNBTAM5RUE7DCGS2IK4LMOQ6PYAWBVXCZE3TR'
+const DEPOSIT_TX_HASH = 'M7PWT2XQK5JVBHLYRC4ZAEN6UD3FSG7IO2QMWK5NYPVXBAECZ4LH'
+
 /**
  * A spread of mock card transactions across two months, exercising each row
  * kind (payment, refund, deposit) and status (confirmed, pending, declined).
@@ -81,16 +87,31 @@ export const buildMockCardTransactions = (
         merchantNameLocation: 'Sesame Street Cafe',
         merchantType: 'InStore',
         mcc: '5812',
-        mccCategory: 'Food & Drink',
+        mccCategory: 'FOOD',
         dateTime: isoAgo(now, 3 * HOUR),
         transactionCurrency: 'USDC',
         originalCurrency: 'USDC',
         amountInTransactionCurrency: '500',
-        feesInTransactionCurrency: '0',
+        feesInTransactionCurrency: '0.35',
         amountInOriginalCurrency: '500',
-        feesInOriginalCurrency: '0',
+        feesInOriginalCurrency: '0.35',
         billingConversionRate: '1',
         ecbRate: '1',
+        fundingSources: [
+            {
+                id: 'fs_1001',
+                address: 'PERA…DEV',
+                network: 'algorand',
+                currency: 'USDC',
+                txHash: SESAME_FUNDING_TX_HASH,
+                sign: 'DEBIT',
+                status: 'CONFIRMED',
+                amount: '500',
+                fees: '0.35',
+                swapFee: '0',
+                dateTime: isoAgo(now, 3 * HOUR),
+            },
+        ],
     },
     {
         id: 'tx_refund_moretti',
@@ -100,9 +121,9 @@ export const buildMockCardTransactions = (
         sign: 'CREDIT',
         status: 'PENDING',
         merchantNameLocation: 'Moretti Restaurant',
-        merchantType: 'InStore',
+        merchantType: 'InStoreWithPin',
         mcc: '5812',
-        mccCategory: 'Food & Drink',
+        mccCategory: 'FOOD',
         dateTime: isoAgo(now, DAY + 2 * HOUR),
         transactionCurrency: 'USDC',
         originalCurrency: 'USDC',
@@ -121,9 +142,9 @@ export const buildMockCardTransactions = (
         sign: 'DEBIT',
         status: 'DECLINED',
         merchantNameLocation: 'Uber',
-        merchantType: 'Ecommerce',
+        merchantType: 'OutOfWalletOnline',
         mcc: '4121',
-        mccCategory: 'Travel',
+        mccCategory: 'TRAVEL',
         declineReason: 'INSUFFICIENT_FUNDS',
         dateTime: isoAgo(now, 2 * DAY),
         transactionCurrency: 'USDC',
@@ -158,7 +179,7 @@ export const buildMockCardTransactions = (
                 address: 'PERA…DEV',
                 network: 'algorand',
                 currency: 'USDC',
-                txHash: 'DEVTXHASH',
+                txHash: DEPOSIT_TX_HASH,
                 sign: 'CREDIT',
                 status: 'CONFIRMED',
                 amount: '160',
@@ -178,7 +199,7 @@ export const buildMockCardTransactions = (
         merchantNameLocation: 'Blue Bottle Coffee',
         merchantType: 'InStore',
         mcc: '5814',
-        mccCategory: 'Food & Drink',
+        mccCategory: 'FOOD',
         dateTime: isoAgo(now, 38 * DAY),
         transactionCurrency: 'USDC',
         originalCurrency: 'USDC',
@@ -197,9 +218,9 @@ export const buildMockCardTransactions = (
         sign: 'CREDIT',
         status: 'CONFIRMED',
         merchantNameLocation: 'Patagonia',
-        merchantType: 'Ecommerce',
+        merchantType: 'OutOfWalletOnline',
         mcc: '5651',
-        mccCategory: 'Shopping',
+        mccCategory: 'MISC',
         dateTime: isoAgo(now, 45 * DAY),
         transactionCurrency: 'USDC',
         originalCurrency: 'USDC',

@@ -486,6 +486,10 @@
             "title": "Copied to clipboard",
             "body": ""
         },
+        "email_failed": {
+            "title": "Couldn't open email app",
+            "body": "No email app is set up on this device. You can write to {{email}} directly."
+        },
         "error": {
             "title": "An error has occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
@@ -746,10 +750,39 @@
             "status_pending": "Pending",
             "status_declined": "Declined",
             "status_reverted": "Reverted",
+            "status_completed": "Completed",
             "export_accessibility_label": "Export statement",
             "error_title": "Couldn't load transactions",
             "error_body": "Please try again.",
-            "retry": "Try again"
+            "retry": "Try again",
+            "detail_tab_transaction": "Transaction",
+            "detail_tab_merchant": "Merchant",
+            "detail_card_number": "Card number",
+            "detail_processed_on": "Processed on",
+            "detail_reference": "Reference #",
+            "detail_transaction_hash": "Transaction hash",
+            "detail_fees": "Fees",
+            "detail_merchant_category": "Category",
+            "detail_merchant_type": "Type",
+            "merchant_type_in_store": "In store",
+            "merchant_type_in_store_with_pin": "In store with PIN",
+            "merchant_type_online": "Online",
+            "merchant_type_atm": "ATM",
+            "mcc_category_subscriptions": "Subscriptions",
+            "mcc_category_food": "Food & Drink",
+            "mcc_category_travel": "Travel",
+            "mcc_category_entertainment": "Entertainment",
+            "mcc_category_health": "Health",
+            "mcc_category_atm": "ATM",
+            "mcc_category_utilities": "Utilities",
+            "mcc_category_misc": "Other",
+            "detail_report": "Report Transaction",
+            "detail_open_explorer_accessibility_label": "View transaction in explorer",
+            "detail_copy_hash_accessibility_label": "Copy transaction hash",
+            "detail_not_found_title": "Transaction not found",
+            "detail_not_found_body": "This transaction is no longer available. Please try again.",
+            "report_email_subject": "Report Card Transaction - {{transactionId}}",
+            "report_email_body": "Hello Baanx Support,\n\nI would like to report the following card transaction(s):\n\nTransaction ID(s): {{transactionId}}\nProcessed on: {{processedOn}}\nMerchant: {{merchantName}}\n\nDescription of the issue:\n"
         },
         "add_funds": {
             "navigation_title": "Add Funds",

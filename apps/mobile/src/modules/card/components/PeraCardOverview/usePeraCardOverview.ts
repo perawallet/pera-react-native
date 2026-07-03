@@ -48,6 +48,7 @@ type UsePeraCardOverviewResult = {
     onAddFunds: () => void
     onGetUsdc: () => void
     onShowAllTransactions: () => void
+    onPressTransaction: (id: string) => void
     onCreditPress: () => void
 }
 
@@ -86,6 +87,13 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         navigation.navigate('CardTransactions')
     }, [navigation])
 
+    const onPressTransaction = useCallback(
+        (id: string) => {
+            navigation.navigate('CardTransactionDetail', { id })
+        },
+        [navigation],
+    )
+
     return {
         isAutoFunding: selectedFundingType === FundingType.Auto,
         currency: DEFAULT_CARD_CURRENCY,
@@ -99,6 +107,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         onAddFunds,
         onGetUsdc: showComingSoon,
         onShowAllTransactions,
+        onPressTransaction,
         onCreditPress: showComingSoon,
     }
 }

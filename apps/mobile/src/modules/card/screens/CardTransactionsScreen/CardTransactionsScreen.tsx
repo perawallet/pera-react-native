@@ -43,6 +43,7 @@ export const CardTransactionsScreen = () => {
         handleLoadMore,
         handleRetry,
         onExport,
+        onPressTransaction,
     } = useCardTransactions()
 
     useLayoutEffect(() => {
@@ -63,9 +64,12 @@ export const CardTransactionsScreen = () => {
 
     const renderItem = useCallback(
         ({ item }: { item: CardTransaction }) => (
-            <CardTransactionListItem transaction={item} />
+            <CardTransactionListItem
+                transaction={item}
+                onPress={onPressTransaction}
+            />
         ),
-        [],
+        [onPressTransaction],
     )
 
     const renderSectionHeader = useCallback(
