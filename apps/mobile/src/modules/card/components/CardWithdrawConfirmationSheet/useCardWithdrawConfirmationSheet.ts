@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     useSelectedAccount,
     type WalletAccount,
@@ -26,8 +26,8 @@ import { useCardErrorToast } from '../../hooks'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 
 type UseCardWithdrawConfirmationSheetParams = {
-    /** Raw typed amount string from the withdraw screen. */
-    amount: string
+    /** Withdraw amount in display units (whole USDC). */
+    amount: Decimal
 }
 
 type UseCardWithdrawConfirmationSheetResult = {
@@ -58,7 +58,7 @@ export const useCardWithdrawConfirmationSheet = ({
     const destinationAccount = useSelectedAccount()
 
     const amountDisplay = useMemo(
-        () => new Decimal(amount || 0).toFixed(USDC_DISPLAY_PRECISION),
+        () => amount.toFixed(USDC_DISPLAY_PRECISION),
         [amount],
     )
 
@@ -69,18 +69,18 @@ export const useCardWithdrawConfirmationSheet = ({
         // re-read here — mounting the sheet adds a query subscriber that can
         // refetch a lower balance, so re-check instead of relying on the
         // server's 400.
-        const amountDecimal = new Decimal(amount)
         if (
             !usdcWallet ||
             !destinationAccount ||
-            amountDecimal.gt(usdcWallet.balance)
+            amount.lte(0) ||
+            amount.gt(usdcWallet.balance)
         ) {
             await showError(null)
             return
         }
         try {
             await withdraw.mutateAsync({
-                amount: amountDecimal,
+                amount,
                 recipientAddress: destinationAccount.address,
                 wallet: usdcWallet,
             })

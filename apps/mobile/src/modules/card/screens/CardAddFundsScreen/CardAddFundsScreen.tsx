@@ -10,18 +10,12 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWIcon,
-    PWScreen,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
 import { NumberPad } from '@components/NumberPad'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardAmountInput } from '../../components/CardAmountInput'
 import { useCardAddFundsScreen } from './useCardAddFundsScreen'
 import { useStyles } from './styles'
 
@@ -69,42 +63,15 @@ export const CardAddFundsScreen = () => {
                         />
                     </PWView>
 
-                    <PWView style={styles.amountCard}>
-                        <PWView style={styles.amountCardHeader}>
-                            <PWText
-                                variant='body'
-                                style={styles.mutedLabel}
-                            >
-                                {t('peraCard.add_funds.amount')}
-                            </PWText>
-                            <PWText
-                                variant='body'
-                                style={styles.mutedLabel}
-                            >
-                                {t('peraCard.add_funds.balance', {
-                                    amount: balanceDisplay,
-                                })}
-                            </PWText>
-                        </PWView>
-
-                        <PWView style={styles.amountRow}>
-                            <PWText
-                                variant='h3'
-                                numberOfLines={1}
-                                style={
-                                    amount
-                                        ? styles.amountValue
-                                        : styles.amountPlaceholder
-                                }
-                                testID='card-add-funds-amount'
-                            >
-                                {amount ?? '0'}
-                            </PWText>
-                            <PWTouchableOpacity
-                                style={styles.assetChip}
-                                onPress={() => void onSelectAsset()}
-                                testID='card-add-funds-asset-selector'
-                            >
+                    <CardAmountInput
+                        label={t('peraCard.add_funds.amount')}
+                        balanceText={t('peraCard.add_funds.balance', {
+                            amount: balanceDisplay,
+                        })}
+                        amount={amount}
+                        amountTestID='card-add-funds-amount'
+                        chip={
+                            <>
                                 {sourceAsset && (
                                     <AssetIcon
                                         asset={sourceAsset}
@@ -118,9 +85,11 @@ export const CardAddFundsScreen = () => {
                                     name='chevron-right'
                                     variant='secondary'
                                 />
-                            </PWTouchableOpacity>
-                        </PWView>
-
+                            </>
+                        }
+                        onChipPress={() => void onSelectAsset()}
+                        chipTestID='card-add-funds-asset-selector'
+                    >
                         <PWText
                             variant='body'
                             style={styles.mutedLabel}
@@ -145,7 +114,7 @@ export const CardAddFundsScreen = () => {
                                 </PWText>
                             </PWView>
                         )}
-                    </PWView>
+                    </CardAmountInput>
                 </PWView>
 
                 <PWView style={styles.bottomGroup}>

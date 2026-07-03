@@ -33,43 +33,6 @@ export const useStyles = makeStyles(theme => ({
     mutedLabel: {
         color: theme.colors.textGray,
     },
-    amountCard: {
-        backgroundColor: theme.colors.background,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.md,
-        padding: theme.spacing.lg,
-        gap: theme.spacing.sm,
-    },
-    amountCardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    amountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    amountValue: {
-        flex: 1,
-        color: theme.colors.textMain,
-    },
-    amountPlaceholder: {
-        flex: 1,
-        color: theme.colors.textGrayLighter,
-    },
-    assetChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        backgroundColor: theme.colors.layerGrayLightest,
-        borderRadius: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.sm,
-        paddingVertical: theme.spacing.xs,
-    },
     bottomGroup: {
         gap: theme.spacing.lg,
     },

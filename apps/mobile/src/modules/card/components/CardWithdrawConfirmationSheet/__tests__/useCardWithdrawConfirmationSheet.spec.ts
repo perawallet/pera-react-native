@@ -101,7 +101,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
         mocks.withdrawMutateAsync.mockResolvedValue(undefined)
 
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '25.5' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('25.5') }),
         )
         await act(async () => {
             result.current.onConfirm()
@@ -117,7 +117,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
 
     it('formats the amount for display with two decimals', () => {
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '25.5' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('25.5') }),
         )
 
         expect(result.current.amountDisplay).toBe('25.50')
@@ -127,7 +127,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
         mocks.withdrawMutateAsync.mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '1' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
         )
         await act(async () => {
             result.current.onConfirm()
@@ -141,7 +141,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
         mocks.withdrawPending = true
 
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '1' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
         )
         expect(result.current.isWithdrawing).toBe(true)
 
@@ -156,7 +156,20 @@ describe('useCardWithdrawConfirmationSheet', () => {
         mocks.usdcWallet = { ...usdcWallet, balance: new Decimal('10') }
 
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '25.5' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('25.5') }),
+        )
+        await act(async () => {
+            result.current.onConfirm()
+        })
+
+        expect(mocks.withdrawMutateAsync).not.toHaveBeenCalled()
+        expect(mocks.errorToast).toHaveBeenCalledTimes(1)
+        expect(mocks.resolve).not.toHaveBeenCalled()
+    })
+
+    it('toasts instead of withdrawing when the amount is zero', async () => {
+        const { result } = renderHook(() =>
+            useCardWithdrawConfirmationSheet({ amount: new Decimal(0) }),
         )
         await act(async () => {
             result.current.onConfirm()
@@ -171,7 +184,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
         mocks.usdcWallet = null
 
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '1' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
         )
         await act(async () => {
             result.current.onConfirm()
@@ -185,7 +198,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
         mocks.selectedAccount = null
 
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '1' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
         )
         await act(async () => {
             result.current.onConfirm()
@@ -197,7 +210,7 @@ describe('useCardWithdrawConfirmationSheet', () => {
 
     it('dismisses the sheet on close', () => {
         const { result } = renderHook(() =>
-            useCardWithdrawConfirmationSheet({ amount: '1' }),
+            useCardWithdrawConfirmationSheet({ amount: new Decimal('1') }),
         )
 
         result.current.onClose()

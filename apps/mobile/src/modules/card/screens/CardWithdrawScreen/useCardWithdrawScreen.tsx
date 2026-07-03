@@ -84,7 +84,7 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
         try {
             const result = await requestBottomSheet<'confirm'>({
                 contents: (
-                    <CardWithdrawConfirmationSheet amount={value ?? '0'} />
+                    <CardWithdrawConfirmationSheet amount={amountDecimal} />
                 ),
                 options: { size: 'auto', enablePanDownToClose: true },
             })
@@ -108,7 +108,6 @@ export const useCardWithdrawScreen = (): UseCardWithdrawScreenResult => {
         }
     }, [
         requestBottomSheet,
-        value,
         successToast,
         t,
         amountDecimal,

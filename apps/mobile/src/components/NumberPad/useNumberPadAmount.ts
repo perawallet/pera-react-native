@@ -33,8 +33,8 @@ type UseNumberPadAmountResult = {
 /**
  * Amount-entry state for the {@link NumberPad}: guards decimal input (single
  * separator, leading zero, fraction capped at `decimals`) and exposes the
- * typed value both raw and as a Decimal. Shared by the send/card amount
- * screens so the guard logic lives in one place.
+ * typed value both raw and as a Decimal. Shared by the card amount screens so
+ * the guard logic lives in one place.
  */
 export const useNumberPadAmount = ({
     decimals,

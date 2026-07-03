@@ -10,14 +10,15 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardConfirmationSheet } from '../CardConfirmationSheet'
 import { useCardWithdrawConfirmationSheet } from './useCardWithdrawConfirmationSheet'
 
 type CardWithdrawConfirmationSheetProps = {
-    /** Raw typed amount string from the withdraw screen. */
-    amount: string
+    /** Withdraw amount in display units (whole USDC). */
+    amount: Decimal
 }
 
 /**

@@ -13,18 +13,15 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        justifyContent: 'space-between',
+    amountCard: {
+        backgroundColor: theme.colors.background,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.md,
+        padding: theme.spacing.lg,
+        gap: theme.spacing.sm,
     },
-    topGroup: {
-        paddingTop: theme.spacing.sm,
-        gap: theme.spacing.lg,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
-    },
-    fundAddressRow: {
+    amountCardHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -33,15 +30,27 @@ export const useStyles = makeStyles(theme => ({
     mutedLabel: {
         color: theme.colors.textGray,
     },
-    rateRow: {
+    amountRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs,
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
     },
-    rateIcon: {
-        transform: [{ rotate: '90deg' }],
+    amountValue: {
+        flex: 1,
+        color: theme.colors.textMain,
     },
-    bottomGroup: {
-        gap: theme.spacing.lg,
+    amountPlaceholder: {
+        flex: 1,
+        color: theme.colors.textGrayLighter,
+    },
+    assetChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderRadius: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: theme.spacing.xs,
     },
 }))

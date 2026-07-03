@@ -14,6 +14,7 @@ import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { NumberPad } from '@components/NumberPad'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardAmountInput } from '../../components/CardAmountInput'
 import { useCardWithdrawScreen } from './useCardWithdrawScreen'
 import { useStyles } from './styles'
 
@@ -56,42 +57,15 @@ export const CardWithdrawScreen = () => {
                         />
                     </PWView>
 
-                    <PWView style={styles.amountCard}>
-                        <PWView style={styles.amountCardHeader}>
-                            <PWText
-                                variant='body'
-                                style={styles.mutedLabel}
-                            >
-                                {t('peraCard.withdraw.amount')}
-                            </PWText>
-                            <PWText
-                                variant='body'
-                                style={styles.mutedLabel}
-                            >
-                                {t('peraCard.withdraw.balance', {
-                                    amount: balanceDisplay,
-                                })}
-                            </PWText>
-                        </PWView>
-
-                        <PWView style={styles.amountRow}>
-                            <PWText
-                                variant='h3'
-                                numberOfLines={1}
-                                style={
-                                    amount
-                                        ? styles.amountValue
-                                        : styles.amountPlaceholder
-                                }
-                                testID='card-withdraw-amount'
-                            >
-                                {amount ?? '0'}
-                            </PWText>
-                            <PWView style={styles.assetChip}>
-                                <PWText variant='bodyLarge'>USDC</PWText>
-                            </PWView>
-                        </PWView>
-                    </PWView>
+                    <CardAmountInput
+                        label={t('peraCard.withdraw.amount')}
+                        balanceText={t('peraCard.withdraw.balance', {
+                            amount: balanceDisplay,
+                        })}
+                        amount={amount}
+                        amountTestID='card-withdraw-amount'
+                        chip={<PWText variant='bodyLarge'>USDC</PWText>}
+                    />
                 </PWView>
 
                 <PWView style={styles.bottomGroup}>

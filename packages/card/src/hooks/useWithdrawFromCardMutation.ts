@@ -48,13 +48,10 @@ export const useWithdrawFromCardMutation =
                 }),
             throwOnError: false,
             onSuccess: () => {
-                // The card balance changed and the withdrawal will surface as a
-                // wallet movement; transactions are prefix-matched so every
-                // filter variant refetches. On-chain account balances are an
-                // app-side concern, invalidated by the calling screen.
                 void queryClient.invalidateQueries({
                     queryKey: cardQueryKeys.internalWallets(network),
                 })
+                // Prefix match: every transactions filter variant refetches.
                 void queryClient.invalidateQueries({
                     queryKey: [MODULE_PREFIX, 'transactions'],
                 })

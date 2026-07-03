@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
@@ -34,11 +34,8 @@ type UseCardInternalWalletsQueryResult = {
 }
 
 /**
- * Freshness after a withdrawal comes from explicit invalidation in
- * `useWithdrawFromCardMutation`.
- *
- * TODO(card): when the deposit funding provider ships, its success path must
- * invalidate `cardQueryKeys.internalWallets` too.
+ * Withdrawal freshness comes from invalidation in `useWithdrawFromCardMutation`.
+ * TODO(card): the deposit provider's success path must invalidate this key too.
  */
 export const useCardInternalWalletsQuery =
     (): UseCardInternalWalletsQueryResult => {
@@ -63,11 +60,15 @@ export const useCardInternalWalletsQuery =
             [query.data],
         )
 
+        const refetch = useCallback(() => {
+            void query.refetch()
+        }, [query.refetch])
+
         return {
             usdcWallet,
             isLoading: query.isLoading,
             isError: query.isError,
             error: query.error,
-            refetch: () => void query.refetch(),
+            refetch,
         }
     }
