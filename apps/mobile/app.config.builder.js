@@ -382,6 +382,10 @@ function buildAppConfig(env) {
       // builds don't compile all four ABIs. Release keeps every ABI.
       './plugins/withAndroidAbiFilters',
 
+      // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
+      // the React host is ready) by overriding it in MainActivity.
+      './plugins/withAndroidUserLeaveHintFix',
+
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',
 
