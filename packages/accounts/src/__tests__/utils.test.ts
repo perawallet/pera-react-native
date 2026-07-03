@@ -25,6 +25,7 @@ import {
     isEligibleLedgerRekeyTarget,
     isEligibleRekeyTarget,
     isEligibleSharedRekeyTarget,
+    isQuantumAccount,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -744,6 +745,59 @@ const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
         ...overrides,
     }) as WalletAccount
 
+const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'f',
+        address: overrides.address ?? 'F',
+        type: AccountTypes.quantum,
+        keyPairId: 'kp-quantum',
+        ...overrides,
+    }) as WalletAccount
+
+describe('services/accounts/utils - quantum accounts', () => {
+    test('isQuantumAccount returns true only for quantum accounts', () => {
+        expect(isQuantumAccount(quantum())).toBe(true)
+        expect(isQuantumAccount(algo25())).toBe(false)
+        expect(isQuantumAccount(hd())).toBe(false)
+        expect(isQuantumAccount(ledger())).toBe(false)
+        expect(isQuantumAccount(watch())).toBe(false)
+        expect(isQuantumAccount(multisig())).toBe(false)
+    })
+
+    test('other type guards reject quantum accounts', () => {
+        expect(isAlgo25Account(quantum())).toBe(false)
+        expect(isHDWalletAccount(quantum())).toBe(false)
+        expect(isWatchAccount(quantum())).toBe(false)
+        expect(isMultisigAccount(quantum())).toBe(false)
+    })
+
+    test('hasSigningKeys is true for a keyPairId-backed quantum account', () => {
+        expect(hasSigningKeys(quantum())).toBe(true)
+    })
+
+    test('canSignArbitraryData and canSignArc60 are true for quantum', () => {
+        expect(canSignArbitraryData(quantum())).toBe(true)
+        expect(canSignArc60(quantum())).toBe(true)
+    })
+
+    test('canSignWith resolves a quantum account as its own signer', () => {
+        const account = quantum()
+        expect(canSignWith(account, [account])).toBe(true)
+    })
+
+    test('canSignWith resolves a quantum auth account for a rekeyed account', () => {
+        const auth = quantum({ address: 'FAUTH' })
+        const rekeyed = watch({ address: 'A', rekeyAddress: 'FAUTH' })
+        expect(canSignWith(rekeyed, [rekeyed, auth])).toBe(true)
+    })
+
+    test('quantum keys are not valid multisig participants (Ed25519-only protocol)', () => {
+        expect(canSignViaParticipants(['F'], [quantum({ address: 'F' })])).toBe(
+            false,
+        )
+    })
+})
+
 describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     test('rejects target equal to source', () => {
         expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'A')).toBe(false)
@@ -782,6 +836,21 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
             true,
         )
         expect(isEligibleRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(true)
+    })
+
+    test('accepts a quantum target (rekey-in migration path)', () => {
+        expect(isEligibleRekeyTarget(quantum({ address: 'F' }), 'SRC')).toBe(
+            true,
+        )
+    })
+
+    test('rejects a quantum target already rekeyed away', () => {
+        expect(
+            isEligibleRekeyTarget(
+                quantum({ address: 'F', rekeyAddress: 'X' }),
+                'SRC',
+            ),
+        ).toBe(false)
     })
 })
 
