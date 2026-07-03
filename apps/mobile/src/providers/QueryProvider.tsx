@@ -15,7 +15,12 @@ import {
     PersistQueryClientProvider,
     type PersistQueryClientRootOptions,
 } from '@tanstack/react-query-persist-client'
-import { type OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
+import {
+    type OmitKeyof,
+    MutationCache,
+    QueryCache,
+    QueryClient,
+} from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import { isTransientNetworkError, logger } from '@perawallet/wallet-core-shared'
 import { isAccountQuery } from '@perawallet/wallet-core-accounts'
@@ -36,8 +41,22 @@ const cache = new QueryCache({
     },
 })
 
+const mutationCache = new MutationCache({
+    onError: (error, _variables, _context, mutation) => {
+        // Same transient-skip rationale as the query cache above.
+        if (isTransientNetworkError(error)) {
+            return
+        }
+        logger.error('Mutation failed:', {
+            error,
+            mutationKey: mutation.options.mutationKey,
+        })
+    },
+})
+
 const queryClient = new QueryClient({
     queryCache: cache,
+    mutationCache,
     defaultOptions: {
         queries: {
             gcTime: config.reactQueryDefaultGCTime,
@@ -45,7 +64,13 @@ const queryClient = new QueryClient({
             retry: 0, //ky handles retries
         },
         mutations: {
-            throwOnError: true,
+            // Failed mutations surface as `mutation.error` state (the same
+            // contract as queries) instead of re-throwing during render — a
+            // render-phase throw crashes the app for any consumer mounted
+            // outside an error boundary. Failures are logged centrally by
+            // `mutationCache.onError`; user-facing surfacing stays at the
+            // call site.
+            throwOnError: false,
         },
     },
 })

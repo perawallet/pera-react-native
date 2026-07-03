@@ -2305,6 +2305,18 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     toError: vi.fn((e: unknown) =>
         e instanceof Error ? e : new Error(String(e)),
     ),
+    // Mirrors the real semantics (packages/shared/src/api/query-client.ts):
+    // timeouts, network errors, and 5xx HTTPErrors are transient. ky's own
+    // guards match on error name, so name checks are faithful here.
+    isTransientNetworkError: (error: unknown): boolean => {
+        const e = error as {
+            name?: string
+            response?: { status?: number }
+        } | null
+        if (!e) return false
+        if (e.name === 'TimeoutError' || e.name === 'NetworkError') return true
+        return e.name === 'HTTPError' && (e.response?.status ?? 0) >= 500
+    },
     AppError: class AppError extends Error {
         constructor(message: string) {
             super(message)
