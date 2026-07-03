@@ -106,6 +106,10 @@ export const useSettingsSecurityScreen =
                         size: 'full',
                         enablePanDownToClose: false,
                         enableCloseOnBackdropPress: false,
+                        // gorhom's BottomSheetView is top-anchored and
+                        // content-sized, so the PIN layout can't flex-fill
+                        // the sheet; use the plain flex container instead.
+                        autoCreateContainer: false,
                     },
                 })
                 return result === true

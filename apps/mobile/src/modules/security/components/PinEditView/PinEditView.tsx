@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useWindowDimensions } from 'react-native'
 import { PinEntry } from '@modules/security/components/PinEntry'
 import {
     type PinEntryMode,
@@ -34,12 +33,8 @@ export const PinEditView = ({
     testID,
     savePinHandler,
 }: PinEditViewProps) => {
-    const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
-    const styles = useStyles({
-        height: height - insets.top - insets.bottom,
-        insets,
-    })
+    const styles = useStyles({ insets })
 
     const {
         title,

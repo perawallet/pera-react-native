@@ -25,6 +25,8 @@ export type WebViewFooterBarProps = {
     homeUrl?: string
     navigationState?: WebViewNativeEvent
     favorite?: WebViewFavorite
+    /** Bottom safe-area inset the footer must clear itself (0 when the host screen handles insets). */
+    bottomInset: number
 }
 
 export const WebViewFooterBar = ({
@@ -32,8 +34,9 @@ export const WebViewFooterBar = ({
     homeUrl,
     navigationState,
     favorite,
+    bottomInset,
 }: WebViewFooterBarProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ bottomInset })
     const {
         isHome,
         canGoBack,

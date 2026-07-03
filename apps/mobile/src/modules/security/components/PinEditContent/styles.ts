@@ -14,7 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingVertical: theme.spacing.xl,
+        // Top only: PinEditView already clears the bottom safe area itself,
+        // and the sheet adds its own bottom padding — padding here would
+        // stack up and push the numpad into the PIN circles.
+        paddingTop: theme.spacing.xl,
         flex: 1,
     },
     toolbar: {
