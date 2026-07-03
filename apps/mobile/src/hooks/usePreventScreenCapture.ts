@@ -18,12 +18,41 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 
+// One shared native lock, ref-counted in JS (prevent on 0->1, allow on 1->0):
+// expo fires a native prevent per DISTINCT tag and iOS `preventScreenshots()`
+// isn't idempotent, so overlapping screens with different tags black-screened.
+export const SECURE_SCREEN_CAPTURE_TAG = 'pera-secure-screen'
+
+let activeHolders = 0
+
+const acquireCaptureLock = (tag: string): void => {
+    activeHolders += 1
+    if (activeHolders !== 1) return
+    void preventScreenCaptureAsync(SECURE_SCREEN_CAPTURE_TAG).catch(err => {
+        logger.error(
+            'usePreventScreenCapture: failed to prevent screen capture',
+            { tag, error: err instanceof Error ? err.message : String(err) },
+        )
+    })
+}
+
+const releaseCaptureLock = (tag: string): void => {
+    activeHolders = Math.max(0, activeHolders - 1)
+    if (activeHolders !== 0) return
+    void allowScreenCaptureAsync(SECURE_SCREEN_CAPTURE_TAG).catch(err => {
+        logger.error(
+            'usePreventScreenCapture: failed to re-allow screen capture',
+            { tag, error: err instanceof Error ? err.message : String(err) },
+        )
+    })
+}
+
 // Blocks screenshots and screen recordings while the mounting component is
 // alive (or while `enabled` is true), re-enabling capture on unmount or when
 // `enabled` flips back to false. Fails open (permission denied) rather than
 // bricking the caller — errors are logged so we notice them in crash reports.
-// The `tag` is required so overlapping callers (e.g. mnemonic screen plus a
-// deep-linked verification sheet) don't clobber each other's lock.
+// The `tag` only labels the caller in those logs; the native lock is shared
+// and ref-counted (see above), so overlapping callers never double-lock it.
 //
 // The e2e escape hatch is a build-time config flag, not a remote/runtime
 // signal: store builds compile `disableScreenCapturePrevention` to false, so
@@ -34,25 +63,7 @@ export const usePreventScreenCapture = (
 ): void => {
     useEffect(() => {
         if (!enabled || config.disableScreenCapturePrevention) return
-        void preventScreenCaptureAsync(tag).catch(err => {
-            logger.error(
-                'usePreventScreenCapture: failed to prevent screen capture',
-                {
-                    tag,
-                    error: err instanceof Error ? err.message : String(err),
-                },
-            )
-        })
-        return () => {
-            void allowScreenCaptureAsync(tag).catch(err => {
-                logger.error(
-                    'usePreventScreenCapture: failed to re-allow screen capture',
-                    {
-                        tag,
-                        error: err instanceof Error ? err.message : String(err),
-                    },
-                )
-            })
-        }
+        acquireCaptureLock(tag)
+        return () => releaseCaptureLock(tag)
     }, [tag, enabled])
 }
