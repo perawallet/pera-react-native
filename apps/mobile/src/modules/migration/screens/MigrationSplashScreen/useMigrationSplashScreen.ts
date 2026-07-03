@@ -17,6 +17,7 @@ import {
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     runMigration,
@@ -39,6 +40,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     const importAccount = useImportAccount()
     const { createHdWalletAccountForSeed } = useCreateAccount()
     const { createHDWalletKey } = useKMS()
+    const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const { dismiss, setSkipped } = useNeedsMigration()
 
     const [status, setStatus] = useState<MigrationSplashStatus>('running')
@@ -50,6 +52,8 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     createHdWalletAccountRef.current = createHdWalletAccountForSeed
     const createHDWalletKeyRef = useRef(createHDWalletKey)
     createHDWalletKeyRef.current = createHDWalletKey
+    const markAccountBackedUpRef = useRef(markAccountBackedUp)
+    markAccountBackedUpRef.current = markAccountBackedUp
     const dismissRef = useRef(dismiss)
     dismissRef.current = dismiss
     const setSkippedRef = useRef(setSkipped)
@@ -71,6 +75,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
                     importAccount: importAccountRef.current,
                     createHdWalletAccount: createHdWalletAccountRef.current,
                     createHDWalletKey: createHDWalletKeyRef.current,
+                    markAccountBackedUp: markAccountBackedUpRef.current,
                 })
             } catch (error) {
                 logger.error('[Migration] splash run threw', { error })

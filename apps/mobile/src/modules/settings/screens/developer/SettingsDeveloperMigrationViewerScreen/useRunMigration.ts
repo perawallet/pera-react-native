@@ -16,6 +16,7 @@ import {
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     runMigration,
@@ -33,6 +34,7 @@ export const useRunMigration = (): UseRunMigrationResult => {
     const importAccount = useImportAccount()
     const { createHdWalletAccountForSeed } = useCreateAccount()
     const { createHDWalletKey } = useKMS()
+    const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const [isMigrating, setIsMigrating] = useState(false)
     const [result, setResult] = useState<MigrationRunResult | null>(null)
     const [error, setError] = useState<Error | null>(null)
@@ -46,6 +48,7 @@ export const useRunMigration = (): UseRunMigrationResult => {
                 importAccount,
                 createHdWalletAccount: createHdWalletAccountForSeed,
                 createHDWalletKey,
+                markAccountBackedUp,
             })
             setResult(runResult)
             return runResult
@@ -56,7 +59,12 @@ export const useRunMigration = (): UseRunMigrationResult => {
         } finally {
             setIsMigrating(false)
         }
-    }, [importAccount, createHdWalletAccountForSeed, createHDWalletKey])
+    }, [
+        importAccount,
+        createHdWalletAccountForSeed,
+        createHDWalletKey,
+        markAccountBackedUp,
+    ])
 
     return { run, isMigrating, result, error }
 }

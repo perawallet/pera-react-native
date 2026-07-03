@@ -19,6 +19,7 @@ import type {
 import {
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    markLegacyBackedUpAccounts,
 } from './accountStoreOps'
 import {
     classifyLegacyAccountRoute,
@@ -85,6 +86,7 @@ export const runMigrationLoop = async (
     }
 
     applyAllLegacyMetadata(pendingMetadata)
+    markLegacyBackedUpAccounts(pendingMetadata, args.markAccountBackedUp)
     applyLegacyAccountOrder(args.accounts)
 
     return summary

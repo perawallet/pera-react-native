@@ -21,6 +21,7 @@ import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    markLegacyBackedUpAccounts,
 } from '../accountStoreOps'
 import type { MigratedAccountPair } from '../types'
 
@@ -174,6 +175,51 @@ describe('applyAllLegacyMetadata', () => {
         ])
 
         expect(useAccountsStore.getState().accounts).toBe(accountsBefore)
+    })
+})
+
+describe('markLegacyBackedUpAccounts', () => {
+    it('marks only the accounts the user had backed up in the legacy app', () => {
+        const markAccountBackedUp = vi.fn()
+
+        markLegacyBackedUpAccounts(
+            [
+                buildPair({ address: 'ADDR_A' }, { isBackedUp: true }),
+                buildPair({ address: 'ADDR_B' }, { isBackedUp: false }),
+            ],
+            markAccountBackedUp,
+        )
+
+        expect(markAccountBackedUp).toHaveBeenCalledTimes(1)
+        expect(markAccountBackedUp).toHaveBeenCalledWith(
+            expect.objectContaining({ address: 'ADDR_A' }),
+        )
+    })
+
+    it('forwards the created account to the marker, which owns key routing', () => {
+        const markAccountBackedUp = vi.fn()
+
+        markLegacyBackedUpAccounts(
+            [
+                buildPair(
+                    { address: 'ADDR_W', type: AccountTypes.watch },
+                    { isBackedUp: true },
+                ),
+            ],
+            markAccountBackedUp,
+        )
+
+        expect(markAccountBackedUp).toHaveBeenCalledWith(
+            expect.objectContaining({ address: 'ADDR_W' }),
+        )
+    })
+
+    it('no-ops when no marker is injected', () => {
+        expect(() =>
+            markLegacyBackedUpAccounts([
+                buildPair({ address: 'ADDR_A' }, { isBackedUp: true }),
+            ]),
+        ).not.toThrow()
     })
 })
 

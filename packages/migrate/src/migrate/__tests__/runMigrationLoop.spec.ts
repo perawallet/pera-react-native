@@ -42,6 +42,7 @@ vi.mock('../migrateLegacyAccount', () => ({
 vi.mock('../accountStoreOps', () => ({
     applyAllLegacyMetadata: vi.fn(),
     applyLegacyAccountOrder: vi.fn(),
+    markLegacyBackedUpAccounts: vi.fn(),
 }))
 
 import type {
@@ -56,6 +57,7 @@ import {
 import {
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    markLegacyBackedUpAccounts,
 } from '../accountStoreOps'
 import type { MigrationDeps } from '../types'
 
@@ -86,6 +88,7 @@ beforeEach(() => {
     vi.mocked(classifyLegacyAccountRoute).mockReset()
     vi.mocked(applyAllLegacyMetadata).mockReset()
     vi.mocked(applyLegacyAccountOrder).mockReset()
+    vi.mocked(markLegacyBackedUpAccounts).mockReset()
     loggerMock.error.mockReset()
     vi.mocked(classifyLegacyAccountRoute).mockReturnValue('algo25')
 })
@@ -138,6 +141,26 @@ describe('runMigrationLoop', () => {
 
         const batch = vi.mocked(applyAllLegacyMetadata).mock.calls[0][0]
         expect(batch).toEqual([{ created: { address: 'ADDR_NEW' }, legacy }])
+    })
+
+    it('forwards the migrated pairs and the injected marker to markLegacyBackedUpAccounts', async () => {
+        const legacy = buildAccount({ address: 'ADDR_NEW' })
+        const markAccountBackedUp = vi.fn()
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'ADDR_NEW',
+        } as never)
+
+        await runMigrationLoop({
+            ...buildDeps(),
+            markAccountBackedUp,
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(markLegacyBackedUpAccounts).toHaveBeenCalledWith(
+            [{ created: { address: 'ADDR_NEW' }, legacy }],
+            markAccountBackedUp,
+        )
     })
 
     it('passes hdWalletsById built from the input hd wallets to migrateLegacyAccount', async () => {
