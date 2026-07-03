@@ -103,7 +103,8 @@ export const PWWebView = (props: PWWebViewProps) => {
     // A bottom sheet supplies no bottom inset of its own, so the footer must
     // clear the home indicator / system nav bar itself. Outside a sheet the
     // host screen handles insets, so keep it 0 to avoid double-insetting.
-    const styles = useStyles({ bottomInset: inBottomSheet ? insets.bottom : 0 })
+    const footerBottomInset = inBottomSheet ? insets.bottom : 0
+    const styles = useStyles({ bottomInset: footerBottomInset })
     const { theme } = useTheme()
     const removeWebView = useWebViewStore(state => state.removeWebView)
     const internalRef = useRef<WebView>(null)
@@ -386,6 +387,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                     homeUrl={url}
                     navigationState={navigationState}
                     favorite={favorite}
+                    bottomInset={footerBottomInset}
                 />
             )}
         </PWView>

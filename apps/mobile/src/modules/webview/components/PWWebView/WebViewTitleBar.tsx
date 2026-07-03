@@ -31,7 +31,8 @@ export const WebViewTitleBar = ({
     onCloseRequested,
     onReload,
 }: WebViewTitleBarProps) => {
-    const styles = useStyles()
+    // The title bar uses none of the inset-dependent styles.
+    const styles = useStyles({ bottomInset: 0 })
 
     const domain = useMemo(() => {
         return new URL(url).hostname
