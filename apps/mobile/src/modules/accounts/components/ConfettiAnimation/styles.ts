@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { makeStyles, useTheme } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -18,12 +18,34 @@ export const useStyles = makeStyles(theme => ({
         top: 0,
         left: 0,
         right: 0,
-        // Anchor to the top half of the screen so the confetti bursts from
-        // the top rather than centering vertically in a full-screen frame.
-        aspectRatio: 1,
+        bottom: 0,
         zIndex: theme.zIndex.overlay1,
+        // Clip flakes that sway past the screen edges.
+        overflow: 'hidden',
         // Confetti is decorative — let taps pass through to the UI below
         // so buttons remain interactive while the animation plays.
         pointerEvents: 'none',
     },
+    piece: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+    },
 }))
+
+/** Vibrant on-brand palette for confetti flakes, drawn from semantic theme tokens. */
+export const useConfettiColors = (): string[] => {
+    const { theme } = useTheme()
+    const { colors } = theme
+
+    return [
+        colors.wallet1,
+        colors.wallet2,
+        colors.wallet3,
+        colors.wallet4,
+        colors.wallet5,
+        colors.success,
+        colors.secondary,
+        colors.warning,
+    ]
+}
