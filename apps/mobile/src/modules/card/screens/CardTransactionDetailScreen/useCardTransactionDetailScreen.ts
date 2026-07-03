@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
-import { Linking } from 'react-native'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     type CardTransaction,
@@ -19,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { useSendEmail } from '@hooks/useSendEmail'
 import { type PeraCardStackParamList } from '../../routes/types'
 import { formatCardTransactionDateTime } from '../../utils/cardTransactions'
 
@@ -43,7 +42,7 @@ export const useCardTransactionDetailScreen =
         // not crash on the destructure.
         const id = route.params?.id
         const { t } = useLanguage()
-        const { errorToast } = useToast()
+        const { sendEmail } = useSendEmail()
 
         // Baanx has no detail endpoint; the row comes from the cached list
         // query (same unfiltered key the list and overview use). The screen
@@ -80,29 +79,20 @@ export const useCardTransactionDetailScreen =
 
             // Support needs the processor reference; fall back to our row id.
             const reportedId = transaction.transactionId || transaction.id
-            const subject = t('peraCard.transactions.report_email_subject', {
-                transactionId: reportedId,
+            sendEmail({
+                to: config.cardSupportEmail,
+                subject: t('peraCard.transactions.report_email_subject', {
+                    transactionId: reportedId,
+                }),
+                body: t('peraCard.transactions.report_email_body', {
+                    transactionId: reportedId,
+                    processedOn: formatCardTransactionDateTime(
+                        transaction.dateTime,
+                    ),
+                    merchantName: transaction.merchantName?.trim() || '-',
+                }),
             })
-            const body = t('peraCard.transactions.report_email_body', {
-                transactionId: reportedId,
-                processedOn: formatCardTransactionDateTime(
-                    transaction.dateTime,
-                ),
-                merchantName: transaction.merchantName?.trim() || '-',
-            })
-            const url = `mailto:${config.cardSupportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-            Linking.openURL(url).catch(() => {
-                // No mail client can handle mailto: (iOS Simulator, or a
-                // device with no mail account) — tell the user instead of
-                // failing silently.
-                errorToast(
-                    t('peraCard.transactions.report_email_failed_title'),
-                    t('peraCard.transactions.report_email_failed_body', {
-                        email: config.cardSupportEmail,
-                    }),
-                )
-            })
-        }, [t, transaction, errorToast])
+        }, [t, transaction, sendEmail])
 
         return {
             transaction,

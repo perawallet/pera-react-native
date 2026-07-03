@@ -12,7 +12,6 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Linking } from 'react-native'
 import { type CardTransaction } from '@perawallet/wallet-core-card'
 
 const mockState = vi.hoisted(() => ({
@@ -24,15 +23,10 @@ const mockState = vi.hoisted(() => ({
     fetchNextPage: vi.fn(),
     refetch: vi.fn(),
 }))
-const mockErrorToast = vi.fn()
+const mockSendEmail = vi.fn()
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        errorToast: mockErrorToast,
-        infoToast: vi.fn(),
-        successToast: vi.fn(),
-        showToast: vi.fn(),
-    }),
+vi.mock('@hooks/useSendEmail', () => ({
+    useSendEmail: () => ({ sendEmail: mockSendEmail }),
 }))
 
 vi.mock('@react-navigation/native', async () => {
@@ -60,7 +54,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
-// Interpolation values must survive so the mailto assertion can see the id.
+// Interpolation values must survive so the report-email assertions can see the id.
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {
@@ -86,7 +80,6 @@ describe('useCardTransactionDetailScreen', () => {
         mockState.isError = false
         mockState.isFetching = false
         mockState.hasNextPage = false
-        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     })
 
     it('finds the transaction matching the route param by row id', () => {
@@ -168,7 +161,7 @@ describe('useCardTransactionDetailScreen', () => {
         expect(mockState.refetch).toHaveBeenCalledTimes(1)
     })
 
-    it('opens a support mailto containing the processor transaction id', () => {
+    it('sends a support email to the card inbox with the processor id in subject and body', () => {
         mockState.transactions = [
             tx({
                 id: 'row_1',
@@ -181,11 +174,11 @@ describe('useCardTransactionDetailScreen', () => {
         const { result } = renderHook(() => useCardTransactionDetailScreen())
         result.current.onReportTransaction()
 
-        expect(Linking.openURL).toHaveBeenCalledTimes(1)
-        const url = vi.mocked(Linking.openURL).mock.calls[0][0]
-        expect(url.startsWith('mailto:support@baanx.com?subject=')).toBe(true)
-        expect(url).toContain('auth_1001')
-        expect(url).toContain('&body=')
+        expect(mockSendEmail).toHaveBeenCalledTimes(1)
+        const args = mockSendEmail.mock.calls[0][0]
+        expect(args.to).toBe('support@baanx.com')
+        expect(args.subject).toContain('auth_1001')
+        expect(args.body).toContain('auth_1001')
     })
 
     it('falls back to the row id in the report email when the processor id is empty', () => {
@@ -200,37 +193,15 @@ describe('useCardTransactionDetailScreen', () => {
         const { result } = renderHook(() => useCardTransactionDetailScreen())
         result.current.onReportTransaction()
 
-        expect(vi.mocked(Linking.openURL).mock.calls[0][0]).toContain('row_1')
+        expect(mockSendEmail.mock.calls[0][0].subject).toContain('row_1')
     })
 
-    it('does not open the mail composer when no transaction is loaded', () => {
+    it('does not send an email when no transaction is loaded', () => {
         mockState.routeId = 'missing'
 
         const { result } = renderHook(() => useCardTransactionDetailScreen())
         result.current.onReportTransaction()
 
-        expect(Linking.openURL).not.toHaveBeenCalled()
-    })
-
-    it('shows an error toast when no mail client can open the mailto url', async () => {
-        vi.spyOn(Linking, 'openURL').mockRejectedValue(
-            new Error('Unable to open URL'),
-        )
-        mockState.transactions = [tx({ id: 'row_1', transactionId: 'a_1' })]
-
-        const { result } = renderHook(() => useCardTransactionDetailScreen())
-        result.current.onReportTransaction()
-
-        await vi.waitFor(() => expect(mockErrorToast).toHaveBeenCalledTimes(1))
-    })
-
-    it('does not toast when the mail composer opens', async () => {
-        mockState.transactions = [tx({ id: 'row_1', transactionId: 'a_1' })]
-
-        const { result } = renderHook(() => useCardTransactionDetailScreen())
-        result.current.onReportTransaction()
-
-        await vi.waitFor(() => expect(Linking.openURL).toHaveBeenCalled())
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockSendEmail).not.toHaveBeenCalled()
     })
 })

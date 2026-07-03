@@ -486,6 +486,10 @@
             "title": "Copied to clipboard",
             "body": ""
         },
+        "email_failed": {
+            "title": "Couldn't open email app",
+            "body": "No email app is set up on this device. You can write to {{email}} directly."
+        },
         "error": {
             "title": "An error has occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
@@ -777,8 +781,6 @@
             "detail_copy_hash_accessibility_label": "Copy transaction hash",
             "detail_not_found_title": "Transaction not found",
             "detail_not_found_body": "This transaction is no longer available. Please try again.",
-            "report_email_failed_title": "Couldn't open email app",
-            "report_email_failed_body": "No email app is set up on this device. You can write to {{email}} directly.",
             "report_email_subject": "Report Card Transaction - {{transactionId}}",
             "report_email_body": "Hello Baanx Support,\n\nI would like to report the following card transaction(s):\n\nTransaction ID(s): {{transactionId}}\nProcessed on: {{processedOn}}\nMerchant: {{merchantName}}\n\nDescription of the issue:\n"
         },
