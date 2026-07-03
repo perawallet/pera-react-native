@@ -38,6 +38,14 @@ const watch = (address: string, rekeyAddress?: string): WalletAccount =>
 const hardware = (address: string): WalletAccount =>
     ({ type: AccountTypes.hardware, address }) as WalletAccount
 
+const falcon = (address: string, rekeyAddress?: string): WalletAccount =>
+    ({
+        type: AccountTypes.falcon,
+        address,
+        keyPairId: `kp-${address}`,
+        ...(rekeyAddress ? { rekeyAddress } : {}),
+    }) as WalletAccount
+
 const multisig = (
     address: string,
     participantAddresses: string[],
@@ -124,6 +132,31 @@ describe('resolveSignerForAccount — tagged resolution', () => {
         expect(
             resolveSignerForAccount(account, [account, participant]),
         ).toEqual({ kind: 'ok', signer: account })
+    })
+
+    it('kind="ok" for a falcon account holding its own key', () => {
+        const account = falcon('F')
+        expect(resolveSignerForAccount(account, [account])).toEqual({
+            kind: 'ok',
+            signer: account,
+        })
+    })
+
+    it('kind="ok" with a falcon auth as signer for a rekeyed account', () => {
+        const auth = falcon('FAUTH')
+        const account = watch('A', 'FAUTH')
+        expect(resolveSignerForAccount(account, [account, auth])).toEqual({
+            kind: 'ok',
+            signer: auth,
+        })
+    })
+
+    it('kind="noLocalParticipant" when a multisig\'s only held participant is falcon (Ed25519-only protocol)', () => {
+        const participant = falcon('F1')
+        const account = multisig('M', ['F1', 'P2'])
+        expect(
+            resolveSignerForAccount(account, [account, participant]),
+        ).toEqual({ kind: 'noLocalParticipant', account })
     })
 
     it('kind="noLocalParticipant" for a multisig with no local signable participant', () => {

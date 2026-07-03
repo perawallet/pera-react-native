@@ -19,6 +19,7 @@ import {
     type HardwareWalletAccount,
     type HDWalletAccount,
     type Algo25Account,
+    type FalconAccount,
     type MultiSigAccount,
     type WatchAccount,
     type ImportAccountType,
@@ -64,6 +65,12 @@ export const isAlgo25Account = (
     return account.type === AccountTypes.algo25
 }
 
+export const isFalconAccount = (
+    account: WalletAccount,
+): account is FalconAccount => {
+    return account.type === AccountTypes.falcon
+}
+
 export const isWatchAccount = (
     account: WalletAccount,
 ): account is WatchAccount => {
@@ -95,6 +102,8 @@ const canSignDirectly = (account: WalletAccount): boolean =>
  * propose-based, so one local signable participant is enough. A participant
  * counts only with its OWN key — slots bind to the participant's pubkey, so
  * rekey indirection is not followed and watch-only participants don't count.
+ * Falcon participants don't count either: multisig slots verify Ed25519
+ * signatures only, so a Falcon key can never satisfy a slot.
  */
 export const canSignViaParticipants = (
     participantAddresses: string[],
@@ -102,7 +111,11 @@ export const canSignViaParticipants = (
 ): boolean =>
     participantAddresses.some(addr => {
         const participant = accounts.find(a => a.address === addr)
-        return !!participant && canSignDirectly(participant)
+        return (
+            !!participant &&
+            !isFalconAccount(participant) &&
+            canSignDirectly(participant)
+        )
     })
 
 /**
@@ -321,7 +334,8 @@ export const rekeyTransitionFor = (
  * True when `target` may be chosen as the new auth address for a "rekey to
  * standard account" flow originating from `sourceAddress`. Mirrors Android
  * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`:
- * the target must be a standard signing account (algo25 / HD wallet),
+ * the target must be a standard signing account (algo25 / HD wallet) or a
+ * falcon account (the rekey-in migration path to post-quantum keys),
  * not the source itself, hold its own signing keys, and not already be
  * rekeyed away.
  */
@@ -332,7 +346,8 @@ export const isEligibleRekeyTarget = (
     if (target.address === sourceAddress) return false
     if (
         target.type !== AccountTypes.algo25 &&
-        target.type !== AccountTypes.hdWallet
+        target.type !== AccountTypes.hdWallet &&
+        target.type !== AccountTypes.falcon
     )
         return false
     if (!hasSigningKeys(target)) return false

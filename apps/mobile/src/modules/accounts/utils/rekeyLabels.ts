@@ -22,6 +22,8 @@ const PART_KEY: Record<AccountType, string> = {
     [AccountTypes.hardware]: 'account_info.rekey_part_ledger',
     [AccountTypes.multisig]: 'account_info.rekey_part_shared',
     [AccountTypes.watch]: 'account_info.rekey_part_watch',
+    // Temporary standard label until PQ-010 delivers quantum copy.
+    [AccountTypes.falcon]: 'account_info.rekey_part_standard',
 }
 
 export type RekeyLabelI18n = {

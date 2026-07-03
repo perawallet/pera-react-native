@@ -25,6 +25,7 @@ import {
     isEligibleLedgerRekeyTarget,
     isEligibleRekeyTarget,
     isEligibleSharedRekeyTarget,
+    isFalconAccount,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -744,6 +745,59 @@ const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
         ...overrides,
     }) as WalletAccount
 
+const falcon = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'f',
+        address: overrides.address ?? 'F',
+        type: AccountTypes.falcon,
+        keyPairId: 'kp-falcon',
+        ...overrides,
+    }) as WalletAccount
+
+describe('services/accounts/utils - falcon accounts', () => {
+    test('isFalconAccount returns true only for falcon accounts', () => {
+        expect(isFalconAccount(falcon())).toBe(true)
+        expect(isFalconAccount(algo25())).toBe(false)
+        expect(isFalconAccount(hd())).toBe(false)
+        expect(isFalconAccount(ledger())).toBe(false)
+        expect(isFalconAccount(watch())).toBe(false)
+        expect(isFalconAccount(multisig())).toBe(false)
+    })
+
+    test('other type guards reject falcon accounts', () => {
+        expect(isAlgo25Account(falcon())).toBe(false)
+        expect(isHDWalletAccount(falcon())).toBe(false)
+        expect(isWatchAccount(falcon())).toBe(false)
+        expect(isMultisigAccount(falcon())).toBe(false)
+    })
+
+    test('hasSigningKeys is true for a keyPairId-backed falcon account', () => {
+        expect(hasSigningKeys(falcon())).toBe(true)
+    })
+
+    test('canSignArbitraryData and canSignArc60 are true for falcon', () => {
+        expect(canSignArbitraryData(falcon())).toBe(true)
+        expect(canSignArc60(falcon())).toBe(true)
+    })
+
+    test('canSignWith resolves a falcon account as its own signer', () => {
+        const account = falcon()
+        expect(canSignWith(account, [account])).toBe(true)
+    })
+
+    test('canSignWith resolves a falcon auth account for a rekeyed account', () => {
+        const auth = falcon({ address: 'FAUTH' })
+        const rekeyed = watch({ address: 'A', rekeyAddress: 'FAUTH' })
+        expect(canSignWith(rekeyed, [rekeyed, auth])).toBe(true)
+    })
+
+    test('falcon keys are not valid multisig participants (Ed25519-only protocol)', () => {
+        expect(canSignViaParticipants(['F'], [falcon({ address: 'F' })])).toBe(
+            false,
+        )
+    })
+})
+
 describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     test('rejects target equal to source', () => {
         expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'A')).toBe(false)
@@ -782,6 +836,21 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
             true,
         )
         expect(isEligibleRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(true)
+    })
+
+    test('accepts a falcon target (rekey-in migration path)', () => {
+        expect(isEligibleRekeyTarget(falcon({ address: 'F' }), 'SRC')).toBe(
+            true,
+        )
+    })
+
+    test('rejects a falcon target already rekeyed away', () => {
+        expect(
+            isEligibleRekeyTarget(
+                falcon({ address: 'F', rekeyAddress: 'X' }),
+                'SRC',
+            ),
+        ).toBe(false)
     })
 })
 

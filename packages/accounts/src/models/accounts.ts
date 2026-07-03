@@ -29,6 +29,7 @@ export const AccountTypes = {
     hardware: 'hardware',
     multisig: 'multisig',
     watch: 'watch',
+    falcon: 'falcon',
 } as const
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
@@ -67,6 +68,7 @@ export type WalletAccount =
     | MultiSigAccount
     | HardwareWalletAccount
     | WatchAccount
+    | FalconAccount
 
 export type BaseWalletAccount = {
     /**
@@ -91,6 +93,17 @@ export type BaseWalletAccount = {
 
 export type Algo25Account = BaseWalletAccount & {
     type: typeof AccountTypes.algo25
+    address: string
+    keyPairId: string
+}
+
+/**
+ * Post-quantum account signing with a Falcon keypair. Flat and single-key
+ * like {@link Algo25Account}: the key material lives in the KMS under
+ * `keyPairId`; there is no derivation path or device metadata.
+ */
+export type FalconAccount = BaseWalletAccount & {
+    type: typeof AccountTypes.falcon
     address: string
     keyPairId: string
 }
