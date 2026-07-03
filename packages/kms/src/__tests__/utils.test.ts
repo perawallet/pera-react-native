@@ -32,7 +32,7 @@ import {
     seedSchemeOf,
 } from '../utils'
 import { AccessControlPermission } from '../models'
-import { SeedScheme } from '../constants'
+import { FALCON_SEED_LENGTH, SeedScheme } from '../constants'
 
 const seedKey = (
     overrides: Partial<Key> & { metadata?: Record<string, unknown> } = {},
@@ -55,6 +55,12 @@ describe('seedSchemeOf', () => {
         expect(
             seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Algo25 } })),
         ).toBe(SeedScheme.Algo25)
+    })
+
+    test('returns "falcon" for a seed with scheme=falcon metadata', () => {
+        expect(
+            seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Falcon } })),
+        ).toBe(SeedScheme.Falcon)
     })
 
     test('returns null for a seed with no scheme metadata', () => {
@@ -106,6 +112,12 @@ describe('isSeedKey', () => {
             isSeedKey(seedKey({ metadata: { scheme: SeedScheme.Bip39 } })),
         ).toBe(true)
         expect(isSeedKey(seedKey())).toBe(false)
+    })
+
+    test('treats a falcon seed as a wallet-root seed', () => {
+        expect(
+            isSeedKey(seedKey({ metadata: { scheme: SeedScheme.Falcon } })),
+        ).toBe(true)
     })
 })
 
@@ -178,6 +190,18 @@ describe('aclOf / createdAtOf / expiresAtOf', () => {
             metadata: buildSeedMetadata({ scheme: SeedScheme.Bip39 }),
         })
         expect(expiresAtOf(key)).toBeUndefined()
+    })
+
+    test('aclOf gives a falcon seed the same fail-closed default ACL as algo25', () => {
+        const falconSeed = seedKey({
+            metadata: { scheme: SeedScheme.Falcon, pera: {} },
+        })
+        const acl = aclOf(falconSeed)
+        expect(acl).toHaveLength(1)
+        expect(acl[0].domains).toEqual(['pera.accounts', 'backup-flow'])
+        expect(acl[0].permissions).toEqual([
+            AccessControlPermission.ReadPrivate,
+        ])
     })
 })
 
@@ -259,5 +283,15 @@ describe('hexToBytes', () => {
 
     test('throws on non-hex characters instead of decoding them to 0', () => {
         expect(() => hexToBytes('zz')).toThrow()
+    })
+})
+
+describe('falcon scheme constants', () => {
+    test('SeedScheme.Falcon is the literal "falcon"', () => {
+        expect(SeedScheme.Falcon).toBe('falcon')
+    })
+
+    test('FALCON_SEED_LENGTH matches the 32-byte algo25 entropy size', () => {
+        expect(FALCON_SEED_LENGTH).toBe(32)
     })
 })

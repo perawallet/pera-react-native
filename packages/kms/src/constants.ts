@@ -19,6 +19,7 @@
 export const SeedScheme = {
     Bip39: 'bip39',
     Algo25: 'algo25',
+    Falcon: 'falcon',
 } as const
 
 export type SeedScheme = (typeof SeedScheme)[keyof typeof SeedScheme]
@@ -30,6 +31,14 @@ export type SeedScheme = (typeof SeedScheme)[keyof typeof SeedScheme]
  * seed alone. The leading 32 bytes are always the seed in either case.
  */
 export const ALGO25_SEED_LENGTH = 32
+
+/**
+ * Byte length of a Falcon (quantum) seed. Deliberately identical to
+ * ALGO25_SEED_LENGTH: the falcon mnemonic format IS algo25 (24 data words +
+ * 1 SHA-512/256 checksum word over 32 bytes of entropy), so falcon seeds
+ * reuse the existing algo25 mnemonic↔seed utilities unchanged.
+ */
+export const FALCON_SEED_LENGTH = 32
 
 /**
  * The origins that legitimately request private-key access from a seed via

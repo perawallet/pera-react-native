@@ -107,7 +107,11 @@ const seedMetadata = (key: Key): SeedMetadata =>
 export const seedSchemeOf = (key: Key): SeedScheme | null => {
     if (key.type !== 'seed' && key.type !== 'hd-seed') return null
     const scheme = seedMetadata(key).scheme
-    if (scheme === SeedScheme.Bip39 || scheme === SeedScheme.Algo25) {
+    if (
+        scheme === SeedScheme.Bip39 ||
+        scheme === SeedScheme.Algo25 ||
+        scheme === SeedScheme.Falcon
+    ) {
         return scheme
     }
     return null

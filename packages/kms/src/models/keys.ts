@@ -31,3 +31,20 @@ export type AccessControl = {
  * hits this id, so accounts never need to track it separately.
  */
 export const algo25SignKeyId = (seedId: string): string => `${seedId}-ed25519`
+
+/**
+ * Deterministic keystore id for the quantum signing child of a falcon seed.
+ * Deliberately scheme-agnostic (`-quantum`, not `-falcon`): accounts persist
+ * this id as `keyPairId`, so the concrete algorithm must not be baked into
+ * it. The algorithm lives on the keystore entries instead (seed
+ * `metadata.scheme`, child entry `type` — see {@link FALCON_CHILD_KEY_TYPE}),
+ * so a future scheme swap needs no keyPairId migration.
+ */
+export const quantumSignKeyId = (seedId: string): string => `${seedId}-quantum`
+
+/**
+ * Keystore entry `type` for the quantum signing child — this (not the id)
+ * names the concrete algorithm, parallel to the `'ed25519'` child type of an
+ * algo25 seed.
+ */
+export const FALCON_CHILD_KEY_TYPE = 'falcon1024'
