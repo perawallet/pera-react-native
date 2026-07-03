@@ -25,44 +25,44 @@ import {
     deriveFalconAddressMock,
     deriveFalconKeypairMock,
 } from '../crypto/falcon-utils'
-import { commitFalconChildKey } from '../storage/falcon-child'
+import { commitQuantumChildKey } from '../storage/quantum-child'
 import { zeroBytes } from '../crypto/secure-memory'
-import { FALCON_SEED_LENGTH, SeedScheme } from '../constants'
+import { QUANTUM_SEED_LENGTH, SeedScheme } from '../constants'
 
-export type FalconKeyResult = {
+export type QuantumKeyResult = {
     seedKey: Key
     address: string
-    /** Keystore id of the persisted falcon signing child — what
+    /** Keystore id of the persisted quantum signing child — what
      * `account.keyPairId` should be set to. */
     signKeyId: string
 }
 
-export const useFalcon = () => {
+export const useQuantum = () => {
     const { keyStore } = useKMSService()
 
-    const createFalconKey = async (params?: {
+    const createQuantumKey = async (params?: {
         id?: string
         mnemonic?: string
-    }): Promise<FalconKeyResult> => {
+    }): Promise<QuantumKeyResult> => {
         const seedKeyId = params?.id ?? generateOrderedUniqueId()
 
         let seed: Optional<Uint8Array>
         let committedSeed = false
 
         try {
-            // Falcon's mnemonic format IS algo25 (24 data words + 1 checksum
+            // The quantum mnemonic format IS algo25 (24 data words + 1 checksum
             // word over 32 bytes of entropy), so the mnemonic→seed path is
-            // algosdk's — no falcon-specific mnemonic code exists.
+            // algosdk's — no quantum-specific mnemonic code exists.
             seed = params?.mnemonic
                 ? seedFromMnemonic(params.mnemonic)
-                : nacl.randomBytes(FALCON_SEED_LENGTH)
+                : nacl.randomBytes(QUANTUM_SEED_LENGTH)
 
             const { publicKey } = deriveFalconKeypairMock(seed)
             const address = deriveFalconAddressMock(publicKey)
 
-            const metadata = buildSeedMetadata({ scheme: SeedScheme.Falcon })
+            const metadata = buildSeedMetadata({ scheme: SeedScheme.Quantum })
 
-            // 1. Persist the 32-byte falcon seed.
+            // 1. Persist the 32-byte quantum seed.
             //
             // Pass the seed buffer directly (no defensive copy) so the
             // `finally`'s `zeroBytes(seed)` wipes the same Uint8Array
@@ -78,10 +78,10 @@ export const useFalcon = () => {
             await keyStore.import(seedData, 'raw')
             committedSeed = true
 
-            // 2. Persist the falcon signing child (public material only —
+            // 2. Persist the quantum signing child (public material only —
             // signing always re-derives from the parent seed).
             const signKeyId = quantumSignKeyId(seedKeyId)
-            await commitFalconChildKey({
+            await commitQuantumChildKey({
                 id: signKeyId,
                 parentKeyId: seedKeyId,
                 publicKey,
@@ -107,7 +107,7 @@ export const useFalcon = () => {
                     /* swallow */
                 }
             }
-            logger.error('createFalconKey failed', { error: e })
+            logger.error('createQuantumKey failed', { error: e })
             throw e
         } finally {
             zeroBytes(seed)
@@ -115,6 +115,6 @@ export const useFalcon = () => {
     }
 
     return {
-        createFalconKey,
+        createQuantumKey,
     }
 }

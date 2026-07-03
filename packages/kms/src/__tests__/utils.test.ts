@@ -32,7 +32,7 @@ import {
     seedSchemeOf,
 } from '../utils'
 import { AccessControlPermission } from '../models'
-import { FALCON_SEED_LENGTH, SeedScheme } from '../constants'
+import { QUANTUM_SEED_LENGTH, SeedScheme } from '../constants'
 
 const seedKey = (
     overrides: Partial<Key> & { metadata?: Record<string, unknown> } = {},
@@ -57,10 +57,10 @@ describe('seedSchemeOf', () => {
         ).toBe(SeedScheme.Algo25)
     })
 
-    test('returns "falcon" for a seed with scheme=falcon metadata', () => {
+    test('returns "quantum" for a seed with scheme=quantum metadata', () => {
         expect(
-            seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Falcon } })),
-        ).toBe(SeedScheme.Falcon)
+            seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Quantum } })),
+        ).toBe(SeedScheme.Quantum)
     })
 
     test('returns null for a seed with no scheme metadata', () => {
@@ -114,9 +114,9 @@ describe('isSeedKey', () => {
         expect(isSeedKey(seedKey())).toBe(false)
     })
 
-    test('treats a falcon seed as a wallet-root seed', () => {
+    test('treats a quantum seed as a wallet-root seed', () => {
         expect(
-            isSeedKey(seedKey({ metadata: { scheme: SeedScheme.Falcon } })),
+            isSeedKey(seedKey({ metadata: { scheme: SeedScheme.Quantum } })),
         ).toBe(true)
     })
 })
@@ -192,11 +192,11 @@ describe('aclOf / createdAtOf / expiresAtOf', () => {
         expect(expiresAtOf(key)).toBeUndefined()
     })
 
-    test('aclOf gives a falcon seed the same fail-closed default ACL as algo25', () => {
-        const falconSeed = seedKey({
-            metadata: { scheme: SeedScheme.Falcon, pera: {} },
+    test('aclOf gives a quantum seed the same fail-closed default ACL as algo25', () => {
+        const quantumSeed = seedKey({
+            metadata: { scheme: SeedScheme.Quantum, pera: {} },
         })
-        const acl = aclOf(falconSeed)
+        const acl = aclOf(quantumSeed)
         expect(acl).toHaveLength(1)
         expect(acl[0].domains).toEqual(['pera.accounts', 'backup-flow'])
         expect(acl[0].permissions).toEqual([
@@ -286,12 +286,12 @@ describe('hexToBytes', () => {
     })
 })
 
-describe('falcon scheme constants', () => {
-    test('SeedScheme.Falcon is the literal "falcon"', () => {
-        expect(SeedScheme.Falcon).toBe('falcon')
+describe('quantum scheme constants', () => {
+    test('SeedScheme.Quantum is the literal "quantum"', () => {
+        expect(SeedScheme.Quantum).toBe('quantum')
     })
 
-    test('FALCON_SEED_LENGTH matches the 32-byte algo25 entropy size', () => {
-        expect(FALCON_SEED_LENGTH).toBe(32)
+    test('QUANTUM_SEED_LENGTH matches the 32-byte algo25 entropy size', () => {
+        expect(QUANTUM_SEED_LENGTH).toBe(32)
     })
 })

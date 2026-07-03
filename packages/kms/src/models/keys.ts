@@ -33,7 +33,7 @@ export type AccessControl = {
 export const algo25SignKeyId = (seedId: string): string => `${seedId}-ed25519`
 
 /**
- * Deterministic keystore id for the quantum signing child of a falcon seed.
+ * Deterministic keystore id for the quantum signing child of a quantum seed.
  * Deliberately scheme-agnostic (`-quantum`, not `-falcon`): accounts persist
  * this id as `keyPairId`, so the concrete algorithm must not be baked into
  * it. The algorithm lives on the keystore entries instead (seed

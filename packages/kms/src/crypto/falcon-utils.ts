@@ -12,7 +12,7 @@
 
 import { createHash } from 'crypto'
 import { encodeAddress } from 'algosdk'
-import { FALCON_SEED_LENGTH } from '../constants'
+import { QUANTUM_SEED_LENGTH } from '../constants'
 
 /** Byte length of a Falcon-1024 public key (per the Falcon specification). */
 export const FALCON_PUBLIC_KEY_LENGTH = 1793
@@ -72,8 +72,8 @@ const expandDeterministic = (
 export const deriveFalconKeypairMock = (
     seed: Uint8Array,
 ): { publicKey: Uint8Array } => {
-    if (seed.length !== FALCON_SEED_LENGTH) {
-        throw new RangeError(`Seed length must be ${FALCON_SEED_LENGTH}`)
+    if (seed.length !== QUANTUM_SEED_LENGTH) {
+        throw new RangeError(`Seed length must be ${QUANTUM_SEED_LENGTH}`)
     }
     return {
         publicKey: expandDeterministic(

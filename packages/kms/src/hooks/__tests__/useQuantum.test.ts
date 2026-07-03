@@ -31,10 +31,10 @@ vi.mock('../useKMSServices', () => ({
     }),
 }))
 
-const mockCommitFalconChildKey = vi.fn()
-vi.mock('../../storage/falcon-child', () => ({
-    commitFalconChildKey: (...args: unknown[]) =>
-        mockCommitFalconChildKey(...args),
+const mockCommitQuantumChildKey = vi.fn()
+vi.mock('../../storage/quantum-child', () => ({
+    commitQuantumChildKey: (...args: unknown[]) =>
+        mockCommitQuantumChildKey(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -47,7 +47,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-import { useFalcon, type FalconKeyResult } from '../useFalcon'
+import { useQuantum, type QuantumKeyResult } from '../useQuantum'
 import { quantumSignKeyId, FALCON_CHILD_KEY_TYPE } from '../../models'
 import { FALCON_PUBLIC_KEY_LENGTH } from '../../crypto/falcon-utils'
 import { SeedScheme } from '../../constants'
@@ -56,20 +56,20 @@ import { SeedScheme } from '../../constants'
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 
-describe('useFalcon', () => {
+describe('useQuantum', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockKeyStoreImport.mockResolvedValue('my-key')
-        mockCommitFalconChildKey.mockResolvedValue(undefined)
+        mockCommitQuantumChildKey.mockResolvedValue(undefined)
     })
 
-    describe('createFalconKey', () => {
-        test('imports the seed, commits a falcon child, and returns address + seedKey + signKeyId', async () => {
-            const { result } = renderHook(() => useFalcon())
+    describe('createQuantumKey', () => {
+        test('imports the seed, commits a quantum child, and returns address + seedKey + signKeyId', async () => {
+            const { result } = renderHook(() => useQuantum())
 
-            let keyResult: Optional<FalconKeyResult>
+            let keyResult: Optional<QuantumKeyResult>
             await act(async () => {
-                keyResult = await result.current.createFalconKey({
+                keyResult = await result.current.createQuantumKey({
                     id: 'my-key',
                     mnemonic: TEST_MNEMONIC,
                 })
@@ -79,13 +79,13 @@ describe('useFalcon', () => {
             expect(keyResult!.seedKey.type).toBe('seed')
             expect(
                 (keyResult!.seedKey.metadata as { scheme?: string }).scheme,
-            ).toBe(SeedScheme.Falcon)
+            ).toBe(SeedScheme.Quantum)
             expect(keyResult!.signKeyId).toBe(quantumSignKeyId('my-key'))
             expect(keyResult!.address).toHaveLength(58)
             expect(isValidAddress(keyResult!.address)).toBe(true)
         })
 
-        test('persists the seed with scheme=falcon metadata and zeroes the buffer after import', async () => {
+        test('persists the seed with scheme=quantum metadata and zeroes the buffer after import', async () => {
             // Snapshot the privateKey synchronously when import fires — the
             // hook passes the seed buffer directly (no defensive copy) and
             // zeroes it in `finally`, mirroring createAlgo25Key.
@@ -99,9 +99,9 @@ describe('useFalcon', () => {
                 },
             )
 
-            const { result } = renderHook(() => useFalcon())
+            const { result } = renderHook(() => useQuantum())
             await act(async () => {
-                await result.current.createFalconKey({
+                await result.current.createQuantumKey({
                     id: 'my-key',
                     mnemonic: TEST_MNEMONIC,
                 })
@@ -120,31 +120,31 @@ describe('useFalcon', () => {
             expect(privateKeySnapshot.some(b => b !== 0)).toBe(true)
             // Post-call the buffer is wiped — the zeroing path fired.
             expect(Array.from(arg.privateKey)).toEqual(new Array(32).fill(0))
-            expect(arg.metadata.scheme).toBe(SeedScheme.Falcon)
+            expect(arg.metadata.scheme).toBe(SeedScheme.Quantum)
             expect(arg.metadata.pera.createdAt).toBeDefined()
         })
 
-        test('commits the falcon child with the quantum id, parentKeyId and 1,793-byte public key', async () => {
-            const { result } = renderHook(() => useFalcon())
+        test('commits the quantum child with the quantum id, parentKeyId and 1,793-byte public key', async () => {
+            const { result } = renderHook(() => useQuantum())
             await act(async () => {
-                await result.current.createFalconKey({
+                await result.current.createQuantumKey({
                     id: 'my-key',
                     mnemonic: TEST_MNEMONIC,
                 })
             })
 
-            expect(mockCommitFalconChildKey).toHaveBeenCalledTimes(1)
-            const arg = mockCommitFalconChildKey.mock.calls[0][0]
+            expect(mockCommitQuantumChildKey).toHaveBeenCalledTimes(1)
+            const arg = mockCommitQuantumChildKey.mock.calls[0][0]
             expect(arg.id).toBe(quantumSignKeyId('my-key'))
             expect(arg.parentKeyId).toBe('my-key')
             expect(arg.publicKey).toHaveLength(FALCON_PUBLIC_KEY_LENGTH)
         })
 
         test('generates a random 32-byte seed and a uuid id when no params given', async () => {
-            const { result } = renderHook(() => useFalcon())
-            let keyResult: Optional<FalconKeyResult>
+            const { result } = renderHook(() => useQuantum())
+            let keyResult: Optional<QuantumKeyResult>
             await act(async () => {
-                keyResult = await result.current.createFalconKey()
+                keyResult = await result.current.createQuantumKey()
             })
             expect(keyResult!.seedKey.id).toBe('mock-uuid-v7')
             expect(isValidAddress(keyResult!.address)).toBe(true)
@@ -152,7 +152,7 @@ describe('useFalcon', () => {
 
         test('same mnemonic produces the same public key and address across fresh hook instances', async () => {
             const publicKeys: number[][] = []
-            mockCommitFalconChildKey.mockImplementation(
+            mockCommitQuantumChildKey.mockImplementation(
                 async (params: { publicKey: Uint8Array }) => {
                     publicKeys.push(Array.from(params.publicKey))
                 },
@@ -160,9 +160,9 @@ describe('useFalcon', () => {
 
             const addresses: string[] = []
             for (let i = 0; i < 2; i++) {
-                const { result, unmount } = renderHook(() => useFalcon())
+                const { result, unmount } = renderHook(() => useQuantum())
                 await act(async () => {
-                    const created = await result.current.createFalconKey({
+                    const created = await result.current.createQuantumKey({
                         id: `key-${i}`,
                         mnemonic: TEST_MNEMONIC,
                     })
@@ -175,13 +175,13 @@ describe('useFalcon', () => {
             expect(publicKeys[0]).toEqual(publicKeys[1])
         })
 
-        test('rolls back the seed if the falcon child commit fails', async () => {
-            mockCommitFalconChildKey.mockRejectedValueOnce(new Error('boom'))
+        test('rolls back the seed if the quantum child commit fails', async () => {
+            mockCommitQuantumChildKey.mockRejectedValueOnce(new Error('boom'))
 
-            const { result } = renderHook(() => useFalcon())
+            const { result } = renderHook(() => useQuantum())
             await expect(
                 act(async () => {
-                    await result.current.createFalconKey({
+                    await result.current.createQuantumKey({
                         id: 'my-key',
                         mnemonic: TEST_MNEMONIC,
                     })

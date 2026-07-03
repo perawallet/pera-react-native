@@ -110,7 +110,7 @@ export const seedSchemeOf = (key: Key): SeedScheme | null => {
     if (
         scheme === SeedScheme.Bip39 ||
         scheme === SeedScheme.Algo25 ||
-        scheme === SeedScheme.Falcon
+        scheme === SeedScheme.Quantum
     ) {
         return scheme
     }

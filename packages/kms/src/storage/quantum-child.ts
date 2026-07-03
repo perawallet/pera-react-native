@@ -15,7 +15,7 @@ import { FALCON_CHILD_KEY_TYPE } from '../models'
 
 // MOCK(quantum): replace with real Falcon-1024 implementation when keystore support lands. See EPIC phase 2.
 /**
- * Persists the falcon signing child as a keystore entry with
+ * Persists the quantum signing child as a keystore entry with
  * `type: 'falcon1024'` (the concrete algorithm lives on the entry — the id
  * is the scheme-agnostic `quantumSignKeyId`).
  *
@@ -31,7 +31,7 @@ import { FALCON_CHILD_KEY_TYPE } from '../models'
  * runs if it becomes statically reachable through the kms barrel (see the
  * note at the bottom of `src/index.ts`).
  */
-export const commitFalconChildKey = async (params: {
+export const commitQuantumChildKey = async (params: {
     id: string
     parentKeyId: string
     publicKey: Uint8Array

@@ -27,8 +27,8 @@ import {
 import { SeedScheme } from '../constants'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
-import { useFalcon } from './useFalcon'
-export type { FalconKeyResult } from './useFalcon'
+import { useQuantum } from './useQuantum'
+export type { QuantumKeyResult } from './useQuantum'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
@@ -46,7 +46,7 @@ export type ExecuteWithMnemonicHandler<T> = (
 export const useKMS = () => {
     const keystoreKeys = useKeystoreKeys()
     const { createAlgo25Key } = useAlgo25()
-    const { createFalconKey } = useFalcon()
+    const { createQuantumKey } = useQuantum()
     const {
         createHDWalletKey,
         persistHDMasterKey,
@@ -149,19 +149,19 @@ export const useKMS = () => {
 
     // MOCK(quantum): replace with real Falcon-1024 implementation when keystore support lands. See EPIC phase 2.
     /**
-     * Signs each payload with the mocked falcon signer. The falcon child
+     * Signs each payload with the mocked quantum signer. The quantum child
      * entry holds no private material — the signature derives from the
      * parent seed's private bytes, exported only for the duration of this
      * call and zeroed in `finally`.
      */
-    const signWithFalconSeed = (
+    const signWithQuantumSeed = (
         seedKey: Key,
         payloads: Uint8Array[],
     ): Promise<Uint8Array[]> =>
         withExportedKey(seedKey.id, seedData => {
             if (!seedData.privateKey) {
                 throw new KeyManagementError(
-                    'Falcon seed has no private key bytes',
+                    'Quantum seed has no private key bytes',
                 )
             }
             const seedBytes = new Uint8Array(seedData.privateKey)
@@ -184,8 +184,8 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Falcon) {
-            return signWithFalconSeed(seedKey, encodedTxs)
+        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
+            return signWithQuantumSeed(seedKey, encodedTxs)
         }
         return Promise.all(encodedTxs.map(tx => keyStore.sign(childKeyId, tx)))
     }
@@ -197,8 +197,8 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Falcon) {
-            return signWithFalconSeed(seedKey, data)
+        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
+            return signWithQuantumSeed(seedKey, data)
         }
         return Promise.all(data.map(d => keyStore.sign(childKeyId, d)))
     }
@@ -268,7 +268,7 @@ export const useKMS = () => {
             return runWithIndices(indices)
         }
 
-        // algo25 / falcon: the phrase derives from the seed's own
+        // algo25 / quantum: the phrase derives from the seed's own
         // private-key bytes — both schemes share the 25-word format
         // (24 data words + 1 checksum over 32 bytes of entropy).
         return withExportedKey(seedKey.id, async seedData => {
@@ -294,7 +294,7 @@ export const useKMS = () => {
         getKey,
         getKeyOrThrow,
         createAlgo25Key,
-        createFalconKey,
+        createQuantumKey,
         createHDWalletKey,
         persistHDMasterKey,
         generateDerivedKey,

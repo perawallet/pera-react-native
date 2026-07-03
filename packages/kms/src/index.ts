@@ -42,7 +42,7 @@ export {
 export {
     SeedScheme,
     ALGO25_SEED_LENGTH,
-    FALCON_SEED_LENGTH,
+    QUANTUM_SEED_LENGTH,
     SIGNING_ACCESS_DOMAIN,
     BACKUP_ACCESS_DOMAIN,
 } from './constants'

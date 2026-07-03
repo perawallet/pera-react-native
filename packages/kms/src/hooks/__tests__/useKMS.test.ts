@@ -77,10 +77,10 @@ vi.mock('../useAlgo25', () => ({
     }),
 }))
 
-const mockCreateFalconKey = vi.fn()
-vi.mock('../useFalcon', () => ({
-    useFalcon: () => ({
-        createFalconKey: (...args: any[]) => mockCreateFalconKey(...args),
+const mockCreateQuantumKey = vi.fn()
+vi.mock('../useQuantum', () => ({
+    useQuantum: () => ({
+        createQuantumKey: (...args: any[]) => mockCreateQuantumKey(...args),
     }),
 }))
 
@@ -125,13 +125,13 @@ const seedAlgo25Root = (id: string): Key => {
     return key
 }
 
-const seedFalconRoot = (id: string): Key => {
+const seedQuantumRoot = (id: string): Key => {
     const key: Key = {
         id,
         type: 'seed',
         algorithm: 'raw',
         extractable: true,
-        metadata: { scheme: SeedScheme.Falcon, pera: {} },
+        metadata: { scheme: SeedScheme.Quantum, pera: {} },
     }
     mockKeystoreKeys.push(key)
     return key
@@ -456,20 +456,24 @@ describe('useKMS', () => {
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2')
     })
 
-    describe('falcon sign dispatch', () => {
-        const FALCON_SEED_BYTES = new Uint8Array(32).fill(7)
+    describe('quantum sign dispatch', () => {
+        const QUANTUM_SEED_BYTES = new Uint8Array(32).fill(7)
 
-        const arrangeFalconPair = () => {
-            seedFalconRoot('falcon-1')
-            const child = childOf('falcon-1-quantum', 'falcon-1', 'falcon1024')
+        const arrangeQuantumPair = () => {
+            seedQuantumRoot('quantum-1')
+            const child = childOf(
+                'quantum-1-quantum',
+                'quantum-1',
+                'falcon1024',
+            )
             mockKeyStoreExport.mockResolvedValue({
-                privateKey: new Uint8Array(FALCON_SEED_BYTES),
+                privateKey: new Uint8Array(QUANTUM_SEED_BYTES),
             })
             return child
         }
 
-        it('signTransactionsWithKey routes falcon children to the mock signer, not keyStore.sign', async () => {
-            const child = arrangeFalconPair()
+        it('signTransactionsWithKey routes quantum children to the mock signer, not keyStore.sign', async () => {
+            const child = arrangeQuantumPair()
             const tx = new Uint8Array([1, 2, 3])
 
             const { result } = renderHook(() => useKMS())
@@ -483,12 +487,12 @@ describe('useKMS', () => {
             })
 
             expect(mockKeyStoreSign).not.toHaveBeenCalled()
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('falcon-1')
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
             expect(sigs![0]).toHaveLength(FALCON_SIGNATURE_LENGTH)
         })
 
-        it('falcon signatures are deterministic per payload and differ across payloads', async () => {
-            const child = arrangeFalconPair()
+        it('quantum signatures are deterministic per payload and differ across payloads', async () => {
+            const child = arrangeQuantumPair()
             const txA = new Uint8Array([1, 2, 3])
             const txB = new Uint8Array([4, 5, 6])
 
@@ -512,8 +516,8 @@ describe('useKMS', () => {
             expect(Array.from(first![0])).not.toEqual(Array.from(first![1]))
         })
 
-        it('signDataWithKey routes falcon children to the mock signer', async () => {
-            const child = arrangeFalconPair()
+        it('signDataWithKey routes quantum children to the mock signer', async () => {
+            const child = arrangeQuantumPair()
 
             const { result } = renderHook(() => useKMS())
             let sigs: Optional<Uint8Array[]>
@@ -530,7 +534,7 @@ describe('useKMS', () => {
         })
 
         it('rejects and never exports the seed when the ACL denies the domain', async () => {
-            const child = arrangeFalconPair()
+            const child = arrangeQuantumPair()
             mockCheckAccess.mockImplementationOnce(() => {
                 throw new KeyAccessError()
             })
@@ -564,8 +568,8 @@ describe('useKMS', () => {
             expect(mockKeyStoreExport).not.toHaveBeenCalled()
         })
 
-        it('executeWithMnemonic for a falcon seed derives indices from the seed bytes like algo25', async () => {
-            const child = arrangeFalconPair()
+        it('executeWithMnemonic for a quantum seed derives indices from the seed bytes like algo25', async () => {
+            const child = arrangeQuantumPair()
             mockAlgo25SeedToIndices.mockReturnValue(Uint16Array.from([7, 8, 9]))
 
             const { result } = renderHook(() => useKMS())
@@ -578,20 +582,20 @@ describe('useKMS', () => {
                 )
             })
 
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('falcon-1')
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
             expect(mockAlgo25SeedToIndices).toHaveBeenCalledTimes(1)
             expect(received).toEqual([7, 8, 9])
         })
 
-        it('exposes createFalconKey from useFalcon', async () => {
+        it('exposes createQuantumKey from useQuantum', async () => {
             const mockResult = { seedKey: { id: 'f-1', type: 'seed' } }
-            mockCreateFalconKey.mockResolvedValue(mockResult)
+            mockCreateQuantumKey.mockResolvedValue(mockResult)
             const { result } = renderHook(() => useKMS())
             let keyResult: any
             await act(async () => {
-                keyResult = await result.current.createFalconKey({ id: 'f-1' })
+                keyResult = await result.current.createQuantumKey({ id: 'f-1' })
             })
-            expect(mockCreateFalconKey).toHaveBeenCalledWith({ id: 'f-1' })
+            expect(mockCreateQuantumKey).toHaveBeenCalledWith({ id: 'f-1' })
             expect(keyResult).toEqual(mockResult)
         })
     })
