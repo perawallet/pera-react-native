@@ -12,12 +12,18 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { type CardTransaction } from '@perawallet/wallet-core-card'
+import { Decimal } from 'decimal.js'
+import {
+    type CardInternalWallet,
+    type CardTransaction,
+} from '@perawallet/wallet-core-card'
 
 const mockState = vi.hoisted(() => ({
     selectedFundingType: null as string | null,
     transactions: [] as CardTransaction[],
     isLoading: false,
+    usdcWallet: null as unknown,
+    isWalletsLoading: false,
 }))
 const mockInfoToast = vi.fn()
 const mockNavigate = vi.fn()
@@ -42,6 +48,13 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardTransactionsQuery: () => ({
             transactions: mockState.transactions,
             isLoading: mockState.isLoading,
+        }),
+        useCardInternalWalletsQuery: () => ({
+            usdcWallet: mockState.usdcWallet,
+            isLoading: mockState.isWalletsLoading,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
         }),
     }
 })
@@ -77,9 +90,19 @@ describe('usePeraCardOverview', () => {
         mockState.selectedFundingType = null
         mockState.transactions = []
         mockState.isLoading = false
+        mockState.usdcWallet = null
+        mockState.isWalletsLoading = false
     })
 
-    it('defaults to manual funding with stubbed zero balance/credits', () => {
+    it('reports the balance as loading while the wallets query is in flight', () => {
+        mockState.isWalletsLoading = true
+
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        expect(result.current.isBalanceLoading).toBe(true)
+    })
+
+    it('defaults to manual funding with zero balance and stubbed credits', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.isAutoFunding).toBe(false)
@@ -87,6 +110,22 @@ describe('usePeraCardOverview', () => {
         expect(result.current.balance.toString()).toBe('0')
         expect(result.current.credits.cashbacks.toString()).toBe('0')
         expect(result.current.credits.refunds.toString()).toBe('0')
+    })
+
+    it('exposes the USDC internal wallet balance as the card balance', () => {
+        mockState.usdcWallet = {
+            id: 'wallet_usdc',
+            balance: new Decimal('150.25'),
+            currency: 'usdc',
+            address: 'BAANX_ADDR',
+            addressMemo: null,
+            addressId: 'addr_1',
+            type: 'INTERNAL',
+        } satisfies CardInternalWallet
+
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        expect(result.current.balance.toFixed(2)).toBe('150.25')
     })
 
     it('reports auto funding when the selected type is AUTO', () => {
@@ -127,10 +166,17 @@ describe('usePeraCardOverview', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CardTransactions')
     })
 
-    it('unwired action handlers surface the coming-soon toast', () => {
+    it('navigates to the Withdraw screen', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         result.current.onWithdraw()
+
+        expect(mockNavigate).toHaveBeenCalledWith('CardWithdraw')
+    })
+
+    it('unwired action handlers surface the coming-soon toast', () => {
+        const { result } = renderHook(() => usePeraCardOverview())
+
         result.current.onGetUsdc()
 
         expect(mockInfoToast).toHaveBeenCalled()

@@ -54,6 +54,12 @@ export {
 export type { MockListCardTransactionsParams } from './api/transactions/msw-handlers'
 
 export {
+    mockGetInternalWallets,
+    mockWithdrawFromWallet,
+} from './api/wallet/msw-handlers'
+export type { MockGetInternalWalletsParams } from './api/wallet/msw-handlers'
+
+export {
     mockSendEmailVerification,
     mockVerifyEmail,
     mockSendPhoneVerification,

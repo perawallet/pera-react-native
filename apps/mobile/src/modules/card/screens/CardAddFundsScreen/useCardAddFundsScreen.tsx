@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
@@ -30,14 +30,13 @@ import {
 } from '@perawallet/wallet-core-card'
 import { useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useNumberPadAmount } from '@components/NumberPad'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardSelectAssetContent } from '../../components/CardSelectAssetContent'
 import { useCardComingSoonToast } from '../../hooks'
 import { type PeraCardStackParamList } from '../../routes/types'
+import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import { useCardAddFundsSwap } from './useCardAddFundsSwap'
-
-/** USDC is a USD stablecoin — display amounts to 2 decimals like the design. */
-const USDC_DISPLAY_PRECISION = 2
 
 type UseCardAddFundsScreenResult = {
     /** Funding account (active account placeholder until the contract links one). */
@@ -110,45 +109,12 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         return balance ?? new Decimal(0)
     }, [accountBalances, fundingAccount, sourceAssetId])
 
-    const [value, setValue] = useState<Maybe<string>>(undefined)
-    const valueRef = useRef<Maybe<string>>(value)
-    const setValueAndRef = useCallback((next: Maybe<string>) => {
-        valueRef.current = next
-        setValue(next)
-    }, [])
-
-    // Decimal guard (mirrors the send flow) — capped at the source asset decimals.
-    const handleKey = useCallback(
-        (key?: string) => {
-            const current = valueRef.current ?? null
-            if (key) {
-                if (key === '.' && sourceDecimals === 0) return
-                if (key === '.' && (current ?? '').includes('.')) return
-                if (key === '.' && !current) {
-                    setValueAndRef('0.')
-                    return
-                }
-                const next = (current ?? '') + key
-                const decimalIndex = next.indexOf('.')
-                if (
-                    decimalIndex !== -1 &&
-                    next.length - decimalIndex - 1 > sourceDecimals
-                ) {
-                    return
-                }
-                setValueAndRef(next)
-            } else if (current?.length) {
-                const next = current.substring(0, current.length - 1)
-                setValueAndRef(next.length ? next : null)
-            }
-        },
-        [setValueAndRef, sourceDecimals],
-    )
-
-    const amountDecimal = useMemo(
-        () => (value ? new Decimal(value) : new Decimal(0)),
-        [value],
-    )
+    const {
+        amount: value,
+        amountDecimal,
+        handleKey,
+        setAmount,
+    } = useNumberPadAmount({ decimals: sourceDecimals })
 
     const swap = useCardAddFundsSwap({
         account: fundingAccount,
@@ -171,8 +137,8 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         })
         if (!assetId) return
         setPickedAssetId(assetId)
-        setValueAndRef(null)
-    }, [requestBottomSheet, setValueAndRef])
+        setAmount(null)
+    }, [requestBottomSheet, setAmount])
 
     const balanceDisplay = useMemo(
         () => sourceBalance.toFixed(USDC_DISPLAY_PRECISION),

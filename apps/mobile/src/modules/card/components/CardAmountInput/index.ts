@@ -10,6 +10,4 @@
  limitations under the License
  */
 
-export { NumberPad } from './NumberPad'
-export type { NumberPadProps } from './NumberPad'
-export { useNumberPadAmount } from './useNumberPadAmount'
+export { CardAmountInput } from './CardAmountInput'
