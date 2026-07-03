@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { type CardTransaction } from '@perawallet/wallet-core-card'
 import { useCardTransactionListItem } from './useCardTransactionListItem'
@@ -18,15 +18,17 @@ import { useStyles } from './styles'
 
 type CardTransactionListItemProps = {
     transaction: CardTransaction
+    onPress?: () => void
 }
 
 export const CardTransactionListItem = ({
     transaction,
+    onPress,
 }: CardTransactionListItemProps) => {
     const styles = useStyles()
     const { title, subtitle, isDebit } = useCardTransactionListItem(transaction)
 
-    return (
+    const row = (
         <PWView style={styles.txRow}>
             <PWView style={styles.txTextBlock}>
                 <PWText
@@ -56,5 +58,16 @@ export const CardTransactionListItem = ({
                 style={isDebit ? styles.txAmountDebit : styles.txAmountCredit}
             />
         </PWView>
+    )
+
+    if (!onPress) return row
+
+    return (
+        <PWTouchableOpacity
+            onPress={onPress}
+            testID={`card_transaction_item_${transaction.id}`}
+        >
+            {row}
+        </PWTouchableOpacity>
     )
 }

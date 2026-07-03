@@ -41,6 +41,18 @@ describe('buildMockCardTransactions', () => {
         expect(deposit?.fundingSources?.length).toBeGreaterThan(0)
     })
 
+    it('includes a confirmed payment with fees and a funding-source tx hash', () => {
+        const payment = buildMockCardTransactions(NOW).find(
+            row =>
+                row.sign === 'DEBIT' &&
+                row.status === 'CONFIRMED' &&
+                row.fundingSources?.some(source => source.txHash),
+        )
+
+        expect(payment).toBeDefined()
+        expect(Number(payment?.feesInTransactionCurrency)).toBeGreaterThan(0)
+    })
+
     it('dates rows relative to `now`', () => {
         const earlier = Date.parse('2020-01-15T12:00:00Z')
         const rows = buildMockCardTransactions(earlier)

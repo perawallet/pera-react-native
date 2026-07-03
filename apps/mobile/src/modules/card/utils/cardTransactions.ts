@@ -34,6 +34,18 @@ const shortMonthFormatter = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     timeZone: 'UTC',
 })
+const longDateFormatter = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+})
+const timeFormatter = new Intl.DateTimeFormat('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+})
 
 // Section key for transactions whose dateTime is missing/unparseable, so a
 // malformed row can't crash `Intl.format` (which throws on an Invalid Date).
@@ -89,6 +101,17 @@ export const formatCardTransactionDate = (dateTime: string): string => {
 }
 
 /**
+ * Full timezone-stable date-time, e.g. "Dec 24, 2024 at 01:10 PM". Empty when
+ * unparseable.
+ */
+export const formatCardTransactionDateTime = (dateTime: string): string => {
+    const date = parseDateTime(dateTime)
+    return date
+        ? `${longDateFormatter.format(date)} at ${timeFormatter.format(date)}`
+        : ''
+}
+
+/**
  * What a row is, derived from sign + merchant (Baanx has no explicit type):
  * a debit is a "payment", a credit with a merchant is a "refund", a credit
  * without one is a "deposit". Status (declined/pending) is shown separately.
@@ -112,6 +135,46 @@ export const getCardTransactionKind = (
         ? CardTransactionKind.Refund
         : CardTransactionKind.Deposit
 }
+
+/**
+ * Friendly-label i18n keys for Baanx `merchantType`. The wire values are an
+ * OPEN set (the api-reference only shows examples: "OutOfWalletOnline",
+ * "InStore", "InStoreWithPin", "ATM"), so unknown values return undefined and
+ * the caller falls back to the raw string.
+ */
+// Map (not object literal): an open-set wire value like "Constructor" must
+// miss, not resolve through Object.prototype.
+const MERCHANT_TYPE_LABEL_KEYS = new Map<string, string>([
+    ['instore', 'peraCard.transactions.merchant_type_in_store'],
+    ['instorewithpin', 'peraCard.transactions.merchant_type_in_store_with_pin'],
+    ['outofwalletonline', 'peraCard.transactions.merchant_type_online'],
+    ['atm', 'peraCard.transactions.merchant_type_atm'],
+])
+
+export const getCardMerchantTypeLabelKey = (
+    merchantType: string,
+): string | undefined =>
+    MERCHANT_TYPE_LABEL_KEYS.get(merchantType.toLowerCase())
+
+/**
+ * Friendly-label i18n keys for Baanx `mccCategory` — a documented closed enum
+ * (SUBSCRIPTIONS, FOOD, TRAVEL, ENTERTAINMENT, HEALTH, ATM, UTILITIES, MISC).
+ * Still tolerant: unknown values return undefined so the raw string shows.
+ */
+const MCC_CATEGORY_LABEL_KEYS = new Map<string, string>([
+    ['SUBSCRIPTIONS', 'peraCard.transactions.mcc_category_subscriptions'],
+    ['FOOD', 'peraCard.transactions.mcc_category_food'],
+    ['TRAVEL', 'peraCard.transactions.mcc_category_travel'],
+    ['ENTERTAINMENT', 'peraCard.transactions.mcc_category_entertainment'],
+    ['HEALTH', 'peraCard.transactions.mcc_category_health'],
+    ['ATM', 'peraCard.transactions.mcc_category_atm'],
+    ['UTILITIES', 'peraCard.transactions.mcc_category_utilities'],
+    ['MISC', 'peraCard.transactions.mcc_category_misc'],
+])
+
+export const getCardMccCategoryLabelKey = (
+    mccCategory: string,
+): string | undefined => MCC_CATEGORY_LABEL_KEYS.get(mccCategory.toUpperCase())
 
 /** Relative date as a translatable descriptor; the row maps it to copy. */
 export type CardTransactionRelativeDate =

@@ -34,6 +34,7 @@ export const PeraCardOverview = () => {
         onAddFunds,
         onGetUsdc,
         onShowAllTransactions,
+        onPressTransaction,
         onCreditPress,
     } = usePeraCardOverview()
 
@@ -68,6 +69,7 @@ export const PeraCardOverview = () => {
                 sections={transactionSections}
                 isLoading={isLoadingTransactions}
                 onShowAll={onShowAllTransactions}
+                onPressTransaction={onPressTransaction}
             />
         </PWScrollView>
     )

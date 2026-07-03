@@ -22,4 +22,8 @@ export type PeraCardStackParamList = {
     CardConfirmSwap: { sourceAssetId: string; amount: string }
     CardWithdraw: undefined
     CardTransactions: undefined
+    // The param is the row's internal `id` (the list key), not the model's
+    // external `transactionId` field. The full object can't be passed: it
+    // holds Decimal instances, which aren't serializable navigation state.
+    CardTransactionDetail: { transactionId: string }
 }

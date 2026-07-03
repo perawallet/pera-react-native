@@ -12,7 +12,12 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export type PWChipVariant = 'helper' | 'secondary' | 'outline'
+export type PWChipVariant =
+    | 'helper'
+    | 'secondary'
+    | 'outline'
+    | 'positive'
+    | 'negative'
 
 type Props = {
     variant: PWChipVariant
@@ -39,6 +44,18 @@ export const useStyles = makeStyles(
                 borderColor: theme.colors.layerGray,
                 borderWidth: theme.borders.sm,
                 color: theme.colors.textMain,
+            },
+            positive: {
+                backgroundColor: theme.colors.positiveLighter,
+                color: theme.colors.positive,
+                borderWidth: 0,
+                borderColor: 'transparent',
+            },
+            negative: {
+                backgroundColor: theme.colors.negativeLighter,
+                color: theme.colors.negative,
+                borderWidth: 0,
+                borderColor: 'transparent',
             },
         }
 
