@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import { addDebugAbiFilter } from '../withAndroidAbiFilters'
+import { afterEach, describe, expect, it } from 'vitest'
+import { addDebugAbiFilter, getDebugAbis } from '../withAndroidAbiFilters'
 
 // Mirrors the RN/Expo template: a `signingConfigs` block that also opens a
 // `debug {` before the `buildTypes` block, so the anchor must skip it.
@@ -74,5 +74,68 @@ describe('addDebugAbiFilter', () => {
         expect(() =>
             addDebugAbiFilter('android {\n    buildTypes {\n    }\n}'),
         ).toThrow(/could not find the debug buildType/)
+    })
+
+    it('still scopes debug when an unrelated abiFilters already exists elsewhere', () => {
+        // A release-side ndk filter (or any other abiFilters usage) must not
+        // make the idempotency guard think debug is already patched — a bare
+        // 'abiFilters' substring check would silently no-op here and leave
+        // debug unscoped.
+        const withReleaseAbiFilters = `android {
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            signingConfig signingConfigs.release
+            ndk {
+                abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+            }
+        }
+    }
+}`
+
+        const result = addDebugAbiFilter(withReleaseAbiFilters)
+
+        const buildTypes = result.slice(result.indexOf('buildTypes {'))
+        const debugBlock = buildTypes.slice(
+            buildTypes.indexOf('debug {'),
+            buildTypes.indexOf('release {'),
+        )
+
+        expect(debugBlock).toContain("abiFilters 'arm64-v8a'")
+    })
+
+    it('scopes debug to multiple ABIs when overridden (e.g. x86_64 emulator)', () => {
+        // The escape hatch for non-arm64 emulators: abiFilters must widen to the
+        // requested ABIs, otherwise the APK ships no libs the device can load.
+        const result = addDebugAbiFilter(TEMPLATE, ['arm64-v8a', 'x86_64'])
+
+        expect(result).toContain("abiFilters 'arm64-v8a', 'x86_64'")
+        expect(result.match(/abiFilters/g)).toHaveLength(1)
+    })
+})
+
+describe('getDebugAbis', () => {
+    afterEach(() => {
+        delete process.env.PERA_ANDROID_DEBUG_ABI
+    })
+
+    it('defaults to arm64-v8a when the override is unset', () => {
+        delete process.env.PERA_ANDROID_DEBUG_ABI
+
+        expect(getDebugAbis()).toEqual(['arm64-v8a'])
+    })
+
+    it('parses a comma-separated PERA_ANDROID_DEBUG_ABI override, trimming whitespace', () => {
+        process.env.PERA_ANDROID_DEBUG_ABI = ' arm64-v8a , x86_64 '
+
+        expect(getDebugAbis()).toEqual(['arm64-v8a', 'x86_64'])
+    })
+
+    it('falls back to the default when the override is blank', () => {
+        process.env.PERA_ANDROID_DEBUG_ABI = '   ,  '
+
+        expect(getDebugAbis()).toEqual(['arm64-v8a'])
     })
 })
