@@ -33,8 +33,16 @@ export {
 } from './crypto/hdwallet-utils'
 export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
 export {
+    deriveFalconAddressMock,
+    deriveFalconKeypairMock,
+    falconSignMock,
+    FALCON_PUBLIC_KEY_LENGTH,
+    FALCON_SIGNATURE_LENGTH,
+} from './crypto/falcon-utils'
+export {
     SeedScheme,
     ALGO25_SEED_LENGTH,
+    FALCON_SEED_LENGTH,
     SIGNING_ACCESS_DOMAIN,
     BACKUP_ACCESS_DOMAIN,
 } from './constants'

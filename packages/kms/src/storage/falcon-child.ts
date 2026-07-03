@@ -36,9 +36,7 @@ export const commitFalconChildKey = async (params: {
     parentKeyId: string
     publicKey: Uint8Array
 }): Promise<void> => {
-    const { commit } = await import(
-        '@algorandfoundation/react-native-keystore'
-    )
+    const { commit } = await import('@algorandfoundation/react-native-keystore')
     await commit({
         store: getKeystoreStore(),
         keyData: {

@@ -14,9 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { InvalidKeyError, KeyNotFoundError } from '../../errors'
+import { InvalidKeyError, KeyAccessError, KeyNotFoundError } from '../../errors'
 import { SeedScheme } from '../../constants'
 import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
+import { FALCON_SIGNATURE_LENGTH } from '../../crypto/falcon-utils'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -39,6 +40,7 @@ const mockDeleteKey = vi.fn()
 const mockKeyStoreRemove = vi.fn()
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
+const mockCheckAccess = vi.fn()
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         deleteKey: (...args: any[]) => mockDeleteKey(...args),
@@ -54,7 +56,7 @@ vi.mock('../useKMSServices', () => ({
             const keyData = await mockKeyStoreExport(keyId)
             return handler(keyData)
         },
-        checkAccess: vi.fn(),
+        checkAccess: (...args: any[]) => mockCheckAccess(...args),
     }),
 }))
 
@@ -72,6 +74,13 @@ const mockCreateAlgo25Key = vi.fn()
 vi.mock('../useAlgo25', () => ({
     useAlgo25: () => ({
         createAlgo25Key: (...args: any[]) => mockCreateAlgo25Key(...args),
+    }),
+}))
+
+const mockCreateFalconKey = vi.fn()
+vi.mock('../useFalcon', () => ({
+    useFalcon: () => ({
+        createFalconKey: (...args: any[]) => mockCreateFalconKey(...args),
     }),
 }))
 
@@ -111,6 +120,18 @@ const seedAlgo25Root = (id: string): Key => {
         algorithm: 'raw',
         extractable: true,
         metadata: { scheme: SeedScheme.Algo25, pera: {} },
+    }
+    mockKeystoreKeys.push(key)
+    return key
+}
+
+const seedFalconRoot = (id: string): Key => {
+    const key: Key = {
+        id,
+        type: 'seed',
+        algorithm: 'raw',
+        extractable: true,
+        metadata: { scheme: SeedScheme.Falcon, pera: {} },
     }
     mockKeystoreKeys.push(key)
     return key
@@ -433,5 +454,145 @@ describe('useKMS', () => {
         // child-c (under hd-2) is left alone
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('child-c')
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2')
+    })
+
+    describe('falcon sign dispatch', () => {
+        const FALCON_SEED_BYTES = new Uint8Array(32).fill(7)
+
+        const arrangeFalconPair = () => {
+            seedFalconRoot('falcon-1')
+            const child = childOf('falcon-1-quantum', 'falcon-1', 'falcon1024')
+            mockKeyStoreExport.mockResolvedValue({
+                privateKey: new Uint8Array(FALCON_SEED_BYTES),
+            })
+            return child
+        }
+
+        it('signTransactionsWithKey routes falcon children to the mock signer, not keyStore.sign', async () => {
+            const child = arrangeFalconPair()
+            const tx = new Uint8Array([1, 2, 3])
+
+            const { result } = renderHook(() => useKMS())
+            let sigs: Optional<Uint8Array[]>
+            await act(async () => {
+                sigs = await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [tx],
+                )
+            })
+
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('falcon-1')
+            expect(sigs![0]).toHaveLength(FALCON_SIGNATURE_LENGTH)
+        })
+
+        it('falcon signatures are deterministic per payload and differ across payloads', async () => {
+            const child = arrangeFalconPair()
+            const txA = new Uint8Array([1, 2, 3])
+            const txB = new Uint8Array([4, 5, 6])
+
+            const { result } = renderHook(() => useKMS())
+            let first: Optional<Uint8Array[]>
+            let second: Optional<Uint8Array[]>
+            await act(async () => {
+                first = await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [txA, txB],
+                )
+                second = await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [txA],
+                )
+            })
+
+            expect(Array.from(first![0])).toEqual(Array.from(second![0]))
+            expect(Array.from(first![0])).not.toEqual(Array.from(first![1]))
+        })
+
+        it('signDataWithKey routes falcon children to the mock signer', async () => {
+            const child = arrangeFalconPair()
+
+            const { result } = renderHook(() => useKMS())
+            let sigs: Optional<Uint8Array[]>
+            await act(async () => {
+                sigs = await result.current.signDataWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [new Uint8Array([9])],
+                )
+            })
+
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
+            expect(sigs![0]).toHaveLength(FALCON_SIGNATURE_LENGTH)
+        })
+
+        it('rejects and never exports the seed when the ACL denies the domain', async () => {
+            const child = arrangeFalconPair()
+            mockCheckAccess.mockImplementationOnce(() => {
+                throw new KeyAccessError()
+            })
+
+            const { result } = renderHook(() => useKMS())
+            await expect(
+                result.current.signTransactionsWithKey(
+                    child.id,
+                    'not-granted-domain',
+                    [new Uint8Array([1])],
+                ),
+            ).rejects.toThrow(KeyAccessError)
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
+        it('ed25519 children still route through keyStore.sign', async () => {
+            seedAlgo25Root('algo-1')
+            const child = childOf('algo-1-ed25519', 'algo-1', 'ed25519')
+            mockKeyStoreSign.mockResolvedValue(new Uint8Array(64))
+
+            const { result } = renderHook(() => useKMS())
+            await act(async () => {
+                await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [new Uint8Array([1])],
+                )
+            })
+
+            expect(mockKeyStoreSign).toHaveBeenCalledTimes(1)
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
+        it('executeWithMnemonic for a falcon seed derives indices from the seed bytes like algo25', async () => {
+            const child = arrangeFalconPair()
+            mockAlgo25SeedToIndices.mockReturnValue(Uint16Array.from([7, 8, 9]))
+
+            const { result } = renderHook(() => useKMS())
+            let received: Optional<number[]>
+            await act(async () => {
+                received = await result.current.executeWithMnemonic(
+                    child.id,
+                    'backup-flow',
+                    indices => Array.from(indices),
+                )
+            })
+
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('falcon-1')
+            expect(mockAlgo25SeedToIndices).toHaveBeenCalledTimes(1)
+            expect(received).toEqual([7, 8, 9])
+        })
+
+        it('exposes createFalconKey from useFalcon', async () => {
+            const mockResult = { seedKey: { id: 'f-1', type: 'seed' } }
+            mockCreateFalconKey.mockResolvedValue(mockResult)
+            const { result } = renderHook(() => useKMS())
+            let keyResult: any
+            await act(async () => {
+                keyResult = await result.current.createFalconKey({ id: 'f-1' })
+            })
+            expect(mockCreateFalconKey).toHaveBeenCalledWith({ id: 'f-1' })
+            expect(keyResult).toEqual(mockResult)
+        })
     })
 })
