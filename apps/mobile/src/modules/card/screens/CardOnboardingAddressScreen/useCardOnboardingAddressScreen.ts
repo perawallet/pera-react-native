@@ -48,12 +48,10 @@ export type UseCardOnboardingAddressScreenResult = {
     selectedCountry: Optional<SupportedCountry>
     isUsResident: boolean
     selectedUsState: Optional<SupportedUsState>
-    allowMarketing: boolean
     cardTermsAccepted: boolean
     platformTermsAccepted: boolean
     handleSelectCountry: () => void
     handleSelectUsState: () => void
-    handleToggleMarketing: () => void
     handleToggleCardTerms: () => void
     handleTogglePlatformTerms: () => void
     handleOpenCardTerms: () => void
@@ -71,10 +69,10 @@ export const useCardOnboardingAddressScreen =
         const onboardingId = useCardStore(state => state.onboardingId)
         const residenceCountryIso = useCardStore(state => state.countryIso)
         const setCountryIso = useCardStore(state => state.setCountryIso)
-        const setAllowMarketing = useCardStore(state => state.setAllowMarketing)
-        // The checkbox binds straight to the persisted preference so an
-        // opt-out survives remounts and failed submits.
+        // Marketing/SMS consents are captured on the Set-Password screen; read
+        // them here to submit with the granular /v2/consent set on this step.
         const allowMarketing = useCardStore(state => state.allowMarketing)
+        const allowSms = useCardStore(state => state.allowSms)
         const submitAddress = useSubmitAddressMutation()
         const submitConsent = useSubmitConsentMutation()
         const linkConsent = useLinkConsentMutation()
@@ -184,10 +182,6 @@ export const useCardOnboardingAddressScreen =
             void openPicker()
         }, [request, setValue])
 
-        const handleToggleMarketing = useCallback(
-            () => setAllowMarketing(!allowMarketing),
-            [setAllowMarketing, allowMarketing],
-        )
         const handleToggleCardTerms = useCallback(
             () => setCardTermsAccepted(previous => !previous),
             [],
@@ -237,10 +231,12 @@ export const useCardOnboardingAddressScreen =
                 // accepted here — the Continue button gates on them.
                 const { consentSetId } = await submitConsent.mutateAsync({
                     onboardingId,
-                    policyType: isUsResident ? 'us' : 'global',
+                    policyType: isUsResident ? 'US' : 'global',
                     // Both T&C boxes gate Continue, so they're accepted here.
                     termsAccepted: cardTermsAccepted && platformTermsAccepted,
+                    // Marketing/SMS were chosen on the Set-Password screen.
                     allowMarketing,
+                    allowSms,
                 })
                 const { userId } = await submitAddress.mutateAsync(address)
                 // Link best-effort: registration is already finalized (the
@@ -284,12 +280,10 @@ export const useCardOnboardingAddressScreen =
             selectedCountry,
             isUsResident,
             selectedUsState,
-            allowMarketing,
             cardTermsAccepted,
             platformTermsAccepted,
             handleSelectCountry,
             handleSelectUsState,
-            handleToggleMarketing,
             handleToggleCardTerms,
             handleTogglePlatformTerms,
             handleOpenCardTerms,

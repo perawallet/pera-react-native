@@ -38,6 +38,7 @@ export const fetchCardStatus = async (
             network,
             method: 'GET',
             path: '/v1/card/status',
+            authenticated: true,
             signal,
         })
         return transformCard(cardStatusResponseSchema.parse(response.data))
@@ -68,6 +69,7 @@ export const orderCard = async (params: OrderCardParams): Promise<void> => {
         network,
         method: 'POST',
         path: '/v1/card/order',
+        authenticated: true,
         data: { type },
         signal,
     })
@@ -85,6 +87,7 @@ export const freezeCard = async (
         network: params.network,
         method: 'POST',
         path: '/v1/card/freeze',
+        authenticated: true,
         signal: params.signal,
     })
 }
@@ -96,6 +99,7 @@ export const unfreezeCard = async (
         network: params.network,
         method: 'POST',
         path: '/v1/card/unfreeze',
+        authenticated: true,
         signal: params.signal,
     })
 }

@@ -64,16 +64,18 @@ export const sendEmailVerification = async (
     return sendEmailVerificationResponseSchema.parse(response.data)
 }
 
-// Completes email verification AND sets the password / marketing consent in one
-// call, per the spec; returns the onboarding id later steps require.
+// Completes email verification AND sets the password / consent flags in one
+// call, per the spec; returns the onboarding id later steps require. Baanx
+// requires both `allowMarketing` and `allowSms` here (they're collected on the
+// Set-Password screen), so they're modelled as required, not optional.
 export type VerifyEmailParams = NetworkParams & {
     email: string
     password: string
     verificationCode: string
     contactVerificationId: string
     countryOfResidence: string
-    allowMarketing?: boolean
-    allowSms?: boolean
+    allowMarketing: boolean
+    allowSms: boolean
 }
 export type VerifyEmailResult = { onboardingId: string }
 export const verifyEmail = async (
@@ -224,9 +226,9 @@ export const submitAddress = async (
     }
 }
 
-// POST /v2/consent/onboarding. Jurisdiction policy: US residents use 'us',
-// everyone else 'global'.
-export type ConsentPolicyType = 'us' | 'global'
+// POST /v2/consent/onboarding. Jurisdiction policy: US residents use 'US',
+// everyone else 'global'. Casing must match Baanx's enum exactly ('US' | 'global').
+export type ConsentPolicyType = 'US' | 'global'
 
 type ConsentType =
     | 'termsAndPrivacy'
@@ -245,13 +247,15 @@ export type OnboardingConsentInput = {
     policyType: ConsentPolicyType
     /** Both T&C boxes accepted (they gate the Continue button). */
     termsAccepted: boolean
-    /** The single marketing checkbox; drives all notification consents. */
+    /** Marketing opt-in (from the Set-Password screen); drives marketing + email. */
     allowMarketing: boolean
+    /** SMS opt-in (from the Set-Password screen); drives the SMS consent. */
+    allowSms: boolean
 }
 
 /**
  * Maps the address-step checkboxes to Baanx's required consent set. Both
- * policies require terms + the three notification channels; `us` additionally
+ * policies require terms + the three notification channels; `US` additionally
  * requires the e-sign consent.
  */
 export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
@@ -261,6 +265,7 @@ export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
         policyType,
         termsAccepted,
         allowMarketing,
+        allowSms,
     } = input
     const status = (granted: boolean): Consent['consentStatus'] =>
         granted ? 'granted' : 'denied'
@@ -275,13 +280,13 @@ export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
         },
         {
             consentType: 'smsNotifications',
-            consentStatus: status(allowMarketing),
+            consentStatus: status(allowSms),
         },
         {
             consentType: 'emailNotifications',
             consentStatus: status(allowMarketing),
         },
-        ...(policyType === 'us'
+        ...(policyType === 'US'
             ? [
                   {
                       consentType: 'eSignAct' as const,
@@ -340,6 +345,9 @@ export const submitOnboardingConsent = async (
 // Step 2 of Baanx's two-step consent flow: link the consent set created above to
 // the permanent user id the address step issues. Idempotent — Baanx returns 409
 // Conflict if the set is already linked (the desired end state), which we swallow.
+// Deliberately NOT `authenticated`: per the Baanx api-reference
+// (api-reference/consent/link-user-to-consent) this endpoint uses API-key
+// headers only — no user Bearer — even though it runs after the token exists.
 export type LinkOnboardingConsentParams = NetworkParams & {
     consentSetId: string
     userId: string
@@ -376,6 +384,7 @@ export const connectFundingSource = async (
         network: params.network,
         method: 'POST',
         path: '/v1/card/funding-source',
+        authenticated: true,
         data: { address: params.address },
         signal: params.signal,
     })

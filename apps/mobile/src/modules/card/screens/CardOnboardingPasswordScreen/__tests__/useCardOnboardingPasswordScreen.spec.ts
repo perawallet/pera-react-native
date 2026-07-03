@@ -14,7 +14,8 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockVerifyEmailMutateAsync = vi.fn()
-const mockVerifyPhoneMutateAsync = vi.fn()
+const mockSetAllowMarketing = vi.fn()
+const mockSetAllowSms = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -34,35 +35,33 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             ...mutationShell,
             mutateAsync: mockVerifyEmailMutateAsync,
         }),
-        useVerifyPhoneMutation: () => ({
-            ...mutationShell,
-            mutateAsync: mockVerifyPhoneMutateAsync,
-        }),
         useCardStore: (
             selector: (state: {
                 email: string | null
                 countryIso: string | null
                 verificationCode: string | null
-                phoneVerificationCode: string | null
-                phoneCountryCode: string | null
-                phoneNumber: string | null
                 contactVerificationId: string | null
                 onboardingId: string | null
+                allowMarketing: boolean
+                allowSms: boolean
                 setCodeVerificationError: (
                     target: 'email' | 'phone' | null,
                 ) => void
+                setAllowMarketing: (allow: boolean) => void
+                setAllowSms: (allow: boolean) => void
             }) => unknown,
         ) =>
             selector({
                 email: 'john@example.com',
                 countryIso: 'GB',
                 verificationCode: '123456',
-                phoneVerificationCode: '654321',
-                phoneCountryCode: '44',
-                phoneNumber: '7400846282',
                 contactVerificationId: 'mock-contact-id',
                 onboardingId: null,
+                allowMarketing: false,
+                allowSms: false,
                 setCodeVerificationError: vi.fn(),
+                setAllowMarketing: mockSetAllowMarketing,
+                setAllowSms: mockSetAllowSms,
             }),
     }
 })
@@ -96,7 +95,6 @@ describe('useCardOnboardingPasswordScreen', () => {
         mockVerifyEmailMutateAsync.mockResolvedValue({
             onboardingId: 'mock-onboarding-id',
         })
-        mockVerifyPhoneMutateAsync.mockResolvedValue(undefined)
     })
 
     it('starts invalid and not submitting', () => {
@@ -106,7 +104,7 @@ describe('useCardOnboardingPasswordScreen', () => {
         expect(result.current.isSubmitting).toBe(false)
     })
 
-    it('does not call either verify while the form is invalid', async () => {
+    it('does not call email/verify while the form is invalid', async () => {
         const { result } = renderPasswordHook()
 
         await act(async () => {
@@ -114,6 +112,18 @@ describe('useCardOnboardingPasswordScreen', () => {
         })
 
         expect(mockVerifyEmailMutateAsync).not.toHaveBeenCalled()
-        expect(mockVerifyPhoneMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('exposes the consent flags (off by default) and toggles them', () => {
+        const { result } = renderPasswordHook()
+
+        expect(result.current.allowMarketing).toBe(false)
+        expect(result.current.allowSms).toBe(false)
+
+        act(() => result.current.handleToggleMarketing())
+        act(() => result.current.handleToggleSms())
+
+        expect(mockSetAllowMarketing).toHaveBeenCalledWith(true)
+        expect(mockSetAllowSms).toHaveBeenCalledWith(true)
     })
 })

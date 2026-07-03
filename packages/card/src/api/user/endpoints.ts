@@ -38,6 +38,7 @@ export const fetchUser = async (
             network,
             method: 'GET',
             path: '/v1/user',
+            authenticated: true,
             signal,
         })
         return transformUser(userResponseSchema.parse(response.data))
@@ -72,6 +73,7 @@ export const fetchVerificationSession = async (
         network: params.network,
         method: 'GET',
         path: '/v1/user/verification',
+        authenticated: true,
         signal: params.signal,
     })
     const parsed = verificationSessionResponseSchema.parse(response.data)

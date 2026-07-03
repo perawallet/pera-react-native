@@ -60,11 +60,14 @@ describe('card onboarding — phone verify', () => {
         store.resetState()
         store.setPhone({ phoneCountryCode: '44', phoneNumber: '7400846282' })
         store.setContactVerificationId('mock-contact-id')
+        // email/verify ran on the (preceding) password step, so the onboardingId
+        // phone/verify needs is already set when the user reaches this screen.
+        store.setOnboardingId('mock-onboarding-id')
     })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('stashes the valid code (auto-submit) and advances to the password step', async () => {
+    it('verifies the code (auto-submit) and advances to identity verification', async () => {
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
         server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
 
@@ -76,21 +79,40 @@ describe('card onboarding — phone verify', () => {
             { target: { value: VALID_CODE } },
         )
 
-        // The real phone/verify is deferred to the password step (it needs the
-        // onboardingId email/verify returns), so the code is stashed instead.
+        await waitFor(() => expect(verifySpy).toHaveBeenCalled())
         await waitFor(() =>
             expect(
-                screen.getByTestId('card-onboarding-password-input'),
+                screen.getByTestId('card-onboarding-verification'),
             ).toBeTruthy(),
         )
-        expect(verifySpy).not.toHaveBeenCalled()
-        expect(useCardStore.getState().phoneVerificationCode).toBe(VALID_CODE)
     })
 
-    it('verifies directly and advances to identity verification on the retry path', async () => {
-        // After the password step the onboardingId exists; a re-entered code
-        // (e.g. the deferred verify failed) fires the real call from here.
-        useCardStore.getState().setOnboardingId('mock-onboarding-id')
+    it('surfaces an inline error when phone/verify rejects the code', async () => {
+        server.use(
+            http.post('*/v1/auth/register/phone/verify', () =>
+                HttpResponse.json({ message: 'wrong code' }, { status: 400 }),
+            ),
+        )
+
+        renderVerify()
+
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-phone-verify-input'),
+            { target: { value: VALID_CODE } },
+        )
+
+        // The rejected code is surfaced inline; the user stays on this screen.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-phone-verify-input-error'),
+            ).toBeTruthy(),
+        )
+    })
+
+    it('routes back to the password step when the onboarding id is missing', async () => {
+        // Defensive: email/verify should have set it, but if it's somehow gone
+        // phone/verify can't run — send the user back rather than POSTing blind.
+        useCardStore.getState().setOnboardingId(null)
         const verifySpy = vi.fn(() => HttpResponse.json({}, { status: 200 }))
         server.use(http.post('*/v1/auth/register/phone/verify', verifySpy))
 
@@ -101,11 +123,11 @@ describe('card onboarding — phone verify', () => {
             { target: { value: VALID_CODE } },
         )
 
-        await waitFor(() => expect(verifySpy).toHaveBeenCalled())
         await waitFor(() =>
             expect(
-                screen.getByTestId('card-onboarding-verification'),
+                screen.getByTestId('card-onboarding-password-input'),
             ).toBeTruthy(),
         )
+        expect(verifySpy).not.toHaveBeenCalled()
     })
 })

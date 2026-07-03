@@ -13,35 +13,13 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    content: {
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.xxl,
-    },
-    fields: {
-        gap: theme.spacing.xl,
-    },
-    confirmGroup: {
-        gap: theme.spacing.md,
-    },
-    requirements: {
-        gap: theme.spacing.sm,
-    },
-    requirementRow: {
+    row: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    requirementText: {
-        color: theme.colors.textGrayLighter,
-    },
-    requirementMet: {
-        color: theme.colors.positive,
-    },
-    hint: {
-        color: theme.colors.textGrayLighter,
-        marginTop: theme.spacing.xs,
-    },
-    checkboxes: {
         gap: theme.spacing.md,
+    },
+    label: {
+        flex: 1,
+        color: theme.colors.textGray,
     },
 }))

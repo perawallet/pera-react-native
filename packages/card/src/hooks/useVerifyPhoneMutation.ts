@@ -27,14 +27,12 @@ export const useVerifyPhoneMutation = (): UseVerifyPhoneMutationResult => {
 
     const mutation = useMutation<void, Error, VerifyPhoneVariables>({
         mutationFn: variables => verifyPhone({ ...variables, network }),
-        // Phone verified: advance to the verification (KYC) step and drop the
-        // stashed phone OTP (kept only to bridge the phone-code screen and the
-        // deferred verify on the password step — see the phone-verify screen).
+        // Phone verified (the last step before KYC): advance to the
+        // verification step so the setup checklist unlocks.
         onSuccess: () => {
-            const { setOnboardingStep, setPhoneVerificationCode } =
-                useCardStore.getState()
-            setOnboardingStep(OnboardingStep.Verification)
-            setPhoneVerificationCode(null)
+            useCardStore
+                .getState()
+                .setOnboardingStep(OnboardingStep.Verification)
         },
         throwOnError: false,
     })

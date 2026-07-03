@@ -42,13 +42,4 @@ export const useStyles = makeStyles(theme => ({
     checkboxes: {
         gap: theme.spacing.md,
     },
-    checkboxRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    checkboxLabel: {
-        flex: 1,
-        color: theme.colors.textGray,
-    },
 }))

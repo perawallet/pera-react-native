@@ -88,6 +88,7 @@ describe('baanxDirectRequest', () => {
             network: 'mainnet',
             method: 'GET',
             path: '/v1/card/status',
+            authenticated: true,
         })
 
         expect(withSecret).toHaveBeenCalledWith(
@@ -111,6 +112,24 @@ describe('baanxDirectRequest', () => {
             network: 'mainnet',
             method: 'POST',
             path: '/v1/auth/login',
+            data: { email: 'e@x.com' },
+        })
+
+        expect(withSecret).not.toHaveBeenCalled()
+        const options = clientCall.mock.calls[0][1]
+        expect(options.headers.Authorization).toBeUndefined()
+    })
+
+    it('never attaches a Bearer to an unauthenticated request, even with a token stored', async () => {
+        // Regression: a pre-auth call (no `authenticated` flag) must not receive
+        // a stale token from a prior session — Baanx rejects it with "Missing
+        // User Data". email/verify is the canonical case.
+        hasSecret.mockReturnValue(true)
+
+        await baanxDirectRequest({
+            network: 'mainnet',
+            method: 'POST',
+            path: '/v1/auth/register/email/verify',
             data: { email: 'e@x.com' },
         })
 

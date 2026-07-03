@@ -32,14 +32,9 @@ export type CardUxState = BaseStoreState & {
      */
     verificationCode: Nullable<string>
     /**
-     * The phone verification code, stashed until the password step fires the
-     * deferred phone/verify call (it needs the onboardingId email/verify
-     * returns). Transient OTP — never persisted (excluded from `partialize`).
-     */
-    phoneVerificationCode: Nullable<string>
-    /**
-     * Set when a deferred email/phone code is rejected at the password step, so
-     * the matching verify screen can show an inline "code invalid" error.
+     * Set when a verification code is rejected — 'email' by the Set-Password
+     * step (where `email/verify` fires), 'phone' by the phone-verify screen —
+     * so the matching verify screen can show an inline "code invalid" error.
      * Transient — never persisted; cleared once the user edits the code.
      */
     codeVerificationError: Nullable<CodeVerificationTarget>
@@ -58,11 +53,17 @@ export type CardUxState = BaseStoreState & {
      */
     consentSetId: Nullable<string>
     /**
-     * Marketing-communication opt-in captured on the address step.
-     * TODO(card): confirm with backend how to transmit it — `email/verify`
-     * accepts `allowMarketing`, but it fires before this consent is collected.
+     * Marketing-communication opt-in. Captured (unchecked by default) on the
+     * Set-Password screen, sent on the required `email/verify` call, and reused
+     * by the address-step `/v2/consent` call (drives marketing + email consents).
      */
     allowMarketing: boolean
+    /**
+     * SMS-communication opt-in. Captured alongside `allowMarketing` on the
+     * Set-Password screen and sent on `email/verify` (both are required there);
+     * drives the `smsNotifications` consent independently at the address step.
+     */
+    allowSms: boolean
     /**
      * Address of the Pera account connected as the card's funding source on the
      * setup checklist's Connect Funds step. Persisted so the row stays "done"
@@ -83,13 +84,13 @@ export type CardUxState = BaseStoreState & {
     setEmail: (email: Nullable<string>) => void
     setCountryIso: (countryIso: Nullable<string>) => void
     setVerificationCode: (verificationCode: Nullable<string>) => void
-    setPhoneVerificationCode: (phoneVerificationCode: Nullable<string>) => void
     setCodeVerificationError: (target: Nullable<CodeVerificationTarget>) => void
     setPhone: (phone: { phoneCountryCode: string; phoneNumber: string }) => void
     setContactVerificationId: (id: Nullable<string>) => void
     setOnboardingId: (id: Nullable<string>) => void
     setConsentSetId: (id: Nullable<string>) => void
     setAllowMarketing: (allowMarketing: boolean) => void
+    setAllowSms: (allowSms: boolean) => void
     setConnectedFundingSourceAddress: (address: Nullable<string>) => void
     setSelectedFundingType: (type: Nullable<FundingType>) => void
     setCardSnapshot: (snapshot: {

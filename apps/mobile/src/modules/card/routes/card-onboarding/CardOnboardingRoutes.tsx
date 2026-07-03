@@ -52,6 +52,11 @@ export const CardOnboardingStackNavigator = () => {
                 options={{ title: 'peraCard.verify_email.navigation_title' }}
             />
             <Stack.Screen
+                name='CardOnboardingPassword'
+                component={CardOnboardingPasswordScreen}
+                options={{ title: 'peraCard.create_password.navigation_title' }}
+            />
+            <Stack.Screen
                 name='CardOnboardingPhone'
                 component={CardOnboardingPhoneScreen}
                 options={{
@@ -62,11 +67,6 @@ export const CardOnboardingStackNavigator = () => {
                 name='CardOnboardingPhoneVerify'
                 component={CardOnboardingPhoneVerifyScreen}
                 options={{ title: 'peraCard.verify_phone.navigation_title' }}
-            />
-            <Stack.Screen
-                name='CardOnboardingPassword'
-                component={CardOnboardingPasswordScreen}
-                options={{ title: 'peraCard.create_password.navigation_title' }}
             />
             <Stack.Screen
                 name='CardOnboardingVerification'

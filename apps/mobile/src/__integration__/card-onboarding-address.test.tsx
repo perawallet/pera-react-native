@@ -120,6 +120,11 @@ describe('Flow: Card onboarding — residential address', () => {
         store.setEmail('john@example.com')
         store.setCountryIso('GB')
         store.setOnboardingId('mock-onboarding-id')
+        // Marketing/SMS opt-ins are chosen on the Set-Password screen earlier in
+        // the flow; simulate the user having ticked both so the consent set
+        // recorded here reflects those choices.
+        store.setAllowMarketing(true)
+        store.setAllowSms(true)
         server.use(
             http.get('*/v1/auth/settings', () =>
                 HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
@@ -192,6 +197,8 @@ describe('Flow: Card onboarding — residential address', () => {
                     consentType: 'marketingNotifications',
                     consentStatus: 'granted',
                 },
+                // SMS follows the (independent) allowSms flag chosen earlier.
+                { consentType: 'smsNotifications', consentStatus: 'granted' },
             ]),
         )
         // Registration is finalized, so the flow hands back to the setup

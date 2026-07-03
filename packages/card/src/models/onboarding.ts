@@ -140,12 +140,12 @@ const PASSWORD_SPECIAL_CHARACTER_REGEX = /[^A-Za-z0-9]/
  * The individual password rules, in display order. Exported so the Create
  * Password screen's live checklist and the schema below stay in lockstep — a
  * single source of truth for "what makes a valid password". Mirrors Baanx's
- * rules: at least 8 chars with an uppercase, a lowercase, a number, and a
+ * rules: at least 15 chars with an uppercase, a lowercase, a number, and a
  * special character. (Baanx also advises avoiding common passwords; that's
  * surfaced as guidance on the screen but not enforced here.)
  */
 export const PASSWORD_RULES = [
-    { id: 'length', test: (value: string): boolean => value.length >= 8 },
+    { id: 'length', test: (value: string): boolean => value.length >= 15 },
     { id: 'uppercase', test: (value: string): boolean => /[A-Z]/.test(value) },
     { id: 'lowercase', test: (value: string): boolean => /[a-z]/.test(value) },
     { id: 'number', test: (value: string): boolean => /[0-9]/.test(value) },
