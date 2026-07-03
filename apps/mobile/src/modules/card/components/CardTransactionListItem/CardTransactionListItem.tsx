@@ -18,7 +18,9 @@ import { useStyles } from './styles'
 
 type CardTransactionListItemProps = {
     transaction: CardTransaction
-    onPress?: () => void
+    // Takes the row id so list callers can pass one stable handler instead of
+    // a fresh closure per row.
+    onPress?: (id: string) => void
 }
 
 export const CardTransactionListItem = ({
@@ -64,7 +66,7 @@ export const CardTransactionListItem = ({
 
     return (
         <PWTouchableOpacity
-            onPress={onPress}
+            onPress={() => onPress(transaction.id)}
             testID={`card_transaction_item_${transaction.id}`}
         >
             {row}

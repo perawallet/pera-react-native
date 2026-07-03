@@ -41,7 +41,7 @@ export const useCardTransactionDetailScreen =
             >()
         // Guarded: a params-less navigate should land on the not-found state,
         // not crash on the destructure.
-        const transactionId = route.params?.transactionId
+        const id = route.params?.id
         const { t } = useLanguage()
         const { errorToast } = useToast()
 
@@ -59,8 +59,8 @@ export const useCardTransactionDetailScreen =
         } = useCardTransactionsQuery(undefined, { refetchOnMount: false })
 
         const transaction = useMemo(
-            () => transactions.find(item => item.id === transactionId),
-            [transactions, transactionId],
+            () => transactions.find(item => item.id === id),
+            [transactions, id],
         )
 
         // On a cold cache the query holds page 0 only; keep paginating until

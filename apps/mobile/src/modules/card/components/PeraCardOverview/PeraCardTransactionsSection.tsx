@@ -20,7 +20,7 @@ type PeraCardTransactionsSectionProps = {
     sections: CardTransactionSection[]
     isLoading: boolean
     onShowAll: () => void
-    onPressTransaction: (transactionId: string) => void
+    onPressTransaction: (id: string) => void
 }
 
 export const PeraCardTransactionsSection = ({
@@ -68,9 +68,7 @@ export const PeraCardTransactionsSection = ({
                             <CardTransactionListItem
                                 key={transaction.id}
                                 transaction={transaction}
-                                onPress={() =>
-                                    onPressTransaction(transaction.id)
-                                }
+                                onPress={onPressTransaction}
                             />
                         ))}
                     </PWView>

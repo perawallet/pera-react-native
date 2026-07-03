@@ -145,7 +145,7 @@ describe('Flow: Card transaction detail', () => {
         renderWithNavigation(
             CardTransactionDetailScreen,
             'CardTransactionDetail',
-            { initialParams: { transactionId: 'nope' } },
+            { initialParams: { id: 'nope' } },
         )
 
         // The hook auto-paginates to exhaustion before declaring not-found.
@@ -170,7 +170,7 @@ describe('Flow: Card transaction detail', () => {
         renderWithNavigation(
             CardTransactionDetailScreen,
             'CardTransactionDetail',
-            { initialParams: { transactionId: 'tx_payment_sesame' } },
+            { initialParams: { id: 'tx_payment_sesame' } },
         )
 
         expect(

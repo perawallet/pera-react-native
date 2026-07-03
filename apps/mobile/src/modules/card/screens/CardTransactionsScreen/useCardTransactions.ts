@@ -30,7 +30,7 @@ type UseCardTransactionsResult = {
     handleLoadMore: () => void
     handleRetry: () => void
     onExport: () => void
-    onPressTransaction: (transactionId: string) => void
+    onPressTransaction: (id: string) => void
 }
 
 export const useCardTransactions = (): UseCardTransactionsResult => {
@@ -63,8 +63,8 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
     }, [refetch])
 
     const onPressTransaction = useCallback(
-        (transactionId: string) => {
-            navigation.navigate('CardTransactionDetail', { transactionId })
+        (id: string) => {
+            navigation.navigate('CardTransactionDetail', { id })
         },
         [navigation],
     )

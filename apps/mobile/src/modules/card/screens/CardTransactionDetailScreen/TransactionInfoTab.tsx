@@ -73,16 +73,18 @@ export const TransactionInfoTab = ({
                     network={fundingSource.network}
                 />
             ) : null}
-            <DetailRow title={t('peraCard.transactions.detail_fees')}>
-                <CurrencyAmount
-                    value={fees.abs()}
-                    currency={transaction.transactionCurrency}
-                    precision='compact'
-                    prefix={feesPrefix}
-                    symbolPosition='end'
-                    variant='body'
-                />
-            </DetailRow>
+            {feesPrefix ? (
+                <DetailRow title={t('peraCard.transactions.detail_fees')}>
+                    <CurrencyAmount
+                        value={fees.abs()}
+                        currency={transaction.transactionCurrency}
+                        precision='compact'
+                        prefix={feesPrefix}
+                        symbolPosition='end'
+                        variant='body'
+                    />
+                </DetailRow>
+            ) : null}
         </PWScrollView>
     )
 }

@@ -48,7 +48,7 @@ type UsePeraCardOverviewResult = {
     onAddFunds: () => void
     onGetUsdc: () => void
     onShowAllTransactions: () => void
-    onPressTransaction: (transactionId: string) => void
+    onPressTransaction: (id: string) => void
     onCreditPress: () => void
 }
 
@@ -88,8 +88,8 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     }, [navigation])
 
     const onPressTransaction = useCallback(
-        (transactionId: string) => {
-            navigation.navigate('CardTransactionDetail', { transactionId })
+        (id: string) => {
+            navigation.navigate('CardTransactionDetail', { id })
         },
         [navigation],
     )

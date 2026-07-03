@@ -16,7 +16,7 @@ import { Linking } from 'react-native'
 import { type CardTransaction } from '@perawallet/wallet-core-card'
 
 const mockState = vi.hoisted(() => ({
-    routeTransactionId: 'row_1',
+    routeId: 'row_1',
     transactions: [] as CardTransaction[],
     isError: false,
     isFetching: false,
@@ -40,7 +40,7 @@ vi.mock('@react-navigation/native', async () => {
     return {
         ...actual,
         useRoute: () => ({
-            params: { transactionId: mockState.routeTransactionId },
+            params: { id: mockState.routeId },
         }),
     }
 })
@@ -81,7 +81,7 @@ const tx = (partial: Partial<CardTransaction>): CardTransaction =>
 describe('useCardTransactionDetailScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockState.routeTransactionId = 'row_1'
+        mockState.routeId = 'row_1'
         mockState.transactions = []
         mockState.isError = false
         mockState.isFetching = false
@@ -101,7 +101,7 @@ describe('useCardTransactionDetailScreen', () => {
     })
 
     it('reports loading while any fetch is in flight and the row is absent', () => {
-        mockState.routeTransactionId = 'missing'
+        mockState.routeId = 'missing'
         mockState.isFetching = true
 
         const { result } = renderHook(() => useCardTransactionDetailScreen())
@@ -120,7 +120,7 @@ describe('useCardTransactionDetailScreen', () => {
     })
 
     it('passes the query error state through', () => {
-        mockState.routeTransactionId = 'missing'
+        mockState.routeId = 'missing'
         mockState.isError = true
 
         const { result } = renderHook(() => useCardTransactionDetailScreen())
@@ -129,7 +129,7 @@ describe('useCardTransactionDetailScreen', () => {
     })
 
     it('auto-paginates while the row is absent and more pages exist', () => {
-        mockState.routeTransactionId = 'on_page_2'
+        mockState.routeId = 'on_page_2'
         mockState.transactions = [tx({ id: 'row_1' })]
         mockState.hasNextPage = true
 
@@ -148,7 +148,7 @@ describe('useCardTransactionDetailScreen', () => {
     })
 
     it('does not paginate while a fetch is already in flight or errored', () => {
-        mockState.routeTransactionId = 'missing'
+        mockState.routeId = 'missing'
         mockState.hasNextPage = true
         mockState.isFetching = true
         renderHook(() => useCardTransactionDetailScreen())
@@ -204,7 +204,7 @@ describe('useCardTransactionDetailScreen', () => {
     })
 
     it('does not open the mail composer when no transaction is loaded', () => {
-        mockState.routeTransactionId = 'missing'
+        mockState.routeId = 'missing'
 
         const { result } = renderHook(() => useCardTransactionDetailScreen())
         result.current.onReportTransaction()

@@ -66,7 +66,7 @@ export const CardTransactionsScreen = () => {
         ({ item }: { item: CardTransaction }) => (
             <CardTransactionListItem
                 transaction={item}
-                onPress={() => onPressTransaction(item.id)}
+                onPress={onPressTransaction}
             />
         ),
         [onPressTransaction],
