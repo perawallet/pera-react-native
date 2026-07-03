@@ -1681,9 +1681,15 @@ importers:
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
+      '@perawallet/wallet-core-remote-config':
+        specifier: workspace:*
+        version: link:../remote-config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-extension-platform':
+        specifier: workspace:*
+        version: link:../../extensions/platform
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
@@ -12906,7 +12912,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.9(@types/node@25.9.2)(@vitest/coverage-v8@4.1.9)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.14.6(@types/node@25.9.2)(typescript@5.9.3))(vite@8.0.16(@types/node@25.9.2)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
+      vitest: 4.1.9(@types/node@20.19.42)(@vitest/coverage-v8@4.1.9)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.14.6(@types/node@20.19.42)(typescript@5.9.3))(vite@8.0.16(@types/node@20.19.42)(esbuild@0.28.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
 
   '@vitest/expect@4.1.9':
     dependencies:
