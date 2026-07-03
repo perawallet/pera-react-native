@@ -48,6 +48,16 @@ export const applyAllLegacyMetadata = (pairs: MigratedAccountPair[]): void => {
     if (changed) store.setAccounts(next)
 }
 
+export const markLegacyBackedUpAccounts = (
+    pairs: MigratedAccountPair[],
+    markAccountBackedUp?: (account: WalletAccount) => void,
+): void => {
+    if (!markAccountBackedUp) return
+    for (const { created, legacy } of pairs) {
+        if (legacy.isBackedUp) markAccountBackedUp(created)
+    }
+}
+
 export const applyLegacyAccountOrder = (
     legacyAccounts: LegacyAccount[],
 ): void => {

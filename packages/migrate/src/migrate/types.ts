@@ -39,6 +39,7 @@ export type MigrationDeps = {
         typeof useCreateAccount
     >['createHdWalletAccountForSeed']
     createHDWalletKey: ReturnType<typeof useKMS>['createHDWalletKey']
+    markAccountBackedUp?: (account: WalletAccount) => void
 }
 
 export type ImportedHdRoot = {
