@@ -81,6 +81,12 @@ export const isTransientNetworkError = (error: unknown): boolean => {
     return false
 }
 
+// Caller-initiated aborts surface as DOMException/Error with name
+// 'AbortError'. Timeouts are distinct: ky raises its own TimeoutError and
+// AbortSignal.timeout() aborts carry name 'TimeoutError', so neither is
+// swallowed here.
+const isAbortError = (error: Error): boolean => error.name === 'AbortError'
+
 const logError = ({ request, options, error }: BeforeErrorState): Error => {
     const context = options.context as DiagnosticContext
     const durationMs =
@@ -92,6 +98,21 @@ const logError = ({ request, options, error }: BeforeErrorState): Error => {
         logger.info('Resource not found', {
             url: request?.url,
             status: 404,
+        })
+        return error
+    }
+
+    // Aborted requests are expected lifecycle events (screen unmount, query
+    // cancellation), not failures: error-level logging pollutes error
+    // reporting, and in vitest the burst of abort logs emitted while a test
+    // file's queries are torn down races the worker's console RPC channel
+    // (EnvironmentTeardownError: "Closing rpc while onUserConsoleLog was
+    // pending"). Debug keeps them visible when diagnosing locally.
+    if (isAbortError(error)) {
+        logger.debug('Request aborted', {
+            url: request?.url,
+            durationMs,
+            abortReason: context.abortReason,
         })
         return error
     }

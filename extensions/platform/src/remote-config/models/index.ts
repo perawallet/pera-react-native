@@ -24,6 +24,7 @@ export const RemoteConfigKeys = {
     force_platform_age_gate: 'force_platform_age_gate',
     onramp_currency_decimals: 'onramp_currency_decimals',
     enable_pera_card: 'enable_pera_card',
+    enable_quantum_accounts: 'enable_quantum_accounts',
     terms_version: 'terms_version',
 } as const
 
@@ -49,6 +50,7 @@ export const RemoteConfigDefaults: Record<
     // built-in onramp defaults. Empty string = no overrides.
     onramp_currency_decimals: '',
     enable_pera_card: false,
+    enable_quantum_accounts: false,
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '1',
