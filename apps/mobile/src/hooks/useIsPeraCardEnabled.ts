@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
+import { isDebug, isStaging } from '@perawallet/wallet-core-config'
 import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 
 /**
- * Pera Card is in progress and hidden in production. Defaults visible in dev &
- * staging so the team can keep testing; Firebase Remote Config can override.
+ * Pera Card is in progress and hidden from store users. Defaults visible in
+ * debug and staging builds so the team can keep testing; Firebase Remote
+ * Config can override.
  */
 export const useIsPeraCardEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
-    const fallback = __DEV__ || config.appEnvironment === 'staging'
     return remoteConfig.getBooleanValue(
         RemoteConfigKeys.enable_pera_card,
-        fallback,
+        isDebug || isStaging,
     )
 }

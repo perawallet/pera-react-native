@@ -13,7 +13,6 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
-import { config } from '@perawallet/wallet-core-config'
 import { useIsPeraCardEnabled } from '../useIsPeraCardEnabled'
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
@@ -21,8 +20,15 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
     RemoteConfigKeys: { enable_pera_card: 'enable_pera_card' },
 }))
 
+// Live getters so each test can flip the build-type flags the hook reads.
+const buildFlags = vi.hoisted(() => ({ isDebug: false, isStaging: false }))
 vi.mock('@perawallet/wallet-core-config', () => ({
-    config: { appEnvironment: 'production' },
+    get isDebug() {
+        return buildFlags.isDebug
+    },
+    get isStaging() {
+        return buildFlags.isStaging
+    },
 }))
 
 describe('useIsPeraCardEnabled', () => {
@@ -30,7 +36,8 @@ describe('useIsPeraCardEnabled', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        config.appEnvironment = 'production'
+        buildFlags.isDebug = false
+        buildFlags.isStaging = false
         ;(useRemoteConfig as Mock).mockReturnValue({
             getBooleanValue: mockGetBooleanValue,
         })
@@ -57,23 +64,33 @@ describe('useIsPeraCardEnabled', () => {
         expect(result2.current).toBe(false)
     })
 
-    it('falls back to visible on staging when the flag is unset', () => {
+    it('falls back to visible on staging builds when the flag is unset', () => {
         // Mimic an unset remote value by echoing the fallback the hook passes.
         mockGetBooleanValue.mockImplementation(
             (_key: string, fallback?: boolean) => fallback ?? false,
         )
-        config.appEnvironment = 'staging'
+        buildFlags.isStaging = true
 
         const { result } = renderHook(() => useIsPeraCardEnabled())
 
         expect(result.current).toBe(true)
     })
 
-    it('falls back to hidden in production when the flag is unset', () => {
+    it('falls back to visible on debug builds when the flag is unset', () => {
         mockGetBooleanValue.mockImplementation(
             (_key: string, fallback?: boolean) => fallback ?? false,
         )
-        config.appEnvironment = 'production'
+        buildFlags.isDebug = true
+
+        const { result } = renderHook(() => useIsPeraCardEnabled())
+
+        expect(result.current).toBe(true)
+    })
+
+    it('falls back to hidden on the signed prod release when the flag is unset', () => {
+        mockGetBooleanValue.mockImplementation(
+            (_key: string, fallback?: boolean) => fallback ?? false,
+        )
 
         const { result } = renderHook(() => useIsPeraCardEnabled())
 

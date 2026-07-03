@@ -25,7 +25,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
-import { config } from '@perawallet/wallet-core-config'
+import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
 import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
@@ -43,12 +43,11 @@ export const useAddAccountScreen = () => {
     const { pushWebView } = useWebView()
     // TODO(card): TEMP — a completed Baanx onboarding persists `isAuthenticated`,
     // which hides this entry with no in-app way to clear it. Force it visible in
-    // dev + staging so the sandbox flow stays re-testable; production keeps the
-    // real gating. Swap this session proxy for a real hasCard check
-    // (useCardStatusQuery gated on isAuthenticated) once that's wired.
+    // debug + staging builds so the sandbox flow stays re-testable; the signed
+    // prod release keeps the real gating. Swap this session proxy for a real
+    // hasCard check (useCardStatusQuery gated on isAuthenticated) once wired.
     const { isAuthenticated } = useCardSession()
-    const hasCardSession =
-        __DEV__ || config.appEnvironment === 'staging' ? false : isAuthenticated
+    const hasCardSession = isDebug || isStaging ? false : isAuthenticated
     const isPeraCardEnabled = useIsPeraCardEnabled()
 
     const {
