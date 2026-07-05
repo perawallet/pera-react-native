@@ -34,7 +34,7 @@ export interface MigrationService {
     simulateLegacyDatabase(args: SimulateLegacyDatabaseArgs): Promise<void>
     /** ⚠️ DEV-ONLY: writes the pre-6.x encrypted account blob — never call from app code. */
     simulatePreSixxAccounts(): Promise<void>
-    /** ⚠️ DEV-ONLY: destructive wipe — never call from app code. */
+    /** Removes all legacy (v6) migration data and clears the migration sentinel. */
     resetLegacyData(): Promise<void>
 }
 

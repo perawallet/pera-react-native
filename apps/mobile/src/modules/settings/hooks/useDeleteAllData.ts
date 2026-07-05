@@ -110,10 +110,17 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             logger.error('Failed to clear database', { error: e })
         }
 
-        // 8. Clear all registered stores (this will redirect to onboarding, then show the success popup)
+        // 8. Remove legacy (v6) migration data + sentinel so a re-upgrade starts clean
+        try {
+            await getProvider().migration.resetLegacyData()
+        } catch (e) {
+            logger.error('Failed to reset legacy migration data', { error: e })
+        }
+
+        // 9. Clear all registered stores (this will redirect to onboarding, then show the success popup)
         clearAllStores()
 
-        // 9. Drop the React Query cache last. With the active account gone,
+        // 10. Drop the React Query cache last. With the active account gone,
         // address-gated queries are disabled, so removing them can't make
         // React Query recreate and refetch against the now-deleted database.
         if (queryClient) {

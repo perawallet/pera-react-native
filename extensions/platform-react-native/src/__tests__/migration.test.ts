@@ -722,5 +722,15 @@ describe('RNMigrationService', () => {
             expect(module.resetLegacyData).toHaveBeenCalledOnce()
             expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBeNull()
         })
+
+        test('keeps the sentinel when the native reset throws (DB drop must succeed first)', async () => {
+            storage.setItem(MIGRATION_SENTINEL_KEY, 'x')
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                resetLegacyData: vi.fn().mockRejectedValue(new Error('boom')),
+            })
+
+            await expect(service.resetLegacyData()).rejects.toThrow('boom')
+            expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBe('x')
+        })
     })
 })
