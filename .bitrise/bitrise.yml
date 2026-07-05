@@ -81,7 +81,12 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                npm install -g pnpm
+                # Pin to the repo's packageManager version — an unpinned
+                # `npm i -g pnpm` floats to latest and a pnpm major release
+                # would change lockfile/hoisting behavior under the release
+                # builds without any repo change.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1]")
+                npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
           inputs:
@@ -118,6 +123,8 @@ workflows:
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
+        # Pure git + shell — no reason to burn a large machine on it.
+        machine_type_id: g2.linux.medium
     steps:
       - git-clone@8:
           inputs:
@@ -233,7 +240,12 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                npm install -g pnpm
+                # Pin to the repo's packageManager version — an unpinned
+                # `npm i -g pnpm` floats to latest and a pnpm major release
+                # would change lockfile/hoisting behavior under the release
+                # builds without any repo change.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1]")
+                npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
           inputs:
@@ -286,6 +298,16 @@ workflows:
                 set -e
                 # no -x: keep the decoded secret out of the build trace log
                 echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/config/GoogleService-Info.plist
+      - restore-cache@2:
+          inputs:
+            # Restore BEFORE prebuild: expo:prebuild ends with pod-install, so
+            # the Pods dir must be warm by then. apps/mobile/ios is generated
+            # (Podfile.lock absent here), so the checksum key never matches on
+            # restore — the prefix fallback pulls the latest cache and
+            # pod-install syncs the delta.
+            - key: |-
+                ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
+                ios-pods-
       - script@1:
           title: Expo Prebuild
           inputs:
@@ -294,11 +316,6 @@ workflows:
                 set -ex
                 export APP_ENV=$ENVIRONMENT
                 pnpm --filter mobile expo:prebuild
-      - restore-cache@2:
-          inputs:
-            - key: |-
-                ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
-                ios-pods-
       - save-cache@1:
           inputs:
             - key: ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
@@ -383,6 +400,10 @@ workflows:
             - notify_user_groups: none
             - is_enable_public_page: "true"
       - script@1:
+          # is_always_run: a failed build that still produced an artifact
+          # (deploy-to-bitrise-io above is always-run) is exactly the case
+          # where the install link in the Slack ❌ row is most useful.
+          is_always_run: true
           title: Capture artifact URLs
           inputs:
             - content: |
@@ -452,13 +473,15 @@ workflows:
 
                 echo "Generating changelog (not available from pipeline)"
 
-                # For production builds, generate changelog from the last tag
+                # Changelog is best-effort (same contract as the
+                # generate-changelog workflow): never fail the build over it.
                 LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
                 if [ -n "$LAST_TAG" ]; then
                   echo "Generating changelog since tag: $LAST_TAG"
-                  CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG")
-                else
-                  echo "No previous tag found"
+                  CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+                fi
+                if [ -z "${CHANGELOG:-}" ]; then
+                  echo "No previous tag / empty changelog; using fallback"
                   CHANGELOG="Release build - see git history for changes"
                 fi
 
@@ -503,7 +526,12 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                npm install -g pnpm
+                # Pin to the repo's packageManager version — an unpinned
+                # `npm i -g pnpm` floats to latest and a pnpm major release
+                # would change lockfile/hoisting behavior under the release
+                # builds without any repo change.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1]")
+                npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
           inputs:
@@ -720,6 +748,10 @@ workflows:
             - notify_user_groups: none
             - is_enable_public_page: "true"
       - script@1:
+          # is_always_run: a failed build that still produced an artifact
+          # (deploy-to-bitrise-io above is always-run) is exactly the case
+          # where the install link in the Slack ❌ row is most useful.
+          is_always_run: true
           title: Capture artifact URLs
           inputs:
             - content: |
@@ -755,6 +787,8 @@ workflows:
     meta:
       bitrise.io:
         stack: linux-docker-android-22.04
+        # Single curl to Slack — smallest machine is plenty.
+        machine_type_id: g2.linux.medium
     steps:
       - script@1:
           is_always_run: true
@@ -811,7 +845,10 @@ workflows:
                   if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
                 done
 
-                curl -X POST "$SLACK_WEBHOOK_URL" \
+                # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
+                # and the release card silently never arrives. --retry covers
+                # transient Slack hiccups (retries only transient failures).
+                curl -sS --fail-with-body --retry 2 --max-time 30 -X POST "$SLACK_WEBHOOK_URL" \
                   -H "Content-Type: application/json" \
                   -d @- << EOF
                 {
