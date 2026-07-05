@@ -57,7 +57,7 @@ workflows:
     description: Run tests before release
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
     envs:
       - ENVIRONMENT: production
       - VALIDATE_PROFILE: test
@@ -122,7 +122,7 @@ workflows:
     description: Generate the release changelog once and share it with the build workflows
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
         # Pure git + shell — no reason to burn a large machine on it.
         machine_type_id: g2.linux.medium
     steps:
@@ -428,7 +428,7 @@ workflows:
       - _publish-result
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
   android-production:
     description: Build and deploy Android Production to Play Store Internal
     envs:
@@ -445,7 +445,7 @@ workflows:
       - _publish-result
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
   _android-build:
     steps:
       - git-clone@8:
@@ -786,7 +786,7 @@ workflows:
     description: Post one consolidated release card (all build statuses + changelog)
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
         # Single curl to Slack — smallest machine is plenty.
         machine_type_id: g2.linux.medium
     steps:
@@ -892,5 +892,5 @@ workflows:
                 EOF
 meta:
   bitrise.io:
-    stack: linux-docker-android-22.04
+    stack: ubuntu-noble-24.04-bitrise-2025-android
     machine_type_id: g2.linux.large
