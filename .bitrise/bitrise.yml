@@ -84,8 +84,9 @@ workflows:
                 # Pin to the repo's packageManager version — an unpinned
                 # `npm i -g pnpm` floats to latest and a pnpm major release
                 # would change lockfile/hoisting behavior under the release
-                # builds without any repo change.
-                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1]")
+                # builds without any repo change. split('+') strips a Corepack
+                # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
                 npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
@@ -243,8 +244,9 @@ workflows:
                 # Pin to the repo's packageManager version — an unpinned
                 # `npm i -g pnpm` floats to latest and a pnpm major release
                 # would change lockfile/hoisting behavior under the release
-                # builds without any repo change.
-                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1]")
+                # builds without any repo change. split('+') strips a Corepack
+                # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
                 npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
@@ -344,7 +346,32 @@ workflows:
                 fi
                 envman add --key APP_VERSION --value "$VERSION"
                 envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
-      - certificate-and-profile-installer@1:
+      - script@1:
+          title: Write ASC API key for code signing
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -e
+                # no -x: keep the key out of the build trace log. The signing
+                # step below authenticates with the same App Store Connect API
+                # key fastlane uses, but needs it as a p8 file.
+                echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > "$HOME/asc_api_key.p8"
+      - manage-ios-code-signing@2:
+          # Replaces the deprecated certificate-and-profile-installer. It
+          # installs the same Bitrise-uploaded certificates and ensures
+          # app-store profiles for the app + AutoFill extension via the ASC
+          # API (step-level key override — no Bitrise-side Apple connection
+          # needed). Fastlane still pins profiles by name afterwards
+          # (CODE_SIGN_STYLE=Manual), so the project mutation this step does
+          # is overwritten; what matters is the installed certs + profiles.
+          # The uploaded profiles remain wired in as the fallback, which is
+          # exactly the old step's behavior.
+          inputs:
+            - distribution_method: app-store
+            - api_key_path: $HOME/asc_api_key.p8
+            - api_key_id: $APP_STORE_CONNECT_API_KEY_KEY_ID
+            - api_key_issuer_id: $APP_STORE_CONNECT_API_KEY_ISSUER_ID
+            - fallback_provisioning_profile_url_list: $BITRISE_PROVISION_URL
       - script@1:
           title: Build & Deploy iOS
           inputs:
@@ -529,8 +556,9 @@ workflows:
                 # Pin to the repo's packageManager version — an unpinned
                 # `npm i -g pnpm` floats to latest and a pnpm major release
                 # would change lockfile/hoisting behavior under the release
-                # builds without any repo change.
-                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1]")
+                # builds without any repo change. split('+') strips a Corepack
+                # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
                 npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
