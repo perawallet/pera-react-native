@@ -68,7 +68,10 @@ export const migrateAuth = async (
         result.pinMigrated = true
 
         if (preferences.biometricEnabled === true) {
-            await commitSecret({ id: BIOMETRIC_BLOB_KEY_ID, bytes: pinBytes })
+            await commitSecret({
+                id: BIOMETRIC_BLOB_KEY_ID,
+                bytes: serializePinRecord(record),
+            })
             result.biometricMigrated = true
         }
     } finally {

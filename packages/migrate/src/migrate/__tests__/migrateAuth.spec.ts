@@ -163,7 +163,7 @@ describe('migrateAuth', () => {
         expect(recordArg.lockoutEndTime).toBeNull()
     })
 
-    it('writes the biometric pin when preferences.biometricEnabled is true', async () => {
+    it('writes the serialized pin record to the biometric blob when biometricEnabled is true', async () => {
         const pinBytes = encodePin('2468')
         const auth: LegacyAuth = { pin: pinBytes }
         const preferences = buildPreferences({ biometricEnabled: true })
@@ -171,7 +171,8 @@ describe('migrateAuth', () => {
         const result = await migrateAuth(auth, preferences)
 
         expect(result.biometricMigrated).toBe(true)
-        expect(commitCallFor(BIO_KEY)).toBeDefined()
+        const bioWrite = commitCallFor(BIO_KEY)
+        expect(bioWrite?.[0].bytes).toContain('serialized:')
     })
 
     it('skips the biometric write when biometricEnabled is not true', async () => {
