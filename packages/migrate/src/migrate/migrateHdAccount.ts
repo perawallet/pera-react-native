@@ -64,7 +64,11 @@ const lookupHdParentAndChild = ({
 
 const ensureHdRootImported = async (
     parent: LegacyHDWallet,
-    { importedHdRoots, createHDWalletKey, hasSeedWithEntropy }: MigrateAccountArgs,
+    {
+        importedHdRoots,
+        createHDWalletKey,
+        hasSeedWithEntropy,
+    }: MigrateAccountArgs,
 ): Promise<ImportedHdRoot> => {
     const cached = importedHdRoots.get(parent.walletId)
     if (cached) return cached

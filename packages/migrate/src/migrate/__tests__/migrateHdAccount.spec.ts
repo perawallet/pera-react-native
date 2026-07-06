@@ -96,8 +96,8 @@ const buildArgs = (
             }) as unknown as MigrateAccountArgs['createHDWalletKey']),
         hasSeedWithEntropy:
             overrides.hasSeedWithEntropy ??
-            (vi.fn(() =>
-                false,
+            (vi.fn(
+                () => false,
             ) as unknown as MigrateAccountArgs['hasSeedWithEntropy']),
     } as MigrateAccountArgs
 }
