@@ -31,10 +31,8 @@ import {
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    displayUnitsToBaseUnits,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-blockchain'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -52,7 +50,7 @@ type useTransactionConfirmationScreenResult = {
     destination: Optional<string>
     selectedAccount: Nullable<WalletAccount>
     selectedAssetId: Optional<string>
-    params: Optional<{ minFee: number | bigint }>
+    params: Optional<{ minFee: bigint }>
     paramsPending: boolean
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
@@ -90,8 +88,10 @@ export const useTransactionConfirmationScreen =
         const { showToast } = useToast()
         const { request: requestBottomSheet } = useBottomSheet()
 
-        const { data: params, isPending: paramsPending } =
-            useSuggestedParametersQuery()
+        const { minFee, isPending: paramsPending } = useMinFeeForSender(
+            selectedAccount?.address,
+        )
+        const params = minFee !== undefined ? { minFee } : undefined
 
         const openNote = useCallback(() => {
             void requestBottomSheet({
