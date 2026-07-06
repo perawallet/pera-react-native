@@ -11,9 +11,49 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import {
+    AccountTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { createPaymentSource } from '../createPaymentSource'
+import { createMinFeeResolver } from '../minFeeResolver'
 
 const mockEncoded = new Uint8Array([1, 2, 3])
+
+const FIXTURE_ACCOUNTS: WalletAccount[] = [
+    {
+        id: 'q',
+        address: 'QSENDER',
+        type: AccountTypes.quantum,
+        keyPairId: 'kp-q',
+    },
+    {
+        id: 'a',
+        address: 'ASENDER',
+        type: AccountTypes.algo25,
+        keyPairId: 'kp-a',
+    },
+    {
+        id: 'r',
+        address: 'REKEYED',
+        type: AccountTypes.algo25,
+        keyPairId: 'kp-r',
+        rekeyAddress: 'QSENDER',
+    },
+    {
+        id: 'rq',
+        address: 'QREKEYED',
+        type: AccountTypes.quantum,
+        keyPairId: 'kp-rq',
+        rekeyAddress: 'ASENDER',
+    },
+] as WalletAccount[]
+
+const resolveMinFeeForSender = createMinFeeResolver({
+    getAccounts: () => FIXTURE_ACCOUNTS,
+    getSuggestedParams: async () => ({ minFee: 1000n }),
+    getMinFeeConfig: () => ({ minTxnFee: 1000n, pqMultiplier: 3n }),
+})
 
 const makeDeps = () => {
     const createPaymentTransaction = vi.fn().mockResolvedValue({ kind: 'pay' })
@@ -26,6 +66,7 @@ const makeDeps = () => {
             createPaymentTransaction,
             createAssetTransferTransaction,
             encodeTransaction,
+            resolveMinFeeForSender,
         },
         createPaymentTransaction,
         createAssetTransferTransaction,
@@ -54,6 +95,7 @@ describe('createPaymentSource', () => {
             amount: 1000n,
             closeRemainderTo: undefined,
             note: undefined,
+            fee: 1000n,
         })
         expect(createAssetTransferTransaction).not.toHaveBeenCalled()
         expect(group.signerAddress).toBe('SENDER')
@@ -96,6 +138,7 @@ describe('createPaymentSource', () => {
             amount: 0n,
             closeRemainderTo: 'RECEIVER',
             note: 'bye',
+            fee: 1000n,
         })
     })
 
@@ -121,6 +164,7 @@ describe('createPaymentSource', () => {
             amount: 5n,
             assetId: 123n,
             note: 'hi',
+            fee: 1000n,
         })
         expect(createPaymentTransaction).not.toHaveBeenCalled()
     })
@@ -132,6 +176,7 @@ describe('createPaymentSource', () => {
                 .mockRejectedValue(new Error('boom')),
             createAssetTransferTransaction: vi.fn(),
             encodeTransaction: vi.fn(),
+            resolveMinFeeForSender,
         }
         const source = createPaymentSource(deps)
 
@@ -142,5 +187,129 @@ describe('createPaymentSource', () => {
                 amount: 1n,
             }),
         ).rejects.toThrow('boom')
+    })
+
+    describe('PQ-aware min fee resolution', () => {
+        test('ALGO payment from a quantum sender applies the PQ multiplier', async () => {
+            const { deps, createPaymentTransaction } = makeDeps()
+            const source = createPaymentSource(deps)
+
+            await source.getSignableData({
+                sender: 'QSENDER',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'QSENDER',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+                closeRemainderTo: undefined,
+                note: undefined,
+                fee: 3000n,
+            })
+        })
+
+        test('ALGO payment from an algo25 sender uses the base fee (regression)', async () => {
+            const { deps, createPaymentTransaction } = makeDeps()
+            const source = createPaymentSource(deps)
+
+            await source.getSignableData({
+                sender: 'ASENDER',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'ASENDER',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+                closeRemainderTo: undefined,
+                note: undefined,
+                fee: 1000n,
+            })
+        })
+
+        test('ASA transfer from a quantum sender applies the PQ multiplier', async () => {
+            const { deps, createAssetTransferTransaction } = makeDeps()
+            const source = createPaymentSource(deps)
+
+            await source.getSignableData({
+                sender: 'QSENDER',
+                receiver: 'RECEIVER',
+                amount: 5n,
+                assetId: 123n,
+            })
+
+            expect(createAssetTransferTransaction).toHaveBeenCalledWith({
+                sender: 'QSENDER',
+                receiver: 'RECEIVER',
+                amount: 5n,
+                assetId: 123n,
+                note: undefined,
+                fee: 3000n,
+            })
+        })
+
+        test('close-account payment from a quantum sender applies the PQ multiplier and keeps close semantics', async () => {
+            const { deps, createPaymentTransaction } = makeDeps()
+            const source = createPaymentSource(deps)
+
+            await source.getSignableData({
+                sender: 'QSENDER',
+                receiver: 'RECEIVER',
+                amount: 1_000_000n,
+                isCloseAccount: true,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'QSENDER',
+                receiver: 'RECEIVER',
+                amount: 0n,
+                closeRemainderTo: 'RECEIVER',
+                note: undefined,
+                fee: 3000n,
+            })
+        })
+
+        test('sender rekeyed to a quantum auth account applies the PQ multiplier', async () => {
+            const { deps, createPaymentTransaction } = makeDeps()
+            const source = createPaymentSource(deps)
+
+            await source.getSignableData({
+                sender: 'REKEYED',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'REKEYED',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+                closeRemainderTo: undefined,
+                note: undefined,
+                fee: 3000n,
+            })
+        })
+
+        test('quantum sender rekeyed to an algo25 auth account uses the base fee', async () => {
+            const { deps, createPaymentTransaction } = makeDeps()
+            const source = createPaymentSource(deps)
+
+            await source.getSignableData({
+                sender: 'QREKEYED',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'QREKEYED',
+                receiver: 'RECEIVER',
+                amount: 1000n,
+                closeRemainderTo: undefined,
+                note: undefined,
+                fee: 1000n,
+            })
+        })
     })
 })

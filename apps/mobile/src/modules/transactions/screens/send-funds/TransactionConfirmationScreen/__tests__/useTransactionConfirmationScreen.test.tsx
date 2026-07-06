@@ -23,7 +23,7 @@ import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -76,6 +76,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useLocalKeyTransactionSigner: vi.fn(),
+    useMinFeeForSender: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -97,7 +98,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSuggestedParametersQuery: vi.fn(),
     displayUnitsToBaseUnits: (value: Decimal, decimals: number) =>
         new Decimal(value).mul(new Decimal(10).pow(decimals)),
 }))
@@ -179,8 +179,8 @@ describe('useTransactionConfirmationScreen', () => {
         ;(useCurrency as Mock).mockReturnValue({
             preferredCurrency: 'USD',
         })
-        ;(useSuggestedParametersQuery as Mock).mockReturnValue({
-            data: { minFee: 1000 },
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: 1000n,
             isPending: false,
         })
         ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
@@ -633,7 +633,6 @@ describe('useTransactionConfirmationScreen', () => {
             const mockAmount = new Decimal(15)
             const mockDestination = 'DEST_ADDRESS'
             const mockNote = 'Test note'
-            const mockParams = { minFee: 1000 }
             const mockCurrentBalance = {
                 amount: new Decimal(100),
             }
@@ -649,8 +648,8 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map([['123', mockAsset]]),
             })
-            ;(useSuggestedParametersQuery as Mock).mockReturnValue({
-                data: mockParams,
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: 1000n,
                 isPending: false,
             })
             ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
@@ -670,10 +669,68 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.amount).toEqual(mockAmount)
             expect(result.current.destination).toEqual(mockDestination)
             expect(result.current.note).toEqual(mockNote)
-            expect(result.current.params).toEqual(mockParams)
+            expect(result.current.params).toEqual({ minFee: 1000n })
             expect(result.current.paramsPending).toBe(false)
             expect(result.current.currentBalance).toEqual(mockCurrentBalance)
             expect(result.current.currentBalancePending).toBe(false)
+        })
+    })
+
+    describe('PQ-aware fee display', () => {
+        beforeEach(() => {
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: mockSelectedAssetId,
+                amount: new Decimal(10),
+                destination: 'DEST_ADDRESS',
+            })
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['123', mockAsset]]),
+            })
+        })
+
+        it('exposes the multiplied fee for a quantum sender', () => {
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: 3000n,
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(useMinFeeForSender).toHaveBeenCalledWith(mockAccount.address)
+            expect(result.current.params).toEqual({ minFee: 3000n })
+            expect(result.current.paramsPending).toBe(false)
+        })
+
+        it('exposes the base fee for a non-quantum sender (regression)', () => {
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: 1000n,
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.params).toEqual({ minFee: 1000n })
+            expect(result.current.paramsPending).toBe(false)
+        })
+
+        it('returns undefined params while the resolved fee is pending', () => {
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: undefined,
+                isPending: true,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.params).toBeUndefined()
+            expect(result.current.paramsPending).toBe(true)
         })
     })
 })

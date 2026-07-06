@@ -35,17 +35,21 @@ export const createPaymentSource = (
         | 'createPaymentTransaction'
         | 'createAssetTransferTransaction'
         | 'encodeTransaction'
+        | 'resolveMinFeeForSender'
     >,
 ): DataSource<PaymentSourceParams> => {
     const {
         createPaymentTransaction,
         createAssetTransferTransaction,
         encodeTransaction,
+        resolveMinFeeForSender,
     } = deps
 
     return createLocalSource<PaymentSourceParams>(async params => {
         const { sender, receiver, amount, assetId, note, isCloseAccount } =
             params
+
+        const fee = await resolveMinFeeForSender(sender)
 
         // Determine if this is an ALGO payment or ASA transfer
         const isAlgoPayment = !assetId || isAlgoAssetId(assetId)
@@ -60,6 +64,7 @@ export const createPaymentSource = (
                 amount: isCloseAccount ? 0n : amount,
                 closeRemainderTo: isCloseAccount ? receiver : undefined,
                 note,
+                fee,
             })
         } else {
             transaction = await createAssetTransferTransaction({
@@ -68,6 +73,7 @@ export const createPaymentSource = (
                 amount,
                 assetId,
                 note,
+                fee,
             })
         }
 

@@ -11,36 +11,67 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import {
+    AccountTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { createExpressSendSource } from '../createExpressSendSource'
+import { createMinFeeResolver } from '../minFeeResolver'
+
+const FIXTURE_ACCOUNTS: WalletAccount[] = [
+    {
+        id: 'q',
+        address: 'QSENDER',
+        type: AccountTypes.quantum,
+        keyPairId: 'kp-q',
+    },
+    {
+        id: 'a',
+        address: 'ASENDER',
+        type: AccountTypes.algo25,
+        keyPairId: 'kp-a',
+    },
+] as WalletAccount[]
 
 const makeDeps = (overrides?: {
     currentBalance?: bigint
     currentMbr?: bigint
     minFee?: bigint
     assetMbr?: bigint
+    accounts?: WalletAccount[]
 }) => {
     const {
         currentBalance = 0n,
         currentMbr = 100_000n,
         minFee = 1_000n,
         assetMbr = 100_000n,
+        accounts = FIXTURE_ACCOUNTS,
     } = overrides ?? {}
 
     const createPaymentTransaction = vi
         .fn()
-        .mockImplementation(async ({ amount }) => ({ kind: 'pay', amount }))
+        .mockImplementation(async ({ amount, fee }) => ({
+            kind: 'pay',
+            amount,
+            fee,
+        }))
     const createAssetOptInTransaction = vi
         .fn()
-        .mockResolvedValue({ kind: 'optin' })
+        .mockImplementation(async ({ fee }) => ({ kind: 'optin', fee }))
     const createAssetTransferTransaction = vi
         .fn()
-        .mockResolvedValue({ kind: 'axfer' })
+        .mockImplementation(async ({ fee }) => ({ kind: 'axfer', fee }))
     const encodeTransaction = vi.fn().mockReturnValue(new Uint8Array([1]))
     const getAccountInfo = vi.fn().mockResolvedValue({
         amount: currentBalance,
         minBalance: currentMbr,
     })
     const getSuggestedParams = vi.fn().mockResolvedValue({ minFee })
+    const resolveMinFeeForSender = createMinFeeResolver({
+        getAccounts: () => accounts,
+        getSuggestedParams,
+        getMinFeeConfig: () => ({ minTxnFee: minFee, pqMultiplier: 3n }),
+    })
 
     return {
         deps: {
@@ -49,7 +80,7 @@ const makeDeps = (overrides?: {
             createAssetOptInTransaction,
             encodeTransaction,
             getAccountInfo,
-            getSuggestedParams,
+            resolveMinFeeForSender,
             assetMbr,
         },
         createPaymentTransaction,
@@ -80,6 +111,7 @@ describe('createExpressSendSource', () => {
             sender: 'SENDER',
             receiver: 'RECEIVER',
             amount: 201_000n,
+            fee: 1_000n,
         })
         expect(group.data.type).toBe('transactions')
         if (group.data.type === 'transactions') {
@@ -129,6 +161,7 @@ describe('createExpressSendSource', () => {
         expect(createAssetOptInTransaction).toHaveBeenCalledWith({
             sender: 'RECEIVER',
             assetId: 42n,
+            fee: 1_000n,
         })
     })
 
@@ -147,5 +180,190 @@ describe('createExpressSendSource', () => {
                 assetId: 1n,
             }),
         ).rejects.toThrow('lookup fail')
+    })
+
+    describe('PQ-aware per-txn fees and receiver funding', () => {
+        test('algo25 sender, external receiver, 0 balance: funding stays base rate (regression)', async () => {
+            const {
+                deps,
+                createPaymentTransaction,
+                createAssetOptInTransaction,
+                createAssetTransferTransaction,
+            } = makeDeps({
+                currentBalance: 0n,
+                currentMbr: 100_000n,
+                assetMbr: 100_000n,
+                minFee: 1_000n,
+            })
+            const source = createExpressSendSource(deps)
+
+            const group = await source.getSignableData({
+                sender: 'ASENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 5n,
+                assetId: 42n,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'ASENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 201_000n,
+                fee: 1_000n,
+            })
+            expect(createAssetOptInTransaction).toHaveBeenCalledWith({
+                sender: 'EXTERNAL_RECEIVER',
+                assetId: 42n,
+                fee: 1_000n,
+            })
+            expect(createAssetTransferTransaction).toHaveBeenCalledWith({
+                sender: 'ASENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 5n,
+                assetId: 42n,
+                fee: 1_000n,
+            })
+            if (group.data.type === 'transactions') {
+                expect(group.data.transactions).toHaveLength(3)
+                expect(group.data.indicesToSign).toEqual([0, 2])
+            }
+        })
+
+        test('quantum sender, external receiver, 0 balance: sender-side fees are PQ, funding amount stays at receiver base rate', async () => {
+            const {
+                deps,
+                createPaymentTransaction,
+                createAssetOptInTransaction,
+                createAssetTransferTransaction,
+            } = makeDeps({
+                currentBalance: 0n,
+                currentMbr: 100_000n,
+                assetMbr: 100_000n,
+                minFee: 1_000n,
+            })
+            const source = createExpressSendSource(deps)
+
+            await source.getSignableData({
+                sender: 'QSENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 5n,
+                assetId: 42n,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'QSENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 201_000n,
+                fee: 3_000n,
+            })
+            expect(createAssetOptInTransaction).toHaveBeenCalledWith({
+                sender: 'EXTERNAL_RECEIVER',
+                assetId: 42n,
+                fee: 1_000n,
+            })
+            expect(createAssetTransferTransaction).toHaveBeenCalledWith({
+                sender: 'QSENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 5n,
+                assetId: 42n,
+                fee: 3_000n,
+            })
+
+            const totalFees =
+                createPaymentTransaction.mock.calls[0][0].fee +
+                createAssetOptInTransaction.mock.calls[0][0].fee +
+                createAssetTransferTransaction.mock.calls[0][0].fee
+            expect(totalFees).toBe(7_000n)
+        })
+
+        test('quantum receiver in the wallet, algo25 sender, 0 balance: funding reserves the receiver PQ opt-in fee', async () => {
+            const receiverAddress = 'QRECEIVER'
+            const {
+                deps,
+                createPaymentTransaction,
+                createAssetOptInTransaction,
+                createAssetTransferTransaction,
+            } = makeDeps({
+                currentBalance: 0n,
+                currentMbr: 100_000n,
+                assetMbr: 100_000n,
+                minFee: 1_000n,
+                accounts: [
+                    ...FIXTURE_ACCOUNTS,
+                    {
+                        id: 'qr',
+                        address: receiverAddress,
+                        type: AccountTypes.quantum,
+                        keyPairId: 'kp-qr',
+                    } as WalletAccount,
+                ],
+            })
+            const source = createExpressSendSource(deps)
+
+            await source.getSignableData({
+                sender: 'ASENDER',
+                receiver: receiverAddress,
+                amount: 5n,
+                assetId: 42n,
+            })
+
+            expect(createPaymentTransaction).toHaveBeenCalledWith({
+                sender: 'ASENDER',
+                receiver: receiverAddress,
+                amount: 203_000n,
+                fee: 1_000n,
+            })
+            expect(createAssetOptInTransaction).toHaveBeenCalledWith({
+                sender: receiverAddress,
+                assetId: 42n,
+                fee: 3_000n,
+            })
+            expect(createAssetTransferTransaction).toHaveBeenCalledWith({
+                sender: 'ASENDER',
+                receiver: receiverAddress,
+                amount: 5n,
+                assetId: 42n,
+                fee: 1_000n,
+            })
+        })
+
+        test('funded receiver: 2-txn group unchanged, opt-in/transfer fees follow resolved rates', async () => {
+            const {
+                deps,
+                createPaymentTransaction,
+                createAssetOptInTransaction,
+                createAssetTransferTransaction,
+            } = makeDeps({
+                currentBalance: 10_000_000n,
+                currentMbr: 100_000n,
+                assetMbr: 100_000n,
+                minFee: 1_000n,
+            })
+            const source = createExpressSendSource(deps)
+
+            const group = await source.getSignableData({
+                sender: 'QSENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 5n,
+                assetId: 42n,
+            })
+
+            expect(createPaymentTransaction).not.toHaveBeenCalled()
+            expect(createAssetOptInTransaction).toHaveBeenCalledWith({
+                sender: 'EXTERNAL_RECEIVER',
+                assetId: 42n,
+                fee: 1_000n,
+            })
+            expect(createAssetTransferTransaction).toHaveBeenCalledWith({
+                sender: 'QSENDER',
+                receiver: 'EXTERNAL_RECEIVER',
+                amount: 5n,
+                assetId: 42n,
+                fee: 3_000n,
+            })
+            if (group.data.type === 'transactions') {
+                expect(group.data.transactions).toHaveLength(2)
+                expect(group.data.indicesToSign).toEqual([1])
+            }
+        })
     })
 })
