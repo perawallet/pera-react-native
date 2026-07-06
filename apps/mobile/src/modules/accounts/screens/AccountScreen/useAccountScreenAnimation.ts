@@ -11,6 +11,7 @@
  */
 
 import { useEffect } from 'react'
+import type { ViewStyle } from 'react-native'
 import {
     useAnimatedStyle,
     useSharedValue,
@@ -26,7 +27,7 @@ import {
 import { BANNER_REVEAL_EASING } from '@modules/banners/components/animations'
 
 export type UseAccountScreenAnimationResult = {
-    animatedCornerStyle: AnimatedStyle
+    animatedCornerStyle: AnimatedStyle<ViewStyle>
 }
 
 // Animates the content view's top-corner radius from 0 → borderRadius.lg in

@@ -30,9 +30,10 @@ catalog:
   eslint-plugin-unused-imports: 4.4.1
   fast-glob: ^3.3.2
   oxfmt: ^0.45.0
-  # Must equal react-native 0.85.3's bundled renderer version. RN does an exact
+  # Must equal react-native 0.86.0's bundled renderer version. RN does an exact
   # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
   # "Incompatible React versions". Keep in lockstep with the override below.
+  # Expo SDK 57 / RN 0.86 still bundle 19.2.3, so this stays put.
   react: 19.2.3
   react-dom: 19.2.3
   tsx: ^4.22.3
@@ -64,7 +65,7 @@ onlyBuiltDependencies:
 overrides:
   "@algorandfoundation/keystore": 1.0.0-canary.16
   "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4"
-  "@expo/dom-webview": ^56.0.5
+  "@expo/dom-webview": ~57.0.0
   # Security backport for GHSA-5375-pq7m-f5r2 + GHSA-99f4-grh7-6pcq (DoS).
   # Pinned exactly, NOT ">=", so it stays inside @firebase/firestore's
   # "~1.9.0" range — 1.10+ would break Firestore's resolution.
@@ -96,11 +97,11 @@ overrides:
   # GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7 (DoS / property shadowing).
   # Was 7.5.8, now vulnerable. Pinned exact to the verified lowest patched 7.x.
   protobufjs@7: 7.6.3
-  # Pinned to react-native 0.85.3's bundled renderer (19.2.3); see catalog note.
+  # Pinned to react-native 0.86.0's bundled renderer (19.2.3); see catalog note.
   react: 19.2.3
   react-dom: 19.2.3
-  react-native: 0.85.3
-  "@react-native/metro-config": 0.85.3
+  react-native: 0.86.0
+  "@react-native/metro-config": 0.86.0
   # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera +
   # its nitro-image peer) to one native ABI version — leaving it at 0.35.7 splits the
   # tree into 0.35.7 + 0.35.9. nitro-image 0.15.1 is built against 0.35.9.

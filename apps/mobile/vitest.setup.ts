@@ -239,6 +239,14 @@ vi.mock('react-native-reanimated', () => {
     return Reanimated
 })
 
+// react-native-worklets ships an extensionless ESM subpath import that vitest
+// can't resolve under node; the app only uses scheduleOnRN (runs a callback on
+// the JS thread), so mock it to invoke synchronously.
+vi.mock('react-native-worklets', () => ({
+    scheduleOnRN: (fn: (...args: unknown[]) => unknown, ...args: unknown[]) =>
+        fn(...args),
+}))
+
 // Mock expo-splash-screen
 vi.mock('expo-splash-screen', () => ({
     preventAutoHideAsync: vi.fn().mockResolvedValue(true),

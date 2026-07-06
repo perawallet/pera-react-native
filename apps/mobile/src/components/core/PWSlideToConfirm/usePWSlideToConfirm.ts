@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect } from 'react'
-import type { LayoutChangeEvent } from 'react-native'
+import type { LayoutChangeEvent, ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { Gesture, type PanGesture } from 'react-native-gesture-handler'
 import {
@@ -37,14 +37,14 @@ type UsePWSlideToConfirmParams = {
 
 type UsePWSlideToConfirmResult = {
     panGesture: PanGesture
-    thumbAnimatedStyle: AnimatedStyle
-    fillAnimatedStyle: AnimatedStyle
-    labelOverlayClipStyle: AnimatedStyle
-    labelOverlayInnerStyle: AnimatedStyle
-    rootAnimatedStyle: AnimatedStyle
-    idleContentStyle: AnimatedStyle
-    loadingContentStyle: AnimatedStyle
-    confirmedContentStyle: AnimatedStyle
+    thumbAnimatedStyle: AnimatedStyle<ViewStyle>
+    fillAnimatedStyle: AnimatedStyle<ViewStyle>
+    labelOverlayClipStyle: AnimatedStyle<ViewStyle>
+    labelOverlayInnerStyle: AnimatedStyle<ViewStyle>
+    rootAnimatedStyle: AnimatedStyle<ViewStyle>
+    idleContentStyle: AnimatedStyle<ViewStyle>
+    loadingContentStyle: AnimatedStyle<ViewStyle>
+    confirmedContentStyle: AnimatedStyle<ViewStyle>
     onTrackLayout: (event: LayoutChangeEvent) => void
 }
 
