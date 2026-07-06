@@ -13,8 +13,19 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
+
+// Deterministic quantum address: seedFromMnemonic(ALGO25_TEST_MNEMONIC)
+// → deriveFalconKeypairMock → deriveFalconAddressMock (algosdk 3.6.0).
+// Pinned as a constant (rather than derived in-test) because
+// `@perawallet/wallet-core-kms` is globally stubbed in vitest.setup.ts and
+// does not expose deriveFalconKeypairMock/deriveFalconAddressMock.
+const QUANTUM_TEST_ADDRESS =
+    'XGOHUMHM7JDVEMHV4GP6JRFDVMLIF72P76O5756D2C427WJOM7PFB6ZXK4'
 
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
@@ -48,13 +59,18 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-blockchain',
-    )
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-blockchain')
+    >('@perawallet/wallet-core-blockchain')
     return {
         ...actual,
+        // Keep the existing sentinel for legacy test cases, but delegate any
+        // other address (e.g. QUANTUM_TEST_ADDRESS) to the real
+        // `isValidAlgorandAddress` (pure algosdk decodeAddress round-trip)
+        // so the quantum-address pin below exercises the actual validator.
         isValidAlgorandAddress: (address?: string) =>
-            address === 'VALID_ALGORAND_ADDRESS',
+            address === 'VALID_ALGORAND_ADDRESS' ||
+            actual.isValidAlgorandAddress(address),
     }
 })
 
@@ -274,6 +290,31 @@ describe('useWatchAccountScreen', () => {
 
         expect(result.current.isNfdResolved).toBe(false)
         expect(result.current.nfdName).toBeUndefined()
+    })
+
+    it('accepts a quantum-derived address and creates a plain watch account (FR-6)', () => {
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange(QUANTUM_TEST_ADDRESS)
+        })
+
+        expect(result.current.isValidAddress).toBe(true)
+
+        act(() => {
+            result.current.handleWatchAccount()
+        })
+
+        const expectedAccount = {
+            id: 'mock-uuid',
+            address: QUANTUM_TEST_ADDRESS,
+            type: AccountTypes.watch,
+        }
+
+        expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
+        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+            account: expectedAccount,
+        })
     })
 
     it('shows resolving state during NFD lookup', () => {
