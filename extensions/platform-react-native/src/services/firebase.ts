@@ -18,11 +18,9 @@ import {
 } from '@react-native-firebase/crashlytics'
 import {
     fetchAndActivate,
-    type FirebaseRemoteConfigTypes,
     getRemoteConfig,
-    setConfigSettings,
-    setDefaults,
     getValue,
+    type RemoteConfig,
 } from '@react-native-firebase/remote-config'
 import {
     type FirebaseMessagingTypes,
@@ -84,7 +82,7 @@ export class RNFirebaseService
         AnalyticsService,
         PushNotificationService
 {
-    remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
+    remoteConfig: RemoteConfig | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: Analytics | null = null
     crashlytics: FirebaseCrashlyticsTypes.Module | null = null
@@ -125,12 +123,15 @@ export class RNFirebaseService
     }
 
     async initializeRemoteConfig() {
-        this.remoteConfig = await getRemoteConfig()
-        await setConfigSettings(this.remoteConfig, {
+        this.remoteConfig = getRemoteConfig()
+        // v25 removed the modular setConfigSettings/setDefaults functions;
+        // assign the Firebase-JS-v9 settings/defaultConfig properties instead
+        // (assignment eagerly seeds the in-memory value cache).
+        this.remoteConfig.settings = {
+            ...this.remoteConfig.settings,
             minimumFetchIntervalMillis: config.remoteConfigRefreshTime,
-        })
-
-        await setDefaults(this.remoteConfig, RemoteConfigDefaults)
+        }
+        this.remoteConfig.defaultConfig = RemoteConfigDefaults
 
         try {
             await fetchAndActivate(this.remoteConfig)
