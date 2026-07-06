@@ -23,25 +23,44 @@ import { renderHook, act } from '@testing-library/react'
     }
 
 const mockPayment = vi.fn()
+const mockGetSuggestedParams = vi.fn()
 const mockAlgokit = {
     createTransaction: { payment: mockPayment },
+    getSuggestedParams: mockGetSuggestedParams,
 }
 
 const mockAddSignRequest = vi.fn()
 const mockEncodeSignedTransactions = vi.fn()
 const mockSubmitAndAutoRefresh = vi.fn()
+const mockUseAllAccounts = vi.fn()
+const mockUseMinimumFeeConfig = vi.fn()
+const mockResolveMinFeeForSender = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => mockAlgokit,
     useTransactionEncoder: () => ({
         encodeSignedTransactions: mockEncodeSignedTransactions,
     }),
+    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
+}))
+
+// Full replacement (not importActual): the real barrels pull in
+// platform-specific storage (react-native-mmkv) that can't load under
+// vitest/jsdom. `resolveMinFeeForSender`'s own rekey-chain/PQ-multiplier
+// correctness is already exhaustively covered by
+// packages/signing/src/pipeline/sources/__tests__/minFeeResolver.spec.ts —
+// these tests verify only that this hook wires the resolver's inputs
+// correctly and applies the override guard on its output.
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => mockUseAllAccounts(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     submitAndAutoRefresh: (...args: unknown[]) =>
         mockSubmitAndAutoRefresh(...args),
+    resolveMinFeeForSender: (...args: unknown[]) =>
+        mockResolveMinFeeForSender(...args),
 }))
 
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
@@ -76,6 +95,15 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
 describe('useSubmitRekeyMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
+        mockUseMinimumFeeConfig.mockReturnValue({
+            minTxnFee: 1000n,
+            pqMultiplier: 3n,
+        })
+        mockUseAllAccounts.mockReturnValue([])
+        // Default: no PQ signer in the chain — resolver returns the base
+        // fee, which must never force a staticFee override (regression).
+        mockResolveMinFeeForSender.mockReturnValue(1000n)
     })
 
     it('builds a 0-amount rekey payment, requests a signature, and submits the signed group', async () => {
@@ -264,5 +292,70 @@ describe('useSubmitRekeyMutation', () => {
         // useMutation would re-throw the error during render here, crashing
         // the screen. The local override must prevent this.
         expect(() => rerender()).not.toThrow()
+    })
+
+    it('overrides the fee with the PQ-resolved staticFee for a quantum sender', async () => {
+        mockUseAllAccounts.mockReturnValue([
+            { address: 'SRC', type: 'quantum' },
+        ])
+        // resolveMinFeeForSender (1000n base * 3n multiplier = 3000n) exceeds
+        // the network's suggested minFee (1000n) and must be forced in.
+        mockResolveMinFeeForSender.mockReturnValue(3000n)
+        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.([{ id: 'signed' }])
+            },
+        )
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
+
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            await result.current.submitAsync({
+                sourceAddress: 'SRC',
+                rekeyToAddress: 'TGT',
+            })
+        })
+
+        expect(mockPayment.mock.calls[0][0]).toMatchObject({
+            staticFee: 3000n,
+        })
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
+            senderAddress: 'SRC',
+            accounts: [{ address: 'SRC', type: 'quantum' }],
+            suggestedMinFee: 1000n,
+            configMinTxnFee: 1000n,
+            pqMultiplier: 3n,
+        })
+    })
+
+    it('regression: builds without a staticFee key for an algo25 sender', async () => {
+        mockUseAllAccounts.mockReturnValue([{ address: 'SRC', type: 'algo25' }])
+        mockResolveMinFeeForSender.mockReturnValue(1000n)
+        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.([{ id: 'signed' }])
+            },
+        )
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
+
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            await result.current.submitAsync({
+                sourceAddress: 'SRC',
+                rekeyToAddress: 'TGT',
+            })
+        })
+
+        expect(mockPayment.mock.calls[0][0]).not.toHaveProperty('staticFee')
     })
 })

@@ -12,11 +12,14 @@
 
 import { useMutation } from '@tanstack/react-query'
 
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     useAlgorandClient,
+    useMinimumFeeConfig,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    resolveMinFeeForSender,
     submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -62,6 +65,13 @@ export type UseSubmitRekeyMutationResult = {
  * Every failure propagates as a {@link RekeyError} tagged with the stage
  * that failed (`build_failed`, `signing_failed`, `submission_failed`,
  * `user_rejected`) so confirm screens can show failure-specific copy.
+ *
+ * The rekey transaction is signed by `sourceAddress`'s CURRENT auth account
+ * (pre-rekey), so `resolveMinFeeForSender`'s `getSignerFor` resolution is the
+ * correct fee basis — a sender currently rekeyed to a quantum auth (e.g.
+ * mid undo-rekey) pays the PQ fee regardless of the rekey's direction. The
+ * network-congestion guard (`max(suggestedMinFee, configMinTxnFee)`) lives
+ * in `resolveMinFeeForSender` too.
  */
 export const useSubmitRekeyMutation = ({
     signingMetadata,
@@ -69,6 +79,8 @@ export const useSubmitRekeyMutation = ({
     const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
     const { encodeSignedTransactions } = useTransactionEncoder()
+    const accounts = useAllAccounts()
+    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     const mutation = useMutation({
         // The global default mutation config sets throwOnError: true so that
@@ -87,14 +99,32 @@ export const useSubmitRekeyMutation = ({
         }: SubmitRekeyParams): Promise<string[]> => {
             let unsignedTxn: PeraTransaction
             try {
-                // No explicit fee — AlgoKit sizes it from the full encoded
-                // transaction (`max(minFee, feePerByte × size)`), so the
-                // rekey never underpays under congestion.
+                const suggestedParams = await algokit.getSuggestedParams()
+                const suggestedMinFee = BigInt(suggestedParams.minFee)
+                // The rekey txn is signed by sourceAddress's CURRENT auth
+                // (pre-rekey) — resolveMinFeeForSender resolves the
+                // effective signer via getSignerFor, so this is the correct
+                // fee basis even when undoing a rekey to a quantum auth.
+                const resolvedMinFee = resolveMinFeeForSender({
+                    senderAddress: sourceAddress,
+                    accounts,
+                    suggestedMinFee,
+                    configMinTxnFee: minTxnFee,
+                    pqMultiplier,
+                })
                 unsignedTxn = await algokit.createTransaction.payment({
                     sender: sourceAddress,
                     receiver: sourceAddress,
                     amount: 0n.microAlgo(),
                     rekeyTo: rekeyToAddress,
+                    // Only override AlgoKit's auto-sizing when the PQ-aware
+                    // fee exceeds the network's suggested minimum — otherwise
+                    // AlgoKit sizes it from the full encoded transaction
+                    // (`max(minFee, feePerByte × size)`), so a non-quantum
+                    // rekey never underpays under congestion.
+                    ...(resolvedMinFee > suggestedMinFee
+                        ? { staticFee: resolvedMinFee.microAlgo() }
+                        : {}),
                 })
             } catch (error) {
                 throw new RekeyError('build_failed', error)
