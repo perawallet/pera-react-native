@@ -464,6 +464,14 @@ export type MnemonicAccountTypeResult =
     | { success: true; accountType: ImportAccountType }
     | { success: false; wordCount: number }
 
+/**
+ * Auto-detects the import account type from the mnemonic's word count.
+ *
+ * NOTE: quantum mnemonics are ALSO 25 words — indistinguishable from algo25
+ * by count. 25 words deliberately resolves to algo25 (the insertion order of
+ * MNEMONIC_WORD_COUNT guarantees it); quantum import never goes through
+ * auto-detection, only through its dedicated entrypoint (PQ-009).
+ */
 export const resolveImportAccountType = (
     mnemonic: string,
 ): MnemonicAccountTypeResult => {
