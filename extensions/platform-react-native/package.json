@@ -28,7 +28,7 @@
     "react-native-mmkv": "^4.2.0",
     "@react-native-firebase/analytics": "^24.0.0",
     "@react-native-firebase/crashlytics": "^24.0.0",
-    "@react-native-firebase/messaging": "^24.0.0",
+    "@react-native-firebase/messaging": "^25.1.0",
     "@react-native-firebase/remote-config": "^24.0.0",
     "@notifee/react-native": "^9.1.8",
     "drizzle-orm": "catalog:",

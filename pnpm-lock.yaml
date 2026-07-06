@@ -381,8 +381,8 @@ importers:
         specifier: ^24.0.0
         version: 24.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)
       '@react-native-firebase/messaging':
-        specifier: ^24.0.0
-        version: 24.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)
+        specifier: ^25.1.0
+        version: 25.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)
       '@react-native-firebase/remote-config':
         specifier: ^24.0.0
         version: 24.1.0(@react-native-firebase/analytics@24.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12))(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
@@ -948,8 +948,8 @@ importers:
         specifier: ^24.0.0
         version: 24.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)
       '@react-native-firebase/messaging':
-        specifier: ^24.0.0
-        version: 24.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)
+        specifier: ^25.1.0
+        version: 25.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)
       '@react-native-firebase/remote-config':
         specifier: ^24.0.0
         version: 24.1.0(@react-native-firebase/analytics@24.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12))(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
@@ -5767,10 +5767,10 @@ packages:
       expo:
         optional: true
 
-  '@react-native-firebase/messaging@24.1.0':
-    resolution: {integrity: sha512-fwE+KF4T6UeMgwqsN1Qi1q1q0Bus2ppknhMgbRX1WpG+XYhIHFLGD1M9Z29p0eVWwrz4cQR6f5I0zCnMXwIItQ==}
+  '@react-native-firebase/messaging@25.1.0':
+    resolution: {integrity: sha512-YVhGWr6uthySTNHqnXsDh6DX4WtK4AittU9oDeKaBSjN4uoMDOe2X74TYnBFEUdcCQxOAsUavFNAexQx/o8dsw==}
     peerDependencies:
-      '@react-native-firebase/app': 24.1.0
+      '@react-native-firebase/app': 25.1.0
       expo: '>=47.0.0'
     peerDependenciesMeta:
       expo:
@@ -9847,8 +9847,8 @@ packages:
     resolution: {integrity: sha512-aePbxDmcYW++PaqBsJ+HYUFwCdv4LVvdnhBy78E57PIor8/OVvhMrADFFEDh8DHDFRv/O9i3lPhsENjO7QX0+A==}
     engines: {node: '>=8'}
 
-  yargs@16.2.0:
-    resolution: {integrity: sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw==}
+  yargs@16.2.2:
+    resolution: {integrity: sha512-Nt9ZJjXTv5R8MHbqby/wXQ6Gi0Bb3TcYZkR1bzuL4yB2OxWPkXknz513gEF0GoA6tn00UpbPvERW8rzCuWCA6w==}
     engines: {node: '>=10'}
 
   yargs@17.7.2:
@@ -12317,7 +12317,7 @@ snapshots:
     optionalDependencies:
       expo: 56.0.12(@babel/core@7.29.7)(@expo/dom-webview@56.0.5)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.8.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
 
-  '@react-native-firebase/messaging@24.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)':
+  '@react-native-firebase/messaging@25.1.0(@react-native-firebase/app@24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(expo@56.0.12)':
     dependencies:
       '@react-native-firebase/app': 24.1.0(expo@56.0.12)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
     optionalDependencies:
@@ -12455,7 +12455,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
@@ -15723,7 +15725,7 @@ snapshots:
   react-native-vector-icons@10.3.0:
     dependencies:
       prop-types: 15.8.1
-      yargs: 16.2.0
+      yargs: 16.2.2
 
   react-native-vision-camera-barcode-scanner@5.0.11(487765285bc499b8ff1edcc3d386bcbc):
     dependencies:
@@ -16765,7 +16767,7 @@ snapshots:
       y18n: 4.0.3
       yargs-parser: 18.1.3
 
-  yargs@16.2.0:
+  yargs@16.2.2:
     dependencies:
       cliui: 7.0.4
       escalade: 3.2.0
