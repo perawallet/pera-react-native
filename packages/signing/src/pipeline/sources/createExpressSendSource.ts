@@ -84,6 +84,7 @@ export const createExpressSendSource = (
                 sender,
                 receiver,
                 amount: fundingNeeded,
+                fee: suggestedParams.minFee,
             })
             senderIndicesToSign.push(transactions.length)
             transactions.push(fundingTx)
@@ -93,6 +94,7 @@ export const createExpressSendSource = (
         const optInTx = await createAssetOptInTransaction({
             sender: receiver,
             assetId,
+            fee: suggestedParams.minFee,
         })
         // Note: opt-in is NOT in senderIndicesToSign - it's signed by receiver
         transactions.push(optInTx)
@@ -103,6 +105,7 @@ export const createExpressSendSource = (
             receiver,
             amount,
             assetId,
+            fee: suggestedParams.minFee,
         })
         senderIndicesToSign.push(transactions.length)
         transactions.push(transferTx)

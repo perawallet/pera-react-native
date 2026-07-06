@@ -80,6 +80,7 @@ describe('createExpressSendSource', () => {
             sender: 'SENDER',
             receiver: 'RECEIVER',
             amount: 201_000n,
+            fee: 1_000n,
         })
         expect(group.data.type).toBe('transactions')
         if (group.data.type === 'transactions') {
@@ -129,6 +130,7 @@ describe('createExpressSendSource', () => {
         expect(createAssetOptInTransaction).toHaveBeenCalledWith({
             sender: 'RECEIVER',
             assetId: 42n,
+            fee: 1_000n,
         })
     })
 
