@@ -42,7 +42,7 @@ export const createExpressSendSource = (
         | 'createAssetOptInTransaction'
         | 'encodeTransaction'
         | 'getAccountInfo'
-        | 'getSuggestedParams'
+        | 'resolveMinFeeForSender'
         | 'assetMbr'
     >,
 ): DataSource<ExpressSendSourceParams> => {
@@ -52,7 +52,7 @@ export const createExpressSendSource = (
         createAssetOptInTransaction,
         encodeTransaction,
         getAccountInfo,
-        getSuggestedParams,
+        resolveMinFeeForSender,
         assetMbr,
     } = deps
 
@@ -63,13 +63,14 @@ export const createExpressSendSource = (
         const { amount: currentBalance, minBalance: currentMbr } =
             await getAccountInfo(receiver)
 
-        // Get suggested params for fee calculation
-        const suggestedParams = await getSuggestedParams()
+        const senderFee = await resolveMinFeeForSender(sender)
+        const receiverFee = await resolveMinFeeForSender(receiver)
 
-        // After opt-in the receiver's MBR increases by ASSET_MBR
-        // The opt-in tx fee is also paid from the receiver's balance
+        // After opt-in the receiver's MBR increases by ASSET_MBR.
+        // The opt-in tx fee is paid from the receiver's balance at the
+        // receiver's own (PQ-aware) rate, so reserve exactly that.
         const mbrAfterOptIn = currentMbr + assetMbr
-        const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+        const balanceNeeded = mbrAfterOptIn + receiverFee
         const fundingNeeded =
             balanceNeeded > currentBalance ? balanceNeeded - currentBalance : 0n
 
@@ -84,7 +85,7 @@ export const createExpressSendSource = (
                 sender,
                 receiver,
                 amount: fundingNeeded,
-                fee: suggestedParams.minFee,
+                fee: senderFee,
             })
             senderIndicesToSign.push(transactions.length)
             transactions.push(fundingTx)
@@ -94,7 +95,7 @@ export const createExpressSendSource = (
         const optInTx = await createAssetOptInTransaction({
             sender: receiver,
             assetId,
-            fee: suggestedParams.minFee,
+            fee: receiverFee,
         })
         // Note: opt-in is NOT in senderIndicesToSign - it's signed by receiver
         transactions.push(optInTx)
@@ -105,7 +106,7 @@ export const createExpressSendSource = (
             receiver,
             amount,
             assetId,
-            fee: suggestedParams.minFee,
+            fee: senderFee,
         })
         senderIndicesToSign.push(transactions.length)
         transactions.push(transferTx)
