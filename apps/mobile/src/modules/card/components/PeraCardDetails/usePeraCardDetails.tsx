@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import {
     CardStatus,
@@ -28,6 +28,7 @@ import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import {
+    useAuthorizeCardDelegation,
     useCardErrorToast,
     useCardFundingDelegation,
     useCardFundingSourcePicker,
@@ -201,6 +202,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const { pickFundingSource } = useCardFundingSourcePicker()
     const { delegateTo, cancelDelegation, canDelegate } =
         useCardFundingDelegation()
+    const { authorizeDelegation } = useAuthorizeCardDelegation()
     const { mutateAsync: connectFundingSourceAsync } =
         useConnectFundingSourceMutation()
 
@@ -210,7 +212,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // pointed at an un-delegated source. The old delegation is only zeroed
     // once the new one is live — best-effort, since Baanx has no DELETE, so a
     // failure there just leaves a stale allowance surfaced as a soft warning.
-    const changeFunding = useCallback(async () => {
+    const performChangeFunding = useCallback(async () => {
         const previousAccount = accounts.find(
             account => account.address === fundingAddress,
         )
@@ -237,7 +239,9 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         // Delegate the new account first — the card stays funded by the old
         // account until this succeeds, so a failure changes nothing on Baanx.
         try {
-            await delegateTo(account)
+            // Consent + live PIN/biometric before signing the grant.
+            const authorized = await authorizeDelegation(account, delegateTo)
+            if (!authorized) return
         } catch {
             // Recoverable: nothing was repointed; the old account is intact.
             errorToast(
@@ -274,12 +278,27 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         canDelegate,
         connectFundingSourceAsync,
         delegateTo,
+        authorizeDelegation,
         cancelDelegation,
         showError,
         errorToast,
         infoToast,
         t,
     ])
+
+    // Guard the whole picker → consent/PIN → delegate → repoint sequence so a
+    // double-tap can't run two concurrent changes (the consent gate opens
+    // before any mutation flips its own pending flag).
+    const isChangingFundingRef = useRef(false)
+    const changeFunding = useCallback(async () => {
+        if (isChangingFundingRef.current) return
+        isChangingFundingRef.current = true
+        try {
+            await performChangeFunding()
+        } finally {
+            isChangingFundingRef.current = false
+        }
+    }, [performChangeFunding])
     const onChangeFunding = useCallback(() => {
         void changeFunding()
     }, [changeFunding])

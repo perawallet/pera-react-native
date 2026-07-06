@@ -15,6 +15,7 @@ import { act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 
 const mockSetSelectedFundingType = vi.fn()
 let mockStoredFundingType: FundingType | null = null
@@ -73,6 +74,10 @@ const mockDelegateTo = vi.fn()
 const mockCancelDelegation = vi.fn()
 const mockCanDelegate = vi.fn()
 const mockShowCardError = vi.fn()
+// By default the gate passes through to the delegate fn, so existing Auto
+// tests still observe the delegation; tests that exercise a declined
+// consent/PIN override it to resolve false.
+const mockAuthorizeDelegation = vi.fn(passThroughAuthorizeDelegation)
 vi.mock('../../../hooks', () => ({
     useCardErrorToast: () => mockShowCardError,
     useCardFundingDelegation: () => ({
@@ -80,6 +85,9 @@ vi.mock('../../../hooks', () => ({
         cancelDelegation: mockCancelDelegation,
         isPending: false,
         canDelegate: mockCanDelegate,
+    }),
+    useAuthorizeCardDelegation: () => ({
+        authorizeDelegation: mockAuthorizeDelegation,
     }),
 }))
 
@@ -91,6 +99,11 @@ vi.mock('@hooks/useToast', () => ({
         infoToast: vi.fn(),
         showToast: vi.fn(),
     }),
+}))
+
+let mockIsAutoFundingEnabled = true
+vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
+    useIsCardAutoFundingEnabled: () => mockIsAutoFundingEnabled,
 }))
 
 import { useSelectFundingTypeSheet } from '../useSelectFundingTypeSheet'
@@ -111,6 +124,10 @@ describe('useSelectFundingTypeSheet', () => {
         mockDelegateTo.mockResolvedValue(undefined)
         mockCancelDelegation.mockResolvedValue(undefined)
         mockCanDelegate.mockReturnValue(true)
+        mockIsAutoFundingEnabled = true
+        mockAuthorizeDelegation.mockImplementation(
+            passThroughAuthorizeDelegation,
+        )
     })
 
     it('seeds the selection from the stored funding type', () => {
@@ -240,6 +257,58 @@ describe('useSelectFundingTypeSheet', () => {
         expect(result.current.isAutoDisabled).toBe(true)
         // The seeded Auto selection migrates to Manual so Apply can't dead-end
         // trying to sign a delegation the account can't produce.
+        expect(result.current.selectedType).toBe(FundingType.Manual)
+    })
+
+    it('routes the Auto grant through the consent + auth gate', async () => {
+        const { result } = renderHook(() => useSelectFundingTypeSheet())
+
+        act(() => {
+            result.current.onSelectType(FundingType.Auto)
+        })
+        act(() => {
+            result.current.onApply()
+        })
+
+        await waitFor(() =>
+            expect(mockAuthorizeDelegation).toHaveBeenCalledWith(
+                connectedAccount,
+                expect.any(Function),
+            ),
+        )
+    })
+
+    it('keeps the sheet open and skips persisting when authorization is declined', async () => {
+        mockAuthorizeDelegation.mockResolvedValue(false)
+        const { result } = renderHook(() => useSelectFundingTypeSheet())
+
+        act(() => {
+            result.current.onSelectType(FundingType.Auto)
+        })
+        act(() => {
+            result.current.onApply()
+        })
+
+        await waitFor(() => expect(mockAuthorizeDelegation).toHaveBeenCalled())
+        expect(mockDelegateTo).not.toHaveBeenCalled()
+        expect(mockSetSelectedFundingType).not.toHaveBeenCalled()
+        expect(mockResolve).not.toHaveBeenCalled()
+        expect(mockDismiss).not.toHaveBeenCalled()
+    })
+
+    it('disables Auto when the kill-switch flag is off', () => {
+        mockIsAutoFundingEnabled = false
+        const { result } = renderHook(() => useSelectFundingTypeSheet())
+
+        expect(result.current.isAutoDisabled).toBe(true)
+        expect(result.current.isAutoFundingEnabled).toBe(false)
+    })
+
+    it('migrates a seeded Auto to Manual when the kill-switch flag is off', () => {
+        mockStoredFundingType = FundingType.Auto
+        mockIsAutoFundingEnabled = false
+        const { result } = renderHook(() => useSelectFundingTypeSheet())
+
         expect(result.current.selectedType).toBe(FundingType.Manual)
     })
 

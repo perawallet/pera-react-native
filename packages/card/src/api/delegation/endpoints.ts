@@ -95,7 +95,12 @@ export type PostAlgorandDelegationApprovalParams = {
     token: string
     /** Base64 msgpack-encoded signed LogicSig. */
     signedProgram: string
-    /** Base64 nonce bound into the signature (ownership proof). */
+    /**
+     * Single-use nonce from GET /v1/delegation/token, echoed back for token
+     * matching — NOT part of the signed bytes (the signature covers only
+     * "Program" || program), so it binds nothing cryptographically. SWAP POINT:
+     * the real contract may require the nonce inside the signed program.
+     */
     sigMessage: string
     signal?: AbortSignal
 }

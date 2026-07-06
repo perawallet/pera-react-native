@@ -34,12 +34,14 @@ import { config } from '@perawallet/wallet-core-config'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import {
+    useAuthorizeCardDelegation,
     useCardErrorToast,
     useCardFundingDelegation,
     useCardFundingSourcePicker,
     useCardOnboardingLogout,
 } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
@@ -66,8 +68,10 @@ export type UseCardOnboardingStatusScreenResult = {
     selectedFundingType: FundingType
     /** Selects a funding type — local state until "Create Pera Card" commits it. */
     handleSelectFundingType: (type: FundingType) => void
-    /** True when the connected account can't sign an LSig (e.g. Ledger). */
+    /** True when Auto can't be picked (kill-switch off, or account can't sign). */
     isAutoFundingUnavailable: boolean
+    /** False when the auto-funding kill-switch is off — Auto is "coming soon". */
+    isAutoFundingEnabled: boolean
     /** True while the auto-funding delegation is being signed and submitted. */
     isCreatingCard: boolean
     /** Persists the funding type and finishes onboarding (card creation deferred). */
@@ -244,9 +248,12 @@ export const useCardOnboardingStatusScreen =
             canDelegate,
             isPending: isCreatingCard,
         } = useCardFundingDelegation()
+        const { authorizeDelegation } = useAuthorizeCardDelegation()
         const showError = useCardErrorToast()
+        const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
         const isAutoFundingUnavailable =
-            connectedAccount != null && !canDelegate(connectedAccount)
+            !isAutoFundingEnabled ||
+            (connectedAccount != null && !canDelegate(connectedAccount))
 
         // A connected account that can't sign (e.g. Ledger) can't use Auto, so
         // fall back to Manual. Without this the Auto option stays selected but
@@ -276,7 +283,15 @@ export const useCardOnboardingStatusScreen =
                     return
                 }
                 try {
-                    await delegateTo(connectedAccount)
+                    // Consent + live PIN/biometric before signing the grant.
+                    const authorized = await authorizeDelegation(
+                        connectedAccount,
+                        delegateTo,
+                    )
+                    if (!authorized) {
+                        hasCreatedRef.current = false
+                        return
+                    }
                 } catch (error) {
                     hasCreatedRef.current = false
                     await showError(error)
@@ -295,6 +310,7 @@ export const useCardOnboardingStatusScreen =
             selectedFundingType,
             connectedAccount,
             delegateTo,
+            authorizeDelegation,
             showError,
             successToast,
             navigation,
@@ -318,6 +334,7 @@ export const useCardOnboardingStatusScreen =
             selectedFundingType,
             handleSelectFundingType,
             isAutoFundingUnavailable,
+            isAutoFundingEnabled,
             isCreatingCard,
             handleCreatePeraCard,
             handleEnterDetails,

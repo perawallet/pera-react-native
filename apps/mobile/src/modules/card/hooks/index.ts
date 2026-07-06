@@ -25,6 +25,10 @@ export {
     type UseCardFundingDelegationResult,
 } from './useCardFundingDelegation'
 export {
+    useAuthorizeCardDelegation,
+    type UseAuthorizeCardDelegationResult,
+} from './useAuthorizeCardDelegation'
+export {
     useCardFundingSourcePicker,
     isEligibleFundingSource,
     type UseCardFundingSourcePickerResult,

@@ -35,6 +35,25 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
     }),
 }))
 
+// __DEV__ is false in the test env, so the kill-switch would default off; force
+// it on to exercise the Auto flow.
+vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
+    useIsCardAutoFundingEnabled: () => true,
+}))
+
+// The consent + PIN gate is unit-tested in useAuthorizeCardDelegation.spec;
+// pass through here so this test stays focused on the delegation wire.
+vi.mock('@modules/card/hooks', async () => {
+    const { passThroughAuthorizeDelegation } =
+        await import('@test-utils/cardDelegation')
+    return {
+        ...(await vi.importActual<object>('@modules/card/hooks')),
+        useAuthorizeCardDelegation: () => ({
+            authorizeDelegation: passThroughAuthorizeDelegation,
+        }),
+    }
+})
+
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {

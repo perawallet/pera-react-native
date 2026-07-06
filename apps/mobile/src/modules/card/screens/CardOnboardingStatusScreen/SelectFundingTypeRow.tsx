@@ -20,6 +20,7 @@ import { PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { FundingTypeOption } from '../../components/FundingTypeOption'
+import { resolveAutoFundingHint } from '../../utils/autoFundingHint'
 import { StatusChecklistRow } from './StatusChecklistRow'
 import { FundingTypeInfoContent } from './FundingTypeInfoContent'
 import { useStyles } from './styles'
@@ -28,8 +29,10 @@ type SelectFundingTypeRowProps = {
     isFundsConnected: boolean
     selectedFundingType: FundingType
     onSelectFundingType: (type: FundingType) => void
-    /** Disables the Auto option (connected account can't sign an LSig). */
+    /** Disables the Auto option (kill-switch off, or account can't sign). */
     isAutoFundingUnavailable: boolean
+    /** False when the kill-switch is off — Auto shows a "coming soon" hint. */
+    isAutoFundingEnabled: boolean
 }
 
 /** Checklist row 4 — "Select Funding Type", active once funds are connected. */
@@ -38,10 +41,19 @@ export const SelectFundingTypeRow = ({
     selectedFundingType,
     onSelectFundingType,
     isAutoFundingUnavailable,
+    isAutoFundingEnabled,
 }: SelectFundingTypeRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const title = t('peraCard.setup_status.funding_type_title')
+
+    const autoHint = resolveAutoFundingHint(t, {
+        isAutoFundingEnabled,
+        isAutoUnavailable: isAutoFundingUnavailable,
+        fallback: t('peraCard.setup_status.funding_type_limit_hint', {
+            limit: formatCurrency(AUTO_FUNDING_PER_TX_LIMIT_USD, 0, 'USD'),
+        }),
+    })
 
     if (!isFundsConnected) {
         return (
@@ -78,22 +90,7 @@ export const SelectFundingTypeRow = ({
                     isSelected={selectedFundingType === FundingType.Auto}
                     onPress={() => onSelectFundingType(FundingType.Auto)}
                     isDisabled={isAutoFundingUnavailable}
-                    hint={
-                        isAutoFundingUnavailable
-                            ? t(
-                                  'peraCard.account.funding_type_auto_unavailable_hint',
-                              )
-                            : t(
-                                  'peraCard.setup_status.funding_type_limit_hint',
-                                  {
-                                      limit: formatCurrency(
-                                          AUTO_FUNDING_PER_TX_LIMIT_USD,
-                                          0,
-                                          'USD',
-                                      ),
-                                  },
-                              )
-                    }
+                    hint={autoHint}
                     testID='card-onboarding-status-funding-type-auto'
                 />
                 <FundingTypeOption

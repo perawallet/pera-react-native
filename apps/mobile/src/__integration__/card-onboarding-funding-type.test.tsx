@@ -35,6 +35,27 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
     }),
 }))
 
+// __DEV__ is false in the test env, so the kill-switch would default off (and
+// migrate the Auto default to Manual). Force it on for the Auto flow; a
+// dedicated test flips it off to cover the coming-soon / migration path.
+const { autoFunding } = vi.hoisted(() => ({ autoFunding: { enabled: true } }))
+vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
+    useIsCardAutoFundingEnabled: () => autoFunding.enabled,
+}))
+
+// The consent + PIN gate is unit-tested in useAuthorizeCardDelegation.spec;
+// pass through here so this test stays focused on the delegation wire.
+vi.mock('@modules/card/hooks', async () => {
+    const { passThroughAuthorizeDelegation } =
+        await import('@test-utils/cardDelegation')
+    return {
+        ...(await vi.importActual<object>('@modules/card/hooks')),
+        useAuthorizeCardDelegation: () => ({
+            authorizeDelegation: passThroughAuthorizeDelegation,
+        }),
+    }
+})
+
 import {
     AccountTypes,
     useAccountsStore,
@@ -94,6 +115,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         store.setOnboardingStep(OnboardingStep.Completed)
         store.setConnectedFundingSourceAddress(FUNDING_ADDRESS)
         mockOnboardingDetails('VERIFIED')
+        autoFunding.enabled = true
     })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
@@ -189,6 +211,32 @@ describe('Flow: Card onboarding — select funding type', () => {
             ).toBeTruthy(),
         )
         expect(useCardStore.getState().selectedFundingType).toBeNull()
+    })
+
+    it('Given the kill-switch is off, then Auto shows the coming-soon hint and Create persists Manual', async () => {
+        autoFunding.enabled = false
+        useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
+
+        renderStatus()
+
+        const autoOption = await screen.findByTestId(
+            'card-onboarding-status-funding-type-auto',
+        )
+        // Integration i18n renders keys, not copy.
+        expect(autoOption.textContent).toContain(
+            'funding_type_auto_coming_soon_hint',
+        )
+
+        // The Auto default migrated to Manual, so Create takes the
+        // no-delegation path and persists Manual.
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-status-create-card'),
+        )
+        await waitFor(() =>
+            expect(useCardStore.getState().selectedFundingType).toBe(
+                FundingType.Manual,
+            ),
+        )
     })
 
     it('Given funds are not connected, then the funding-type row stays inactive with no Create button', async () => {

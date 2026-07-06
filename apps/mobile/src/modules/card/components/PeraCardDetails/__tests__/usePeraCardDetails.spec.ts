@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
     accounts: [] as unknown[],
     pickFundingSource: vi.fn(),
     delegateTo: vi.fn(),
+    authorizeDelegation: vi.fn(),
     cancelDelegation: vi.fn(),
     canDelegate: vi.fn(),
 }))
@@ -128,10 +129,14 @@ vi.mock('../../../hooks', async () => ({
         isPending: false,
         canDelegate: mocks.canDelegate,
     }),
+    useAuthorizeCardDelegation: () => ({
+        authorizeDelegation: mocks.authorizeDelegation,
+    }),
 }))
 
 import { FundingType } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 import { usePeraCardDetails } from '../usePeraCardDetails'
 
 const walletAccount = (address: string): WalletAccount =>
@@ -155,6 +160,10 @@ describe('usePeraCardDetails', () => {
         mocks.delegateTo.mockResolvedValue(undefined)
         mocks.cancelDelegation.mockResolvedValue(undefined)
         mocks.canDelegate.mockReturnValue(true)
+        // The consent + auth gate passes through to the delegate fn by default.
+        mocks.authorizeDelegation.mockImplementation(
+            passThroughAuthorizeDelegation,
+        )
     })
 
     it('masks the PAN with the last 4 when known', () => {
@@ -473,6 +482,26 @@ describe('usePeraCardDetails', () => {
             expect(mocks.connectAsync.mock.invocationCallOrder[0]).toBeLessThan(
                 mocks.cancelDelegation.mock.invocationCallOrder[0],
             )
+        })
+
+        it('aborts without repointing when the user declines authorization', async () => {
+            mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'OLD_ADDR'
+            const oldAccount = walletAccount('OLD_ADDR')
+            const newAccount = walletAccount('NEW_ADDR')
+            mocks.accounts = [oldAccount, newAccount]
+            mocks.pickFundingSource.mockResolvedValue(newAccount)
+            // User backs out of the consent/PIN gate.
+            mocks.authorizeDelegation.mockResolvedValue(false)
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.delegateTo).not.toHaveBeenCalled()
+            expect(mocks.connectAsync).not.toHaveBeenCalled()
+            expect(mocks.cancelDelegation).not.toHaveBeenCalled()
         })
 
         it('does nothing when the picker is dismissed or re-picks the same account', async () => {

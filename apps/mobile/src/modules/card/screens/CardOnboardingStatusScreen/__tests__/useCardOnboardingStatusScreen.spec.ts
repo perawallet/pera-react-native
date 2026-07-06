@@ -15,6 +15,7 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 
 const mockSetOnboardingStep = vi.fn()
 const mockSetSelectedFundingType = vi.fn()
@@ -100,6 +101,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockLogout = vi.fn()
 const mockShowCardError = vi.fn()
+// Passes through to the delegate fn by default so existing Auto tests still
+// observe the delegation; the declined-authorization test overrides it.
+const mockAuthorizeDelegation = vi.fn(passThroughAuthorizeDelegation)
 vi.mock('@modules/card/hooks', () => ({
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
     useCardErrorToast: () => mockShowCardError,
@@ -111,6 +115,9 @@ vi.mock('@modules/card/hooks', () => ({
         cancelDelegation: vi.fn(),
         isPending: false,
         canDelegate: mockCanDelegate,
+    }),
+    useAuthorizeCardDelegation: () => ({
+        authorizeDelegation: mockAuthorizeDelegation,
     }),
 }))
 
@@ -165,6 +172,11 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+let mockIsAutoFundingEnabled = true
+vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
+    useIsCardAutoFundingEnabled: () => mockIsAutoFundingEnabled,
+}))
+
 import { useCardOnboardingStatusScreen } from '../useCardOnboardingStatusScreen'
 
 const account = (
@@ -188,6 +200,8 @@ beforeEach(() => {
     mockPickFundingSource.mockResolvedValue(null)
     mockDelegateTo.mockResolvedValue(undefined)
     mockCanDelegate.mockReturnValue(true)
+    mockIsAutoFundingEnabled = true
+    mockAuthorizeDelegation.mockImplementation(passThroughAuthorizeDelegation)
 })
 
 describe('useCardOnboardingStatusScreen', () => {
@@ -425,6 +439,52 @@ describe('useCardOnboardingStatusScreen', () => {
         )
     })
 
+    it('routes the Auto grant through the consent + auth gate', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        const connected = account('ADDR1', 'algo25')
+        mockAccounts = [connected]
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() =>
+            expect(mockAuthorizeDelegation).toHaveBeenCalledWith(
+                connected,
+                expect.any(Function),
+            ),
+        )
+    })
+
+    it('stays on the screen and allows retry when authorization is declined', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAuthorizeDelegation.mockResolvedValueOnce(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() => expect(mockAuthorizeDelegation).toHaveBeenCalled())
+        expect(mockDelegateTo).not.toHaveBeenCalled()
+        expect(mockSetSelectedFundingType).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+
+        // The one-shot guard reset on decline so a retry can go through.
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+            }),
+        )
+    })
+
     it('flags auto funding unavailable when the connected account cannot sign', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
@@ -468,6 +528,27 @@ describe('useCardOnboardingStatusScreen', () => {
         // must not dead-end on an error.
         expect(mockDelegateTo).not.toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+    })
+
+    it('flags auto funding unavailable when the kill-switch flag is off', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockIsAutoFundingEnabled = false
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.isAutoFundingUnavailable).toBe(true)
+        expect(result.current.isAutoFundingEnabled).toBe(false)
+    })
+
+    it('migrates the Auto default to Manual when the kill-switch flag is off', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockIsAutoFundingEnabled = false
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
     })
 
     it('wires logout and the support link', () => {

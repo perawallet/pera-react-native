@@ -16,6 +16,8 @@ import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 /**
  * Max USD Baanx auto-funds per card transaction; also sent as the delegation
  * allowance. SWAP POINT: value and semantics TBC with Baanx (~300–400 USD).
+ * Today this cap is a plaintext POST field, not bound into the signed program —
+ * binding it is a required unblock, tracked in api/delegation/verify.ts.
  */
 export const AUTO_FUNDING_PER_TX_LIMIT_USD = new Decimal(400)
 

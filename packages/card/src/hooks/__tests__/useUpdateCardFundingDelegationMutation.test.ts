@@ -25,15 +25,18 @@ const {
     fetchDelegationToken,
     fetchDelegationProgram,
     postAlgorandDelegationApproval,
+    verifyDelegationProgram,
 } = vi.hoisted(() => ({
     fetchDelegationToken: vi.fn(),
     fetchDelegationProgram: vi.fn(),
     postAlgorandDelegationApproval: vi.fn(),
+    verifyDelegationProgram: vi.fn(),
 }))
 vi.mock('../../api/delegation', () => ({
     fetchDelegationToken,
     fetchDelegationProgram,
     postAlgorandDelegationApproval,
+    verifyDelegationProgram,
 }))
 
 import { useUpdateCardFundingDelegationMutation } from '../useUpdateCardFundingDelegationMutation'
@@ -156,6 +159,43 @@ describe('useUpdateCardFundingDelegationMutation', () => {
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
+    })
+
+    it('verifies the fetched program before signing it', async () => {
+        const { result } = renderHook(
+            () => useUpdateCardFundingDelegationMutation(),
+            { wrapper },
+        )
+
+        await result.current.mutateAsync({
+            address: 'ALGO_ADDR',
+            allowance: new Decimal(400),
+            signDelegation,
+        })
+
+        expect(verifyDelegationProgram).toHaveBeenCalledWith(PROGRAM, 'mainnet')
+    })
+
+    it('aborts before signing when program verification throws', async () => {
+        verifyDelegationProgram.mockImplementationOnce(() => {
+            throw new Error('unpinned program')
+        })
+        const rejectingSigner = vi.fn()
+
+        const { result } = renderHook(
+            () => useUpdateCardFundingDelegationMutation(),
+            { wrapper },
+        )
+
+        result.current.mutate({
+            address: 'ALGO_ADDR',
+            allowance: new Decimal(400),
+            signDelegation: rejectingSigner,
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(rejectingSigner).not.toHaveBeenCalled()
         expect(postAlgorandDelegationApproval).not.toHaveBeenCalled()
     })
 

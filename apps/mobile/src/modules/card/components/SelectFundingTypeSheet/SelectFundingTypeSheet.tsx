@@ -21,6 +21,7 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { FundingTypeOption } from '../FundingTypeOption'
+import { resolveAutoFundingHint } from '../../utils/autoFundingHint'
 import { useSelectFundingTypeSheet } from './useSelectFundingTypeSheet'
 import { useStyles } from './styles'
 
@@ -33,12 +34,18 @@ export const SelectFundingTypeSheet = () => {
         selectedType,
         onSelectType,
         isAutoDisabled,
+        isAutoFundingEnabled,
         isPending,
         onApply,
         onClose,
     } = useSelectFundingTypeSheet()
 
     const limit = formatCurrency(AUTO_FUNDING_PER_TX_LIMIT_USD, 0, 'USD')
+
+    const autoHint = resolveAutoFundingHint(t, {
+        isAutoFundingEnabled,
+        isAutoUnavailable: isAutoDisabled,
+    })
 
     return (
         <PWView
@@ -69,13 +76,7 @@ export const SelectFundingTypeSheet = () => {
                     isSelected={selectedType === FundingType.Auto}
                     onPress={() => onSelectType(FundingType.Auto)}
                     isDisabled={isAutoDisabled}
-                    hint={
-                        isAutoDisabled
-                            ? t(
-                                  'peraCard.account.funding_type_auto_unavailable_hint',
-                              )
-                            : undefined
-                    }
+                    hint={autoHint}
                     testID='card_funding_type_option_auto'
                 />
                 <FundingTypeOption

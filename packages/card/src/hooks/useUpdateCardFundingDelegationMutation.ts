@@ -18,6 +18,7 @@ import {
     fetchDelegationProgram,
     fetchDelegationToken,
     postAlgorandDelegationApproval,
+    verifyDelegationProgram,
 } from '../api/delegation'
 import { DEFAULT_CARD_CURRENCY, type DelegationSignature } from '../models'
 import { cardQueryKeys } from './querykeys'
@@ -52,9 +53,13 @@ export const useUpdateCardFundingDelegationMutation =
         >({
             mutationFn: async ({ address, allowance, signDelegation }) => {
                 const program = await fetchDelegationProgram({ network })
+                // Never sign an unpinned program in production — covers cancels
+                // too (allowance 0 still signs the program), so enabling auto
+                // funding in prod requires a pinned program first. See verify.ts.
+                verifyDelegationProgram(program, network)
                 const { signedProgram } = await signDelegation(program)
-                // The single-use token (~10 min) is fetched after signing so
-                // it is freshest at post time; a retry gets a new one.
+                // Single-use token (~10 min) fetched after signing so it is
+                // freshest at post time; the nonce is posted as-is, not signed.
                 const { token, nonce } = await fetchDelegationToken({
                     network,
                 })

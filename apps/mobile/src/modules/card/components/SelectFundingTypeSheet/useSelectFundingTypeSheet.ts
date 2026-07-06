@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     FundingType,
     useCardExternalWalletsQuery,
@@ -20,13 +20,20 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useCardErrorToast, useCardFundingDelegation } from '../../hooks'
+import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
+import {
+    useAuthorizeCardDelegation,
+    useCardErrorToast,
+    useCardFundingDelegation,
+} from '../../hooks'
 
 export type UseSelectFundingTypeSheetResult = {
     selectedType: FundingType
     onSelectType: (type: FundingType) => void
-    /** True when the connected account can't sign an LSig (e.g. Ledger). */
+    /** True when Auto can't be picked (flag off, or account can't sign). */
     isAutoDisabled: boolean
+    /** False when the auto-funding kill-switch is off — Auto is "coming soon". */
+    isAutoFundingEnabled: boolean
     isPending: boolean
     onApply: () => void
     onClose: () => void
@@ -57,6 +64,7 @@ export const useSelectFundingTypeSheet =
 
         const { delegateTo, cancelDelegation, isPending, canDelegate } =
             useCardFundingDelegation()
+        const { authorizeDelegation } = useAuthorizeCardDelegation()
         const { hasActiveDelegation } = useCardExternalWalletsQuery({
             address: connectedAddress,
         })
@@ -67,8 +75,10 @@ export const useSelectFundingTypeSheet =
             () => storedType ?? FundingType.Manual,
         )
 
+        const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
         const isAutoDisabled =
-            connectedAccount != null && !canDelegate(connectedAccount)
+            !isAutoFundingEnabled ||
+            (connectedAccount != null && !canDelegate(connectedAccount))
 
         // A connected account that can't sign (e.g. Ledger) can't use Auto, so
         // move the selection to Manual. Otherwise Auto stays selected but
@@ -79,8 +89,11 @@ export const useSelectFundingTypeSheet =
             }
         }, [isAutoDisabled, selectedType])
 
+        // The consent + PIN gate opens before the mutation flips `isPending`,
+        // so `isPending` alone can't block a double-tap during that window.
+        const isApplyingRef = useRef(false)
         const apply = useCallback(async () => {
-            if (isPending) return
+            if (isPending || isApplyingRef.current) return
             const currentType =
                 useCardStore.getState().selectedFundingType ??
                 FundingType.Manual
@@ -98,9 +111,15 @@ export const useSelectFundingTypeSheet =
                 await showError(null)
                 return
             }
+            isApplyingRef.current = true
             try {
                 if (selectedType === FundingType.Auto) {
-                    await delegateTo(connectedAccount)
+                    // Consent + live PIN/biometric before signing the grant.
+                    const authorized = await authorizeDelegation(
+                        connectedAccount,
+                        delegateTo,
+                    )
+                    if (!authorized) return
                 } else if (canDelegate(connectedAccount)) {
                     // Manual: zero any live delegation. A non-signing account
                     // (e.g. Ledger) can't hold one, so there's nothing to sign.
@@ -114,6 +133,8 @@ export const useSelectFundingTypeSheet =
                 resolve('applied')
             } catch (error) {
                 await showError(error)
+            } finally {
+                isApplyingRef.current = false
             }
         }, [
             isPending,
@@ -122,6 +143,7 @@ export const useSelectFundingTypeSheet =
             hasActiveDelegation,
             canDelegate,
             delegateTo,
+            authorizeDelegation,
             cancelDelegation,
             successToast,
             resolve,
@@ -138,6 +160,7 @@ export const useSelectFundingTypeSheet =
             selectedType,
             onSelectType: setSelectedType,
             isAutoDisabled,
+            isAutoFundingEnabled,
             isPending,
             onApply,
             onClose: dismiss,

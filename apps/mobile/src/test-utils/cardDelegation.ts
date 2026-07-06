@@ -10,15 +10,17 @@
  limitations under the License
  */
 
-export {
-    fetchDelegationToken,
-    fetchDelegationProgram,
-    fetchExternalWallets,
-    postAlgorandDelegationApproval,
-    type DelegationRequestParams,
-    type PostAlgorandDelegationApprovalParams,
-} from './endpoints'
-export {
-    verifyDelegationProgram,
-    DelegationProgramUnverifiedError,
-} from './verify'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+
+/**
+ * Test double for `useAuthorizeCardDelegation().authorizeDelegation` that skips
+ * the consent + PIN gate and runs the delegate directly — so specs can exercise
+ * the delegation wire without driving the gate (which has its own unit tests).
+ */
+export const passThroughAuthorizeDelegation = async (
+    account: WalletAccount,
+    delegate: (account: WalletAccount) => Promise<void>,
+): Promise<boolean> => {
+    await delegate(account)
+    return true
+}
