@@ -160,6 +160,8 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             accountIconPinkBg: '#F5B2C6',
             accountIconPeachBg: palette.salmon[100],
             accountIconNeutralBg: palette.gray[100],
+            // Placeholder gold pending PERA-4484 final quantum design.
+            accountIconQuantumBg: '#FFE280',
 
             // ASA Icons
             trustedIconBg: palette.turquoise[600],
@@ -367,6 +369,8 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             accountIconPinkBg: '#F5B2C6',
             accountIconPeachBg: palette.salmon[100],
             accountIconNeutralBg: palette.gray[100],
+            // Placeholder gold pending PERA-4484 final quantum design.
+            accountIconQuantumBg: '#FFE280',
 
             // ASA Icons
             trustedIconBg: palette.turquoise[600],

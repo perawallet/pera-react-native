@@ -135,6 +135,7 @@ import HdWalletAccountGlyph from '@assets/icons/accounts/glyph/hdwallet-account.
 import LedgerAccountGlyph from '@assets/icons/accounts/glyph/ledger-account.svg'
 import MultisigAccountGlyph from '@assets/icons/accounts/glyph/multisig-account.svg'
 import NoAuthAccountGlyph from '@assets/icons/accounts/glyph/noauth-account.svg'
+import QuantumAccountGlyph from '@assets/icons/accounts/glyph/quantum-account.svg'
 import RekeyedLedgerGlyph from '@assets/icons/accounts/glyph/rekeyed-ledger.svg'
 import RekeyedMultisigGlyph from '@assets/icons/accounts/glyph/rekeyed-multisig.svg'
 import RekeyedStandardGlyph from '@assets/icons/accounts/glyph/rekeyed-standard.svg'
@@ -291,6 +292,7 @@ export const ICON_LIBRARY = {
     'accounts/glyph/ledger-account': LedgerAccountGlyph,
     'accounts/glyph/multisig-account': MultisigAccountGlyph,
     'accounts/glyph/noauth-account': NoAuthAccountGlyph,
+    'accounts/glyph/quantum-account': QuantumAccountGlyph,
     'accounts/glyph/rekeyed-ledger': RekeyedLedgerGlyph,
     'accounts/glyph/rekeyed-multisig': RekeyedMultisigGlyph,
     'accounts/glyph/rekeyed-standard': RekeyedStandardGlyph,

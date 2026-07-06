@@ -126,4 +126,38 @@ describe('useAccountIcon', () => {
             variant: 'accountPeach',
         })
     })
+
+    it('returns the quantum glyph with the quantum variant for a base quantum account', () => {
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.quantum)),
+        )
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/quantum-account',
+            variant: 'accountQuantum',
+        })
+    })
+
+    it('falls through to the standard rekeyed glyph for a rekeyed-signable quantum account', () => {
+        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useCanSignWith).mockReturnValue(true)
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.quantum)),
+        )
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/rekeyed-standard',
+            variant: 'accountTurquoise',
+        })
+    })
+
+    it('shows the noauth glyph for a rekeyed-unsignable quantum account', () => {
+        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useCanSignWith).mockReturnValue(false)
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.quantum)),
+        )
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/noauth-account',
+            variant: 'accountPeach',
+        })
+    })
 })
