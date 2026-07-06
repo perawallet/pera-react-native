@@ -17,4 +17,9 @@ export const KEY_DOMAIN = 'pera.accounts'
 export const MNEMONIC_WORD_COUNT: Record<ImportAccountType, number> = {
     hdWallet: 24,
     algo25: 25,
+    // Quantum mnemonics collide with algo25 at 25 words. Key order matters:
+    // resolveImportAccountType scans this record in insertion order, so
+    // algo25 must stay ABOVE quantum for 25-word auto-detection to keep
+    // resolving to algo25 (quantum import is explicit-only — PQ-009).
+    quantum: 25,
 }

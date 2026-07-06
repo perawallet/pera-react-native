@@ -37,6 +37,7 @@ import {
     resolveImportAccountType,
 } from '../utils'
 import { AccountTypes, type WalletAccount } from '../models'
+import { MNEMONIC_WORD_COUNT } from '../constants'
 import { RekeyTargetNotFoundError } from '../errors'
 
 vi.mock('tweetnacl', () => ({
@@ -616,12 +617,20 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
     const words = (count: number) =>
         Array.from({ length: count }, (_, i) => `word${i}`).join(' ')
 
+    test('quantum mnemonics are 25 words', () => {
+        expect(MNEMONIC_WORD_COUNT.quantum).toBe(25)
+    })
+
     test('returns hdWallet for 24-word mnemonic', () => {
         const result = resolveImportAccountType(words(24))
         expect(result).toEqual({ success: true, accountType: 'hdWallet' })
     })
 
-    test('returns algo25 for 25-word mnemonic', () => {
+    test('25-word mnemonic still auto-resolves to algo25, never quantum', () => {
+        // Product decision: a 25-word quantum mnemonic is indistinguishable
+        // from legacy algo25 by word count. Auto-detection deliberately keeps
+        // resolving 25 words to algo25; quantum import only happens through
+        // its dedicated explicit entrypoint (PQ-009).
         const result = resolveImportAccountType(words(25))
         expect(result).toEqual({ success: true, accountType: 'algo25' })
     })
