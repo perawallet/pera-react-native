@@ -18,10 +18,10 @@ import com.algorand.perarn.migration.database.SchemaMigrationReplay
 import java.io.File
 import java.security.KeyStore
 
-// DESTRUCTIVE: wipes every legacy artifact. Do NOT call from production migration flow.
+// DESTRUCTIVE: wipes every legacy artifact.
 internal class LegacyDataWiper(private val context: Context) {
 
-    // DEV-ONLY destructive wipe (no production guard) + schema-replay cache. Do not call from app code.
+    // Destructive wipe (no production guard) + schema-replay cache.
     fun forceClear() {
         wipeEverything()
         SchemaMigrationReplay.cleanupAll(context)
