@@ -10,15 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
-
-export * from './models'
-export * from './hooks'
-export * from './fees'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './constants'
-export * from './arc0001'
-
-export { useNetworkStore } from './store/network-store'
+export * from './feeCalculator'
+export * from './useMinimumFeeConfig'

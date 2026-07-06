@@ -15,6 +15,10 @@ export const RemoteConfigKeys = {
     welcome_message: 'welcome_message',
     fee_warning_standard_fee: 'fee_warning_standard_fee',
     fee_warning_usd_threshold: 'fee_warning_usd_threshold',
+    fee_min_txn_fee: 'fee_min_txn_fee',
+    fee_pq_multiplier: 'fee_pq_multiplier',
+    fee_asset_mbr: 'fee_asset_mbr',
+    fee_base_account_mbr: 'fee_base_account_mbr',
     staking_projects: 'staking_projects',
     swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
@@ -39,6 +43,14 @@ export const RemoteConfigDefaults: Record<
     welcome_message: 'Hello',
     fee_warning_standard_fee: 0.001,
     fee_warning_usd_threshold: 0.01,
+    // Minimum transaction fee in µAlgo.
+    fee_min_txn_fee: 1000,
+    // Multiplier applied to the minimum fee for post-quantum signers.
+    fee_pq_multiplier: 3,
+    // Additional minimum balance requirement per opted-in asset, in µAlgo.
+    fee_asset_mbr: 100_000,
+    // Base minimum balance requirement for any account, in µAlgo.
+    fee_base_account_mbr: 100_000,
     staking_projects: '',
     swap_price_impact_low_threshold: 1,
     swap_price_impact_high_threshold: 5,
