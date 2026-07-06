@@ -124,6 +124,14 @@ export const useQRScannerView = ({
                             setScanningEnabled(true)
                         })
                     },
+                    () => {
+                        // WalletConnect handshake rejected (e.g. wrong
+                        // network). The provider already surfaced a toast on
+                        // this Modal's own notifier, so keep the scanner open
+                        // and re-arm it for another scan instead of closing.
+                        handlingRef.current = false
+                        setScanningEnabled(true)
+                    },
                 )
             } catch (error) {
                 handlingRef.current = false

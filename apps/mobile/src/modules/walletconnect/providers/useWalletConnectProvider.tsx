@@ -12,6 +12,7 @@
 
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
+    getConnectionErrorClientId,
     useWalletConnect,
     useWalletConnectForegroundReconnect,
     useWalletConnectSessionRequests,
@@ -21,9 +22,11 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { scannerNotifier } from '@components/QRScannerView'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
-import { WalletConnectErrorContent } from '../components/WalletConnectErrorContent'
 
 export const useWalletConnectProvider = () => {
     // Without this, a backgrounded session silently drops outgoing signed
@@ -43,8 +46,9 @@ export const useWalletConnectProvider = () => {
         state => state.setConnectionError,
     )
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
+    const { showToast } = useToast()
+    const { t } = useLanguage()
     const successOpenRef = useRef(false)
-    const errorOpenRef = useRef(false)
     const connectionSheetIdRef = useRef<Nullable<string>>(null)
 
     const handleSuccess = (request: WalletConnectSessionRequest) => {
@@ -116,29 +120,40 @@ export const useWalletConnectProvider = () => {
         }
     }, [successRequest, requestBottomSheet])
 
+    // Surface WalletConnect connection errors (wrong network, rejected /
+    // expired handshake, …) as a toast rather than a bottom sheet. When the
+    // QR scanner is open its native Modal covers the app's root view tree, so
+    // the toast is routed to the scanner's own notifier to render on top of
+    // the live camera; otherwise it falls back to the global notifier. This
+    // matches the native apps, which keep the scanner running and show the
+    // error inline instead of blocking it behind a sheet.
     useEffect(() => {
-        if (!connectionError || errorOpenRef.current) return
-        errorOpenRef.current = true
-        let cancelled = false
-        void (async () => {
-            await requestBottomSheet<void>({
-                contents: <WalletConnectErrorContent error={connectionError} />,
-                options: { size: 'auto', enablePanDownToClose: true },
-            })
-            if (cancelled) return
-            errorOpenRef.current = false
-            if (nextRequest) {
-                removeSessionRequest(nextRequest)
-            }
-            setConnectionError(null)
-        })()
-        return () => {
-            cancelled = true
+        if (!connectionError) return
+        showToast(
+            {
+                title: t('walletconnect.request.error_sheet_title'),
+                body: connectionError.message,
+                type: 'error',
+            },
+            { notifier: scannerNotifier.current ?? undefined },
+        )
+        // Only drop the pending request belonging to the connector that
+        // errored — not whatever happens to be first in the queue — so an
+        // error from one dApp can't discard another dApp's still-valid
+        // pending approval.
+        const erroredClientId = getConnectionErrorClientId(connectionError)
+        const erroredRequest = erroredClientId
+            ? sessionRequests.find(r => r.clientId === erroredClientId)
+            : undefined
+        if (erroredRequest) {
+            removeSessionRequest(erroredRequest)
         }
+        setConnectionError(null)
     }, [
         connectionError,
-        requestBottomSheet,
-        nextRequest,
+        showToast,
+        t,
+        sessionRequests,
         removeSessionRequest,
         setConnectionError,
     ])

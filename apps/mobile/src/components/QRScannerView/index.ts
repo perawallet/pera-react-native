@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { QRScannerView } from './QRScannerView'
+export { QRScannerView, scannerNotifier } from './QRScannerView'
 export type { QRScannerViewProps } from './QRScannerView'

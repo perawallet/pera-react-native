@@ -13,12 +13,27 @@
 import { useStyles } from './styles'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
 import { Modal } from 'react-native'
-import { Suspense, lazy } from 'react'
+import { Suspense, createRef, lazy } from 'react'
+import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton, PWText, PWTouchableIcon } from '@components/core'
 import { useQRScannerView } from './useQRScannerView'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+/**
+ * Local notifier scoped to the scanner Modal. The scanner is a native
+ * `<Modal>` (a separate OS window) that sits above the app's root view
+ * tree, so toasts shown through the global `Notifier` render behind it and
+ * stay hidden until the Modal closes. Routing WalletConnect errors through
+ * this notifier — mirroring `bottomSheetNotifier` — lets them appear on top
+ * of the live camera, matching the native apps. The ref is populated only
+ * while the Modal is visible (the `NotifierWrapper` unmounts otherwise), so
+ * consumers can treat a non-null `current` as "scanner is open".
+ */
+export const scannerNotifier = createRef<Nullable<NotifierRoot>>()
 
 // Loaded lazily and only when a camera device exists. QRCameraScanner is the
 // sole importer of `react-native-vision-camera-barcode-scanner`, which pulls in
@@ -65,47 +80,60 @@ export const QRScannerView = (props: QRScannerViewProps) => {
             visible={props.isVisible}
             animationType={props.animationType}
         >
-            {device == null || permissionDenied || !hasPermission ? (
-                <>
-                    <EmptyView
-                        style={styles.emptyView}
-                        title={t('camera.no_camera_device_found.title')}
-                        body={t('camera.no_camera_device_found.body')}
-                        button={
-                            <PWButton
-                                variant='primary'
-                                title={t('common.close.label')}
-                                onPress={props.onClose}
-                            />
-                        }
-                    />
-                </>
-            ) : (
-                <>
-                    <PWTouchableIcon
-                        name='cross'
-                        variant='white'
-                        onPress={props.onClose}
-                        containerStyle={styles.icon}
-                    />
-                    <Suspense fallback={null}>
-                        <QRCameraScanner
-                            device={device}
-                            isActive={scanningEnabled}
-                            style={styles.camera}
-                            onBarcodeScanned={onBarcodeScanned}
-                            onError={onError}
+            {props.isVisible ? (
+                <NotifierWrapper
+                    omitGlobalMethodsHookup
+                    ref={scannerNotifier}
+                    componentProps={{ ContainerComponent: SafeAreaView }}
+                >
+                    {device == null || permissionDenied || !hasPermission ? (
+                        <EmptyView
+                            style={styles.emptyView}
+                            title={t('camera.no_camera_device_found.title')}
+                            body={t('camera.no_camera_device_found.body')}
+                            button={
+                                <PWButton
+                                    variant='primary'
+                                    title={t('common.close.label')}
+                                    onPress={props.onClose}
+                                />
+                            }
                         />
-                    </Suspense>
-                    <CameraOverlay style={styles.overlay} />
-                    <PWText
-                        variant='h2'
-                        style={styles.title}
-                    >
-                        {props.title ?? t('camera.find_qr.title')}
-                    </PWText>
-                </>
-            )}
+                    ) : (
+                        // Order matters for paint stacking: none of these carry
+                        // an explicit `zIndex`, so they layer purely by document
+                        // order (camera at the back, title/close on top). This
+                        // deliberately leaves the toast — rendered last by
+                        // `NotifierWrapper` — as the top-most layer. An explicit
+                        // `zIndex` on any of these would jump it above the toast,
+                        // hiding the WalletConnect error behind the overlay.
+                        <>
+                            <Suspense fallback={null}>
+                                <QRCameraScanner
+                                    device={device}
+                                    isActive={scanningEnabled}
+                                    style={styles.camera}
+                                    onBarcodeScanned={onBarcodeScanned}
+                                    onError={onError}
+                                />
+                            </Suspense>
+                            <CameraOverlay style={styles.overlay} />
+                            <PWTouchableIcon
+                                name='cross'
+                                variant='white'
+                                onPress={props.onClose}
+                                containerStyle={styles.icon}
+                            />
+                            <PWText
+                                variant='h2'
+                                style={styles.title}
+                            >
+                                {props.title ?? t('camera.find_qr.title')}
+                            </PWText>
+                        </>
+                    )}
+                </NotifierWrapper>
+            ) : null}
         </Modal>
     )
 }

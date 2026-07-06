@@ -32,7 +32,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         overlay: {
             alignItems: 'center',
-            zIndex: theme.zIndex.layer1,
             position: 'absolute',
             top: OVERLAY_TOP_OFFSET,
             bottom: 0,
@@ -44,12 +43,10 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             textAlign: 'center',
             marginTop: theme.spacing.xxl,
             marginBottom: theme.spacing.xl,
-            zIndex: theme.zIndex.layer2,
         },
         icon: {
             marginTop: insets.top,
             marginLeft: theme.spacing.xl,
-            zIndex: theme.zIndex.layer2,
             justifyContent: 'center',
             alignItems: 'center',
             width: theme.spacing.xxl,

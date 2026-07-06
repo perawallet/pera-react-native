@@ -249,6 +249,16 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
             })
             const connector = walletConnectClientStub.last()!
 
+            // The provider consumes `connectionError` (shows a toast, then
+            // clears the store), so capture the surfaced error as it lands
+            // rather than reading it back off the store afterwards.
+            const surfaced: { error: Error | null } = { error: null }
+            const unsubscribe = useWalletConnectStore.subscribe(state => {
+                if (state.connectionError) {
+                    surfaced.error = state.connectionError
+                }
+            })
+
             const requestId = 9001
             act(() => {
                 connector.fire('algo_signTxn', null, {
@@ -270,17 +280,15 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
                 'WalletConnectInvalidSessionError',
             )
 
-            // Same throw is dispatched onto the store via `surfaceError`
-            // — production reads `connectionError` to decide between
-            // toast and bottom-sheet UI.
+            // Same throw is dispatched onto the store via `surfaceError`; the
+            // provider surfaces it as a toast and then clears the store.
             await waitFor(() => {
-                expect(
-                    useWalletConnectStore.getState().connectionError,
-                ).toBeTruthy()
+                expect(surfaced.error).toBeTruthy()
             })
-            expect(useWalletConnectStore.getState().connectionError?.name).toBe(
+            expect(surfaced.error?.name).toBe(
                 'WalletConnectInvalidSessionError',
             )
+            unsubscribe()
             // No success-path side-effect — connector.approveRequest is
             // not called.
             expect(connector.approveRequestCalls).toHaveLength(0)
