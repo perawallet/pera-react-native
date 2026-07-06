@@ -127,7 +127,7 @@
     "expo-media-library": "^56.0.6",
     "expo-screen-capture": "^56.0.4",
     "expo-sensors": "^56.0.5",
-    "expo-splash-screen": "~56.0.10",
+    "expo-splash-screen": "~57.0.2",
     "expo-sqlite": "~56.0.4",
     "expo-status-bar": "~56.0.4",
     "expo-video": "56.1.4",
