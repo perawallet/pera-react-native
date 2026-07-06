@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     runMigration,
@@ -42,6 +43,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
     const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const { dismiss, setSkipped } = useNeedsMigration()
+    const requestLock = useSecurityStore(state => state.requestLock)
 
     const [status, setStatus] = useState<MigrationSplashStatus>('running')
     const [failedAccountCount, setFailedAccountCount] = useState(0)
@@ -60,6 +62,8 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     dismissRef.current = dismiss
     const setSkippedRef = useRef(setSkipped)
     setSkippedRef.current = setSkipped
+    const requestLockRef = useRef(requestLock)
+    requestLockRef.current = requestLock
 
     const startedRef = useRef(false)
 
@@ -93,6 +97,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
             if (result.completed) {
                 setStatus('success')
                 successTimer = setTimeout(() => {
+                    requestLockRef.current()
                     dismissRef.current()
                 }, SUCCESS_DISMISS_DELAY_MS)
                 return
@@ -111,11 +116,13 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     }, [])
 
     const handleContinue = useCallback(() => {
+        requestLockRef.current()
         dismissRef.current()
     }, [])
 
     const handleSkipPermanently = useCallback(() => {
         setSkippedRef.current()
+        requestLockRef.current()
         dismissRef.current()
     }, [])
 
