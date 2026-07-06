@@ -17,7 +17,6 @@ vi.mock('../legacyKeyConversion', () => ({
 }))
 
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
     LegacyHDKey,
@@ -95,6 +94,11 @@ const buildArgs = (
             (vi.fn().mockResolvedValue({
                 seedKey: { id: 'root-key-pair-id' },
             }) as unknown as MigrateAccountArgs['createHDWalletKey']),
+        hasSeedWithEntropy:
+            overrides.hasSeedWithEntropy ??
+            (vi.fn(
+                () => false,
+            ) as unknown as MigrateAccountArgs['hasSeedWithEntropy']),
     } as MigrateAccountArgs
 }
 
@@ -141,6 +145,33 @@ describe('migrateHdAccount', () => {
         )
     })
 
+    it('wipes the decrypted seed entropy after importing the HD root', async () => {
+        const args = buildArgs()
+        const parent = args.hdWalletsById.get('wallet-1')
+        expect(parent?.entropy?.every(b => b === 1)).toBe(true)
+
+        await migrateHdAccount(args)
+
+        expect(parent?.entropy?.every(b => b === 0)).toBe(true)
+    })
+
+    it('leaves the shared seed entropy intact when the HD root import fails', async () => {
+        const createHDWalletKey = vi
+            .fn()
+            .mockRejectedValue(new Error('transient keystore error'))
+        const args = buildArgs({
+            createHDWalletKey:
+                createHDWalletKey as unknown as MigrateAccountArgs['createHDWalletKey'],
+        })
+        const parent = args.hdWalletsById.get('wallet-1')
+
+        await expect(migrateHdAccount(args)).rejects.toThrow(
+            'transient keystore error',
+        )
+
+        expect(parent?.entropy?.every(b => b === 1)).toBe(true)
+    })
+
     it('imports the HD root on first encounter and caches it for reuse', async () => {
         const createHDWalletKey = vi.fn().mockResolvedValue({
             seedKey: { id: 'kp-id' },
@@ -156,11 +187,60 @@ describe('migrateHdAccount', () => {
 
         expect(hdWalletEntropyToMnemonic).toHaveBeenCalledTimes(1)
         expect(createHDWalletKey).toHaveBeenCalledTimes(1)
-        expect(createHDWalletKey).toHaveBeenCalledWith(
-            expect.objectContaining({ mnemonic: 'mock mnemonic' }),
-        )
+        expect(createHDWalletKey).toHaveBeenCalledWith({
+            id: 'wallet-1',
+            mnemonic: 'mock mnemonic',
+        })
         expect(importedHdRoots.get('wallet-1')).toEqual({
             seedKeyId: 'kp-id',
+        })
+    })
+
+    it('reuses an already-imported seed (root + entropy) without re-importing across runs', async () => {
+        const createHDWalletKey = vi.fn()
+        const hasSeedWithEntropy = vi.fn(() => true) as unknown as never
+        const createHdWalletAccount = vi.fn().mockResolvedValue({
+            id: 'c',
+            type: AccountTypes.hdWallet,
+            address: 'ADDR_CHILD',
+            keyPairId: 'kp',
+            hdWalletDetails: {} as never,
+        })
+        const args = buildArgs({
+            hasSeedWithEntropy,
+            createHDWalletKey:
+                createHDWalletKey as unknown as MigrateAccountArgs['createHDWalletKey'],
+            createHdWalletAccount:
+                createHdWalletAccount as unknown as MigrateAccountArgs['createHdWalletAccount'],
+        })
+
+        await migrateHdAccount(args)
+
+        expect(createHDWalletKey).not.toHaveBeenCalled()
+        expect(hdWalletEntropyToMnemonic).not.toHaveBeenCalled()
+        expect(createHdWalletAccount).toHaveBeenCalledWith({
+            seedKeyId: 'wallet-1',
+            account: 3,
+            keyIndex: 7,
+        })
+    })
+
+    it('re-imports (self-heals) when a prior seed root exists but its entropy child is missing', async () => {
+        const createHDWalletKey = vi.fn().mockResolvedValue({
+            seedKey: { id: 'wallet-1' },
+        })
+        const hasSeedWithEntropy = vi.fn(() => false) as unknown as never
+        const args = buildArgs({
+            hasSeedWithEntropy,
+            createHDWalletKey:
+                createHDWalletKey as unknown as MigrateAccountArgs['createHDWalletKey'],
+        })
+
+        await migrateHdAccount(args)
+
+        expect(createHDWalletKey).toHaveBeenCalledWith({
+            id: 'wallet-1',
+            mnemonic: 'mock mnemonic',
         })
     })
 
@@ -207,10 +287,7 @@ describe('migrateHdAccount', () => {
         })
     })
 
-    it('falls back to the generated id when createHDWalletKey returns no seedKey.id', async () => {
-        vi.mocked(generateOrderedUniqueId).mockReturnValueOnce(
-            'fallback-root-id',
-        )
+    it('falls back to the walletId when createHDWalletKey returns no seedKey.id', async () => {
         const createHDWalletKey = vi.fn().mockResolvedValue({ seedKey: {} })
         const importedHdRoots = new Map<string, ImportedHdRoot>()
         const args = buildArgs({
@@ -221,9 +298,7 @@ describe('migrateHdAccount', () => {
 
         await migrateHdAccount(args)
 
-        expect(importedHdRoots.get('wallet-1')?.seedKeyId).toBe(
-            'fallback-root-id',
-        )
+        expect(importedHdRoots.get('wallet-1')?.seedKeyId).toBe('wallet-1')
     })
 
     it('throws when the derived address does not match the legacy address', async () => {

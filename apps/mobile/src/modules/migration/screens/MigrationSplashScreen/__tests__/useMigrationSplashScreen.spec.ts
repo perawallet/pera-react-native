@@ -17,18 +17,22 @@ const {
     importAccountFn,
     createHdWalletAccountFn,
     createHDWalletKeyFn,
+    hasSeedWithEntropyFn,
     markAccountBackedUpFn,
     migrationService,
     dismissFn,
     setSkippedFn,
+    requestLockFn,
 } = vi.hoisted(() => ({
     importAccountFn: vi.fn(),
     createHdWalletAccountFn: vi.fn(),
     createHDWalletKeyFn: vi.fn(),
+    hasSeedWithEntropyFn: vi.fn(),
     markAccountBackedUpFn: vi.fn(),
     migrationService: { tag: 'migration-service' },
     dismissFn: vi.fn(),
     setSkippedFn: vi.fn(),
+    requestLockFn: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -39,11 +43,20 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: () => ({ createHDWalletKey: createHDWalletKeyFn }),
+    useKMS: () => ({
+        createHDWalletKey: createHDWalletKeyFn,
+        hasSeedWithEntropy: hasSeedWithEntropyFn,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkMnemonicBackupComplete: () => markAccountBackedUpFn,
+}))
+
+vi.mock('@perawallet/wallet-core-security', () => ({
+    useSecurityStore: (
+        selector: (state: { requestLock: () => void }) => unknown,
+    ) => selector({ requestLock: requestLockFn }),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -97,6 +110,7 @@ const otherFailureResult = {
 beforeEach(() => {
     dismissFn.mockReset()
     setSkippedFn.mockReset()
+    requestLockFn.mockReset()
     vi.mocked(runMigration).mockReset()
 })
 
@@ -191,6 +205,59 @@ describe('useMigrationSplashScreen', () => {
         expect(dismissFn).toHaveBeenCalledTimes(1)
     })
 
+    it('requests an app-lock re-check when auto-dismissing after a successful migration', async () => {
+        vi.useFakeTimers()
+        try {
+            vi.mocked(runMigration).mockResolvedValue(successfulResult as never)
+            renderHook(() => useMigrationSplashScreen())
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(0)
+            })
+            expect(requestLockFn).not.toHaveBeenCalled()
+
+            act(() => {
+                vi.advanceTimersByTime(3000)
+            })
+
+            expect(requestLockFn).toHaveBeenCalledTimes(1)
+            expect(dismissFn).toHaveBeenCalledTimes(1)
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('requests an app-lock re-check on handleContinue', async () => {
+        vi.mocked(runMigration).mockResolvedValue(accountsFailedResult as never)
+        const { result } = renderHook(() => useMigrationSplashScreen())
+
+        await waitFor(() => {
+            expect(result.current.status).toBe('failure')
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+
+        expect(requestLockFn).toHaveBeenCalledTimes(1)
+        expect(dismissFn).toHaveBeenCalledTimes(1)
+    })
+
+    it('requests an app-lock re-check on handleSkipPermanently', async () => {
+        vi.mocked(runMigration).mockResolvedValue(accountsFailedResult as never)
+        const { result } = renderHook(() => useMigrationSplashScreen())
+
+        await waitFor(() => {
+            expect(result.current.status).toBe('failure')
+        })
+        act(() => {
+            result.current.handleSkipPermanently()
+        })
+
+        expect(setSkippedFn).toHaveBeenCalledTimes(1)
+        expect(requestLockFn).toHaveBeenCalledTimes(1)
+        expect(dismissFn).toHaveBeenCalledTimes(1)
+    })
+
     it('does not dismiss after success if the screen unmounts within the 3s window', async () => {
         vi.useFakeTimers()
         try {
@@ -227,6 +294,7 @@ describe('useMigrationSplashScreen', () => {
             importAccount: importAccountFn,
             createHdWalletAccount: createHdWalletAccountFn,
             createHDWalletKey: createHDWalletKeyFn,
+            hasSeedWithEntropy: hasSeedWithEntropyFn,
             markAccountBackedUp: markAccountBackedUpFn,
         })
     })

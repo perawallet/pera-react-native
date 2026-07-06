@@ -11,7 +11,7 @@
  */
 
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import type {
     LegacyHDKey,
     LegacyHDWallet,
@@ -65,21 +65,31 @@ const lookupHdParentAndChild = ({
 
 const ensureHdRootImported = async (
     parent: LegacyHDWallet,
-    { importedHdRoots, createHDWalletKey }: MigrateAccountArgs,
+    {
+        importedHdRoots,
+        createHDWalletKey,
+        hasSeedWithEntropy,
+    }: MigrateAccountArgs,
 ): Promise<ImportedHdRoot> => {
     const cached = importedHdRoots.get(parent.walletId)
     if (cached) return cached
 
+    if (hasSeedWithEntropy(parent.walletId)) {
+        const reused: ImportedHdRoot = { seedKeyId: parent.walletId }
+        importedHdRoots.set(parent.walletId, reused)
+        return reused
+    }
+
     const mnemonic = hdWalletEntropyToMnemonic(parent)
-    const newRootId = generateOrderedUniqueId()
     const { seedKey } = await createHDWalletKey({
-        id: newRootId,
+        id: parent.walletId,
         mnemonic,
     })
 
     const root: ImportedHdRoot = {
-        seedKeyId: seedKey.id ?? newRootId,
+        seedKeyId: seedKey.id ?? parent.walletId,
     }
     importedHdRoots.set(parent.walletId, root)
+    zeroBytes(parent.entropy)
     return root
 }

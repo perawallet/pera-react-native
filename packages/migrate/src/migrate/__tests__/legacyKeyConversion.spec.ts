@@ -52,6 +52,23 @@ describe('hdWalletEntropyToMnemonic', () => {
         expect(arg).toHaveLength(32)
     })
 
+    it('wipes the transient entropy copy after deriving the mnemonic', () => {
+        hdWalletEntropyToMnemonic(
+            buildWallet({ entropy: new Uint8Array(32).fill(0xab) }),
+        )
+
+        const passedCopy = vi.mocked(entropyToMnemonic).mock.calls[0][0]
+        expect(passedCopy.every(b => b === 0)).toBe(true)
+    })
+
+    it('leaves the source entropy on the wallet intact for the caller to wipe', () => {
+        const entropy = new Uint8Array(32).fill(0xab)
+
+        hdWalletEntropyToMnemonic(buildWallet({ entropy }))
+
+        expect(entropy.every(b => b === 0xab)).toBe(true)
+    })
+
     it('throws when entropy is null', () => {
         expect(() =>
             hdWalletEntropyToMnemonic(

@@ -80,6 +80,8 @@ const buildDeps = (): MigrationDeps => ({
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
     createHDWalletKey: vi.fn() as unknown as MigrationDeps['createHDWalletKey'],
+    hasSeedWithEntropy:
+        vi.fn() as unknown as MigrationDeps['hasSeedWithEntropy'],
 })
 
 beforeEach(() => {
@@ -299,5 +301,45 @@ describe('runMigrationLoop', () => {
         })
 
         expect(applyLegacyAccountOrder).toHaveBeenCalledWith(accounts)
+    })
+
+    it('records undecodable accounts as failures without invoking migrateLegacyAccount', async () => {
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [],
+            hdWallets: [],
+            undecodableAccounts: [
+                {
+                    address: 'ADDR_UNDECODABLE',
+                    name: 'Corrupt',
+                    error: 'Invalid string. Length must be a multiple of 4',
+                },
+            ],
+        })
+
+        expect(result.failed).toEqual([
+            {
+                address: 'ADDR_UNDECODABLE',
+                name: 'Corrupt',
+                reason: '[undecodable] Invalid string. Length must be a multiple of 4',
+            },
+        ])
+        expect(migrateLegacyAccount).not.toHaveBeenCalled()
+    })
+
+    it('skips an undecodable account whose address is already in the wallet store', async () => {
+        accountsStoreMock.accounts = [{ address: 'ADDR_EXISTING' }]
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [],
+            hdWallets: [],
+            undecodableAccounts: [
+                { address: 'ADDR_EXISTING', name: 'Already', error: 'boom' },
+            ],
+        })
+
+        expect(result.failed).toEqual([])
+        expect(result.skipped).toBe(1)
     })
 })

@@ -33,7 +33,7 @@ export type UseRunMigrationResult = {
 export const useRunMigration = (): UseRunMigrationResult => {
     const importAccount = useImportAccount()
     const { createHdWalletAccountForSeed } = useCreateAccount()
-    const { createHDWalletKey } = useKMS()
+    const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
     const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const [isMigrating, setIsMigrating] = useState(false)
     const [result, setResult] = useState<MigrationRunResult | null>(null)
@@ -48,6 +48,7 @@ export const useRunMigration = (): UseRunMigrationResult => {
                 importAccount,
                 createHdWalletAccount: createHdWalletAccountForSeed,
                 createHDWalletKey,
+                hasSeedWithEntropy,
                 markAccountBackedUp,
             })
             setResult(runResult)
@@ -63,6 +64,7 @@ export const useRunMigration = (): UseRunMigrationResult => {
         importAccount,
         createHdWalletAccountForSeed,
         createHDWalletKey,
+        hasSeedWithEntropy,
         markAccountBackedUp,
     ])
 

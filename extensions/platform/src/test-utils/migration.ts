@@ -52,6 +52,7 @@ export const createEmptyLegacyMigrationData = (
     },
     auth: { pin: null },
     accounts: [],
+    undecodableAccounts: [],
     hdWallets: [],
     contacts: [],
     notificationFilters: [],
@@ -130,7 +131,10 @@ export class StubMigrationService implements MigrationService {
 
     async simulatePreSixxAccounts() {}
 
-    async resetLegacyData() {}
+    async resetLegacyData() {
+        this.hasData = false
+        this.sentinel = null
+    }
 
     get migrationSentinel(): MigrationSentinelValue | null {
         return this.sentinel

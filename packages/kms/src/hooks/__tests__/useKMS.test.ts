@@ -599,4 +599,53 @@ describe('useKMS', () => {
             expect(keyResult).toEqual(mockResult)
         })
     })
+
+    it('hasSeedWithEntropy returns true when the seed has an entropy secret-key child', () => {
+        seedBip39Root('hd-1')
+        entropyChildOf('hd-1')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('hd-1')).toBe(true)
+    })
+
+    it('hasSeedWithEntropy returns false when the seed has no entropy child', () => {
+        seedBip39Root('hd-1')
+        childOf('hd-1-acc0', 'hd-1', 'hd-derived-ed25519')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('hd-1')).toBe(false)
+    })
+
+    it('hasSeedWithEntropy returns false when the id is not in the keystore', () => {
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('missing')).toBe(false)
+    })
+
+    it('hasSeedWithEntropy returns false for a non-seed key even when an entropy child points to it', () => {
+        mockKeystoreKeys.push({
+            id: 'pin',
+            type: 'secret-key',
+            algorithm: 'raw',
+            extractable: true,
+        })
+        entropyChildOf('pin')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('pin')).toBe(false)
+    })
+
+    it('hasSeedWithEntropy scopes the entropy child to the given seed', () => {
+        seedBip39Root('hd-1')
+        seedBip39Root('hd-2')
+        entropyChildOf('hd-2')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('hd-1')).toBe(false)
+        expect(result.current.hasSeedWithEntropy('hd-2')).toBe(true)
+    })
 })

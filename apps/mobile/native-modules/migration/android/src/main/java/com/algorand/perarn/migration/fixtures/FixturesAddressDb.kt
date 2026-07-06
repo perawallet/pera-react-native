@@ -193,7 +193,7 @@ internal object FixturesAddressDb {
         ),
     )
 
-    private const val DERIVATION_TYPE_PEIKERT = 0
+    private const val DERIVATION_TYPE_PEIKERT = 9
 
     private fun hexToBytes(hex: String): ByteArray {
         require(hex.length % 2 == 0) { "hex string must have even length: ${hex.length}" }

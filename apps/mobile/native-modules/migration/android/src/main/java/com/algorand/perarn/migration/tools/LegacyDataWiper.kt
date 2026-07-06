@@ -15,12 +15,13 @@ import android.content.Context
 import android.util.Log
 import com.algorand.perarn.migration.bridge.LegacyMigrationConstants
 import com.algorand.perarn.migration.database.SchemaMigrationReplay
+import java.io.File
 import java.security.KeyStore
 
-// DESTRUCTIVE: wipes every legacy artifact. Do NOT call from production migration flow.
+// DESTRUCTIVE: wipes every legacy artifact.
 internal class LegacyDataWiper(private val context: Context) {
 
-    // DEV-ONLY destructive wipe (no production guard) + schema-replay cache. Do not call from app code.
+    // Destructive wipe (no production guard) + schema-replay cache.
     fun forceClear() {
         wipeEverything()
         SchemaMigrationReplay.cleanupAll(context)
@@ -33,6 +34,7 @@ internal class LegacyDataWiper(private val context: Context) {
             deleteDatabase(dbName)
         }
         deleteKeystoreAliases(LegacyMigrationConstants.LEGACY_KEYSTORE_ALIASES)
+        deleteCacheFile(LegacyMigrationConstants.WC_SESSION_STORE_FILE_NAME)
     }
 
     private fun clearSharedPrefs(name: String) {
@@ -51,6 +53,14 @@ internal class LegacyDataWiper(private val context: Context) {
             context.deleteDatabase(dbName)
         } catch (t: Throwable) {
             Log.w(LegacyMigrationConstants.LOG_TAG, "Failed to delete database '$dbName'", t)
+        }
+    }
+
+    private fun deleteCacheFile(name: String) {
+        try {
+            File(context.cacheDir, name).delete()
+        } catch (t: Throwable) {
+            Log.w(LegacyMigrationConstants.LOG_TAG, "Failed to delete cache file '$name'", t)
         }
     }
 

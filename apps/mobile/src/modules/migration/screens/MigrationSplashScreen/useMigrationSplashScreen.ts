@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     runMigration,
@@ -39,9 +40,10 @@ export type UseMigrationSplashScreenResult = {
 export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     const importAccount = useImportAccount()
     const { createHdWalletAccountForSeed } = useCreateAccount()
-    const { createHDWalletKey } = useKMS()
+    const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
     const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const { dismiss, setSkipped } = useNeedsMigration()
+    const requestLock = useSecurityStore(state => state.requestLock)
 
     const [status, setStatus] = useState<MigrationSplashStatus>('running')
     const [failedAccountCount, setFailedAccountCount] = useState(0)
@@ -52,12 +54,16 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     createHdWalletAccountRef.current = createHdWalletAccountForSeed
     const createHDWalletKeyRef = useRef(createHDWalletKey)
     createHDWalletKeyRef.current = createHDWalletKey
+    const hasSeedWithEntropyRef = useRef(hasSeedWithEntropy)
+    hasSeedWithEntropyRef.current = hasSeedWithEntropy
     const markAccountBackedUpRef = useRef(markAccountBackedUp)
     markAccountBackedUpRef.current = markAccountBackedUp
     const dismissRef = useRef(dismiss)
     dismissRef.current = dismiss
     const setSkippedRef = useRef(setSkipped)
     setSkippedRef.current = setSkipped
+    const requestLockRef = useRef(requestLock)
+    requestLockRef.current = requestLock
 
     const startedRef = useRef(false)
 
@@ -75,6 +81,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
                     importAccount: importAccountRef.current,
                     createHdWalletAccount: createHdWalletAccountRef.current,
                     createHDWalletKey: createHDWalletKeyRef.current,
+                    hasSeedWithEntropy: hasSeedWithEntropyRef.current,
                     markAccountBackedUp: markAccountBackedUpRef.current,
                 })
             } catch (error) {
@@ -90,6 +97,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
             if (result.completed) {
                 setStatus('success')
                 successTimer = setTimeout(() => {
+                    requestLockRef.current()
                     dismissRef.current()
                 }, SUCCESS_DISMISS_DELAY_MS)
                 return
@@ -108,11 +116,13 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     }, [])
 
     const handleContinue = useCallback(() => {
+        requestLockRef.current()
         dismissRef.current()
     }, [])
 
     const handleSkipPermanently = useCallback(() => {
         setSkippedRef.current()
+        requestLockRef.current()
         dismissRef.current()
     }, [])
 
