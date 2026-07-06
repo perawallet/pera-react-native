@@ -63,6 +63,7 @@ export const runMigrationLoop = async (
                 importAccount: args.importAccount,
                 createHdWalletAccount: args.createHdWalletAccount,
                 createHDWalletKey: args.createHDWalletKey,
+                hasSeedWithEntropy: args.hasSeedWithEntropy,
             })
             existingAddresses.add(created.address)
             pendingMetadata.push({ created, legacy: account })

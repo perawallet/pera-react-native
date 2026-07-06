@@ -17,6 +17,7 @@ const {
     importAccountFn,
     createHdWalletAccountFn,
     createHDWalletKeyFn,
+    hasSeedWithEntropyFn,
     markAccountBackedUpFn,
     migrationService,
     dismissFn,
@@ -25,6 +26,7 @@ const {
     importAccountFn: vi.fn(),
     createHdWalletAccountFn: vi.fn(),
     createHDWalletKeyFn: vi.fn(),
+    hasSeedWithEntropyFn: vi.fn(),
     markAccountBackedUpFn: vi.fn(),
     migrationService: { tag: 'migration-service' },
     dismissFn: vi.fn(),
@@ -39,7 +41,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: () => ({ createHDWalletKey: createHDWalletKeyFn }),
+    useKMS: () => ({
+        createHDWalletKey: createHDWalletKeyFn,
+        hasSeedWithEntropy: hasSeedWithEntropyFn,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
@@ -227,6 +232,7 @@ describe('useMigrationSplashScreen', () => {
             importAccount: importAccountFn,
             createHdWalletAccount: createHdWalletAccountFn,
             createHDWalletKey: createHDWalletKeyFn,
+            hasSeedWithEntropy: hasSeedWithEntropyFn,
             markAccountBackedUp: markAccountBackedUpFn,
         })
     })

@@ -80,6 +80,8 @@ const buildDeps = (): MigrationDeps => ({
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
     createHDWalletKey: vi.fn() as unknown as MigrationDeps['createHDWalletKey'],
+    hasSeedWithEntropy:
+        vi.fn() as unknown as MigrationDeps['hasSeedWithEntropy'],
 })
 
 beforeEach(() => {

@@ -39,7 +39,7 @@ export type UseMigrationSplashScreenResult = {
 export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     const importAccount = useImportAccount()
     const { createHdWalletAccountForSeed } = useCreateAccount()
-    const { createHDWalletKey } = useKMS()
+    const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
     const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const { dismiss, setSkipped } = useNeedsMigration()
 
@@ -52,6 +52,8 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
     createHdWalletAccountRef.current = createHdWalletAccountForSeed
     const createHDWalletKeyRef = useRef(createHDWalletKey)
     createHDWalletKeyRef.current = createHDWalletKey
+    const hasSeedWithEntropyRef = useRef(hasSeedWithEntropy)
+    hasSeedWithEntropyRef.current = hasSeedWithEntropy
     const markAccountBackedUpRef = useRef(markAccountBackedUp)
     markAccountBackedUpRef.current = markAccountBackedUp
     const dismissRef = useRef(dismiss)
@@ -75,6 +77,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
                     importAccount: importAccountRef.current,
                     createHdWalletAccount: createHdWalletAccountRef.current,
                     createHDWalletKey: createHDWalletKeyRef.current,
+                    hasSeedWithEntropy: hasSeedWithEntropyRef.current,
                     markAccountBackedUp: markAccountBackedUpRef.current,
                 })
             } catch (error) {

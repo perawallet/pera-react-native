@@ -55,6 +55,8 @@ const buildArgs = (
             vi.fn() as unknown as MigrateAccountArgs['createHdWalletAccount'],
         createHDWalletKey:
             vi.fn() as unknown as MigrateAccountArgs['createHDWalletKey'],
+        hasSeedWithEntropy:
+            vi.fn() as unknown as MigrateAccountArgs['hasSeedWithEntropy'],
         ...overrides,
     }) as MigrateAccountArgs
 

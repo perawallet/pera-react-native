@@ -52,6 +52,8 @@ const buildDeps = (): MigrationDeps => ({
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
     createHDWalletKey: vi.fn() as unknown as MigrationDeps['createHDWalletKey'],
+    hasSeedWithEntropy:
+        vi.fn() as unknown as MigrationDeps['hasSeedWithEntropy'],
 })
 
 const successfulAccountResult = { imported: 1, skipped: 0, failed: [] }
@@ -222,6 +224,7 @@ describe('runMigration', () => {
             importAccount: deps.importAccount,
             createHdWalletAccount: deps.createHdWalletAccount,
             createHDWalletKey: deps.createHDWalletKey,
+            hasSeedWithEntropy: deps.hasSeedWithEntropy,
         })
     })
 

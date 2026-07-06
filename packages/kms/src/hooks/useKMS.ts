@@ -174,6 +174,13 @@ export const useKMS = () => {
             }
         })
 
+    const hasSeedWithEntropy = useCallback((seedKeyId: string): boolean => {
+        const keys = getKeystoreStore().state.keys
+        const seed = keys.find(k => k.id === seedKeyId)
+        if (!seed || !isSeedKey(seed)) return false
+        return entropyChildIdOf(seedKeyId, keys) !== undefined
+    }, [])
+
     /**
      * Signs each item with the child key at `childKeyId`.
      */
@@ -293,6 +300,7 @@ export const useKMS = () => {
         deleteKey,
         getKey,
         getKeyOrThrow,
+        hasSeedWithEntropy,
         createAlgo25Key,
         createQuantumKey,
         createHDWalletKey,
