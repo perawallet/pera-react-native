@@ -64,6 +64,45 @@ describe('createWalletConnectTransactionSource', () => {
     })
 })
 
+// PERA-4511: PQ-aware minimum fees were added to Pera-initiated sources
+// (createPaymentSource, createExpressSendSource) via resolveMinFeeForSender.
+// WalletConnect/deeplink fee handling is explicitly out of scope (owned by
+// PQ-017) — this pins that dApp-set fees keep flowing through untouched.
+describe('createWalletConnectTransactionSource - fee pass-through regression', () => {
+    test('passes dApp-set fees through unchanged (PQ fee resolution does not apply to external sources)', async () => {
+        const source = createWalletConnectTransactionSource()
+
+        const transactions = [
+            { sender: { toString: () => 'SENDER_ADDR' }, fee: 1000n } as never,
+            { sender: { toString: () => 'SENDER_ADDR' }, fee: 0n } as never,
+            { sender: { toString: () => 'SENDER_ADDR' }, fee: 5000n } as never,
+        ]
+
+        const group = await source.getSignableData({
+            requestId: 99,
+            clientId: 'client-1',
+            transactions,
+            rawTransactionsBase64: ['aGVsbG8=', 'd29ybGQ=', 'ZmVl'],
+            indicesToSign: [0, 1, 2],
+            approve: vi.fn(),
+            reject: vi.fn(),
+        })
+
+        expect(group.data.type).toBe('transactions')
+        if (group.data.type === 'transactions') {
+            expect(group.data.transactions.map(tx => tx.fee)).toEqual([
+                1000n,
+                0n,
+                5000n,
+            ])
+        }
+    })
+
+    test('has no resolveMinFeeForSender dependency (takes no dependencies at all)', () => {
+        expect(createWalletConnectTransactionSource).toHaveLength(0)
+    })
+})
+
 describe('createWalletConnectDataSource', () => {
     test('wraps data request with arbitrary-data signable and signer metadata', async () => {
         const approve = vi.fn()

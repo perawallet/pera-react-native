@@ -73,6 +73,11 @@ export interface Arc59RejectSourceParams {
 
 /**
  * Dependencies for ARC59 sources
+ *
+ * Fee note: ARC59 transactions arrive pre-built from the injected build*
+ * dependencies — fee selection (including the PQ minimum-fee premium,
+ * see minFeeResolver.ts) is the responsibility of those builder
+ * implementations, not this source.
  */
 export interface Arc59SourceDependencies {
     /** ARC59 app address */
