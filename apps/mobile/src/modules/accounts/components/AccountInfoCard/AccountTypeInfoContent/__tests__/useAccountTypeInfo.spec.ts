@@ -208,6 +208,17 @@ describe('useAccountTypeInfo', () => {
         expect(result.current.title).toBe('account_type_info.no_auth_title')
     })
 
+    it('resolves quantum account type', () => {
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('quantum') }),
+        )
+
+        expect(result.current.title).toBe('account_type_info.quantum_title')
+        expect(result.current.description).toBe(
+            'account_type_info.quantum_description',
+        )
+    })
+
     it('resolves watch account type', () => {
         const { result } = renderHook(() =>
             useAccountTypeInfo({ account: accountOfType('watch') }),

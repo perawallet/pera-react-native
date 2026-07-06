@@ -89,6 +89,7 @@ describe('useAccountTypeLabel', () => {
         ['algo25', 'account_info.type_algo25'],
         ['hardware', 'account_info.type_ledger'],
         ['watch', 'account_info.type_watch'],
+        ['quantum', 'account_info.type_quantum'],
     ] as const)('maps non-rekeyed %s account to label %s', (type, expected) => {
         const { result } = renderHook(() =>
             useAccountTypeLabel(accountOfType(type)),

@@ -339,12 +339,14 @@
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
         "type_multisig": "Shared Account",
+        "type_quantum": "Quantum Account",
         "type_rekeyed": "Rekeyed Account",
         "type_rekeyed_transition": "Rekeyed ({{from}} to {{to}})",
         "rekey_part_standard": "Standard",
         "rekey_part_ledger": "Ledger",
         "rekey_part_watch": "Watch",
         "rekey_part_shared": "Shared Account",
+        "rekey_part_quantum": "Quantum",
         "type_no_auth": "No Auth",
         "type_unknown": "Unknown Account"
     },
@@ -367,6 +369,8 @@
         "multisig_title": "Shared Account",
         "multisig_description": "Your account is a shared account. Transactions for this account must be approved by multiple signers.",
         "multisig_no_auth_description": "This is a shared account, but none of its signer accounts are in your wallet. You can't sign transactions for it. To sign, add one of its signer accounts to your wallet.",
+        "quantum_title": "Quantum Account",
+        "quantum_description": "A standard account protected with post-quantum cryptography, designed to keep your assets secure even against future quantum computers.",
         "learn_more": "Learn More"
     },
     "min_balance_info": {
