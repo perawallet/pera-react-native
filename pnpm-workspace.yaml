@@ -19,7 +19,7 @@ catalog:
   "@testing-library/react": 16.3.2
   "@types/node": ^20.19.39
   "@types/react": ~19.2.14
-  "@vitejs/plugin-react": 6.0.2
+  "@vitejs/plugin-react": 6.0.3
   "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
   algosdk: ^3.5.2
@@ -33,8 +33,8 @@ catalog:
   # Must equal react-native 0.85.3's bundled renderer version. RN does an exact
   # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
   # "Incompatible React versions". Keep in lockstep with the override below.
-  react: 19.2.3
-  react-dom: 19.2.3
+  react: 19.2.7
+  react-dom: 19.2.7
   tsx: ^4.22.3
   typescript: ^5.9.3
   util: ^0.12.5
@@ -97,8 +97,8 @@ overrides:
   # Was 7.5.8, now vulnerable. Pinned exact to the verified lowest patched 7.x.
   protobufjs@7: 7.6.3
   # Pinned to react-native 0.85.3's bundled renderer (19.2.3); see catalog note.
-  react: 19.2.3
-  react-dom: 19.2.3
+  react: 19.2.7
+  react-dom: 19.2.7
   react-native: 0.85.3
   "@react-native/metro-config": 0.85.3
   # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera +
