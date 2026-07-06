@@ -15,6 +15,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
     LegacyHDWallet,
+    LegacyUndecodableAccount,
 } from '@perawallet/wallet-extension-platform'
 import {
     applyAllLegacyMetadata,
@@ -36,6 +37,7 @@ import type {
 export type RunMigrationLoopArgs = MigrationDeps & {
     accounts: LegacyAccount[]
     hdWallets: LegacyHDWallet[]
+    undecodableAccounts?: LegacyUndecodableAccount[]
 }
 
 export const runMigrationLoop = async (
@@ -84,6 +86,21 @@ export const runMigrationLoop = async (
                 reason,
             })
         }
+    }
+
+    for (const undecodable of args.undecodableAccounts ?? []) {
+        if (existingAddresses.has(undecodable.address)) {
+            summary.skipped += 1
+            continue
+        }
+        logger.error('Legacy account undecodable; recording as failure', {
+            address: undecodable.address,
+        })
+        summary.failed.push({
+            address: undecodable.address,
+            name: undecodable.name,
+            reason: `[undecodable] ${undecodable.error}`,
+        })
     }
 
     applyAllLegacyMetadata(pendingMetadata)

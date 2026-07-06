@@ -78,6 +78,13 @@ export interface LegacyMigrationData {
     tooltipPreferences: LegacyTooltipPreferences
     dismissedBanners: LegacyDismissedBanners
     schemaReplayResults?: Record<string, LegacySchemaReplayResult>
+    undecodableAccounts: LegacyUndecodableAccount[]
+}
+
+export interface LegacyUndecodableAccount {
+    address: string
+    name: string
+    error: string
 }
 
 export type LegacySchemaReplayResult =

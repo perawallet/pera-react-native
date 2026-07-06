@@ -91,6 +91,7 @@ export const runMigration = async (
     try {
         accountResult = await runMigrationLoop({
             accounts: data.accounts,
+            undecodableAccounts: data.undecodableAccounts,
             hdWallets: data.hdWallets,
             ...deps,
         })

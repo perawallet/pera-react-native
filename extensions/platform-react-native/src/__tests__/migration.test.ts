@@ -540,6 +540,97 @@ describe('RNMigrationService', () => {
             expect(summary.accountsWithLedger).toBe(1)
             expect(summary.accountsWithJoint).toBe(1)
         })
+
+        describe('corrupt-blob resilience', () => {
+            const CORRUPT_BASE64 = 'AQI'
+
+            test('records an account whose secretKey blob is corrupt as undecodable and still decodes the rest', async () => {
+                const raw = buildRawPayload({
+                    accounts: [
+                        {
+                            address: 'BAD',
+                            name: 'Corrupt',
+                            type: 'standard',
+                            preferredOrder: 0,
+                            isBackedUp: true,
+                            secretKey: CORRUPT_BASE64,
+                            hdWalletId: null,
+                            ledger: null,
+                            joint: null,
+                        },
+                        {
+                            address: 'GOOD',
+                            name: 'Valid',
+                            type: 'standard',
+                            preferredOrder: 1,
+                            isBackedUp: true,
+                            secretKey: 'AQID',
+                            hdWalletId: null,
+                            ledger: null,
+                            joint: null,
+                        },
+                    ],
+                })
+                nativeModulesMock.LegacyMigration = createNativeModule({
+                    getLegacyData: vi.fn().mockResolvedValue(raw),
+                })
+
+                const data = await service.getLegacyData()
+
+                expect(data.accounts).toHaveLength(1)
+                expect(data.accounts[0].address).toBe('GOOD')
+                expect(data.accounts[0].secretKey).toEqual(
+                    new Uint8Array([1, 2, 3]),
+                )
+                expect(data.undecodableAccounts).toHaveLength(1)
+                expect(data.undecodableAccounts[0].address).toBe('BAD')
+                expect(data.undecodableAccounts[0].name).toBe('Corrupt')
+                expect(data.undecodableAccounts[0].error).toBeTruthy()
+                expect(loggerMock.warn).toHaveBeenCalled()
+            })
+
+            test('drops an HD wallet whose blob is corrupt instead of throwing', async () => {
+                const raw = buildRawPayload({
+                    hdWallets: [
+                        {
+                            walletId: 'W_BAD',
+                            name: 'Corrupt',
+                            entropy: CORRUPT_BASE64,
+                            keys: [],
+                        },
+                        {
+                            walletId: 'W_GOOD',
+                            name: 'Valid',
+                            entropy: 'AQID',
+                            keys: [],
+                        },
+                    ],
+                })
+                nativeModulesMock.LegacyMigration = createNativeModule({
+                    getLegacyData: vi.fn().mockResolvedValue(raw),
+                })
+
+                const data = await service.getLegacyData()
+
+                expect(data.hdWallets).toHaveLength(1)
+                expect(data.hdWallets[0].walletId).toBe('W_GOOD')
+                expect(loggerMock.warn).toHaveBeenCalled()
+            })
+
+            test('nulls a corrupt auth.pin blob instead of throwing', async () => {
+                const raw = buildRawPayload({
+                    auth: { pin: CORRUPT_BASE64 },
+                })
+                nativeModulesMock.LegacyMigration = createNativeModule({
+                    getLegacyData: vi.fn().mockResolvedValue(raw),
+                })
+
+                const data = await service.getLegacyData()
+
+                expect(data.auth.pin).toBeNull()
+                expect(loggerMock.warn).toHaveBeenCalled()
+            })
+        })
     })
 
     describe('isMigrationComplete', () => {
