@@ -328,6 +328,8 @@ describe('useImportAccount', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        // The duplicate attempt's keystore entries were swept (seed + child).
+        expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('WALLET1')
     })
 
     test('imports quantum account with explicit quantum type', async () => {
