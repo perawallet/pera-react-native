@@ -18,6 +18,8 @@ import { useStyles } from './styles'
 
 type StatusFooterProps = {
     isFundsConnected: boolean
+    /** True while the auto-funding delegation is signed and submitted. */
+    isCreatingCard: boolean
     onCreatePeraCard: () => void
     onLogout: () => void
     onOpenSupport: () => void
@@ -26,6 +28,7 @@ type StatusFooterProps = {
 /** Footer: the "Create Pera Card" CTA once connected, otherwise logout + support. */
 export const StatusFooter = ({
     isFundsConnected,
+    isCreatingCard,
     onCreatePeraCard,
     onLogout,
     onOpenSupport,
@@ -39,6 +42,7 @@ export const StatusFooter = ({
                 variant='primary'
                 title={t('peraCard.setup_status.funding_type_button')}
                 onPress={onCreatePeraCard}
+                isLoading={isCreatingCard}
                 testID='card-onboarding-status-create-card'
             />
         )

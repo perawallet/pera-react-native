@@ -29,6 +29,7 @@ export const RemoteConfigKeys = {
     onramp_currency_decimals: 'onramp_currency_decimals',
     enable_pera_card: 'enable_pera_card',
     enable_quantum_accounts: 'enable_quantum_accounts',
+    enable_card_auto_funding: 'enable_card_auto_funding',
     terms_version: 'terms_version',
 } as const
 
@@ -63,6 +64,10 @@ export const RemoteConfigDefaults: Record<
     onramp_currency_decimals: '',
     enable_pera_card: false,
     enable_quantum_accounts: false,
+    // Off in prod (the hook keeps it on in dev/staging). Gates the auto-funding
+    // UI only; prod is stopped from signing an unpinned program by
+    // verifyDelegationProgram, not by this flag.
+    enable_card_auto_funding: false,
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '1',

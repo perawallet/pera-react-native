@@ -60,6 +60,19 @@ export {
 export type { MockGetInternalWalletsParams } from './api/wallet/msw-handlers'
 
 export {
+    mockGetDelegationToken,
+    mockGetDelegationProgram,
+    mockPostAlgorandDelegationApproval,
+    mockGetExternalWallets,
+} from './api/delegation/msw-handlers'
+export type {
+    MockGetDelegationTokenParams,
+    MockGetDelegationProgramParams,
+    MockPostAlgorandDelegationApprovalParams,
+    MockGetExternalWalletsParams,
+} from './api/delegation/msw-handlers'
+
+export {
     mockSendEmailVerification,
     mockVerifyEmail,
     mockSendPhoneVerification,

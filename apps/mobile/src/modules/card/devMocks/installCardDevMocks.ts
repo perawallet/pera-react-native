@@ -28,18 +28,29 @@ import {
     applyMockWithdrawal,
     buildMockInternalWallets,
 } from './mockInternalWallets'
+import {
+    applyMockDelegation,
+    buildMockDelegationProgram,
+    buildMockDelegationToken,
+    buildMockExternalWallets,
+} from './mockDelegation'
 
 const TRANSACTIONS_PATH = '/v1/card/transactions'
 const INTERNAL_WALLETS_PATH = '/v1/wallet/internal'
 const WITHDRAW_PATH = '/v1/wallet/internal/withdraw'
+const DELEGATION_TOKEN_PATH = '/v1/delegation/token'
+const DELEGATION_CONFIG_PATH = '/v1/delegation/chain/config'
+const DELEGATION_POST_APPROVAL_PATH = '/v1/delegation/algorand/post-approval'
+const EXTERNAL_WALLETS_PATH = '/v1/wallet/external'
 
 /**
  * Swaps in a transport that serves mock transactions for
  * `GET /v1/card/transactions` (page 0; later pages are empty so the infinite
- * query terminates) and a mock USDC internal wallet for the custodial-only
- * wallet routes (list + withdraw, with a stateful balance), delegating every
- * other request to the real transport. Returns a disposer that restores the
- * default transport.
+ * query terminates), a mock USDC internal wallet for the custodial-only
+ * wallet routes (list + withdraw, with a stateful balance), and the assumed
+ * Algorand delegation routes (stateful allowance per address, single-use
+ * tokens), delegating every other request to the real transport. Returns a
+ * disposer that restores the default transport.
  */
 export const installCardDevMocks = (): (() => void) => {
     const baseTransport = getCardTransport()
@@ -63,6 +74,31 @@ export const installCardDevMocks = (): (() => void) => {
                 const { amount } = req.data as { amount: string }
                 applyMockWithdrawal(amount)
                 const data = { success: true } as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (req.method === 'GET' && req.path === DELEGATION_TOKEN_PATH) {
+                const data = buildMockDelegationToken() as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (req.method === 'GET' && req.path === DELEGATION_CONFIG_PATH) {
+                const data = buildMockDelegationProgram() as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (
+                req.method === 'POST' &&
+                req.path === DELEGATION_POST_APPROVAL_PATH
+            ) {
+                const data = applyMockDelegation(
+                    req.data as {
+                        address: string
+                        amount: string
+                        token: string
+                    },
+                ) as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (req.method === 'GET' && req.path === EXTERNAL_WALLETS_PATH) {
+                const data = buildMockExternalWallets() as TData
                 return Promise.resolve({ data, status: 200, statusText: 'OK' })
             }
             return baseTransport.request<TData, TVars>(req)

@@ -70,16 +70,28 @@ export const useStyles = makeStyles(theme => ({
     sectionLabel: {
         color: theme.colors.textGray,
     },
-    // Funding account row: bordered box, account on the left, Change on the right.
-    fundingRow: {
+    // Grouped funding selectors: one bordered card, a divider between rows.
+    fundingGroup: {
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.sm,
+    },
+    fundingGroupRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: theme.spacing.md,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.sm,
         padding: theme.spacing.md,
+    },
+    fundingGroupValue: {
+        gap: theme.spacing.xxs,
+    },
+    fundingGroupLabel: {
+        color: theme.colors.textGray,
+    },
+    fundingGroupDivider: {
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGray,
     },
     changeLink: {
         color: theme.colors.linkPrimary,

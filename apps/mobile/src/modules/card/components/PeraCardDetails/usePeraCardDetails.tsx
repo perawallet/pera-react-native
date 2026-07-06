@@ -10,23 +10,34 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import {
     CardStatus,
+    FundingType,
     useCardDetailsMutation,
     useCardStatusQuery,
     useCardStore,
+    useConnectFundingSourceMutation,
     useIsCardUnfreezing,
     useSetCardPinMutation,
 } from '@perawallet/wallet-core-card'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useCardComingSoonToast, useCardErrorToast } from '../../hooks'
+import {
+    useAuthorizeCardDelegation,
+    useCardErrorToast,
+    useCardFundingDelegation,
+    useCardFundingSourcePicker,
+} from '../../hooks'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
 import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
+import { ReportLostStolenSheet } from '../ReportLostStolenSheet'
+import { ReportTransactionsSheet } from '../ReportTransactionsSheet'
+import { SelectFundingTypeSheet } from '../SelectFundingTypeSheet'
 import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 import {
     WalletInstructionsSheet,
@@ -47,6 +58,10 @@ type UsePeraCardDetailsResult = {
     /** Connected funding-source address, or `null` if none is stored. */
     fundingAddress: string | null
     onChangeFunding: () => void
+    /** Localised Auto/Manual funding label for the Funding Type row. */
+    fundingTypeLabel: string
+    /** Opens the Select Funding Type sheet. */
+    onChangeFundingType: () => void
     isFrozen: boolean
     freezeLabel: string
     /** True while an unfreeze request is in flight (freezing's pending state
@@ -64,12 +79,11 @@ type UsePeraCardDetailsResult = {
     onAddToWallet: () => void
     onReportLostStolen: () => void
     onReportSuspicious: () => void
-    onCancelCard: () => void
 }
 
 export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const { t } = useLanguage()
-    const { errorToast } = useToast()
+    const { errorToast, infoToast } = useToast()
     const { pushWebView } = useWebView()
     const { request } = useBottomSheet()
 
@@ -77,6 +91,11 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const fundingAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
+    const selectedFundingType = useCardStore(state => state.selectedFundingType)
+    const isAutoFunding = selectedFundingType === FundingType.Auto
+    const fundingTypeLabel = isAutoFunding
+        ? t('peraCard.setup_status.funding_type_auto_title')
+        : t('peraCard.setup_status.funding_type_manual_title')
 
     const { data: card } = useCardStatusQuery()
     const isFrozen = card?.status === CardStatus.Frozen
@@ -97,8 +116,6 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const [secureImageUrl, setSecureImageUrl] = useState<string | null>(null)
 
     const showError = useCardErrorToast()
-
-    const showComingSoon = useCardComingSoonToast()
 
     // Async impls are wrapped in sync `void` handlers below so the exposed
     // callbacks are `() => void` (the codebase convention for onPress props).
@@ -181,6 +198,142 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         })
     }, [request, walletPlatform])
 
+    const accounts = useAllAccounts()
+    const { pickFundingSource } = useCardFundingSourcePicker()
+    const { delegateTo, cancelDelegation, canDelegate } =
+        useCardFundingDelegation()
+    const { authorizeDelegation } = useAuthorizeCardDelegation()
+    const { mutateAsync: connectFundingSourceAsync } =
+        useConnectFundingSourceMutation()
+
+    // Change the linked account. With auto-funding on, the new account is
+    // delegated BEFORE the card is repointed to it, so a signing/post failure
+    // leaves the old (still-delegated) account connected and the card is never
+    // pointed at an un-delegated source. The old delegation is only zeroed
+    // once the new one is live — best-effort, since Baanx has no DELETE, so a
+    // failure there just leaves a stale allowance surfaced as a soft warning.
+    const performChangeFunding = useCallback(async () => {
+        const previousAccount = accounts.find(
+            account => account.address === fundingAddress,
+        )
+        const account = await pickFundingSource()
+        if (!account || account.address === fundingAddress) return
+
+        // Manual funding: no delegation involved, just link the new account.
+        if (!isAutoFunding) {
+            try {
+                await connectFundingSourceAsync({ address: account.address })
+            } catch (error) {
+                await showError(error)
+            }
+            return
+        }
+
+        if (!canDelegate(account)) {
+            errorToast(
+                t('peraCard.account.funding_delegation_unsupported_title'),
+                t('peraCard.account.funding_delegation_unsupported_body'),
+            )
+            return
+        }
+        // Delegate the new account first — the card stays funded by the old
+        // account until this succeeds, so a failure changes nothing on Baanx.
+        try {
+            // Consent + live PIN/biometric before signing the grant.
+            const authorized = await authorizeDelegation(account, delegateTo)
+            if (!authorized) return
+        } catch {
+            // Recoverable: nothing was repointed; the old account is intact.
+            errorToast(
+                t('peraCard.account.funding_redelegate_failed_title'),
+                t('peraCard.account.funding_redelegate_failed_body'),
+            )
+            return
+        }
+        // New account is delegated; now repoint the card to it.
+        try {
+            await connectFundingSourceAsync({ address: account.address })
+        } catch (error) {
+            // The new account is delegated but couldn't be linked; the card
+            // stays on the old (still connected + delegated) account, so the
+            // new allowance is harmless until a retry re-links it.
+            await showError(error)
+            return
+        }
+        if (previousAccount && canDelegate(previousAccount)) {
+            try {
+                await cancelDelegation(previousAccount)
+            } catch {
+                infoToast(
+                    t('peraCard.account.funding_cancel_old_failed_title'),
+                    t('peraCard.account.funding_cancel_old_failed_body'),
+                )
+            }
+        }
+    }, [
+        accounts,
+        fundingAddress,
+        isAutoFunding,
+        pickFundingSource,
+        canDelegate,
+        connectFundingSourceAsync,
+        delegateTo,
+        authorizeDelegation,
+        cancelDelegation,
+        showError,
+        errorToast,
+        infoToast,
+        t,
+    ])
+
+    // Guard the whole picker → consent/PIN → delegate → repoint sequence so a
+    // double-tap can't run two concurrent changes (the consent gate opens
+    // before any mutation flips its own pending flag).
+    const isChangingFundingRef = useRef(false)
+    const changeFunding = useCallback(async () => {
+        if (isChangingFundingRef.current) return
+        isChangingFundingRef.current = true
+        try {
+            await performChangeFunding()
+        } finally {
+            isChangingFundingRef.current = false
+        }
+    }, [performChangeFunding])
+    const onChangeFunding = useCallback(() => {
+        void changeFunding()
+    }, [changeFunding])
+
+    const onChangeFundingType = useCallback(() => {
+        void request({
+            contents: <SelectFundingTypeSheet />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+            },
+        })
+    }, [request])
+
+    const onReportLostStolen = useCallback(() => {
+        void request({
+            contents: <ReportLostStolenSheet />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+            },
+        })
+    }, [request])
+
+    const onReportSuspicious = useCallback(() => {
+        void request({
+            contents: <ReportTransactionsSheet />,
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [request])
+
     return {
         maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,
         secureImageUrl,
@@ -188,7 +341,9 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         onToggleReveal,
         onSecureImageError,
         fundingAddress,
-        onChangeFunding: showComingSoon,
+        onChangeFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         isFrozen,
         freezeLabel: isFrozen
             ? t('peraCard.account.unfreeze_card')
@@ -201,8 +356,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         onAccountsDetails,
         walletPlatform,
         onAddToWallet,
-        onReportLostStolen: showComingSoon,
-        onReportSuspicious: showComingSoon,
-        onCancelCard: showComingSoon,
+        onReportLostStolen,
+        onReportSuspicious,
     }
 }

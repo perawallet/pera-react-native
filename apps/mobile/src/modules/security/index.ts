@@ -20,3 +20,7 @@ export {
     PinEditContent,
     type PinEditContentProps,
 } from './components/PinEditContent'
+export {
+    useRequirePinVerification,
+    type UseRequirePinVerificationResult,
+} from './hooks/useRequirePinVerification'

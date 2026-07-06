@@ -11,9 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { usePinCode } from '@perawallet/wallet-core-security'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { PinEditContent } from '@modules/security'
+import { useRequirePinVerification } from '@modules/security'
 import {
     PassphraseAcknowledgeContent,
     type PassphraseAcknowledgeContentResult,
@@ -32,27 +31,12 @@ export type UseViewPassphraseFlowResult = {
  * before opening this flow to avoid stacked sheets).
  */
 export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
-    const { checkPinEnabled } = usePinCode()
+    const { requirePinVerification } = useRequirePinVerification()
     const { request: requestBottomSheet } = useBottomSheet()
 
     const openViewPassphraseFlow = useCallback(
         async (address: string) => {
-            const pinEnabled = await checkPinEnabled()
-            if (pinEnabled) {
-                const verified = await requestBottomSheet<boolean>({
-                    contents: <PinEditContent mode='verify' />,
-                    options: {
-                        size: 'full',
-                        enablePanDownToClose: false,
-                        enableCloseOnBackdropPress: false,
-                        // gorhom's BottomSheetView is top-anchored and
-                        // content-sized, so the PIN layout can't flex-fill
-                        // the sheet; use the plain flex container instead.
-                        autoCreateContainer: false,
-                    },
-                })
-                if (verified !== true) return
-            }
+            if (!(await requirePinVerification())) return
 
             const ack =
                 await requestBottomSheet<PassphraseAcknowledgeContentResult>({
@@ -70,7 +54,7 @@ export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
                 options: { size: 'modal', enablePanDownToClose: true },
             })
         },
-        [checkPinEnabled, requestBottomSheet],
+        [requirePinVerification, requestBottomSheet],
     )
 
     return { openViewPassphraseFlow }

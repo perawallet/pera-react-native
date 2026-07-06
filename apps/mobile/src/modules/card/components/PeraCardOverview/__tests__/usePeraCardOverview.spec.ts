@@ -20,10 +20,13 @@ import {
 
 const mockState = vi.hoisted(() => ({
     selectedFundingType: null as string | null,
+    connectedAddress: null as string | null,
     transactions: [] as CardTransaction[],
     isLoading: false,
     usdcWallet: null as unknown,
     isWalletsLoading: false,
+    delegatedWallet: null as unknown,
+    isExternalLoading: false,
 }))
 const mockInfoToast = vi.fn()
 const mockNavigate = vi.fn()
@@ -43,8 +46,13 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardStore: (
             selector: (state: {
                 selectedFundingType: string | null
+                connectedFundingSourceAddress: string | null
             }) => unknown,
-        ) => selector({ selectedFundingType: mockState.selectedFundingType }),
+        ) =>
+            selector({
+                selectedFundingType: mockState.selectedFundingType,
+                connectedFundingSourceAddress: mockState.connectedAddress,
+            }),
         useCardTransactionsQuery: () => ({
             transactions: mockState.transactions,
             isLoading: mockState.isLoading,
@@ -52,6 +60,14 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardInternalWalletsQuery: () => ({
             usdcWallet: mockState.usdcWallet,
             isLoading: mockState.isWalletsLoading,
+            isError: false,
+            error: null,
+            refetch: vi.fn(),
+        }),
+        useCardExternalWalletsQuery: () => ({
+            delegatedWallet: mockState.delegatedWallet,
+            hasActiveDelegation: false,
+            isLoading: mockState.isExternalLoading,
             isError: false,
             error: null,
             refetch: vi.fn(),
@@ -88,10 +104,13 @@ describe('usePeraCardOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockState.selectedFundingType = null
+        mockState.connectedAddress = 'LINKED_ADDR'
         mockState.transactions = []
         mockState.isLoading = false
         mockState.usdcWallet = null
         mockState.isWalletsLoading = false
+        mockState.delegatedWallet = null
+        mockState.isExternalLoading = false
     })
 
     it('reports the balance as loading while the wallets query is in flight', () => {
@@ -180,5 +199,82 @@ describe('usePeraCardOverview', () => {
         result.current.onGetUsdc()
 
         expect(mockInfoToast).toHaveBeenCalled()
+    })
+
+    describe('balance display with auto funding', () => {
+        const cardWallet = (balance: string): CardInternalWallet => ({
+            id: 'wallet_usdc',
+            balance: new Decimal(balance),
+            currency: 'usdc',
+            address: 'BAANX_ADDR',
+            addressMemo: null,
+            addressId: 'addr_1',
+            type: 'INTERNAL',
+        })
+        const linkedWallet = (balance: string, allowance: string) => ({
+            address: 'LINKED_ADDR',
+            currency: 'usdc',
+            balance: new Decimal(balance),
+            allowance: new Decimal(allowance),
+            network: 'algorand',
+        })
+
+        it('ignores the linked balance on manual funding', () => {
+            mockState.selectedFundingType = 'MANUAL'
+            mockState.usdcWallet = cardWallet('240')
+            mockState.delegatedWallet = linkedWallet('1000', '400')
+
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            expect(result.current.balance.toFixed()).toBe('240')
+            // Spendable = card balance + credits (0) — no auto-funding leg.
+            expect(result.current.spendablePerTx.toFixed()).toBe('240')
+        })
+
+        it('adds the linked balance and caps the per-tx leg at the allowance', () => {
+            mockState.selectedFundingType = 'AUTO'
+            mockState.usdcWallet = cardWallet('240')
+            mockState.delegatedWallet = linkedWallet('1000', '400')
+
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            expect(result.current.balance.toFixed()).toBe('1240')
+            // min(400 allowance, 1000 linked) + 240 card + 0 credits.
+            expect(result.current.spendablePerTx.toFixed()).toBe('640')
+        })
+
+        it('caps the per-tx leg at the linked balance when it is lower', () => {
+            mockState.selectedFundingType = 'AUTO'
+            mockState.usdcWallet = cardWallet('240')
+            mockState.delegatedWallet = linkedWallet('150', '400')
+
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            // min(400, 150 linked) + 240 card.
+            expect(result.current.spendablePerTx.toFixed()).toBe('390')
+        })
+
+        it('falls back to the app per-tx limit when no allowance is reported', () => {
+            mockState.selectedFundingType = 'AUTO'
+            mockState.usdcWallet = cardWallet('240')
+            mockState.delegatedWallet = linkedWallet('1000', '0')
+
+            const { result } = renderHook(() => usePeraCardOverview())
+
+            // min(constant 400, 1000 linked) + 240 card.
+            expect(result.current.spendablePerTx.toFixed()).toBe('640')
+        })
+
+        it('waits for the linked balance only when auto funding is on', () => {
+            mockState.isExternalLoading = true
+
+            mockState.selectedFundingType = 'MANUAL'
+            const manual = renderHook(() => usePeraCardOverview())
+            expect(manual.result.current.isBalanceLoading).toBe(false)
+
+            mockState.selectedFundingType = 'AUTO'
+            const auto = renderHook(() => usePeraCardOverview())
+            expect(auto.result.current.isBalanceLoading).toBe(true)
+        })
     })
 })
