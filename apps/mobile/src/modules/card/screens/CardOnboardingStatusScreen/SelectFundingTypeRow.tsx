@@ -11,40 +11,25 @@
  */
 
 import React from 'react'
-import { FundingType } from '@perawallet/wallet-core-card'
+import {
+    AUTO_FUNDING_PER_TX_LIMIT_USD,
+    FundingType,
+} from '@perawallet/wallet-core-card'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
+import { FundingTypeOption } from '../../components/FundingTypeOption'
 import { StatusChecklistRow } from './StatusChecklistRow'
-import { FundingTypeOption } from './FundingTypeOption'
 import { FundingTypeInfoContent } from './FundingTypeInfoContent'
 import { useStyles } from './styles'
-
-// The funding-type options shown inline once funds are connected.
-const FUNDING_TYPE_OPTIONS: {
-    type: FundingType
-    titleKey: string
-    descriptionKey: string
-    testID: string
-}[] = [
-    {
-        type: FundingType.Auto,
-        titleKey: 'peraCard.setup_status.funding_type_auto_title',
-        descriptionKey: 'peraCard.setup_status.funding_type_auto_description',
-        testID: 'card-onboarding-status-funding-type-auto',
-    },
-    {
-        type: FundingType.Manual,
-        titleKey: 'peraCard.setup_status.funding_type_manual_title',
-        descriptionKey: 'peraCard.setup_status.funding_type_manual_description',
-        testID: 'card-onboarding-status-funding-type-manual',
-    },
-]
 
 type SelectFundingTypeRowProps = {
     isFundsConnected: boolean
     selectedFundingType: FundingType
     onSelectFundingType: (type: FundingType) => void
+    /** Disables the Auto option (connected account can't sign an LSig). */
+    isAutoFundingUnavailable: boolean
 }
 
 /** Checklist row 4 — "Select Funding Type", active once funds are connected. */
@@ -52,6 +37,7 @@ export const SelectFundingTypeRow = ({
     isFundsConnected,
     selectedFundingType,
     onSelectFundingType,
+    isAutoFundingUnavailable,
 }: SelectFundingTypeRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -84,16 +70,41 @@ export const SelectFundingTypeRow = ({
             testID='card-onboarding-status-funding-type'
         >
             <PWView style={styles.optionsList}>
-                {FUNDING_TYPE_OPTIONS.map(option => (
-                    <FundingTypeOption
-                        key={option.type}
-                        title={t(option.titleKey)}
-                        description={t(option.descriptionKey)}
-                        isSelected={selectedFundingType === option.type}
-                        onPress={() => onSelectFundingType(option.type)}
-                        testID={option.testID}
-                    />
-                ))}
+                <FundingTypeOption
+                    title={t('peraCard.setup_status.funding_type_auto_title')}
+                    description={t(
+                        'peraCard.setup_status.funding_type_auto_description',
+                    )}
+                    isSelected={selectedFundingType === FundingType.Auto}
+                    onPress={() => onSelectFundingType(FundingType.Auto)}
+                    isDisabled={isAutoFundingUnavailable}
+                    hint={
+                        isAutoFundingUnavailable
+                            ? t(
+                                  'peraCard.account.funding_type_auto_unavailable_hint',
+                              )
+                            : t(
+                                  'peraCard.setup_status.funding_type_limit_hint',
+                                  {
+                                      limit: formatCurrency(
+                                          AUTO_FUNDING_PER_TX_LIMIT_USD,
+                                          0,
+                                          'USD',
+                                      ),
+                                  },
+                              )
+                    }
+                    testID='card-onboarding-status-funding-type-auto'
+                />
+                <FundingTypeOption
+                    title={t('peraCard.setup_status.funding_type_manual_title')}
+                    description={t(
+                        'peraCard.setup_status.funding_type_manual_description',
+                    )}
+                    isSelected={selectedFundingType === FundingType.Manual}
+                    onPress={() => onSelectFundingType(FundingType.Manual)}
+                    testID='card-onboarding-status-funding-type-manual'
+                />
             </PWView>
         </StatusChecklistRow>
     )

@@ -19,6 +19,9 @@ type FundingTypeOptionProps = {
     description: string
     isSelected: boolean
     onPress: () => void
+    isDisabled?: boolean
+    /** Short note under the description, e.g. why the option is unavailable. */
+    hint?: string
     testID?: string
 }
 
@@ -28,6 +31,8 @@ export const FundingTypeOption = ({
     description,
     isSelected,
     onPress,
+    isDisabled = false,
+    hint,
     testID,
 }: FundingTypeOptionProps) => {
     const styles = useStyles()
@@ -36,6 +41,7 @@ export const FundingTypeOption = ({
         <PWRadioButton
             isSelected={isSelected}
             onPress={onPress}
+            isDisabled={isDisabled}
             containerStyle={[
                 styles.optionCard,
                 isSelected && styles.optionCardSelected,
@@ -51,6 +57,16 @@ export const FundingTypeOption = ({
                 >
                     {description}
                 </PWText>
+                {hint != null && (
+                    <PWText
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.optionHint}
+                        testID={testID ? `${testID}-hint` : undefined}
+                    >
+                        {hint}
+                    </PWText>
+                )}
             </PWView>
         </PWRadioButton>
     )

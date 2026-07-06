@@ -17,6 +17,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => ({
     panLast4: null as string | null,
     fundingAddress: null as string | null,
+    selectedFundingType: null as string | null,
     status: 'ACTIVE' as string | null,
     cardDetailsMutateAsync: vi.fn(),
     freezeMutateAsync: vi.fn(),
@@ -25,10 +26,16 @@ const mocks = vi.hoisted(() => ({
     isUnfreezing: false,
     setPinMutateAsync: vi.fn(),
     setPinPending: false,
+    connectAsync: vi.fn(),
     pushWebView: vi.fn(),
     infoToast: vi.fn(),
     errorToast: vi.fn(),
     request: vi.fn(),
+    accounts: [] as unknown[],
+    pickFundingSource: vi.fn(),
+    delegateTo: vi.fn(),
+    cancelDelegation: vi.fn(),
+    canDelegate: vi.fn(),
 }))
 
 const mutationResult = (
@@ -53,12 +60,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             selector: (state: {
                 lastKnownPanLast4: string | null
                 connectedFundingSourceAddress: string | null
+                selectedFundingType: string | null
             }) => unknown,
         ) =>
             selector({
                 lastKnownPanLast4: mocks.panLast4,
                 connectedFundingSourceAddress: mocks.fundingAddress,
+                selectedFundingType: mocks.selectedFundingType,
             }),
+        useConnectFundingSourceMutation: () =>
+            mutationResult(mocks.connectAsync),
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
         }),
@@ -99,19 +110,51 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
+    useAllAccounts: () => mocks.accounts,
+}))
+
+// Keep the real toast hooks (they use the mocked useToast); override only the
+// delegation/picker hooks.
+vi.mock('../../../hooks', async () => ({
+    ...(await vi.importActual<object>('../../../hooks')),
+    useCardFundingSourcePicker: () => ({
+        pickFundingSource: mocks.pickFundingSource,
+    }),
+    useCardFundingDelegation: () => ({
+        delegateTo: mocks.delegateTo,
+        cancelDelegation: mocks.cancelDelegation,
+        isPending: false,
+        canDelegate: mocks.canDelegate,
+    }),
+}))
+
+import { FundingType } from '@perawallet/wallet-core-card'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { usePeraCardDetails } from '../usePeraCardDetails'
+
+const walletAccount = (address: string): WalletAccount =>
+    ({ address, type: 'algo25', keyPairId: `key-${address}` }) as WalletAccount
 
 describe('usePeraCardDetails', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.panLast4 = null
         mocks.fundingAddress = null
+        mocks.selectedFundingType = null
         mocks.status = 'ACTIVE'
         mocks.setPinPending = false
         mocks.freezePending = false
         mocks.isUnfreezing = false
+        mocks.accounts = []
         // The freeze sheet runs the freeze itself; opening it just resolves.
         mocks.request.mockResolvedValue(undefined)
+        mocks.pickFundingSource.mockResolvedValue(null)
+        mocks.connectAsync.mockResolvedValue({ fundingSourceId: 'fs_1' })
+        mocks.delegateTo.mockResolvedValue(undefined)
+        mocks.cancelDelegation.mockResolvedValue(undefined)
+        mocks.canDelegate.mockReturnValue(true)
     })
 
     it('masks the PAN with the last 4 when known', () => {
@@ -304,14 +347,26 @@ describe('usePeraCardDetails', () => {
         expect(mocks.errorToast).toHaveBeenCalledTimes(1)
     })
 
-    it('shows a coming-soon toast for stubbed actions', () => {
+    it('opens the lost/stolen report sheet', () => {
         const { result } = renderHook(() => usePeraCardDetails())
 
         act(() => {
             result.current.onReportLostStolen()
         })
 
-        expect(mocks.infoToast).toHaveBeenCalledTimes(1)
+        expect(mocks.request).toHaveBeenCalledTimes(1)
+        expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
+    })
+
+    it('opens the report-transactions sheet from Report Suspicious Activity', () => {
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        act(() => {
+            result.current.onReportSuspicious()
+        })
+
+        expect(mocks.request).toHaveBeenCalledTimes(1)
+        expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
     })
 
     it('opens the wallet instructions bottom sheet from Add to Wallet', () => {
@@ -340,5 +395,179 @@ describe('usePeraCardDetails', () => {
 
         expect(mocks.request).toHaveBeenCalledTimes(1)
         expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
+    })
+
+    describe('funding type', () => {
+        it('labels the funding type from the stored preference', () => {
+            mocks.selectedFundingType = FundingType.Auto
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.fundingTypeLabel).toBe(
+                'peraCard.setup_status.funding_type_auto_title',
+            )
+        })
+
+        it('falls back to the manual label when nothing is stored', () => {
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.fundingTypeLabel).toBe(
+                'peraCard.setup_status.funding_type_manual_title',
+            )
+        })
+
+        it('opens the Select Funding Type sheet', () => {
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            act(() => {
+                result.current.onChangeFundingType()
+            })
+
+            expect(mocks.request).toHaveBeenCalledTimes(1)
+            expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
+        })
+    })
+
+    describe('changing the funding account', () => {
+        it('connects the picked account without delegating on manual funding', async () => {
+            mocks.selectedFundingType = FundingType.Manual
+            mocks.fundingAddress = 'OLD_ADDR'
+            mocks.pickFundingSource.mockResolvedValue(walletAccount('NEW_ADDR'))
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.connectAsync).toHaveBeenCalledWith({
+                address: 'NEW_ADDR',
+            })
+            expect(mocks.delegateTo).not.toHaveBeenCalled()
+            expect(mocks.cancelDelegation).not.toHaveBeenCalled()
+        })
+
+        it('delegates the new account, links it, then cancels the old delegation on auto funding', async () => {
+            mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'OLD_ADDR'
+            const oldAccount = walletAccount('OLD_ADDR')
+            const newAccount = walletAccount('NEW_ADDR')
+            mocks.accounts = [oldAccount, newAccount]
+            mocks.pickFundingSource.mockResolvedValue(newAccount)
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.delegateTo).toHaveBeenCalledWith(newAccount)
+            expect(mocks.connectAsync).toHaveBeenCalledWith({
+                address: 'NEW_ADDR',
+            })
+            expect(mocks.cancelDelegation).toHaveBeenCalledWith(oldAccount)
+            // The new account must be delegated BEFORE the card is repointed to
+            // it (connect), so a delegation failure never strands the card on
+            // an un-delegated source; the old delegation is zeroed only last.
+            expect(mocks.delegateTo.mock.invocationCallOrder[0]).toBeLessThan(
+                mocks.connectAsync.mock.invocationCallOrder[0],
+            )
+            expect(mocks.connectAsync.mock.invocationCallOrder[0]).toBeLessThan(
+                mocks.cancelDelegation.mock.invocationCallOrder[0],
+            )
+        })
+
+        it('does nothing when the picker is dismissed or re-picks the same account', async () => {
+            mocks.fundingAddress = 'OLD_ADDR'
+            mocks.pickFundingSource.mockResolvedValue(walletAccount('OLD_ADDR'))
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.connectAsync).not.toHaveBeenCalled()
+        })
+
+        it('aborts before connecting when the new account cannot sign on auto funding', async () => {
+            mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'OLD_ADDR'
+            mocks.pickFundingSource.mockResolvedValue(walletAccount('NEW_ADDR'))
+            mocks.canDelegate.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.errorToast).toHaveBeenCalledWith(
+                'peraCard.account.funding_delegation_unsupported_title',
+                'peraCard.account.funding_delegation_unsupported_body',
+            )
+            expect(mocks.connectAsync).not.toHaveBeenCalled()
+        })
+
+        it('does not repoint the card or touch the old delegation when the new delegation fails', async () => {
+            mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'OLD_ADDR'
+            const oldAccount = walletAccount('OLD_ADDR')
+            const newAccount = walletAccount('NEW_ADDR')
+            mocks.accounts = [oldAccount, newAccount]
+            mocks.pickFundingSource.mockResolvedValue(newAccount)
+            mocks.delegateTo.mockRejectedValue(new Error('baanx down'))
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.errorToast).toHaveBeenCalledWith(
+                'peraCard.account.funding_redelegate_failed_title',
+                'peraCard.account.funding_redelegate_failed_body',
+            )
+            // The card is never repointed and the old delegation stays intact,
+            // so the still-connected old account keeps funding the card.
+            expect(mocks.connectAsync).not.toHaveBeenCalled()
+            expect(mocks.cancelDelegation).not.toHaveBeenCalled()
+        })
+
+        it('leaves the old delegation intact when linking the delegated new account fails', async () => {
+            mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'OLD_ADDR'
+            const oldAccount = walletAccount('OLD_ADDR')
+            const newAccount = walletAccount('NEW_ADDR')
+            mocks.accounts = [oldAccount, newAccount]
+            mocks.pickFundingSource.mockResolvedValue(newAccount)
+            mocks.connectAsync.mockRejectedValue(new Error('link failed'))
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.delegateTo).toHaveBeenCalledWith(newAccount)
+            // Linking failed after delegation, so the old delegation is left
+            // untouched — the card stays on the still-delegated old account.
+            expect(mocks.cancelDelegation).not.toHaveBeenCalled()
+        })
+
+        it('soft-warns when zeroing the old delegation fails', async () => {
+            mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'OLD_ADDR'
+            const oldAccount = walletAccount('OLD_ADDR')
+            const newAccount = walletAccount('NEW_ADDR')
+            mocks.accounts = [oldAccount, newAccount]
+            mocks.pickFundingSource.mockResolvedValue(newAccount)
+            mocks.cancelDelegation.mockRejectedValue(new Error('baanx down'))
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                result.current.onChangeFunding()
+            })
+
+            expect(mocks.delegateTo).toHaveBeenCalledWith(newAccount)
+            expect(mocks.infoToast).toHaveBeenCalledWith(
+                'peraCard.account.funding_cancel_old_failed_title',
+                'peraCard.account.funding_cancel_old_failed_body',
+            )
+        })
     })
 })

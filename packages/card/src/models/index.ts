@@ -12,6 +12,7 @@
 
 export * from './card'
 export * from './currency'
+export * from './delegation'
 export * from './user'
 export * from './onboarding'
 export * from './transaction'

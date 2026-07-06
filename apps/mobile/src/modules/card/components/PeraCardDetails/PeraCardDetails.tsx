@@ -29,6 +29,8 @@ export const PeraCardDetails = () => {
         onSecureImageError,
         fundingAddress,
         onChangeFunding,
+        fundingTypeLabel,
+        onChangeFundingType,
         isFrozen,
         freezeLabel,
         isFreezing,
@@ -41,7 +43,6 @@ export const PeraCardDetails = () => {
         onAddToWallet,
         onReportLostStolen,
         onReportSuspicious,
-        onCancelCard,
     } = usePeraCardDetails()
 
     return (
@@ -64,6 +65,8 @@ export const PeraCardDetails = () => {
             <CardFundingAccountSection
                 address={fundingAddress}
                 onChange={onChangeFunding}
+                fundingTypeLabel={fundingTypeLabel}
+                onChangeFundingType={onChangeFundingType}
             />
 
             <CardOptionsSection
@@ -79,7 +82,6 @@ export const PeraCardDetails = () => {
                 onToggleFreeze={onToggleFreeze}
                 onReportLostStolen={onReportLostStolen}
                 onReportSuspicious={onReportSuspicious}
-                onCancelCard={onCancelCard}
             />
         </PWScrollView>
     )

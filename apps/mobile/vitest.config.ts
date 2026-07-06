@@ -258,6 +258,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-card/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/card/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-backup',
                 replacement: path.resolve(
                     __dirname,

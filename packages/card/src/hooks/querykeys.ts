@@ -41,6 +41,8 @@ export const cardQueryKeys = {
         ] as const,
     internalWallets: (network: Network) =>
         [MODULE_PREFIX, 'internal-wallets', { network }] as const,
+    externalWallets: (network: Network) =>
+        [MODULE_PREFIX, 'external-wallets', { network }] as const,
 }
 
 // Stable mutation keys so the same logical operation is recognised as a single

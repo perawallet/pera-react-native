@@ -2932,6 +2932,28 @@ vi.mock('react-native-advanced-input-mask', () => {
 })
 
 // Mock common SVG files to avoid InvalidCharacterError and loading issues
+vi.mock('@assets/icons/apple-wallet.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'SvgIcon',
+            }),
+    }
+})
+
+vi.mock('@assets/icons/google-pay.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'SvgIcon',
+            }),
+    }
+})
+
 vi.mock('@assets/icons/algo.svg', () => {
     const React = require('react')
     return {

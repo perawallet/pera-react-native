@@ -18,14 +18,38 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+
+// The real program signer needs a provisioned KMS keystore; stub just the
+// crypto so the Auto path (delegate → persist) stays real down to the wire.
+vi.mock('@perawallet/wallet-core-signing', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
+    useProgramSigner: () => ({
+        signProgram: vi.fn(),
+        signDelegatedLsig: vi.fn(async () => ({
+            signedProgram: new Uint8Array([1, 2, 3]),
+        })),
+    }),
+}))
+
+import {
+    AccountTypes,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     FundingType,
     OnboardingStep,
     useCardStore,
 } from '@perawallet/wallet-core-card'
+import {
+    mockGetDelegationProgram,
+    mockGetDelegationToken,
+    mockPostAlgorandDelegationApproval,
+} from '@perawallet/wallet-core-card/test-handlers'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -33,6 +57,14 @@ import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboarding
 
 const FUNDING_ADDRESS =
     'GD64YIY3TWGDMCNPP553DZPPR6LDUSFQOIJVFDPPXWEG3FVOJCCDBBHU5A'
+
+const FUNDING_ACCOUNT: WalletAccount = {
+    id: 'funding-account',
+    type: AccountTypes.algo25,
+    address: FUNDING_ADDRESS,
+    keyPairId: 'funding-account-key',
+    name: 'Main Account',
+}
 
 // The setup checklist with a stub Home tab so the "Create Pera Card" terminus
 // (navigate to TabBar → Home) resolves without a registered tab navigator.
@@ -99,6 +131,64 @@ describe('Flow: Card onboarding — select funding type', () => {
                 FundingType.Manual,
             ),
         )
+    })
+
+    it('Given Auto is selected, when Create Pera Card is pressed, then the delegation posts before persisting', async () => {
+        useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
+        let postBody: Record<string, unknown> | null = null
+        server.use(
+            mockGetDelegationProgram(),
+            mockGetDelegationToken(),
+            mockPostAlgorandDelegationApproval({
+                onRequest: body => {
+                    postBody = body
+                },
+            }),
+        )
+
+        renderStatus()
+
+        // Auto is the default selection — go straight to Create.
+        fireEvent.click(
+            await screen.findByTestId('card-onboarding-status-create-card'),
+        )
+
+        await waitFor(() => expect(postBody).not.toBeNull())
+        expect(postBody).toEqual(
+            expect.objectContaining({
+                address: FUNDING_ADDRESS,
+                network: 'algorand',
+                amount: '400',
+            }),
+        )
+        await waitFor(() =>
+            expect(useCardStore.getState().selectedFundingType).toBe(
+                FundingType.Auto,
+            ),
+        )
+    })
+
+    it('Given the delegation fails, when Create Pera Card is pressed, then nothing is persisted', async () => {
+        useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
+        server.use(
+            mockGetDelegationProgram(),
+            mockGetDelegationToken(),
+            mockPostAlgorandDelegationApproval({ status: 400 }),
+        )
+
+        renderStatus()
+
+        fireEvent.click(
+            await screen.findByTestId('card-onboarding-status-create-card'),
+        )
+
+        // The Create button is still there (no navigation) and no persistence.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-status-create-card'),
+            ).toBeTruthy(),
+        )
+        expect(useCardStore.getState().selectedFundingType).toBeNull()
     })
 
     it('Given funds are not connected, then the funding-type row stays inactive with no Create button', async () => {

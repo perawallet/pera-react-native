@@ -15,8 +15,10 @@ import { Decimal } from 'decimal.js'
 import { useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    AUTO_FUNDING_PER_TX_LIMIT_USD,
     DEFAULT_CARD_CURRENCY,
     FundingType,
+    useCardExternalWalletsQuery,
     useCardInternalWalletsQuery,
     useCardStore,
     useCardTransactionsQuery,
@@ -38,17 +40,20 @@ const ZERO_BALANCE = new Decimal(0)
 type UsePeraCardOverviewResult = {
     isAutoFunding: boolean
     currency: string
+    /** On-card balance, plus the linked account's balance when auto-funding. */
     balance: Decimal
+    /** Max a single purchase can draw: card balance + credits, plus (with
+     * auto-funding) min(per-tx limit, linked account balance). */
+    spendablePerTx: Decimal
     isBalanceLoading: boolean
     credits: PeraCardCredits
     transactionSections: CardTransactionSection[]
     isLoadingTransactions: boolean
-    onFundingPress: () => void
     onWithdraw: () => void
     onAddFunds: () => void
     onGetUsdc: () => void
     onShowAllTransactions: () => void
-    onPressTransaction: (id: string) => void
+    onPressTransaction: (transactionId: string) => void
     onCreditPress: () => void
 }
 
@@ -56,6 +61,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const navigation =
         useNavigation<NativeStackNavigationProp<PeraCardStackParamList>>()
     const selectedFundingType = useCardStore(state => state.selectedFundingType)
+    const connectedAddress = useCardStore(
+        state => state.connectedFundingSourceAddress,
+    )
+    const isAutoFunding = selectedFundingType === FundingType.Auto
     const { transactions, isLoading } = useCardTransactionsQuery()
 
     const transactionSections = useMemo(
@@ -63,15 +72,34 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [transactions],
     )
 
-    const { usdcWallet, isLoading: isBalanceLoading } =
+    const { usdcWallet, isLoading: isCardBalanceLoading } =
         useCardInternalWalletsQuery()
-    const balance = usdcWallet?.balance ?? ZERO_BALANCE
+    const { delegatedWallet, isLoading: isLinkedBalanceLoading } =
+        useCardExternalWalletsQuery({ address: connectedAddress })
 
     // TODO(card): credits are stubbed — no Baanx API exposes them yet.
     const credits = useMemo<PeraCardCredits>(
         () => ({ cashbacks: new Decimal(0), refunds: new Decimal(0) }),
         [],
     )
+
+    const cardBalance = usdcWallet?.balance ?? ZERO_BALANCE
+    const linkedBalance = isAutoFunding
+        ? (delegatedWallet?.balance ?? ZERO_BALANCE)
+        : ZERO_BALANCE
+
+    // Baanx enforces the delegation allowance per transaction; fall back to
+    // the app constant until the server reports one.
+    const perTxLimit = delegatedWallet?.allowance.gt(0)
+        ? delegatedWallet.allowance
+        : AUTO_FUNDING_PER_TX_LIMIT_USD
+
+    const creditsTotal = credits.cashbacks.plus(credits.refunds)
+    const spendablePerTx = (
+        isAutoFunding ? Decimal.min(perTxLimit, linkedBalance) : ZERO_BALANCE
+    )
+        .plus(cardBalance)
+        .plus(creditsTotal)
 
     const showComingSoon = useCardComingSoonToast()
 
@@ -88,21 +116,22 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     }, [navigation])
 
     const onPressTransaction = useCallback(
-        (id: string) => {
-            navigation.navigate('CardTransactionDetail', { id })
+        (transactionId: string) => {
+            navigation.navigate('CardTransactionDetail', { id: transactionId })
         },
         [navigation],
     )
 
     return {
-        isAutoFunding: selectedFundingType === FundingType.Auto,
+        isAutoFunding,
         currency: DEFAULT_CARD_CURRENCY,
-        balance,
-        isBalanceLoading,
+        balance: cardBalance.plus(linkedBalance),
+        spendablePerTx,
+        isBalanceLoading:
+            isCardBalanceLoading || (isAutoFunding && isLinkedBalanceLoading),
         credits,
         transactionSections,
         isLoadingTransactions: isLoading,
-        onFundingPress: showComingSoon,
         onWithdraw,
         onAddFunds,
         onGetUsdc: showComingSoon,

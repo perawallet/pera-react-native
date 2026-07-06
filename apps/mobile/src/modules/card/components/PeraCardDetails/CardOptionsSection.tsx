@@ -34,7 +34,6 @@ type CardOptionsSectionProps = {
     onToggleFreeze: () => void
     onReportLostStolen: () => void
     onReportSuspicious: () => void
-    onCancelCard: () => void
 }
 
 export const CardOptionsSection = ({
@@ -50,7 +49,6 @@ export const CardOptionsSection = ({
     onToggleFreeze,
     onReportLostStolen,
     onReportSuspicious,
-    onCancelCard,
 }: CardOptionsSectionProps) => {
     const { t } = useLanguage()
     const { theme } = useTheme()
@@ -131,16 +129,6 @@ export const CardOptionsSection = ({
                     label={t('peraCard.account.report_suspicious')}
                     onPress={onReportSuspicious}
                     testID='pera_card_report_suspicious_row'
-                />
-
-                <PWDivider />
-
-                <CardOptionRow
-                    icon='cross'
-                    label={t('peraCard.account.cancel_card')}
-                    onPress={onCancelCard}
-                    variant='destructive'
-                    testID='pera_card_cancel_row'
                 />
             </PWView>
         </PWView>

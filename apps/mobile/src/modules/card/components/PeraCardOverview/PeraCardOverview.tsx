@@ -25,11 +25,11 @@ export const PeraCardOverview = () => {
         isAutoFunding,
         currency,
         balance,
+        spendablePerTx,
         isBalanceLoading,
         credits,
         transactionSections,
         isLoadingTransactions,
-        onFundingPress,
         onWithdraw,
         onAddFunds,
         onGetUsdc,
@@ -46,8 +46,7 @@ export const PeraCardOverview = () => {
                 balance={balance}
                 isLoading={isBalanceLoading}
                 currency={currency}
-                isAutoFunding={isAutoFunding}
-                onFundingPress={onFundingPress}
+                spendablePerTx={spendablePerTx}
             />
 
             <PeraCardActionButtons

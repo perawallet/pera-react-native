@@ -33,6 +33,8 @@ export const CardOnboardingStatusScreen = () => {
         isConnecting,
         selectedFundingType,
         handleSelectFundingType,
+        isAutoFundingUnavailable,
+        isCreatingCard,
         handleCreatePeraCard,
         handleEnterDetails,
         handleConnectAccount,
@@ -46,6 +48,7 @@ export const CardOnboardingStatusScreen = () => {
             footer={
                 <StatusFooter
                     isFundsConnected={isFundsConnected}
+                    isCreatingCard={isCreatingCard}
                     onCreatePeraCard={handleCreatePeraCard}
                     onLogout={handleLogout}
                     onOpenSupport={handleOpenSupport}
@@ -74,6 +77,7 @@ export const CardOnboardingStatusScreen = () => {
                         isFundsConnected={isFundsConnected}
                         selectedFundingType={selectedFundingType}
                         onSelectFundingType={handleSelectFundingType}
+                        isAutoFundingUnavailable={isAutoFundingUnavailable}
                     />
                 </PWView>
             </PWView>
