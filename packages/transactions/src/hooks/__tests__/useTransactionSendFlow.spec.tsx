@@ -326,6 +326,43 @@ describe('useTransactionSendFlow', () => {
             })
         })
 
+        it('express send: algo25 sender + quantum receiver — opt-in gets staticFee, funding & transfer stay at base rate', async () => {
+            mockAccountInformation.mockResolvedValueOnce({
+                amount: 0n,
+                minBalance: 100000n,
+            })
+            mockResolveMinFeeForSender.mockImplementation(
+                ({ senderAddress }: { senderAddress: string }) =>
+                    senderAddress === 'B' ? 3000n : 1000n,
+            )
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await result.current.execute({
+                    params: {
+                        sendMode: 'express',
+                        sender: { address: 'A' } as any,
+                        receiver: 'B',
+                        asset: { assetId: 99n, decimals: 0 } as any,
+                        amount: new Decimal(1),
+                    },
+                })
+            })
+            // Funding reserves the receiver's (quantum) fee:
+            // mbrAfterOptIn (200000) + receiverFee (3000) = 203000.
+            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
+                amount: 203000n,
+            })
+            expect(mockAddPayment.mock.calls[0][0]).not.toHaveProperty(
+                'staticFee',
+            )
+            expect(mockAddAssetTransfer.mock.calls[0][0]).not.toHaveProperty(
+                'staticFee',
+            )
+            expect(mockAddAssetOptIn.mock.calls[0][0]).toMatchObject({
+                staticFee: 3000n,
+            })
+        })
+
         it('express send: algo25 sender — everything unchanged (regression)', async () => {
             mockAccountInformation.mockResolvedValueOnce({
                 amount: 0n,
