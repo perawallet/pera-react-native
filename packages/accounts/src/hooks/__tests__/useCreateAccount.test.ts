@@ -53,6 +53,8 @@ const kmsMock = vi.hoisted(() => ({
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
     getDerivedPublicKey: vi.fn(),
+    createQuantumKey: vi.fn(),
+    removeKeyAndChildren: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async () => {
@@ -95,6 +97,8 @@ describe('useCreateAccount', () => {
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
         kmsMock.getDerivedPublicKey.mockReset()
+        kmsMock.createQuantumKey.mockReset()
+        kmsMock.removeKeyAndChildren.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
@@ -120,6 +124,18 @@ describe('useCreateAccount', () => {
         kmsMock.getDerivedPublicKey.mockResolvedValue(
             new Uint8Array(32).fill(2),
         )
+        kmsMock.createQuantumKey.mockResolvedValue({
+            seedKey: {
+                id: 'QSEED1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Quantum },
+            },
+            address: 'QUANTUM_ADDRESS',
+            signKeyId: 'QSEED1-quantum',
+        })
+        kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
     })
 
     test('creates new HD wallet account when no existing key', async () => {
@@ -351,5 +367,65 @@ describe('useCreateAccount', () => {
         expect(created.address).toBe('IMPORTED_ADDRESS')
         // keyPairId is the ed25519 child of the imported seed.
         expect(created.keyPairId).toBe('IMPORTED_KEY-ed25519')
+    })
+
+    describe('createQuantumWalletAccount', () => {
+        test('creates a quantum account backed by a freshly minted KMS key', async () => {
+            uuidSpies.v7.mockImplementation(() => 'ACC1')
+
+            const { result } = renderHook(() => useCreateAccount())
+
+            let account: any
+            await act(async () => {
+                account = await result.current.createQuantumWalletAccount()
+            })
+
+            expect(kmsMock.createQuantumKey).toHaveBeenCalledTimes(1)
+            expect(account).toEqual({
+                id: 'ACC1',
+                address: 'QUANTUM_ADDRESS',
+                type: 'quantum',
+                keyPairId: 'QSEED1-quantum',
+            })
+            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+            expect(useAccountsStore.getState().accounts[0].address).toBe(
+                'QUANTUM_ADDRESS',
+            )
+        })
+
+        test('uses a provided seed reference without minting a new key', async () => {
+            uuidSpies.v7.mockImplementation(() => 'ACC1')
+
+            const { result } = renderHook(() => useCreateAccount())
+
+            let account: any
+            await act(async () => {
+                account = await result.current.createQuantumWalletAccount({
+                    seed: { seedKeyId: 'SEED42', address: 'ADDR42' },
+                })
+            })
+
+            expect(kmsMock.createQuantumKey).not.toHaveBeenCalled()
+            // keyPairId is the scheme-agnostic quantum signing child id.
+            expect(account.keyPairId).toBe('SEED42-quantum')
+            expect(account.address).toBe('ADDR42')
+            expect(account.type).toBe('quantum')
+            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        })
+
+        test('propagates createQuantumKey failures and stores nothing', async () => {
+            kmsMock.createQuantumKey.mockRejectedValueOnce(
+                new Error('keystore unavailable'),
+            )
+
+            const { result } = renderHook(() => useCreateAccount())
+
+            await act(async () => {
+                await expect(
+                    result.current.createQuantumWalletAccount(),
+                ).rejects.toThrow('keystore unavailable')
+            })
+            expect(useAccountsStore.getState().accounts).toHaveLength(0)
+        })
     })
 })
