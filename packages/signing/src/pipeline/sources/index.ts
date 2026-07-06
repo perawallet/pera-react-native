@@ -18,6 +18,14 @@ export {
 
 export { createPaymentSource } from './createPaymentSource'
 export { createExpressSendSource } from './createExpressSendSource'
+export {
+    createMinFeeResolver,
+    resolveMinFeeForSender,
+} from './minFeeResolver'
+export type {
+    MinFeeResolverDependencies,
+    ResolveMinFeeForSenderParams,
+} from './minFeeResolver'
 
 export {
     createWalletConnectTransactionSource,
