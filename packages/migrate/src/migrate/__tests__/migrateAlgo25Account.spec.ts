@@ -127,4 +127,32 @@ describe('migrateAlgo25Account', () => {
             'Imported algo25 address ADDR_DIFFERENT did not match legacy address ADDR_LEGACY',
         )
     })
+
+    it('wipes the decrypted secretKey after a successful import', async () => {
+        const secretKey = new Uint8Array(32).fill(9)
+        const args = buildArgs({
+            account: buildLegacyAccount({ secretKey }),
+        })
+
+        await migrateAlgo25Account(args)
+
+        expect(secretKey.every(b => b === 0)).toBe(true)
+    })
+
+    it('wipes the decrypted secretKey even when the import fails', async () => {
+        const secretKey = new Uint8Array(32).fill(9)
+        const args = buildArgs({
+            account: buildLegacyAccount({ secretKey }),
+            importAccount: vi.fn().mockResolvedValue({
+                id: 'mismatch',
+                type: AccountTypes.algo25,
+                address: 'ADDR_DIFFERENT',
+                keyPairId: 'kp',
+            }),
+        })
+
+        await expect(migrateAlgo25Account(args)).rejects.toThrow()
+
+        expect(secretKey.every(b => b === 0)).toBe(true)
+    })
 })

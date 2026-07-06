@@ -20,7 +20,12 @@ export { algo25SecretKeyToMnemonic }
 
 export const hdWalletEntropyToMnemonic = (parent: LegacyHDWallet): string => {
     if (parent.entropy && parent.entropy.length > 0) {
-        return entropyToMnemonic(Uint8Array.from(parent.entropy))
+        const entropy = Uint8Array.from(parent.entropy)
+        try {
+            return entropyToMnemonic(entropy)
+        } finally {
+            entropy.fill(0)
+        }
     }
     throw new Error(`HD wallet ${parent.walletId} has no entropy`)
 }

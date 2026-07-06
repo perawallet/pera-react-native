@@ -21,6 +21,7 @@ import {
     type ExtrasMigrationResult,
 } from './runExtrasMigration'
 import { runMigrationLoop } from './runMigrationLoop'
+import { scrubLegacyPayloadSecrets } from './scrubLegacyPayload'
 import type { MigrationDeps, MigrationResult } from './types'
 
 export type MigrationRunIncompleteReason =
@@ -87,6 +88,18 @@ export const runMigration = async (
         }
     }
 
+    try {
+        return await runMigrationWithLegacyData(migration, deps, data)
+    } finally {
+        scrubLegacyPayloadSecrets(data)
+    }
+}
+
+const runMigrationWithLegacyData = async (
+    migration: MigrationService,
+    deps: MigrationDeps,
+    data: LegacyMigrationData,
+): Promise<MigrationRunResult> => {
     let accountResult: MigrationResult
     try {
         accountResult = await runMigrationLoop({

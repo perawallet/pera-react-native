@@ -11,6 +11,7 @@
  */
 
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
 import type {
     LegacyHDKey,
     LegacyHDWallet,
@@ -89,5 +90,6 @@ const ensureHdRootImported = async (
         seedKeyId: seedKey.id ?? parent.walletId,
     }
     importedHdRoots.set(parent.walletId, root)
+    zeroBytes(parent.entropy)
     return root
 }

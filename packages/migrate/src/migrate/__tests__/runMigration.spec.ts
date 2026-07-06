@@ -18,7 +18,11 @@ import type {
 } from '@perawallet/wallet-extension-platform'
 
 const emptyLegacyData = (): LegacyMigrationData =>
-    ({ accounts: [], hdWallets: [] }) as unknown as LegacyMigrationData
+    ({
+        auth: { pin: null },
+        accounts: [],
+        hdWallets: [],
+    }) as unknown as LegacyMigrationData
 
 import { runMigration } from '../runMigration'
 import { runMigrationLoop } from '../runMigrationLoop'

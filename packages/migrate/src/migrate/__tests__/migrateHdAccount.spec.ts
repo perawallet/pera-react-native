@@ -145,6 +145,33 @@ describe('migrateHdAccount', () => {
         )
     })
 
+    it('wipes the decrypted seed entropy after importing the HD root', async () => {
+        const args = buildArgs()
+        const parent = args.hdWalletsById.get('wallet-1')
+        expect(parent?.entropy?.every(b => b === 1)).toBe(true)
+
+        await migrateHdAccount(args)
+
+        expect(parent?.entropy?.every(b => b === 0)).toBe(true)
+    })
+
+    it('leaves the shared seed entropy intact when the HD root import fails', async () => {
+        const createHDWalletKey = vi
+            .fn()
+            .mockRejectedValue(new Error('transient keystore error'))
+        const args = buildArgs({
+            createHDWalletKey:
+                createHDWalletKey as unknown as MigrateAccountArgs['createHDWalletKey'],
+        })
+        const parent = args.hdWalletsById.get('wallet-1')
+
+        await expect(migrateHdAccount(args)).rejects.toThrow(
+            'transient keystore error',
+        )
+
+        expect(parent?.entropy?.every(b => b === 1)).toBe(true)
+    })
+
     it('imports the HD root on first encounter and caches it for reuse', async () => {
         const createHDWalletKey = vi.fn().mockResolvedValue({
             seedKey: { id: 'kp-id' },
