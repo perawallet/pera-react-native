@@ -142,6 +142,9 @@ import { usePeraCardDetails } from '../usePeraCardDetails'
 const walletAccount = (address: string): WalletAccount =>
     ({ address, type: 'algo25', keyPairId: `key-${address}` }) as WalletAccount
 
+// Shared secure-view response the reveal tests resolve the token request with.
+const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
+
 describe('usePeraCardDetails', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -188,27 +191,102 @@ describe('usePeraCardDetails', () => {
         expect(result.current.fundingAddress).toBe('QKZ6ABCDEFG2IHH')
     })
 
-    it('reveals the secure image, then hides it without re-fetching', async () => {
-        mocks.cardDetailsMutateAsync.mockResolvedValue({
-            token: 'tok',
-            imageUrl: 'https://secure/card.png',
-        })
+    it('reveals, hides, and re-reveals from cache without re-fetching', async () => {
+        mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
 
         const { result } = renderHook(() => usePeraCardDetails())
         expect(result.current.secureImageUrl).toBeNull()
 
+        // First reveal fetches the token, then the image loads and opens.
+        await act(async () => {
+            await result.current.onToggleReveal()
+        })
+        act(() => {
+            result.current.onSecureImageLoad()
+        })
+        expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledTimes(1)
+        expect(result.current.secureImageUrl).toBe(SECURE_VIEW.imageUrl)
+        expect(result.current.isCardOpen).toBe(true)
+
+        // Hiding flips closed but keeps the fetched image cached.
+        await act(async () => {
+            await result.current.onToggleReveal()
+        })
+        expect(result.current.isCardOpen).toBe(false)
+        expect(result.current.secureImageUrl).toBe(SECURE_VIEW.imageUrl)
+
+        // Re-reveal is instant: no second fetch and no pending state.
         await act(async () => {
             await result.current.onToggleReveal()
         })
         expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledTimes(1)
-        expect(result.current.secureImageUrl).toBe('https://secure/card.png')
+        expect(result.current.isCardOpen).toBe(true)
+        expect(result.current.isRevealing).toBe(false)
+    })
+
+    it('requests the brand-styled secure image (customCss from the card art)', async () => {
+        mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
+
+        const { result } = renderHook(() => usePeraCardDetails())
+        await act(async () => {
+            await result.current.onToggleReveal()
+        })
+
+        expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledWith({
+            customCss: {
+                cardBackgroundColor: '#FCCA44',
+                cardTextColor: '#000000',
+                panBackgroundColor: '#FFE858',
+                panTextColor: '#000000',
+            },
+        })
+    })
+
+    it('stays pending and closed until the secure image has loaded', async () => {
+        mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
+
+        const { result } = renderHook(() => usePeraCardDetails())
+        expect(result.current.isRevealing).toBe(false)
 
         await act(async () => {
             await result.current.onToggleReveal()
         })
-        expect(result.current.secureImageUrl).toBeNull()
-        // Hiding must not call the secure-view endpoint again.
-        expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledTimes(1)
+        // Token fetched but the image is still downloading — the button stays
+        // pending and the card stays closed (masked) until it renders.
+        expect(result.current.secureImageUrl).toBe(SECURE_VIEW.imageUrl)
+        expect(result.current.isRevealing).toBe(true)
+        expect(result.current.isCardOpen).toBe(false)
+
+        act(() => {
+            result.current.onSecureImageLoad()
+        })
+        expect(result.current.isRevealing).toBe(false)
+        expect(result.current.isCardOpen).toBe(true)
+    })
+
+    it('recovers to the masked card if the secure image never loads', async () => {
+        vi.useFakeTimers()
+        try {
+            mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                await result.current.onToggleReveal()
+            })
+            expect(result.current.isRevealing).toBe(true)
+
+            // onLoad/onError never fire — the load timeout is the escape hatch
+            // so the button can't stay disabled forever.
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(20_000)
+            })
+
+            expect(result.current.secureImageUrl).toBeNull()
+            expect(result.current.isRevealing).toBe(false)
+            expect(mocks.errorToast).toHaveBeenCalledTimes(1)
+        } finally {
+            vi.useRealTimers()
+        }
     })
 
     it('surfaces the real API error message when revealing fails', async () => {
@@ -231,22 +309,20 @@ describe('usePeraCardDetails', () => {
     })
 
     it('hides the secure image and toasts when it fails to load', async () => {
-        mocks.cardDetailsMutateAsync.mockResolvedValue({
-            token: 'tok',
-            imageUrl: 'https://secure/card.png',
-        })
+        mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
 
         const { result } = renderHook(() => usePeraCardDetails())
         await act(async () => {
             result.current.onToggleReveal()
         })
-        expect(result.current.secureImageUrl).toBe('https://secure/card.png')
+        expect(result.current.secureImageUrl).toBe(SECURE_VIEW.imageUrl)
 
         act(() => {
             result.current.onSecureImageError()
         })
 
         expect(result.current.secureImageUrl).toBeNull()
+        expect(result.current.isRevealing).toBe(false)
         expect(mocks.errorToast).toHaveBeenCalledTimes(1)
     })
 

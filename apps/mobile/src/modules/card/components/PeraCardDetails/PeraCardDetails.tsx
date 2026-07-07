@@ -24,8 +24,10 @@ export const PeraCardDetails = () => {
     const {
         maskedPan,
         secureImageUrl,
+        isCardOpen,
         isRevealing,
         onToggleReveal,
+        onSecureImageLoad,
         onSecureImageError,
         fundingAddress,
         onChangeFunding,
@@ -53,11 +55,15 @@ export const PeraCardDetails = () => {
                 <PeraCardVisual
                     maskedPan={maskedPan}
                     secureImageUrl={secureImageUrl ?? undefined}
+                    isOpen={isCardOpen}
+                    onSecureImageLoad={onSecureImageLoad}
                     onSecureImageError={onSecureImageError}
                 />
                 <RevealCardDetailsButton
                     isLoading={isRevealing}
-                    isRevealed={secureImageUrl != null}
+                    // "Hide" only once the card is actually open; disabled while
+                    // the first reveal loads, so the label is never a mismatch.
+                    isRevealed={isCardOpen}
                     onPress={onToggleReveal}
                 />
             </PWView>

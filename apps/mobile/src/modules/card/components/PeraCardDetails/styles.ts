@@ -38,6 +38,19 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
         height: '100%',
     },
+    // The two flip faces (masked front, secure back) stacked in the same box.
+    // `backfaceVisibility: hidden` so only the face toward the viewer paints as
+    // the card rotates around its Y axis.
+    cardFace: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backfaceVisibility: 'hidden',
+        borderRadius: theme.spacing.lg,
+        overflow: 'hidden',
+    },
     panContainer: {
         position: 'absolute',
         left: theme.spacing.lg,

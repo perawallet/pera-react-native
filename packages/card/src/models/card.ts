@@ -51,6 +51,18 @@ export type CardSecureView = {
 }
 
 /**
+ * Optional server-side styling for the secure details image — the
+ * `POST /v1/card/details/token` request body. All values are hex colors.
+ * (The pin/token endpoint has a different, smaller customCss shape.)
+ */
+export type CardImageCustomCss = {
+    cardBackgroundColor?: string
+    cardTextColor?: string
+    panBackgroundColor?: string
+    panTextColor?: string
+}
+
+/**
  * SENSITIVE set-PIN handle from `POST /v1/card/set-pin/token`. Returns a
  * single-use token + a `hostedPageUrl` the user opens to set their PIN. Never
  * persisted or cached.

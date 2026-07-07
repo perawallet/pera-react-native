@@ -38,12 +38,37 @@ describe('card-sensitive endpoints', () => {
             expect.objectContaining({
                 method: 'POST',
                 path: '/v1/card/details/token',
+                data: undefined,
             }),
         )
         expect(view).toEqual({
             token: 'tok-1',
             imageUrl: 'https://host/details-image?token=tok-1',
         })
+    })
+
+    it('forwards customCss as the details/token request body', async () => {
+        request.mockResolvedValue({
+            data: {
+                token: 'tok-1',
+                imageUrl: 'https://host/details-image?token=tok-1',
+            },
+        })
+        const customCss = {
+            cardBackgroundColor: '#FCCA44',
+            cardTextColor: '#000000',
+            panBackgroundColor: '#FFE858',
+            panTextColor: '#000000',
+        }
+
+        await fetchCardDetailsToken({ network: 'mainnet', customCss })
+
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                path: '/v1/card/details/token',
+                data: { customCss },
+            }),
+        )
     })
 
     it('POSTs the pin/token endpoint and returns the secure view', async () => {

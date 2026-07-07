@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import {
     CardStatus,
@@ -43,16 +43,40 @@ import {
     WalletInstructionsSheet,
     type WalletPlatform,
 } from '../WalletInstructionsSheet'
+import { SECURE_CARD_IMAGE_CSS } from '../../utils/secureCardImageStyle'
 
 const PAN_MASK = '••••'
+
+// expo-image can stall without ever firing onLoad/onError (a trickling
+// connection, or the load-deferral class of bugs the reveal works around).
+// Bound the wait so the reveal button can't be pinned in its disabled spinner
+// state forever — on timeout we fall back to the masked card and notify.
+const SECURE_IMAGE_LOAD_TIMEOUT_MS = 15_000
+
+/** Single-use secure-view image plus whether it is still downloading. */
+type SecureView = {
+    /** Baanx-hosted image URL (PAN/CVC/expiry rendered server-side). */
+    url: string
+    /** True until the image's onLoad fires. */
+    isLoading: boolean
+}
 
 type UsePeraCardDetailsResult = {
     /** Masked PAN for the card visual, e.g. "•••• 2234". */
     maskedPan: string
-    /** Secure-view image URL when revealed; `null` while masked. */
+    /** Secure-view image URL once fetched. Cached for the screen visit — it
+     * persists across hide so re-revealing is an instant flip with no re-fetch;
+     * `null` until the first reveal (and after a load failure). */
     secureImageUrl: string | null
+    /** True when the secure card face should be shown (flipped open): revealed
+     * AND the image has finished loading. Drives the flip and the button label. */
+    isCardOpen: boolean
+    /** True only during the first fetch + image download (spinner + disabled
+     * button). A cached re-reveal never enters this state. */
     isRevealing: boolean
     onToggleReveal: () => void
+    /** The secure image finished rendering — ends the reveal pending state. */
+    onSecureImageLoad: () => void
     /** Recover if the single-use secure image fails to load: hide it + toast. */
     onSecureImageError: () => void
     /** Connected funding-source address, or `null` if none is stored. */
@@ -111,39 +135,91 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const isUnfreezing = useIsCardUnfreezing()
     const setPin = useSetCardPinMutation()
 
-    // The single-use secure image is held only in memory and discarded when the
-    // user hides it again — never persisted.
-    const [secureImageUrl, setSecureImageUrl] = useState<string | null>(null)
+    // The secure image (URL + load state as one value so they can never drift)
+    // is fetched once and cached in memory for the screen visit — never written
+    // to disk, and dropped when the screen unmounts. `isRevealed` is the
+    // separate show/hide toggle so hiding keeps the cached image for an instant
+    // re-reveal instead of re-fetching a fresh single-use token each time.
+    const [secureView, setSecureView] = useState<SecureView | null>(null)
+    const [isRevealed, setIsRevealed] = useState(false)
+    const secureImageUrl = secureView?.url ?? null
+    const isSecureImageLoading = secureView?.isLoading ?? false
+    // Only "open" once the image has actually loaded, so the flip and the "Hide"
+    // label never appear over a still-loading card.
+    const isCardOpen = isRevealed && secureView != null && !isSecureImageLoading
 
     const showError = useCardErrorToast()
 
-    // Async impls are wrapped in sync `void` handlers below so the exposed
-    // callbacks are `() => void` (the codebase convention for onPress props).
-    const toggleReveal = useCallback(async () => {
-        if (secureImageUrl != null) {
-            setSecureImageUrl(null)
-            return
+    const loadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const clearLoadTimeout = useCallback(() => {
+        if (loadTimeoutRef.current != null) {
+            clearTimeout(loadTimeoutRef.current)
+            loadTimeoutRef.current = null
         }
-        try {
-            const view = await cardDetails.mutateAsync()
-            setSecureImageUrl(view.imageUrl)
-        } catch (error) {
-            await showError(error)
-        }
-    }, [secureImageUrl, cardDetails, showError])
-    const onToggleReveal = useCallback(() => {
-        void toggleReveal()
-    }, [toggleReveal])
+    }, [])
 
-    // The secure-view image is the only way details are shown; if it fails to
-    // load (expired single-use URL, network), fall back to masked + notify.
-    const onSecureImageError = useCallback(() => {
-        setSecureImageUrl(null)
+    // The secure-view image is the only way details are shown; if it fails or
+    // never resolves, drop the cache, fall back to the masked card, and notify.
+    const failSecureImage = useCallback(() => {
+        clearLoadTimeout()
+        setSecureView(null)
+        setIsRevealed(false)
         errorToast(
             t('peraCard.account.error_title'),
             t('peraCard.account.error_body'),
         )
-    }, [errorToast, t])
+    }, [clearLoadTimeout, errorToast, t])
+
+    // Async impls are wrapped in sync `void` handlers below so the exposed
+    // callbacks are `() => void` (the codebase convention for onPress props).
+    const toggleReveal = useCallback(async () => {
+        // Hide: just flip closed. Keep the cached image so the next reveal is
+        // instant (no new token, no spinner).
+        if (isRevealed) {
+            setIsRevealed(false)
+            return
+        }
+        // Already fetched earlier this visit: show it without re-fetching.
+        if (secureView != null) {
+            setIsRevealed(true)
+            return
+        }
+        // First reveal this visit: fetch the single-use secure view.
+        try {
+            const view = await cardDetails.mutateAsync({
+                customCss: SECURE_CARD_IMAGE_CSS,
+            })
+            setSecureView({ url: view.imageUrl, isLoading: true })
+            setIsRevealed(true)
+            clearLoadTimeout()
+            loadTimeoutRef.current = setTimeout(
+                failSecureImage,
+                SECURE_IMAGE_LOAD_TIMEOUT_MS,
+            )
+        } catch (error) {
+            await showError(error)
+        }
+    }, [
+        isRevealed,
+        secureView,
+        cardDetails,
+        showError,
+        clearLoadTimeout,
+        failSecureImage,
+    ])
+    const onToggleReveal = useCallback(() => {
+        void toggleReveal()
+    }, [toggleReveal])
+
+    const onSecureImageLoad = useCallback(() => {
+        clearLoadTimeout()
+        setSecureView(view => (view ? { ...view, isLoading: false } : view))
+    }, [clearLoadTimeout])
+
+    const onSecureImageError = failSecureImage
+
+    // Drop any pending load timeout if the screen unmounts mid-download.
+    useEffect(() => clearLoadTimeout, [clearLoadTimeout])
 
     // Both freeze and unfreeze are confirmed AND executed inside their sheet, so
     // the sheet's button owns the pending state; here we only open it.
@@ -337,8 +413,10 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     return {
         maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,
         secureImageUrl,
-        isRevealing: cardDetails.isPending,
+        isCardOpen,
+        isRevealing: cardDetails.isPending || isSecureImageLoading,
         onToggleReveal,
+        onSecureImageLoad,
         onSecureImageError,
         fundingAddress,
         onChangeFunding,
