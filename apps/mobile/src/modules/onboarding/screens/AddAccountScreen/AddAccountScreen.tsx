@@ -104,6 +104,18 @@ export const AddAccountScreen = () => {
                                     leftIcon={option.leftIcon}
                                     onPress={option.onPress}
                                     disabled={option.isDisabled}
+                                    badge={
+                                        option.badge && {
+                                            label: t(option.badge.labelKey),
+                                            variant: option.badge.variant,
+                                        }
+                                    }
+                                    learnMore={
+                                        option.learnMore && {
+                                            label: t(option.learnMore.labelKey),
+                                            onPress: option.learnMore.onPress,
+                                        }
+                                    }
                                 />
                             ))}
                     </PWView>

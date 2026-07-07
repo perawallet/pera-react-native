@@ -99,6 +99,7 @@ vi.mock('@perawallet/wallet-core-config', async () => {
         config: {
             termsOfServiceUrl: 'https://example.com/terms',
             privacyPolicyUrl: 'https://example.com/privacy',
+            accountTypeSupportUrl: 'https://example.com/account-types',
         },
     }
 })
@@ -184,12 +185,15 @@ describe('useAddAccountScreen', () => {
             'add_account_create_universal_wallet_button',
         )
         expect(result.current.mainOptions[1]?.testID).toBe(
-            'add_account_create_multisig_button',
+            'add_account_create_quantum_button',
         )
         expect(result.current.mainOptions[2]?.testID).toBe(
-            'add_account_pera_card_button',
+            'add_account_create_multisig_button',
         )
         expect(result.current.mainOptions[3]?.testID).toBe(
+            'add_account_pera_card_button',
+        )
+        expect(result.current.mainOptions[4]?.testID).toBe(
             'add_account_import_button',
         )
     })
@@ -227,7 +231,6 @@ describe('useAddAccountScreen', () => {
 
     it('otherOptions includes watch, universal wallet, and algo25 when HD wallet exists', () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockQuantumFlag.enabled = false
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -251,7 +254,6 @@ describe('useAddAccountScreen', () => {
 
     it('otherOptions excludes universal wallet when no HD wallet exists', () => {
         mockUseAllAccounts.mockReturnValue([])
-        mockQuantumFlag.enabled = false
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -574,26 +576,74 @@ describe('useAddAccountScreen', () => {
         )
     })
 
-    it('otherOptions includes quantum option when the flag is enabled', () => {
+    it('mainOptions includes quantum option when the flag is enabled', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
         expect(
-            result.current.otherOptions.find(
+            result.current.mainOptions.find(
                 o => o.testID === 'add_account_create_quantum_button',
             ),
         ).toBeDefined()
     })
 
-    it('otherOptions excludes quantum option when the flag is disabled', () => {
+    it('mainOptions excludes quantum option when the flag is disabled', () => {
         mockQuantumFlag.enabled = false
 
         const { result } = renderHook(() => useAddAccountScreen())
 
         expect(
-            result.current.otherOptions.find(
+            result.current.mainOptions.find(
                 o => o.testID === 'add_account_create_quantum_button',
             ),
         ).toBeUndefined()
+    })
+
+    it('places the quantum option directly after the first account option', () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const addIndex = result.current.mainOptions.findIndex(
+            o => o.testID === 'add_account_add_button',
+        )
+        const quantumIndex = result.current.mainOptions.findIndex(
+            o => o.testID === 'add_account_create_quantum_button',
+        )
+
+        expect(quantumIndex).toBe(addIndex + 1)
+    })
+
+    it('quantum option carries a NEW badge and a learn-more link', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        expect(quantumOption.badge?.labelKey).toBe(
+            'onboarding.add_account.quantum_account_option_badge',
+        )
+        expect(quantumOption.learnMore?.labelKey).toBe(
+            'onboarding.add_account.quantum_account_option_learn_more',
+        )
+    })
+
+    it('quantum learn-more link opens the account-type support webview', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        act(() => {
+            quantumOption.learnMore!.onPress()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: 'https://example.com/account-types',
+            }),
+        )
     })
 
     it('quantum option creates quantum account and navigates to NameAccount', async () => {
@@ -607,7 +657,7 @@ describe('useAddAccountScreen', () => {
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const quantumOption = result.current.otherOptions.find(
+        const quantumOption = result.current.mainOptions.find(
             o => o.testID === 'add_account_create_quantum_button',
         )!
 
@@ -628,7 +678,7 @@ describe('useAddAccountScreen', () => {
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const quantumOption = result.current.otherOptions.find(
+        const quantumOption = result.current.mainOptions.find(
             o => o.testID === 'add_account_create_quantum_button',
         )!
 
@@ -657,7 +707,7 @@ describe('useAddAccountScreen', () => {
             'onboarding.create_account.processing',
         )
 
-        const quantumOption = result.current.otherOptions.find(
+        const quantumOption = result.current.mainOptions.find(
             o => o.testID === 'add_account_create_quantum_button',
         )!
 

@@ -193,6 +193,17 @@ export const useAddAccountScreen = () => {
         )
     }, [buildQuantumWalletAccount, runCreateAccount])
 
+    const handleLearnMoreQuantum = useCallback(
+        () =>
+            // TODO(PQ): point at the dedicated Quantum accounts support page
+            // once it exists; accountTypeSupportUrl is the closest placeholder.
+            pushWebView({
+                url: config.accountTypeSupportUrl,
+                id: 'quantum-account-support',
+            }),
+        [pushWebView],
+    )
+
     const mainOptions: AccountOption[] = useMemo(
         () =>
             [
@@ -214,6 +225,28 @@ export const useAddAccountScreen = () => {
                     leftIcon: 'wallet-with-algo' as IconName,
                     onPress: handleCreateUniversalWallet,
                     isDisabled: isCreatingAccount,
+                },
+                isQuantumAccountsEnabled && {
+                    testID: 'add_account_create_quantum_button',
+                    titleKey:
+                        'onboarding.add_account.quantum_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.quantum_account_option_description',
+                    // TODO(PQ-010): swap for the dedicated Quantum glyph once
+                    // the design asset lands; shield-check is a placeholder.
+                    leftIcon: 'shield-check' as IconName,
+                    onPress: handleCreateQuantum,
+                    isDisabled: isCreatingAccount,
+                    badge: {
+                        labelKey:
+                            'onboarding.add_account.quantum_account_option_badge',
+                        variant: 'positive',
+                    },
+                    learnMore: {
+                        labelKey:
+                            'onboarding.add_account.quantum_account_option_learn_more',
+                        onPress: handleLearnMoreQuantum,
+                    },
                 },
                 {
                     testID: 'add_account_create_multisig_button',
@@ -248,6 +281,9 @@ export const useAddAccountScreen = () => {
             hasHDWallet,
             handleAddAccount,
             handleCreateUniversalWallet,
+            isQuantumAccountsEnabled,
+            handleCreateQuantum,
+            handleLearnMoreQuantum,
             isCreatingAccount,
             openMultisigIntroduction,
             hasCardSession,
@@ -289,26 +325,12 @@ export const useAddAccountScreen = () => {
                     onPress: handleCreateAlgo25,
                     isDisabled: isCreatingAccount,
                 },
-                isQuantumAccountsEnabled && {
-                    testID: 'add_account_create_quantum_button',
-                    titleKey:
-                        'onboarding.add_account.quantum_account_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.quantum_account_option_description',
-                    // TODO(PQ-010): swap for the dedicated Quantum glyph once
-                    // the design asset lands; shield-check is a placeholder.
-                    leftIcon: 'shield-check' as IconName,
-                    onPress: handleCreateQuantum,
-                    isDisabled: isCreatingAccount,
-                },
             ].filter(Boolean) as AccountOption[],
         [
             hasHDWallet,
             handleWatchAddress,
             handleCreateUniversalWallet,
             handleCreateAlgo25,
-            isQuantumAccountsEnabled,
-            handleCreateQuantum,
             isCreatingAccount,
         ],
     )

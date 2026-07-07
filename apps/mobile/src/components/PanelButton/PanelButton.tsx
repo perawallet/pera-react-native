@@ -13,6 +13,8 @@
 import { useStyles } from './styles'
 import {
     type IconName,
+    PWBadge,
+    type PWBadgeProps,
     PWIcon,
     PWView,
     PWTouchableOpacity,
@@ -29,6 +31,13 @@ export type PanelButtonProps = {
     titleWeight: 'h3' | 'h4'
     variant?: 'default' | 'error'
     paddingStyle?: 'normal' | 'dense'
+    /** Optional badge shown inline next to the title (e.g. a "NEW" pill). */
+    badge?: { label: string; variant?: PWBadgeProps['variant'] }
+    /**
+     * Optional link rendered below the description with its own press
+     * handler, independent of the row's onPress (e.g. "Learn more").
+     */
+    learnMore?: { label: string; onPress: () => void }
     onPress: () => void
 } & PWTouchableOpacityProps
 
@@ -41,6 +50,8 @@ export const PanelButton = (props: PanelButtonProps) => {
         title,
         titleWeight,
         variant,
+        badge,
+        learnMore,
         onPress,
         description,
         testID,
@@ -65,19 +76,41 @@ export const PanelButton = (props: PanelButtonProps) => {
                 )}
                 <PWView style={themeStyle.textContainerStyle}>
                     <PWView style={themeStyle.titleContainerStyle}>
-                        <PWText
-                            style={themeStyle.textStyle}
-                            variant={titleWeight}
-                            {...getTestProps(testID, 'text')}
-                        >
-                            {title}
-                        </PWText>
+                        <PWView style={themeStyle.titleRowStyle}>
+                            <PWText
+                                style={themeStyle.textStyle}
+                                variant={titleWeight}
+                                {...getTestProps(testID, 'text')}
+                            >
+                                {title}
+                            </PWText>
+                            {!!badge && (
+                                <PWBadge
+                                    variant={badge.variant}
+                                    value={badge.label}
+                                />
+                            )}
+                        </PWView>
                         {rightIcon && <PWIcon name={rightIcon} />}
                     </PWView>
                     {!!description && (
                         <PWText style={themeStyle.descriptionStyle}>
                             {description}
                         </PWText>
+                    )}
+                    {!!learnMore && (
+                        <PWTouchableOpacity
+                            style={themeStyle.learnMoreStyle}
+                            onPress={event => {
+                                // Keep the tap on the link only — don't also
+                                // trigger the row's onPress.
+                                event?.stopPropagation?.()
+                                learnMore.onPress()
+                            }}
+                            {...getTestProps(testID, 'learn_more')}
+                        >
+                            <PWText variant='link'>{learnMore.label}</PWText>
+                        </PWTouchableOpacity>
                     )}
                 </PWView>
             </PWView>
