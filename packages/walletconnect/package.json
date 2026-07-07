@@ -25,7 +25,7 @@
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@perawallet/walletconnect": "1.0.0",
     "react": "catalog:",
-    "react-native": "0.85.3",
+    "react-native": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
   },

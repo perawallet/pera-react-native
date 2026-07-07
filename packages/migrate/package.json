@@ -42,7 +42,7 @@
         "@perawallet/wallet-extension-provider": "workspace:*",
         "@scure/bip39": "catalog:",
         "react": "catalog:",
-        "react-native": "0.85.3",
+        "react-native": "catalog:",
         "zustand": "catalog:"
     },
     "devDependencies": {

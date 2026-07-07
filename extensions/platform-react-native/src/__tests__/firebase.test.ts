@@ -25,16 +25,9 @@ vi.mock('react-native', () => ({
 }))
 
 // Mock Firebase modules with simple implementations
-const {
-    mockGetValue,
-    mockFetchAndActivate,
-    mockSetConfigSettings,
-    mockSetDefaults,
-} = vi.hoisted(() => ({
+const { mockGetValue, mockFetchAndActivate } = vi.hoisted(() => ({
     mockGetValue: vi.fn(),
     mockFetchAndActivate: vi.fn().mockResolvedValue(true),
-    mockSetConfigSettings: vi.fn().mockResolvedValue(undefined),
-    mockSetDefaults: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@react-native-firebase/crashlytics', () => ({
@@ -45,8 +38,6 @@ vi.mock('@react-native-firebase/crashlytics', () => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: vi.fn(() => ({})),
-    setConfigSettings: mockSetConfigSettings,
-    setDefaults: mockSetDefaults,
     fetchAndActivate: mockFetchAndActivate,
     getValue: mockGetValue,
 }))

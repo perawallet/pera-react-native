@@ -24,7 +24,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "decimal.js": "catalog:",
-    "ky": "^2.0.2",
+    "ky": "catalog:",
     "zod": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
