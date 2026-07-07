@@ -73,26 +73,34 @@ export const useAssetsQuery = (
         },
     })
 
-    return useMemo(() => {
+    // Derive the Map from query.data alone so its identity (and the assets it
+    // holds) stays stable when only a status flag flips — e.g. isRefetching
+    // during a background refetch. Consumers that dep on an asset in an effect
+    // then don't re-run on every status transition.
+    const data = useMemo(() => {
         const assets: Map<string, PeraAsset> = new Map()
 
         query.data?.forEach(asset => {
             assets.set(asset.assetId, asset)
         })
 
-        return {
-            data: assets,
+        return assets
+    }, [query.data])
+
+    return useMemo(
+        () => ({
+            data,
             isPending: query.isPending,
             isFetched: query.isFetched,
             isRefetching: query.isRefetching,
             isError: query.isError,
-        }
-    }, [
-        stableIds,
-        query.data,
-        query.isPending,
-        query.isFetched,
-        query.isRefetching,
-        query.isError,
-    ])
+        }),
+        [
+            data,
+            query.isPending,
+            query.isFetched,
+            query.isRefetching,
+            query.isError,
+        ],
+    )
 }
