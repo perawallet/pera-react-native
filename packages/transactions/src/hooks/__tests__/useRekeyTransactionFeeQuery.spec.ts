@@ -46,7 +46,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => mockAlgokit,
     useNetwork: () => mockUseNetwork(),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
-    MIN_TXN_FEE: 1000n,
     microAlgosToAlgos: (microAlgos: bigint) =>
         new Decimal(microAlgos.toString()).dividedBy(1_000_000),
 }))
@@ -133,7 +132,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         )
     })
 
-    it('falls back to MIN_TXN_FEE when the built transaction has no fee', async () => {
+    it('falls back to the config min fee when the built transaction has no fee', async () => {
         // AlgoKit may leave `fee` undefined in some constructs; the optional
         // chain falls back to the network minimum (1000 microAlgo → 0.001 ALGO).
         mockPayment.mockResolvedValueOnce({ fee: undefined })
@@ -148,6 +147,27 @@ describe('useRekeyTransactionFeeQuery', () => {
             expect(result.current.isPending).toBe(false)
         })
         expect(result.current.feeAlgos?.toString()).toBe('0.001')
+    })
+
+    it('uses the remote-config min fee as the built-txn fallback (follows remote config)', async () => {
+        // Non-default config: 2000 µAlgo. With txn.fee undefined the built-fee
+        // fallback comes from config; the resolver (base 1000n ≤ config) must
+        // not eclipse it, so the displayed fee is 0.002 ALGO.
+        mockUseMinimumFeeConfig.mockReturnValue({
+            minTxnFee: 2000n,
+            pqMultiplier: 3n,
+        })
+        mockResolveMinFeeForSender.mockReturnValue(1000n)
+        mockPayment.mockResolvedValueOnce({ fee: undefined })
+        const { wrapper } = buildWrapper()
+
+        const { result } = renderHook(
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.feeAlgos?.toString()).toBe('0.002')
     })
 
     it('does not run the query when sourceAddress is empty', async () => {

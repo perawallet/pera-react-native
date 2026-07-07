@@ -13,7 +13,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
-    MIN_TXN_FEE,
     microAlgosToAlgos,
     useAlgorandClient,
     useMinimumFeeConfig,
@@ -74,7 +73,7 @@ export const useRekeyTransactionFeeQuery = (
             ])
             // AlgoKit populates `fee` when it builds the transaction; fall
             // back to the network minimum only to satisfy the optional type.
-            const builtFee = txn.fee ?? MIN_TXN_FEE
+            const builtFee = txn.fee ?? minTxnFee
             // The rekey txn is signed by `sourceAddress`'s CURRENT auth
             // account (pre-rekey) — resolveMinFeeForSender resolves the
             // effective signer via getSignerFor, so a sender currently
