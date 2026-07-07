@@ -106,6 +106,13 @@ const multisigAccount: MultiSigAccount = {
     },
 }
 
+const quantumAccount: WalletAccount = {
+    id: 'quantum-account',
+    type: 'quantum',
+    address: 'QUANTUM_ADDR',
+    keyPairId: 'key-1',
+}
+
 describe('useAccountInfoCard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -219,6 +226,19 @@ describe('useAccountInfoCard', () => {
 
         expect(result.current.accountType.label).toBe(
             'account_info.type_multisig',
+        )
+    })
+
+    test('Quantum account: resolves the quantum account type label', () => {
+        const { result } = renderHook(() =>
+            useAccountInfoCard({
+                account: quantumAccount,
+                onClose: vi.fn(),
+            }),
+        )
+
+        expect(result.current.accountType.label).toBe(
+            'account_info.type_quantum',
         )
     })
 

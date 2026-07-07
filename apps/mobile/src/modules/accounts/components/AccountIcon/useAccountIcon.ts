@@ -51,10 +51,9 @@ const BASE_GLYPH: Record<AccountType, AccountGlyph> = {
         name: 'accounts/glyph/watch-account',
         variant: 'accountPink',
     },
-    // Temporary algo25 glyph until PQ-010 delivers the quantum visuals.
     [AccountTypes.quantum]: {
-        name: 'accounts/glyph/algo25-account',
-        variant: 'accountTurquoise',
+        name: 'accounts/glyph/quantum-account',
+        variant: 'accountQuantum',
     },
 }
 

@@ -124,6 +124,7 @@ declare module '@rneui/themed' {
         accountIconPinkBg: string
         accountIconPeachBg: string
         accountIconNeutralBg: string
+        accountIconQuantumBg: string
 
         // ASA Icons
         trustedIconBg: string

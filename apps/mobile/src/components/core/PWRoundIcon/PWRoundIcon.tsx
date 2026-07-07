@@ -31,6 +31,7 @@ export type PWRoundIconAccountVariant =
     | 'accountPink'
     | 'accountPeach'
     | 'accountNeutral'
+    | 'accountQuantum'
 
 export type PWRoundIconVariant = PWIconVariant | PWRoundIconAccountVariant
 

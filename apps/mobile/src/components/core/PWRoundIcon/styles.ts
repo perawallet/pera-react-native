@@ -27,6 +27,7 @@ export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
         accountPink: theme.colors.accountIconPinkBg,
         accountPeach: theme.colors.accountIconPeachBg,
         accountNeutral: theme.colors.accountIconNeutralBg,
+        accountQuantum: theme.colors.accountIconQuantumBg,
     }
 
     const backgroundColor =

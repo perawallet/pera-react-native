@@ -882,6 +882,16 @@ registerPreview({
                         />
                     ),
                 },
+                {
+                    label: 'quantum glyph / md / accountQuantum',
+                    node: (
+                        <PWRoundIcon
+                            icon='accounts/glyph/quantum-account'
+                            size='md'
+                            variant='accountQuantum'
+                        />
+                    ),
+                },
             ]}
         />
     ),

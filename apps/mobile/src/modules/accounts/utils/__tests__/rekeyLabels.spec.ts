@@ -70,6 +70,15 @@ describe('getRekeyLabelI18n', () => {
             },
         )
     })
+
+    it('maps a quantum base type to the quantum part', () => {
+        expect(getRekeyLabelI18n({ from: 'quantum', to: 'hardware' })).toEqual({
+            labelKey: 'account_info.type_rekeyed_transition',
+            fromKey: 'account_info.rekey_part_quantum',
+            toKey: 'account_info.rekey_part_ledger',
+            descriptionKey: 'account_type_info.rekeyed_ledger_description',
+        })
+    })
 })
 
 describe('splitAccountTypeLabel', () => {

@@ -35,6 +35,7 @@ vi.mock('@modules/multisig/hooks/useMultisigCreation', () => ({
 
 const mockBuildHdWalletAccount = vi.fn()
 const mockBuildAlgo25WalletAccount = vi.fn()
+const mockBuildQuantumWalletAccount = vi.fn()
 const mockBuildNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
@@ -49,6 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useCreateAccount: () => ({
             buildHdWalletAccount: mockBuildHdWalletAccount,
             buildAlgo25WalletAccount: mockBuildAlgo25WalletAccount,
+            buildQuantumWalletAccount: mockBuildQuantumWalletAccount,
         }),
         useAllAccounts: () => mockUseAllAccounts(),
         useCreateNextHDAccount: () => ({
@@ -97,6 +99,7 @@ vi.mock('@perawallet/wallet-core-config', async () => {
         config: {
             termsOfServiceUrl: 'https://example.com/terms',
             privacyPolicyUrl: 'https://example.com/privacy',
+            accountTypeSupportUrl: 'https://example.com/account-types',
         },
         // Pinned: the real values depend on the machine-local generated env
         // and test-runner globals, and the card-session cases assert
@@ -140,6 +143,11 @@ vi.mock('@hooks/useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: () => mockPeraCardFlag.enabled,
 }))
 
+const mockQuantumFlag = vi.hoisted(() => ({ enabled: true }))
+vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
+    useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
+}))
+
 const HD_ACCOUNT = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
@@ -159,6 +167,7 @@ describe('useAddAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([])
         mockUseCardSession.mockReturnValue({ isAuthenticated: false })
         mockPeraCardFlag.enabled = true
+        mockQuantumFlag.enabled = true
     })
 
     it('mainOptions excludes add account option when no HD wallet exists', () => {
@@ -181,12 +190,15 @@ describe('useAddAccountScreen', () => {
             'add_account_create_universal_wallet_button',
         )
         expect(result.current.mainOptions[1]?.testID).toBe(
-            'add_account_create_multisig_button',
+            'add_account_create_quantum_button',
         )
         expect(result.current.mainOptions[2]?.testID).toBe(
-            'add_account_pera_card_button',
+            'add_account_create_multisig_button',
         )
         expect(result.current.mainOptions[3]?.testID).toBe(
+            'add_account_pera_card_button',
+        )
+        expect(result.current.mainOptions[4]?.testID).toBe(
             'add_account_import_button',
         )
     })
@@ -567,6 +579,182 @@ describe('useAddAccountScreen', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
         )
+    })
+
+    it('mainOptions includes quantum option when the flag is enabled', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.mainOptions.find(
+                o => o.testID === 'add_account_create_quantum_button',
+            ),
+        ).toBeDefined()
+    })
+
+    it('mainOptions excludes quantum option when the flag is disabled', () => {
+        mockQuantumFlag.enabled = false
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            result.current.mainOptions.find(
+                o => o.testID === 'add_account_create_quantum_button',
+            ),
+        ).toBeUndefined()
+    })
+
+    it('places the quantum option directly after the first account option', () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const addIndex = result.current.mainOptions.findIndex(
+            o => o.testID === 'add_account_add_button',
+        )
+        const quantumIndex = result.current.mainOptions.findIndex(
+            o => o.testID === 'add_account_create_quantum_button',
+        )
+
+        expect(quantumIndex).toBe(addIndex + 1)
+    })
+
+    it('quantum option carries a NEW badge and a learn-more link', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        expect(quantumOption.badge?.labelKey).toBe(
+            'onboarding.add_account.quantum_account_option_badge',
+        )
+        expect(quantumOption.learnMore?.labelKey).toBe(
+            'onboarding.add_account.quantum_account_option_learn_more',
+        )
+    })
+
+    it('quantum learn-more link opens the account-type support webview', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        act(() => {
+            quantumOption.learnMore!.onPress()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: 'https://example.com/account-types',
+            }),
+        )
+    })
+
+    it('quantum option creates quantum account and navigates to NameAccount', async () => {
+        const newAccount = {
+            id: 'quantum-id',
+            address: 'QUANTUM_ADDRESS',
+            type: 'quantum' as const,
+            canSign: true,
+        }
+        mockBuildQuantumWalletAccount.mockResolvedValue(newAccount)
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        await act(async () => {
+            quantumOption.onPress()
+        })
+
+        expect(mockBuildQuantumWalletAccount).toHaveBeenCalled()
+        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+            account: newAccount,
+        })
+    })
+
+    it('quantum option shows error toast on failure', async () => {
+        mockBuildQuantumWalletAccount.mockRejectedValue(
+            new Error('Keygen failed'),
+        )
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        await act(async () => {
+            quantumOption.onPress()
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
+        )
+    })
+
+    it('creatingTitleKey reflects the quantum title while a quantum account is created', async () => {
+        let resolveCreate: (value: unknown) => void
+        mockBuildQuantumWalletAccount.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    resolveCreate = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        // Default title before any creation starts.
+        expect(result.current.creatingTitleKey).toBe(
+            'onboarding.create_account.processing',
+        )
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        await act(async () => {
+            quantumOption.onPress()
+        })
+
+        expect(result.current.creatingTitleKey).toBe(
+            'onboarding.add_account.quantum_creating_title',
+        )
+
+        await act(async () => {
+            resolveCreate!({ id: 'q', address: 'ADDR' })
+        })
+    })
+
+    it('creatingTitleKey stays the default while an algo25 account is created', async () => {
+        let resolveCreate: (value: unknown) => void
+        mockBuildAlgo25WalletAccount.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    resolveCreate = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const algo25Option = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_algo25_button',
+        )!
+
+        await act(async () => {
+            algo25Option.onPress()
+        })
+
+        expect(result.current.creatingTitleKey).toBe(
+            'onboarding.create_account.processing',
+        )
+
+        await act(async () => {
+            resolveCreate!({ id: 'a', address: 'ADDR' })
+        })
     })
 
     it('add account option calls createNextHDAccount and navigates to NameAccount', async () => {

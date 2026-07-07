@@ -83,6 +83,9 @@ export const useAccountTypeLabel = (
             case AccountTypes.algo25: {
                 return plain(t('account_info.type_algo25'))
             }
+            case AccountTypes.quantum: {
+                return plain(t('account_info.type_quantum'))
+            }
             case AccountTypes.hardware: {
                 return plain(t('account_info.type_ledger'))
             }
