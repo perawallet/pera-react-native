@@ -20,19 +20,13 @@ import {
 } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
-import {
-    ALGO_ASSET,
-    toWholeUnits,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
-import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
+import { useOptInConfirmationContent } from './useOptInConfirmationContent'
 import { useStyles } from './styles'
-
-const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
 
 export type OptInConfirmationContentProps = {
     assetId: string
@@ -47,12 +41,13 @@ export type OptInConfirmationContentProps = {
 export const OptInConfirmationContent = ({
     assetId,
     accountAddress,
-    fee = MIN_FEE_WHOLE_UNITS,
+    fee,
 }: OptInConfirmationContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve } = useBottomSheetResult<'confirm'>()
+    const { resolvedFee } = useOptInConfirmationContent(fee)
 
     const { data: assets } = useAssetsQuery([assetId])
     const asset = assets?.get(assetId)
@@ -141,7 +136,7 @@ export const OptInConfirmationContent = ({
                     </PWText>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={fee}
+                        value={resolvedFee}
                         showSymbol
                         style={styles.rowValue}
                         testID='opt_in_fee'
