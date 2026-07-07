@@ -102,6 +102,28 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
     })
 
+    test('applies afterTime/beforeTime filters to the first DB page', async () => {
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                    afterTime: '2024-01-01',
+                    beforeTime: '2024-01-31',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        expect(mockGetTransactionHistory).toHaveBeenCalledWith(
+            expect.objectContaining({
+                afterTime: '2024-01-01',
+                beforeTime: '2024-01-31',
+            }),
+        )
+    })
+
     test('provides loading state initially', () => {
         mockGetTransactionHistory.mockImplementation(
             () => new Promise(() => {}),

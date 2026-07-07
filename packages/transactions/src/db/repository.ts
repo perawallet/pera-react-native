@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, desc, lt, sql } from 'drizzle-orm'
+import { eq, and, desc, lt, gte, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type {
@@ -201,6 +201,20 @@ export async function upsertTransactions({
     }
 }
 
+/** Seconds in a calendar day, used to make `beforeTime` day-inclusive. */
+const SECONDS_PER_DAY = 86_400
+
+/**
+ * Converts an `YYYY-MM-DD` date string to the UTC start-of-day in unix
+ * seconds, matching how `roundTime` is stored. Returns `undefined` for
+ * missing or unparseable input so the caller can skip the condition.
+ */
+function isoDateToUnixSeconds(isoDate?: string): number | undefined {
+    if (isoDate === undefined) return undefined
+    const ms = Date.parse(`${isoDate}T00:00:00.000Z`)
+    return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000)
+}
+
 type GetTransactionHistoryParams = {
     db?: Database
     accountAddress: string
@@ -208,6 +222,10 @@ type GetTransactionHistoryParams = {
     assetId?: string
     limit?: number
     beforeRoundTime?: number
+    /** Optional: only include txs on/after this date (YYYY-MM-DD, inclusive) */
+    afterTime?: string
+    /** Optional: only include txs on/before this date (YYYY-MM-DD, inclusive) */
+    beforeTime?: string
 }
 
 export async function getTransactionHistory({
@@ -217,6 +235,8 @@ export async function getTransactionHistory({
     assetId,
     limit = 25,
     beforeRoundTime,
+    afterTime,
+    beforeTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
     const conditions = [
         eq(AccountTransactionsSchema.accountAddress, accountAddress),
@@ -232,6 +252,25 @@ export async function getTransactionHistory({
     if (beforeRoundTime !== undefined) {
         conditions.push(
             lt(AccountTransactionsSchema.roundTime, beforeRoundTime),
+        )
+    }
+
+    const afterRoundTime = isoDateToUnixSeconds(afterTime)
+    if (afterRoundTime !== undefined) {
+        conditions.push(
+            gte(AccountTransactionsSchema.roundTime, afterRoundTime),
+        )
+    }
+
+    const beforeStartOfDay = isoDateToUnixSeconds(beforeTime)
+    if (beforeStartOfDay !== undefined) {
+        // `beforeTime` names a day; include the whole day by cutting off at the
+        // start of the next day (day-grain, matching the Pera API semantics).
+        conditions.push(
+            lt(
+                AccountTransactionsSchema.roundTime,
+                beforeStartOfDay + SECONDS_PER_DAY,
+            ),
         )
     }
 

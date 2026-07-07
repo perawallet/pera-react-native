@@ -124,6 +124,8 @@ export const useTransactionHistoryQuery = (
                     accountAddress,
                     network,
                     assetId,
+                    afterTime,
+                    beforeTime,
                     limit: limit ?? 25,
                 })
 
@@ -178,6 +180,7 @@ export const useTransactionHistoryQuery = (
                 accountAddress,
                 network,
                 assetId,
+                afterTime,
                 beforeTime: beforeTimeForApi,
                 limit,
             })
