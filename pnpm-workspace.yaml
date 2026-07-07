@@ -77,6 +77,8 @@ overrides:
   brace-expansion@4: 5.0.6
   brace-expansion@5: 5.0.6
   esbuild@<0.25.0: ">=0.25.0"
+  # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
+  esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
   fast-uri@<3.1.2: ">=3.1.2"
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: ">=10.5.0"
