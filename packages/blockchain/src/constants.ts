@@ -33,12 +33,3 @@ export const FALLBACK_ASSET_MBR = 100_000n
  * which sources the value from remote config.
  */
 export const FALLBACK_MIN_TXN_FEE = 1000n
-
-/** @deprecated Use `useMinimumFeeConfig` (remote config); removed in PQ-016. */
-export const BASE_ACCOUNT_MBR = FALLBACK_BASE_ACCOUNT_MBR
-
-/** @deprecated Use `useMinimumFeeConfig` (remote config); removed in PQ-016. */
-export const ASSET_MBR = FALLBACK_ASSET_MBR
-
-/** @deprecated Use `useMinimumFeeConfig` (remote config); removed in PQ-016. */
-export const MIN_TXN_FEE = FALLBACK_MIN_TXN_FEE
