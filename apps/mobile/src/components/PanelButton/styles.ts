@@ -55,5 +55,16 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
             justifyContent: 'space-between',
             gap: theme.spacing.sm,
         },
+        titleRowStyle: {
+            flexShrink: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+            backgroundColor: 'transparent',
+        },
+        learnMoreStyle: {
+            marginTop: theme.spacing.sm,
+            backgroundColor: 'transparent',
+        },
     }
 })

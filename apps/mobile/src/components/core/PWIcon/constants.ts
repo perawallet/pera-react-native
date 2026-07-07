@@ -77,6 +77,7 @@ import ProgressIcon from '@assets/icons/progress.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
 import QrIcon from '@assets/icons/qr.svg'
+import QuantumIcon from '@assets/icons/quantum.svg'
 import QuestionMarkIcon from '@assets/icons/question-mark.svg'
 import RekeyIcon from '@assets/icons/rekey.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
@@ -237,6 +238,7 @@ export const ICON_LIBRARY = {
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
     qr: QrIcon,
+    quantum: QuantumIcon,
     'question-mark': QuestionMarkIcon,
     rekey: RekeyIcon,
     reload: ReloadIcon,
