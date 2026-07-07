@@ -19,7 +19,12 @@ export {
     type UseCardAddAccountResult,
 } from './useCardAddAccount'
 export { useCardComingSoonToast } from './useCardComingSoonToast'
+export { useCardConfirmMutation } from './useCardConfirmMutation'
 export { useCardErrorToast } from './useCardErrorToast'
+export {
+    useCardFreezeAction,
+    type CardFreezeOutcome,
+} from './useCardFreezeAction'
 export {
     useCardFundingDelegation,
     type UseCardFundingDelegationResult,
@@ -33,3 +38,7 @@ export {
     isEligibleFundingSource,
     type UseCardFundingSourcePickerResult,
 } from './useCardFundingSourcePicker'
+// useReportSuspiciousFlow is intentionally NOT re-exported here: it is a flow
+// orchestrator that imports the report sheet components, and those components
+// import hooks from this barrel — routing it through here closes an import
+// cycle. Its single consumer imports it directly from './useReportSuspiciousFlow'.

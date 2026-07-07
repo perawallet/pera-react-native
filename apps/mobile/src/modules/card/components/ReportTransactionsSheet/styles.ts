@@ -14,8 +14,11 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     // Sticky zone needs its own background so rows scroll under it cleanly.
+    // PWSheetLayout doesn't pad the header slot, so match the body's horizontal
+    // padding here to keep the title/subtitle aligned with the rows below.
     header: {
         gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.md,
         paddingBottom: theme.spacing.md,
         backgroundColor: theme.colors.background,

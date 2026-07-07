@@ -13,6 +13,7 @@
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
+import { getButtonIconSize } from './sizing'
 import {
     PWIcon,
     type IconName,
@@ -116,11 +117,7 @@ export const PWButton = ({
                 <PWIcon
                     name={icon}
                     variant={iconVariant}
-                    size={
-                        paddingStyle === 'dense' || paddingStyle === 'none'
-                            ? 'sm'
-                            : 'md'
-                    }
+                    size={getButtonIconSize(paddingStyle)}
                 />
             )}
             {!!title && !isLoading && (
@@ -139,11 +136,7 @@ export const PWButton = ({
                 <PWIcon
                     name={iconRight}
                     variant={iconVariant}
-                    size={
-                        paddingStyle === 'dense' || paddingStyle === 'none'
-                            ? 'sm'
-                            : 'md'
-                    }
+                    size={getButtonIconSize(paddingStyle)}
                 />
             )}
 

@@ -33,10 +33,12 @@ import {
     useCardFundingDelegation,
     useCardFundingSourcePicker,
 } from '../../hooks'
+// Imported directly (not via the hooks barrel) to avoid an import cycle: the
+// flow orchestrator pulls in report sheet components that import from that barrel.
+import { useReportSuspiciousFlow } from '../../hooks/useReportSuspiciousFlow'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
 import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
 import { ReportLostStolenSheet } from '../ReportLostStolenSheet'
-import { ReportTransactionsSheet } from '../ReportTransactionsSheet'
 import { SelectFundingTypeSheet } from '../SelectFundingTypeSheet'
 import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 import {
@@ -323,16 +325,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         })
     }, [request])
 
-    const onReportSuspicious = useCallback(() => {
-        void request({
-            contents: <ReportTransactionsSheet />,
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [request])
+    const { start: onReportSuspicious } = useReportSuspiciousFlow()
 
     return {
         maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,

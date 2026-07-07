@@ -11,9 +11,9 @@
  */
 
 import { useLanguage } from '@hooks/useLanguage'
+import { useCardFreezeAction } from '../../hooks'
 import { CardConfirmationSheet } from '../CardConfirmationSheet'
-import { FrozenCardGlyph } from '../FrozenCardGlyph'
-import { useFreezeCardConfirmationSheet } from './useFreezeCardConfirmationSheet'
+import { CardBadgeGlyph } from '../CardBadgeGlyph'
 
 /**
  * Confirmation sheet shown before freezing a card. Freezing runs here — the
@@ -21,11 +21,11 @@ import { useFreezeCardConfirmationSheet } from './useFreezeCardConfirmationSheet
  */
 export const FreezeCardConfirmationSheet = () => {
     const { t } = useLanguage()
-    const { isFreezing, onConfirm, onClose } = useFreezeCardConfirmationSheet()
+    const { isFreezing, onConfirm, onClose } = useCardFreezeAction()
 
     return (
         <CardConfirmationSheet
-            header={<FrozenCardGlyph size='lg' />}
+            header={<CardBadgeGlyph size='lg' />}
             title={t('peraCard.account.freeze_sheet_title')}
             body={t('peraCard.account.freeze_sheet_body')}
             confirmLabel={t('peraCard.account.freeze_sheet_confirm')}

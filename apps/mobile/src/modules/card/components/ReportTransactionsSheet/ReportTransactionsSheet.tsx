@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Fragment } from 'react'
 import {
     PWButton,
     PWCheckbox,
@@ -18,6 +19,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardTransactionListItem } from '../CardTransactionListItem'
 import { useReportTransactionsSheet } from './useReportTransactionsSheet'
@@ -86,24 +88,26 @@ export const ReportTransactionsSheet = () => {
                     {t('peraCard.account.transactions_empty')}
                 </PWText>
             ) : (
-                transactions.map(transaction => (
-                    <PWTouchableOpacity
-                        key={transaction.id}
-                        style={styles.row}
-                        onPress={() => onToggle(transaction.id)}
-                        testID={`card_report_tx_${transaction.id}`}
-                    >
-                        <PWCheckbox
-                            checked={isSelected(transaction.id)}
+                transactions.map((transaction, index) => (
+                    <Fragment key={transaction.id}>
+                        {index > 0 ? <ListItemDivider /> : null}
+                        <PWTouchableOpacity
+                            style={styles.row}
                             onPress={() => onToggle(transaction.id)}
-                            testID={`card_report_tx_checkbox_${transaction.id}`}
-                        />
-                        <PWView style={styles.rowItem}>
-                            <CardTransactionListItem
-                                transaction={transaction}
+                            testID={`card_report_tx_${transaction.id}`}
+                        >
+                            <PWCheckbox
+                                checked={isSelected(transaction.id)}
+                                onPress={() => onToggle(transaction.id)}
+                                testID={`card_report_tx_checkbox_${transaction.id}`}
                             />
-                        </PWView>
-                    </PWTouchableOpacity>
+                            <PWView style={styles.rowItem}>
+                                <CardTransactionListItem
+                                    transaction={transaction}
+                                />
+                            </PWView>
+                        </PWTouchableOpacity>
+                    </Fragment>
                 ))
             )}
         </PWSheetLayout>

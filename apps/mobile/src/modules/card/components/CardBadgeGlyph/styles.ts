@@ -11,15 +11,21 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import type { CardBadge } from './CardBadgeGlyph'
 
-type StyleProps = { size: 'sm' | 'lg' }
+type StyleProps = { size: 'sm' | 'lg'; badge: CardBadge }
 
 // The card art keeps a ~3:2 landscape ratio so it isn't letterboxed; the badge
 // is pinned to its lower-right corner.
-export const useStyles = makeStyles((theme, { size }: StyleProps) => {
+export const useStyles = makeStyles((theme, { size, badge }: StyleProps) => {
     const cardWidth = size === 'lg' ? theme.spacing['4xl'] : theme.spacing.xxl
     const cardHeight = size === 'lg' ? theme.spacing['3xl'] : theme.spacing.xl
     const badgeSize = size === 'lg' ? theme.spacing.xl : theme.spacing.lg
+    // `unfreeze` intentionally shares the frozen orange; only its icon differs.
+    const badgeColor =
+        badge === 'suspicious'
+            ? theme.colors.negative
+            : theme.colors.warningText
 
     return {
         container: {
@@ -38,7 +44,7 @@ export const useStyles = makeStyles((theme, { size }: StyleProps) => {
             width: badgeSize,
             height: badgeSize,
             borderRadius: badgeSize / 2,
-            backgroundColor: theme.colors.warningText,
+            backgroundColor: badgeColor,
             alignItems: 'center',
             justifyContent: 'center',
         },

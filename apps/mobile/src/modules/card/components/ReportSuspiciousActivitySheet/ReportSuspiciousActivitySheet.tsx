@@ -11,36 +11,35 @@
  */
 
 import { useLanguage } from '@hooks/useLanguage'
-import { CardConfirmationSheet } from '../CardConfirmationSheet'
+import { useCardFreezeAction } from '../../hooks'
 import { CardBadgeGlyph } from '../CardBadgeGlyph'
-import { useUnfreezeCardConfirmationSheet } from './useUnfreezeCardConfirmationSheet'
+import { CardConfirmationSheet } from '../CardConfirmationSheet'
 
 /**
- * Confirmation sheet shown before unfreezing a card. Unfreezing runs here —
- * the confirm button shows the pending state and the sheet closes on success.
+ * First step of the report-suspicious flow: freeze the card before reporting.
+ * Freezing runs here — the confirm button shows the pending state.
  */
-export const UnfreezeCardConfirmationSheet = () => {
+export const ReportSuspiciousActivitySheet = () => {
     const { t } = useLanguage()
-    const { isUnfreezing, onConfirm, onClose } =
-        useUnfreezeCardConfirmationSheet()
+    const { isFreezing, onConfirm, onClose } = useCardFreezeAction()
 
     return (
         <CardConfirmationSheet
             header={
                 <CardBadgeGlyph
                     size='lg'
-                    badge='unfreeze'
+                    badge='suspicious'
                 />
             }
-            title={t('peraCard.account.unfreeze_sheet_title')}
-            body={t('peraCard.account.unfreeze_sheet_body')}
-            confirmLabel={t('peraCard.account.unfreeze_sheet_confirm')}
-            isPending={isUnfreezing}
+            title={t('peraCard.account.report_suspicious_sheet_title')}
+            body={t('peraCard.account.report_suspicious_sheet_body')}
+            confirmLabel={t('peraCard.account.report_suspicious_sheet_confirm')}
+            isPending={isFreezing}
             onConfirm={onConfirm}
             onClose={onClose}
-            testID='unfreeze_card_confirmation_sheet'
-            confirmTestID='unfreeze_confirm_button'
-            closeTestID='unfreeze_close_button'
+            testID='report_suspicious_activity_sheet'
+            confirmTestID='report_suspicious_freeze_button'
+            closeTestID='report_suspicious_close_button'
         />
     )
 }

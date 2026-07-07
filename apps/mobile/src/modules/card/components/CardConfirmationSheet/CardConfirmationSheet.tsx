@@ -20,10 +20,13 @@ type CardConfirmationSheetProps = {
     title: string
     body: string
     confirmLabel: string
-    /** True while the confirmed action runs — drives the confirm button. */
-    isPending: boolean
+    /** True while the confirmed action runs — drives the confirm button.
+     * Defaults to false for informational sheets that run no async action. */
+    isPending?: boolean
     onConfirm: () => void
     onClose: () => void
+    /** Secondary button label; defaults to "Close". */
+    closeLabel?: string
     /** Optional visual above the title (e.g. a glyph). */
     header?: ReactNode
     /** Optional content between the body and the actions. */
@@ -43,9 +46,10 @@ export const CardConfirmationSheet = ({
     title,
     body,
     confirmLabel,
-    isPending,
+    isPending = false,
     onConfirm,
     onClose,
+    closeLabel,
     header,
     children,
     testID,
@@ -85,7 +89,7 @@ export const CardConfirmationSheet = ({
                 />
                 <PWButton
                     variant='secondary'
-                    title={t('common.close.label')}
+                    title={closeLabel ?? t('common.close.label')}
                     onPress={onClose}
                     isDisabled={isPending}
                     testID={closeTestID}

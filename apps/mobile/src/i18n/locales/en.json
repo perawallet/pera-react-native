@@ -760,6 +760,13 @@
             "report_lost_sheet_confirm": "Freeze Card & Report",
             "report_lost_email_subject": "Report Lost/Stolen Card",
             "report_lost_email_body": "Hello Baanx Support,\n\nI would like to report my card (ending in {{panLast4}}) as lost or stolen. The card has been frozen from the app. Please block it and advise on the next steps.\n\nAdditional details:\n",
+            "report_suspicious_sheet_title": "Report Suspicious Activity",
+            "report_suspicious_sheet_body": "If you believe there to be suspicious activity on this card, please freeze the card immediately before the next steps.",
+            "report_suspicious_sheet_confirm": "Freeze Card",
+            "report_suspicious_frozen_toast_title": "Your card has been frozen",
+            "report_suspicious_before_title": "Before we continue",
+            "report_suspicious_before_body": "Please verify with family or other authorized users if they have used your card. If they have, you can unfreeze your card anytime to keep using it. If not, continue with the report.",
+            "report_suspicious_before_confirm": "Continue with Report",
             "error_title": "Something went wrong",
             "error_body": "Please try again."
         },
