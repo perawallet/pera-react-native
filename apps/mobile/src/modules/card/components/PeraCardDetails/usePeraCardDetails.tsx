@@ -32,8 +32,10 @@ import {
     useCardErrorToast,
     useCardFundingDelegation,
     useCardFundingSourcePicker,
-    useReportSuspiciousFlow,
 } from '../../hooks'
+// Imported directly (not via the hooks barrel) to avoid an import cycle: the
+// flow orchestrator pulls in report sheet components that import from that barrel.
+import { useReportSuspiciousFlow } from '../../hooks/useReportSuspiciousFlow'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
 import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
 import { ReportLostStolenSheet } from '../ReportLostStolenSheet'
