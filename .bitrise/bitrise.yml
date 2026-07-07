@@ -6,12 +6,6 @@ app:
   envs:
   - BITRISE_SCHEME_STAGING: Pera7Staging
   - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
-  - BITRISE_EXPORT_METHOD_STAGING: app-store
-  - BITRISE_EXPORT_METHOD_PRODUCTION: app-store
-  - ANDROID_MODULE: app
-  - ANDROID_BUILD_TYPE: Release
-  - GRADLE_BUILD_FILE_PATH: apps/mobile/android/build.gradle
-  - JIRA_BASE_URL: https://algorandfoundation.atlassian.net
 pipelines:
   release-builds:
     workflows:
@@ -171,7 +165,6 @@ workflows:
     - ENVIRONMENT: production
     - APP_ENV: production
     - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
-    - IOS_PROFILE_NAME: Pera React Native Prod
     - USE_CACHE: 'false'
     - VALIDATE_PROFILE: ios
     - ROW_ID: IOS_PRODUCTION
