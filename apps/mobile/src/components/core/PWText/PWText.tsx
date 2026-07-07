@@ -62,9 +62,10 @@ export const PWText = ({
     const { fontScale = 1 } = useWindowDimensions()
 
     const baseStyle = [styles.text, truncate && styles.truncate, style]
-    const { lineHeight } = StyleSheet.flatten<TextStyle>(baseStyle)
+    const { lineHeight, fontSize } = StyleSheet.flatten<TextStyle>(baseStyle)
     const scaledLineHeight = scaleLineHeight(
         lineHeight,
+        fontSize,
         fontScale,
         MAX_FONT_SIZE_MULTIPLIER,
     )
