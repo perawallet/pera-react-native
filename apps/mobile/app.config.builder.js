@@ -374,6 +374,10 @@ function buildAppConfig(env) {
       // so Android native (.so) crashes are symbolicated (iOS dSYM counterpart)
       './plugins/withAndroidNativeSymbolUpload',
 
+      // Enable GWP-ASan so native heap memory-safety crashes surface with
+      // allocation stacks in Crashlytics instead of a bare abort.
+      './plugins/withAndroidGwpAsan',
+
       // Raise the Gradle/Kotlin daemon heap — the -Xmx2048m default OOMs this
       // monorepo's Android build. Must run after expo-build-properties so ours wins.
       './plugins/withAndroidGradleHeap',
@@ -381,6 +385,10 @@ function buildAppConfig(env) {
       // Limit *debug* builds to arm64-v8a (matches native Pera Android) so local
       // builds don't compile all four ABIs. Release keeps every ABI.
       './plugins/withAndroidAbiFilters',
+
+      // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
+      // the React host is ready) by overriding it in MainActivity.
+      './plugins/withAndroidUserLeaveHintFix',
 
       // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
       './plugins/withPodfileModifications.js',
