@@ -87,8 +87,11 @@ function hoistCrashlyticsApply(buildGradle) {
   const APPLY = "apply plugin: 'com.google.firebase.crashlytics'";
   // Remove every existing apply of the crashlytics plugin, wherever it sits,
   // along with any blank line it left behind (keeps the transform idempotent).
+  // The trailing newline is optional (`\r?\n?`): Expo emits this apply as the
+  // very last line of app/build.gradle with NO trailing newline, so requiring
+  // one here would leave the original in place and duplicate the apply.
   const stripped = buildGradle.replace(
-    /^[ \t]*apply plugin: ['"]com\.google\.firebase\.crashlytics['"].*\n(?:[ \t]*\n)*/gm,
+    /^[ \t]*apply plugin: ['"]com\.google\.firebase\.crashlytics['"].*\r?\n?(?:[ \t]*\r?\n)*/gm,
     '',
   );
   // Re-insert exactly one, immediately before the top-level `android {` block.
