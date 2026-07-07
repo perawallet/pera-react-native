@@ -19,7 +19,12 @@ export {
     type UseCardAddAccountResult,
 } from './useCardAddAccount'
 export { useCardComingSoonToast } from './useCardComingSoonToast'
+export { useCardConfirmMutation } from './useCardConfirmMutation'
 export { useCardErrorToast } from './useCardErrorToast'
+export {
+    useCardFreezeAction,
+    type CardFreezeOutcome,
+} from './useCardFreezeAction'
 export {
     useCardFundingDelegation,
     type UseCardFundingDelegationResult,
@@ -33,3 +38,4 @@ export {
     isEligibleFundingSource,
     type UseCardFundingSourcePickerResult,
 } from './useCardFundingSourcePicker'
+export { useReportSuspiciousFlow } from './useReportSuspiciousFlow'

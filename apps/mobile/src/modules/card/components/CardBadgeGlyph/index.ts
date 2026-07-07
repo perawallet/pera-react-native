@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { FrozenCardGlyph } from './FrozenCardGlyph'
+export { CardBadgeGlyph, type CardBadge } from './CardBadgeGlyph'

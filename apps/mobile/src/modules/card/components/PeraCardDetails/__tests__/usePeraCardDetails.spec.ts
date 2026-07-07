@@ -137,6 +137,7 @@ vi.mock('../../../hooks', async () => ({
 import { FundingType } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
+import { ReportSuspiciousActivitySheet } from '../../ReportSuspiciousActivitySheet'
 import { usePeraCardDetails } from '../usePeraCardDetails'
 
 const walletAccount = (address: string): WalletAccount =>
@@ -367,15 +368,19 @@ describe('usePeraCardDetails', () => {
         expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
     })
 
-    it('opens the report-transactions sheet from Report Suspicious Activity', () => {
+    it('starts the report-suspicious flow at the freeze intro', () => {
         const { result } = renderHook(() => usePeraCardDetails())
 
         act(() => {
             result.current.onReportSuspicious()
         })
 
+        // An active card enters the flow at the freeze intro; the rest of the
+        // chain is covered by useReportSuspiciousFlow's own tests.
         expect(mocks.request).toHaveBeenCalledTimes(1)
-        expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
+        expect(mocks.request.mock.calls[0][0].contents.type).toBe(
+            ReportSuspiciousActivitySheet,
+        )
     })
 
     it('opens the wallet instructions bottom sheet from Add to Wallet', () => {

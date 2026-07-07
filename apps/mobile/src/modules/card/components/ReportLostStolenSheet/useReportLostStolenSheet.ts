@@ -11,17 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import {
-    CardStatus,
-    useCardStatusQuery,
-    useCardStore,
-    useFreezeCardMutation,
-} from '@perawallet/wallet-core-card'
+import { useCardStore } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
-import { useCardErrorToast } from '../../hooks'
+import { useCardFreezeAction } from '../../hooks'
 
 type UseReportLostStolenSheetResult = {
     /** True while the freeze request is in flight — drives the confirm button. */
@@ -32,29 +26,15 @@ type UseReportLostStolenSheetResult = {
 
 /**
  * Baanx can't cancel cards, so a lost/stolen report freezes the card first
- * (skipped when already frozen) and then opens a support email. Freeze
- * failure keeps the sheet open for a retry; the email is best-effort.
+ * (skipped when already frozen) and then opens a support email. Freeze failure
+ * keeps the sheet open for a retry; the email is best-effort.
  */
 export const useReportLostStolenSheet = (): UseReportLostStolenSheetResult => {
     const { t } = useLanguage()
-    const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
-    const { data: card } = useCardStatusQuery()
-    const freeze = useFreezeCardMutation()
     const { sendEmail } = useSendEmail()
-    const showError = useCardErrorToast()
     const panLast4 = useCardStore(state => state.lastKnownPanLast4)
 
-    const confirm = useCallback(async () => {
-        // Guard re-entry so a double-tap can't fire a second freeze.
-        if (freeze.isPending) return
-        if (card?.status !== CardStatus.Frozen) {
-            try {
-                await freeze.mutateAsync()
-            } catch (error) {
-                await showError(error)
-                return
-            }
-        }
+    const onFrozen = useCallback(() => {
         sendEmail({
             to: config.cardSupportEmail,
             subject: t('peraCard.account.report_lost_email_subject'),
@@ -62,16 +42,7 @@ export const useReportLostStolenSheet = (): UseReportLostStolenSheetResult => {
                 panLast4: panLast4 ?? '-',
             }),
         })
-        resolve('confirm')
-    }, [freeze, card?.status, sendEmail, panLast4, resolve, showError, t])
+    }, [sendEmail, panLast4, t])
 
-    const onConfirm = useCallback(() => {
-        void confirm()
-    }, [confirm])
-
-    return {
-        isFreezing: freeze.isPending,
-        onConfirm,
-        onClose: dismiss,
-    }
+    return useCardFreezeAction({ onFrozen })
 }

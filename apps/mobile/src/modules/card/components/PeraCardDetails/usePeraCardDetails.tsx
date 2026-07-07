@@ -32,11 +32,11 @@ import {
     useCardErrorToast,
     useCardFundingDelegation,
     useCardFundingSourcePicker,
+    useReportSuspiciousFlow,
 } from '../../hooks'
 import { CardAccountDetailsSheet } from '../CardAccountDetailsSheet'
 import { FreezeCardConfirmationSheet } from '../FreezeCardConfirmationSheet'
 import { ReportLostStolenSheet } from '../ReportLostStolenSheet'
-import { ReportTransactionsSheet } from '../ReportTransactionsSheet'
 import { SelectFundingTypeSheet } from '../SelectFundingTypeSheet'
 import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 import {
@@ -323,16 +323,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         })
     }, [request])
 
-    const onReportSuspicious = useCallback(() => {
-        void request({
-            contents: <ReportTransactionsSheet />,
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [request])
+    const { start: onReportSuspicious } = useReportSuspiciousFlow()
 
     return {
         maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,

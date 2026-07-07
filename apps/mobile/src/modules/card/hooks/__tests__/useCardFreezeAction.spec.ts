@@ -16,10 +16,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     status: 'ACTIVE' as string,
-    panLast4: '4242' as string | null,
     freezeMutateAsync: vi.fn(),
     freezePending: false,
-    sendEmail: vi.fn(),
     resolve: vi.fn(),
     dismiss: vi.fn(),
     errorToast: vi.fn(),
@@ -30,9 +28,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     return {
         ...actual,
         useCardStatusQuery: () => ({ data: { status: mocks.status } }),
-        useCardStore: (
-            selector: (state: { lastKnownPanLast4: string | null }) => unknown,
-        ) => selector({ lastKnownPanLast4: mocks.panLast4 }),
         useFreezeCardMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mocks.freezeMutateAsync,
@@ -53,10 +48,6 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@hooks/useSendEmail', () => ({
-    useSendEmail: () => ({ sendEmail: mocks.sendEmail }),
-}))
-
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         errorToast: mocks.errorToast,
@@ -66,32 +57,18 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-// Interpolation-aware t so the templated email bodies can be asserted.
-vi.mock('react-i18next', async () => {
-    const actual = await vi.importActual<object>('react-i18next')
-    return {
-        ...actual,
-        useTranslation: () => ({
-            t: (key: string, options?: Record<string, unknown>) =>
-                options ? `${key} ${Object.values(options).join(' ')}` : key,
-            i18n: { changeLanguage: vi.fn(), language: 'en' },
-        }),
-    }
-})
+import { useCardFreezeAction } from '../useCardFreezeAction'
 
-import { useReportLostStolenSheet } from '../useReportLostStolenSheet'
-
-describe('useReportLostStolenSheet', () => {
+describe('useCardFreezeAction', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.status = 'ACTIVE'
-        mocks.panLast4 = '4242'
         mocks.freezePending = false
         mocks.freezeMutateAsync.mockResolvedValue(undefined)
     })
 
-    it('freezes the card, then opens the support email and resolves', async () => {
-        const { result } = renderHook(() => useReportLostStolenSheet())
+    it('freezes an active card and resolves "frozen"', async () => {
+        const { result } = renderHook(() => useCardFreezeAction())
 
         act(() => {
             result.current.onConfirm()
@@ -101,47 +78,86 @@ describe('useReportLostStolenSheet', () => {
             expect(mocks.resolve).toHaveBeenCalledWith('frozen'),
         )
         expect(mocks.freezeMutateAsync).toHaveBeenCalledTimes(1)
-        expect(mocks.sendEmail).toHaveBeenCalledTimes(1)
-        const args = mocks.sendEmail.mock.calls[0][0]
-        expect(args.to).toBe('support@baanx.com')
-        // The body carries the card's last 4 for support to identify it.
-        expect(args.body).toContain('4242')
-        // The freeze must land before the composer opens.
-        expect(
-            mocks.freezeMutateAsync.mock.invocationCallOrder[0],
-        ).toBeLessThan(mocks.sendEmail.mock.invocationCallOrder[0])
     })
 
-    it('skips the freeze but still emails when the card is already frozen', async () => {
+    it('skips the freeze when already frozen and resolves "skipped"', async () => {
         mocks.status = 'FROZEN'
-        const { result } = renderHook(() => useReportLostStolenSheet())
+        const { result } = renderHook(() => useCardFreezeAction())
 
         act(() => {
             result.current.onConfirm()
         })
 
-        await waitFor(() => expect(mocks.sendEmail).toHaveBeenCalled())
+        await waitFor(() =>
+            expect(mocks.resolve).toHaveBeenCalledWith('skipped'),
+        )
+        expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('never freezes a blocked card and resolves "skipped"', async () => {
+        mocks.status = 'BLOCKED'
+        const { result } = renderHook(() => useCardFreezeAction())
+
+        act(() => {
+            result.current.onConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mocks.resolve).toHaveBeenCalledWith('skipped'),
+        )
+        expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('runs onFrozen after freezing and before resolving', async () => {
+        const onFrozen = vi.fn()
+        const { result } = renderHook(() => useCardFreezeAction({ onFrozen }))
+
+        act(() => {
+            result.current.onConfirm()
+        })
+
+        await waitFor(() => expect(onFrozen).toHaveBeenCalledTimes(1))
+        // Freeze must land before the side effect, which runs before resolve.
+        expect(
+            mocks.freezeMutateAsync.mock.invocationCallOrder[0],
+        ).toBeLessThan(onFrozen.mock.invocationCallOrder[0])
+        expect(onFrozen.mock.invocationCallOrder[0]).toBeLessThan(
+            mocks.resolve.mock.invocationCallOrder[0],
+        )
+    })
+
+    it('runs onFrozen even when the freeze is skipped', async () => {
+        mocks.status = 'FROZEN'
+        const onFrozen = vi.fn()
+        const { result } = renderHook(() => useCardFreezeAction({ onFrozen }))
+
+        act(() => {
+            result.current.onConfirm()
+        })
+
+        await waitFor(() => expect(onFrozen).toHaveBeenCalledTimes(1))
         expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
         expect(mocks.resolve).toHaveBeenCalledWith('skipped')
     })
 
-    it('keeps the sheet open and skips the email when the freeze fails', async () => {
+    it('keeps the sheet open and skips onFrozen when the freeze fails', async () => {
         mocks.freezeMutateAsync.mockRejectedValue(new Error('baanx down'))
-        const { result } = renderHook(() => useReportLostStolenSheet())
+        const onFrozen = vi.fn()
+        const { result } = renderHook(() => useCardFreezeAction({ onFrozen }))
 
         act(() => {
             result.current.onConfirm()
         })
 
         await waitFor(() => expect(mocks.errorToast).toHaveBeenCalled())
-        expect(mocks.sendEmail).not.toHaveBeenCalled()
+        expect(onFrozen).not.toHaveBeenCalled()
         expect(mocks.resolve).not.toHaveBeenCalled()
         expect(mocks.dismiss).not.toHaveBeenCalled()
     })
 
     it('does not start a second freeze while one is pending', async () => {
         mocks.freezePending = true
-        const { result } = renderHook(() => useReportLostStolenSheet())
+        const { result } = renderHook(() => useCardFreezeAction())
 
         act(() => {
             result.current.onConfirm()
@@ -149,6 +165,6 @@ describe('useReportLostStolenSheet', () => {
 
         await act(async () => {})
         expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
-        expect(mocks.sendEmail).not.toHaveBeenCalled()
+        expect(mocks.resolve).not.toHaveBeenCalled()
     })
 })

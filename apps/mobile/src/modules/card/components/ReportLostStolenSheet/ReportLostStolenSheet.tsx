@@ -12,7 +12,7 @@
 
 import { useLanguage } from '@hooks/useLanguage'
 import { CardConfirmationSheet } from '../CardConfirmationSheet'
-import { FrozenCardGlyph } from '../FrozenCardGlyph'
+import { CardBadgeGlyph } from '../CardBadgeGlyph'
 import { useReportLostStolenSheet } from './useReportLostStolenSheet'
 
 /** Lost/stolen report: freezes the card, then opens the support email. */
@@ -22,7 +22,7 @@ export const ReportLostStolenSheet = () => {
 
     return (
         <CardConfirmationSheet
-            header={<FrozenCardGlyph size='lg' />}
+            header={<CardBadgeGlyph size='lg' />}
             title={t('peraCard.account.report_lost_sheet_title')}
             body={t('peraCard.account.report_lost_sheet_body')}
             confirmLabel={t('peraCard.account.report_lost_sheet_confirm')}

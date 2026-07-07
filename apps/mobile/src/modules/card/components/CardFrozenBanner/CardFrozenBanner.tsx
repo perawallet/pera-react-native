@@ -12,7 +12,7 @@
 
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { FrozenCardGlyph } from '../FrozenCardGlyph'
+import { CardBadgeGlyph } from '../CardBadgeGlyph'
 import { useCardFrozenBanner } from './useCardFrozenBanner'
 import { useStyles } from './styles'
 
@@ -32,7 +32,7 @@ export const CardFrozenBanner = () => {
             style={styles.banner}
             testID='card_frozen_banner'
         >
-            <FrozenCardGlyph size='sm' />
+            <CardBadgeGlyph size='sm' />
             <PWView style={styles.content}>
                 <PWView style={styles.textColumn}>
                     <PWText variant='h3'>

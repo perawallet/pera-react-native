@@ -14,18 +14,32 @@ import { PWIcon, PWImage, PWView } from '@components/core'
 import peraCardSmall from '@assets/images/pera-card-small.png'
 import { useStyles } from './styles'
 
-type FrozenCardGlyphProps = {
+/** The status a badge conveys via its colour and icon: `frozen` (orange pause)
+ * and `suspicious` (red pause) both freeze the card; `unfreeze` (orange play)
+ * is the resume affordance shown when the card is already frozen. */
+export type CardBadge = 'frozen' | 'suspicious' | 'unfreeze'
+
+type CardBadgeGlyphProps = {
     /** `sm` for the inline banner, `lg` for the bottom sheet. */
     size: 'sm' | 'lg'
+    /** Which status badge to overlay; defaults to `frozen`. */
+    badge?: CardBadge
     testID?: string
 }
 
 /**
- * The Pera card art with an orange pause badge in the lower-right — the "frozen"
- * indicator used by both the Card Frozen banner and the freeze confirmation sheet.
+ * The Pera card art with a status badge in the lower-right — a pause icon for
+ * freezing (orange for a frozen card, red for the suspicious-activity report)
+ * and a play icon for unfreezing (orange).
  */
-export const FrozenCardGlyph = ({ size, testID }: FrozenCardGlyphProps) => {
-    const styles = useStyles({ size })
+export const CardBadgeGlyph = ({
+    size,
+    badge = 'frozen',
+    testID,
+}: CardBadgeGlyphProps) => {
+    const styles = useStyles({ size, badge })
+    // Unfreezing resumes the card, so it reads as "play"; freezing reads as "pause".
+    const iconName = badge === 'unfreeze' ? 'play' : 'pause'
 
     return (
         <PWView
@@ -39,7 +53,7 @@ export const FrozenCardGlyph = ({ size, testID }: FrozenCardGlyphProps) => {
             />
             <PWView style={styles.badge}>
                 <PWIcon
-                    name='pause'
+                    name={iconName}
                     size={size === 'lg' ? 'sm' : 'xs'}
                     variant='white'
                 />

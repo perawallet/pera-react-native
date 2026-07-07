@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { useUnfreezeCardMutation } from '@perawallet/wallet-core-card'
-import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useCardErrorToast } from '../../hooks'
+import { useCardConfirmMutation } from '../../hooks'
 
 type UseUnfreezeCardConfirmationSheetResult = {
     /** True while the unfreeze request is in flight — drives the confirm button. */
@@ -23,35 +21,20 @@ type UseUnfreezeCardConfirmationSheetResult = {
 }
 
 /**
- * Owns the unfreeze request for the confirmation sheet so the pending state lives
- * on the sheet's button. On success it closes the sheet (`resolve`); on failure
- * it surfaces the error and keeps the sheet open so the user can retry. Mirrors
- * {@link useFreezeCardConfirmationSheet} so freeze and unfreeze are symmetric.
+ * Owns the unfreeze request for the confirmation sheet so the pending state
+ * lives on the sheet's button. Builds on {@link useCardConfirmMutation}: on
+ * success it closes the sheet, on failure it surfaces the error and keeps the
+ * sheet open for a retry.
  */
 export const useUnfreezeCardConfirmationSheet =
     (): UseUnfreezeCardConfirmationSheetResult => {
-        const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
         const unfreeze = useUnfreezeCardMutation()
-        const showError = useCardErrorToast()
 
-        const confirm = useCallback(async () => {
-            // Guard re-entry so a double-tap can't fire a second unfreeze.
-            if (unfreeze.isPending) return
-            try {
-                await unfreeze.mutateAsync()
-                resolve('confirm')
-            } catch (error) {
-                await showError(error)
-            }
-        }, [unfreeze, resolve, showError])
+        const { isPending, onConfirm, onClose } =
+            useCardConfirmMutation<'confirm'>({
+                mutation: unfreeze,
+                resolveOnMutate: 'confirm',
+            })
 
-        const onConfirm = useCallback(() => {
-            void confirm()
-        }, [confirm])
-
-        return {
-            isUnfreezing: unfreeze.isPending,
-            onConfirm,
-            onClose: dismiss,
-        }
+        return { isUnfreezing: isPending, onConfirm, onClose }
     }
