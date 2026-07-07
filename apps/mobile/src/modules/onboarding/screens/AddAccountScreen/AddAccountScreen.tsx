@@ -29,6 +29,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
+import { type AccountOption } from '@modules/onboarding/types'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 
@@ -50,6 +51,33 @@ export const AddAccountScreen = () => {
         isOtherOptionsVisible,
         handleToggleOtherOptions,
     } = useAddAccountScreen()
+
+    // Single render path for both option lists so their prop wiring (badge,
+    // learn-more, etc.) can never drift apart.
+    const renderOption = (option: AccountOption) => (
+        <PanelButton
+            key={option.testID}
+            testID={option.testID}
+            title={t(option.titleKey)}
+            description={t(option.descriptionKey)}
+            titleWeight='h3'
+            leftIcon={option.leftIcon}
+            onPress={option.onPress}
+            disabled={option.isDisabled}
+            badge={
+                option.badge && {
+                    label: t(option.badge.labelKey),
+                    variant: option.badge.variant,
+                }
+            }
+            learnMore={
+                option.learnMore && {
+                    label: t(option.learnMore.labelKey),
+                    onPress: option.learnMore.onPress,
+                }
+            }
+        />
+    )
 
     return (
         <>
@@ -80,44 +108,10 @@ export const AddAccountScreen = () => {
                     />
 
                     <PWView style={styles.mainContainer}>
-                        {mainOptions.map(option => (
-                            <PanelButton
-                                key={option.testID}
-                                testID={option.testID}
-                                title={t(option.titleKey)}
-                                description={t(option.descriptionKey)}
-                                titleWeight='h3'
-                                leftIcon={option.leftIcon}
-                                onPress={option.onPress}
-                                disabled={option.isDisabled}
-                            />
-                        ))}
+                        {mainOptions.map(renderOption)}
 
                         {isOtherOptionsVisible &&
-                            otherOptions.map(option => (
-                                <PanelButton
-                                    key={option.testID}
-                                    testID={option.testID}
-                                    title={t(option.titleKey)}
-                                    description={t(option.descriptionKey)}
-                                    titleWeight='h3'
-                                    leftIcon={option.leftIcon}
-                                    onPress={option.onPress}
-                                    disabled={option.isDisabled}
-                                    badge={
-                                        option.badge && {
-                                            label: t(option.badge.labelKey),
-                                            variant: option.badge.variant,
-                                        }
-                                    }
-                                    learnMore={
-                                        option.learnMore && {
-                                            label: t(option.learnMore.labelKey),
-                                            onPress: option.learnMore.onPress,
-                                        }
-                                    }
-                                />
-                            ))}
+                            otherOptions.map(renderOption)}
                     </PWView>
 
                     {!isOtherOptionsVisible && (

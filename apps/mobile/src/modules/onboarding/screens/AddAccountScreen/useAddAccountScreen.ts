@@ -232,9 +232,7 @@ export const useAddAccountScreen = () => {
                         'onboarding.add_account.quantum_account_option_title',
                     descriptionKey:
                         'onboarding.add_account.quantum_account_option_description',
-                    // TODO(PQ-010): swap for the dedicated Quantum glyph once
-                    // the design asset lands; shield-check is a placeholder.
-                    leftIcon: 'shield-check' as IconName,
+                    leftIcon: 'quantum' as IconName,
                     onPress: handleCreateQuantum,
                     isDisabled: isCreatingAccount,
                     badge: {
