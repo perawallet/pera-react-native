@@ -20,18 +20,12 @@ import {
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    ALGO_ASSET,
-    toWholeUnits,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
-import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
+import { useOptOutConfirmationContent } from './useOptOutConfirmationContent'
 import { useStyles } from './styles'
-
-const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
 
 export type OptOutConfirmationContentProps = {
     assetId: string
@@ -46,6 +40,7 @@ export const OptOutConfirmationContent = ({
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve, dismiss } = useBottomSheetResult<'confirm'>()
+    const { fee } = useOptOutConfirmationContent()
 
     const accountName = useAccountsStore(s => {
         const account = s.accounts.find(a => a.address === accountAddress)
@@ -132,7 +127,7 @@ export const OptOutConfirmationContent = ({
                     </PWText>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={MIN_FEE_WHOLE_UNITS}
+                        value={fee}
                         showSymbol
                         style={styles.rowValue}
                     />

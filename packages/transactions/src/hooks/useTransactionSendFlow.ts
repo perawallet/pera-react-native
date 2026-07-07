@@ -21,7 +21,6 @@ import {
     useArc59ClaimTransaction,
 } from '@perawallet/wallet-core-asa-inbox'
 import {
-    ASSET_MBR,
     displayUnitsToBaseUnits,
     useAlgorandClient,
     useMinimumFeeConfig,
@@ -100,7 +99,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     const { buildClaimAssetTxs, buildRejectAssetTxs } =
         useArc59ClaimTransaction()
     const accounts = useAllAccounts()
-    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
+    const { minTxnFee, pqMultiplier, assetMbr } = useMinimumFeeConfig()
 
     /**
      * Express send has two distinct signers, each with its own PQ-aware
@@ -143,11 +142,11 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 pqMultiplier,
             })
 
-            // After opt-in the receiver's MBR increases by ASSET_MBR. The
+            // After opt-in the receiver's MBR increases by assetMbr. The
             // opt-in tx fee is paid from the receiver's balance at the
             // receiver's own (PQ-aware) rate, so reserve exactly that
             // instead of the flat network minimum.
-            const mbrAfterOptIn = currentMbr + ASSET_MBR
+            const mbrAfterOptIn = currentMbr + assetMbr
             const balanceNeeded = mbrAfterOptIn + receiverFee
             const fundingNeeded =
                 balanceNeeded > currentBalance
@@ -189,7 +188,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             const { transactions } = await composer.build()
             return transactions.map(t => t.txn)
         },
-        [algokit, accounts, minTxnFee, pqMultiplier],
+        [algokit, accounts, minTxnFee, pqMultiplier, assetMbr],
     )
 
     /**

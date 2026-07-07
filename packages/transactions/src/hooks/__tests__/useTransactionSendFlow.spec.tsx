@@ -96,7 +96,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         },
     }),
     displayUnitsToBaseUnits: (val: Decimal, _decimals: number) => val,
-    ASSET_MBR: 100000n,
     useNetwork: () => ({ network: 'mainnet' }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
@@ -128,6 +127,7 @@ describe('useTransactionSendFlow', () => {
         mockUseMinimumFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
             pqMultiplier: 3n,
+            assetMbr: 100000n,
         })
         // Default: no PQ signer — resolver returns the base fee, which must
         // never force a staticFee override (regression-safe default).
@@ -393,6 +393,36 @@ describe('useTransactionSendFlow', () => {
             expect(mockAddAssetOptIn.mock.calls[0][0]).not.toHaveProperty(
                 'staticFee',
             )
+        })
+
+        it('express send: MBR reservation follows the remote-config asset MBR', async () => {
+            // Non-default asset MBR (200000). Receiver underfunded (balance 0),
+            // base receiver fee 1000. Funding must reserve
+            // mbrAfterOptIn (100000 + 200000) + receiverFee (1000) = 301000.
+            mockAccountInformation.mockResolvedValueOnce({
+                amount: 0n,
+                minBalance: 100000n,
+            })
+            mockUseMinimumFeeConfig.mockReturnValue({
+                minTxnFee: 1000n,
+                pqMultiplier: 3n,
+                assetMbr: 200000n,
+            })
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await result.current.execute({
+                    params: {
+                        sendMode: 'express',
+                        sender: { address: 'A' } as any,
+                        receiver: 'B',
+                        asset: { assetId: 99n, decimals: 0 } as any,
+                        amount: new Decimal(1),
+                    },
+                })
+            })
+            expect(mockAddPayment.mock.calls[0][0]).toMatchObject({
+                amount: 301000n,
+            })
         })
     })
 

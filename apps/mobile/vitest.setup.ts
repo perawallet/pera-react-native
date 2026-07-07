@@ -2800,7 +2800,6 @@ class MockAlgodError extends Error {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    MIN_TXN_FEE: 1000n,
     useAlgorandClient: vi.fn(),
     useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
     useTransactionEncoder: vi.fn(() => ({ encodeSignedTransaction: vi.fn() })),

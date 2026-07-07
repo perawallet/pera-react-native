@@ -12,8 +12,8 @@
 
 import { useCallback, useState } from 'react'
 import {
-    ASSET_MBR,
     useAlgorandClient,
+    useMinimumFeeConfig,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
@@ -52,6 +52,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
+    const { assetMbr } = useMinimumFeeConfig()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Nullable<Error>>(null)
 
@@ -75,7 +76,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 const suggestedParams = await algokit.getSuggestedParams()
                 const balanceNeeded =
                     accountInfo.minBalance +
-                    ASSET_MBR +
+                    assetMbr +
                     BigInt(suggestedParams.minFee)
                 if (accountInfo.amount < balanceNeeded) {
                     throw new InsufficientBalanceForOptInError()
@@ -113,7 +114,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, submit, network, invalidateBalances],
+        [algokit, submit, network, invalidateBalances, assetMbr],
     )
 
     return {

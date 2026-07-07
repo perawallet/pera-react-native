@@ -13,8 +13,8 @@
 import { useCallback } from 'react'
 import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import {
-    ASSET_MBR,
     useAlgorandClient,
+    useMinimumFeeConfig,
 } from '@perawallet/wallet-core-blockchain'
 import { useFeeDelegation } from '@perawallet/wallet-core-fee-delegation'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
@@ -71,6 +71,7 @@ export const useEnsureDestinationOptIn =
         const algokit = useAlgorandClient()
         const { optIn } = useAssetOptInMutation()
         const { submitWithFeeDelegation } = useFeeDelegation()
+        const { assetMbr } = useMinimumFeeConfig()
 
         const ensureOptIn = useCallback(
             async ({
@@ -100,7 +101,7 @@ export const useEnsureDestinationOptIn =
                 const suggestedParams = await algokit.getSuggestedParams()
                 const balanceNeeded =
                     accountInfo.minBalance +
-                    ASSET_MBR +
+                    assetMbr +
                     BigInt(suggestedParams.minFee)
                 const isSponsored = accountInfo.amount < balanceNeeded
 
@@ -140,7 +141,7 @@ export const useEnsureDestinationOptIn =
                 })
                 return true
             },
-            [algokit, optIn, submitWithFeeDelegation],
+            [algokit, optIn, submitWithFeeDelegation, assetMbr],
         )
 
         return { ensureOptIn }

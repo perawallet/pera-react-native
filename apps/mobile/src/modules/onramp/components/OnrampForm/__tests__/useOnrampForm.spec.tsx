@@ -108,7 +108,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
-    MIN_TXN_FEE: 1000n,
 }))
 
 vi.mock('@hooks/useToast', () => ({
