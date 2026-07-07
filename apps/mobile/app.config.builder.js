@@ -440,6 +440,11 @@ function buildAppConfig(env) {
 
       // Match native BLE/location permission scoping (maxSdkVersion + neverForLocation).
       './plugins/withAndroidBlePermissionScoping',
+
+      // Strip the advertising-ID permissions that Firebase Analytics injects at
+      // manifest-merge time. Pera does no ad attribution, so AD_ID collection is
+      // an unnecessary privacy exposure for a wallet (security finding AND-02).
+      './plugins/withAndroidRemoveAdIdPermissions',
     ],
 
     // Experiments (for bleeding edge features)
