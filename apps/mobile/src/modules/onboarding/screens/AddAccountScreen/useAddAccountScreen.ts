@@ -14,6 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
@@ -31,11 +32,18 @@ import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
 import { type AccountOption } from '@modules/onboarding/types'
 
+// Default loading-overlay title shown while an account is being created.
+// Individual create flows (e.g. Quantum keygen) can override it per call.
+const DEFAULT_CREATING_TITLE_KEY = 'onboarding.create_account.processing'
+
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const isMounted = useIsMounted()
-    const { buildHdWalletAccount, buildAlgo25WalletAccount } =
-        useCreateAccount()
+    const {
+        buildHdWalletAccount,
+        buildAlgo25WalletAccount,
+        buildQuantumWalletAccount,
+    } = useCreateAccount()
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showToast } = useToast()
@@ -50,12 +58,16 @@ export const useAddAccountScreen = () => {
     const hasCardSession =
         __DEV__ || config.appEnvironment === 'staging' ? false : isAuthenticated
     const isPeraCardEnabled = useIsPeraCardEnabled()
+    const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
 
     const {
         isOpen: isCreatingAccount,
         open: openCreatingAccount,
         close: closeCreatingAccount,
     } = useModalState()
+    const [creatingTitleKey, setCreatingTitleKey] = useState(
+        DEFAULT_CREATING_TITLE_KEY,
+    )
     const {
         isOpen: isMultisigIntroductionVisible,
         open: openMultisigIntroduction,
@@ -69,8 +81,14 @@ export const useAddAccountScreen = () => {
 
     // Shared create-account flow: open the creating-account state, create on the
     // next cycle, navigate to naming on success, toast on failure, always close.
+    // `titleKey` overrides the loading-overlay title for flows that need their
+    // own copy (e.g. the heavier Quantum keygen).
     const runCreateAccount = useCallback(
-        (create: () => Promise<Nullable<WalletAccount>>) => {
+        (
+            create: () => Promise<Nullable<WalletAccount>>,
+            titleKey: string = DEFAULT_CREATING_TITLE_KEY,
+        ) => {
+            setCreatingTitleKey(titleKey)
             openCreatingAccount()
             void deferToNextCycle(async () => {
                 try {
@@ -164,6 +182,16 @@ export const useAddAccountScreen = () => {
     const handleCreateAlgo25 = useCallback(() => {
         runCreateAccount(() => buildAlgo25WalletAccount({}))
     }, [buildAlgo25WalletAccount, runCreateAccount])
+
+    const handleCreateQuantum = useCallback(() => {
+        // Quantum keygen is heavier than Ed25519, so surface a Quantum-specific
+        // progress title while it runs. Mirrors handleCreateAlgo25 otherwise:
+        // build in memory, then NameAccount persists after the user names it.
+        runCreateAccount(
+            () => buildQuantumWalletAccount(),
+            'onboarding.add_account.quantum_creating_title',
+        )
+    }, [buildQuantumWalletAccount, runCreateAccount])
 
     const mainOptions: AccountOption[] = useMemo(
         () =>
@@ -261,18 +289,33 @@ export const useAddAccountScreen = () => {
                     onPress: handleCreateAlgo25,
                     isDisabled: isCreatingAccount,
                 },
+                isQuantumAccountsEnabled && {
+                    testID: 'add_account_create_quantum_button',
+                    titleKey:
+                        'onboarding.add_account.quantum_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.quantum_account_option_description',
+                    // TODO(PQ-010): swap for the dedicated Quantum glyph once
+                    // the design asset lands; shield-check is a placeholder.
+                    leftIcon: 'shield-check' as IconName,
+                    onPress: handleCreateQuantum,
+                    isDisabled: isCreatingAccount,
+                },
             ].filter(Boolean) as AccountOption[],
         [
             hasHDWallet,
             handleWatchAddress,
             handleCreateUniversalWallet,
             handleCreateAlgo25,
+            isQuantumAccountsEnabled,
+            handleCreateQuantum,
             isCreatingAccount,
         ],
     )
 
     return {
         isCreatingAccount,
+        creatingTitleKey,
         mainOptions,
         otherOptions,
         handleClose: navigation.goBack,

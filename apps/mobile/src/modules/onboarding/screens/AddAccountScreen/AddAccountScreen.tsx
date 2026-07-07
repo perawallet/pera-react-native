@@ -38,6 +38,7 @@ export const AddAccountScreen = () => {
     const styles = useStyles(insets)
     const {
         isCreatingAccount,
+        creatingTitleKey,
         mainOptions,
         otherOptions,
         handleClose,
@@ -146,7 +147,7 @@ export const AddAccountScreen = () => {
 
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}
-                title={t('onboarding.create_account.processing')}
+                title={t(creatingTitleKey)}
             />
 
             <MultisigIntroductionDialog
