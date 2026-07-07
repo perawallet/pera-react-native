@@ -1,4 +1,5 @@
-import { NativeModules, Platform } from 'react-native'
+import { Platform } from 'react-native'
+import { requireOptionalNativeModule } from 'expo'
 import { logger } from '@perawallet/wallet-core-shared'
 import { ADULT_AGE } from '@perawallet/wallet-extension-platform'
 import type {
@@ -64,12 +65,8 @@ interface NativePeraAgeGate {
     getDeviceCapability(): Promise<AgeGateDeviceCapability>
 }
 
-const getNativeModule = (): NativePeraAgeGate | null => {
-    const module = (
-        NativeModules as Record<string, NativePeraAgeGate | undefined>
-    ).PeraAgeGate
-    return module ?? null
-}
+const getNativeModule = (): NativePeraAgeGate | null =>
+    requireOptionalNativeModule<NativePeraAgeGate>('PeraAgeGate')
 
 export class RNAgeGateService implements AgeGateService {
     async requestAgeRange(minimumAge: number): Promise<AgeGateResult> {
