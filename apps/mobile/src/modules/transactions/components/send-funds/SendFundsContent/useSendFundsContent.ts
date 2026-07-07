@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
@@ -47,6 +47,14 @@ export const useSendFundsContent = (
     const asset = assetId ? assets.get(assetId) : undefined
 
     const [isReady, setIsReady] = useState(assetId == null)
+    // Prefill the NFT amount once per asset id rather than latching a boolean —
+    // `setAmount(new Decimal(1))` builds a fresh Decimal every run, and this
+    // component subscribes to `amount` via `useSendFunds`, so an unguarded
+    // re-run (e.g. `asset` changing identity on refetch) would set a new
+    // Decimal → re-render → set again → "Maximum update depth exceeded". Keying
+    // on the id instead of a boolean still re-prefills if the user switches to
+    // a different pure NFT without this component unmounting.
+    const prefilledAssetIdRef = useRef<Optional<string>>(undefined)
 
     useLayoutEffect(() => {
         if (assetId != null) {
@@ -60,8 +68,14 @@ export const useSendFundsContent = (
 
             // Pure collectibles have a fixed quantity of 1, so prefill
             // the amount and skip the input screen entirely.
-            if (asset && isCollectible(asset) && isPureNft(asset)) {
+            if (
+                prefilledAssetIdRef.current !== assetId &&
+                asset &&
+                isCollectible(asset) &&
+                isPureNft(asset)
+            ) {
                 setAmount(new Decimal(1))
+                prefilledAssetIdRef.current = assetId
             }
 
             setIsReady(true)
@@ -77,6 +91,10 @@ export const useSendFundsContent = (
     ])
 
     const handleFinished = useCallback(() => {
+        // `reset()` clears the store amount, so drop the prefill latch too —
+        // otherwise re-selecting the same pure NFT on a surviving instance
+        // would skip the prefill and leave the amount empty.
+        prefilledAssetIdRef.current = undefined
         reset()
         dismiss()
     }, [reset, dismiss])

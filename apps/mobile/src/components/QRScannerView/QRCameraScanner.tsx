@@ -10,12 +10,23 @@
  limitations under the License
  */
 
-import { type StyleProp, type ViewStyle } from 'react-native'
-import { Camera, type CameraDevice } from 'react-native-vision-camera'
+import { useCallback, useRef } from 'react'
+import {
+    Platform,
+    type LayoutChangeEvent,
+    type StyleProp,
+    type ViewStyle,
+} from 'react-native'
+import {
+    Camera,
+    type CameraDevice,
+    type CameraRef,
+} from 'react-native-vision-camera'
 import {
     useBarcodeScannerOutput,
     type TargetBarcodeFormat,
 } from 'react-native-vision-camera-barcode-scanner'
+import { logger } from '@perawallet/wallet-core-shared'
 
 // IMPORTANT: this is the ONLY module that imports
 // `react-native-vision-camera-barcode-scanner`. That package creates its MLKit
@@ -49,6 +60,14 @@ export const QRCameraScanner = ({
     onBarcodeScanned,
     onError,
 }: QRCameraScannerProps) => {
+    const cameraRef = useRef<CameraRef>(null)
+    // Latest measured preview size, used to derive the centre view point for
+    // focusTo. Kept in a ref (not state) so measuring the layout doesn't
+    // re-render the camera.
+    const previewSizeRef = useRef<{ width: number; height: number } | null>(
+        null,
+    )
+
     const scannerOutput = useBarcodeScannerOutput({
         barcodeFormats: BARCODE_FORMATS,
         // Scan from the full-resolution camera buffer rather than the default
@@ -65,12 +84,64 @@ export const QRCameraScanner = ({
         onError,
     })
 
+    // Record the preview size so focusCenter can target the view's centre.
+    const handleLayout = useCallback((event: LayoutChangeEvent) => {
+        const { width, height } = event.nativeEvent.layout
+        previewSizeRef.current = { width, height }
+    }, [])
+
+    // Auto-focus the centre once the preview is streaming. On Android the v5
+    // pipeline doesn't reliably continuous-autofocus a QR held close to the
+    // lens, so codes stay blurry and fail to decode; iOS's native continuous AF
+    // handles this fine, so we scope the override to Android to avoid changing
+    // iOS focus behaviour. Since the reticle is centred, focus there:
+    // CameraRef.focusTo takes a view point (screen coordinates) and internally
+    // maps it to a metering point, so we pass the centre derived from the
+    // measured layout. 'continuous' keeps re-adapting as the user moves a code
+    // into frame, and autoResetAfter:null stops it reverting to whole-scene AF.
+    // No-ops before the layout is measured, and rejects on devices without
+    // focus metering — in both cases we fall back to native continuous AF plus
+    // the tap-to-focus gesture. See PERA-4402.
+    const focusCenter = useCallback(() => {
+        if (Platform.OS !== 'android') {
+            return
+        }
+
+        const previewSize = previewSizeRef.current
+        if (
+            !previewSize ||
+            previewSize.width === 0 ||
+            previewSize.height === 0
+        ) {
+            return
+        }
+
+        cameraRef.current
+            ?.focusTo(
+                { x: previewSize.width / 2, y: previewSize.height / 2 },
+                {
+                    adaptiveness: 'continuous',
+                    autoResetAfter: null,
+                },
+            )
+            ?.catch((error: unknown) => {
+                logger.debug('QRCameraScanner: centre auto-focus unavailable', {
+                    error,
+                })
+            })
+    }, [])
+
     return (
         <Camera
+            ref={cameraRef}
             style={style}
             outputs={[scannerOutput]}
             device={device}
             isActive={isActive}
+            onLayout={handleLayout}
+            onPreviewStarted={focusCenter}
+            // Manual override so the user can also tap to focus elsewhere.
+            enableNativeTapToFocusGesture
         />
     )
 }
