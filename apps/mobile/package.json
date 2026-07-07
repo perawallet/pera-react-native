@@ -189,7 +189,7 @@
     "@welldone-software/why-did-you-render": "^10.0.1",
     "babel-plugin-module-resolver": "^5.0.2",
     "babel-preset-expo": "~57.0.1",
-    "jsdom": "^27.4.0",
+    "jsdom": "catalog:",
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "react-dom": "catalog:",

@@ -31,7 +31,7 @@
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
-    "jsdom": "^27.1.0",
+    "jsdom": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

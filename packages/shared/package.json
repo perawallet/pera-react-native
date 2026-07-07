@@ -48,11 +48,11 @@
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "jsdom": "^27.1.0",
+    "jsdom": "catalog:",
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "react-dom": "catalog:",

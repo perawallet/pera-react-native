@@ -31,7 +31,7 @@
     "@types/node": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "jsdom": "^27.1.0",
+    "jsdom": "catalog:",
     "oxfmt": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

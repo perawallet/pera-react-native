@@ -46,6 +46,7 @@ catalog:
   expo-localization: ~57.0.0
   expo-sqlite: ~57.0.0
   fast-glob: ^3.3.2
+  jsdom: ^27.4.0
   ky: ^2.0.2
   oxfmt: ^0.45.0
   # Must equal react-native 0.86.0's bundled renderer version. RN does an exact
