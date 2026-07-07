@@ -6,11 +6,22 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/keystore": 1.0.0-canary.16
+  "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.12
+  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.21
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@babel/runtime": ^7.29.2
+  "@expo/app-integrity": ~57.0.0
+  "@ledgerhq/errors": ^6.35.0
+  "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/hashes": ^1.8.0
+  "@notifee/react-native": ^9.1.8
+  "@react-native-firebase/analytics": ^25.1.0
+  "@react-native-firebase/app": ^25.1.0
+  "@react-native-firebase/crashlytics": ^25.1.0
+  "@react-native-firebase/messaging": ^25.1.0
+  "@react-native-firebase/remote-config": ^25.1.0
   "@scure/bip39": ^2.2.0
   "@tanstack/query-async-storage-persister": ^5.99.0
   "@tanstack/react-query": ^5.99.0
@@ -28,7 +39,14 @@ catalog:
   drizzle-orm: ^0.45.2
   eslint: 9.39.4
   eslint-plugin-unused-imports: 4.4.1
+  expo: ^57.0.2
+  expo-application: ~57.0.0
+  expo-device: ~57.0.0
+  expo-local-authentication: ~57.0.0
+  expo-localization: ~57.0.0
+  expo-sqlite: ~57.0.0
   fast-glob: ^3.3.2
+  ky: ^2.0.2
   oxfmt: ^0.45.0
   # Must equal react-native 0.86.0's bundled renderer version. RN does an exact
   # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
@@ -36,7 +54,11 @@ catalog:
   # Expo SDK 57 / RN 0.86 still bundle 19.2.3, so this stays put.
   react: 19.2.3
   react-dom: 19.2.3
+  react-native: 0.86.0
+  react-native-mmkv: ^4.2.0
+  react-native-quick-base64: ^3.0.0
   tsx: ^4.22.3
+  tweetnacl: ^1.0.3
   typescript: ^5.9.3
   util: ^0.12.5
   uuid: 14.0.1
@@ -69,7 +91,7 @@ overrides:
   # Security backport for GHSA-5375-pq7m-f5r2 + GHSA-99f4-grh7-6pcq (DoS).
   # Pinned exactly, NOT ">=", so it stays inside @firebase/firestore's
   # "~1.9.0" range — 1.10+ would break Firestore's resolution.
-  "@grpc/grpc-js@<1.9.16": "1.9.16"
+  "@grpc/grpc-js@<1.9.16": 1.9.16
   "@xmldom/xmldom": 0.8.13
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.13

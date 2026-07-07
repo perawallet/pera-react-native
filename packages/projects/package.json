@@ -24,7 +24,7 @@
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "react": "catalog:",
-    "ky": "^2.0.2",
+    "ky": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -18,10 +18,10 @@
   },
   "dependencies": {
     "@algorandfoundation/keystore": "catalog:",
-    "@algorandfoundation/react-native-passkey-autofill": "1.0.0-canary.21",
+    "@algorandfoundation/react-native-passkey-autofill": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "react-native": "0.86.0"
+    "react-native": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",

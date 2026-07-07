@@ -17,9 +17,9 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/ledger-algorand-js": "^1.4.3",
-    "@ledgerhq/errors": "^6.35.0",
-    "@ledgerhq/react-native-hid": "^6.39.1",
+    "@algorandfoundation/ledger-algorand-js": "catalog:",
+    "@ledgerhq/errors": "catalog:",
+    "@ledgerhq/react-native-hid": "catalog:",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
