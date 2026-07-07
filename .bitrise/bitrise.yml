@@ -4,7 +4,6 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 project_type: react-native
 app:
   envs:
-    - BITRISE_PROJECT_PATH: apps/mobile/ios/pera.xcworkspace
     - BITRISE_SCHEME_STAGING: Pera7Staging
     - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
     - BITRISE_EXPORT_METHOD_STAGING: app-store
@@ -367,6 +366,11 @@ workflows:
           # The uploaded profiles remain wired in as the fallback, which is
           # exactly the old step's behavior.
           inputs:
+            # No static workspace path exists: expo prebuild names the
+            # workspace after the variant's app name, which equals the scheme
+            # (PeraAlgoWallet / Pera7Staging), so resolve it per build.
+            - project_path: apps/mobile/ios/$BITRISE_SCHEME.xcworkspace
+            - scheme: $BITRISE_SCHEME
             - distribution_method: app-store
             - api_key_path: $HOME/asc_api_key.p8
             - api_key_id: $APP_STORE_CONNECT_API_KEY_KEY_ID
