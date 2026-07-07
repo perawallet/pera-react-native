@@ -57,7 +57,7 @@ workflows:
     description: Run tests before release
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
     envs:
       - ENVIRONMENT: production
       - VALIDATE_PROFILE: test
@@ -81,7 +81,13 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                npm install -g pnpm
+                # Pin to the repo's packageManager version — an unpinned
+                # `npm i -g pnpm` floats to latest and a pnpm major release
+                # would change lockfile/hoisting behavior under the release
+                # builds without any repo change. split('+') strips a Corepack
+                # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
+                npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
           inputs:
@@ -117,7 +123,9 @@ workflows:
     description: Generate the release changelog once and share it with the build workflows
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
+        # Pure git + shell — no reason to burn a large machine on it.
+        machine_type_id: g2.linux.medium
     steps:
       - git-clone@8:
           inputs:
@@ -233,7 +241,13 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                npm install -g pnpm
+                # Pin to the repo's packageManager version — an unpinned
+                # `npm i -g pnpm` floats to latest and a pnpm major release
+                # would change lockfile/hoisting behavior under the release
+                # builds without any repo change. split('+') strips a Corepack
+                # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
+                npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
           inputs:
@@ -286,6 +300,16 @@ workflows:
                 set -e
                 # no -x: keep the decoded secret out of the build trace log
                 echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/config/GoogleService-Info.plist
+      - restore-cache@2:
+          inputs:
+            # Restore BEFORE prebuild: expo:prebuild ends with pod-install, so
+            # the Pods dir must be warm by then. apps/mobile/ios is generated
+            # (Podfile.lock absent here), so the checksum key never matches on
+            # restore — the prefix fallback pulls the latest cache and
+            # pod-install syncs the delta.
+            - key: |-
+                ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
+                ios-pods-
       - script@1:
           title: Expo Prebuild
           inputs:
@@ -294,11 +318,6 @@ workflows:
                 set -ex
                 export APP_ENV=$ENVIRONMENT
                 pnpm --filter mobile expo:prebuild
-      - restore-cache@2:
-          inputs:
-            - key: |-
-                ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
-                ios-pods-
       - save-cache@1:
           inputs:
             - key: ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
@@ -327,7 +346,32 @@ workflows:
                 fi
                 envman add --key APP_VERSION --value "$VERSION"
                 envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
-      - certificate-and-profile-installer@1:
+      - script@1:
+          title: Write ASC API key for code signing
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -e
+                # no -x: keep the key out of the build trace log. The signing
+                # step below authenticates with the same App Store Connect API
+                # key fastlane uses, but needs it as a p8 file.
+                echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > "$HOME/asc_api_key.p8"
+      - manage-ios-code-signing@2:
+          # Replaces the deprecated certificate-and-profile-installer. It
+          # installs the same Bitrise-uploaded certificates and ensures
+          # app-store profiles for the app + AutoFill extension via the ASC
+          # API (step-level key override — no Bitrise-side Apple connection
+          # needed). Fastlane still pins profiles by name afterwards
+          # (CODE_SIGN_STYLE=Manual), so the project mutation this step does
+          # is overwritten; what matters is the installed certs + profiles.
+          # The uploaded profiles remain wired in as the fallback, which is
+          # exactly the old step's behavior.
+          inputs:
+            - distribution_method: app-store
+            - api_key_path: $HOME/asc_api_key.p8
+            - api_key_id: $APP_STORE_CONNECT_API_KEY_KEY_ID
+            - api_key_issuer_id: $APP_STORE_CONNECT_API_KEY_ISSUER_ID
+            - fallback_provisioning_profile_url_list: $BITRISE_PROVISION_URL
       - script@1:
           title: Build & Deploy iOS
           inputs:
@@ -383,6 +427,10 @@ workflows:
             - notify_user_groups: none
             - is_enable_public_page: "true"
       - script@1:
+          # is_always_run: a failed build that still produced an artifact
+          # (deploy-to-bitrise-io above is always-run) is exactly the case
+          # where the install link in the Slack ❌ row is most useful.
+          is_always_run: true
           title: Capture artifact URLs
           inputs:
             - content: |
@@ -407,7 +455,7 @@ workflows:
       - _publish-result
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
   android-production:
     description: Build and deploy Android Production to Play Store Internal
     envs:
@@ -424,7 +472,7 @@ workflows:
       - _publish-result
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
   _android-build:
     steps:
       - git-clone@8:
@@ -452,13 +500,15 @@ workflows:
 
                 echo "Generating changelog (not available from pipeline)"
 
-                # For production builds, generate changelog from the last tag
+                # Changelog is best-effort (same contract as the
+                # generate-changelog workflow): never fail the build over it.
                 LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
                 if [ -n "$LAST_TAG" ]; then
                   echo "Generating changelog since tag: $LAST_TAG"
-                  CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG")
-                else
-                  echo "No previous tag found"
+                  CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+                fi
+                if [ -z "${CHANGELOG:-}" ]; then
+                  echo "No previous tag / empty changelog; using fallback"
                   CHANGELOG="Release build - see git history for changes"
                 fi
 
@@ -503,7 +553,13 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                npm install -g pnpm
+                # Pin to the repo's packageManager version — an unpinned
+                # `npm i -g pnpm` floats to latest and a pnpm major release
+                # would change lockfile/hoisting behavior under the release
+                # builds without any repo change. split('+') strips a Corepack
+                # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
+                PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
+                npm install -g "pnpm@${PNPM_VERSION}"
       - script@1:
           title: Install dependencies
           inputs:
@@ -720,6 +776,10 @@ workflows:
             - notify_user_groups: none
             - is_enable_public_page: "true"
       - script@1:
+          # is_always_run: a failed build that still produced an artifact
+          # (deploy-to-bitrise-io above is always-run) is exactly the case
+          # where the install link in the Slack ❌ row is most useful.
+          is_always_run: true
           title: Capture artifact URLs
           inputs:
             - content: |
@@ -754,7 +814,9 @@ workflows:
     description: Post one consolidated release card (all build statuses + changelog)
     meta:
       bitrise.io:
-        stack: linux-docker-android-22.04
+        stack: ubuntu-noble-24.04-bitrise-2025-android
+        # Single curl to Slack — smallest machine is plenty.
+        machine_type_id: g2.linux.medium
     steps:
       - script@1:
           is_always_run: true
@@ -811,7 +873,10 @@ workflows:
                   if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
                 done
 
-                curl -X POST "$SLACK_WEBHOOK_URL" \
+                # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
+                # and the release card silently never arrives. --retry covers
+                # transient Slack hiccups (retries only transient failures).
+                curl -sS --fail-with-body --retry 2 --max-time 30 -X POST "$SLACK_WEBHOOK_URL" \
                   -H "Content-Type: application/json" \
                   -d @- << EOF
                 {
@@ -855,5 +920,5 @@ workflows:
                 EOF
 meta:
   bitrise.io:
-    stack: linux-docker-android-22.04
+    stack: ubuntu-noble-24.04-bitrise-2025-android
     machine_type_id: g2.linux.large

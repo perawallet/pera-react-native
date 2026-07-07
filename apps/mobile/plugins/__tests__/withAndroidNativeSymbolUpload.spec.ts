@@ -84,4 +84,19 @@ describe('addNativeSymbolUpload', () => {
             result.indexOf("apply plugin: 'com.google.firebase.crashlytics'"),
         ).toBeLessThan(result.indexOf('android {'))
     })
+
+    it('does not duplicate the apply when it is the last line with no trailing newline', () => {
+        // Exactly what `expo prebuild` produces: the crashlytics apply is the
+        // final line of app/build.gradle with no terminating newline.
+        const noTrailingNewline = `${TEMPLATE}\n\napply plugin: 'com.google.gms.google-services'\napply plugin: 'com.google.firebase.crashlytics'`
+
+        const result = addNativeSymbolUpload(noTrailingNewline)
+
+        expect(
+            result.match(/apply plugin: 'com\.google\.firebase\.crashlytics'/g),
+        ).toHaveLength(1)
+        expect(
+            result.indexOf("apply plugin: 'com.google.firebase.crashlytics'"),
+        ).toBeLessThan(result.indexOf('android {'))
+    })
 })

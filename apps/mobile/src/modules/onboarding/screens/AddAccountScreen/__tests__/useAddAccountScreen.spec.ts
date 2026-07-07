@@ -98,6 +98,11 @@ vi.mock('@perawallet/wallet-core-config', async () => {
             termsOfServiceUrl: 'https://example.com/terms',
             privacyPolicyUrl: 'https://example.com/privacy',
         },
+        // Pinned: the real values depend on the machine-local generated env
+        // and test-runner globals, and the card-session cases assert
+        // signed-prod behavior.
+        isDebug: false,
+        isStaging: false,
     }
 })
 

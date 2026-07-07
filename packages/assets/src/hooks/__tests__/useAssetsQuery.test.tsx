@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetsQuery } from '../useAssetsQuery'
 import { getAssetsQueryKey, getAlgoQueryKey } from '../querykeys'
@@ -196,6 +196,28 @@ describe('useAssetsQuery', () => {
                     network: 'mainnet',
                 }),
             )
+        })
+
+        it('preserves the data Map identity across a refetch when the assets are unchanged', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
+
+            const { result } = renderHook(() => useAssetsQuery(['123']), {
+                wrapper: createWrapper(queryClient),
+            })
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            const firstData = result.current.data
+
+            // A refetch cycles the status flags (isRefetching) without changing
+            // query.data, so the derived Map — keyed on query.data alone — must
+            // keep its identity for effects that dep on an asset.
+            await act(async () => {
+                await queryClient.refetchQueries({
+                    queryKey: getAssetsQueryKey(['123'], 'mainnet'),
+                })
+            })
+
+            expect(result.current.data).toBe(firstData)
         })
 
         it('refetches when network changes', async () => {

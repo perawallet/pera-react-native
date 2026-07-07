@@ -52,7 +52,7 @@ import {
     RemoteConfigDefaults,
     type RemoteConfigKey,
 } from '@perawallet/wallet-extension-platform'
-import { config } from '@perawallet/wallet-core-config'
+import { config, isDebug } from '@perawallet/wallet-core-config'
 
 const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
 
@@ -279,7 +279,13 @@ export class RNFirebaseService
 
     initializeCrashReporting(): void {
         this.crashlytics = getCrashlytics()
-        setCrashlyticsCollectionEnabled(this.crashlytics, true)
+        // Collect only from signed releases (staging QA + store prod). Debug
+        // builds — local Metro/Expo bundles of either variant — otherwise
+        // report local-only failures (unresolved dev modules, hot-reload
+        // errors) into the SAME Firebase app as their variant's signed
+        // release, drowning real crashes in noise. `isDebug` is the
+        // debug-vs-release axis; the app variant is the wrong signal here.
+        setCrashlyticsCollectionEnabled(this.crashlytics, !isDebug)
     }
 
     recordNonFatalError(error: unknown): void {
