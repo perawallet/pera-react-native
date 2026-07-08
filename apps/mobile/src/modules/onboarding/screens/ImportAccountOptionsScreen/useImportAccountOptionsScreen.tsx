@@ -162,11 +162,6 @@ export const useImportAccountOptionsScreen =
                                   'onboarding.import_account_options.quantum_description',
                               leftIcon: 'quantum' as IconName,
                               onPress: handleImportQuantum,
-                              badge: {
-                                  labelKey:
-                                      'onboarding.import_account_options.quantum_badge',
-                                  variant: 'positive' as const,
-                              },
                           },
                       ]
                     : []),
