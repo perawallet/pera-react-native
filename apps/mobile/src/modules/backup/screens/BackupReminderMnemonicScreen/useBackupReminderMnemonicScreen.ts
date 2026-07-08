@@ -10,19 +10,15 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import {
-    useRoute,
-    type RouteProp,
-    useNavigation,
-} from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { usePinCode } from '@perawallet/wallet-core-security'
-import { logger } from '@perawallet/wallet-core-shared'
-import { useMnemonicForAddress } from '../../hooks'
-import type { BackupStackParamList } from '../../routes/types'
+import {useCallback, useEffect, useState} from 'react'
+import {type RouteProp, useNavigation, useRoute,} from '@react-navigation/native'
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack'
+import {useAccountsStore} from '@perawallet/wallet-core-accounts'
+import {zeroBytes} from '@perawallet/wallet-core-kms'
+import {usePinCode} from '@perawallet/wallet-core-security'
+import {logger} from '@perawallet/wallet-core-shared'
+import {useMnemonicForAddress} from '../../hooks'
+import type {BackupStackParamList} from '../../routes/types'
 
 export type UseBackupReminderMnemonicScreenResult = {
     wordIndices: Uint16Array | null
@@ -56,6 +52,7 @@ export const useBackupReminderMnemonicScreen =
         const [indices, setIndices] = useState<Uint16Array | null>(null)
         const [isLoading, setIsLoading] = useState(true)
         const [error, setError] = useState<Error | null>(null)
+        const [focusToken, setFocusToken] = useState(0)
 
         // Defense-in-depth: if any caller reaches this screen without going
         // through BackupReminderWriteDownScreen (e.g. future deep link, new
@@ -106,7 +103,7 @@ export const useBackupReminderMnemonicScreen =
             return () => {
                 cancelled = true
             }
-        }, [isPinGateResolved, executeWithMnemonic])
+        }, [isPinGateResolved, executeWithMnemonic, focusToken])
 
         // Zero the retained index buffer before dropping it so the phrase
         // doesn't linger in memory waiting on GC.
@@ -116,6 +113,14 @@ export const useBackupReminderMnemonicScreen =
                 return null
             })
         }, [])
+
+        // Native stack keeps this screen mounted while verification sits on top,
+        // so returning fires a focus event, not a remount; re-fetch on focus.
+        useEffect(() => {
+            return navigation.addListener('focus', () =>
+                setFocusToken(previous => previous + 1),
+            )
+        }, [navigation])
 
         // Clear the buffer when the host unmounts so the phrase doesn't linger
         // on a detached fiber.
@@ -128,10 +133,8 @@ export const useBackupReminderMnemonicScreen =
 
         const onContinue = useCallback(() => {
             if (!address) return
-            // Native-stack keeps this screen mounted after navigate(), so the
-            // unmount cleanup won't fire yet — clear eagerly here. The
-            // verification screen pulls only the N words it needs from the KMS,
-            // so we don't carry the full phrase through flow state.
+            // Zero the buffer before leaving so the phrase doesn't linger in
+            // memory behind the verification screen; returning re-fetches it.
             clearIndices()
             navigation.navigate('BackupVerification', { address })
         }, [address, navigation, clearIndices])
