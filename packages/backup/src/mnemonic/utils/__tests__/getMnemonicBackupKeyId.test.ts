@@ -42,6 +42,16 @@ describe('getMnemonicBackupKeyId', () => {
         expect(getMnemonicBackupKeyId(account)).toBe('kp-2')
     })
 
+    test('returns keyPairId for Quantum accounts (25-word recovery phrase, algo25 wire format)', () => {
+        const account: WalletAccount = {
+            id: 'acc-quantum',
+            type: AccountTypes.quantum,
+            address: 'ADDR_Q',
+            keyPairId: 'kp-quantum',
+        }
+        expect(getMnemonicBackupKeyId(account)).toBe('kp-quantum')
+    })
+
     test('returns null for multisig, hardware, watch', () => {
         const multisig: WalletAccount = {
             type: AccountTypes.multisig,

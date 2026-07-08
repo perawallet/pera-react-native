@@ -74,6 +74,21 @@ describe('useRequiresMnemonicBackup', () => {
         expect(result.current).toBe(true)
     })
 
+    test('returns true when a quantum account root is not backed up', async () => {
+        const { useRequiresMnemonicBackup } =
+            await import('../useRequiresMnemonicBackup')
+
+        const account: WalletAccount = {
+            id: 'acc-quantum',
+            type: AccountTypes.quantum,
+            address: 'ADDR',
+            keyPairId: 'kp-quantum-unbacked',
+        }
+
+        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
+        expect(result.current).toBe(true)
+    })
+
     test('returns false for accounts without a backup concept (watch)', async () => {
         const { useRequiresMnemonicBackup } =
             await import('../useRequiresMnemonicBackup')

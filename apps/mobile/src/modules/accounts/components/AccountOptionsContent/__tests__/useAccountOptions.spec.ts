@@ -129,6 +129,14 @@ describe('useAccountOptions', () => {
         type: AccountTypes.watch,
     }
 
+    const quantumAccount: WalletAccount = {
+        id: 'acc-q',
+        address: 'QUANTUMADDRESS',
+        type: AccountTypes.quantum,
+        keyPairId: 'key-q',
+        name: 'My Quantum Account',
+    }
+
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
         address: 'REKEYEDADDRESS',
@@ -175,6 +183,7 @@ describe('useAccountOptions', () => {
         mockUseCanSignWith.mockImplementation(account => {
             switch (account?.address) {
                 case algo25Account.address:
+                case quantumAccount.address:
                 case rekeyedAccount.address:
                 case rekeyedWatchAccount.address:
                 case hardwareAccount.address:
@@ -209,6 +218,19 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+
+        it('offers view-passphrase for a quantum account (25-word recovery phrase)', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: quantumAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toContain('view-passphrase')
         })
 
         it('shows only applicable options for a watch account', () => {
