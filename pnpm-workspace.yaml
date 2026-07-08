@@ -58,6 +58,7 @@ catalog:
   react-native: 0.86.0
   react-native-mmkv: ^4.2.0
   react-native-quick-base64: ^3.0.0
+  react-native-ssl-public-key-pinning: ^1.2.6
   tsx: ^4.22.3
   tweetnacl: ^1.0.3
   typescript: ^5.9.3

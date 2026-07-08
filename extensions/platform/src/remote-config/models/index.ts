@@ -30,6 +30,7 @@ export const RemoteConfigKeys = {
     enable_pera_card: 'enable_pera_card',
     enable_quantum_accounts: 'enable_quantum_accounts',
     enable_card_auto_funding: 'enable_card_auto_funding',
+    enable_ssl_pinning: 'enable_ssl_pinning',
     terms_version: 'terms_version',
 } as const
 
@@ -68,6 +69,13 @@ export const RemoteConfigDefaults: Record<
     // UI only; prod is stopped from signing an unpinned program by
     // verifyDelegationProgram, not by this flag.
     enable_card_auto_funding: false,
+    // SSL public-key pinning for perawallet.app API hosts. getBooleanValue only
+    // trusts genuinely fetched values, so pinning stays OFF until Firebase has
+    // delivered an explicit true at least once (fetched values persist across
+    // launches) — and flipping the flag off in the console is the remote kill
+    // switch: Firebase's own hosts are never pinned, so a broken pin set cannot
+    // lock the app out of receiving the disable.
+    enable_ssl_pinning: false,
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '1',

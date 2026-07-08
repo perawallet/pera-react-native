@@ -16,6 +16,7 @@ import type {
 } from '@perawallet/wallet-extension-platform'
 
 import { platformServices } from './resources'
+import { initializeSslPinningService } from './services'
 
 export type ReactNativePlatformExtension = PlatformExtension
 
@@ -43,6 +44,15 @@ export const WithReactNativePlatformExtension = (
             remoteConfigInit,
             analyticsInit,
         ])
+
+        // After remote config so the enable_ssl_pinning decision sees the
+        // freshest activated value. Never throws — pinning is best-effort
+        // hardening and must not break startup.
+        await initializeSslPinningService({
+            remoteConfig: platformServices.remoteConfig,
+            analytics: platformServices.analytics,
+            crashReporting: platformServices.crashReporting,
+        })
 
         const notificationResults =
             await platformServices.pushNotification.initializeNotifications()
