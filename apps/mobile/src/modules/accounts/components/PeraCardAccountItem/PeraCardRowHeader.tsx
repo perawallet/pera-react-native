@@ -36,6 +36,8 @@ export const PeraCardRowHeader = ({ children }: PeraCardRowHeaderProps) => {
                     variant='bodyLarge'
                     weight={500}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.75}
                 >
                     {t('peraCard.account_item.title')}
                 </PWText>

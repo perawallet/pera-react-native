@@ -33,6 +33,8 @@ export const PeraCardActivateRow = ({
                     weight={400}
                     style={styles.subtitle}
                     numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.75}
                 >
                     {t('peraCard.account_item.subtitle')}
                 </PWText>
