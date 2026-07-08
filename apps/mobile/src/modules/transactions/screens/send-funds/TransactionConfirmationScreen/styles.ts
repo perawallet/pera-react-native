@@ -17,6 +17,11 @@ export const useStyles = makeStyles(theme => {
         secondaryAmount: {
             color: theme.colors.textGray,
         },
+        feeValueContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+        },
         linkContainer: {
             flexDirection: 'row',
             alignItems: 'center',
