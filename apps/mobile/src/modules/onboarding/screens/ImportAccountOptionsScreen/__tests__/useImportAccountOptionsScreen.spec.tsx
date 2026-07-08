@@ -85,6 +85,11 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+const mockQuantumFlag = vi.hoisted(() => ({ enabled: false }))
+vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
+    useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
+}))
+
 describe('useImportAccountOptionsScreen', () => {
     const originalOS = Platform.OS
 
@@ -92,6 +97,7 @@ describe('useImportAccountOptionsScreen', () => {
         vi.clearAllMocks()
         Platform.OS = 'ios'
         mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockQuantumFlag.enabled = false
     })
 
     afterEach(() => {
@@ -363,5 +369,58 @@ describe('useImportAccountOptionsScreen', () => {
         expect(mockErrorToast).toHaveBeenCalledTimes(1)
         expect(restartScanning).toHaveBeenCalledTimes(1)
         expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    describe('quantum import option', () => {
+        it('is absent when the quantum accounts flag is off', () => {
+            mockQuantumFlag.enabled = false
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const testIDs = result.current.options.map(o => o.testID)
+
+            expect(testIDs).not.toContain('import_account_quantum_button')
+        })
+
+        it('is present with the quantum title when the flag is on and adds exactly one option', () => {
+            mockQuantumFlag.enabled = false
+            const { result: offResult } = renderHook(() =>
+                useImportAccountOptionsScreen(),
+            )
+            const offLength = offResult.current.options.length
+
+            mockQuantumFlag.enabled = true
+            const { result: onResult } = renderHook(() =>
+                useImportAccountOptionsScreen(),
+            )
+
+            const quantumOption = onResult.current.options.find(
+                o => o.testID === 'import_account_quantum_button',
+            )
+
+            expect(quantumOption).toBeDefined()
+            expect(quantumOption!.titleKey).toBe(
+                'onboarding.import_account_options.quantum_title',
+            )
+            expect(onResult.current.options).toHaveLength(offLength + 1)
+        })
+
+        it('navigates to ImportAccount with the quantum account type on press', () => {
+            mockQuantumFlag.enabled = true
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            const quantumOption = result.current.options.find(
+                o => o.testID === 'import_account_quantum_button',
+            )!
+
+            act(() => {
+                quantumOption.onPress()
+            })
+
+            expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
+                accountType: 'quantum',
+            })
+        })
     })
 })

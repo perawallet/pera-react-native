@@ -23,6 +23,8 @@ export type UseImportAccountScreenResult = {
     handleWordChange: (word: string, index: number) => void
     handleImportAccount: () => void
     mnemonicLength: number
+    titleKey: string
+    infoNoteKey: string | null
     t: (key: string) => string
     handleOpenSupportOptions: () => void
     isQRScannerVisible: boolean

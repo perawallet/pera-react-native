@@ -56,6 +56,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
 
+    const isQuantum = accountType === 'quantum'
+    const titleKey = isQuantum
+        ? 'onboarding.import_account.quantum_title'
+        : 'onboarding.import_account.title'
+    const infoNoteKey = isQuantum
+        ? 'onboarding.import_account.quantum_info_note'
+        : null
+
     const onTooManyWords = useCallback(() => {
         errorToast(
             t('onboarding.import_account.invalid_mnemonic_title'),
@@ -235,6 +243,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             void handleWordChange(word, index),
         handleImportAccount,
         mnemonicLength,
+        titleKey,
+        infoNoteKey,
         t,
         handleOpenSupportOptions: () => void handleOpenSupportOptions(),
         isQRScannerVisible,
