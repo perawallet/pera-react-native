@@ -10,13 +10,10 @@
  limitations under the License
  */
 
-import { type PWIconSize } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 
-export type QuantumFeeExplainerProps = {
-    size?: PWIconSize
-}
+export const QUANTUM_FEE_EXPLAINER_TEST_ID = 'quantum-fee-explainer'
 
 /**
  * Presentation-only affordance rendered next to a transaction fee when the
@@ -25,16 +22,14 @@ export type QuantumFeeExplainerProps = {
  * the network fee is higher than for standard accounts. The show/hide decision
  * lives in the colocated screen hooks — this component only renders.
  */
-export const QuantumFeeExplainer = ({
-    size = 'sm',
-}: QuantumFeeExplainerProps) => {
+export const QuantumFeeExplainer = () => {
     const { t } = useLanguage()
 
     return (
         <InfoButton
             variant='secondary'
-            size={size}
             title={t('transactions.quantum_fee.title')}
+            testID={QUANTUM_FEE_EXPLAINER_TEST_ID}
         >
             {t('transactions.quantum_fee.body')}
         </InfoButton>

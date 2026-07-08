@@ -10,5 +10,7 @@
  limitations under the License
  */
 
-export { QuantumFeeExplainer } from './QuantumFeeExplainer'
-export type { QuantumFeeExplainerProps } from './QuantumFeeExplainer'
+export {
+    QuantumFeeExplainer,
+    QUANTUM_FEE_EXPLAINER_TEST_ID,
+} from './QuantumFeeExplainer'
