@@ -229,8 +229,17 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).toContain('view-passphrase')
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+            // Distinct label: a quantum account can share its 25 words with an
+            // algo25 twin (same mnemonic, different address). Reusing the algo25
+            // "View wallet passphrase" copy would read as a duplicate/bug, so
+            // quantum gets its own string.
+            expect(passphraseOption).toBeDefined()
+            expect(passphraseOption?.title).toBe(
+                'account_options.view_passphrase_quantum',
+            )
         })
 
         it('shows only applicable options for a watch account', () => {

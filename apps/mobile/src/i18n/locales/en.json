@@ -297,6 +297,7 @@
         "show_address": "Show Address",
         "view_passphrase_hd": "View root wallet passphrase",
         "view_passphrase_algo25": "View wallet passphrase",
+        "view_passphrase_quantum": "View Quantum account passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_to_ledger": "Rekey to Ledger Account",
