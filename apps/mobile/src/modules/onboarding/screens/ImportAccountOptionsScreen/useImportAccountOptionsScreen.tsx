@@ -19,6 +19,7 @@ import {
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { type IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -45,6 +46,7 @@ export const useImportAccountOptionsScreen =
         const { t } = useLanguage()
         const { parseDeeplink } = useDeepLink()
         const { request: requestBottomSheet } = useBottomSheet()
+        const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
 
         const {
             isOpen: isQRScannerVisible,
@@ -135,6 +137,10 @@ export const useImportAccountOptionsScreen =
             navigation.push('PeraWebImportInfo')
         }, [navigation])
 
+        const handleImportQuantum = useCallback(() => {
+            navigation.push('ImportAccount', { accountType: 'quantum' })
+        }, [navigation])
+
         const options: AccountOption[] = useMemo(() => {
             const allOptions: AccountOption[] = [
                 {
@@ -146,6 +152,19 @@ export const useImportAccountOptionsScreen =
                     leftIcon: 'fund' as IconName,
                     onPress: () => void handleOpenImportOptions(),
                 },
+                ...(isQuantumAccountsEnabled
+                    ? [
+                          {
+                              testID: 'import_account_quantum_button',
+                              titleKey:
+                                  'onboarding.import_account_options.quantum_title',
+                              descriptionKey:
+                                  'onboarding.import_account_options.quantum_description',
+                              leftIcon: 'quantum' as IconName,
+                              onPress: handleImportQuantum,
+                          },
+                      ]
+                    : []),
                 {
                     testID: 'import_account_options_recover_qr_button',
                     titleKey:
@@ -206,6 +225,8 @@ export const useImportAccountOptionsScreen =
             handlePairLedgerUsb,
             handleImportAsb,
             handleImportPeraWeb,
+            handleImportQuantum,
+            isQuantumAccountsEnabled,
         ])
 
         return {

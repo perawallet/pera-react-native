@@ -204,7 +204,14 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         accounts: discoveredAccounts,
                     })
                 }
-            } else if (account.type === AccountTypes.algo25) {
+            } else if (
+                account.type === AccountTypes.algo25 ||
+                account.type === AccountTypes.quantum
+            ) {
+                // Quantum accounts are flat single-key accounts like algo25:
+                // discovery is an address-only rekey scan (no derivation), and
+                // an empty result must still move the flow on to NameAccount —
+                // otherwise the "Searching your accounts" step hangs forever.
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
                         walletKeyId,

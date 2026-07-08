@@ -1312,6 +1312,8 @@
         },
         "import_account": {
             "title": "Enter your Recovery Passphrase",
+            "quantum_title": "Enter your Quantum Passphrase",
+            "quantum_info_note": "A 25-word passphrase from a regular Algorand account is not a Quantum account and cannot be imported here.",
             "importing": "Importing wallet...",
             "button": "Recover",
             "failed_title": "Import failed",
@@ -1423,7 +1425,9 @@
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
             "asb_title": "Algorand Secure Backup",
-            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key"
+            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key",
+            "quantum_title": "Import Quantum account",
+            "quantum_description": "I want to import a Quantum account using its 25-word passphrase"
         },
         "asb_import": {
             "info": {

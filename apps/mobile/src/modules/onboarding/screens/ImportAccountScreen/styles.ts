@@ -13,6 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    quantumNote: {
+        color: theme.colors.textGray,
+        marginBottom: theme.spacing.md,
+    },
     wordContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',

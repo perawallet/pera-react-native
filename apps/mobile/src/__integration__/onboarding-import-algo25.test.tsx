@@ -155,6 +155,12 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
                 screen.getByTestId('import_account_word_input_24'),
             )
 
+            // The Quantum-only collision explainer must NOT appear on a
+            // standard algo25 import (it shares the ImportAccountScreen).
+            expect(
+                screen.queryByTestId('import_account_quantum_note'),
+            ).toBeNull()
+
             typeWordsIndividually(ALGO25_TEST_MNEMONIC_WORDS)
 
             await waitFor(() => {
