@@ -545,4 +545,62 @@ describe('useSearchAccountsScreen', () => {
             expect(mockExitAccountFlow).not.toHaveBeenCalled()
         })
     })
+
+    it('quantum account with no rekeyed: moves on to NameAccount instead of hanging on the search step', async () => {
+        const quantumAccount = {
+            id: '1',
+            address: 'PARENT_ADDRESS',
+            type: AccountTypes.quantum,
+            keyPairId: 'wallet-1',
+        }
+        mockRouteParams.current = {
+            account: quantumAccount,
+            createIfEmpty: undefined,
+        } as SearchAccountsParams
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: quantumAccount,
+            })
+        })
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        expect(mockSetShouldPlayConfetti).not.toHaveBeenCalled()
+    })
+
+    it('quantum account with rekeyed: selects the parent before navigating to ImportRekeyedAddresses', async () => {
+        const quantumAccount = {
+            id: '1',
+            address: 'PARENT_ADDRESS',
+            type: AccountTypes.quantum,
+            keyPairId: 'wallet-1',
+        }
+        const rekeyedAccounts = [
+            {
+                id: 'rekeyed-1',
+                address: 'REKEYED_1',
+                type: AccountTypes.algo25,
+                rekeyAddress: 'PARENT_ADDRESS',
+            },
+        ]
+        mockRouteParams.current = {
+            account: quantumAccount,
+            createIfEmpty: undefined,
+        } as SearchAccountsParams
+        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+                'PARENT_ADDRESS',
+            )
+            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
+                accounts: rekeyedAccounts,
+            })
+            expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        })
+    })
 })
