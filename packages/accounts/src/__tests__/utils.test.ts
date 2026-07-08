@@ -26,6 +26,7 @@ import {
     isEligibleRekeyTarget,
     isEligibleSharedRekeyTarget,
     isQuantumAccount,
+    isQuantumDowngrade,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -860,6 +861,55 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
                 'SRC',
             ),
         ).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - isQuantumDowngrade', () => {
+    test('quantum source to a plain Ed25519 target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = algo25({ address: 'A' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
+        expect(
+            isQuantumDowngrade(source, hd({ address: 'H' }), [
+                source,
+                hd({ address: 'H' }),
+            ]),
+        ).toBe(true)
+    })
+
+    test('quantum source to a quantum target is not a downgrade', () => {
+        const source = quantum({ address: 'F1' })
+        const target = quantum({ address: 'F2' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('Ed25519 source to a quantum target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = quantum({ address: 'F' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('Ed25519 source to an Ed25519 target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = hd({ address: 'H' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('quantum source to a target whose effective auth is quantum is not a downgrade', () => {
+        // Target is itself rekeyed to a quantum account, so its effective
+        // signing authority resolves to quantum via resolveAuthAccount.
+        const source = quantum({ address: 'F1' })
+        const quantumAuth = quantum({ address: 'FAUTH' })
+        const target = watch({ address: 'T', rekeyAddress: 'FAUTH' })
+        expect(
+            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
+        ).toBe(false)
+    })
+
+    test('quantum source to a hardware/ledger target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = ledger({ address: 'L' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
     })
 })
 

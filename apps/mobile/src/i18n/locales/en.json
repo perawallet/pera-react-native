@@ -1763,6 +1763,12 @@
                 "body": "The account <0>{{source}}</0> has been reverted to its original state",
                 "cta": "Done"
             }
+        },
+        "quantum_downgrade_warning": {
+            "title": "Remove quantum-safe protection?",
+            "body": "Rekeying <0>{{source}}</0> to <1>{{target}}</1> will remove its quantum-safe protection. Transactions will then be authorized by a standard key that is not resistant to quantum attacks. This can be reversed by rekeying back to a quantum account.",
+            "confirm": "Continue",
+            "cancel": "Cancel"
         }
     },
     "receive_funds": {

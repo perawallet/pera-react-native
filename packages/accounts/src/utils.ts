@@ -356,6 +356,22 @@ export const isEligibleRekeyTarget = (
 }
 
 /**
+ * True iff rekeying `source` to `target` removes quantum protection: the
+ * source is a quantum account, but the target's effective signing authority
+ * is not quantum (Ed25519 — standard/ledger/multisig). Not a downgrade when
+ * the target's effective auth is also quantum, nor when the source is not a
+ * quantum account.
+ */
+export const isQuantumDowngrade = (
+    source: WalletAccount,
+    target: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    if (!isQuantumAccount(source)) return false
+    return !isQuantumAccount(resolveAuthAccount(target, accounts))
+}
+
+/**
  * True when `target` may be chosen as the new auth address for a "rekey to
  * Ledger account" flow originating from `sourceAddress`. The target must be
  * a hardware wallet account already imported in the wallet, not the source
