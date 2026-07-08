@@ -12,7 +12,11 @@
 
 import type { Network } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
-import type { CardSecureView, CardSetPinSession } from '../../models'
+import type {
+    CardImageCustomCss,
+    CardSecureView,
+    CardSetPinSession,
+} from '../../models'
 import {
     cardSecureViewResponseSchema,
     cardSetPinSessionResponseSchema,
@@ -27,13 +31,18 @@ export type SensitiveCardParams = {
     signal?: AbortSignal
 }
 
+export type CardDetailsTokenParams = SensitiveCardParams & {
+    /** Colors for the server-rendered image; Baanx defaults apply if omitted. */
+    customCss?: CardImageCustomCss
+}
+
 /**
  * Single-use secure view of the card details (PAN/CVV). Returns a token + an
- * image URL to render — raw values are never exposed. Held transiently by the
- * caller; never persisted or cached.
+ * image URL to render — raw values are never exposed. Held in memory by the
+ * caller for the screen visit; never persisted to disk.
  */
 export const fetchCardDetailsToken = async (
-    params: SensitiveCardParams,
+    params: CardDetailsTokenParams,
 ): Promise<CardSecureView> => {
     const response = await getCardTransport().request({
         network: params.network,
@@ -41,6 +50,7 @@ export const fetchCardDetailsToken = async (
         path: '/v1/card/details/token',
         authenticated: true,
         signal: params.signal,
+        data: params.customCss ? { customCss: params.customCss } : undefined,
     })
     return transformCardSecureView(
         cardSecureViewResponseSchema.parse(response.data),

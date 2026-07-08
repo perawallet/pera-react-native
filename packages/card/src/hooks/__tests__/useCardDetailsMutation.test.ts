@@ -57,11 +57,37 @@ describe('useCardDetailsMutation', () => {
         const { result } = renderHook(() => useCardDetailsMutation(), {
             wrapper,
         })
-        result.current.mutate()
+        result.current.mutate({})
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.data?.imageUrl).toContain('details-image')
         // The sensitive result must never enter the query cache.
         expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
+        expect(fetchCardDetailsToken).toHaveBeenCalledWith({
+            network: 'mainnet',
+            customCss: undefined,
+        })
+    })
+
+    it('forwards customCss to the details/token request', async () => {
+        fetchCardDetailsToken.mockResolvedValue({
+            token: 'tok-1',
+            imageUrl: 'https://host/details-image?token=tok-1',
+        })
+        const customCss = {
+            cardBackgroundColor: '#FCCA44',
+            panBackgroundColor: '#FFE858',
+        }
+
+        const { result } = renderHook(() => useCardDetailsMutation(), {
+            wrapper,
+        })
+        result.current.mutate({ customCss })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(fetchCardDetailsToken).toHaveBeenCalledWith({
+            network: 'mainnet',
+            customCss,
+        })
     })
 })

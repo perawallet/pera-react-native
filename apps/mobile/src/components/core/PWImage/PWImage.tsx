@@ -39,6 +39,13 @@ export type PWImageProps = {
     onLoad?: ImageProps['onLoad']
     onError?: ImageProps['onError']
     PlaceholderContent?: React.ReactElement
+    /**
+     * Show the built-in loading overlay (spinner or `PlaceholderContent`) while
+     * the image loads. Defaults to `true`. Pass `false` when the caller owns the
+     * pending UI and any overlay would flash over the content — e.g. the card
+     * secure-view, where the reveal button is the sole loading indicator.
+     */
+    showLoadingIndicator?: boolean
     transition?: boolean | number
     width?: number
     height?: number
@@ -66,6 +73,7 @@ export const PWImage = ({
     onLoad,
     onError,
     PlaceholderContent,
+    showLoadingIndicator = true,
     transition = true,
     width,
     height,
@@ -125,7 +133,7 @@ export const PWImage = ({
                         : undefined
                 }
             />
-            {isLoading && (
+            {showLoadingIndicator && isLoading && (
                 <View style={styles.loadingOverlay}>
                     {PlaceholderContent ?? <ActivityIndicator />}
                 </View>

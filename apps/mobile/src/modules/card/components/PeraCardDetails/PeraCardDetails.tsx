@@ -11,6 +11,7 @@
  */
 
 import { PWScrollView, PWView } from '@components/core'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardVisual } from './PeraCardVisual'
 import { RevealCardDetailsButton } from './RevealCardDetailsButton'
@@ -19,13 +20,18 @@ import { CardOptionsSection } from './CardOptionsSection'
 import { usePeraCardDetails } from './usePeraCardDetails'
 import { useStyles } from './styles'
 
+// Labels this caller in screen-capture logs; the native lock is shared.
+const SCREEN_CAPTURE_TAG = 'pera-card-details'
+
 export const PeraCardDetails = () => {
     const styles = useStyles()
     const {
         maskedPan,
         secureImageUrl,
+        isCardOpen,
         isRevealing,
         onToggleReveal,
+        onSecureImageLoad,
         onSecureImageError,
         fundingAddress,
         onChangeFunding,
@@ -45,6 +51,10 @@ export const PeraCardDetails = () => {
         onReportSuspicious,
     } = usePeraCardDetails()
 
+    // Block screenshots/recording while the real PAN/CVV is (or is becoming)
+    // visible, matching the other secure screens (passphrase, backup, import).
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG, isCardOpen || isRevealing)
+
     return (
         <PWScrollView contentContainerStyle={styles.content}>
             <CardFrozenBanner />
@@ -53,11 +63,15 @@ export const PeraCardDetails = () => {
                 <PeraCardVisual
                     maskedPan={maskedPan}
                     secureImageUrl={secureImageUrl ?? undefined}
+                    isOpen={isCardOpen}
+                    onSecureImageLoad={onSecureImageLoad}
                     onSecureImageError={onSecureImageError}
                 />
                 <RevealCardDetailsButton
                     isLoading={isRevealing}
-                    isRevealed={secureImageUrl != null}
+                    // "Hide" only once the card is actually open; disabled while
+                    // the first reveal loads, so the label is never a mismatch.
+                    isRevealed={isCardOpen}
                     onPress={onToggleReveal}
                 />
             </PWView>
