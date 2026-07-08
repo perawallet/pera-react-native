@@ -2905,6 +2905,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         enable_motion_lock: 'enable_motion_lock',
         enable_duress_pin: 'enable_duress_pin',
         onramp_currency_decimals: 'onramp_currency_decimals',
+        enable_quantum_accounts: 'enable_quantum_accounts',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
     useNotificationsListQuery: vi.fn(() => ({

@@ -2283,6 +2283,10 @@
             "title": "Non-Standard Fees",
             "body": "The fees for this transaction are higher than the standard network fee. This may be due to network congestion or additional fees required by the application."
         },
+        "quantum_fee": {
+            "title": "Quantum Network Fee",
+            "body": "Quantum accounts use larger signatures, so their transactions require a higher network fee than standard accounts."
+        },
         "unknown": {
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."
