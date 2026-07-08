@@ -1909,11 +1909,11 @@
         },
         "close_account": {
             "title": "Close Account",
-            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network and remove it from your wallet.",
+            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network.",
             "confirm": "Close Account & Send",
-            "warning": "This transaction will close your account and remove it from your wallet.",
+            "warning": "This transaction will close your account on the Algorand network.",
             "success_title": "Account Closed",
-            "success_subtitle": "Your account has been closed and removed from your wallet"
+            "success_subtitle": "Your account has been closed on the Algorand network."
         },
         "express_send": {
             "title": "Express Send",
