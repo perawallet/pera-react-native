@@ -224,6 +224,101 @@ describe('usePeraCardDetails', () => {
         expect(result.current.isRevealing).toBe(false)
     })
 
+    it('ignores a second reveal tap while the first token request is in flight', async () => {
+        // Keep the first request pending across the second tap so both taps fire
+        // in the same tick, before any re-render could disable the button.
+        let resolveToken: (view: typeof SECURE_VIEW) => void = () => {}
+        mocks.cardDetailsMutateAsync.mockImplementation(
+            () =>
+                new Promise<typeof SECURE_VIEW>(resolve => {
+                    resolveToken = resolve
+                }),
+        )
+
+        const { result, unmount } = renderHook(() => usePeraCardDetails())
+
+        await act(async () => {
+            result.current.onToggleReveal()
+            result.current.onToggleReveal()
+        })
+
+        // Only one single-use token is spent despite the double-tap.
+        expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledTimes(1)
+
+        // Settle the in-flight request, then unmount to clear the load timeout.
+        await act(async () => {
+            resolveToken(SECURE_VIEW)
+        })
+        unmount()
+    })
+
+    it('does not toast or setState when unmounted before the token resolves', async () => {
+        vi.useFakeTimers()
+        try {
+            let resolveToken: (view: typeof SECURE_VIEW) => void = () => {}
+            mocks.cardDetailsMutateAsync.mockImplementation(
+                () =>
+                    new Promise<typeof SECURE_VIEW>(resolve => {
+                        resolveToken = resolve
+                    }),
+            )
+
+            const { result, unmount } = renderHook(() => usePeraCardDetails())
+
+            // Start the reveal, then leave the screen while the request is in flight.
+            act(() => {
+                result.current.onToggleReveal()
+            })
+            unmount()
+
+            // The request resolves after unmount: the mounted guard skips the
+            // setState + arming a new load timeout, so advancing past the timeout
+            // window fires no error toast (the pre-fix bug).
+            await act(async () => {
+                resolveToken(SECURE_VIEW)
+            })
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(20_000)
+            })
+
+            expect(mocks.errorToast).not.toHaveBeenCalled()
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('auto re-masks after the idle period, keeping the cached image', async () => {
+        vi.useFakeTimers()
+        try {
+            mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                await result.current.onToggleReveal()
+            })
+            act(() => {
+                result.current.onSecureImageLoad()
+            })
+            expect(result.current.isCardOpen).toBe(true)
+
+            // After the idle window the card re-masks itself.
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(30_000)
+            })
+            expect(result.current.isCardOpen).toBe(false)
+            // The image stays cached, so re-revealing is instant with no new token.
+            expect(result.current.secureImageUrl).toBe(SECURE_VIEW.imageUrl)
+
+            await act(async () => {
+                await result.current.onToggleReveal()
+            })
+            expect(result.current.isCardOpen).toBe(true)
+            expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledTimes(1)
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
     it('requests the brand-styled secure image (customCss from the card art)', async () => {
         mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
 

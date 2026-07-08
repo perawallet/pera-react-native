@@ -53,6 +53,11 @@ const PAN_MASK = '••••'
 // state forever — on timeout we fall back to the masked card and notify.
 const SECURE_IMAGE_LOAD_TIMEOUT_MS = 15_000
 
+// Once revealed, re-mask automatically after this idle period so the PAN/CVV
+// isn't left on screen indefinitely. The cached image is kept, so re-revealing
+// afterwards is still an instant flip with no new single-use token.
+const AUTO_HIDE_MS = 30_000
+
 /** Single-use secure-view image plus whether it is still downloading. */
 type SecureView = {
     /** Baanx-hosted image URL (PAN/CVC/expiry rendered server-side). */
@@ -140,6 +145,9 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // to disk, and dropped when the screen unmounts. `isRevealed` is the
     // separate show/hide toggle so hiding keeps the cached image for an instant
     // re-reveal instead of re-fetching a fresh single-use token each time.
+    // Caveat: with on-disk caching off, the OS may still purge the decoded
+    // bitmap under memory pressure, so the "instant re-reveal" isn't guaranteed
+    // — it then degrades gracefully via the image's onError → failSecureImage.
     const [secureView, setSecureView] = useState<SecureView | null>(null)
     const [isRevealed, setIsRevealed] = useState(false)
     const secureImageUrl = secureView?.url ?? null
@@ -157,6 +165,22 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
             loadTimeoutRef.current = null
         }
     }, [])
+
+    // Tracks mount status so a reveal that resolves after the screen is gone
+    // can't setState or arm a timeout on an unmounted component.
+    const isMountedRef = useRef(true)
+    useEffect(() => {
+        isMountedRef.current = true
+        return () => {
+            isMountedRef.current = false
+        }
+    }, [])
+
+    // Synchronous re-entry guard for the first reveal. The button's `disabled`
+    // only takes effect after a re-render and `cardDetails.isPending` on the
+    // closure doesn't flip until then either, so a same-tick double-tap could
+    // otherwise fire `mutateAsync` twice and spend two single-use tokens.
+    const isFetchingRevealRef = useRef(false)
 
     // The secure-view image is the only way details are shown; if it fails or
     // never resolves, drop the cache, fall back to the masked card, and notify.
@@ -184,11 +208,17 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
             setIsRevealed(true)
             return
         }
-        // First reveal this visit: fetch the single-use secure view.
+        // First reveal this visit: fetch the single-use secure view. Guard
+        // re-entry so a same-tick double-tap can't spend two tokens.
+        if (isFetchingRevealRef.current) return
+        isFetchingRevealRef.current = true
         try {
             const view = await cardDetails.mutateAsync({
                 customCss: SECURE_CARD_IMAGE_CSS,
             })
+            // Bail if the screen unmounted mid-fetch — no setState / timeout on a
+            // dead component (the unmount cleanup effect has already run).
+            if (!isMountedRef.current) return
             setSecureView({ url: view.imageUrl, isLoading: true })
             setIsRevealed(true)
             clearLoadTimeout()
@@ -198,6 +228,8 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
             )
         } catch (error) {
             await showError(error)
+        } finally {
+            isFetchingRevealRef.current = false
         }
     }, [
         isRevealed,
@@ -220,6 +252,16 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
 
     // Drop any pending load timeout if the screen unmounts mid-download.
     useEffect(() => clearLoadTimeout, [clearLoadTimeout])
+
+    // Auto re-mask after an idle period once open, so the PAN/CVV isn't left on
+    // screen. Keeps the cached image (re-reveal stays instant). The effect
+    // re-runs whenever the open state changes — so the timer resets on each
+    // reveal and is cleared on hide and on unmount.
+    useEffect(() => {
+        if (!isCardOpen) return
+        const timeout = setTimeout(() => setIsRevealed(false), AUTO_HIDE_MS)
+        return () => clearTimeout(timeout)
+    }, [isCardOpen])
 
     // Both freeze and unfreeze are confirmed AND executed inside their sheet, so
     // the sheet's button owns the pending state; here we only open it.

@@ -42,8 +42,8 @@ export type Card = {
 /**
  * SENSITIVE secure-view handle from `POST /v1/card/{details,pin}/token`. Baanx
  * returns a single-use token + an `imageUrl` rendering the PAN/CVV (or PIN) as
- * an image — raw values are never exposed via the API. Held only transiently
- * by the rendering screen; never persisted or cached.
+ * an image — raw values are never exposed via the API. Held in memory by the
+ * rendering screen for the screen visit; never persisted to disk.
  */
 export type CardSecureView = {
     token: string

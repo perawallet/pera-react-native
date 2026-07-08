@@ -11,6 +11,7 @@
  */
 
 import { PWScrollView, PWView } from '@components/core'
+import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardVisual } from './PeraCardVisual'
 import { RevealCardDetailsButton } from './RevealCardDetailsButton'
@@ -18,6 +19,9 @@ import { CardFundingAccountSection } from './CardFundingAccountSection'
 import { CardOptionsSection } from './CardOptionsSection'
 import { usePeraCardDetails } from './usePeraCardDetails'
 import { useStyles } from './styles'
+
+// Labels this caller in screen-capture logs; the native lock is shared.
+const SCREEN_CAPTURE_TAG = 'pera-card-details'
 
 export const PeraCardDetails = () => {
     const styles = useStyles()
@@ -46,6 +50,10 @@ export const PeraCardDetails = () => {
         onReportLostStolen,
         onReportSuspicious,
     } = usePeraCardDetails()
+
+    // Block screenshots/recording while the real PAN/CVV is (or is becoming)
+    // visible, matching the other secure screens (passphrase, backup, import).
+    usePreventScreenCapture(SCREEN_CAPTURE_TAG, isCardOpen || isRevealing)
 
     return (
         <PWScrollView contentContainerStyle={styles.content}>

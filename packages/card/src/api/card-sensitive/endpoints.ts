@@ -38,8 +38,8 @@ export type CardDetailsTokenParams = SensitiveCardParams & {
 
 /**
  * Single-use secure view of the card details (PAN/CVV). Returns a token + an
- * image URL to render — raw values are never exposed. Held transiently by the
- * caller; never persisted or cached.
+ * image URL to render — raw values are never exposed. Held in memory by the
+ * caller for the screen visit; never persisted to disk.
  */
 export const fetchCardDetailsToken = async (
     params: CardDetailsTokenParams,

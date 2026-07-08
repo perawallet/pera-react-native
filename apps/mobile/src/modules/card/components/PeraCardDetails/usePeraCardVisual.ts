@@ -86,7 +86,14 @@ export const usePeraCardVisual = ({
         onSecureImageLoad?.()
     }, [onSecureImageLoad])
 
+    // `backfaceVisibility: 'hidden'` (in styles) already hides the away-facing
+    // face, but it's historically unreliable for rotated views on Android — so
+    // also gate each face's opacity on the flip. The swap happens at the 90°
+    // edge-on midpoint (flip 0.5), where both faces are invisible anyway, so
+    // it's imperceptible, and the secure back face is guaranteed not to paint
+    // while the card is masked, regardless of backfaceVisibility.
     const frontAnimatedStyle = useAnimatedStyle(() => ({
+        opacity: flip.value < 0.5 ? 1 : 0,
         transform: [
             { perspective: PERSPECTIVE },
             { rotateY: `${flip.value * HALF_TURN_DEG}deg` },
@@ -94,6 +101,7 @@ export const usePeraCardVisual = ({
     }))
 
     const backAnimatedStyle = useAnimatedStyle(() => ({
+        opacity: flip.value < 0.5 ? 0 : 1,
         transform: [
             { perspective: PERSPECTIVE },
             { rotateY: `${flip.value * HALF_TURN_DEG + HALF_TURN_DEG}deg` },
