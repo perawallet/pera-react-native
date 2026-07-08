@@ -26,6 +26,10 @@ export type AsbBackupEnvelope = {
 // ASB only encodes accounts that the wallet can sign with (`single` =
 // algo25) or watch (`watch`). HD wallets and hardware accounts are exported
 // flat as individual algo25 entries.
+// TODO(quantum, phase 2): the ASB envelope has no representation for
+// post-quantum (Falcon) keys, so quantum accounts are neither exported nor
+// importable here — they are silently absent from this format by design. A
+// quantum-capable ASB kind is out of scope for PQ-012; see EPIC phase 2.
 export const AsbAccountKind = {
     Single: 'single',
     Watch: 'watch',

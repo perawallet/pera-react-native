@@ -63,7 +63,8 @@ export const useMnemonicForAddress = (
 
             if (
                 currentAccount.type !== AccountTypes.hdWallet &&
-                currentAccount.type !== AccountTypes.algo25
+                currentAccount.type !== AccountTypes.algo25 &&
+                currentAccount.type !== AccountTypes.quantum
             ) {
                 throw new Error('Account type does not support backup')
             }

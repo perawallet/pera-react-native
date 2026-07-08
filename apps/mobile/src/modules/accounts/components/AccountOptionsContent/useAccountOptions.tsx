@@ -17,6 +17,7 @@ import {
     isAlgo25Account,
     isHDWalletAccount,
     isMultisigAccount,
+    isQuantumAccount,
     isRekeyedAccount,
     useAllAccounts,
     useCanSignWith,
@@ -97,9 +98,13 @@ export const useAccountOptions = ({
     const canSign = useCanSignWith(account)
     const isRekeyed = isRekeyedAccount(account)
     const showPassphrase =
-        !isRekeyed && (isAlgo25Account(account) || isHDWalletAccount(account))
+        !isRekeyed &&
+        (isAlgo25Account(account) ||
+            isHDWalletAccount(account) ||
+            isQuantumAccount(account))
     const canUndoRekey = isRekeyed && canSign
     const isHdWallet = isHDWalletAccount(account)
+    const isQuantum = isQuantumAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
         ? (account.multisigDetails?.addresses.length ?? 0)
@@ -341,7 +346,9 @@ export const useAccountOptions = ({
                 title: t(
                     isHdWallet
                         ? 'account_options.view_passphrase_hd'
-                        : 'account_options.view_passphrase_algo25',
+                        : isQuantum
+                          ? 'account_options.view_passphrase_quantum'
+                          : 'account_options.view_passphrase_algo25',
                 ),
                 onPress: handleViewPassphrase,
             })
@@ -421,6 +428,7 @@ export const useAccountOptions = ({
         handleShowAddress,
         handleViewPassphrase,
         isHdWallet,
+        isQuantum,
         handleRekeyToLedger,
         handleRekeyToStandard,
         handleRekeyToShared,

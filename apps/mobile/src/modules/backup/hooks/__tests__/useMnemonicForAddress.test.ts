@@ -83,6 +83,28 @@ describe('useMnemonicForAddress', () => {
         )
     })
 
+    test('forwards keyPairId to KMS for a quantum account', async () => {
+        const account: WalletAccount = {
+            id: 'quantum-account',
+            type: AccountTypes.quantum,
+            address: 'Q_ADDR',
+            keyPairId: 'wallet-q',
+        }
+
+        const { result } = renderHook(() =>
+            useMnemonicForAddress('Q_ADDR', account),
+        )
+
+        const handler = vi.fn()
+        await result.current.executeWithMnemonic(handler)
+
+        expect(mockExecuteWithMnemonic).toHaveBeenCalledWith(
+            'wallet-q',
+            'backup-flow',
+            handler,
+        )
+    })
+
     test('throws when address is missing', async () => {
         const { result } = renderHook(() =>
             useMnemonicForAddress(undefined, null),
