@@ -10,15 +10,19 @@
  limitations under the License
  */
 
-import {useCallback, useEffect, useState} from 'react'
-import {type RouteProp, useNavigation, useRoute,} from '@react-navigation/native'
-import type {NativeStackNavigationProp} from '@react-navigation/native-stack'
-import {useAccountsStore} from '@perawallet/wallet-core-accounts'
-import {zeroBytes} from '@perawallet/wallet-core-kms'
-import {usePinCode} from '@perawallet/wallet-core-security'
-import {logger} from '@perawallet/wallet-core-shared'
-import {useMnemonicForAddress} from '../../hooks'
-import type {BackupStackParamList} from '../../routes/types'
+import { useCallback, useEffect, useState } from 'react'
+import {
+    type RouteProp,
+    useNavigation,
+    useRoute,
+} from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { usePinCode } from '@perawallet/wallet-core-security'
+import { logger } from '@perawallet/wallet-core-shared'
+import { useMnemonicForAddress } from '../../hooks'
+import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderMnemonicScreenResult = {
     wordIndices: Uint16Array | null
