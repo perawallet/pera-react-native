@@ -15,12 +15,6 @@ import { BackHandler } from 'react-native'
 
 import { useWebView } from '@modules/webview/hooks'
 import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
-import {
-    useRemoveAccountByAddress,
-    useSelectedAccount,
-    useSelectedAccountAddress,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
@@ -56,10 +50,6 @@ export const useTransactionSuccessScreen =
         const { onFinished: claimOnFinished } = useClaimAssets()
         const { networkConfig } = useNetwork()
         const { pushWebView } = useWebView()
-        const removeAccountByAddress = useRemoveAccountByAddress()
-        const selectedAccount = useSelectedAccount()
-        const accounts = useAccountsStore(state => state.accounts)
-        const { setSelectedAccountAddress } = useSelectedAccountAddress()
 
         const isClaimFlow =
             routeVariant === 'claim' || routeVariant === 'reject'
@@ -74,27 +64,9 @@ export const useTransactionSuccessScreen =
             if (isClaimFlow) {
                 claimOnFinished?.()
             } else {
-                if (isCloseAccount && selectedAccount) {
-                    void removeAccountByAddress(selectedAccount.address)
-                    const remaining = accounts.filter(
-                        a => a.address !== selectedAccount.address,
-                    )
-                    setSelectedAccountAddress(
-                        remaining.length > 0 ? remaining[0].address : null,
-                    )
-                }
                 sendFundsOnFinished?.()
             }
-        }, [
-            isClaimFlow,
-            claimOnFinished,
-            sendFundsOnFinished,
-            isCloseAccount,
-            selectedAccount,
-            removeAccountByAddress,
-            accounts,
-            setSelectedAccountAddress,
-        ])
+        }, [isClaimFlow, claimOnFinished, sendFundsOnFinished])
 
         const handleViewInExplorer = useCallback(() => {
             pushWebView({
