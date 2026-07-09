@@ -28,3 +28,4 @@ export {
     setOnConfirmedHandler,
     type OnConfirmedHandler,
 } from './onConfirmedRegistry'
+export { synthesizeQuantumTxid } from './synthesizeQuantumSubmission'
