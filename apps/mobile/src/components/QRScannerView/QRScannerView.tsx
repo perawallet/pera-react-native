@@ -13,11 +13,12 @@
 import { useStyles } from './styles'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
 import { Modal } from 'react-native'
-import { Suspense, createRef, lazy } from 'react'
+import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
+import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
-import { PWButton, PWText, PWTouchableIcon } from '@components/core'
+import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { useQRScannerView } from './useQRScannerView'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -40,11 +41,51 @@ export const scannerNotifier = createRef<Nullable<NotifierRoot>>()
 // MLKit at import time — MLKit is excluded from the iOS simulator build (no
 // arm64-simulator slice), and there is no camera device on a simulator, so this
 // module is never imported there. The `.then` keeps named exports (repo convention).
-const QRCameraScanner = lazy(() =>
-    import('./QRCameraScanner').then(module => ({
-        default: module.QRCameraScanner,
-    })),
-)
+//
+// Minted per instance instead of module-level: `lazy` caches a rejected import
+// forever, so one failed chunk fetch / MLKit init would otherwise re-throw on
+// every scanner open until app restart (PERA-4465). Retry mints a fresh one.
+const createQRCameraScanner = () =>
+    lazy(() =>
+        import('./QRCameraScanner').then(module => ({
+            default: module.QRCameraScanner,
+        })),
+    )
+
+type ScannerErrorFallbackProps = {
+    onRetry: () => void
+    onClose: () => void
+}
+
+const ScannerErrorFallback = ({
+    onRetry,
+    onClose,
+}: ScannerErrorFallbackProps) => {
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const { t } = useLanguage()
+    return (
+        <EmptyView
+            style={styles.emptyView}
+            title={t('camera.scanner_load_failed.title')}
+            body={t('camera.scanner_load_failed.body')}
+            button={
+                <PWView style={styles.errorActions}>
+                    <PWButton
+                        variant='primary'
+                        title={t('common.retry.label')}
+                        onPress={onRetry}
+                    />
+                    <PWButton
+                        variant='secondary'
+                        title={t('common.close.label')}
+                        onPress={onClose}
+                    />
+                </PWView>
+            }
+        />
+    )
+}
 
 export type QRScannerViewProps = {
     title?: string
@@ -59,6 +100,16 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
+
+    const [QRCameraScanner, setQRCameraScanner] = useState(() =>
+        createQRCameraScanner(),
+    )
+    const handleScannerRetry = useCallback((reset: () => void) => {
+        // Order matters: swap in a fresh lazy component first so clearing the
+        // boundary re-renders against a clean import, not the cached rejection.
+        setQRCameraScanner(() => createQRCameraScanner())
+        reset()
+    }, [])
 
     const {
         device,
@@ -100,14 +151,29 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                             }
                         />
                     ) : (
-                        // Order matters for paint stacking: none of these carry
-                        // an explicit `zIndex`, so they layer purely by document
-                        // order (camera at the back, title/close on top). This
-                        // deliberately leaves the toast — rendered last by
-                        // `NotifierWrapper` — as the top-most layer. An explicit
-                        // `zIndex` on any of these would jump it above the toast,
-                        // hiding the WalletConnect error behind the overlay.
-                        <>
+                        // Catches a failed QRCameraScanner chunk load (Metro
+                        // blip in dev, MLKit init in release), which would
+                        // otherwise escape to the app root as a crash. The
+                        // fallback mirrors the no-camera empty state, with
+                        // Retry re-attempting the import (PERA-4465).
+                        <BaseErrorBoundary
+                            t={t}
+                            fallback={(_error, reset) => (
+                                <ScannerErrorFallback
+                                    onRetry={() => handleScannerRetry(reset)}
+                                    onClose={props.onClose}
+                                />
+                            )}
+                        >
+                            {/* Order matters for paint stacking: none of these
+                                carry an explicit `zIndex`, so they layer purely
+                                by document order (camera at the back,
+                                title/close on top). This deliberately leaves
+                                the toast — rendered last by `NotifierWrapper` —
+                                as the top-most layer. An explicit `zIndex` on
+                                any of these would jump it above the toast,
+                                hiding the WalletConnect error behind the
+                                overlay. */}
                             <Suspense fallback={null}>
                                 <QRCameraScanner
                                     device={device}
@@ -130,7 +196,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                             >
                                 {props.title ?? t('camera.find_qr.title')}
                             </PWText>
-                        </>
+                        </BaseErrorBoundary>
                     )}
                 </NotifierWrapper>
             ) : null}
