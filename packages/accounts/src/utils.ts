@@ -356,19 +356,43 @@ export const isEligibleRekeyTarget = (
 }
 
 /**
- * True iff rekeying `source` to `target` removes quantum protection: the
- * source is a quantum account, but the target's effective signing authority
- * is not quantum (Ed25519 — standard/ledger/multisig). Not a downgrade when
- * the target's effective auth is also quantum, nor when the source is not a
- * quantum account.
+ * True when `account`'s effective signing authority is a quantum key — i.e.
+ * following a single rekey hop lands on a quantum account. A broken auth chain
+ * (the auth account is not held locally, so {@link resolveAuthAccount} throws)
+ * is treated as non-quantum: we cannot assert protection we cannot resolve.
+ */
+const hasQuantumAuthority = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    try {
+        return isQuantumAccount(resolveAuthAccount(account, accounts))
+    } catch {
+        return false
+    }
+}
+
+/**
+ * True iff rekeying `source` to `target` removes quantum protection: `source`'s
+ * effective signing authority is quantum, but `target`'s is not (Ed25519 —
+ * standard / ledger / multisig).
+ *
+ * Both sides are compared by *effective* authority (resolved through one rekey
+ * hop), not raw account type, because that is where the protection actually
+ * lives:
+ * - An Ed25519 account rekeyed to a quantum auth (the rekey-in migration) is
+ *   quantum-protected and IS downgraded when rekeyed back to Ed25519, even
+ *   though its own `type` is still `algo25`.
+ * - A quantum-typed account already rekeyed away to Ed25519 has no quantum
+ *   protection left, so rekeying it further is NOT a downgrade.
  */
 export const isQuantumDowngrade = (
     source: WalletAccount,
     target: WalletAccount,
     accounts: WalletAccount[],
 ): boolean => {
-    if (!isQuantumAccount(source)) return false
-    return !isQuantumAccount(resolveAuthAccount(target, accounts))
+    if (!hasQuantumAuthority(source, accounts)) return false
+    return !hasQuantumAuthority(target, accounts)
 }
 
 /**
