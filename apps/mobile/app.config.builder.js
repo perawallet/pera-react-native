@@ -430,8 +430,6 @@ function buildAppConfig(env) {
       // the autofill plugin. Remove once the fixes land upstream.
       './plugins/withPasskeyAutofillFixes',
 
-      './plugins/withAgeGate',
-
       // Restore the production universal-link (applinks) domains that the
       // passkey-autofill plugin drops from associated-domains during prebuild.
       // MUST run after that plugin. Production only — staging/dev keep the
