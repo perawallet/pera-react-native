@@ -54,6 +54,7 @@ import { LoadingView } from '@components/LoadingView'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
+import { toLoadableUrl } from './toLoadableUrl'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebViewStore, type WebViewFavorite } from '../../hooks'
@@ -122,6 +123,12 @@ export const PWWebView = (props: PWWebViewProps) => {
         webview,
         enablePeraConnect ? contextFingerprints : undefined,
     )
+
+    // Normalize before loading: a scheme-less url (e.g. a bare host typed into
+    // the Discover URL bar) is otherwise resolved by WKWebView as a bundle-
+    // relative path and never loads. Trust/origin checks below still run on the
+    // live navigation url, so this only affects the initial load target.
+    const loadableUrl = toLoadableUrl(url)
 
     // Re-evaluated on every navigation event below — the bridge must downgrade
     // to untrusted as soon as the WebView leaves the trusted base origin
@@ -292,7 +299,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 ref={webview}
                 {...rest}
                 source={{
-                    uri: url,
+                    uri: loadableUrl,
                 }}
                 style={styles.webview}
                 renderLoading={() => (
@@ -360,7 +367,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         webview,
         styles.absoluteFill,
         t,
-        url,
+        loadableUrl,
     ])
 
     return (
@@ -384,7 +391,7 @@ export const PWWebView = (props: PWWebViewProps) => {
             {showControls && showFooterBar && (
                 <WebViewFooterBar
                     webview={webview}
-                    homeUrl={url}
+                    homeUrl={loadableUrl}
                     navigationState={navigationState}
                     favorite={favorite}
                     bottomInset={footerBottomInset}
