@@ -24,6 +24,7 @@ import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
 import { synthesizeQuantumTxid } from './synthesizeQuantumSubmission'
+import { containsQuantumSigner } from './containsQuantumSigner'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
@@ -154,12 +155,17 @@ export const submitAndAutoRefresh = async (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
     signedTxns: PeraSignedTransaction[],
-    options?: { isQuantumMock?: boolean },
 ): Promise<string[]> => {
     const network = useNetworkStore.getState().network
-    const walletAddresses = useAccountsStore
-        .getState()
-        .accounts.map(a => a.address)
+    const accounts = useAccountsStore.getState().accounts
+    const walletAddresses = accounts.map(a => a.address)
+
+    // MOCK(quantum): a group authorized by any quantum signer cannot broadcast
+    // (no node accepts Falcon yet) — route it to synthetic submission.
+    const isQuantumMock = containsQuantumSigner(
+        signedTxns.map(s => s.txn),
+        accounts,
+    )
 
     const { txIds } = await submitAndAutoRefreshCore({
         algokit,
@@ -181,7 +187,7 @@ export const submitAndAutoRefresh = async (
             return handler?.(addresses, networkAtSubmission)
         },
         signedTxns,
-        isQuantumMock: options?.isQuantumMock ?? false,
+        isQuantumMock,
     })
 
     return txIds

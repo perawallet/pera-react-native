@@ -20,7 +20,6 @@ import type {
 } from '../types'
 import { NetworkChangedError, TransportError } from '../errors'
 import {
-    containsQuantumSigner,
     submitAndAutoRefresh,
     type AlgokitClientInterface,
     type EncodeSignedTransactionsFn,
@@ -69,17 +68,12 @@ export const createAlgodTransport = (
 
             const { signed } = result.signedData
 
-            // MOCK(quantum): route groups containing a quantum signer to synthetic
-            // submission — no node can broadcast a Falcon signature yet.
-            const isQuantumMock = containsQuantumSigner(result.signers)
-
             let txIds: string[]
             try {
                 txIds = await submitAndAutoRefresh(
                     algokit,
                     encodeSignedTransactions,
                     signed,
-                    { isQuantumMock },
                 )
             } catch (error) {
                 const err = toError(error)

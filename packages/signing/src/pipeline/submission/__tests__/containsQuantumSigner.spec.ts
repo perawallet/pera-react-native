@@ -11,24 +11,96 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import {
+    AccountTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { containsQuantumSigner } from '../containsQuantumSigner'
-import type { SignerInfo } from '../../types'
+
+const addr = (s: string) => ({ toString: () => s })
+
+const makeTxn = (sender: string): PeraTransaction =>
+    ({ sender: addr(sender) }) as unknown as PeraTransaction
+
+const algo25 = (
+    address: string,
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount =>
+    ({
+        id: address,
+        address,
+        type: AccountTypes.algo25,
+        keyPairId: 'kp',
+        ...overrides,
+    }) as WalletAccount
+
+const quantum = (
+    address: string,
+    overrides: Partial<WalletAccount> = {},
+): WalletAccount =>
+    ({
+        id: address,
+        address,
+        type: AccountTypes.quantum,
+        keyPairId: 'kp-quantum',
+        ...overrides,
+    }) as WalletAccount
 
 describe('containsQuantumSigner', () => {
-    it('returns true when any signer is quantum', () => {
-        const signers: SignerInfo[] = [
-            { address: 'A', accountType: 'algo25' },
-            { address: 'B', accountType: 'quantum' },
+    it('returns true when the sender is a quantum account (not rekeyed)', () => {
+        const accounts = [quantum('QUANTUM_ADDR')]
+
+        expect(containsQuantumSigner([makeTxn('QUANTUM_ADDR')], accounts)).toBe(
+            true,
+        )
+    })
+
+    it('returns true when the sender is rekeyed to a quantum account held in the store', () => {
+        const accounts = [
+            algo25('ALGO25_ADDR', { rekeyAddress: 'QUANTUM_ADDR' }),
+            quantum('QUANTUM_ADDR'),
         ]
-        expect(containsQuantumSigner(signers)).toBe(true)
+
+        expect(containsQuantumSigner([makeTxn('ALGO25_ADDR')], accounts)).toBe(
+            true,
+        )
     })
 
-    it('returns false when no signer is quantum', () => {
-        const signers: SignerInfo[] = [{ address: 'A', accountType: 'algo25' }]
-        expect(containsQuantumSigner(signers)).toBe(false)
+    it('returns false when the sender is a plain algo25 account (no rekey)', () => {
+        const accounts = [algo25('ALGO25_ADDR')]
+
+        expect(containsQuantumSigner([makeTxn('ALGO25_ADDR')], accounts)).toBe(
+            false,
+        )
     })
 
-    it('returns false for signers with no accountType', () => {
-        expect(containsQuantumSigner([{ address: 'A' }])).toBe(false)
+    it('returns false when the rekey target is not held in the store', () => {
+        const accounts = [
+            algo25('ALGO25_ADDR', { rekeyAddress: 'MISSING_QUANTUM_ADDR' }),
+        ]
+
+        expect(containsQuantumSigner([makeTxn('ALGO25_ADDR')], accounts)).toBe(
+            false,
+        )
+    })
+
+    it('returns false when the sender is not held in the wallet at all', () => {
+        const accounts: WalletAccount[] = []
+
+        expect(
+            containsQuantumSigner([makeTxn('EXTERNAL_ADDR')], accounts),
+        ).toBe(false)
+    })
+
+    it('returns true for a mixed group with one quantum sender and one algo25 sender', () => {
+        const accounts = [quantum('QUANTUM_ADDR'), algo25('ALGO25_ADDR')]
+
+        expect(
+            containsQuantumSigner(
+                [makeTxn('ALGO25_ADDR'), makeTxn('QUANTUM_ADDR')],
+                accounts,
+            ),
+        ).toBe(true)
     })
 })

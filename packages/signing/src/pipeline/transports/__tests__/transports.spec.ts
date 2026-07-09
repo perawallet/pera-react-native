@@ -12,7 +12,6 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { createAlgodTransport } from '../createAlgodTransport'
 import { createCallbackTransport } from '../createCallbackTransport'
 import { createWalletConnectTransport } from '../createWalletConnectTransport'
@@ -20,7 +19,6 @@ import { createMultisigCosignTransport } from '../createMultisigCosignTransport'
 import { createMultisigProposeTransport } from '../createMultisigProposeTransport'
 import { walletConnectHandoffs } from '../../walletConnectHandoffs'
 import { NetworkChangedError, TransportError } from '../../errors'
-import { submitAndAutoRefresh } from '../../submission'
 import type {
     SigningResult,
     SourceMetadata,
@@ -34,19 +32,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetworkStore: { getState: () => getNetworkMock() },
     encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
 }))
-
-// `submitAndAutoRefresh` is wrapped in a spy that defaults to the real
-// implementation, so existing tests keep exercising real submission
-// behavior (algod calls, txId fallback, etc.). `containsQuantumSigner`
-// is left untouched — it is a pure predicate and is exercised for real
-// by the quantum-detection tests below.
-vi.mock('../../submission', async importOriginal => {
-    const actual = await importOriginal<typeof import('../../submission')>()
-    return {
-        ...actual,
-        submitAndAutoRefresh: vi.fn(actual.submitAndAutoRefresh),
-    }
-})
 
 const transactionResult: SigningResult = {
     signedData: {
@@ -287,56 +272,6 @@ describe('createAlgodTransport', () => {
             TransportError,
         )
         expect(approve).not.toHaveBeenCalled()
-    })
-
-    test('MOCK(quantum): flags the submission when a signer is quantum', async () => {
-        vi.mocked(submitAndAutoRefresh).mockClear()
-        const algokit = makeAlgokit('TX1')
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            'testnet',
-        )
-        const signed = [{ txn: {} as never, blob: new Uint8Array() } as never]
-        const result: SigningResult = {
-            signedData: { type: 'transactions', signed },
-            signers: [
-                { address: 'QUANTUM_ADDR', accountType: AccountTypes.quantum },
-            ],
-        }
-
-        await transport.send(result, { type: 'local' })
-
-        expect(submitAndAutoRefresh).toHaveBeenCalledWith(
-            algokit,
-            encodeSignedTransactions,
-            signed,
-            { isQuantumMock: true },
-        )
-    })
-
-    test('does not flag the submission for a non-quantum group', async () => {
-        vi.mocked(submitAndAutoRefresh).mockClear()
-        const algokit = makeAlgokit('TX1')
-        const transport = createAlgodTransport(
-            algokit,
-            encodeSignedTransactions,
-            'testnet',
-        )
-        const signed = [{ txn: {} as never, blob: new Uint8Array() } as never]
-        const result: SigningResult = {
-            signedData: { type: 'transactions', signed },
-            signers: [{ address: 'ADDR', accountType: AccountTypes.algo25 }],
-        }
-
-        await transport.send(result, { type: 'local' })
-
-        expect(submitAndAutoRefresh).toHaveBeenCalledWith(
-            algokit,
-            encodeSignedTransactions,
-            signed,
-            { isQuantumMock: false },
-        )
     })
 })
 

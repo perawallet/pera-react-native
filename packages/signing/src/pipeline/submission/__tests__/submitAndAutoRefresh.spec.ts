@@ -10,10 +10,31 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { submitAndAutoRefreshCore } from '../submitAndAutoRefresh'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    submitAndAutoRefresh,
+    submitAndAutoRefreshCore,
+} from '../submitAndAutoRefresh'
+import { setOnConfirmedHandler } from '../onConfirmedRegistry'
+import {
+    AccountTypes,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    useNetworkStore,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
+
+const { mockWaitForConfirmation } = vi.hoisted(() => ({
+    mockWaitForConfirmation: vi.fn(),
+}))
+
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
+    waitForConfirmation: mockWaitForConfirmation,
+}))
 
 const WALLET = 'WALLET_A'
 const EXTERNAL = 'EXTERNAL'
@@ -254,5 +275,99 @@ describe('submitAndAutoRefreshCore', () => {
 
         expect(waitForConfirmation).not.toHaveBeenCalled()
         expect(onConfirmed).not.toHaveBeenCalled()
+    })
+})
+
+describe('submitAndAutoRefresh (public, self-detection)', () => {
+    const PUBLIC_WALLET = 'PUBLIC_WALLET'
+    const PUBLIC_EXTERNAL = 'PUBLIC_EXTERNAL'
+
+    const makeAlgokit = (txid: Optional<string | string[]> = 'TX1') => ({
+        client: {
+            algod: {
+                sendRawTransaction: vi.fn().mockReturnValue({
+                    do: vi.fn().mockResolvedValue({ txid }),
+                }),
+            },
+        },
+    })
+    const encodeSignedTransactions = vi
+        .fn()
+        .mockReturnValue([new Uint8Array([1])])
+
+    const quantumAccount = (address: string): WalletAccount =>
+        ({
+            id: address,
+            address,
+            type: AccountTypes.quantum,
+            keyPairId: 'kp-quantum',
+        }) as WalletAccount
+
+    const algo25Account = (address: string): WalletAccount =>
+        ({
+            id: address,
+            address,
+            type: AccountTypes.algo25,
+            keyPairId: 'kp',
+        }) as WalletAccount
+
+    beforeEach(() => {
+        useAccountsStore.getState().resetState()
+        useNetworkStore.getState().resetState()
+        mockWaitForConfirmation.mockReset().mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+        setOnConfirmedHandler(null)
+    })
+
+    test('MOCK(quantum): self-detects a quantum sender with no flag passed — synthetic txid, algod not called, waitForConfirmation skipped, onConfirmed still fires', async () => {
+        useAccountsStore.getState().setAccounts([quantumAccount(PUBLIC_WALLET)])
+        const onConfirmed = vi.fn()
+        setOnConfirmedHandler(onConfirmed)
+
+        const algokit = makeAlgokit('TX1')
+
+        const txIds = await submitAndAutoRefresh(
+            algokit,
+            encodeSignedTransactions,
+            [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
+        )
+
+        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
+        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
+        expect(mockWaitForConfirmation).not.toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith(
+                [PUBLIC_WALLET],
+                expect.anything(),
+            ),
+        )
+    })
+
+    test('uses the real submission path for a non-quantum (algo25) sender — regression guard', async () => {
+        useAccountsStore.getState().setAccounts([algo25Account(PUBLIC_WALLET)])
+        const onConfirmed = vi.fn()
+        setOnConfirmedHandler(onConfirmed)
+
+        const algokit = makeAlgokit('REALTXID')
+
+        const txIds = await submitAndAutoRefresh(
+            algokit,
+            encodeSignedTransactions,
+            [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
+        )
+
+        expect(txIds).toEqual(['REALTXID'])
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(mockWaitForConfirmation).toHaveBeenCalled(),
+        )
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith(
+                [PUBLIC_WALLET],
+                expect.anything(),
+            ),
+        )
     })
 })
