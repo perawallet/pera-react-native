@@ -439,6 +439,10 @@
             "title": "No camera device found or missing permissions.",
             "body": "Please double check in your system settings that you have enabled camera permissions for the app."
         },
+        "scanner_load_failed": {
+            "title": "Couldn't load the QR scanner",
+            "body": "Something went wrong while opening the camera. Please try again."
+        },
         "find_qr": {
             "title": "Find a QR Code to Scan"
         }

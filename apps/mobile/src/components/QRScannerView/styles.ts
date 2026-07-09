@@ -62,5 +62,9 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             paddingHorizontal: theme.spacing.xl,
             backgroundColor: theme.colors.background,
         },
+        errorActions: {
+            alignSelf: 'stretch',
+            gap: theme.spacing.md,
+        },
     }
 })
