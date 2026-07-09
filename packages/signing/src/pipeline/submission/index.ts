@@ -16,6 +16,7 @@ export type {
     EncodeSignedTransactionsFn,
 } from './types'
 export { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
+export { containsQuantumSigner } from './containsQuantumSigner'
 export { submitRawSignedTransactionGroup } from './submitRawSignedTransactionGroup'
 export { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 export {
