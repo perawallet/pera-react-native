@@ -39,7 +39,7 @@ import { Decimal } from 'decimal.js'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
-import { server } from '@test-utils/msw-server'
+import { http, HttpResponse, server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { NestedNavigateRedirect } from '@test-utils/nestedNavigateRedirect'
@@ -270,6 +270,14 @@ describe('rekey quantum account (PQ-015)', () => {
             await enableQuantumFlag()
             const { quantumSource, target } = await seedRekeyOutAccounts()
 
+            // Registered before driving to confirm so we can assert the
+            // downgrade warning sheet blocks the flow before any broadcast
+            // is attempted.
+            const submitSpy = vi.fn(() =>
+                HttpResponse.json({ txId: 'REKEY_MOCK' }, { status: 200 }),
+            )
+            server.use(http.post('*/v2/transactions', submitSpy))
+
             renderWithNavigation(
                 RekeyToStandardConfirmScreen,
                 'RekeyToStandardConfirm',
@@ -300,6 +308,7 @@ describe('rekey quantum account (PQ-015)', () => {
                     screen.getByTestId('quantum-downgrade-warning-sheet'),
                 ).toBeTruthy()
             })
+            expect(submitSpy).not.toHaveBeenCalled()
 
             // The suite stops here on purpose (see the file-level comment):
             // confirming past the sheet would drive real signing, which

@@ -33,6 +33,7 @@ import {
     AccountTypes,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
@@ -50,7 +51,10 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 
 describe('watch quantum address (PQ-015)', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
+    afterEach(() => {
+        server.resetHandlers()
+        useRemoteConfigStore.getState().resetState()
+    })
     afterAll(() => server.close())
 
     beforeEach(() => {

@@ -43,6 +43,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
@@ -161,7 +162,10 @@ describe('backup quantum account (PQ-015)', () => {
         server.listen({ onUnhandledRequest: 'warn' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
+    afterEach(() => {
+        server.resetHandlers()
+        useRemoteConfigStore.getState().resetState()
+    })
     afterAll(async () => {
         server.close()
         await teardownTestDatabase()
