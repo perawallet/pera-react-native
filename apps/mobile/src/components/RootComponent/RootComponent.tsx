@@ -15,6 +15,7 @@ import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { MainRoutes } from '@routes/index'
+import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -47,6 +48,15 @@ import { config } from '@perawallet/wallet-core-config'
 
 export type RootComponentProps = {
     fcmToken: Nullable<string>
+}
+
+// These overlays render outside the main content's error boundary and host
+// signing/multisig/swap (money) flows, so an unhandled render-throw here
+// would unwind the whole app. Contain it: log the crash and render nothing
+// while the fallback schedules a boundary reset (see OverlayErrorFallback)
+// so the overlays come back instead of staying dead until app restart.
+const handleOverlayError = (error: string | Error) => {
+    logger.critical(error, { source: 'RootOverlaysErrorBoundary' })
 }
 
 const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
@@ -190,9 +200,14 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 <WalletConnectProvider>
                     <RootContentContainer fcmToken={fcmToken} />
                 </WalletConnectProvider>
-                <SigningOverlays />
-                <MultisigOverlays />
-                <SwapOverlays />
+                <ErrorBoundary
+                    onError={handleOverlayError}
+                    FallbackComponent={OverlayErrorFallback}
+                >
+                    <SigningOverlays />
+                    <MultisigOverlays />
+                    <SwapOverlays />
+                </ErrorBoundary>
             </AutoLockGuard>
         </BottomSheetModalProvider>
     )
