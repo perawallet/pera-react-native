@@ -226,6 +226,42 @@ describe('PWBottomSheet', () => {
         expect(capturedProps.enablePanDownToClose).toBe(false)
     })
 
+    it('disables content panning on non-pan-closable sheets (PERA-4437)', () => {
+        render(
+            <PWBottomSheet isVisible={true}>
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.enableContentPanningGesture).toBe(false)
+    })
+
+    it('keeps content panning when the sheet is pan-closable', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                enablePanDownToClose={true}
+            >
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.enableContentPanningGesture).toBe(true)
+    })
+
+    it('lets an explicit enableContentPanningGesture override the derived default', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                enableContentPanningGesture={true}
+            >
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.enableContentPanningGesture).toBe(true)
+    })
+
     it.each(['modal', 'full'] as PWBottomSheetSize[])(
         'hides the drag-handle notch on full-screen size=%s even with pan-down',
         size => {
