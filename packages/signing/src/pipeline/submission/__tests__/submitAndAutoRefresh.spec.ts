@@ -178,6 +178,53 @@ describe('submitAndAutoRefreshCore', () => {
         expect(onConfirmed).not.toHaveBeenCalled()
     })
 
+    test('MOCK(quantum): uses a synthetic txid and does not call algod when isQuantumMock', async () => {
+        const algokit = makeAlgokit('TX1')
+        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
+        const onConfirmed = vi.fn()
+
+        const { txIds } = await submitAndAutoRefreshCore({
+            algokit,
+            encodeSignedTransactions: () => [new Uint8Array([1, 2, 3])],
+            waitForConfirmation,
+            walletAddresses: [WALLET],
+            network: 'mainnet',
+            onConfirmed,
+            signedTxns: [makeSigned(WALLET, EXTERNAL)],
+            isQuantumMock: true,
+        })
+
+        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
+        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
+        expect(waitForConfirmation).not.toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet'),
+        )
+    })
+
+    test('uses the real path and waits for confirmation when not a quantum mock', async () => {
+        const algokit = makeAlgokit('REALTXID')
+        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
+        const onConfirmed = vi.fn()
+
+        const { txIds } = await submitAndAutoRefreshCore({
+            algokit,
+            encodeSignedTransactions,
+            waitForConfirmation,
+            walletAddresses: [WALLET],
+            network: 'mainnet',
+            onConfirmed,
+            signedTxns: [makeSigned(WALLET, EXTERNAL)],
+            // isQuantumMock omitted
+        })
+
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
+        expect(txIds).toEqual(['REALTXID'])
+        await vi.waitFor(() =>
+            expect(waitForConfirmation).toHaveBeenCalledWith('REALTXID'),
+        )
+    })
+
     test('propagates submission errors to the caller', async () => {
         const algokit = {
             client: {
