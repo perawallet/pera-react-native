@@ -18,7 +18,11 @@ import type {
     TransactionBalanceImpact,
 } from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isoDateToUnixSeconds,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 
 /**
  * Serializes balance impacts to JSON for persistence. The signed `amount`
@@ -201,20 +205,6 @@ export async function upsertTransactions({
     }
 }
 
-/** Seconds in a calendar day, used to make `beforeTime` day-inclusive. */
-const SECONDS_PER_DAY = 86_400
-
-/**
- * Converts an `YYYY-MM-DD` date string to the UTC start-of-day in unix
- * seconds, matching how `roundTime` is stored. Returns `undefined` for
- * missing or unparseable input so the caller can skip the condition.
- */
-function isoDateToUnixSeconds(isoDate?: string): number | undefined {
-    if (isoDate === undefined) return undefined
-    const ms = Date.parse(`${isoDate}T00:00:00.000Z`)
-    return Number.isNaN(ms) ? undefined : Math.floor(ms / 1000)
-}
-
 type GetTransactionHistoryParams = {
     db?: Database
     accountAddress: string
@@ -256,14 +246,14 @@ export async function getTransactionHistory({
     }
 
     const afterRoundTime = isoDateToUnixSeconds(afterTime)
-    if (afterRoundTime !== undefined) {
+    if (Number.isFinite(afterRoundTime) && afterRoundTime >= 0) {
         conditions.push(
             gte(AccountTransactionsSchema.roundTime, afterRoundTime),
         )
     }
 
     const beforeStartOfDay = isoDateToUnixSeconds(beforeTime)
-    if (beforeStartOfDay !== undefined) {
+    if (Number.isFinite(beforeStartOfDay) && beforeStartOfDay >= 0) {
         // `beforeTime` names a day; include the whole day by cutting off at the
         // start of the next day (day-grain, matching the Pera API semantics).
         conditions.push(

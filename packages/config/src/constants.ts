@@ -15,3 +15,6 @@ export const THIRTY_SECONDS = 30 * ONE_SECOND
 export const ONE_MINUTE = 60 * 1000
 export const ONE_HOUR = 60 * 60 * 1000
 export const ONE_DAY = 24 * 60 * 60 * 1000
+
+/** Seconds (not milliseconds) in a calendar day — for unix-seconds math. */
+export const SECONDS_PER_DAY = 24 * 60 * 60

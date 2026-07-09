@@ -55,6 +55,17 @@ export const parseRoundTime = (unixTimestamp: number): Date => {
 }
 
 /**
+ * Converts a `YYYY-MM-DD` date string to the UTC start-of-day in Unix seconds
+ * (matching how transaction `roundTime` is stored). Returns `NaN` for missing
+ * or unparseable input, so callers guard with `Number.isFinite(...)`.
+ */
+export const isoDateToUnixSeconds = (isoDate?: string): number => {
+    if (isoDate === undefined) return NaN
+    const ms = Date.parse(`${isoDate}T00:00:00.000Z`)
+    return Number.isNaN(ms) ? NaN : Math.floor(ms / 1000)
+}
+
+/**
  * Formats an ISO date string (YYYY-MM-DD) into a human-readable format (e.g., "Nov 6, 2025").
  */
 export const formatDisplayDate = (isoDate: string): string => {
