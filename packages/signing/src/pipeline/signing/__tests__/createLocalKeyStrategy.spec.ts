@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
     hasSigningKeys: vi.fn(),
     isAlgo25Account: vi.fn(),
     isHDWalletAccount: vi.fn(),
+    isQuantumAccount: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -31,6 +32,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         hasSigningKeys: mocks.hasSigningKeys,
         isAlgo25Account: mocks.isAlgo25Account,
         isHDWalletAccount: mocks.isHDWalletAccount,
+        isQuantumAccount: mocks.isQuantumAccount,
     }
 })
 
@@ -38,6 +40,12 @@ const algo25Account = {
     type: 'algo25',
     address: 'ADDR',
     keyPairId: 'key-1',
+} as unknown as WalletAccount
+
+const quantumAccount = {
+    type: 'quantum',
+    address: 'ADDR',
+    keyPairId: 'key-q',
 } as unknown as WalletAccount
 
 const unsupportedAccount = {
@@ -115,7 +123,9 @@ describe('createLocalKeyStrategy', () => {
             .mockReset()
             .mockImplementation(
                 (account: WalletAccount) =>
-                    account.type === 'algo25' || account.type === 'hd-wallet',
+                    account.type === 'algo25' ||
+                    account.type === 'hd-wallet' ||
+                    account.type === 'quantum',
             )
         mocks.isAlgo25Account
             .mockReset()
@@ -126,6 +136,11 @@ describe('createLocalKeyStrategy', () => {
             .mockReset()
             .mockImplementation(
                 (account: WalletAccount) => account.type === 'hd-wallet',
+            )
+        mocks.isQuantumAccount
+            .mockReset()
+            .mockImplementation(
+                (account: WalletAccount) => account.type === 'quantum',
             )
     })
 
@@ -186,6 +201,27 @@ describe('createLocalKeyStrategy', () => {
                     : undefined,
                 algo25Account,
             )
+        })
+
+        test('signs quantum accounts through the injected signTransactions (rekey support)', async () => {
+            // Quantum accounts hold a keyPairId and are signed at the KMS layer
+            // via the Falcon scheme branch. The local strategy must route them
+            // through the same injected signTransactions path (not reject them),
+            // otherwise rekey-out / undo-rekey for quantum accounts is blocked.
+            const group = makeTransactionGroup()
+
+            const result = await makeStrategy().sign(group, quantumAccount)
+
+            expect(signTransactions).toHaveBeenCalledWith(
+                group.data.type === 'transactions'
+                    ? group.data.transactions
+                    : undefined,
+                group.data.type === 'transactions'
+                    ? group.data.indicesToSign
+                    : undefined,
+                quantumAccount,
+            )
+            expect(result.signedData.type).toBe('transactions')
         })
 
         test('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {
@@ -338,6 +374,7 @@ describe('createLocalKeyStrategy', () => {
             mocks.hasSigningKeys.mockReturnValue(true)
             mocks.isAlgo25Account.mockReturnValue(false)
             mocks.isHDWalletAccount.mockReturnValue(false)
+            mocks.isQuantumAccount.mockReturnValue(false)
 
             await expect(
                 makeStrategy().sign(makeTransactionGroup(), weirdAccount),

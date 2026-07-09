@@ -356,6 +356,46 @@ export const isEligibleRekeyTarget = (
 }
 
 /**
+ * True when `account`'s effective signing authority is a quantum key — i.e.
+ * following a single rekey hop lands on a quantum account. A broken auth chain
+ * (the auth account is not held locally, so {@link resolveAuthAccount} throws)
+ * is treated as non-quantum: we cannot assert protection we cannot resolve.
+ */
+const hasQuantumAuthority = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    try {
+        return isQuantumAccount(resolveAuthAccount(account, accounts))
+    } catch {
+        return false
+    }
+}
+
+/**
+ * True iff rekeying `source` to `target` removes quantum protection: `source`'s
+ * effective signing authority is quantum, but `target`'s is not (Ed25519 —
+ * standard / ledger / multisig).
+ *
+ * Both sides are compared by *effective* authority (resolved through one rekey
+ * hop), not raw account type, because that is where the protection actually
+ * lives:
+ * - An Ed25519 account rekeyed to a quantum auth (the rekey-in migration) is
+ *   quantum-protected and IS downgraded when rekeyed back to Ed25519, even
+ *   though its own `type` is still `algo25`.
+ * - A quantum-typed account already rekeyed away to Ed25519 has no quantum
+ *   protection left, so rekeying it further is NOT a downgrade.
+ */
+export const isQuantumDowngrade = (
+    source: WalletAccount,
+    target: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    if (!hasQuantumAuthority(source, accounts)) return false
+    return !hasQuantumAuthority(target, accounts)
+}
+
+/**
  * True when `target` may be chosen as the new auth address for a "rekey to
  * Ledger account" flow originating from `sourceAddress`. The target must be
  * a hardware wallet account already imported in the wallet, not the source
