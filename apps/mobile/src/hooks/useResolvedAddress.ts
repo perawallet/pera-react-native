@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    LONG_ADDRESS_LENGTH,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useMemo } from 'react'
-
-const LONG_ADDRESS_LENGTH = 20
 
 export type AddressFormat = 'short' | 'long' | 'full'
 
