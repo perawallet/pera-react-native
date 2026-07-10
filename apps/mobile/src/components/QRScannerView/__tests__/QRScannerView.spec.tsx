@@ -11,10 +11,25 @@
  */
 
 import React from 'react'
-import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { fireEvent, render, screen } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useCameraDevice } from 'react-native-vision-camera'
 import { QRScannerView } from '../QRScannerView'
+
+// The camera module is lazily imported by QRScannerView; rejecting that import
+// exercises the error boundary + retry path (PERA-4465). The throw lives in an
+// export *getter* (not the factory) because the mock module is evaluated once
+// per file — the getter re-runs on every `import().then` access, so each lazy
+// instance independently sees the current `failImport` state.
+const scannerModule = vi.hoisted(() => ({ failImport: false }))
+vi.mock('../QRCameraScanner', () => ({
+    get QRCameraScanner() {
+        if (scannerModule.failImport) {
+            throw new Error('chunk load failed')
+        }
+        return () => 'mock-camera-scanner'
+    },
+}))
 
 vi.mock('react-native-vision-camera', () => ({
     useCameraDevice: vi.fn(() => ({ id: 'mock-device' })),
@@ -78,5 +93,59 @@ describe('QRScannerView', () => {
             />,
         )
         expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
+    })
+
+    describe('camera module load failure (PERA-4465)', () => {
+        beforeEach(() => {
+            vi.mocked(useCameraDevice).mockReturnValue({
+                id: 'mock-device',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- minimal device stub
+            } as any)
+            scannerModule.failImport = false
+        })
+
+        it('shows the failure fallback with a close action instead of crashing', async () => {
+            scannerModule.failImport = true
+            const onClose = vi.fn()
+
+            render(
+                <QRScannerView
+                    isVisible={true}
+                    animationType='none'
+                    onClose={onClose}
+                    onSuccess={vi.fn()}
+                />,
+            )
+
+            expect(
+                await screen.findByText('camera.scanner_load_failed.title'),
+            ).toBeTruthy()
+
+            fireEvent.click(screen.getByText('common.close.label'))
+            expect(onClose).toHaveBeenCalledTimes(1)
+        })
+
+        it('retry re-imports the scanner after a failed load', async () => {
+            scannerModule.failImport = true
+
+            render(
+                <QRScannerView
+                    isVisible={true}
+                    animationType='none'
+                    onClose={vi.fn()}
+                    onSuccess={vi.fn()}
+                />,
+            )
+            await screen.findByText('camera.scanner_load_failed.title')
+
+            // Let the import succeed now, as a dev-server/MLKit recovery would.
+            scannerModule.failImport = false
+            fireEvent.click(screen.getByText('common.retry.label'))
+
+            expect(await screen.findByText('mock-camera-scanner')).toBeTruthy()
+            expect(
+                screen.queryByText('camera.scanner_load_failed.title'),
+            ).toBeNull()
+        })
     })
 })

@@ -85,6 +85,9 @@ onlyBuiltDependencies:
   - sharp
   - simple-git-hooks
 
+patchedDependencies:
+  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.21": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.21.patch
+
 overrides:
   "@algorandfoundation/keystore": 1.0.0-canary.16
   "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4"

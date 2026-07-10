@@ -26,6 +26,7 @@ import {
     isEligibleRekeyTarget,
     isEligibleSharedRekeyTarget,
     isQuantumAccount,
+    isQuantumDowngrade,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -860,6 +861,85 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
                 'SRC',
             ),
         ).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - isQuantumDowngrade', () => {
+    test('quantum source to a plain Ed25519 target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = algo25({ address: 'A' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
+        expect(
+            isQuantumDowngrade(source, hd({ address: 'H' }), [
+                source,
+                hd({ address: 'H' }),
+            ]),
+        ).toBe(true)
+    })
+
+    test('quantum source to a quantum target is not a downgrade', () => {
+        const source = quantum({ address: 'F1' })
+        const target = quantum({ address: 'F2' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('Ed25519 source to a quantum target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = quantum({ address: 'F' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('Ed25519 source to an Ed25519 target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = hd({ address: 'H' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('quantum source to a target whose effective auth is quantum is not a downgrade', () => {
+        // Target is itself rekeyed to a quantum account, so its effective
+        // signing authority resolves to quantum via resolveAuthAccount.
+        const source = quantum({ address: 'F1' })
+        const quantumAuth = quantum({ address: 'FAUTH' })
+        const target = watch({ address: 'T', rekeyAddress: 'FAUTH' })
+        expect(
+            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
+        ).toBe(false)
+    })
+
+    test('quantum source to a hardware/ledger target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = ledger({ address: 'L' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
+    })
+
+    test('Ed25519 source rekeyed to a quantum auth (rekey-in), rekeying to an Ed25519 target, is a downgrade', () => {
+        // The flagship migration path: the account's own type stays algo25,
+        // but its effective signer is quantum — rekeying to Ed25519 strips it.
+        const quantumAuth = quantum({ address: 'FAUTH' })
+        const source = algo25({ address: 'A', rekeyAddress: 'FAUTH' })
+        const target = algo25({ address: 'B' })
+        expect(
+            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
+        ).toBe(true)
+    })
+
+    test('quantum-typed source already rekeyed to an Ed25519 auth is not a downgrade', () => {
+        // Its effective signer is already Ed25519 — there is no quantum
+        // protection left to remove, so the warning would be untrue.
+        const ed25519Auth = algo25({ address: 'EAUTH' })
+        const source = quantum({ address: 'F', rekeyAddress: 'EAUTH' })
+        const target = algo25({ address: 'B' })
+        expect(
+            isQuantumDowngrade(source, target, [source, target, ed25519Auth]),
+        ).toBe(false)
+    })
+
+    test('source whose auth is not held locally (broken chain) is not a downgrade', () => {
+        // resolveAuthAccount throws when the auth is unheld; we cannot assert
+        // quantum protection we cannot resolve.
+        const source = quantum({ address: 'F', rekeyAddress: 'MISSING' })
+        const target = algo25({ address: 'B' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
     })
 })
 
