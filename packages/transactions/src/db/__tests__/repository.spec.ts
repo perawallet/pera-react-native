@@ -325,6 +325,71 @@ describe('transaction repository', () => {
         expect(result.map(r => r.id)).toEqual(['TX2', 'TX1'])
     })
 
+    describe('date range filtering', () => {
+        // UTC start-of-day round times for consecutive days.
+        const JAN_01 = 1704067200 // 2024-01-01T00:00:00Z
+        const JAN_02 = 1704153600 // 2024-01-02T00:00:00Z
+        const JAN_03 = 1704240000 // 2024-01-03T00:00:00Z
+
+        beforeEach(async () => {
+            await upsertTransactions({
+                db,
+                items: [
+                    makeTx({ id: 'TX_JAN01', roundTime: JAN_01 + 100 }),
+                    makeTx({ id: 'TX_JAN02', roundTime: JAN_02 + 100 }),
+                    makeTx({ id: 'TX_JAN03', roundTime: JAN_03 + 100 }),
+                ],
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+            })
+        })
+
+        it('filters to transactions on/after afterTime', async () => {
+            const result = await getTransactionHistory({
+                db,
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+                afterTime: '2024-01-02',
+            })
+
+            expect(result.map(r => r.id)).toEqual(['TX_JAN03', 'TX_JAN02'])
+        })
+
+        it('filters to transactions on/before beforeTime (day-inclusive)', async () => {
+            const result = await getTransactionHistory({
+                db,
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+                beforeTime: '2024-01-02',
+            })
+
+            expect(result.map(r => r.id)).toEqual(['TX_JAN02', 'TX_JAN01'])
+        })
+
+        it('filters to a single day when afterTime and beforeTime match', async () => {
+            const result = await getTransactionHistory({
+                db,
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+                afterTime: '2024-01-02',
+                beforeTime: '2024-01-02',
+            })
+
+            expect(result.map(r => r.id)).toEqual(['TX_JAN02'])
+        })
+
+        it('ignores unparseable date strings', async () => {
+            const result = await getTransactionHistory({
+                db,
+                accountAddress: 'ACCT1',
+                network: 'mainnet',
+                afterTime: 'not-a-date',
+            })
+
+            expect(result).toHaveLength(3)
+        })
+    })
+
     it('returns the latest round time for an account', async () => {
         await upsertTransactions({
             db,
