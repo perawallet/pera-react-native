@@ -186,7 +186,11 @@ describe('createLocalKeyStrategy', () => {
             // The cosign-signature population path is verified in its own
             // test below.
             expect(result.signers).toEqual([
-                { address: 'ADDR', signatures: [null, null] },
+                {
+                    address: 'ADDR',
+                    accountType: 'algo25',
+                    signatures: [null, null],
+                },
             ])
             expect(result.originalIndices).toEqual([3, 4])
             // The strategy must plumb the resolved auth account through to
@@ -222,6 +226,18 @@ describe('createLocalKeyStrategy', () => {
                 quantumAccount,
             )
             expect(result.signedData.type).toBe('transactions')
+        })
+
+        test('tags the signer with the account type for transactions groups', async () => {
+            // PQ-014 Task 1: the submission boundary needs to detect quantum
+            // signers without parsing signature bytes, so SignerInfo carries
+            // the signing account's type.
+            const result = await makeStrategy().sign(
+                makeTransactionGroup(),
+                quantumAccount,
+            )
+
+            expect(result.signers[0]!.accountType).toBe('quantum')
         })
 
         test('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {

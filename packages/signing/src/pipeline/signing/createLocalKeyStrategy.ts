@@ -123,6 +123,7 @@ export const createLocalKeyStrategy = (
                         // them to the backend if needed
                         const signerInfo: SignerInfo = {
                             address: account.address,
+                            accountType: account.type,
                             signatures: signed.map(stx =>
                                 stx.sig ? encodeToBase64(stx.sig) : null,
                             ),
