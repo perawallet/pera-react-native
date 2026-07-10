@@ -367,11 +367,14 @@ const cases: Case[] = [
     ...newPair(
         'Add Contact',
         `add-contact/?address=${ADDRESS}&label=${LABEL_ENC}`,
-        { kind: 'navigate', screen: 'AddContact' },
+        { kind: 'navigate', screen: 'Contacts' },
         () => {
-            expect(mockNavigate).toHaveBeenCalledWith('AddContact', {
-                address: ADDRESS,
-                label: LABEL,
+            expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+                screen: 'AddContact',
+                params: {
+                    address: ADDRESS,
+                    label: LABEL,
+                },
             })
         },
     ),
@@ -380,11 +383,14 @@ const cases: Case[] = [
     ...newPair(
         'Edit Contact',
         `edit-contact/?address=${ADDRESS}&label=${LABEL_ENC}`,
-        { kind: 'navigate', screen: 'EditContact' },
+        { kind: 'navigate', screen: 'Contacts' },
         () => {
-            expect(mockNavigate).toHaveBeenCalledWith('EditContact', {
-                address: ADDRESS,
-                label: LABEL,
+            expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+                screen: 'EditContact',
+                params: {
+                    address: ADDRESS,
+                    label: LABEL,
+                },
             })
         },
     ),
