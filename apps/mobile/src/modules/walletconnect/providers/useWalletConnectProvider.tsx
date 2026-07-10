@@ -64,11 +64,11 @@ export const useWalletConnectProvider = () => {
         }
     }
 
-    const { initWalletConnect } = useWalletConnect(network)
+    const { connectSessions } = useWalletConnect(network)
 
     useEffect(() => {
-        initWalletConnect()
-    }, [initWalletConnect, network])
+        connectSessions()
+    }, [connectSessions])
 
     const shouldShowConnection =
         !!nextRequest && !successRequest && !connectionError
