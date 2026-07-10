@@ -177,17 +177,26 @@ export const useDeepLink = (): UseDeepLinkResult => {
         try {
             switch (parsedData.type) {
                 case DeeplinkType.ADD_CONTACT: {
-                    navigateToScreen(replaceCurrentScreen, 'AddContact', {
-                        address: parsedData.address,
-                        label: parsedData.label,
+                    // AddContact lives inside the nested Contacts stack, so it
+                    // must be targeted via its parent route — a bare
+                    // 'AddContact' on the root navigator is a silent no-op.
+                    navigateToScreen(replaceCurrentScreen, 'Contacts', {
+                        screen: 'AddContact',
+                        params: {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
                     })
                     break
                 }
 
                 case DeeplinkType.EDIT_CONTACT: {
-                    navigateToScreen(replaceCurrentScreen, 'EditContact', {
-                        address: parsedData.address,
-                        label: parsedData.label,
+                    navigateToScreen(replaceCurrentScreen, 'Contacts', {
+                        screen: 'EditContact',
+                        params: {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
                     })
                     break
                 }

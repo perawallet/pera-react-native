@@ -398,9 +398,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AddContact', {
-            address: 'addr1',
-            label: 'Label1',
+        expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+            screen: 'AddContact',
+            params: {
+                address: 'addr1',
+                label: 'Label1',
+            },
         })
     })
 
@@ -420,9 +423,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('EditContact', {
-            address: 'addr1',
-            label: 'Label1',
+        expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+            screen: 'EditContact',
+            params: {
+                address: 'addr1',
+                label: 'Label1',
+            },
         })
     })
 
@@ -443,10 +449,13 @@ describe('useDeepLink', () => {
         })
 
         expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
-            'AddContact',
+            'Contacts',
             {
-                address: 'addr1',
-                label: 'Label1',
+                screen: 'AddContact',
+                params: {
+                    address: 'addr1',
+                    label: 'Label1',
+                },
             },
         )
         expect(mockDispatch).toHaveBeenCalled()

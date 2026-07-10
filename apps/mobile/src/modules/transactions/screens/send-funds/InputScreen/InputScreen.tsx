@@ -30,7 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
@@ -98,20 +98,30 @@ export const InputScreen = () => {
         }
     }, [canSelectAsset, navigation, onFinished])
 
-    useNavigationHeader({
-        left: (
+    // Memoize the header nodes so their identities stay stable across renders.
+    // useNavigationHeader lists them as effect deps and calls setOptions; passing
+    // fresh JSX every render re-fires the effect → setOptions → re-render loop
+    // ("Maximum update depth exceeded" on the async-loading ASA path).
+    const headerLeft = useMemo(
+        () => (
             <PWIcon
                 name={canSelectAsset ? 'chevron-left' : 'cross'}
                 onPress={handleBack}
             />
         ),
-        right: (
+        [canSelectAsset, handleBack],
+    )
+    const headerRight = useMemo(
+        () => (
             <PWIcon
                 name='info'
                 onPress={openInfo}
             />
         ),
-        title: (
+        [openInfo],
+    )
+    const headerTitle = useMemo(
+        () => (
             <PWView style={styles.headerTitleContainer}>
                 <PWText>
                     {t('send_funds.input_view.title', {
@@ -127,6 +137,13 @@ export const InputScreen = () => {
                 />
             </PWView>
         ),
+        [styles, t, asset?.name, selectedAccount],
+    )
+
+    useNavigationHeader({
+        left: headerLeft,
+        right: headerRight,
+        title: headerTitle,
     })
 
     if (!asset || !accountAssetBalance || !params || !accountInformation) {
