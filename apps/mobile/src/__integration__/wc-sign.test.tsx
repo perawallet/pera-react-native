@@ -513,4 +513,59 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
+
+    it(
+        'Given a session imported by migration after the provider already mounted, when the imported session is written to the store, then a live connector with the sign handler is reconciled without a cold relaunch',
+        async () => {
+            render(
+                <WalletConnectProvider>
+                    <div data-testid='child' />
+                </WalletConnectProvider>,
+            )
+
+            // Ignore connectors from the empty-store mount.
+            walletConnectClientStub.reset()
+
+            const migratedConnection = {
+                clientId: 'migrated-client',
+                version: 1,
+                bridge: 'https://relay.example.test',
+                connected: false,
+                createdAt: new Date(0),
+                session: {
+                    connected: true,
+                    accounts: [SIGNING_ACCOUNT.address],
+                    chainId: AlgorandChainId.mainnet,
+                    bridge: 'https://relay.example.test',
+                    key: 'migrated-key',
+                    clientId: 'migrated-client',
+                    peerId: 'migrated-peer',
+                    peerMeta: {
+                        name: 'Migrated dApp',
+                        url: 'https://migrated.example',
+                        icons: [],
+                        description: '',
+                    },
+                    handshakeId: 0,
+                    handshakeTopic: 'migrated-topic',
+                },
+            }
+
+            act(() => {
+                useWalletConnectStore
+                    .getState()
+                    .setWalletConnectConnections([migratedConnection as never])
+            })
+
+            await waitFor(() => {
+                expect(
+                    walletConnectClientStub.instances.length,
+                ).toBeGreaterThan(0)
+            })
+            expect(
+                walletConnectClientStub.last()!.handlers.has('algo_signTxn'),
+            ).toBe(true)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
 })
