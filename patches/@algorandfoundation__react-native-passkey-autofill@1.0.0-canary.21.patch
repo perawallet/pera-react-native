@@ -1,0 +1,117 @@
+diff --git a/android/src/main/AndroidManifest.xml b/android/src/main/AndroidManifest.xml
+index e664746a384e1403297d47c42c1383f0f41d4766..e6e8cd6ac5ca2a69e4489fc5efad613c860fb1b4 100644
+--- a/android/src/main/AndroidManifest.xml
++++ b/android/src/main/AndroidManifest.xml
+@@ -2,8 +2,19 @@
+           xmlns:tools="http://schemas.android.com/tools">
+     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+     <application>
++        <!--
++          PERA LOCAL PATCH: register the credential provider under the legacy
++          native app's fully-qualified class name. Android's Credential Manager
++          persists the user's enabled provider as ComponentName =
++          package/serviceClass. The package (com.algorand.android) is unchanged
++          across the native -> RN upgrade, so keeping the legacy service class
++          name makes the OS treat this as the same provider and carry the
++          enablement over instead of silently dropping it. The class below is a
++          thin subclass of PasskeyAutofillCredentialProviderService. Keep this in
++          sync with the ComponentName checked in ReactNativePasskeyAutofillModule.
++        -->
+         <service
+-            android:name=".service.PasskeyAutofillCredentialProviderService"
++            android:name="com.algorand.android.credentials.passkeys.ui.PasskeyProviderService"
+             android:enabled="true"
+             android:exported="true"
+             android:label="@string/passkey_autofill_label"
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
+index 17f548964431f6afb0eaff19e3063c342ef79522..563529914fdb94a1b2d0b2032c70688da8bee3a0 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/ReactNativePasskeyAutofillModule.kt
+@@ -3,7 +3,10 @@ package co.algorand.passkeyautofill
+ import expo.modules.kotlin.modules.Module
+ import expo.modules.kotlin.modules.ModuleDefinition
+ import co.algorand.passkeyautofill.credentials.CredentialRepository
+-import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
++// PERA LOCAL PATCH: check the legacy-named subclass so the ComponentName built
++// below matches the native app's persisted credential-provider selection. See
++// the shim class + module AndroidManifest patch notes.
++import com.algorand.android.credentials.passkeys.ui.PasskeyProviderService
+ import android.content.ComponentName
+ import android.content.Context
+ import android.content.Intent
+@@ -155,7 +158,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+   }
+ 
+   /**
+-   * Returns `true` when this app's [PasskeyAutofillCredentialProviderService]
++   * Returns `true` when this app's [PasskeyProviderService]
+    * is registered as an active credential provider for the current user.
+    *
+    * On API 34+ (UpsideDownCake) we use the official
+@@ -170,7 +173,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+   private fun isProviderEnabled(context: Context): Boolean {
+     val component = ComponentName(
+       context.packageName,
+-      PasskeyAutofillCredentialProviderService::class.java.name,
++      PasskeyProviderService::class.java.name,
+     )
+     val expected = component.flattenToString()
+ 
+@@ -221,7 +224,7 @@ class ReactNativePasskeyAutofillModule : Module() {
+     // Manager screen isn't a directly launchable activity.
+     val component = ComponentName(
+       context.packageName,
+-      PasskeyAutofillCredentialProviderService::class.java.name,
++      PasskeyProviderService::class.java.name,
+     ).flattenToString()
+     val intents = listOf(
+       // Preferred: Credential Manager provider settings, deep-linked to our row.
+diff --git a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
+index 7199493d1680164000de4d44eaf939f5111cb0af..de8cd864eab81e3ace030c11fe8006922e44aa9c 100644
+--- a/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
++++ b/android/src/main/java/co/algorand/passkeyautofill/service/PasskeyAutofillCredentialProviderService.kt
+@@ -37,8 +37,12 @@ import kotlinx.coroutines.*
+ import org.json.JSONArray
+ import org.json.JSONObject
+ 
++// PERA LOCAL PATCH: `open` so the legacy-named subclass
++// (com.algorand.android.credentials.passkeys.ui.PasskeyProviderService) can
++// extend it and be registered under the native app's ComponentName. See patch
++// notes in ReactNativePasskeyAutofillModule and the module AndroidManifest.
+ @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+-class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
++open class PasskeyAutofillCredentialProviderService: CredentialProviderService() {
+     private val credentialRepository = CredentialRepository()
+     private val job = SupervisorJob()
+     private val scope = CoroutineScope(Dispatchers.IO + job)
+diff --git a/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
+new file mode 100644
+index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f7063f3b6b8
+--- /dev/null
++++ b/android/src/main/java/com/algorand/android/credentials/passkeys/ui/PasskeyProviderService.kt
+@@ -0,0 +1,25 @@
++package com.algorand.android.credentials.passkeys.ui
++
++import android.os.Build
++import androidx.annotation.RequiresApi
++import co.algorand.passkeyautofill.service.PasskeyAutofillCredentialProviderService
++
++/**
++ * PERA LOCAL PATCH — migration compatibility shim.
++ *
++ * The legacy native pera-android app registered its Credential Manager provider
++ * as `com.algorand.android/com.algorand.android.credentials.passkeys.ui.PasskeyProviderService`.
++ * Android persists the user's enabled provider by that exact ComponentName, so
++ * after the in-place native -> RN upgrade the provider selection is only
++ * retained if a service still resolves at this fully-qualified name.
++ *
++ * This subclass adds no behaviour; it exists purely so the manifest can declare
++ * the legacy ComponentName while all logic stays in the upstream base class.
++ * `ReactNativePasskeyAutofillModule` checks this same class for its
++ * `isProviderActive` / `openProviderSettings` ComponentName.
++ *
++ * Remove this shim (and the accompanying module patch) only once every user has
++ * migrated off the legacy native app.
++ */
++@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
++class PasskeyProviderService : PasskeyAutofillCredentialProviderService()

@@ -70,6 +70,15 @@ const slugs = {
 function buildAppConfig(env) {
   const variant = getAppVariant(env);
 
+  // Legacy native AutoFill extension suffix. Production only: it's the sole
+  // variant whose app bundle id matches the native app's, so the only one that
+  // can inherit the provider selection (the extension id is app-id + suffix, so
+  // both parts must match). Other variants → undefined → plugin no-op.
+  // See plugins/withAutofillExtensionBundleId.js.
+  const legacyAutofillExtensionSuffix = {
+    production: '.autofill-extension',
+  }[variant];
+
   // Production ships the native App Store / Play Store app images; dev and
   // staging keep their current (dark) icon. Production sources are generated
   // from the native Android brand vector (see scripts/generate-production-icons.mjs).
@@ -410,6 +419,16 @@ function buildAppConfig(env) {
       // + device-transfer via dataExtractionRules / fullBackupContent — alongside
       // allowBackup:false.
       './plugins/withExcludeDataFromBackup.js',
+
+      // Rename the iOS AutoFill extension bundle id back to the legacy app's
+      // suffix so the enabled-provider selection survives the native -> RN
+      // upgrade. Registered BEFORE the autofill plugin on purpose: Expo runs
+      // withXcodeProject mods in reverse order, so this runs after that plugin
+      // creates the extension target.
+      [
+        './plugins/withAutofillExtensionBundleId',
+        { legacySuffix: legacyAutofillExtensionSuffix },
+      ],
 
       // Passkey autofill (FIDO2) — system credential provider extension
       [
