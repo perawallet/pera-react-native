@@ -7,7 +7,7 @@ catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/keystore": 1.0.0-canary.16
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.12
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.13
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.21
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
