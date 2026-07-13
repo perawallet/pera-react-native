@@ -18,6 +18,7 @@ import {
     useSendPhoneVerificationMutation,
     useVerifyPhoneMutation,
 } from '@perawallet/wallet-core-card'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
@@ -51,6 +52,10 @@ export const useCardOnboardingPhoneVerifyScreen =
     (): UseCardOnboardingPhoneVerifyScreenResult => {
         const { t } = useLanguage()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.verify_phone.verify_error_title',
+            bodyKey: 'peraCard.verify_phone.verify_error_body',
+        })
         const navigation = useAppNavigation()
         const phoneCountryCode = useCardStore(state => state.phoneCountryCode)
         const phoneNumber = useCardStore(state => state.phoneNumber)
@@ -176,10 +181,7 @@ export const useCardOnboardingPhoneVerifyScreen =
                         if (isInvalidInputError(apiError)) {
                             setCodeVerificationError('phone')
                         } else {
-                            errorToast(
-                                t('peraCard.verify_phone.verify_error_title'),
-                                t('peraCard.verify_phone.verify_error_body'),
-                            )
+                            await showError(error)
                         }
                     }
                 }
@@ -194,6 +196,7 @@ export const useCardOnboardingPhoneVerifyScreen =
                 setCodeVerificationError,
                 verifyPhone,
                 errorToast,
+                showError,
                 navigation,
                 t,
             ],

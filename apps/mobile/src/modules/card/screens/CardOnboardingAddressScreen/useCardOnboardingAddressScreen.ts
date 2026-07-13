@@ -31,6 +31,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -76,6 +77,10 @@ export const useCardOnboardingAddressScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast, infoToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.address.error_title',
+            bodyKey: 'peraCard.address.error_body',
+        })
         const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -312,10 +317,7 @@ export const useCardOnboardingAddressScreen =
                     navigation.navigate('CardSignIn')
                     return
                 }
-                errorToast(
-                    t('peraCard.address.error_title'),
-                    apiError.message ?? t('peraCard.address.error_body'),
-                )
+                await showError(error)
             }
         })
 

@@ -17,11 +17,12 @@ import { AppState, Linking } from 'react-native'
 
 const mockStartMutateAsync = vi.fn()
 const mockRefetch = vi.fn()
+const mockRestartPolling = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockVerificationState: string | null = null
-let mockQueryOptions:
-    | { enabled?: boolean; refetchInterval?: number | false }
-    | undefined
+let mockIsStateUnknown = false
+let mockHasPollTimedOut = false
+let mockPollOptions: { enabled?: boolean } | undefined
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -39,17 +40,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
-        useOnboardingDetailsQuery: (options: {
-            enabled?: boolean
-            refetchInterval?: number | false
-        }) => {
-            mockQueryOptions = options
-            return {
-                data: { verificationState: mockVerificationState },
-                isLoading: false,
-                refetch: mockRefetch,
-            }
-        },
         useCardStore: (
             selector: (state: { onboardingId: string | null }) => unknown,
         ) => selector({ onboardingId: mockOnboardingId }),
@@ -57,9 +47,29 @@ vi.mock('@perawallet/wallet-core-card', async () => {
 })
 
 const mockLogout = vi.fn()
-vi.mock('@modules/card/hooks', () => ({
-    useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
-}))
+vi.mock('@modules/card/hooks', async () => {
+    // Real error-toast hook (single file, not the whole barrel) so the specs
+    // keep asserting the actual message-resolution behavior. The poll
+    // mechanics (give-up limits) are unit-tested in useOnboardingKycPoll.spec —
+    // here we drive its output to exercise the screen's handoff/give-up wiring.
+    const { useCardErrorToast } = await vi.importActual<
+        typeof import('../../../hooks/useCardErrorToast')
+    >('../../../hooks/useCardErrorToast')
+    return {
+        useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
+        useCardErrorToast,
+        useOnboardingKycPoll: (options: { enabled?: boolean }) => {
+            mockPollOptions = options
+            return {
+                verificationState: mockVerificationState,
+                isStateUnknown: mockIsStateUnknown,
+                hasPollTimedOut: mockHasPollTimedOut,
+                restartPolling: mockRestartPolling,
+                refetch: mockRefetch,
+            }
+        },
+    }
+})
 
 const mockPushWebView = vi.fn()
 vi.mock('@modules/webview', () => ({
@@ -95,7 +105,9 @@ beforeEach(() => {
     vi.clearAllMocks()
     mockOnboardingId = 'mock-onboarding-id'
     mockVerificationState = null
-    mockQueryOptions = undefined
+    mockIsStateUnknown = false
+    mockHasPollTimedOut = false
+    mockPollOptions = undefined
     mockStartMutateAsync.mockResolvedValue({ sessionUrl: SESSION_URL })
     vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     vi.spyOn(Linking, 'canOpenURL').mockResolvedValue(true)
@@ -168,7 +180,7 @@ describe('useCardOnboardingVerificationScreen', () => {
         )
         await startVerification(result)
         // Polling is live while we wait for Veriff to report back.
-        expect(mockQueryOptions?.enabled).toBe(true)
+        expect(mockPollOptions?.enabled).toBe(true)
 
         mockVerificationState = 'PENDING'
         act(() => rerender())
@@ -178,8 +190,24 @@ describe('useCardOnboardingVerificationScreen', () => {
         )
         // The handoff disables our poll so it doesn't keep refetching behind
         // the status screen (which polls from here on).
-        expect(mockQueryOptions?.enabled).toBe(false)
-        expect(mockQueryOptions?.refetchInterval).toBe(false)
+        expect(mockPollOptions?.enabled).toBe(false)
+    })
+
+    it('hands off to the setup status on an unmodelled server state', async () => {
+        const { result, rerender } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+        await startVerification(result)
+
+        // An unknown (null) state means Veriff reported back with something we
+        // don't model — still a handoff, not "user abandoned".
+        mockVerificationState = null
+        mockIsStateUnknown = true
+        act(() => rerender())
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingStatus'),
+        )
     })
 
     it('stays put while the state is still UNVERIFIED (user abandoned Veriff)', async () => {
@@ -192,6 +220,38 @@ describe('useCardOnboardingVerificationScreen', () => {
         act(() => rerender())
 
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('resets the poll budget when a fresh session is opened', async () => {
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        await startVerification(result)
+
+        // Opening a fresh Veriff session must restart the give-up counters so a
+        // prior stuck run doesn't immediately trip the new one.
+        expect(mockRestartPolling).toHaveBeenCalled()
+    })
+
+    it('gives up and toasts when the poll times out, leaving the button re-tappable', async () => {
+        const { result, rerender } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+        await startVerification(result)
+
+        mockHasPollTimedOut = true
+        act(() => rerender())
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.verification.error_title',
+                'peraCard.verification.poll_timeout_body',
+            ),
+        )
+        // Stops waiting, and does not force-navigate — the button re-mints.
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockPollOptions?.enabled).toBe(false)
     })
 
     it('shows an error toast when starting fails, leaving the button re-tappable', async () => {
@@ -252,7 +312,7 @@ describe('useCardOnboardingVerificationScreen', () => {
         )
         expect(Linking.openURL).not.toHaveBeenCalled()
         // Nothing was opened, so the status poll must not arm.
-        expect(mockQueryOptions?.enabled).toBe(false)
+        expect(mockPollOptions?.enabled).toBe(false)
     })
 
     it('does not poll when no browser can open the session URL', async () => {
@@ -272,7 +332,7 @@ describe('useCardOnboardingVerificationScreen', () => {
             ),
         )
         expect(Linking.openURL).not.toHaveBeenCalled()
-        expect(mockQueryOptions?.enabled).toBe(false)
+        expect(mockPollOptions?.enabled).toBe(false)
     })
 
     it('does not arm the poll when opening the browser fails', async () => {
@@ -288,11 +348,11 @@ describe('useCardOnboardingVerificationScreen', () => {
         })
 
         await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
-        expect(mockQueryOptions?.enabled).toBe(false)
+        expect(mockPollOptions?.enabled).toBe(false)
 
         // The same handler succeeds on the retry.
         await startVerification(result)
-        expect(mockQueryOptions?.enabled).toBe(true)
+        expect(mockPollOptions?.enabled).toBe(true)
     })
 
     it('refetches the status when the app returns to the foreground while polling', async () => {

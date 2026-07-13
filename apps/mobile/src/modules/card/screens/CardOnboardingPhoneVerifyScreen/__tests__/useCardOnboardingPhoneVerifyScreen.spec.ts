@@ -179,6 +179,25 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
+    it("surfaces Baanx's own message when a non-code failure carries one", async () => {
+        mockVerifyMutateAsync.mockRejectedValue({
+            response: { status: 500 },
+            data: { message: 'Verification service unavailable' },
+        })
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode(VALID_CODE))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'peraCard.verify_phone.verify_error_title',
+            'Verification service unavailable',
+        )
+        expect(mockSetCodeVerificationError).not.toHaveBeenCalled()
+    })
+
     it('exposes the inline code error when a prior attempt was rejected', () => {
         mockCodeVerificationError = 'phone'
         const { result } = renderVerifyHook()

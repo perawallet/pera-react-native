@@ -11,7 +11,7 @@
  */
 
 import {
-    toEnumValue,
+    toEnumValueOrNull,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -161,7 +161,11 @@ export type FetchOnboardingDetailsParams = NetworkParams & {
     onboardingId: string
 }
 export type OnboardingDetails = {
-    verificationState: VerificationState
+    /**
+     * Modelled KYC state; null when Baanx returns a state we don't model, so
+     * consumers can tell "not yet verified" from "unknown server state".
+     */
+    verificationState: Nullable<VerificationState>
     /** Profile fields prefilled into the personal-details form when present. */
     firstName: Nullable<string>
     lastName: Nullable<string>
@@ -183,12 +187,11 @@ export const fetchOnboardingDetails = async (
     })
     const parsed = onboardingDetailsResponseSchema.parse(response.data)
     return {
-        // Unknown/missing state falls back to Unverified — never report KYC
-        // progress on a state we don't recognise.
-        verificationState: toEnumValue(
+        // An unrecognised state maps to null, not UNVERIFIED — coercing would
+        // eventually route a progressing user into re-minting a Veriff session.
+        verificationState: toEnumValueOrNull(
             VerificationState,
             parsed.verificationState,
-            VerificationState.Unverified,
         ),
         firstName: parsed.firstName ?? null,
         lastName: parsed.lastName ?? null,

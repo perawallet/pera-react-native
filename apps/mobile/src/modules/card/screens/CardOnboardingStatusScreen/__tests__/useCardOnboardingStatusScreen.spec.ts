@@ -24,14 +24,10 @@ const mockPickFundingSource = vi.fn()
 const mockDelegateTo = vi.fn()
 const mockCanDelegate = vi.fn()
 let mockVerificationState: string | null = null
-let mockQueryOptions: { refetchInterval?: number | false } | undefined
 let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
 let mockStoredFundingType: FundingType | null = null
 let mockIsConnecting = false
-let mockDataUpdatedAt = 0
-let mockErrorUpdatedAt = 0
-const mockRefetch = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -39,18 +35,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     >('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useOnboardingDetailsQuery: (options: {
-            refetchInterval?: number | false
-        }) => {
-            mockQueryOptions = options
-            return {
-                data: { verificationState: mockVerificationState },
-                isLoading: false,
-                refetch: mockRefetch,
-                dataUpdatedAt: mockDataUpdatedAt,
-                errorUpdatedAt: mockErrorUpdatedAt,
-            }
-        },
         useConnectFundingSourceMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockConnectAsync,
@@ -106,12 +90,24 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockLogout = vi.fn()
 const mockShowCardError = vi.fn()
+let mockHasPollTimedOut = false
+let mockIsStateUnknown = false
+const mockRestartPolling = vi.fn()
 // Passes through to the delegate fn by default so existing Auto tests still
 // observe the delegation; the declined-authorization test overrides it.
 const mockAuthorizeDelegation = vi.fn(passThroughAuthorizeDelegation)
 vi.mock('@modules/card/hooks', () => ({
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
     useCardErrorToast: () => mockShowCardError,
+    // The poll mechanics (give-up limits, restart) are unit-tested in
+    // useOnboardingKycPoll.spec — here only the wiring matters.
+    useOnboardingKycPoll: () => ({
+        verificationState: mockVerificationState,
+        isStateUnknown: mockIsStateUnknown,
+        hasPollTimedOut: mockHasPollTimedOut,
+        restartPolling: mockRestartPolling,
+        refetch: vi.fn(),
+    }),
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mockPickFundingSource,
     }),
@@ -193,13 +189,12 @@ const account = (
 beforeEach(() => {
     vi.clearAllMocks()
     mockVerificationState = null
-    mockQueryOptions = undefined
+    mockHasPollTimedOut = false
+    mockIsStateUnknown = false
     mockOnboardingStep = OnboardingStep.Verification
     mockConnectedAddress = null
     mockStoredFundingType = null
     mockIsConnecting = false
-    mockDataUpdatedAt = 0
-    mockErrorUpdatedAt = 0
     mockAccounts = []
     mockRouteParams = undefined
     mockSelectedAddress = null
@@ -212,24 +207,18 @@ beforeEach(() => {
 })
 
 describe('useCardOnboardingStatusScreen', () => {
-    it('reports pending (and keeps polling) while Veriff reviews', () => {
+    it('reports pending while Veriff reviews', () => {
         mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('pending')
-        expect(mockQueryOptions?.refetchInterval).not.toBe(false)
     })
 
-    it('reports verified and stops polling once the identity is confirmed', async () => {
+    it('reports verified once the identity is confirmed', () => {
         mockVerificationState = 'VERIFIED'
-        const { result, rerender } = renderHook(() =>
-            useCardOnboardingStatusScreen(),
-        )
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('verified')
-        // The post-decision render disables the poll interval.
-        act(() => rerender())
-        expect(mockQueryOptions?.refetchInterval).toBe(false)
     })
 
     it('reports rejected when verification failed', () => {
@@ -280,85 +269,57 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(mockBeforeRemoveCallback).toBeNull()
     })
 
-    describe('poll error / stuck-UNVERIFIED handling', () => {
-        it('flips to an error state and stops polling after repeated poll failures', () => {
-            const { result, rerender } = renderHook(() =>
-                useCardOnboardingStatusScreen(),
-            )
-            expect(result.current.documentsState).toBe('pending')
-
-            // Three consecutive failed polls (retry: 0 surfaces each error).
-            for (const timestamp of [1, 2, 3]) {
-                mockErrorUpdatedAt = timestamp
-                act(() => rerender())
-            }
+    describe('timed-out poll handling', () => {
+        it('flips the documents row to an error state when the poll gives up', () => {
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
             expect(result.current.documentsState).toBe('error')
-            act(() => rerender())
-            expect(mockQueryOptions?.refetchInterval).toBe(false)
         })
 
-        it('resets the failure count when a poll succeeds in between', () => {
-            mockVerificationState = 'PENDING'
-            const { result, rerender } = renderHook(() =>
-                useCardOnboardingStatusScreen(),
-            )
-
-            for (const timestamp of [1, 2]) {
-                mockErrorUpdatedAt = timestamp
-                act(() => rerender())
-            }
-            // A successful poll clears the streak…
-            mockDataUpdatedAt = 10
-            act(() => rerender())
-            // …so a third failure is a fresh streak of one, not the limit.
-            mockErrorUpdatedAt = 11
-            act(() => rerender())
-
-            expect(result.current.documentsState).toBe('pending')
-        })
-
-        it('gives up after the record stays UNVERIFIED for the whole poll budget', () => {
-            mockVerificationState = 'UNVERIFIED'
-            const { result, rerender } = renderHook(() =>
-                useCardOnboardingStatusScreen(),
-            )
-
-            for (let poll = 1; poll <= 15; poll += 1) {
-                mockDataUpdatedAt = poll
-                act(() => rerender())
-            }
-
-            expect(result.current.documentsState).toBe('error')
-
+        it('routes retry to the KYC entry when the record never left UNVERIFIED', () => {
             // A record that never left UNVERIFIED needs a fresh Veriff
-            // session, so retry routes back to the KYC entry screen.
+            // session, so retry re-mints instead of re-polling.
+            mockVerificationState = 'UNVERIFIED'
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
             act(() => {
                 result.current.handleRetryStatus()
             })
+
             expect(mockNavigate).toHaveBeenCalledWith(
                 'CardOnboardingVerification',
             )
+            expect(mockRestartPolling).not.toHaveBeenCalled()
         })
 
-        it('re-arms polling and refetches on retry after poll failures', () => {
-            const { result, rerender } = renderHook(() =>
-                useCardOnboardingStatusScreen(),
-            )
-            for (const timestamp of [1, 2, 3]) {
-                mockErrorUpdatedAt = timestamp
-                act(() => rerender())
-            }
-            expect(result.current.documentsState).toBe('error')
+        it('restarts polling on retry after failures', () => {
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
             act(() => {
                 result.current.handleRetryStatus()
             })
 
-            expect(mockRefetch).toHaveBeenCalled()
-            expect(result.current.documentsState).toBe('pending')
-            act(() => rerender())
-            expect(mockQueryOptions?.refetchInterval).not.toBe(false)
+            expect(mockRestartPolling).toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('restarts polling on retry for an unmodelled state (no Veriff re-mint)', () => {
+            // An unknown server state is progress, not a dead session — retry
+            // must not send the user into minting a fresh Veriff session.
+            mockVerificationState = null
+            mockIsStateUnknown = true
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+            act(() => {
+                result.current.handleRetryStatus()
+            })
+
+            expect(mockRestartPolling).toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
         })
     })
 

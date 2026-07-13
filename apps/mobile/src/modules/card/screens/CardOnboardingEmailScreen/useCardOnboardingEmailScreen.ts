@@ -30,6 +30,7 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardWaitlistSuccessContent } from '@modules/card/components/CardWaitlistSuccessContent'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -55,6 +56,10 @@ export const useCardOnboardingEmailScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.create_account.error_title',
+            bodyKey: 'peraCard.create_account.error_body',
+        })
         const { request } = useBottomSheet()
         const { network } = useNetwork()
         const deviceId = useDeviceID(network)
@@ -144,10 +149,7 @@ export const useCardOnboardingEmailScreen =
                     })
                     return
                 }
-                errorToast(
-                    t('peraCard.create_account.error_title'),
-                    t('peraCard.create_account.error_body'),
-                )
+                await showError(error)
             }
         })
 

@@ -28,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -54,6 +55,10 @@ export const useCardOnboardingPersonalDetailsScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.personal_details.error_title',
+            bodyKey: 'peraCard.personal_details.error_body',
+        })
         const { request } = useBottomSheet()
         const onboardingId = useCardStore(state => state.onboardingId)
         const countryIso = useCardStore(state => state.countryIso)
@@ -214,11 +219,7 @@ export const useCardOnboardingPersonalDetailsScreen =
                         navigation.navigate('CardOnboardingAddress')
                         return
                     }
-                    errorToast(
-                        t('peraCard.personal_details.error_title'),
-                        apiError.message ??
-                            t('peraCard.personal_details.error_body'),
-                    )
+                    await showError(error)
                 }
             },
         )

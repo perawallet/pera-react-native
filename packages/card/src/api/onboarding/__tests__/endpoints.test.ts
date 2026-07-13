@@ -272,7 +272,7 @@ describe('onboarding endpoints', () => {
         })
     })
 
-    it('falls back to UNVERIFIED for an unknown verification state', async () => {
+    it('returns null for an unmodelled verification state', async () => {
         request.mockResolvedValue({
             data: { verificationState: 'SOMETHING_NEW' },
         })
@@ -282,7 +282,9 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
-        expect(result.verificationState).toBe(VerificationState.Unverified)
+        // Never coerce an unknown state to UNVERIFIED: consumers would treat a
+        // progressing user as needing a fresh Veriff session.
+        expect(result.verificationState).toBeNull()
     })
 
     it('submits address and returns the access token, onboarding id, and user id', async () => {

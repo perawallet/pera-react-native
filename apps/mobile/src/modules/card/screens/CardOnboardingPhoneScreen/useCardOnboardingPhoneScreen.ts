@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -46,6 +47,10 @@ export const useCardOnboardingPhoneScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.verify_phone.send_error_title',
+            bodyKey: 'peraCard.verify_phone.send_error_body',
+        })
         const { request } = useBottomSheet()
         const countryIso = useCardStore(state => state.countryIso)
         const contactVerificationId = useCardStore(
@@ -138,10 +143,7 @@ export const useCardOnboardingPhoneScreen =
                         })
                         return
                     }
-                    errorToast(
-                        t('peraCard.verify_phone.send_error_title'),
-                        t('peraCard.verify_phone.send_error_body'),
-                    )
+                    await showError(error)
                 }
             },
         )

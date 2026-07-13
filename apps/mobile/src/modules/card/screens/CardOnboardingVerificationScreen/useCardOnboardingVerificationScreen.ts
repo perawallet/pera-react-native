@@ -13,22 +13,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, Linking, type AppStateStatus } from 'react-native'
 import {
-    getCardApiError,
     useCardStore,
-    useOnboardingDetailsQuery,
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import { useWebView } from '@modules/webview'
-import { useCardOnboardingLogout } from '@modules/card/hooks'
+import {
+    useCardErrorToast,
+    useCardOnboardingLogout,
+    useOnboardingKycPoll,
+} from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { isForegroundTransition } from '@utils/app-state'
-
-/** How often we re-check `verificationState` while the user is in Veriff. */
-const POLL_INTERVAL_MS = 4000
 
 export type UseCardOnboardingVerificationScreenResult = {
     /** Start request in flight — disables the CTA and shows its spinner. */
@@ -44,6 +43,10 @@ export const useCardOnboardingVerificationScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.verification.error_title',
+            bodyKey: 'peraCard.verification.error_body',
+        })
         const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -52,11 +55,13 @@ export const useCardOnboardingVerificationScreen =
 
         const startVerification = useStartVerificationMutation()
 
-        const onboardingDetails = useOnboardingDetailsQuery({
-            onboardingId,
-            enabled: hasStarted,
-            refetchInterval: hasStarted ? POLL_INTERVAL_MS : false,
-        })
+        const {
+            verificationState,
+            isStateUnknown,
+            hasPollTimedOut,
+            restartPolling,
+            refetch,
+        } = useOnboardingKycPoll({ enabled: hasStarted })
 
         const handleVerify = useCallback(() => {
             // Set by email/verify; if missing, re-verify rather than start a
@@ -90,40 +95,58 @@ export const useCardOnboardingVerificationScreen =
                         return
                     }
                     await Linking.openURL(sessionUrl)
+                    // A retry after a give-up starts a fresh session, so the
+                    // poll budget starts over too.
+                    restartPolling()
                     setHasStarted(true)
                 } catch (error) {
-                    // Prefer Baanx's own message (e.g. a wrong-phase or expired
-                    // onboarding rejection) over the generic fallback.
-                    const apiError = await getCardApiError(error)
-                    errorToast(
-                        t('peraCard.verification.error_title'),
-                        apiError.message ??
-                            t('peraCard.verification.error_body'),
-                    )
+                    await showError(error)
                 }
             }
             void startKyc()
-        }, [startVerification, onboardingId, errorToast, navigation, t])
+        }, [
+            startVerification,
+            onboardingId,
+            errorToast,
+            showError,
+            restartPolling,
+            navigation,
+            t,
+        ])
 
         const handleOpenSupport = useCallback(() => {
             pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
         }, [pushWebView])
 
-        // Veriff reported back (submitted/decided): continue on the setup
-        // status checklist. Abandoning the browser leaves the state UNVERIFIED
-        // and the user here, with the button still re-tappable.
-        const verificationState =
-            onboardingDetails.data?.verificationState ?? null
+        // Veriff reported back (submitted/decided — including a state we don't
+        // model): continue on the setup status checklist. Abandoning the
+        // browser leaves the state UNVERIFIED and the user here, with the
+        // button still re-tappable.
         useEffect(() => {
-            if (!hasStarted || !verificationState) return
-            if (verificationState !== VerificationState.Unverified) {
-                // Veriff reported back — hand off to the status checklist, which
-                // takes over polling. Stop ours so it doesn't keep refetching in
-                // the background while this screen sits in the stack.
-                setHasStarted(false)
-                navigation.navigate('CardOnboardingStatus')
-            }
-        }, [hasStarted, verificationState, navigation])
+            if (!hasStarted) return
+            const hasReportedBack =
+                isStateUnknown ||
+                (verificationState !== null &&
+                    verificationState !== VerificationState.Unverified)
+            if (!hasReportedBack) return
+            // Hand off to the status checklist, which takes over polling. Stop
+            // ours so it doesn't keep refetching in the background while this
+            // screen sits in the stack.
+            setHasStarted(false)
+            navigation.navigate('CardOnboardingStatus')
+        }, [hasStarted, verificationState, isStateUnknown, navigation])
+
+        // The poll gave up (repeated failures, or Veriff never reported back):
+        // stop waiting and tell the user, leaving the button re-tappable — a
+        // new tap mints a fresh session and a fresh poll budget.
+        useEffect(() => {
+            if (!hasStarted || !hasPollTimedOut) return
+            setHasStarted(false)
+            errorToast(
+                t('peraCard.verification.error_title'),
+                t('peraCard.verification.poll_timeout_body'),
+            )
+        }, [hasStarted, hasPollTimedOut, errorToast, t])
 
         // When the user returns from the Veriff browser, refetch immediately
         // rather than waiting for the next poll tick. Refs keep the listener
@@ -131,8 +154,8 @@ export const useCardOnboardingVerificationScreen =
         const previousAppState = useRef<AppStateStatus>(AppState.currentState)
         const isPollingRef = useRef(hasStarted)
         isPollingRef.current = hasStarted
-        const refetchRef = useRef(onboardingDetails.refetch)
-        refetchRef.current = onboardingDetails.refetch
+        const refetchRef = useRef(refetch)
+        refetchRef.current = refetch
         useEffect(() => {
             const subscription = AppState.addEventListener(
                 'change',

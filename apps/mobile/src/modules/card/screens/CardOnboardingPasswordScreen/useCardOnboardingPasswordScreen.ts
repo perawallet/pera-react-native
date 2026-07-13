@@ -20,6 +20,7 @@ import {
     useVerifyEmailMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -44,6 +45,10 @@ export const useCardOnboardingPasswordScreen =
     (): UseCardOnboardingPasswordScreenResult => {
         const { t } = useLanguage()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.create_account.error_title',
+            bodyKey: 'peraCard.create_account.error_body',
+        })
         const navigation = useAppNavigation()
         const email = useCardStore(state => state.email)
         const countryIso = useCardStore(state => state.countryIso)
@@ -151,12 +156,7 @@ export const useCardOnboardingPasswordScreen =
                     navigation.navigate('CardOnboardingEmailVerify')
                     return
                 }
-                // Prefer Baanx's own message (e.g. "email already registered")
-                // over the generic fallback so the real reason shows.
-                errorToast(
-                    t('peraCard.create_account.error_title'),
-                    apiError.message ?? t('peraCard.create_account.error_body'),
-                )
+                await showError(error)
             }
         })
 
