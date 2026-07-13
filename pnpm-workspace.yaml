@@ -5,7 +5,7 @@ packages:
 
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
-  "@algorandfoundation/keystore": 1.0.0-canary.16
+  "@algorandfoundation/keystore": 1.0.0-canary.17
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.12
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.21
@@ -89,7 +89,7 @@ patchedDependencies:
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.21": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.21.patch
 
 overrides:
-  "@algorandfoundation/keystore": 1.0.0-canary.16
+  "@algorandfoundation/keystore": 1.0.0-canary.17
   "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4"
   "@expo/dom-webview": ~57.0.0
   # Security backport for GHSA-5375-pq7m-f5r2 + GHSA-99f4-grh7-6pcq (DoS).
