@@ -281,6 +281,5 @@ export interface LegacyDeviceIdentifiers {
     notificationUserId: string | null
     mainnetDeviceId: string | null
     testnetDeviceId: string | null
-    legacyDeviceId?: string | null
     lastSeenNotificationId: number | null
 }
