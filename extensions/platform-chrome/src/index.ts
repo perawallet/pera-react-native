@@ -22,3 +22,5 @@ export {
     ChromeKeyValueStorageService,
 } from './services'
 export { getPlatformServices, hydratePlatform } from './resources'
+export { getSurface, type ExtensionSurface } from './surface'
+export { ensureDeviceID, DEVICE_ID_STORAGE_KEY } from './device-id'

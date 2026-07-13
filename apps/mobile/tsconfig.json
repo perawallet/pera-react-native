@@ -3,7 +3,8 @@
   "compilerOptions": {
     "types": [
       "vitest",
-      "vitest/globals"
+      "vitest/globals",
+      "chrome"
     ],
     "paths": {
       "@components/*": [
@@ -95,6 +96,16 @@
       ],
       "@perawallet/wallet-core-nfd/test-handlers": [
         "../../packages/nfd/src/test-handlers.ts"
+      ],
+      // bare-package path pulls the full keystore graph into tsc; web code above the App.web boundary must import '@perawallet/wallet-extension-keystore-chrome/bootstrap' only (Metro enforces at runtime; tsc does not).
+      "@perawallet/wallet-extension-keystore-chrome": [
+        "../../extensions/keystore-chrome/src/index.ts"
+      ],
+      "@perawallet/wallet-extension-keystore-chrome/bootstrap": [
+        "../../extensions/keystore-chrome/src/bootstrap.ts"
+      ],
+      "@perawallet/wallet-extension-platform-chrome": [
+        "../../extensions/platform-chrome/src/surface.ts"
       ],
       "@perawallet/wallet-extension-platform-driver": [
         "../../extensions/platform-driver/src/index.ts"

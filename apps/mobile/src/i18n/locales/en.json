@@ -3172,5 +3172,33 @@
         "ZM": "Zambia",
         "ZR": "Congo - Kinshasa",
         "ZW": "Zimbabwe"
+    },
+    "vault": {
+        "create_password": {
+            "title": "Create a Password",
+            "description": "Set a password to protect your Pera Wallet extension. You'll need it each time you open the extension.",
+            "password_placeholder": "Enter password",
+            "confirm_placeholder": "Confirm password",
+            "submit_button": "Create Password",
+            "error_too_short": "Password must be at least 8 characters",
+            "error_mismatch": "Passwords do not match",
+            "error": "Something went wrong creating your vault. Please try again."
+        },
+        "unlock": {
+            "title": "Unlock Pera Wallet",
+            "description": "Enter your password to unlock the extension.",
+            "password_placeholder": "Enter password",
+            "submit_button": "Unlock",
+            "use_passkey": "Use Passkey",
+            "error_invalid_password": "Incorrect password. Please try again.",
+            "corrupted_error": "Your vault data is corrupted and cannot be unlocked. You may need to reset the extension and restore from your backup.",
+            "passkey_error": "Passkey unlock failed. Use your password instead."
+        },
+        "home": {
+            "title": "Pera Wallet"
+        },
+        "approval": {
+            "placeholder": "Approval surface — coming in M4."
+        }
     }
 }

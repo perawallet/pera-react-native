@@ -16,8 +16,7 @@ import {
     type DeviceInfoService,
     type DevicePlatform,
 } from '@perawallet/wallet-extension-platform'
-
-const DEVICE_ID_KEY = 'device:id'
+import { ensureDeviceID } from '../device-id'
 
 type NavigatorWithUAData = Navigator & {
     userAgentData?: { platform?: string }
@@ -48,18 +47,9 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
 
     async getDeviceID(): Promise<string> {
         // Collapses concurrent callers in this context to one storage
-        // round-trip so a first-run race can't mint two different IDs.
-        this.idPromise ??= this.resolveDeviceID()
+        // round-trip; cross-context convergence lives in ensureDeviceID.
+        this.idPromise ??= ensureDeviceID()
         return this.idPromise
-    }
-
-    private async resolveDeviceID(): Promise<string> {
-        const stored = await chrome.storage.local.get(DEVICE_ID_KEY)
-        const existing = stored[DEVICE_ID_KEY]
-        if (typeof existing === 'string') return existing
-        const id = crypto.randomUUID()
-        await chrome.storage.local.set({ [DEVICE_ID_KEY]: id })
-        return id
     }
 
     getDeviceModel(): string {

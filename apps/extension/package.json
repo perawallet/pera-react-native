@@ -10,6 +10,10 @@
     "test:e2e": "playwright test",
     "lint": "oxlint --config ../../.oxlintrc.json src scripts e2e"
   },
+  "dependencies": {
+    "@perawallet/wallet-extension-keystore-chrome": "workspace:*",
+    "@perawallet/wallet-extension-platform-chrome": "workspace:*"
+  },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@playwright/test": "catalog:",

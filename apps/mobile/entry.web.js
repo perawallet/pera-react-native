@@ -13,6 +13,13 @@
 // Text encoding polyfill (some deps expect TextEncoder/TextDecoder globals)
 import 'fast-text-encoding'
 
+// xhd-wallet-api and KMS BIP39 derivation call bare `Buffer` at runtime.
+// Native gets it from quick-crypto's install(); web never sets it without this.
+import { Buffer } from 'buffer'
+if (globalThis.Buffer === undefined) {
+    globalThis.Buffer = Buffer
+}
+
 import { registerRootComponent } from 'expo'
 import { App } from './src/App.web'
 

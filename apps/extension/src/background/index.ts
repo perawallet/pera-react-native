@@ -10,6 +10,14 @@
  limitations under the License
  */
 
+import { handleAutoLockAlarm } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
+import { ensureDeviceID } from '@perawallet/wallet-extension-platform-chrome'
+
 chrome.runtime.onInstalled.addListener(details => {
     console.info('[pera] extension installed:', details.reason)
+    void ensureDeviceID()
+})
+
+chrome.alarms.onAlarm.addListener(alarm => {
+    void handleAutoLockAlarm(alarm)
 })

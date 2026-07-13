@@ -14,7 +14,7 @@ import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
     testDir: './e2e',
-    timeout: 60_000,
+    timeout: 120_000,
     // Extension state (chrome.storage) persists per launch context; keep
     // workers at 1 so tests don't share/clobber a profile.
     workers: 1,

@@ -318,6 +318,67 @@ jobs:
           TURBO_CONCURRENCY: 4
         run: pnpm run test:coverage
 
+  extension-e2e:
+    name: Extension bundle & e2e
+    runs-on: ubuntu-24.04
+    needs: setup
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: ".tool-versions"
+          cache: "pnpm"
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+            extensions/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies on cache miss
+        run: test -d node_modules || pnpm install --frozen-lockfile
+
+      - name: Bundle extension
+        run: pnpm --filter extension bundle
+
+      # Keyed on the lockfile hash (same idiom as the node_modules/build-artifact
+      # caches above) since @playwright/test is pinned via a semver range, not an
+      # exact version. `playwright install` is idempotent, so a stale/missing
+      # cache just falls back to a full download instead of failing.
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter extension exec playwright install --with-deps chromium
+
+      - name: Run extension e2e
+        run: pnpm --filter extension test:e2e
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: extension-e2e-traces
+          path: apps/extension/test-results/
+          retention-days: 7
+
   gitleaks:
     name: Secret Scan
     runs-on: ubuntu-24.04

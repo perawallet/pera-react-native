@@ -43,6 +43,25 @@ execSync(`pnpm exec expo export --platform web --output-dir "${dist}"`, {
 // with "_" (reserved, except _locales) — expo export emits _expo/.
 renameSync(path.join(dist, '_expo'), path.join(dist, 'expo-static'))
 
+// Patch JS bundles: Metro bakes the chunk URL with the pre-rename "_expo/"
+// prefix; replace it so dynamic imports resolve to the renamed path.
+const jsBundleDir = path.join(dist, 'expo-static', 'static', 'js', 'web')
+let chunkFiles
+try {
+    chunkFiles = readdirSync(jsBundleDir).filter(f => f.endsWith('.js'))
+} catch (error) {
+    throw new Error(
+        `JS bundle dir not found at ${jsBundleDir} — Metro output structure ` +
+            'may have changed; update the /_expo/ patch loop in build.mjs',
+        { cause: error },
+    )
+}
+for (const file of chunkFiles) {
+    const filePath = path.join(jsBundleDir, file)
+    const patched = readFileSync(filePath, 'utf8').replaceAll('/_expo/', '/expo-static/')
+    writeFileSync(filePath, patched)
+}
+
 // 2. Bundle the extension service worker
 await build({
     entryPoints: [path.join(root, 'src/background/index.ts')],
@@ -50,6 +69,16 @@ await build({
     bundle: true,
     format: 'esm',
     target: 'chrome120',
+    alias: {
+        '@perawallet/wallet-extension-keystore-chrome/vault/autolock': path.join(
+            root,
+            '../../extensions/keystore-chrome/src/vault/autolock.ts',
+        ),
+        '@perawallet/wallet-extension-platform-chrome': path.join(
+            root,
+            '../../extensions/platform-chrome/src/index.ts',
+        ),
+    },
 })
 
 // 3. Surface HTMLs: one exported bundle, per-surface flag injected via an
@@ -58,21 +87,28 @@ const indexHtml = readFileSync(path.join(dist, 'index.html'), 'utf8').replaceAll
     '_expo/',
     'expo-static/',
 )
-if (!indexHtml.includes('<head>')) {
-    throw new Error('exported index.html has no <head> tag — expo export output shape changed')
+if (!indexHtml.includes('<head>') || !indexHtml.includes('</head>')) {
+    throw new Error('exported index.html has no <head>/</head> tag — expo export output shape changed')
 }
 for (const surface of SURFACES) {
     writeFileSync(
         path.join(dist, `surface-${surface}.js`),
         `window.__PERA_SURFACE__=${JSON.stringify(surface)}\n`,
     )
-    const extraHead =
-        `<script src="./surface-${surface}.js"></script>` +
-        (surface === 'popup' ? POPUP_CSS : '')
-    writeFileSync(
-        path.join(dist, `${surface}.html`),
-        indexHtml.replace('<head>', `<head>${extraHead}`),
+    let html = indexHtml.replace(
+        '<head>',
+        `<head><script src="./surface-${surface}.js"></script>`,
     )
+    if (surface === 'popup') {
+        // Inject at the END of <head> (not the start) so these rules come
+        // after expo's own "#expo-reset" reset stylesheet in source order.
+        // Both use equal-specificity html/body/#root selectors, so without
+        // this ordering expo-reset's `height:100%` (which resolves against
+        // Chrome's auto-sizing popup window, not a fixed viewport) wins the
+        // cascade and collapses the popup to ~30px tall.
+        html = html.replace('</head>', `${POPUP_CSS}</head>`)
+    }
+    writeFileSync(path.join(dist, `${surface}.html`), html)
 }
 rmSync(path.join(dist, 'index.html'))
 

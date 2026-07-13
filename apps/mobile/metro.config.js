@@ -70,6 +70,25 @@ const polyfillMap = {
     'react-native-quick-base64': path.resolve(projectRoot, 'node_modules/react-native-quick-base64'),
 };
 
+// Native modules that leak into the web bundle through shared screens get
+// same-shaped no-op stubs (design spec: "ledger-react-native /
+// ledger-react-native-usb / passkey-autofill → same-shaped no-op stubs").
+const webStubs = {
+    // BLE transport: react-native-ble-plx calls NativeModules.BlePlx at eval time.
+    '@perawallet/wallet-extension-ledger-react-native': 'web-shims/ledger-react-native.js',
+    // USB HID transport: @ledgerhq/react-native-hid requires the native bridge.
+    '@perawallet/wallet-extension-ledger-react-native-usb': 'web-shims/ledger-react-native-usb.js',
+    // Native credential provider: requireNativeModule('ReactNativePasskeyAutofill') throws on web.
+    '@algorandfoundation/react-native-passkey-autofill': 'web-shims/react-native-passkey-autofill.js',
+    // Worklets runtime: installWorkletsSupport() calls react-native's NativeModules bridge at eval.
+    // On web, react-native-reanimated uses CSS animations and does not require the worklet runtime.
+    'react-native-worklets': 'web-shims/react-native-worklets.js',
+    // Nitro Modules: index.ts calls installWorkletsSupport() at eval time which transitively
+    // requires BatchedBridge (NativeModules) and throws __fbBatchedBridgeConfig on web.
+    // Hybrid objects are native-only; the shim exposes a safe stub for web.
+    'react-native-nitro-modules': 'web-shims/react-native-nitro-modules.js',
+};
+
 // Custom resolver function
 const customResolveRequest = (context, moduleName, platform) => {
     // Strip Vite ?raw suffix so Metro can find the actual file
@@ -111,6 +130,34 @@ const customResolveRequest = (context, moduleName, platform) => {
         };
     }
 
+    // Web shim: 'crypto', 'node:crypto', and 'react-native-quick-crypto' all
+    // resolve to the node-crypto.js shim on web. The babel-plugin-module-resolver
+    // in babel.config.js rewrites `import ... from 'crypto'` → 'react-native-quick-crypto'
+    // at compile time (before Metro's resolveRequest sees it), so we must intercept
+    // the renamed specifier too. On web, the browser's SubtleCrypto API + @noble/hashes
+    // replace the native bridge implementation without touching the native bridge.
+    if (
+        platform === 'web' && (
+            moduleName === 'node:crypto' ||
+            moduleName === 'crypto' ||
+            moduleName === 'react-native-quick-crypto'
+        )
+    ) {
+        return {
+            filePath: path.resolve(projectRoot, 'web-shims/node-crypto.js'),
+            type: 'sourceFile',
+        };
+    }
+
+    // Web stub map: native modules that have no browser equivalent get
+    // same-shaped no-op shims so Metro can bundle the onboarding graph on web.
+    if (platform === 'web' && webStubs[moduleName]) {
+        return {
+            filePath: path.resolve(projectRoot, webStubs[moduleName]),
+            type: 'sourceFile',
+        };
+    }
+
     // Resolve @perawallet workspace packages to source files for development
     if (moduleName === '@perawallet/wallet-core') {
         const sourcePath = path.resolve(monorepoRoot, 'packages', 'core', 'src', 'index.ts');
@@ -130,6 +177,41 @@ const customResolveRequest = (context, moduleName, platform) => {
         } catch {
             // Fall through to default resolution
         }
+    }
+    // Web builds swap the RN keystore for the chrome implementation with the
+    // same export surface (extensions/keystore-chrome). Native keeps the real
+    // react-native-keystore (Keychain + MMKV).
+    if (
+        platform === 'web' &&
+        moduleName === '@algorandfoundation/react-native-keystore'
+    ) {
+        const sourcePath = path.resolve(
+            monorepoRoot,
+            'extensions',
+            'keystore-chrome',
+            'src',
+            'index.ts',
+        );
+        return context.resolveRequest(context, sourcePath, platform);
+    }
+    // Subpath: App.web.tsx statically imports only the storage bootstrap to avoid
+    // pulling @algorandfoundation/keystore (and its native-bridge-touching deps)
+    // into the main synchronous bundle. The /bootstrap subpath is safe: it only
+    // re-exports hydrateKeystoreStorage which uses chrome.storage.local.
+    // Native keeps the real react-native-keystore, so this subpath must only
+    // resolve on web (same guard as every sibling branch above).
+    if (
+        platform === 'web' &&
+        moduleName === '@perawallet/wallet-extension-keystore-chrome/bootstrap'
+    ) {
+        const sourcePath = path.resolve(
+            monorepoRoot,
+            'extensions',
+            'keystore-chrome',
+            'src',
+            'bootstrap.ts',
+        );
+        return context.resolveRequest(context, sourcePath, platform);
     }
     if (moduleName === '@perawallet/wallet-extension-platform-driver') {
         const driverPackage =
