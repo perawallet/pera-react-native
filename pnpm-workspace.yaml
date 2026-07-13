@@ -155,22 +155,13 @@ minimumReleaseAge: 10080
 #   @algorandfoundation/keystore, react-native-keystore, react-native-passkey-autofill
 #     — in-progress first-party canaries pinned to specific versions.
 #   expo / expo-* / @expo/* / babel-preset-expo
-#     — tail of the SDK 56 upgrade; baseline expo 56.0.5 ages out 2026-06-03.
-#       Remove once it has aged past the window.
-#   protobufjs
-#     — security pin to 7.6.3 (GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7);
-#       7.6.3 ages out 2026-06-16. Maintainer continuity + SLSA provenance verified.
-#       Remove once it has aged past the window.
-#   @perawallet/walletconnect
-#     — first-party WC v1 fork pinned to 1.0.0 (published 2026-06-12, replaces the
-#       unmaintained @walletconnect/* v1.8.0 packages). Maintainer continuity verified
-#       (Pera/Hipo team), no install scripts. Ages out 2026-06-19; remove after.
+#     — active SDK 57 line: Expo ships frequent same-SDK patch releases (57.0.x)
+#       that we want to adopt immediately rather than wait out the window.
+#       Revisit once SDK 57 patch cadence settles.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
-  - protobufjs
-  - "@perawallet/walletconnect"
   - expo
   - "expo-*"
   - "@expo/*"
