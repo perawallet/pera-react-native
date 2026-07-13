@@ -53,8 +53,8 @@ catalog:
   # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
   # "Incompatible React versions". Keep in lockstep with the override below.
   # Expo SDK 57 / RN 0.86 still bundle 19.2.3, so this stays put.
-  react: 19.2.3
-  react-dom: 19.2.3
+  react: 19.2.7
+  react-dom: 19.2.7
   react-native: 0.86.0
   react-native-mmkv: ^4.2.0
   react-native-quick-base64: ^3.0.0
@@ -126,8 +126,8 @@ overrides:
   # Was 7.5.8, now vulnerable. Pinned exact to the verified lowest patched 7.x.
   protobufjs@7: 7.6.3
   # Pinned to react-native 0.86.0's bundled renderer (19.2.3); see catalog note.
-  react: 19.2.3
-  react-dom: 19.2.3
+  react: 19.2.7
+  react-dom: 19.2.7
   react-native: 0.86.0
   "@react-native/metro-config": 0.86.0
   # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera +
