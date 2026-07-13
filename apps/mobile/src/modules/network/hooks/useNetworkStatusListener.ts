@@ -13,9 +13,13 @@
 import { useEffect } from 'react'
 import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
-import { onlineManager } from '@tanstack/react-query'
 import { useToast } from '@hooks/useToast'
 import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
+import {
+    computeHasInternet,
+    handleConnectivityChange,
+    cancelPendingConnectivityChange,
+} from '../networkStatus'
 import { useNetworkStatusStore } from './useNetworkStatusStore'
 
 /**
@@ -30,22 +34,22 @@ import { useNetworkStatusStore } from './useNetworkStatusStore'
  */
 export const useNetworkStatusListener = (): void => {
     const { showToast } = useToast()
-    const setHasInternet = useNetworkStatusStore(state => state.setHasInternet)
     const hasInternet = useNetworkStatusStore(state => state.hasInternet)
 
-    // Subscribe to network status changes
+    // Subscribe to network status changes. Reachability-aware connectivity is
+    // computed and debounced in networkStatus; the store (wired to
+    // onlineManager via initNetworkStatus) remains the single source of truth.
     useEffect(() => {
         const netInfoSubscription = NetInfo.addEventListener(
             (state: NetInfoState) => {
-                const isConnected = state.isConnected === true
-                setHasInternet(isConnected)
-                onlineManager.setOnline(isConnected)
+                handleConnectivityChange(computeHasInternet(state))
             },
         )
         return () => {
             netInfoSubscription()
+            cancelPendingConnectivityChange()
         }
-    }, [setHasInternet])
+    }, [])
 
     // Show toast when going offline
     useEffect(() => {

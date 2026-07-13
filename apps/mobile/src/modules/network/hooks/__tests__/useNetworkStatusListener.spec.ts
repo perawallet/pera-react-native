@@ -13,14 +13,16 @@
 import { renderHook, act } from '@testing-library/react'
 import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
-import { onlineManager } from '@tanstack/react-query'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useNetworkStatusListener } from '../useNetworkStatusListener'
 import { useNetworkStatusStore } from '../useNetworkStatusStore'
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { OFFLINE_DEBOUNCE_MS } from '../../networkStatus'
 
 // Mock dependencies
 vi.mock('@react-native-community/netinfo', () => ({
     default: {
+        configure: vi.fn(),
+        fetch: vi.fn(),
         addEventListener: vi.fn(),
     },
 }))
@@ -38,12 +40,26 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
+const netInfoState = (partial: Partial<NetInfoState>): NetInfoState =>
+    ({
+        isConnected: null,
+        isInternetReachable: null,
+        ...partial,
+    }) as NetInfoState
+
+const emitNetInfo = (state: NetInfoState): void => {
+    const callback = vi.mocked(NetInfo.addEventListener).mock.calls[0][0]
+    act(() => {
+        callback(state)
+    })
+}
+
 describe('useNetworkStatusListener', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Reset store
+        vi.useFakeTimers()
+        vi.mocked(NetInfo.addEventListener).mockReturnValue(vi.fn())
         useNetworkStatusStore.setState({ hasInternet: true })
-        // Default AppState
         Object.defineProperty(AppState, 'currentState', {
             value: 'active',
             writable: true,
@@ -51,34 +67,75 @@ describe('useNetworkStatusListener', () => {
     })
 
     afterEach(() => {
+        vi.useRealTimers()
         vi.restoreAllMocks()
     })
 
-    it('subscribes to NetInfo updates and updates store and onlineManager', () => {
-        const mockUnsubscribe = vi.fn()
-        const mockAddEventListener = vi.mocked(NetInfo.addEventListener)
-        mockAddEventListener.mockReturnValue(mockUnsubscribe)
+    it('subscribes to NetInfo on mount and unsubscribes on unmount', () => {
+        const unsubscribe = vi.fn()
+        vi.mocked(NetInfo.addEventListener).mockReturnValue(unsubscribe)
 
+        const { unmount } = renderHook(() => useNetworkStatusListener())
+
+        expect(NetInfo.addEventListener).toHaveBeenCalledTimes(1)
+
+        unmount()
+        expect(unsubscribe).toHaveBeenCalledTimes(1)
+    })
+
+    it('flips offline on a connected-but-unreachable link after the debounce window', () => {
         renderHook(() => useNetworkStatusListener())
 
-        expect(mockAddEventListener).toHaveBeenCalledTimes(1)
+        // Captive portal: link up, internet unreachable.
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: false }),
+        )
 
-        // Simulate network change to offline
-        const networkCallback = mockAddEventListener.mock.calls[0][0]
+        // Not immediately offline — the transition is debounced.
+        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
+
         act(() => {
-            networkCallback({ isConnected: false } as NetInfoState)
+            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
         })
-
         expect(useNetworkStatusStore.getState().hasInternet).toBe(false)
-        expect(onlineManager.setOnline).toHaveBeenCalledWith(false)
+    })
 
-        // Simulate network change to online
+    it('does not flip offline when reachability is unknown (null)', () => {
+        renderHook(() => useNetworkStatusListener())
+
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: null }),
+        )
         act(() => {
-            networkCallback({ isConnected: true } as NetInfoState)
+            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
         })
 
         expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
-        expect(onlineManager.setOnline).toHaveBeenCalledWith(true)
+    })
+
+    it('comes back online immediately', () => {
+        useNetworkStatusStore.setState({ hasInternet: false })
+        renderHook(() => useNetworkStatusListener())
+
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: true }),
+        )
+
+        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
+    })
+
+    it('does not apply a pending offline transition after unmount', () => {
+        const { unmount } = renderHook(() => useNetworkStatusListener())
+
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: false }),
+        )
+        unmount()
+
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
+        })
+        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
     })
 
     it('shows toast when internet is lost and AppState is active', () => {
@@ -90,7 +147,6 @@ describe('useNetworkStatusListener', () => {
 
         const { rerender } = renderHook(() => useNetworkStatusListener())
 
-        // Change store state to offline
         act(() => {
             useNetworkStatusStore.setState({ hasInternet: false })
         })
@@ -114,7 +170,6 @@ describe('useNetworkStatusListener', () => {
 
         const { rerender } = renderHook(() => useNetworkStatusListener())
 
-        // Change store state to offline
         act(() => {
             useNetworkStatusStore.setState({ hasInternet: false })
         })
@@ -132,7 +187,6 @@ describe('useNetworkStatusListener', () => {
 
         const { rerender } = renderHook(() => useNetworkStatusListener())
 
-        // Change store state to offline
         act(() => {
             useNetworkStatusStore.setState({ hasInternet: false })
         })
