@@ -228,6 +228,74 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(result.current.documentsState).toBe('rejected')
     })
 
+    it('reports unverified when the KYC was never submitted', () => {
+        // The bug: an abandoned KYC (UNVERIFIED) used to render as "pending"
+        // (submitted). It must be its own actionable state instead.
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('reports unverified while the KYC state is unknown or unfetched', () => {
+        mockVerificationState = null
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('keeps an unsubmitted KYC actionable even after the poll gives up', () => {
+        // The give-up signal must not turn an unsubmitted KYC into the retry
+        // "error" row — the right action is still "verify your account".
+        mockVerificationState = 'UNVERIFIED'
+        mockHasPollTimedOut = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('sends the verify CTA to the KYC entry screen', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleVerifyIdentity()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
+    })
+
+    it('unlocks the details step only once KYC is submitted (PENDING/VERIFIED)', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result, rerender } = renderHook(() =>
+            useCardOnboardingStatusScreen(),
+        )
+        expect(result.current.isKycSubmitted).toBe(false)
+
+        mockVerificationState = 'PENDING'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(true)
+
+        mockVerificationState = 'VERIFIED'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(true)
+
+        mockVerificationState = 'REJECTED'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(false)
+    })
+
+    it('keeps the details step unlocked when a submitted review poll errors', () => {
+        // documentsState becomes 'error' on a PENDING poll failure, but the
+        // user has still submitted — the step must stay unlocked.
+        mockVerificationState = 'PENDING'
+        mockHasPollTimedOut = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('error')
+        expect(result.current.isKycSubmitted).toBe(true)
+    })
+
     it('redirects a back action to the wallet home once KYC is verified', () => {
         mockVerificationState = 'VERIFIED'
         renderHook(() => useCardOnboardingStatusScreen())
@@ -270,47 +338,18 @@ describe('useCardOnboardingStatusScreen', () => {
     })
 
     describe('timed-out poll handling', () => {
-        it('flips the documents row to an error state when the poll gives up', () => {
+        it('flips a reviewing (PENDING) row to error when the poll gives up', () => {
+            // Only a submitted-but-unconfirmed (PENDING) review that stops
+            // responding becomes the retry "error" row.
+            mockVerificationState = 'PENDING'
             mockHasPollTimedOut = true
             const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
             expect(result.current.documentsState).toBe('error')
         })
 
-        it('routes retry to the KYC entry when the record never left UNVERIFIED', () => {
-            // A record that never left UNVERIFIED needs a fresh Veriff
-            // session, so retry re-mints instead of re-polling.
-            mockVerificationState = 'UNVERIFIED'
-            mockHasPollTimedOut = true
-            const { result } = renderHook(() => useCardOnboardingStatusScreen())
-
-            act(() => {
-                result.current.handleRetryStatus()
-            })
-
-            expect(mockNavigate).toHaveBeenCalledWith(
-                'CardOnboardingVerification',
-            )
-            expect(mockRestartPolling).not.toHaveBeenCalled()
-        })
-
         it('restarts polling on retry after failures', () => {
-            mockHasPollTimedOut = true
-            const { result } = renderHook(() => useCardOnboardingStatusScreen())
-
-            act(() => {
-                result.current.handleRetryStatus()
-            })
-
-            expect(mockRestartPolling).toHaveBeenCalled()
-            expect(mockNavigate).not.toHaveBeenCalled()
-        })
-
-        it('restarts polling on retry for an unmodelled state (no Veriff re-mint)', () => {
-            // An unknown server state is progress, not a dead session — retry
-            // must not send the user into minting a fresh Veriff session.
-            mockVerificationState = null
-            mockIsStateUnknown = true
+            mockVerificationState = 'PENDING'
             mockHasPollTimedOut = true
             const { result } = renderHook(() => useCardOnboardingStatusScreen())
 

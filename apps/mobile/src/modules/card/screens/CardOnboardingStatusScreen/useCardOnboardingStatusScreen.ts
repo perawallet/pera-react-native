@@ -46,11 +46,28 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
 
-/** The "Submit Your Documents" checklist row's visual state. */
-export type DocumentsState = 'pending' | 'verified' | 'rejected' | 'error'
+/**
+ * The "Submit Your Documents" checklist row's visual state.
+ * - `unverified`: KYC not submitted yet (or state unknown) — the user must
+ *   still complete Veriff; the later steps stay locked.
+ * - `pending`: submitted and under review — Baanx reviews async, so the later
+ *   steps unlock.
+ */
+export type DocumentsState =
+    | 'unverified'
+    | 'pending'
+    | 'verified'
+    | 'rejected'
+    | 'error'
 
 export type UseCardOnboardingStatusScreenResult = {
     documentsState: DocumentsState
+    /**
+     * KYC is submitted (PENDING under review, or VERIFIED) — the only states
+     * that unlock the details/address step. UNVERIFIED, rejected, and unknown
+     * states keep it locked behind the "verify" prompt.
+     */
+    isKycSubmitted: boolean
     /** Registration (details + address) is finalized — gates the later steps. */
     isRegistrationComplete: boolean
     /** A Pera account has been linked as the funding source. */
@@ -75,11 +92,9 @@ export type UseCardOnboardingStatusScreenResult = {
     handleCreatePeraCard: () => void
     /** Continues to the personal-details step (allowed while Baanx reviews). */
     handleEnterDetails: () => void
-    /**
-     * Recovers from the documents-row error state: restarts polling after
-     * failures, or returns to the KYC entry when the record never left
-     * UNVERIFIED (a fresh Veriff session is the only way forward).
-     */
+    /** Resumes KYC from the unverified documents row (reopens the Veriff entry). */
+    handleVerifyIdentity: () => void
+    /** Recovers the documents-row error state (PENDING review) by re-polling. */
     handleRetryStatus: () => void
     /** Opens the account picker and links the chosen account as funding source. */
     handleConnectAccount: () => void
@@ -101,26 +116,42 @@ export const useCardOnboardingStatusScreen =
         const { verificationState, hasPollTimedOut, restartPolling } =
             useOnboardingKycPoll()
 
-        const documentsState: DocumentsState = hasPollTimedOut
-            ? 'error'
-            : verificationState === VerificationState.Verified
-              ? 'verified'
-              : verificationState === VerificationState.Rejected
-                ? 'rejected'
-                : 'pending'
+        // Only PENDING (submitted, under review) and VERIFIED count as "KYC
+        // done enough to proceed" — matching the sign-in resume gate. UNVERIFIED
+        // (abandoned/never submitted) and unknown/unfetched states are NOT
+        // submitted, so they surface an actionable "verify" row and keep the
+        // later steps locked rather than masquerading as pending. The give-up
+        // signal only escalates a submitted review (PENDING) that stops
+        // responding into the retry error row.
+        const documentsState: DocumentsState =
+            verificationState === VerificationState.Verified
+                ? 'verified'
+                : verificationState === VerificationState.Rejected
+                  ? 'rejected'
+                  : verificationState === VerificationState.Pending
+                    ? hasPollTimedOut
+                        ? 'error'
+                        : 'pending'
+                    : 'unverified'
 
+        // Submitted (PENDING/VERIFIED) is the gate for the later steps — a poll
+        // hiccup on a submitted review (documentsState 'error') must not relock
+        // them, so this reads the KYC state directly, not the row state.
+        const isKycSubmitted =
+            verificationState === VerificationState.Pending ||
+            verificationState === VerificationState.Verified
+
+        // The documents row's "Verify your Account" CTA — resumes KYC by
+        // reopening the Veriff entry screen.
+        const handleVerifyIdentity = useCallback(() => {
+            navigation.navigate('CardOnboardingVerification')
+        }, [navigation])
+
+        // Only reachable from the PENDING error row (repeated poll failures);
+        // re-arm polling to wait for Baanx's decision again.
         const handleRetryStatus = useCallback(() => {
-            // A record stuck on UNVERIFIED means Veriff never reported back —
-            // the fix is a fresh session, not another round of polling. Keep
-            // the timed-out error row (and polling stopped) while this screen
-            // sits behind the KYC entry; a later retry re-polls once the new
-            // session has changed the state.
-            if (verificationState === VerificationState.Unverified) {
-                navigation.navigate('CardOnboardingVerification')
-                return
-            }
             restartPolling()
-        }, [verificationState, navigation, restartPolling])
+        }, [restartPolling])
 
         // The address step sets Completed, so it doubles as the "details done"
         // signal that unlocks the Connect Funds step.
@@ -333,6 +364,7 @@ export const useCardOnboardingStatusScreen =
 
         return {
             documentsState,
+            isKycSubmitted,
             isRegistrationComplete,
             isFundsConnected,
             connectedAccount,
@@ -345,6 +377,7 @@ export const useCardOnboardingStatusScreen =
             isCreatingCard,
             handleCreatePeraCard,
             handleEnterDetails,
+            handleVerifyIdentity,
             handleRetryStatus,
             handleConnectAccount,
             handleLogout,

@@ -1067,6 +1067,8 @@
             "title": "Finish setup and start spending on-chain",
             "documents_title": "Submit Your Documents",
             "documents_pending_label": "Pending",
+            "documents_unverified_body": "Please verify your account to begin spending on-chain.",
+            "documents_verify_button": "Verify your Account",
             "documents_pending_body": "Your verification has been submitted. We'll email you once it's complete.",
             "documents_verified_body": "Your identity has been verified.",
             "documents_rejected_body": "We couldn't verify your identity. Please contact support for help.",

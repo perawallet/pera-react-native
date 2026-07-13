@@ -26,6 +26,7 @@ export const CardOnboardingStatusScreen = () => {
     const styles = useStyles()
     const {
         documentsState,
+        isKycSubmitted,
         isRegistrationComplete,
         isFundsConnected,
         connectedAccount,
@@ -38,6 +39,7 @@ export const CardOnboardingStatusScreen = () => {
         isCreatingCard,
         handleCreatePeraCard,
         handleEnterDetails,
+        handleVerifyIdentity,
         handleRetryStatus,
         handleConnectAccount,
         handleLogout,
@@ -64,10 +66,11 @@ export const CardOnboardingStatusScreen = () => {
                     <DocumentsRow
                         documentsState={documentsState}
                         onRetry={handleRetryStatus}
+                        onVerify={handleVerifyIdentity}
                     />
                     <EnterDetailsRow
                         isRegistrationComplete={isRegistrationComplete}
-                        documentsState={documentsState}
+                        isKycSubmitted={isKycSubmitted}
                         onEnterDetails={handleEnterDetails}
                     />
                     <ConnectFundsRow

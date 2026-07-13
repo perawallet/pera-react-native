@@ -27,6 +27,12 @@ const DOCUMENTS_ROW: Record<
         showsPendingLabel: boolean
     }
 > = {
+    unverified: {
+        icon: 'pending',
+        variant: 'primary',
+        bodyKey: 'peraCard.setup_status.documents_unverified_body',
+        showsPendingLabel: false,
+    },
     pending: {
         icon: 'pending',
         variant: 'warning',
@@ -56,12 +62,15 @@ const DOCUMENTS_ROW: Record<
 type DocumentsRowProps = {
     documentsState: DocumentsState
     onRetry: () => void
+    /** Resumes KYC from the unverified state (reopens the Veriff entry). */
+    onVerify: () => void
 }
 
 /** Checklist row 1 — "Submit Your Documents", driven by the KYC state. */
 export const DocumentsRow = ({
     documentsState,
     onRetry,
+    onVerify,
 }: DocumentsRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -80,6 +89,15 @@ export const DocumentsRow = ({
             body={t(row.bodyKey)}
             testID='card-onboarding-status-documents'
         >
+            {documentsState === 'unverified' ? (
+                <PWButton
+                    variant='primary'
+                    title={t('peraCard.setup_status.documents_verify_button')}
+                    onPress={onVerify}
+                    style={styles.detailsButton}
+                    testID='card-onboarding-status-documents-verify'
+                />
+            ) : null}
             {documentsState === 'error' ? (
                 <PWButton
                     variant='secondary'
