@@ -95,5 +95,10 @@ export const useSingleAssetDetailsQuery = (
         },
         staleTime: Infinity,
         enabled: !!assetId.length,
+        // SQLite is the source of truth; run the queryFn even while offline instead
+        // of pausing it (TanStack's default networkMode: 'online'), which would strand
+        // consumers in `pending`. The network fallback uses Promise.allSettled and
+        // never rejects, so running it offline is safe (it simply yields empty data).
+        networkMode: 'always',
     })
 }
