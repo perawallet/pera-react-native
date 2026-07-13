@@ -26,7 +26,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     banner: {
         backgroundColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.md,
+        borderRadius: theme.borderRadius.md,
         marginTop: theme.spacing.xs,
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.xs,

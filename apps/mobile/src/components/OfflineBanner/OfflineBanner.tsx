@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWText, PWView } from '@components/core'
+import { OFFLINE_BANNER_FADE_MS } from '@constants/ui'
 import { useOfflineBanner } from './useOfflineBanner'
 import { useStyles } from './styles'
 
@@ -28,8 +29,8 @@ export const OfflineBanner = () => {
     const opacity = useSharedValue(0)
 
     useEffect(() => {
-        opacity.value = withTiming(isVisible ? 1 : 0, { duration: 200 })
-    }, [isVisible, opacity])
+        opacity.value = withTiming(1, { duration: OFFLINE_BANNER_FADE_MS })
+    }, [opacity])
 
     const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
 
@@ -48,6 +49,7 @@ export const OfflineBanner = () => {
                         styles.banner,
                         isReconnected && styles.bannerReconnected,
                     ]}
+                    pointerEvents='none'
                 >
                     <PWText
                         style={[

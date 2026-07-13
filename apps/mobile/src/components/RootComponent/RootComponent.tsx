@@ -187,21 +187,27 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     }, [appStatePlatform, hasAccounts, runSyncAction])
 
     return (
-        <BottomSheetModalProvider>
-            <AutoLockGuard>
-                <WalletConnectProvider>
-                    <RootContentContainer fcmToken={fcmToken} />
-                </WalletConnectProvider>
-                <ErrorBoundary
-                    onError={handleOverlayError}
-                    FallbackComponent={OverlayErrorFallback}
-                >
-                    <SigningOverlays />
-                    <MultisigOverlays />
-                    <SwapOverlays />
-                </ErrorBoundary>
-            </AutoLockGuard>
+        <>
+            <BottomSheetModalProvider>
+                <AutoLockGuard>
+                    <WalletConnectProvider>
+                        <RootContentContainer fcmToken={fcmToken} />
+                    </WalletConnectProvider>
+                    <ErrorBoundary
+                        onError={handleOverlayError}
+                        FallbackComponent={OverlayErrorFallback}
+                    >
+                        <SigningOverlays />
+                        <MultisigOverlays />
+                        <SwapOverlays />
+                    </ErrorBoundary>
+                </AutoLockGuard>
+            </BottomSheetModalProvider>
+            {/* Global offline indicator. Mounted as the LAST node in the root
+                tree so it paints above navigation, bottom-sheet modals, and the
+                AutoLockGuard PIN overlay (which itself uses zIndex.max). Order
+                here is load-bearing — keep <OfflineBanner /> last. */}
             <OfflineBanner />
-        </BottomSheetModalProvider>
+        </>
     )
 }
