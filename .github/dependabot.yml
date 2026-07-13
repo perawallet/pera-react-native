@@ -11,6 +11,22 @@ updates:
       timezone: Europe/London
     open-pull-requests-limit: 10
     versioning-strategy: increase-if-necessary
+    # Mirror pnpm's minimumReleaseAge (7d) so Dependabot stops proposing versions
+    # our install gate would reject anyway. Keep this exclude list in sync with
+    # minimumReleaseAgeExclude in pnpm-workspace.yaml. Security updates bypass
+    # cooldown, so advisory fixes still come through immediately.
+    cooldown:
+      default-days: 7
+      include:
+        - "*"
+      exclude:
+        - "@algorandfoundation/keystore"
+        - "@algorandfoundation/react-native-keystore"
+        - "@algorandfoundation/react-native-passkey-autofill"
+        - "expo"
+        - "expo-*"
+        - "@expo/*"
+        - "babel-preset-expo"
     labels:
       - dependencies
     groups:
