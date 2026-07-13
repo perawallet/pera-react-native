@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, Linking, type AppStateStatus } from 'react-native'
 import {
+    getCardApiError,
     useCardStore,
     useOnboardingDetailsQuery,
     useStartVerificationMutation,
@@ -75,12 +76,29 @@ export const useCardOnboardingVerificationScreen =
                     const { sessionUrl } = await startVerification.mutateAsync({
                         onboardingId,
                     })
+                    // Guard before opening: a malformed/unopenable session URL
+                    // must not arm the status poll — nothing was opened, so
+                    // there is nothing to wait for.
+                    const canOpen =
+                        sessionUrl.startsWith('https://') &&
+                        (await Linking.canOpenURL(sessionUrl))
+                    if (!canOpen) {
+                        errorToast(
+                            t('peraCard.verification.error_title'),
+                            t('peraCard.verification.open_link_error_body'),
+                        )
+                        return
+                    }
+                    await Linking.openURL(sessionUrl)
                     setHasStarted(true)
-                    void Linking.openURL(sessionUrl)
-                } catch {
+                } catch (error) {
+                    // Prefer Baanx's own message (e.g. a wrong-phase or expired
+                    // onboarding rejection) over the generic fallback.
+                    const apiError = await getCardApiError(error)
                     errorToast(
                         t('peraCard.verification.error_title'),
-                        t('peraCard.verification.error_body'),
+                        apiError.message ??
+                            t('peraCard.verification.error_body'),
                     )
                 }
             }

@@ -15,6 +15,8 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     dobToIsoDate,
+    getCardApiError,
+    isDuplicateError,
     isoDateToDob,
     personalDetailsSchema,
     useCardStore,
@@ -202,10 +204,20 @@ export const useCardOnboardingPersonalDetailsScreen =
                         countryOfNationality,
                     })
                     navigation.navigate('CardOnboardingAddress')
-                } catch {
+                } catch (error) {
+                    // A duplicate means Baanx already holds these details (a
+                    // retried non-idempotent submit) — continue rather than
+                    // strand the user. Otherwise prefer Baanx's own message so
+                    // the real reason shows (e.g. a wrong-phase rejection).
+                    const apiError = await getCardApiError(error)
+                    if (isDuplicateError(apiError)) {
+                        navigation.navigate('CardOnboardingAddress')
+                        return
+                    }
                     errorToast(
                         t('peraCard.personal_details.error_title'),
-                        t('peraCard.personal_details.error_body'),
+                        apiError.message ??
+                            t('peraCard.personal_details.error_body'),
                     )
                 }
             },

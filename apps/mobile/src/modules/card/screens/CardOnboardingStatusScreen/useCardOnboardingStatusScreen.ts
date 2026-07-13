@@ -49,8 +49,19 @@ import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/
 /** How often we re-check the KYC state while Veriff is still reviewing. */
 const POLL_INTERVAL_MS = 4000
 
+/** Consecutive poll failures (~12s) before the row flips to an error state. */
+const POLL_FAILURE_LIMIT = 3
+
+/**
+ * Consecutive UNVERIFIED polls (~60s) before the row flips to an error state.
+ * You only land here once Veriff has reported back, so a record that stays
+ * UNVERIFIED means the session never completed (or the server returned a state
+ * we don't model — those coerce to UNVERIFIED); polling it forever can't help.
+ */
+const STUCK_UNVERIFIED_POLL_LIMIT = 15
+
 /** The "Submit Your Documents" checklist row's visual state. */
-export type DocumentsState = 'pending' | 'verified' | 'rejected'
+export type DocumentsState = 'pending' | 'verified' | 'rejected' | 'error'
 
 export type UseCardOnboardingStatusScreenResult = {
     documentsState: DocumentsState
@@ -78,6 +89,12 @@ export type UseCardOnboardingStatusScreenResult = {
     handleCreatePeraCard: () => void
     /** Continues to the personal-details step (allowed while Baanx reviews). */
     handleEnterDetails: () => void
+    /**
+     * Recovers from the documents-row error state: restarts polling after
+     * failures, or returns to the KYC entry when the record never left
+     * UNVERIFIED (a fresh Veriff session is the only way forward).
+     */
+    handleRetryStatus: () => void
     /** Opens the account picker and links the chosen account as funding source. */
     handleConnectAccount: () => void
     handleLogout: () => void
@@ -97,23 +114,69 @@ export const useCardOnboardingStatusScreen =
         // Poll while the review is still running so the row flips to
         // verified/rejected live; UNVERIFIED (cold resume) renders as pending.
         const [isReviewing, setIsReviewing] = useState(true)
-        const { data } = useOnboardingDetailsQuery({
-            onboardingId,
-            refetchInterval: isReviewing ? POLL_INTERVAL_MS : false,
-        })
+        const [hasPollTimedOut, setHasPollTimedOut] = useState(false)
+        const { data, refetch, dataUpdatedAt, errorUpdatedAt } =
+            useOnboardingDetailsQuery({
+                onboardingId,
+                refetchInterval: isReviewing ? POLL_INTERVAL_MS : false,
+            })
         const verificationState = data?.verificationState ?? null
 
-        const documentsState: DocumentsState =
-            verificationState === VerificationState.Verified
-                ? 'verified'
-                : verificationState === VerificationState.Rejected
-                  ? 'rejected'
-                  : 'pending'
+        // Repeated failures or a never-progressing UNVERIFIED record would
+        // otherwise render as "pending" forever (queries don't retry, and
+        // unknown states coerce to UNVERIFIED) — count them and give up into
+        // an explicit error row with a retry instead.
+        const pollFailuresRef = useRef(0)
+        const unverifiedPollsRef = useRef(0)
+        useEffect(() => {
+            if (!errorUpdatedAt) return
+            pollFailuresRef.current += 1
+            if (pollFailuresRef.current >= POLL_FAILURE_LIMIT) {
+                setHasPollTimedOut(true)
+            }
+        }, [errorUpdatedAt])
+        useEffect(() => {
+            if (!dataUpdatedAt) return
+            pollFailuresRef.current = 0
+            if (verificationState === VerificationState.Unverified) {
+                unverifiedPollsRef.current += 1
+                if (unverifiedPollsRef.current >= STUCK_UNVERIFIED_POLL_LIMIT) {
+                    setHasPollTimedOut(true)
+                }
+            } else {
+                unverifiedPollsRef.current = 0
+            }
+        }, [dataUpdatedAt, verificationState])
 
-        // Stop polling once Veriff has decided.
+        const documentsState: DocumentsState = hasPollTimedOut
+            ? 'error'
+            : verificationState === VerificationState.Verified
+              ? 'verified'
+              : verificationState === VerificationState.Rejected
+                ? 'rejected'
+                : 'pending'
+
+        // Stop polling once Veriff has decided (or once we've given up).
         useEffect(() => {
             setIsReviewing(documentsState === 'pending')
         }, [documentsState])
+
+        const handleRetryStatus = useCallback(() => {
+            pollFailuresRef.current = 0
+            unverifiedPollsRef.current = 0
+            // A record stuck on UNVERIFIED means Veriff never reported back —
+            // the fix is a fresh session, not another round of polling. Keep
+            // the timed-out error row (and polling stopped) while this screen
+            // sits behind the KYC entry; a later retry re-polls once the new
+            // session has changed the state.
+            if (verificationState === VerificationState.Unverified) {
+                navigation.navigate('CardOnboardingVerification')
+                return
+            }
+            setHasPollTimedOut(false)
+            setIsReviewing(true)
+            void refetch()
+        }, [verificationState, navigation, refetch])
 
         // The address step sets Completed, so it doubles as the "details done"
         // signal that unlocks the Connect Funds step.
@@ -338,6 +401,7 @@ export const useCardOnboardingStatusScreen =
             isCreatingCard,
             handleCreatePeraCard,
             handleEnterDetails,
+            handleRetryStatus,
             handleConnectAccount,
             handleLogout,
             handleOpenSupport,

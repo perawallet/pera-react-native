@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockVerifyEmailMutateAsync = vi.fn()
 const mockSetAllowMarketing = vi.fn()
 const mockSetAllowSms = vi.fn()
+let mockAllowSms = false
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -58,7 +59,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 contactVerificationId: 'mock-contact-id',
                 onboardingId: null,
                 allowMarketing: false,
-                allowSms: false,
+                allowSms: mockAllowSms,
                 setCodeVerificationError: vi.fn(),
                 setAllowMarketing: mockSetAllowMarketing,
                 setAllowSms: mockSetAllowSms,
@@ -71,10 +72,11 @@ vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
 }))
 
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: vi.fn(),
-        errorToast: vi.fn(),
+        errorToast: mockErrorToast,
         infoToast: vi.fn(),
         showToast: vi.fn(),
     }),
@@ -92,6 +94,7 @@ const renderPasswordHook = () =>
 describe('useCardOnboardingPasswordScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockAllowSms = false
         mockVerifyEmailMutateAsync.mockResolvedValue({
             onboardingId: 'mock-onboarding-id',
         })
@@ -125,5 +128,91 @@ describe('useCardOnboardingPasswordScreen', () => {
 
         expect(mockSetAllowMarketing).toHaveBeenCalledWith(true)
         expect(mockSetAllowSms).toHaveBeenCalledWith(true)
+    })
+
+    describe('email/verify submission errors', () => {
+        const VALID_PASSWORD = 'CorrectHorse7Battery!'
+
+        // Writes a schema-valid password straight into the form store — no
+        // inputs are rendered in a hook test, so this is the submit lever.
+        const submitWithValidForm = async (result: {
+            current: ReturnType<typeof useCardOnboardingPasswordScreen>
+        }) => {
+            act(() => {
+                Object.assign(result.current.control._formValues, {
+                    password: VALID_PASSWORD,
+                    confirmPassword: VALID_PASSWORD,
+                })
+            })
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+        }
+
+        beforeEach(() => {
+            mockAllowSms = true
+        })
+
+        it('submits and continues to the phone step on success', async () => {
+            const { result } = renderPasswordHook()
+
+            await submitWithValidForm(result)
+
+            expect(mockVerifyEmailMutateAsync).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    email: 'john@example.com',
+                    password: VALID_PASSWORD,
+                    allowSms: true,
+                }),
+            )
+            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('routes back to the code screen on a rejected code (400/422)', async () => {
+            mockVerifyEmailMutateAsync.mockRejectedValueOnce({
+                response: { status: 400 },
+                data: { message: 'Error, no valid verification code' },
+            })
+            const { result } = renderPasswordHook()
+
+            await submitWithValidForm(result)
+
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingEmailVerify',
+            )
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it("surfaces Baanx's own error message on a non-input failure", async () => {
+            mockVerifyEmailMutateAsync.mockRejectedValueOnce({
+                response: { status: 409 },
+                data: { message: 'Email address already registered' },
+            })
+            const { result } = renderPasswordHook()
+
+            await submitWithValidForm(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.create_account.error_title',
+                'Email address already registered',
+            )
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('falls back to the generic error body when the failure carries no message', async () => {
+            mockVerifyEmailMutateAsync.mockRejectedValueOnce(
+                new Error('network down'),
+            )
+            const { result } = renderPasswordHook()
+
+            await submitWithValidForm(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.create_account.error_title',
+                'peraCard.create_account.error_body',
+            )
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
     })
 })

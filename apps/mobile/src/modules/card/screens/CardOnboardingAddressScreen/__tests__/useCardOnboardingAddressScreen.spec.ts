@@ -121,11 +121,12 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 const mockErrorToast = vi.fn()
+const mockInfoToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: vi.fn(),
         errorToast: mockErrorToast,
-        infoToast: vi.fn(),
+        infoToast: mockInfoToast,
         showToast: vi.fn(),
     }),
 }))
@@ -239,6 +240,83 @@ describe('useCardOnboardingAddressScreen', () => {
 
         // The address fields are still empty, so the form is invalid.
         expect(result.current.isValid).toBe(false)
+    })
+
+    // Writes a valid address straight into the form store and accepts both
+    // T&Cs — no inputs are rendered in a hook test, so this is the submit lever.
+    const fillValidAddress = (result: {
+        current: ReturnType<typeof useCardOnboardingAddressScreen>
+    }) => {
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                countryIso: 'GB',
+                addressLine1: '1 Main Street',
+                city: 'London',
+                zip: 'N1 9GU',
+            })
+            result.current.handleToggleCardTerms()
+            result.current.handleTogglePlatformTerms()
+        })
+    }
+
+    it('submits the address and returns to the setup checklist', async () => {
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        fillValidAddress(result)
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingStatus'),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it("surfaces Baanx's own error message when the submit is rejected", async () => {
+        mockMutateAsync.mockRejectedValueOnce({
+            response: { status: 400 },
+            data: { message: 'Registration is not in the expected phase' },
+        })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        fillValidAddress(result)
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.address.error_title',
+                'Registration is not in the expected phase',
+            ),
+        )
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('routes a duplicate submission to sign-in (registration finished but no session was stored)', async () => {
+        mockMutateAsync.mockRejectedValueOnce({
+            response: { status: 409 },
+            data: { message: 'Duplicate onboardingId - record already exists' },
+        })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+        fillValidAddress(result)
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        // The session token only arrives on a successful address response, so
+        // a duplicate retry must send the user to sign in for one — landing on
+        // the checklist tokenless would strand them.
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn'),
+        )
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'peraCard.address.already_registered_title',
+            'peraCard.address.already_registered_body',
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('opens the intl Baanx card T&C and Pera platform T&C links', () => {

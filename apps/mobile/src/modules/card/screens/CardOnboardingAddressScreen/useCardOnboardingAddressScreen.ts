@@ -15,6 +15,8 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     addressSchema,
+    getCardApiError,
+    isDuplicateError,
     useCardStore,
     useLinkConsentMutation,
     useRegistrationSettingsQuery,
@@ -63,7 +65,7 @@ export const useCardOnboardingAddressScreen =
     (): UseCardOnboardingAddressScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { errorToast } = useToast()
+        const { errorToast, infoToast } = useToast()
         const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -257,10 +259,26 @@ export const useCardOnboardingAddressScreen =
                 // Registration is done — hand back to the setup checklist, where
                 // Connect Funds is now the live step.
                 navigation.navigate('CardOnboardingStatus')
-            } catch {
+            } catch (error) {
+                // A duplicate means Baanx already completed this registration
+                // on an earlier attempt whose response was lost — so the
+                // session token that only the address response carries was
+                // never stored on this device. Signing in is the only way to
+                // obtain one; continuing to the checklist would strand the
+                // user with locked steps and 401s. Otherwise prefer Baanx's
+                // own message so the real reason shows.
+                const apiError = await getCardApiError(error)
+                if (isDuplicateError(apiError)) {
+                    infoToast(
+                        t('peraCard.address.already_registered_title'),
+                        t('peraCard.address.already_registered_body'),
+                    )
+                    navigation.navigate('CardSignIn')
+                    return
+                }
                 errorToast(
                     t('peraCard.address.error_title'),
-                    t('peraCard.address.error_body'),
+                    apiError.message ?? t('peraCard.address.error_body'),
                 )
             }
         })

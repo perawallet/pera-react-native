@@ -144,9 +144,11 @@ export const useCardOnboardingPasswordScreen =
                     navigation.navigate('CardOnboardingEmailVerify')
                     return
                 }
+                // Prefer Baanx's own message (e.g. "email already registered")
+                // over the generic fallback so the real reason shows.
                 errorToast(
                     t('peraCard.create_account.error_title'),
-                    t('peraCard.create_account.error_body'),
+                    apiError.message ?? t('peraCard.create_account.error_body'),
                 )
             }
         })

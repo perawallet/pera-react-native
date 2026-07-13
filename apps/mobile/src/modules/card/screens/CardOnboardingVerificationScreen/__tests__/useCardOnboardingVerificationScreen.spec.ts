@@ -98,6 +98,7 @@ beforeEach(() => {
     mockQueryOptions = undefined
     mockStartMutateAsync.mockResolvedValue({ sessionUrl: SESSION_URL })
     vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+    vi.spyOn(Linking, 'canOpenURL').mockResolvedValue(true)
     vi.spyOn(AppState, 'addEventListener').mockImplementation(
         (_event, listener) => {
             appStateListener = listener as (state: string) => void
@@ -208,6 +209,90 @@ describe('useCardOnboardingVerificationScreen', () => {
 
         // The same handler succeeds on the retry.
         await startVerification(result)
+    })
+
+    it("surfaces Baanx's own error message when starting fails with a response body", async () => {
+        mockStartMutateAsync.mockRejectedValueOnce({
+            response: { status: 400 },
+            data: { message: 'Registration is not in the expected phase' },
+        })
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        await act(async () => {
+            result.current.handleVerify()
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.verification.error_title',
+                'Registration is not in the expected phase',
+            ),
+        )
+    })
+
+    it('does not open or poll when the session URL is not https', async () => {
+        mockStartMutateAsync.mockResolvedValueOnce({
+            sessionUrl: 'notaurl',
+        })
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        await act(async () => {
+            result.current.handleVerify()
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.verification.error_title',
+                'peraCard.verification.open_link_error_body',
+            ),
+        )
+        expect(Linking.openURL).not.toHaveBeenCalled()
+        // Nothing was opened, so the status poll must not arm.
+        expect(mockQueryOptions?.enabled).toBe(false)
+    })
+
+    it('does not poll when no browser can open the session URL', async () => {
+        vi.mocked(Linking.canOpenURL).mockResolvedValueOnce(false)
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        await act(async () => {
+            result.current.handleVerify()
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.verification.error_title',
+                'peraCard.verification.open_link_error_body',
+            ),
+        )
+        expect(Linking.openURL).not.toHaveBeenCalled()
+        expect(mockQueryOptions?.enabled).toBe(false)
+    })
+
+    it('does not arm the poll when opening the browser fails', async () => {
+        vi.mocked(Linking.openURL).mockRejectedValueOnce(
+            new Error('no browser'),
+        )
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        await act(async () => {
+            result.current.handleVerify()
+        })
+
+        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockQueryOptions?.enabled).toBe(false)
+
+        // The same handler succeeds on the retry.
+        await startVerification(result)
+        expect(mockQueryOptions?.enabled).toBe(true)
     })
 
     it('refetches the status when the app returns to the foreground while polling', async () => {

@@ -81,6 +81,7 @@ describe('Flow: Card onboarding — identity verification', () => {
         store.setOnboardingId('mock-onboarding-id')
         store.setCountryIso('GB')
         vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        vi.spyOn(Linking, 'canOpenURL').mockResolvedValue(true)
         // The personal-details screen fetches the registration settings for
         // its nationality picker on mount.
         server.use(

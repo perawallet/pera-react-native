@@ -29,6 +29,9 @@ let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
 let mockStoredFundingType: FundingType | null = null
 let mockIsConnecting = false
+let mockDataUpdatedAt = 0
+let mockErrorUpdatedAt = 0
+const mockRefetch = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -43,7 +46,9 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             return {
                 data: { verificationState: mockVerificationState },
                 isLoading: false,
-                refetch: vi.fn(),
+                refetch: mockRefetch,
+                dataUpdatedAt: mockDataUpdatedAt,
+                errorUpdatedAt: mockErrorUpdatedAt,
             }
         },
         useConnectFundingSourceMutation: () => ({
@@ -193,6 +198,8 @@ beforeEach(() => {
     mockConnectedAddress = null
     mockStoredFundingType = null
     mockIsConnecting = false
+    mockDataUpdatedAt = 0
+    mockErrorUpdatedAt = 0
     mockAccounts = []
     mockRouteParams = undefined
     mockSelectedAddress = null
@@ -271,6 +278,88 @@ describe('useCardOnboardingStatusScreen', () => {
 
         // No back interceptor is registered, so back falls through to default.
         expect(mockBeforeRemoveCallback).toBeNull()
+    })
+
+    describe('poll error / stuck-UNVERIFIED handling', () => {
+        it('flips to an error state and stops polling after repeated poll failures', () => {
+            const { result, rerender } = renderHook(() =>
+                useCardOnboardingStatusScreen(),
+            )
+            expect(result.current.documentsState).toBe('pending')
+
+            // Three consecutive failed polls (retry: 0 surfaces each error).
+            for (const timestamp of [1, 2, 3]) {
+                mockErrorUpdatedAt = timestamp
+                act(() => rerender())
+            }
+
+            expect(result.current.documentsState).toBe('error')
+            act(() => rerender())
+            expect(mockQueryOptions?.refetchInterval).toBe(false)
+        })
+
+        it('resets the failure count when a poll succeeds in between', () => {
+            mockVerificationState = 'PENDING'
+            const { result, rerender } = renderHook(() =>
+                useCardOnboardingStatusScreen(),
+            )
+
+            for (const timestamp of [1, 2]) {
+                mockErrorUpdatedAt = timestamp
+                act(() => rerender())
+            }
+            // A successful poll clears the streak…
+            mockDataUpdatedAt = 10
+            act(() => rerender())
+            // …so a third failure is a fresh streak of one, not the limit.
+            mockErrorUpdatedAt = 11
+            act(() => rerender())
+
+            expect(result.current.documentsState).toBe('pending')
+        })
+
+        it('gives up after the record stays UNVERIFIED for the whole poll budget', () => {
+            mockVerificationState = 'UNVERIFIED'
+            const { result, rerender } = renderHook(() =>
+                useCardOnboardingStatusScreen(),
+            )
+
+            for (let poll = 1; poll <= 15; poll += 1) {
+                mockDataUpdatedAt = poll
+                act(() => rerender())
+            }
+
+            expect(result.current.documentsState).toBe('error')
+
+            // A record that never left UNVERIFIED needs a fresh Veriff
+            // session, so retry routes back to the KYC entry screen.
+            act(() => {
+                result.current.handleRetryStatus()
+            })
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingVerification',
+            )
+        })
+
+        it('re-arms polling and refetches on retry after poll failures', () => {
+            const { result, rerender } = renderHook(() =>
+                useCardOnboardingStatusScreen(),
+            )
+            for (const timestamp of [1, 2, 3]) {
+                mockErrorUpdatedAt = timestamp
+                act(() => rerender())
+            }
+            expect(result.current.documentsState).toBe('error')
+
+            act(() => {
+                result.current.handleRetryStatus()
+            })
+
+            expect(mockRefetch).toHaveBeenCalled()
+            expect(result.current.documentsState).toBe('pending')
+            act(() => rerender())
+            expect(mockQueryOptions?.refetchInterval).not.toBe(false)
+        })
     })
 
     it('continues to personal details and advances the stored step', () => {

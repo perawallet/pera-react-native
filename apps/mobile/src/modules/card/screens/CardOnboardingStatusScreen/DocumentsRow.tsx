@@ -11,10 +11,11 @@
  */
 
 import React from 'react'
-import { type IconName, type PWIconVariant } from '@components/core'
+import { PWButton, type IconName, type PWIconVariant } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { StatusChecklistRow } from './StatusChecklistRow'
 import { type DocumentsState } from './useCardOnboardingStatusScreen'
+import { useStyles } from './styles'
 
 // Icon, color, and copy for the "Submit Your Documents" row per KYC state.
 const DOCUMENTS_ROW: Record<
@@ -44,15 +45,26 @@ const DOCUMENTS_ROW: Record<
         bodyKey: 'peraCard.setup_status.documents_rejected_body',
         showsPendingLabel: false,
     },
+    error: {
+        icon: 'info',
+        variant: 'error',
+        bodyKey: 'peraCard.setup_status.documents_error_body',
+        showsPendingLabel: false,
+    },
 }
 
 type DocumentsRowProps = {
     documentsState: DocumentsState
+    onRetry: () => void
 }
 
 /** Checklist row 1 — "Submit Your Documents", driven by the KYC state. */
-export const DocumentsRow = ({ documentsState }: DocumentsRowProps) => {
+export const DocumentsRow = ({
+    documentsState,
+    onRetry,
+}: DocumentsRowProps) => {
     const { t } = useLanguage()
+    const styles = useStyles()
     const row = DOCUMENTS_ROW[documentsState]
 
     return (
@@ -67,6 +79,16 @@ export const DocumentsRow = ({ documentsState }: DocumentsRowProps) => {
             title={t('peraCard.setup_status.documents_title')}
             body={t(row.bodyKey)}
             testID='card-onboarding-status-documents'
-        />
+        >
+            {documentsState === 'error' ? (
+                <PWButton
+                    variant='secondary'
+                    title={t('peraCard.setup_status.documents_retry')}
+                    onPress={onRetry}
+                    style={styles.detailsButton}
+                    testID='card-onboarding-status-documents-retry'
+                />
+            ) : null}
+        </StatusChecklistRow>
     )
 }
