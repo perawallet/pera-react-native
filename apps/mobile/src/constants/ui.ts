@@ -35,6 +35,9 @@ export const BACKUP_REMINDER_BANNER_REVEAL_DURATION = 200
 export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250
 export const LONG_NOTIFICATION_DURATION = 5000
 
+// How long the "back online" confirmation stays before auto-dismissing.
+export const OFFLINE_RECONNECT_DISPLAY_MS = 3000
+
 export const SHORT_PROMPT_DISPLAY_DELAY = 300
 export const LONG_PROMPT_DISPLAY_DELAY = 3000
 
