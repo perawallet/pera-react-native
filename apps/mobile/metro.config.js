@@ -94,9 +94,19 @@ const customResolveRequest = (context, moduleName, platform) => {
     }
 
     // Handle crypto polyfills - resolve from mobile app's node_modules
-    if (polyfillMap[moduleName]) {
+    // (native only: web resolves packages' own browser builds instead)
+    if (platform !== 'web' && polyfillMap[moduleName]) {
         return {
             filePath: require.resolve(polyfillMap[moduleName]),
+            type: 'sourceFile',
+        };
+    }
+
+    // Web shim: react-native-quick-base64 calls TurboModuleRegistry which is
+    // unavailable in browser environments — redirect to the pure-JS web shim.
+    if (platform === 'web' && moduleName === 'react-native-quick-base64') {
+        return {
+            filePath: path.resolve(projectRoot, 'web-shims/react-native-quick-base64.js'),
             type: 'sourceFile',
         };
     }
@@ -122,7 +132,11 @@ const customResolveRequest = (context, moduleName, platform) => {
         }
     }
     if (moduleName === '@perawallet/wallet-extension-platform-driver') {
-        const sourcePath = path.resolve(monorepoRoot, 'extensions', 'platform-react-native', 'src', 'index.ts');
+        const driverPackage =
+            platform === 'web' ? 'platform-chrome' : 'platform-react-native';
+        const sourcePath = path.resolve(
+            monorepoRoot, 'extensions', driverPackage, 'src', 'index.ts',
+        );
         return context.resolveRequest(context, sourcePath, platform);
     }
     if (moduleName.startsWith('@perawallet/wallet-extension-')) {
@@ -140,14 +154,18 @@ const customResolveRequest = (context, moduleName, platform) => {
     }
 
     // Force resolution of critical packages to the mobile app's node_modules
-    if (
-        moduleName === 'react' ||
-        moduleName === 'react-native' ||
-        moduleName === 'react-native-nitro-modules' ||
-        moduleName === '@tanstack/react-query' ||
-        moduleName === 'react-dom' ||
-        moduleName === '@react-native-community/datetimepicker'
-    ) {
+    const forceResolveModules =
+        platform === 'web'
+            ? ['react', 'react-dom', '@tanstack/react-query']
+            : [
+                  'react',
+                  'react-native',
+                  'react-native-nitro-modules',
+                  '@tanstack/react-query',
+                  'react-dom',
+                  '@react-native-community/datetimepicker',
+              ];
+    if (forceResolveModules.includes(moduleName)) {
         const resolvedPath = path.resolve(projectRoot, 'node_modules', moduleName);
         return context.resolveRequest(context, resolvedPath, platform);
     }

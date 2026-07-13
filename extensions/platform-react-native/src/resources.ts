@@ -51,3 +51,6 @@ export const platformServices: PlatformServices = {
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices
+
+/** No-op on native: MMKV storage is synchronous from construction. */
+export const hydratePlatform = async (): Promise<void> => {}

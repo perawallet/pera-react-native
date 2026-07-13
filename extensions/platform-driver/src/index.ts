@@ -45,3 +45,9 @@ export const WithPlatformExtension: PlatformExtensionFn = () => stubError()
  * Replaced at build time via bundler alias, just like `WithPlatformExtension`.
  */
 export const getPlatformServices = (): PlatformServices => stubError()
+
+/**
+ * Async platform bootstrap (KV cache hydration on web; no-op on native).
+ * Replaced at build time via bundler alias.
+ */
+export const hydratePlatform = (): Promise<void> => stubError()

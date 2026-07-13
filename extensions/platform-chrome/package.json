@@ -1,0 +1,32 @@
+{
+  "name": "@perawallet/wallet-extension-platform-chrome",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-core-hardware-wallet": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:",
+    "@types/chrome": "catalog:",
+    "@types/node": "catalog:",
+    "@perawallet/wallet-core-devtools": "workspace:*"
+  }
+}

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2026 Pera Wallet, LDA
+ Copyright 2022-2025 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-// Platform-split entry: Metro resolves ./entry to entry.native.js on
-// ios/android and entry.web.js on web, keeping native-only shims (quick-crypto,
-// wdyr) out of the web bundle.
-import './entry'
+// Text encoding polyfill (some deps expect TextEncoder/TextDecoder globals)
+import 'fast-text-encoding'
+
+import { registerRootComponent } from 'expo'
+import { App } from './src/App.web'
+
+registerRootComponent(App)

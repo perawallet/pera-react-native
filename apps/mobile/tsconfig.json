@@ -95,6 +95,9 @@
       ],
       "@perawallet/wallet-core-nfd/test-handlers": [
         "../../packages/nfd/src/test-handlers.ts"
+      ],
+      "@perawallet/wallet-extension-platform-driver": [
+        "../../extensions/platform-driver/src/index.ts"
       ]
     },
     "lib": [

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2026 Pera Wallet, LDA
+ Copyright 2022-2025 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-// Platform-split entry: Metro resolves ./entry to entry.native.js on
-// ios/android and entry.web.js on web, keeping native-only shims (quick-crypto,
-// wdyr) out of the web bundle.
-import './entry'
+import { defineConfig } from '@playwright/test'
+
+export default defineConfig({
+    testDir: './e2e',
+    timeout: 60_000,
+    // Extension state (chrome.storage) persists per launch context; keep
+    // workers at 1 so tests don't share/clobber a profile.
+    workers: 1,
+    use: {
+        trace: 'retain-on-failure',
+    },
+})
