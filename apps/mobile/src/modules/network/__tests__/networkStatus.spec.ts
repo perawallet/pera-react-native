@@ -206,12 +206,12 @@ describe('configureNetInfo', () => {
         vi.clearAllMocks()
     })
 
-    it('configures active reachability probing against a 204 endpoint', () => {
-        configureNetInfo()
+    it('configures active reachability probing against the given 204 endpoint', () => {
+        configureNetInfo('https://pera.test/probe')
 
         expect(NetInfo.configure).toHaveBeenCalledWith(
             expect.objectContaining({
-                reachabilityUrl: REACHABILITY_URL,
+                reachabilityUrl: 'https://pera.test/probe',
                 reachabilityShortTimeout: 5 * 1000,
                 reachabilityLongTimeout: 60 * 1000,
                 useNativeReachability: true,
@@ -219,15 +219,16 @@ describe('configureNetInfo', () => {
         )
     })
 
-    it('treats an HTTP 204 response as reachable', async () => {
-        configureNetInfo()
+    it('treats only an HTTP 204 response as reachable (rejects captive-portal 200)', async () => {
+        configureNetInfo(REACHABILITY_URL)
 
         const config = vi.mocked(NetInfo.configure).mock.calls[0][0]
         await expect(
             config.reachabilityTest?.({ status: 204 } as Response),
         ).resolves.toBe(true)
+        // Captive portals answer 200 with an HTML login page.
         await expect(
-            config.reachabilityTest?.({ status: 500 } as Response),
+            config.reachabilityTest?.({ status: 200 } as Response),
         ).resolves.toBe(false)
     })
 })
@@ -236,16 +237,6 @@ describe('initNetworkStatus', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useNetworkStatusStore.setState({ hasInternet: true })
-    })
-
-    it('configures reachability probing before seeding connectivity', async () => {
-        vi.mocked(NetInfo.fetch).mockResolvedValue(
-            netInfoState({ isConnected: true, isInternetReachable: true }),
-        )
-
-        await initNetworkStatus()
-
-        expect(NetInfo.configure).toHaveBeenCalled()
     })
 
     it('seeds the store offline on a cold start with no connection', async () => {

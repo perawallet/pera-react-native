@@ -116,13 +116,17 @@ export const bindOnlineManager = (): (() => void) =>
     )
 
 /**
- * Configure NetInfo's active reachability probing once at startup. Conservative
- * timeouts (5s short / 60s long) keep the probe cheap while giving iOS the
- * captive-portal detection Android already gets via NET_CAPABILITY_VALIDATED.
+ * Configure NetInfo's active reachability probing. The URL is supplied by the
+ * caller (sourced from Remote Config, see useNetworkStatusListener) so it can
+ * change without a redeploy; it MUST return HTTP 204 with an empty body, since
+ * `reachabilityTest` treats anything else as unreachable — that is what unmasks
+ * a captive portal answering 200 + HTML. Conservative timeouts (5s short / 60s
+ * long) keep the probe cheap while giving iOS the captive-portal detection
+ * Android already gets via NET_CAPABILITY_VALIDATED.
  */
-export const configureNetInfo = (): void => {
+export const configureNetInfo = (reachabilityUrl: string): void => {
     NetInfo.configure({
-        reachabilityUrl: REACHABILITY_URL,
+        reachabilityUrl,
         reachabilityMethod: 'HEAD',
         reachabilityTest: async response => response.status === 204,
         reachabilityShortTimeout: 5 * 1000,
@@ -133,13 +137,14 @@ export const configureNetInfo = (): void => {
 }
 
 /**
- * Boot seed for connectivity. Configures reachability probing, wires the store
- * to `onlineManager`, then seeds the store from a one-shot fetch routed through
- * {@link computeHasInternet} so early queries never fire-and-fail against a
- * dead link. Runs once, before the query layer mounts (see App.tsx).
+ * Boot seed for connectivity. Wires the store to `onlineManager`, then seeds it
+ * from a one-shot fetch routed through {@link computeHasInternet} so early
+ * queries never fire-and-fail against a dead link. Runs once at module load,
+ * before the query layer mounts (see App.tsx) — the provider (and thus Remote
+ * Config) is not ready yet, so reachability probing is configured later by the
+ * listener; until then NetInfo's built-in generate_204 default applies.
  */
 export const initNetworkStatus = (): Promise<void> => {
-    configureNetInfo()
     bindOnlineManager()
 
     liveSignalSinceBoot = false

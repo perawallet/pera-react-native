@@ -16,7 +16,7 @@ import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useNetworkStatusListener } from '../useNetworkStatusListener'
 import { useNetworkStatusStore } from '../useNetworkStatusStore'
-import { OFFLINE_DEBOUNCE_MS } from '../../networkStatus'
+import { OFFLINE_DEBOUNCE_MS, REACHABILITY_URL } from '../../networkStatus'
 
 // Mock dependencies
 vi.mock('@react-native-community/netinfo', () => ({
@@ -40,6 +40,16 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
+const mockGetStringValue = vi.fn()
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    RemoteConfigKeys: {
+        network_reachability_url: 'network_reachability_url',
+    },
+    useRemoteConfig: () => ({
+        getStringValue: mockGetStringValue,
+    }),
+}))
+
 const netInfoState = (partial: Partial<NetInfoState>): NetInfoState =>
     ({
         isConnected: null,
@@ -59,6 +69,8 @@ describe('useNetworkStatusListener', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         vi.mocked(NetInfo.addEventListener).mockReturnValue(vi.fn())
+        // Default: Remote Config unset → the hook's fallback is returned.
+        mockGetStringValue.mockImplementation((_key, fallback) => fallback)
         useNetworkStatusStore.setState({ hasInternet: true })
         Object.defineProperty(AppState, 'currentState', {
             value: 'active',
@@ -81,6 +93,30 @@ describe('useNetworkStatusListener', () => {
 
         unmount()
         expect(unsubscribe).toHaveBeenCalledTimes(1)
+    })
+
+    it('configures NetInfo reachability with the URL from remote config', () => {
+        mockGetStringValue.mockReturnValue('https://pera.test/generate_204')
+
+        renderHook(() => useNetworkStatusListener())
+
+        expect(mockGetStringValue).toHaveBeenCalledWith(
+            'network_reachability_url',
+            REACHABILITY_URL,
+        )
+        expect(NetInfo.configure).toHaveBeenCalledWith(
+            expect.objectContaining({
+                reachabilityUrl: 'https://pera.test/generate_204',
+            }),
+        )
+    })
+
+    it('falls back to the default 204 endpoint when remote config is unset', () => {
+        renderHook(() => useNetworkStatusListener())
+
+        expect(NetInfo.configure).toHaveBeenCalledWith(
+            expect.objectContaining({ reachabilityUrl: REACHABILITY_URL }),
+        )
     })
 
     it('flips offline on a connected-but-unreachable link after the debounce window', () => {

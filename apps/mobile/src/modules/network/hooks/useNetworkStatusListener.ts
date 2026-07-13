@@ -13,12 +13,18 @@
 import { useEffect } from 'react'
 import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
+import {
+    RemoteConfigKeys,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
 import { useToast } from '@hooks/useToast'
 import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
 import {
     computeHasInternet,
+    configureNetInfo,
     handleConnectivityChange,
     cancelPendingConnectivityChange,
+    REACHABILITY_URL,
 } from '../networkStatus'
 import { useNetworkStatusStore } from './useNetworkStatusStore'
 
@@ -35,6 +41,18 @@ import { useNetworkStatusStore } from './useNetworkStatusStore'
 export const useNetworkStatusListener = (): void => {
     const { showToast } = useToast()
     const hasInternet = useNetworkStatusStore(state => state.hasInternet)
+    const reachabilityUrl = useRemoteConfig().getStringValue(
+        RemoteConfigKeys.network_reachability_url,
+        REACHABILITY_URL,
+    )
+
+    // Configure NetInfo's reachability probe from the Remote Config URL (falls
+    // back to the baked-in 204 endpoint). Done here rather than at module load
+    // because the provider — and thus Remote Config — is only ready inside the
+    // React tree.
+    useEffect(() => {
+        configureNetInfo(reachabilityUrl)
+    }, [reachabilityUrl])
 
     // Subscribe to network status changes. Reachability-aware connectivity is
     // computed and debounced in networkStatus; the store (wired to
