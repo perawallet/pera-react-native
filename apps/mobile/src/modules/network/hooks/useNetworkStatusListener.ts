@@ -11,29 +11,24 @@
  */
 
 import { useEffect } from 'react'
-import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { onlineManager } from '@tanstack/react-query'
-import { useToast } from '@hooks/useToast'
-import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
 import { useNetworkStatusStore } from './useNetworkStatusStore'
 
 /**
  * Hook that initializes network status listeners.
- * Call this once at the app root to set up:
- * - NetInfo subscription to track connectivity
- * - Toast notifications for offline status
+ * Call this once at the app root to set up a NetInfo subscription that tracks
+ * connectivity into the network store and TanStack Query's onlineManager.
+ * Offline UX is surfaced by the global <OfflineBanner /> (see RootComponent),
+ * not a transient toast.
  *
  * @example
  * // In RootComponent
  * useNetworkStatusListener()
  */
 export const useNetworkStatusListener = (): void => {
-    const { showToast } = useToast()
     const setHasInternet = useNetworkStatusStore(state => state.setHasInternet)
-    const hasInternet = useNetworkStatusStore(state => state.hasInternet)
 
-    // Subscribe to network status changes
     useEffect(() => {
         const netInfoSubscription = NetInfo.addEventListener(
             (state: NetInfoState) => {
@@ -46,18 +41,4 @@ export const useNetworkStatusListener = (): void => {
             netInfoSubscription()
         }
     }, [setHasInternet])
-
-    // Show toast when going offline
-    useEffect(() => {
-        if (!hasInternet && AppState.currentState === 'active') {
-            showToast(
-                {
-                    title: 'No Internet Connection',
-                    body: 'Some data may not be up to date.',
-                    type: 'warning',
-                },
-                { duration: LONG_NOTIFICATION_DURATION },
-            )
-        }
-    }, [hasInternet, showToast])
 }

@@ -31,18 +31,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             justifyContent: 'center',
             alignItems: 'center',
         },
-        offlineTextContainer: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.layerGray,
-            marginHorizontal: theme.spacing.lg,
-            zIndex: theme.zIndex.layer1,
-            borderRadius: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
-        },
-        offlineText: {
-            color: theme.colors.textGray,
-        },
         testnetText: {
             ...getTypography(theme, 'caption'),
             color: theme.colors.testnetText,

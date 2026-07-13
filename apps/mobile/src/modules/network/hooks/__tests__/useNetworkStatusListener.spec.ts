@@ -11,43 +11,29 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { onlineManager } from '@tanstack/react-query'
 import { useNetworkStatusListener } from '../useNetworkStatusListener'
 import { useNetworkStatusStore } from '../useNetworkStatusStore'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
-// Mock dependencies
 vi.mock('@react-native-community/netinfo', () => ({
-    default: {
-        addEventListener: vi.fn(),
-    },
+    default: { addEventListener: vi.fn() },
 }))
 
 vi.mock('@tanstack/react-query', () => ({
-    onlineManager: {
-        setOnline: vi.fn(),
-    },
+    onlineManager: { setOnline: vi.fn() },
 }))
 
 const mockShowToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
-    }),
+    useToast: () => ({ showToast: mockShowToast }),
 }))
 
 describe('useNetworkStatusListener', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Reset store
         useNetworkStatusStore.setState({ hasInternet: true })
-        // Default AppState
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'active',
-            writable: true,
-        })
     })
 
     afterEach(() => {
@@ -63,76 +49,25 @@ describe('useNetworkStatusListener', () => {
 
         expect(mockAddEventListener).toHaveBeenCalledTimes(1)
 
-        // Simulate network change to offline
         const networkCallback = mockAddEventListener.mock.calls[0][0]
         act(() => {
             networkCallback({ isConnected: false } as NetInfoState)
         })
-
         expect(useNetworkStatusStore.getState().hasInternet).toBe(false)
         expect(onlineManager.setOnline).toHaveBeenCalledWith(false)
 
-        // Simulate network change to online
         act(() => {
             networkCallback({ isConnected: true } as NetInfoState)
         })
-
         expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
         expect(onlineManager.setOnline).toHaveBeenCalledWith(true)
     })
 
-    it('shows toast when internet is lost and AppState is active', () => {
-        useNetworkStatusStore.setState({ hasInternet: true })
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'active',
-            writable: true,
-        })
+    it('does not show a toast when internet is lost (banner supersedes it)', () => {
+        const mockAddEventListener = vi.mocked(NetInfo.addEventListener)
+        mockAddEventListener.mockReturnValue(vi.fn())
 
         const { rerender } = renderHook(() => useNetworkStatusListener())
-
-        // Change store state to offline
-        act(() => {
-            useNetworkStatusStore.setState({ hasInternet: false })
-        })
-        rerender()
-
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'No Internet Connection',
-                type: 'warning',
-            }),
-            expect.anything(),
-        )
-    })
-
-    it('does NOT show toast when internet is lost but AppState is background', () => {
-        useNetworkStatusStore.setState({ hasInternet: true })
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'background',
-            writable: true,
-        })
-
-        const { rerender } = renderHook(() => useNetworkStatusListener())
-
-        // Change store state to offline
-        act(() => {
-            useNetworkStatusStore.setState({ hasInternet: false })
-        })
-        rerender()
-
-        expect(mockShowToast).not.toHaveBeenCalled()
-    })
-
-    it('does NOT show toast when internet is lost but AppState is inactive', () => {
-        useNetworkStatusStore.setState({ hasInternet: true })
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'inactive',
-            writable: true,
-        })
-
-        const { rerender } = renderHook(() => useNetworkStatusListener())
-
-        // Change store state to offline
         act(() => {
             useNetworkStatusStore.setState({ hasInternet: false })
         })

@@ -18,6 +18,7 @@ import { MainRoutes } from '@routes/index'
 import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
+import { OfflineBanner } from '@components/OfflineBanner'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -28,7 +29,7 @@ import {
     useSyncNewAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
+import { useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
@@ -63,7 +64,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const { isTestnet } = useNetwork()
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { hasInternet } = useNetworkStatus()
     const { showError } = useErrorToast()
     const { t } = useLanguage()
 
@@ -90,14 +90,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                 {isTestnet && (
                     <PWView style={styles.testnetBar}>
                         <PWText style={styles.testnetText}>Testnet</PWText>
-                    </PWView>
-                )}
-
-                {!hasInternet && (
-                    <PWView style={styles.offlineTextContainer}>
-                        <PWText style={styles.offlineText}>
-                            {t('common.offline_mode')}
-                        </PWText>
                     </PWView>
                 )}
 
@@ -209,6 +201,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     <SwapOverlays />
                 </ErrorBoundary>
             </AutoLockGuard>
+            <OfflineBanner />
         </BottomSheetModalProvider>
     )
 }
