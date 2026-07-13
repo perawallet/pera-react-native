@@ -168,13 +168,15 @@ describe('useCardStore', () => {
         expect(result.current.phoneNumber).toBeNull()
     })
 
-    test('setAllowMarketing / setAllowSms update the consent flags (default off)', async () => {
+    test('setAllowMarketing / setAllowSms update the consent flags (default never-asked)', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
 
-        // Consent opt-ins default OFF — ticked explicitly on the Set-Password screen.
-        expect(result.current.allowMarketing).toBe(false)
-        expect(result.current.allowSms).toBe(false)
+        // Consent opt-ins start as "never asked" (null) — a resumed session
+        // that skipped the Set-Password screen re-collects them at the address
+        // step instead of recording a silent "denied".
+        expect(result.current.allowMarketing).toBeNull()
+        expect(result.current.allowSms).toBeNull()
 
         act(() => {
             result.current.setAllowMarketing(true)
@@ -285,8 +287,9 @@ describe('useCardStore', () => {
         expect(result.current.consentSetId).toBeNull()
         expect(result.current.connectedFundingSourceAddress).toBeNull()
         expect(result.current.selectedFundingType).toBeNull()
-        expect(result.current.allowMarketing).toBe(false)
-        expect(result.current.allowSms).toBe(false)
+        // Back to "never asked" so a fresh sign-up re-collects the consents.
+        expect(result.current.allowMarketing).toBeNull()
+        expect(result.current.allowSms).toBeNull()
         // Card snapshot / filters preserved.
         expect(result.current.cardId).toBe('card_1')
         expect(result.current.lastKnownStatus).toBe(CardStatus.Active)

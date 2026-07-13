@@ -167,6 +167,9 @@ describe('useCardOnboardingPasswordScreen', () => {
             )
             expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
             expect(mockErrorToast).not.toHaveBeenCalled()
+            // The untouched marketing box is committed as an explicit decline
+            // so the address step doesn't re-ask this session.
+            expect(mockSetAllowMarketing).toHaveBeenCalledWith(false)
         })
 
         it('routes back to the code screen on a rejected code (400/422)', async () => {

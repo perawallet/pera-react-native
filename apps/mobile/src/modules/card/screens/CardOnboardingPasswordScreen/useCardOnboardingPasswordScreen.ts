@@ -128,9 +128,13 @@ export const useCardOnboardingPasswordScreen =
                     verificationCode,
                     contactVerificationId,
                     countryOfResidence: countryIso,
-                    allowMarketing,
+                    allowMarketing: allowMarketing ?? false,
                     allowSms,
                 })
+                // Commit the answered consents (an untouched marketing box is
+                // an explicit "declined", not "never asked") so the address
+                // step's consent call reuses them instead of re-collecting.
+                setAllowMarketing(allowMarketing ?? false)
                 // Email verified and password set: on to the phone steps.
                 navigation.navigate('CardOnboardingPhone')
             } catch (error) {
@@ -166,10 +170,10 @@ export const useCardOnboardingPasswordScreen =
             password,
             // Baanx requires SMS consent to register, so it gates submission
             // (marketing stays optional) — mirrors the address step's T&C gating.
-            isValid: isFormValid && allowSms,
+            isValid: isFormValid && allowSms === true,
             isSubmitting: verifyEmail.isPending,
-            allowMarketing,
-            allowSms,
+            allowMarketing: allowMarketing ?? false,
+            allowSms: allowSms ?? false,
             handleToggleMarketing,
             handleToggleSms,
             handleConfirm,

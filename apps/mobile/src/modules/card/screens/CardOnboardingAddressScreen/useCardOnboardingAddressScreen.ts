@@ -52,6 +52,16 @@ export type UseCardOnboardingAddressScreenResult = {
     selectedUsState: Optional<SupportedUsState>
     cardTermsAccepted: boolean
     platformTermsAccepted: boolean
+    /**
+     * True when the marketing/SMS consents were never asked this session (a
+     * resumed sign-in skipped the Set-Password screen) — the screen re-collects
+     * them here so the consent set records the user's real choice.
+     */
+    showsConsentOptIns: boolean
+    allowMarketing: boolean
+    allowSms: boolean
+    handleToggleMarketing: () => void
+    handleToggleSms: () => void
     handleSelectCountry: () => void
     handleSelectUsState: () => void
     handleToggleCardTerms: () => void
@@ -75,6 +85,17 @@ export const useCardOnboardingAddressScreen =
         // them here to submit with the granular /v2/consent set on this step.
         const allowMarketing = useCardStore(state => state.allowMarketing)
         const allowSms = useCardStore(state => state.allowSms)
+        const setAllowMarketing = useCardStore(state => state.setAllowMarketing)
+        const setAllowSms = useCardStore(state => state.setAllowSms)
+        // Snapshot on mount: null means the Set-Password screen never ran this
+        // session (resumed sign-in), so the consents must be re-collected here
+        // instead of silently recorded as "denied". Snapshotted so the boxes
+        // don't vanish mid-interaction once the first tick makes them non-null.
+        const [showsConsentOptIns] = useState(() => {
+            const { allowMarketing: marketing, allowSms: sms } =
+                useCardStore.getState()
+            return marketing === null || sms === null
+        })
         const submitAddress = useSubmitAddressMutation()
         const submitConsent = useSubmitConsentMutation()
         const linkConsent = useLinkConsentMutation()
@@ -193,6 +214,15 @@ export const useCardOnboardingAddressScreen =
             [],
         )
 
+        const handleToggleMarketing = useCallback(
+            () => setAllowMarketing(!(allowMarketing ?? false)),
+            [setAllowMarketing, allowMarketing],
+        )
+        const handleToggleSms = useCallback(
+            () => setAllowSms(!(allowSms ?? false)),
+            [setAllowSms, allowSms],
+        )
+
         const handleOpenCardTerms = useCallback(() => {
             pushWebView({ url: cardTermsUrl, id: 'card-terms' })
         }, [pushWebView, cardTermsUrl])
@@ -202,6 +232,10 @@ export const useCardOnboardingAddressScreen =
         }, [pushWebView])
 
         const submitAddressForm = handleSubmit(async values => {
+            // Re-collected SMS consent gates Continue; guard here too so no
+            // edge path (a stray/programmatic submit) can record a silent
+            // denial on a resumed session.
+            if (showsConsentOptIns && allowSms !== true) return
             // Set by email/verify; if missing, re-verify rather than submit an
             // empty onboarding id.
             if (onboardingId === null) {
@@ -236,9 +270,11 @@ export const useCardOnboardingAddressScreen =
                     policyType: isUsResident ? 'US' : 'global',
                     // Both T&C boxes gate Continue, so they're accepted here.
                     termsAccepted: cardTermsAccepted && platformTermsAccepted,
-                    // Marketing/SMS were chosen on the Set-Password screen.
-                    allowMarketing,
-                    allowSms,
+                    // Marketing/SMS come from the Set-Password screen, or from
+                    // this screen's re-collected boxes on a resumed session
+                    // (SMS gates Continue then, so null can't reach here).
+                    allowMarketing: allowMarketing ?? false,
+                    allowSms: allowSms ?? false,
                 })
                 const { userId } = await submitAddress.mutateAsync(address)
                 // Link best-effort: registration is already finalized (the
@@ -290,7 +326,13 @@ export const useCardOnboardingAddressScreen =
         return {
             control,
             errors,
-            isValid: isFormValid && cardTermsAccepted && platformTermsAccepted,
+            isValid:
+                isFormValid &&
+                cardTermsAccepted &&
+                platformTermsAccepted &&
+                // Re-collected SMS consent is required by Baanx, so it gates
+                // Continue exactly like on the Set-Password screen.
+                (!showsConsentOptIns || allowSms === true),
             isSubmitting:
                 submitAddress.isPending ||
                 submitConsent.isPending ||
@@ -300,6 +342,11 @@ export const useCardOnboardingAddressScreen =
             selectedUsState,
             cardTermsAccepted,
             platformTermsAccepted,
+            showsConsentOptIns,
+            allowMarketing: allowMarketing ?? false,
+            allowSms: allowSms ?? false,
+            handleToggleMarketing,
+            handleToggleSms,
             handleSelectCountry,
             handleSelectUsState,
             handleToggleCardTerms,

@@ -24,6 +24,10 @@ const mockMutateAsync = vi.fn()
 const mockConsentMutateAsync = vi.fn()
 const mockLinkMutateAsync = vi.fn()
 const mockSetCountryIso = vi.fn()
+const mockSetAllowMarketing = vi.fn()
+const mockSetAllowSms = vi.fn()
+let mockAllowMarketing: boolean | null = true
+let mockAllowSms: boolean | null = true
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockOnboardingStep: OnboardingStep = OnboardingStep.EmailSend
 let mockCountryIso: string | null = 'GB'
@@ -79,24 +83,37 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isError: false,
             refetch: vi.fn(),
         }),
-        useCardStore: (
-            selector: (state: {
-                onboardingId: string | null
-                onboardingStep: OnboardingStep
-                countryIso: string | null
-                allowMarketing: boolean
-                allowSms: boolean
-                setCountryIso: (iso: string) => void
-            }) => unknown,
-        ) =>
-            selector({
-                onboardingId: mockOnboardingId,
-                onboardingStep: mockOnboardingStep,
-                countryIso: mockCountryIso,
-                allowMarketing: true,
-                allowSms: true,
-                setCountryIso: mockSetCountryIso,
-            }),
+        useCardStore: Object.assign(
+            (
+                selector: (state: {
+                    onboardingId: string | null
+                    onboardingStep: OnboardingStep
+                    countryIso: string | null
+                    allowMarketing: boolean | null
+                    allowSms: boolean | null
+                    setCountryIso: (iso: string) => void
+                    setAllowMarketing: (allow: boolean) => void
+                    setAllowSms: (allow: boolean) => void
+                }) => unknown,
+            ) =>
+                selector({
+                    onboardingId: mockOnboardingId,
+                    onboardingStep: mockOnboardingStep,
+                    countryIso: mockCountryIso,
+                    allowMarketing: mockAllowMarketing,
+                    allowSms: mockAllowSms,
+                    setCountryIso: mockSetCountryIso,
+                    setAllowMarketing: mockSetAllowMarketing,
+                    setAllowSms: mockSetAllowSms,
+                }),
+            {
+                getState: () => ({
+                    consentSetId: null,
+                    allowMarketing: mockAllowMarketing,
+                    allowSms: mockAllowSms,
+                }),
+            },
+        ),
     }
 })
 
@@ -164,6 +181,8 @@ describe('useCardOnboardingAddressScreen', () => {
         mockOnboardingId = 'mock-onboarding-id'
         mockOnboardingStep = OnboardingStep.EmailSend
         mockCountryIso = 'GB'
+        mockAllowMarketing = true
+        mockAllowSms = true
         mockSettings = {
             countries: [gb, us],
             usStates: [california],
@@ -258,6 +277,77 @@ describe('useCardOnboardingAddressScreen', () => {
             result.current.handleTogglePlatformTerms()
         })
     }
+
+    describe('consent re-collection on resumed sessions', () => {
+        it('hides the consent opt-ins when the password step ran this session', () => {
+            const { result } = renderHook(() =>
+                useCardOnboardingAddressScreen(),
+            )
+
+            expect(result.current.showsConsentOptIns).toBe(false)
+        })
+
+        it('re-collects the consents when they were never asked, gating submit on SMS', async () => {
+            mockAllowMarketing = null
+            mockAllowSms = null
+            const { result, rerender } = renderHook(() =>
+                useCardOnboardingAddressScreen(),
+            )
+            fillValidAddress(result)
+            expect(result.current.showsConsentOptIns).toBe(true)
+
+            // The form and T&Cs alone are not enough on a resumed session —
+            // the required SMS consent must be re-ticked first.
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+            expect(mockConsentMutateAsync).not.toHaveBeenCalled()
+
+            act(() => {
+                result.current.handleToggleSms()
+            })
+            expect(mockSetAllowSms).toHaveBeenCalledWith(true)
+
+            // Simulate the store update the real setter would apply; the
+            // boxes stay visible (mount snapshot) and submit unlocks.
+            mockAllowSms = true
+            act(() => rerender())
+            expect(result.current.showsConsentOptIns).toBe(true)
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+            await waitFor(() =>
+                expect(mockConsentMutateAsync).toHaveBeenCalledWith(
+                    expect.objectContaining({ allowSms: true }),
+                ),
+            )
+        })
+
+        it('submits the re-collected consent values, not silent denials', async () => {
+            mockAllowMarketing = null
+            mockAllowSms = true
+            const { result } = renderHook(() =>
+                useCardOnboardingAddressScreen(),
+            )
+            fillValidAddress(result)
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            await waitFor(() =>
+                expect(mockConsentMutateAsync).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        allowSms: true,
+                        // Marketing left untouched on a resumed session is an
+                        // explicit non-opt-in.
+                        allowMarketing: false,
+                    }),
+                ),
+            )
+        })
+    })
 
     it('submits the address and returns to the setup checklist', async () => {
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
