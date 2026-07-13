@@ -16,7 +16,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockVerifyEmailMutateAsync = vi.fn()
 const mockSetAllowMarketing = vi.fn()
 const mockSetAllowSms = vi.fn()
-let mockAllowSms = false
+let mockAllowSms: boolean | null = false
+let mockAllowMarketing: boolean | null = false
+let mockExistingOnboardingId: string | null = null
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -43,8 +45,8 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 verificationCode: string | null
                 contactVerificationId: string | null
                 onboardingId: string | null
-                allowMarketing: boolean
-                allowSms: boolean
+                allowMarketing: boolean | null
+                allowSms: boolean | null
                 setCodeVerificationError: (
                     target: 'email' | 'phone' | null,
                 ) => void
@@ -57,8 +59,8 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 countryIso: 'GB',
                 verificationCode: '123456',
                 contactVerificationId: 'mock-contact-id',
-                onboardingId: null,
-                allowMarketing: false,
+                onboardingId: mockExistingOnboardingId,
+                allowMarketing: mockAllowMarketing,
                 allowSms: mockAllowSms,
                 setCodeVerificationError: vi.fn(),
                 setAllowMarketing: mockSetAllowMarketing,
@@ -95,6 +97,8 @@ describe('useCardOnboardingPasswordScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAllowSms = false
+        mockAllowMarketing = false
+        mockExistingOnboardingId = null
         mockVerifyEmailMutateAsync.mockResolvedValue({
             onboardingId: 'mock-onboarding-id',
         })
@@ -169,6 +173,22 @@ describe('useCardOnboardingPasswordScreen', () => {
             expect(mockErrorToast).not.toHaveBeenCalled()
             // The untouched marketing box is committed as an explicit decline
             // so the address step doesn't re-ask this session.
+            expect(mockSetAllowMarketing).toHaveBeenCalledWith(false)
+        })
+
+        it('skips the spent email/verify but still commits the consents when backing in', async () => {
+            // Cold-resume state: onboardingId persisted, consents never asked.
+            mockExistingOnboardingId = 'existing-onboarding-id'
+            mockAllowMarketing = null
+            const { result } = renderPasswordHook()
+
+            await submitWithValidForm(result)
+
+            expect(mockVerifyEmailMutateAsync).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
+            // The boxes were shown and answered on this screen, so the
+            // untouched marketing box commits as an explicit decline — the
+            // address step must not re-ask.
             expect(mockSetAllowMarketing).toHaveBeenCalledWith(false)
         })
 

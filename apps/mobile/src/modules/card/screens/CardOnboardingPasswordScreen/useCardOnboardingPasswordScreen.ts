@@ -116,8 +116,11 @@ export const useCardOnboardingPasswordScreen =
             // If an onboardingId already exists, email/verify already ran (the
             // user backed into this screen after moving on): the password is set
             // and the email code is spent, so skip the call and continue to the
-            // phone steps.
+            // phone steps. The consent boxes were still shown and answered on
+            // this screen, so commit them like the success path does — leaving
+            // marketing null here would make the address step re-ask.
             if (existingOnboardingId !== null) {
+                setAllowMarketing(allowMarketing ?? false)
                 navigation.navigate('CardOnboardingPhone')
                 return
             }
