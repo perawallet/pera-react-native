@@ -21,3 +21,4 @@ export * from './utils'
 // Error infrastructure
 export * from './errors/base'
 export * from './errors/network-validation'
+export * from './errors/network'
