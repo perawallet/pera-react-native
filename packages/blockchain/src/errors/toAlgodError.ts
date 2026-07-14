@@ -68,12 +68,18 @@ const fromLogicError = (err: LogicError): AlgodError<'logic_error'> =>
         err,
     )
 
-// algokit's ApiError is not publicly exported. Duck-type on the three fields
-// we care about so we don't couple to an internal import path.
+// HTTP errors from the algod client. algosdk v3's `HTTPClient` rebuilds every
+// transport error before rethrowing: it decodes the body into `response.text`
+// and copies `response.status` to a top-level numeric `status` — it has NO
+// `url`, which is why the previous guard (a v10 `ApiError` leftover requiring
+// `url`) silently killed the 5xx path after the algosdk v3 migration
+// (PERA-4502). Neither error type is publicly exported, so duck-type on
+// `status` + `response` together: `status` alone also matches unrelated Error
+// subclasses carrying an HTTP status (e.g. the Pera backend's
+// PeraNetworkError), which must NOT classify as algod network errors.
 interface ApiErrorLike {
     status: number
-    url: string
-    body?: unknown
+    response: { text?: string }
 }
 
 const isApiErrorLike = (err: unknown): err is ApiErrorLike & Error => {
@@ -81,43 +87,57 @@ const isApiErrorLike = (err: unknown): err is ApiErrorLike & Error => {
     const candidate = err as Partial<ApiErrorLike>
     return (
         typeof candidate.status === 'number' &&
-        typeof candidate.url === 'string'
+        typeof candidate.response === 'object' &&
+        candidate.response !== null
     )
 }
 
 const fromApiError = (err: ApiErrorLike, cause: Error): AlgodError => {
-    // 4xx responses often carry a node error in `body.message` — try to parse
-    // it before falling back to the transport-level code.
-    const bodyMessage = extractBodyMessage(err.body)
-    if (bodyMessage) {
-        const parsed = parseAlgodMessage(bodyMessage)
-        if (parsed) {
-            return new AlgodError(parsed.code, parsed.params as never, cause)
-        }
+    // A node's rejection text (4xx) lives in the response body and, for algosdk
+    // v3, is also appended to the error message. parseAlgodMessage substring-
+    // matches, so parse whichever the client populated before falling back to
+    // the transport-level code.
+    const bodyMessage = extractBodyMessage(err.response.text) ?? cause.message
+    const parsed = parseAlgodMessage(bodyMessage)
+    if (parsed) {
+        return new AlgodError(parsed.code, parsed.params as never, cause)
     }
 
     if (err.status >= 500 || err.status === 0) {
         return new AlgodError(
             'network_unavailable',
-            { status: err.status, url: err.url },
+            { status: err.status },
             cause,
         )
     }
 
-    return new AlgodError(
-        'unknown_node_error',
-        { raw: bodyMessage ?? `${err.status} ${err.url}` },
-        cause,
-    )
+    return new AlgodError('unknown_node_error', { raw: bodyMessage }, cause)
 }
 
+// algod bodies arrive as the raw decoded text, usually `{"message":"..."}` —
+// unwrap the inner message so `raw` params don't carry the JSON wrapper.
+// Empty bodies normalize to undefined so callers can `??` a fallback.
 const extractBodyMessage = (body: unknown): Optional<string> => {
-    if (typeof body === 'string') return body
-    if (body && typeof body === 'object' && 'message' in body) {
-        const m = (body as { message?: unknown }).message
-        if (typeof m === 'string') return m
+    if (typeof body === 'string') {
+        return messageFromObject(tryParseJson(body)) ?? (body || undefined)
+    }
+    return messageFromObject(body)
+}
+
+const messageFromObject = (value: unknown): Optional<string> => {
+    if (value && typeof value === 'object' && 'message' in value) {
+        const m = (value as { message?: unknown }).message
+        if (typeof m === 'string' && m) return m
     }
     return undefined
+}
+
+const tryParseJson = (text: string): unknown => {
+    try {
+        return JSON.parse(text)
+    } catch {
+        return undefined
+    }
 }
 
 // Catches React Native's `TypeError: Network request failed` and Node's
