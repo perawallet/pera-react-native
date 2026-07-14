@@ -11,6 +11,7 @@
  */
 
 export * from './api/query-client'
+export * from './api/mutation-policy'
 export * from './api/account-fast-lookup'
 export * from './api/schemas'
 export * from './constants'

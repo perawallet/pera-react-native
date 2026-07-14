@@ -26,8 +26,9 @@ export const useCreateRampOrderMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: (params: CreateRampOrderParams) =>
             createRampOrder(params, network),
-        // Handled inline by the form's confirm flow (toast); don't escalate
-        // to the app's root error boundary (mutations default throwOnError).
+        // Handled inline by the form's confirm flow (toast). Mirrors
+        // `mutationDefaults` (@perawallet/wallet-core-shared), which already
+        // sets throwOnError: false.
         throwOnError: false,
     })
 }

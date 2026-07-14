@@ -32,8 +32,9 @@ export const useCancelRampOrderMutation =
         const mutation = useMutation({
             mutationFn: (params: CancelRampOrderParams) =>
                 cancelRampOrder(params, network),
-            // Handled inline by the caller (toast); don't escalate to the app's
-            // root error boundary (mutations default throwOnError:true).
+            // Handled inline by the caller (toast). Mirrors `mutationDefaults`
+            // (@perawallet/wallet-core-shared), which already sets
+            // throwOnError: false.
             throwOnError: false,
             // Refresh the history list so the cancelled order updates ASAP.
             onSuccess: () =>

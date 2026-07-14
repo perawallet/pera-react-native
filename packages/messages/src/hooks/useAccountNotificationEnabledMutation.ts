@@ -26,13 +26,12 @@ export const useAccountNotificationEnabledMutation = () => {
     const deviceID = useDeviceID(network)
     const queryClient = useQueryClient()
     return useMutation({
-        // The global mutation config sets throwOnError: true so that
-        // unhandled mutation errors surface to the nearest ErrorBoundary.
-        // The notification toggle handler wraps mutateAsync in a .catch()
-        // that rolls back the optimistic update and shows a toast — so we
-        // opt out here. Otherwise a network failure would re-throw on the
-        // next render and crash the settings screen after the toast had
-        // already been shown, making the toggle appear to silently revert.
+        // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
+        // throwOnError: false; this mirrors it locally. The notification toggle
+        // handler wraps mutateAsync in a .catch() that rolls back the optimistic
+        // update and shows a toast. Re-throwing on the next render (TanStack
+        // keeps mutation.error until reset()) would crash the settings screen
+        // after the toast, making the toggle appear to silently revert.
         throwOnError: false,
         mutationFn: ({
             accountID,
