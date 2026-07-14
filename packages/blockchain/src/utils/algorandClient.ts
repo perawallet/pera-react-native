@@ -16,29 +16,47 @@ import {
     type Network,
 } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { Algodv2, Indexer } from 'algosdk'
 import { useNetworkStore } from '../store'
 import { toAlgodError } from '../errors'
+import { TimeoutHttpClient } from './TimeoutHttpClient'
 
 /**
  * Returns an instance of AlgorandClient for a specific network.
  * If no network is provided, defaults to the current active network from the store.
+ *
+ * The algod and indexer clients are built on {@link TimeoutHttpClient}, which
+ * bounds every request with a per-method AbortSignal timeout (read ceiling for
+ * GET/DELETE, submit ceiling for POST) so no call site can hang indefinitely.
  * @returns {AlgorandClient}
  */
 export const getAlgorandClient = (networkOverride?: Network) => {
     const network = networkOverride ?? useNetworkStore.getState().network
     const networkConfig = getNetworkConfig(network)
 
-    const algodConfig = {
-        server: networkConfig.algodUrl,
-        token: config.algodApiKey,
-    }
+    const algod = new Algodv2(
+        new TimeoutHttpClient(
+            { 'X-Algo-API-Token': config.algodApiKey },
+            networkConfig.algodUrl,
+            undefined,
+            config.algodReadTimeout,
+            config.algodSubmitTimeout,
+        ),
+        networkConfig.algodUrl,
+    )
 
-    const indexerConfig = {
-        server: networkConfig.indexerUrl,
-        token: config.indexerApiKey,
-    }
+    const indexer = new Indexer(
+        new TimeoutHttpClient(
+            { 'X-Indexer-API-Token': config.indexerApiKey },
+            networkConfig.indexerUrl,
+            undefined,
+            config.algodReadTimeout,
+            config.algodSubmitTimeout,
+        ),
+        networkConfig.indexerUrl,
+    )
 
-    const client = AlgorandClient.fromConfig({ algodConfig, indexerConfig })
+    const client = AlgorandClient.fromClients({ algod, indexer })
     client.registerErrorTransformer(async error => toAlgodError(error))
     return client
 }
