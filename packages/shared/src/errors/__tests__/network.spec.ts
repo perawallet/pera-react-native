@@ -13,7 +13,12 @@
 import { describe, expect, it } from 'vitest'
 import { HTTPError, NetworkError, TimeoutError } from 'ky'
 import { AppError, ErrorCategory } from '../base'
-import { PeraNetworkError, isPeraNetworkError } from '../network'
+import {
+    PeraNetworkError,
+    getNetworkErrorMessageKeys,
+    isNotFoundError,
+    isPeraNetworkError,
+} from '../network'
 
 // Minimal ky HTTPError builder — ky's isHTTPError checks `instanceof HTTPError`.
 const makeHttpError = (status: number): HTTPError => {
@@ -91,5 +96,90 @@ describe('PeraNetworkError.fromKyError', () => {
             ),
         ).toBe(true)
         expect(isPeraNetworkError(new Error('x'))).toBe(false)
+    })
+})
+
+describe('getNetworkErrorMessageKeys', () => {
+    const keysFor = (base: string) => ({
+        titleKey: `${base}.title`,
+        bodyKey: `${base}.body`,
+    })
+
+    it('maps offline → errors.network.no_connection', () => {
+        expect(
+            getNetworkErrorMessageKeys(new PeraNetworkError('offline')),
+        ).toEqual(keysFor('errors.network.no_connection'))
+    })
+
+    it('maps timeout → errors.network.timeout', () => {
+        expect(
+            getNetworkErrorMessageKeys(new PeraNetworkError('timeout')),
+        ).toEqual(keysFor('errors.network.timeout'))
+    })
+
+    it('maps server → errors.api.server_error', () => {
+        expect(
+            getNetworkErrorMessageKeys(
+                new PeraNetworkError('server', { status: 500 }),
+            ),
+        ).toEqual(keysFor('errors.api.server_error'))
+    })
+
+    it('maps client 404 → errors.api.not_found', () => {
+        expect(
+            getNetworkErrorMessageKeys(
+                new PeraNetworkError('client', { status: 404 }),
+            ),
+        ).toEqual(keysFor('errors.api.not_found'))
+    })
+
+    it('maps client 401 and 403 → errors.api.unauthorized', () => {
+        expect(
+            getNetworkErrorMessageKeys(
+                new PeraNetworkError('client', { status: 401 }),
+            ),
+        ).toEqual(keysFor('errors.api.unauthorized'))
+        expect(
+            getNetworkErrorMessageKeys(
+                new PeraNetworkError('client', { status: 403 }),
+            ),
+        ).toEqual(keysFor('errors.api.unauthorized'))
+    })
+
+    it('maps other client statuses → errors.api.generic', () => {
+        expect(
+            getNetworkErrorMessageKeys(
+                new PeraNetworkError('client', { status: 400 }),
+            ),
+        ).toEqual(keysFor('errors.api.generic'))
+    })
+
+    it('maps unknown kind and non-PeraNetworkError → errors.general', () => {
+        expect(
+            getNetworkErrorMessageKeys(new PeraNetworkError('unknown')),
+        ).toEqual(keysFor('errors.general'))
+        expect(getNetworkErrorMessageKeys(new Error('x'))).toEqual(
+            keysFor('errors.general'),
+        )
+    })
+})
+
+describe('isNotFoundError', () => {
+    it('is true for a PeraNetworkError with status 404', () => {
+        expect(
+            isNotFoundError(new PeraNetworkError('client', { status: 404 })),
+        ).toBe(true)
+    })
+
+    it('is false for other PeraNetworkError statuses', () => {
+        expect(
+            isNotFoundError(new PeraNetworkError('client', { status: 400 })),
+        ).toBe(false)
+    })
+
+    it('falls back to structural .response.status for raw errors', () => {
+        expect(isNotFoundError({ response: { status: 404 } })).toBe(true)
+        expect(isNotFoundError({ response: { status: 500 } })).toBe(false)
+        expect(isNotFoundError(null)).toBe(false)
     })
 })

@@ -98,3 +98,52 @@ export class PeraNetworkError extends AppError {
 /** Type guard for {@link PeraNetworkError}. */
 export const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
     error instanceof PeraNetworkError
+
+export type NetworkErrorMessageKeys = { titleKey: string; bodyKey: string }
+
+const keysFor = (base: string): NetworkErrorMessageKeys => ({
+    titleKey: `${base}.title`,
+    bodyKey: `${base}.body`,
+})
+
+/**
+ * Single source of truth mapping a typed network error to the i18n *keys* for
+ * its title/body. Returns keys (not localized strings) so this stays i18n-free;
+ * the app layer resolves them via `t()`.
+ */
+export const getNetworkErrorMessageKeys = (
+    error: unknown,
+): NetworkErrorMessageKeys => {
+    if (!isPeraNetworkError(error)) return keysFor('errors.general')
+
+    switch (error.kind) {
+        case 'offline':
+            return keysFor('errors.network.no_connection')
+        case 'timeout':
+            return keysFor('errors.network.timeout')
+        case 'server':
+            return keysFor('errors.api.server_error')
+        case 'client':
+            if (error.status === 404) return keysFor('errors.api.not_found')
+            if (error.status === 401 || error.status === 403) {
+                return keysFor('errors.api.unauthorized')
+            }
+            return keysFor('errors.api.generic')
+        case 'unknown':
+        default:
+            return keysFor('errors.general')
+    }
+}
+
+/**
+ * True when an error represents an HTTP 404. Understands the typed
+ * {@link PeraNetworkError} and falls back to the structural `.response.status`
+ * shape for any not-yet-normalized error.
+ */
+export const isNotFoundError = (error: unknown): boolean => {
+    if (isPeraNetworkError(error)) return error.status === 404
+    if (typeof error !== 'object' || error === null) return false
+    return (
+        (error as { response?: { status?: number } }).response?.status === 404
+    )
+}
