@@ -11,9 +11,18 @@
  */
 
 import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
 import { renderHook, act } from '@testing-library/react'
+
+import {
+    mutationDefaults,
+    NoConnectionError,
+} from '@perawallet/wallet-core-shared'
 
 // BigInt.prototype.microAlgo() is a runtime extension added by algokit-utils.
 // Patch the prototype so `0n.microAlgo()` works in the test environment.
@@ -82,7 +91,10 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: { retry: false },
-            mutations: { retry: false },
+            // Mirror the production mutation policy (OFF-004): networkMode
+            // 'always' so the mutationFn runs offline and rejects fast
+            // instead of pausing/auto-resuming.
+            mutations: { ...mutationDefaults, retry: false },
         },
     })
     return React.createElement(
@@ -104,6 +116,45 @@ describe('useSubmitRekeyMutation', () => {
         // Default: no PQ signer in the chain — resolver returns the base
         // fee, which must never force a staticFee override (regression).
         mockResolveMinFeeForSender.mockReturnValue(1000n)
+    })
+
+    afterEach(() => {
+        // Prevent the forced-offline state from leaking into other tests.
+        onlineManager.setOnline(true)
+    })
+
+    it('fails fast offline: rejects with build_failed before the signing pipeline opens', async () => {
+        // OFF-004 hardening: when the device is offline, the mutation must
+        // reject immediately — no Ledger/biometric prompt on a request that
+        // can no way be submitted. assertOnline() runs BEFORE getSuggestedParams
+        // and before requestRekeySignatures, so neither may be reached.
+        onlineManager.setOnline(false)
+
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            { wrapper },
+        )
+
+        const rejection = result.current.submitAsync({
+            sourceAddress: 'SRC',
+            rekeyToAddress: 'TGT',
+        })
+
+        await expect(rejection).rejects.toBeInstanceOf(RekeyError)
+        await expect(rejection).rejects.toMatchObject({
+            reason: 'build_failed',
+        })
+        // The NoConnectionError is preserved as the wrapped cause.
+        await rejection.catch((error: RekeyError) => {
+            expect(error.originalError).toBeInstanceOf(NoConnectionError)
+        })
+
+        // The signing pipeline was NEVER invoked — the key guarantee.
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        // assertOnline short-circuits before any network / build work.
+        expect(mockGetSuggestedParams).not.toHaveBeenCalled()
+        expect(mockPayment).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 
     it('builds a 0-amount rekey payment, requests a signature, and submits the signed group', async () => {

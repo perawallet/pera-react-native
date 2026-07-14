@@ -25,7 +25,10 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    NoConnectionError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 const mockAddSignRequest = vi.fn()
 const mockDecodeTransaction = vi.fn()
@@ -173,6 +176,14 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     generateOrderedUniqueId: () => 'mock-id',
     logger: {
         warn: vi.fn(),
+    },
+    // Thrown by the prepare mutation's `assertOnline()` guard when offline
+    // (OFF-004). Kept minimal — this file only needs an identifiable error type.
+    NoConnectionError: class NoConnectionError extends Error {
+        constructor() {
+            super('No network connection found')
+            this.name = 'NoConnectionError'
+        }
     },
 }))
 
@@ -455,6 +466,34 @@ describe('useSwapExecution', () => {
             phase: 'prepare',
             message: 'errors.algod.unknown_node_error.body',
         })
+    })
+
+    it('surfaces a structured prepare error when offline (fail-fast, no signing)', async () => {
+        // OFF-004: offline, the prepare mutation's `assertOnline()` guard
+        // rejects before the transport instead of pausing. The hook must map
+        // that into a structured `{ kind: 'error', phase: 'prepare' }` outcome
+        // — the flow surfaces an error rather than hanging — and must never
+        // advance to signing.
+        mockPrepareTransactions.mockRejectedValue(new NoConnectionError())
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-offline'))
+        })
+
+        expect(outcome?.kind).toBe('error')
+        if (outcome?.kind === 'error') {
+            expect(outcome.phase).toBe('prepare')
+        }
+        expect(result.current.status).toBe('error')
+        expect(result.current.error?.phase).toBe('prepare')
+
+        // Failed fast: never reached signing, and (a prepare-phase failure)
+        // never reported anything to the backend.
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
     })
 
     it('treats user rejection as a non-fatal cancellation (no failure report)', async () => {
