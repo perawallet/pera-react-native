@@ -54,7 +54,10 @@ export const SingleTransactionScreen = () => {
     }
 
     return (
-        <PWScreen footer={<SigningActionButtons />}>
+        <PWScreen
+            footer={<SigningActionButtons />}
+            testID='signing_transaction_review'
+        >
             <PWView style={styles.contentContainer}>
                 <TransactionSummaryHeader
                     transaction={transaction}

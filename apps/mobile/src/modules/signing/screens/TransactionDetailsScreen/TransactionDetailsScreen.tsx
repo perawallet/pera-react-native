@@ -84,7 +84,7 @@ export const TransactionDetailsScreen = () => {
 
     if (transaction) {
         return (
-            <PWScreen>
+            <PWScreen testID='transaction_details_screen'>
                 <TransactionDisplay
                     transaction={transaction}
                     onInnerTransactionsPress={handleTransactionPress}
