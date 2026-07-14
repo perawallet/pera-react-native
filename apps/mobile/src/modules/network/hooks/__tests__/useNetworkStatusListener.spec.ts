@@ -11,7 +11,6 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useNetworkStatusListener } from '../useNetworkStatusListener'
@@ -72,10 +71,6 @@ describe('useNetworkStatusListener', () => {
         // Default: Remote Config unset → the hook's fallback is returned.
         mockGetStringValue.mockImplementation((_key, fallback) => fallback)
         useNetworkStatusStore.setState({ hasInternet: true })
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'active',
-            writable: true,
-        })
     })
 
     afterEach(() => {
@@ -174,53 +169,7 @@ describe('useNetworkStatusListener', () => {
         expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
     })
 
-    it('shows toast when internet is lost and AppState is active', () => {
-        useNetworkStatusStore.setState({ hasInternet: true })
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'active',
-            writable: true,
-        })
-
-        const { rerender } = renderHook(() => useNetworkStatusListener())
-
-        act(() => {
-            useNetworkStatusStore.setState({ hasInternet: false })
-        })
-        rerender()
-
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'No Internet Connection',
-                type: 'warning',
-            }),
-            expect.anything(),
-        )
-    })
-
-    it('does NOT show toast when internet is lost but AppState is background', () => {
-        useNetworkStatusStore.setState({ hasInternet: true })
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'background',
-            writable: true,
-        })
-
-        const { rerender } = renderHook(() => useNetworkStatusListener())
-
-        act(() => {
-            useNetworkStatusStore.setState({ hasInternet: false })
-        })
-        rerender()
-
-        expect(mockShowToast).not.toHaveBeenCalled()
-    })
-
-    it('does NOT show toast when internet is lost but AppState is inactive', () => {
-        useNetworkStatusStore.setState({ hasInternet: true })
-        Object.defineProperty(AppState, 'currentState', {
-            value: 'inactive',
-            writable: true,
-        })
-
+    it('does not show a toast when internet is lost (banner supersedes it)', () => {
         const { rerender } = renderHook(() => useNetworkStatusListener())
 
         act(() => {

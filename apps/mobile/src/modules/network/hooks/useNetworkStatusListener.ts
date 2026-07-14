@@ -11,14 +11,11 @@
  */
 
 import { useEffect } from 'react'
-import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import { useToast } from '@hooks/useToast'
-import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
 import {
     computeHasInternet,
     configureNetInfo,
@@ -26,21 +23,19 @@ import {
     cancelPendingConnectivityChange,
     REACHABILITY_URL,
 } from '../networkStatus'
-import { useNetworkStatusStore } from './useNetworkStatusStore'
 
 /**
  * Hook that initializes network status listeners.
- * Call this once at the app root to set up:
- * - NetInfo subscription to track connectivity
- * - Toast notifications for offline status
+ * Call this once at the app root to set up a NetInfo subscription that tracks
+ * connectivity into the network store and TanStack Query's onlineManager.
+ * Offline UX is surfaced by the global <OfflineBanner /> (see RootComponent),
+ * not a transient toast.
  *
  * @example
  * // In RootComponent
  * useNetworkStatusListener()
  */
 export const useNetworkStatusListener = (): void => {
-    const { showToast } = useToast()
-    const hasInternet = useNetworkStatusStore(state => state.hasInternet)
     const reachabilityUrl = useRemoteConfig().getStringValue(
         RemoteConfigKeys.network_reachability_url,
         REACHABILITY_URL,
@@ -68,18 +63,4 @@ export const useNetworkStatusListener = (): void => {
             cancelPendingConnectivityChange()
         }
     }, [])
-
-    // Show toast when going offline
-    useEffect(() => {
-        if (!hasInternet && AppState.currentState === 'active') {
-            showToast(
-                {
-                    title: 'No Internet Connection',
-                    body: 'Some data may not be up to date.',
-                    type: 'warning',
-                },
-                { duration: LONG_NOTIFICATION_DURATION },
-            )
-        }
-    }, [hasInternet, showToast])
 }
