@@ -134,7 +134,7 @@ describe('onboarding endpoints', () => {
             network: 'mainnet',
         })
 
-        expect(result).toEqual({ onboardingId: 'ob_1' })
+        expect(result).toEqual({ onboardingId: 'ob_1', hasAccount: false })
         const body = request.mock.calls[0][0].data
         expect(request.mock.calls[0][0].path).toBe(
             '/v1/auth/register/email/verify',
@@ -154,6 +154,27 @@ describe('onboarding endpoints', () => {
         // network/signal must not leak into the request body
         expect(body).not.toHaveProperty('network')
         expect(body).not.toHaveProperty('signal')
+    })
+
+    it('flags an already-registered email (hasAccount, no onboarding id)', async () => {
+        // Baanx answers 200 with this shape when the email already has an
+        // account — it must parse (not throw) so the caller can route to sign-in.
+        request.mockResolvedValue({
+            data: { hasAccount: true, onboardingId: null, user: null },
+        })
+
+        const result = await verifyEmail({
+            email: 'e@x.com',
+            password: 'pw',
+            verificationCode: '123456',
+            contactVerificationId: 'cv_1',
+            countryOfResidence: 'GB',
+            allowMarketing: true,
+            allowSms: false,
+            network: 'mainnet',
+        })
+
+        expect(result).toEqual({ onboardingId: null, hasAccount: true })
     })
 
     it('sends the phone code with phoneNumber + phoneCountryCode + contactVerificationId', async () => {
@@ -284,6 +305,19 @@ describe('onboarding endpoints', () => {
 
         // Never coerce an unknown state to UNVERIFIED: consumers would treat a
         // progressing user as needing a fresh Veriff session.
+        expect(result.verificationState).toBeNull()
+    })
+
+    it('returns null when the verification state is absent', async () => {
+        // The schema is nullish, so a missing/null state resolves to null
+        // rather than throwing the whole poll.
+        request.mockResolvedValue({ data: { id: 'ob_1' } })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            network: 'mainnet',
+        })
+
         expect(result.verificationState).toBeNull()
     })
 

@@ -11,6 +11,7 @@
  */
 
 import {
+    isKycSubmitted,
     OnboardingPhase,
     OnboardingStep,
     VerificationState,
@@ -48,10 +49,9 @@ export const getOnboardingResumeRoute = (
     }
 
     // PENDING counts as done: Baanx reviews asynchronously and allows the
-    // remaining registration steps to proceed in the meantime.
-    const isKycDone =
-        verificationState === VerificationState.Pending ||
-        verificationState === VerificationState.Verified
+    // remaining registration steps to proceed in the meantime. Shared predicate
+    // so this stays in lockstep with the setup checklist's step gate.
+    const isKycDone = isKycSubmitted(verificationState)
 
     switch (phase) {
         // Login succeeded, so the account (email + password) exists; phone
@@ -83,7 +83,13 @@ export const getOnboardingResumeRoute = (
                       step: OnboardingStep.Verification,
                   }
         }
-        case OnboardingPhase.PhysicalAddress: {
+        // No separate mailing-address screen exists; the address form submits
+        // `isSameMailingAddress: true`, satisfying both phases — so mailing
+        // address shares the physical-address routing. KYC gates both; reaching
+        // the mailing phase implies it's done, but the guard is defensive so an
+        // un-done KYC can never skip verification.
+        case OnboardingPhase.PhysicalAddress:
+        case OnboardingPhase.MailingAddress: {
             return isKycDone
                 ? {
                       screen: 'CardOnboardingAddress',
@@ -93,14 +99,6 @@ export const getOnboardingResumeRoute = (
                       screen: 'CardOnboardingVerification',
                       step: OnboardingStep.Verification,
                   }
-        }
-        // No separate mailing-address screen exists; the address form submits
-        // `isSameMailingAddress: true`, satisfying both phases.
-        case OnboardingPhase.MailingAddress: {
-            return {
-                screen: 'CardOnboardingAddress',
-                step: OnboardingStep.Address,
-            }
         }
     }
 }

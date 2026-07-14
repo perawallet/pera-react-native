@@ -105,6 +105,14 @@ const CASES: Case[] = [
         screen: 'CardOnboardingAddress',
         step: OnboardingStep.Address,
     },
+    // …but KYC still gates it (same as the address phases) — an un-done KYC
+    // can't skip verification via the mailing-address phase.
+    {
+        phase: OnboardingPhase.MailingAddress,
+        verificationState: VerificationState.Unverified,
+        screen: 'CardOnboardingVerification',
+        step: OnboardingStep.Verification,
+    },
 ]
 
 describe('getOnboardingResumeRoute', () => {

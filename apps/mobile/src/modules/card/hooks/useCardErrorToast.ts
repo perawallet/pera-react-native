@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { getCardApiError } from '@perawallet/wallet-core-card'
+import {
+    getCardApiError,
+    type CardApiError,
+} from '@perawallet/wallet-core-card'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
@@ -26,18 +29,22 @@ export type CardErrorToastKeys = {
  * Returns a handler that surfaces a card API error as a toast — the backend's
  * message when present, falling back to a generic body. Shared by the card
  * flows so the message-resolution logic lives in one place; screens pass their
- * own keys to keep the per-flow wording.
+ * own keys to keep the per-flow wording. Callers that already resolved the
+ * error (for a branch check) pass it as the second arg to avoid re-parsing.
  */
 export const useCardErrorToast = ({
     titleKey = 'peraCard.account.error_title',
     bodyKey = 'peraCard.account.error_body',
-}: CardErrorToastKeys = {}): ((error: unknown) => Promise<void>) => {
+}: CardErrorToastKeys = {}): ((
+    error: unknown,
+    resolvedApiError?: CardApiError,
+) => Promise<void>) => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
 
     return useCallback(
-        async (error: unknown) => {
-            const apiError = await getCardApiError(error)
+        async (error: unknown, resolvedApiError?: CardApiError) => {
+            const apiError = resolvedApiError ?? (await getCardApiError(error))
             errorToast(t(titleKey), apiError.message ?? t(bodyKey))
         },
         [errorToast, t, titleKey, bodyKey],

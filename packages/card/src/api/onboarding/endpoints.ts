@@ -77,7 +77,12 @@ export type VerifyEmailParams = NetworkParams & {
     allowMarketing: boolean
     allowSms: boolean
 }
-export type VerifyEmailResult = { onboardingId: string }
+export type VerifyEmailResult = {
+    /** Null when the email already has an account (see `hasAccount`). */
+    onboardingId: Nullable<string>
+    /** True when the email is already registered — the caller routes to sign-in. */
+    hasAccount: boolean
+}
 export const verifyEmail = async (
     params: VerifyEmailParams,
 ): Promise<VerifyEmailResult> => {
@@ -89,7 +94,11 @@ export const verifyEmail = async (
         data: body,
         signal,
     })
-    return verifyEmailResponseSchema.parse(response.data)
+    const parsed = verifyEmailResponseSchema.parse(response.data)
+    return {
+        onboardingId: parsed.onboardingId ?? null,
+        hasAccount: parsed.hasAccount ?? false,
+    }
 }
 
 export type SendPhoneVerificationParams = NetworkParams & {

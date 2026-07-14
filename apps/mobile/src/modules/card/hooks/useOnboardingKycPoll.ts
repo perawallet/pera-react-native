@@ -25,11 +25,11 @@ const POLL_INTERVAL_MS = 4000
 const POLL_FAILURE_LIMIT = 3
 
 /**
- * Consecutive UNVERIFIED polls (~60s) before giving up. A record that stays
- * UNVERIFIED means the Veriff session never completed — polling it forever
- * can't help; only a fresh session can move it.
+ * Consecutive "not reported back" polls (~60s) before giving up. A record that
+ * stays UNVERIFIED (or on a state we don't model) means Veriff never reported a
+ * result — polling it can't move it, so we stop and let the consumer act.
  */
-const STUCK_UNVERIFIED_POLL_LIMIT = 15
+const STUCK_POLL_LIMIT = 15
 
 export type UseOnboardingKycPollOptions = {
     /** Gates polling (e.g. only once a Veriff session has been opened). */
@@ -39,11 +39,13 @@ export type UseOnboardingKycPollOptions = {
 export type UseOnboardingKycPollResult = {
     /** Modelled KYC state; null while unfetched or on an unmodelled state. */
     verificationState: Nullable<VerificationState>
-    /** Server reported a state we don't model — treated as progress (polls like
-     * PENDING), not counted toward the stuck-UNVERIFIED give-up budget. */
+    /** Server reported a state we don't model (data present, unrecognised). */
     isStateUnknown: boolean
-    /** Polling gave up (repeated failures or a never-progressing UNVERIFIED
-     * record); consumers surface an error instead of waiting forever. */
+    /** No KYC state has been fetched yet — consumers avoid rendering an
+     * actionable row until the first result lands. */
+    isLoading: boolean
+    /** Polling gave up: repeated failures, or the record never reported a
+     * result (UNVERIFIED/unknown) for the whole budget. */
     hasPollTimedOut: boolean
     /** Clears the give-up state and counters, then re-arms with a fresh fetch. */
     restartPolling: () => void
@@ -61,7 +63,7 @@ export const useOnboardingKycPoll = ({
     const onboardingId = useCardStore(state => state.onboardingId)
     const [hasPollTimedOut, setHasPollTimedOut] = useState(false)
 
-    const { data, refetch, dataUpdatedAt, errorUpdatedAt } =
+    const { data, isLoading, refetch, dataUpdatedAt, errorUpdatedAt } =
         useOnboardingDetailsQuery({
             onboardingId,
             enabled,
@@ -79,9 +81,18 @@ export const useOnboardingKycPoll = ({
 
     const verificationState = data?.verificationState ?? null
     const isStateUnknown = data !== undefined && data.verificationState === null
+    // React Query's own loading flag — true only while the first fetch is
+    // actually in flight; false when the query is disabled (no onboardingId) or
+    // has errored with no data. Using `data === undefined` here would pin a
+    // disabled/failed query to a neutral "loading" row with no recovery action.
+    // "Reported back" = a modelled decision/review state (PENDING/VERIFIED/
+    // REJECTED). UNVERIFIED and unknown (null-with-data) are "not reported".
+    const hasReportedBack =
+        verificationState !== null &&
+        verificationState !== VerificationState.Unverified
 
     const pollFailuresRef = useRef(0)
-    const unverifiedPollsRef = useRef(0)
+    const unresolvedPollsRef = useRef(0)
     useEffect(() => {
         if (!errorUpdatedAt) return
         pollFailuresRef.current += 1
@@ -92,19 +103,23 @@ export const useOnboardingKycPoll = ({
     useEffect(() => {
         if (!dataUpdatedAt) return
         pollFailuresRef.current = 0
-        if (verificationState === VerificationState.Unverified) {
-            unverifiedPollsRef.current += 1
-            if (unverifiedPollsRef.current >= STUCK_UNVERIFIED_POLL_LIMIT) {
+        if (hasReportedBack) {
+            // A real result landed: clear the counter and any stale give-up
+            // (e.g. one earned earlier while UNVERIFIED, now that a late PENDING
+            // has arrived via the shared cache) so the row/poll recover.
+            unresolvedPollsRef.current = 0
+            setHasPollTimedOut(false)
+        } else {
+            unresolvedPollsRef.current += 1
+            if (unresolvedPollsRef.current >= STUCK_POLL_LIMIT) {
                 setHasPollTimedOut(true)
             }
-        } else {
-            unverifiedPollsRef.current = 0
         }
-    }, [dataUpdatedAt, verificationState])
+    }, [dataUpdatedAt, hasReportedBack])
 
     const restartPolling = useCallback(() => {
         pollFailuresRef.current = 0
-        unverifiedPollsRef.current = 0
+        unresolvedPollsRef.current = 0
         setHasPollTimedOut(false)
         void refetch()
     }, [refetch])
@@ -116,6 +131,7 @@ export const useOnboardingKycPoll = ({
     return {
         verificationState,
         isStateUnknown,
+        isLoading,
         hasPollTimedOut,
         restartPolling,
         refetch: stableRefetch,

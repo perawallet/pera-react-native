@@ -950,7 +950,9 @@
             "country_error_body": "Please check your connection and try again.",
             "country_retry": "Try again",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't send your verification email. Please try again."
+            "error_body": "We couldn't send your verification email. Please try again.",
+            "already_registered_title": "Account already exists",
+            "already_registered_body": "An account with this email already exists. Please sign in to continue."
         },
         "verify_email": {
             "navigation_title": "Confirm your Email",
@@ -1060,8 +1062,7 @@
             "contact_us": "If you have any questions, please do not hesitate to <0>contact us</0>",
             "error_title": "Something went wrong",
             "error_body": "We couldn't start verification. Please try again.",
-            "open_link_error_body": "We couldn't open the verification page. Please try again.",
-            "poll_timeout_body": "We couldn't confirm your verification. Please tap Verify your Account to try again."
+            "open_link_error_body": "We couldn't open the verification page. Please try again."
         },
         "setup_status": {
             "title": "Finish setup and start spending on-chain",

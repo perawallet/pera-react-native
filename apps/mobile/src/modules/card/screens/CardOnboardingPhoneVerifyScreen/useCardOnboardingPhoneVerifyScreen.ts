@@ -181,7 +181,7 @@ export const useCardOnboardingPhoneVerifyScreen =
                         if (isInvalidInputError(apiError)) {
                             setCodeVerificationError('phone')
                         } else {
-                            await showError(error)
+                            await showError(error, apiError)
                         }
                     }
                 }

@@ -219,7 +219,7 @@ export const useCardOnboardingPersonalDetailsScreen =
                         navigation.navigate('CardOnboardingAddress')
                         return
                     }
-                    await showError(error)
+                    await showError(error, apiError)
                 }
             },
         )

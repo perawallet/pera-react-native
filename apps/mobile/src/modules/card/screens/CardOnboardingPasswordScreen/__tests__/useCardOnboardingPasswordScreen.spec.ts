@@ -11,6 +11,7 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
+import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockVerifyEmailMutateAsync = vi.fn()
@@ -75,11 +76,12 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 const mockErrorToast = vi.fn()
+const mockInfoToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: vi.fn(),
         errorToast: mockErrorToast,
-        infoToast: vi.fn(),
+        infoToast: mockInfoToast,
         showToast: vi.fn(),
     }),
 }))
@@ -101,6 +103,7 @@ describe('useCardOnboardingPasswordScreen', () => {
         mockExistingOnboardingId = null
         mockVerifyEmailMutateAsync.mockResolvedValue({
             onboardingId: 'mock-onboarding-id',
+            hasAccount: false,
         })
     })
 
@@ -174,6 +177,45 @@ describe('useCardOnboardingPasswordScreen', () => {
             // The untouched marketing box is committed as an explicit decline
             // so the address step doesn't re-ask this session.
             expect(mockSetAllowMarketing).toHaveBeenCalledWith(false)
+        })
+
+        it('shows an error and stays put on a malformed 200 (no id, no account)', async () => {
+            // Neither hasAccount nor a usable onboardingId — must not advance to
+            // the phone step with a null id (which dead-ends at phone/verify).
+            mockVerifyEmailMutateAsync.mockResolvedValueOnce({
+                onboardingId: null,
+                hasAccount: false,
+            })
+            const { result } = renderPasswordHook()
+
+            await submitWithValidForm(result)
+
+            await waitFor(() =>
+                expect(mockErrorToast).toHaveBeenCalledWith(
+                    'peraCard.create_account.error_title',
+                    'peraCard.create_account.error_body',
+                ),
+            )
+            expect(mockNavigate).not.toHaveBeenCalledWith('CardOnboardingPhone')
+            expect(mockNavigate).not.toHaveBeenCalledWith('CardSignIn')
+        })
+
+        it('routes to sign in when the email already has an account', async () => {
+            // email/verify answers 200 with { hasAccount: true, onboardingId:
+            // null } — the email is already registered, so sign in instead of
+            // a generic error.
+            mockVerifyEmailMutateAsync.mockResolvedValueOnce({
+                onboardingId: null,
+                hasAccount: true,
+            })
+            const { result } = renderPasswordHook()
+
+            await submitWithValidForm(result)
+
+            expect(mockInfoToast).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn')
+            expect(mockNavigate).not.toHaveBeenCalledWith('CardOnboardingPhone')
+            expect(mockErrorToast).not.toHaveBeenCalled()
         })
 
         it('skips the spent email/verify but still commits the consents when backing in', async () => {

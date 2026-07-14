@@ -136,17 +136,17 @@ export const useCardOnboardingVerificationScreen =
             navigation.navigate('CardOnboardingStatus')
         }, [hasStarted, verificationState, isStateUnknown, navigation])
 
-        // The poll gave up (repeated failures, or Veriff never reported back):
-        // stop waiting and tell the user, leaving the button re-tappable — a
-        // new tap mints a fresh session and a fresh poll budget.
+        // The poll gave up waiting for Veriff to report back (repeated failures,
+        // or a still-processing/abandoned session). Hand off to the setup
+        // checklist rather than stranding the user here with a hard error: the
+        // checklist keeps polling (so a late PENDING still lands automatically)
+        // and, if the session really was abandoned, shows the "verify" row —
+        // without forcing a fresh Veriff session the way a re-tap here would.
         useEffect(() => {
             if (!hasStarted || !hasPollTimedOut) return
             setHasStarted(false)
-            errorToast(
-                t('peraCard.verification.error_title'),
-                t('peraCard.verification.poll_timeout_body'),
-            )
-        }, [hasStarted, hasPollTimedOut, errorToast, t])
+            navigation.navigate('CardOnboardingStatus')
+        }, [hasStarted, hasPollTimedOut, navigation])
 
         // When the user returns from the Veriff browser, refetch immediately
         // rather than waiting for the next poll tick. Refs keep the listener

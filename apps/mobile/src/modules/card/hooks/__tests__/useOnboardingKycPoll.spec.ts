@@ -24,6 +24,7 @@ type MockQueryOptions = {
 
 const mockRefetch = vi.fn()
 let mockVerificationState: string | null | undefined
+let mockIsLoading = false
 let mockDataUpdatedAt = 0
 let mockErrorUpdatedAt = 0
 let mockQueryOptions: MockQueryOptions | undefined
@@ -43,7 +44,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             mockQueryOptions = options
             return {
                 data: queryData(),
-                isLoading: false,
+                isLoading: mockIsLoading,
                 refetch: mockRefetch,
                 dataUpdatedAt: mockDataUpdatedAt,
                 errorUpdatedAt: mockErrorUpdatedAt,
@@ -68,6 +69,7 @@ const scheduledInterval = () => {
 beforeEach(() => {
     vi.clearAllMocks()
     mockVerificationState = undefined
+    mockIsLoading = false
     mockDataUpdatedAt = 0
     mockErrorUpdatedAt = 0
     mockQueryOptions = undefined
@@ -140,19 +142,57 @@ describe('useOnboardingKycPoll', () => {
         expect(result.current.hasPollTimedOut).toBe(true)
     })
 
-    it('treats an unmodelled state as in-progress, not as stuck UNVERIFIED', () => {
-        // The endpoint maps unknown server states to null (data present).
+    it('gives up after the record stays unmodelled (unknown) for the poll budget', () => {
+        // The endpoint maps unknown server states to null (data present). An
+        // unknown state is "not reported back", so it must give up like
+        // UNVERIFIED rather than poll forever.
         mockVerificationState = null
         const { result, rerender } = renderHook(() => useOnboardingKycPoll())
 
-        for (let poll = 1; poll <= 20; poll += 1) {
+        for (let poll = 1; poll <= 15; poll += 1) {
             mockDataUpdatedAt = poll
             act(() => rerender())
         }
 
         expect(result.current.isStateUnknown).toBe(true)
+        expect(result.current.hasPollTimedOut).toBe(true)
+        expect(scheduledInterval()).toBe(false)
+    })
+
+    it('clears a stale give-up when the state transitions to a reported-back one', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        for (let poll = 1; poll <= 15; poll += 1) {
+            mockDataUpdatedAt = poll
+            act(() => rerender())
+        }
+        expect(result.current.hasPollTimedOut).toBe(true)
+
+        // Baanx later reports PENDING (e.g. via the shared query cache) — the
+        // stale UNVERIFIED give-up must clear so the row shows pending and the
+        // poll resumes toward the decision.
+        mockVerificationState = 'PENDING'
+        mockDataUpdatedAt = 16
+        act(() => rerender())
+
         expect(result.current.hasPollTimedOut).toBe(false)
         expect(scheduledInterval()).not.toBe(false)
+    })
+
+    it('mirrors the query loading flag (not a disabled/errored query)', () => {
+        // Sourced from React Query's `isLoading`, so a disabled or errored query
+        // (no data, but not fetching) reports false — consumers then fall
+        // through to an actionable row instead of a stuck neutral one.
+        mockIsLoading = true
+        const { result, rerender } = renderHook(() => useOnboardingKycPoll())
+        expect(result.current.isLoading).toBe(true)
+
+        mockIsLoading = false
+        mockVerificationState = 'PENDING'
+        mockDataUpdatedAt = 1
+        act(() => rerender())
+
+        expect(result.current.isLoading).toBe(false)
     })
 
     it('does not report an unknown state before any data arrives', () => {

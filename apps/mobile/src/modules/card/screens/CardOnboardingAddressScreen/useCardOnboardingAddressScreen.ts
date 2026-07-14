@@ -317,7 +317,7 @@ export const useCardOnboardingAddressScreen =
                     navigation.navigate('CardSignIn')
                     return
                 }
-                await showError(error)
+                await showError(error, apiError)
             }
         })
 

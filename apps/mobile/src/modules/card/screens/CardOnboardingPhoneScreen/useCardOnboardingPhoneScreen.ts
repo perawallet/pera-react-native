@@ -143,7 +143,7 @@ export const useCardOnboardingPhoneScreen =
                         })
                         return
                     }
-                    await showError(error)
+                    await showError(error, apiError)
                 }
             },
         )

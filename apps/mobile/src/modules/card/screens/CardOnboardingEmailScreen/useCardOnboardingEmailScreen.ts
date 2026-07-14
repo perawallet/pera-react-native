@@ -149,7 +149,7 @@ export const useCardOnboardingEmailScreen =
                     })
                     return
                 }
-                await showError(error)
+                await showError(error, apiError)
             }
         })
 

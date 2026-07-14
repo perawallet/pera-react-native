@@ -44,7 +44,7 @@ export type UseCardOnboardingPasswordScreenResult = {
 export const useCardOnboardingPasswordScreen =
     (): UseCardOnboardingPasswordScreenResult => {
         const { t } = useLanguage()
-        const { errorToast } = useToast()
+        const { errorToast, infoToast } = useToast()
         const showError = useCardErrorToast({
             titleKey: 'peraCard.create_account.error_title',
             bodyKey: 'peraCard.create_account.error_body',
@@ -130,15 +130,34 @@ export const useCardOnboardingPasswordScreen =
                 return
             }
             try {
-                await verifyEmail.mutateAsync({
-                    email,
-                    password,
-                    verificationCode,
-                    contactVerificationId,
-                    countryOfResidence: countryIso,
-                    allowMarketing: allowMarketing ?? false,
-                    allowSms,
-                })
+                const { onboardingId, hasAccount } =
+                    await verifyEmail.mutateAsync({
+                        email,
+                        password,
+                        verificationCode,
+                        contactVerificationId,
+                        countryOfResidence: countryIso,
+                        allowMarketing: allowMarketing ?? false,
+                        allowSms,
+                    })
+                // Baanx answers 200 with `hasAccount: true` (and no onboardingId)
+                // when the email is already registered — send the user to sign
+                // in rather than showing a generic failure.
+                if (hasAccount) {
+                    infoToast(
+                        t('peraCard.create_account.already_registered_title'),
+                        t('peraCard.create_account.already_registered_body'),
+                    )
+                    navigation.navigate('CardSignIn')
+                    return
+                }
+                // A 200 with neither an account flag nor a usable id is malformed
+                // — surface a clean error instead of advancing to the phone step
+                // with a null onboardingId (which dead-ends at phone/verify).
+                if (onboardingId === null) {
+                    await showError(null)
+                    return
+                }
                 // Commit the answered consents (an untouched marketing box is
                 // an explicit "declined", not "never asked") so the address
                 // step's consent call reuses them instead of re-collecting.
@@ -156,7 +175,7 @@ export const useCardOnboardingPasswordScreen =
                     navigation.navigate('CardOnboardingEmailVerify')
                     return
                 }
-                await showError(error)
+                await showError(error, apiError)
             }
         })
 

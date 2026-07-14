@@ -19,6 +19,7 @@ import {
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     FundingType,
+    isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
     useCardStore,
     useConnectFundingSourceMutation,
@@ -59,6 +60,35 @@ export type DocumentsState =
     | 'verified'
     | 'rejected'
     | 'error'
+
+/**
+ * Maps the polled KYC state to the documents row. Loading shows a neutral
+ * pending row (no actionable CTA) so a cold entry can't flash "verify" at an
+ * already-decided user. Only a submitted-but-unconfirmed review (PENDING) that
+ * the poll gave up on escalates to the retry 'error' row; UNVERIFIED and
+ * unmodelled/unfetched states surface the actionable 'unverified' row.
+ */
+const resolveDocumentsState = (
+    isLoading: boolean,
+    verificationState: Nullable<VerificationState>,
+    hasPollTimedOut: boolean,
+): DocumentsState => {
+    if (isLoading) return 'pending'
+    switch (verificationState) {
+        case VerificationState.Verified: {
+            return 'verified'
+        }
+        case VerificationState.Rejected: {
+            return 'rejected'
+        }
+        case VerificationState.Pending: {
+            return hasPollTimedOut ? 'error' : 'pending'
+        }
+        default: {
+            return 'unverified'
+        }
+    }
+}
 
 export type UseCardOnboardingStatusScreenResult = {
     documentsState: DocumentsState
@@ -112,34 +142,26 @@ export const useCardOnboardingStatusScreen =
 
         // You land here once Veriff has reported back (PENDING or a decision).
         // The shared poll keeps the row live until a decision (or gives up);
-        // UNVERIFIED (cold resume) and unmodelled states render as pending.
-        const { verificationState, hasPollTimedOut, restartPolling } =
-            useOnboardingKycPoll()
+        // UNVERIFIED (cold resume) and unmodelled states render the actionable
+        // 'unverified' row, and only the initial in-flight fetch shows 'pending'.
+        const {
+            verificationState,
+            isLoading,
+            hasPollTimedOut,
+            restartPolling,
+        } = useOnboardingKycPoll()
 
-        // Only PENDING (submitted, under review) and VERIFIED count as "KYC
-        // done enough to proceed" — matching the sign-in resume gate. UNVERIFIED
-        // (abandoned/never submitted) and unknown/unfetched states are NOT
-        // submitted, so they surface an actionable "verify" row and keep the
-        // later steps locked rather than masquerading as pending. The give-up
-        // signal only escalates a submitted review (PENDING) that stops
-        // responding into the retry error row.
-        const documentsState: DocumentsState =
-            verificationState === VerificationState.Verified
-                ? 'verified'
-                : verificationState === VerificationState.Rejected
-                  ? 'rejected'
-                  : verificationState === VerificationState.Pending
-                    ? hasPollTimedOut
-                        ? 'error'
-                        : 'pending'
-                    : 'unverified'
+        const documentsState = resolveDocumentsState(
+            isLoading,
+            verificationState,
+            hasPollTimedOut,
+        )
 
-        // Submitted (PENDING/VERIFIED) is the gate for the later steps — a poll
-        // hiccup on a submitted review (documentsState 'error') must not relock
-        // them, so this reads the KYC state directly, not the row state.
-        const isKycSubmitted =
-            verificationState === VerificationState.Pending ||
-            verificationState === VerificationState.Verified
+        // Submitted (PENDING/VERIFIED) gates the later steps — the shared
+        // predicate keeps this in lockstep with the sign-in resume route. Read
+        // from the KYC state, not the row state, so a poll hiccup on a submitted
+        // review (documentsState 'error') doesn't relock the step.
+        const isKycSubmitted = isKycStateSubmitted(verificationState)
 
         // The documents row's "Verify your Account" CTA — resumes KYC by
         // reopening the Veriff entry screen.

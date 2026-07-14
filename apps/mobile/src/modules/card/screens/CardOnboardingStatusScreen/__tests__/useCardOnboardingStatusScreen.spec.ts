@@ -92,6 +92,7 @@ const mockLogout = vi.fn()
 const mockShowCardError = vi.fn()
 let mockHasPollTimedOut = false
 let mockIsStateUnknown = false
+let mockIsLoading = false
 const mockRestartPolling = vi.fn()
 // Passes through to the delegate fn by default so existing Auto tests still
 // observe the delegation; the declined-authorization test overrides it.
@@ -104,6 +105,7 @@ vi.mock('@modules/card/hooks', () => ({
     useOnboardingKycPoll: () => ({
         verificationState: mockVerificationState,
         isStateUnknown: mockIsStateUnknown,
+        isLoading: mockIsLoading,
         hasPollTimedOut: mockHasPollTimedOut,
         restartPolling: mockRestartPolling,
         refetch: vi.fn(),
@@ -191,6 +193,7 @@ beforeEach(() => {
     mockVerificationState = null
     mockHasPollTimedOut = false
     mockIsStateUnknown = false
+    mockIsLoading = false
     mockOnboardingStep = OnboardingStep.Verification
     mockConnectedAddress = null
     mockStoredFundingType = null
@@ -237,11 +240,23 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(result.current.documentsState).toBe('unverified')
     })
 
-    it('reports unverified while the KYC state is unknown or unfetched', () => {
+    it('reports unverified while the KYC state is unknown', () => {
         mockVerificationState = null
+        mockIsStateUnknown = true
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('shows a neutral pending row (no verify CTA) while the state is still loading', () => {
+        // A cold entry (e.g. a REJECTED sign-in resume) must not flash the
+        // "verify" prompt before the first fetch lands.
+        mockVerificationState = null
+        mockIsLoading = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('pending')
+        expect(result.current.isKycSubmitted).toBe(false)
     })
 
     it('keeps an unsubmitted KYC actionable even after the poll gives up', () => {

@@ -234,7 +234,7 @@ describe('useCardOnboardingVerificationScreen', () => {
         expect(mockRestartPolling).toHaveBeenCalled()
     })
 
-    it('gives up and toasts when the poll times out, leaving the button re-tappable', async () => {
+    it('hands off to the setup status when the poll gives up (no forced re-mint)', async () => {
         const { result, rerender } = renderHook(() =>
             useCardOnboardingVerificationScreen(),
         )
@@ -243,14 +243,11 @@ describe('useCardOnboardingVerificationScreen', () => {
         mockHasPollTimedOut = true
         act(() => rerender())
 
+        // The checklist takes over (keeps polling for a late decision + offers
+        // the verify row) instead of a dead-end error that forces a new session.
         await waitFor(() =>
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'peraCard.verification.error_title',
-                'peraCard.verification.poll_timeout_body',
-            ),
+            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingStatus'),
         )
-        // Stops waiting, and does not force-navigate — the button re-mints.
-        expect(mockNavigate).not.toHaveBeenCalled()
         expect(mockPollOptions?.enabled).toBe(false)
     })
 
