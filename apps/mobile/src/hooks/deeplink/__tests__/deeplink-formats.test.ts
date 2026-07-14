@@ -699,6 +699,7 @@ const cases: Case[] = [
         () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
+                params: { screen: 'AccountDetails' },
             })
         },
     ),
@@ -882,6 +883,7 @@ const cases: Case[] = [
         extra: () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
+                params: { screen: 'AccountDetails' },
             })
         },
     },
