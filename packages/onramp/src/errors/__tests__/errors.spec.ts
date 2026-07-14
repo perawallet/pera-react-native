@@ -12,6 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { toOnrampUserMessage } from '..'
 
 // The Pera API returns SourceAmountIsTooLow errors with this shape:
@@ -110,5 +111,20 @@ describe('toOnrampUserMessage', () => {
         expect(toOnrampUserMessage(httpError)).toBe(
             'Device verification is required to fund this account.',
         )
+    })
+
+    it('reads the Pera exception body through a PeraNetworkError wrapper', () => {
+        const httpError = Object.assign(new Error('http'), {
+            data: {
+                type: 'SomeError',
+                fallback_message: 'Specific onramp message',
+                detail: {},
+            },
+        })
+        const wrapped = new PeraNetworkError('client', {
+            status: 400,
+            originalError: httpError,
+        })
+        expect(toOnrampUserMessage(wrapped)).toBe('Specific onramp message')
     })
 })
