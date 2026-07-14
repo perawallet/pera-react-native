@@ -309,8 +309,8 @@ describe('buildAppConfig — production app images (icon + name)', () => {
     })
 
     it('leaves dev/staging display names untouched', () => {
-        expect(build({ APP_ENV: 'staging' }).name).toBe('Pera 7 Staging')
-        expect(build({}).name).toBe('Pera 7 Dev')
+        expect(build({ APP_ENV: 'staging' }).name).toBe('Pera Staging')
+        expect(build({}).name).toBe('Pera Dev')
     })
 })
 

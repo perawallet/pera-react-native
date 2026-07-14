@@ -55,8 +55,8 @@ const bundleIdentifiers = {
 
 // App names per environment
 const appNames = {
-  dev: 'Pera 7 Dev',
-  staging: 'Pera 7 Staging',
+  dev: 'Pera Dev',
+  staging: 'Pera Staging',
   production: 'Pera Algo Wallet',
 };
 

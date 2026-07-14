@@ -1,0 +1,62 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Expo: run (mobile)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "APP_ENV=${input:appEnv} npx expo run:${input:platform}",
+            "cwd": "${workspaceFolder}/apps/mobile"
+        },
+        {
+            "name": "Expo: clean run (mobile)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "APP_ENV=${input:appEnv} npx expo prebuild --clean --platform ${input:platform} --no-install && if [ \"${input:platform}\" = \"ios\" ]; then node scripts/fix-development-team.js && pnpm dlx pod-install ios; fi && APP_ENV=${input:appEnv} npx expo run:${input:platform}",
+            "cwd": "${workspaceFolder}/apps/mobile"
+        },
+        {
+            "name": "Android: build release APK & install on device",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "export APP_ENV=${input:releaseEnv}; if [ \"$APP_ENV\" = \"staging\" ]; then export DEFAULT_NETWORK=testnet; fi; npx expo prebuild --platform android --no-install && (cd android && ./gradlew assembleRelease) && apk=$(find android/app/build/outputs/apk -path '*release*' -name '*.apk' -print0 | xargs -0 ls -t 2>/dev/null | head -1); if [ -z \"$apk\" ]; then echo 'Build produced no release APK.'; exit 1; fi; echo \"Installing $apk\"; adb install -r \"$apk\"",
+            "cwd": "${workspaceFolder}/apps/mobile"
+        },
+        {
+            "name": "Install: latest IPA on iPhone",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "ipa=$(ls -t build/ios/*.ipa 2>/dev/null | head -1); if [ -z \"$ipa\" ]; then echo 'No IPA found — run a fastlane build first.'; exit 1; fi; echo \"Installing $ipa\"; xcrun devicectl device install app --device ${input:iosDevice} \"$ipa\"",
+            "cwd": "${workspaceFolder}/apps/mobile"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "platform",
+            "type": "pickString",
+            "description": "Platform",
+            "options": ["android", "ios"],
+            "default": "android"
+        },
+        {
+            "id": "appEnv",
+            "type": "pickString",
+            "description": "APP_ENV (must match the last prebuild for plain runs)",
+            "options": ["development", "staging", "production"],
+            "default": "development"
+        },
+        {
+            "id": "iosDevice",
+            "type": "promptString",
+            "description": "devicectl device identifier",
+            "default": "3BA310B4-C916-5D4C-8291-F70BD19FDCDC"
+        },
+        {
+            "id": "releaseEnv",
+            "type": "pickString",
+            "description": "Release environment to build & install",
+            "options": ["staging", "production"],
+            "default": "staging"
+        }
+    ]
+}
