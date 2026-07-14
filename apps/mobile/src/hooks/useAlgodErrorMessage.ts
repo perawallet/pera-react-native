@@ -41,6 +41,17 @@ export const useAlgodErrorMessage = (): UseAlgodErrorMessageResult => {
         (err: unknown): { title: string; body: string } => {
             const algodError =
                 err instanceof AlgodError ? err : toAlgodError(err)
+
+            // Offline is a single source of truth — algod's
+            // network_unavailable and the PeraNetworkError 'offline' kind
+            // share the same copy.
+            if (algodError.code === 'network_unavailable') {
+                return {
+                    title: t('errors.network.no_connection.title'),
+                    body: t('errors.network.no_connection.body'),
+                }
+            }
+
             const params = toInterpolationParams(algodError.params)
             return {
                 title: t(`errors.algod.${algodError.code}.title`),
