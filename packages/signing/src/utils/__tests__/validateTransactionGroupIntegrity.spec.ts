@@ -11,8 +11,12 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { Address, Transaction, TransactionType } from 'algosdk'
+import { Address, Transaction } from 'algosdk'
 import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../test-utils/transactions'
 
 import {
     validateCosignSubsetIntegrity,
@@ -20,25 +24,11 @@ import {
 } from '../validateTransactionGroupIntegrity'
 import { InvalidSignableDataError } from '../../pipeline/errors'
 
-const senderA = new Address(new Uint8Array(32).fill(1))
-const senderB = new Address(new Uint8Array(32).fill(2))
-
-const baseParams = {
-    fee: 1000n,
-    minFee: 1000n,
-    firstValid: 1000n,
-    lastValid: 2000n,
-    genesisID: 'mainnet-v1.0',
-    genesisHash: new Uint8Array(32).fill(0xab),
-}
+const senderA = makeTestAddress(1)
+const senderB = makeTestAddress(2)
 
 const makePayment = (sender: Address, amount: bigint): Transaction =>
-    new Transaction({
-        type: TransactionType.pay,
-        sender,
-        suggestedParams: baseParams,
-        paymentParams: { receiver: senderB, amount },
-    })
+    makeTestPaymentTx(sender, { receiver: senderB, amount })
 
 describe('validateTransactionGroupIntegrity', () => {
     test('passes when no transaction declares a group', () => {

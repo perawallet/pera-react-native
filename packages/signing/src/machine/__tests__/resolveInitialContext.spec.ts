@@ -11,8 +11,12 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { Address, Transaction, TransactionType } from 'algosdk'
+import { Address, Transaction } from 'algosdk'
 import { groupTransactions } from '@perawallet/wallet-core-blockchain'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../test-utils/transactions'
 
 import { resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
@@ -30,25 +34,11 @@ import {
     SigningError,
 } from '../../pipeline/errors'
 
-const baseParams = {
-    fee: 1000n,
-    minFee: 1000n,
-    firstValid: 1000n,
-    lastValid: 2000n,
-    genesisID: 'mainnet-v1.0',
-    genesisHash: new Uint8Array(32).fill(0xab),
-}
-
-const userAddr = new Address(new Uint8Array(32).fill(1))
-const dappAddr = new Address(new Uint8Array(32).fill(2))
+const userAddr = makeTestAddress(1)
+const dappAddr = makeTestAddress(2)
 
 const makePayment = (sender: Address, amount: bigint): Transaction =>
-    new Transaction({
-        type: TransactionType.pay,
-        sender,
-        suggestedParams: baseParams,
-        paymentParams: { receiver: dappAddr, amount },
-    })
+    makeTestPaymentTx(sender, { receiver: dappAddr, amount })
 
 const userAccount = {
     type: 'algo25',
