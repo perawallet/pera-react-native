@@ -15,3 +15,4 @@ export {
     useNetworkStatus,
     useNetworkStatusListener,
 } from './hooks'
+export { initNetworkStatus } from './networkStatus'
