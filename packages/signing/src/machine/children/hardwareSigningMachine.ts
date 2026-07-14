@@ -30,10 +30,14 @@ export const hardwareSigningMachine = setup({
     actors: {
         hardwareSignActor,
     },
-    // Generous machine-level ceiling for the long-lived `active` substates
-    // (searching / awaiting_approval) so a hung hardware-signing step cannot
-    // pin the signing UI indefinitely. Reuses the parent machine's transport
-    // ceiling from config so the value stays tunable and never hardcoded.
+    // Per-step inactivity ceiling for the long-lived `active` substates
+    // (searching / awaiting_approval / signing). Each substate arms its own
+    // fresh `HARDWARE_TIMEOUT` on entry, and every activity event (PROGRESS /
+    // GROUP_SIGNED / a repeated AWAITING_APPROVAL) re-enters the substate to
+    // re-arm it — so a hung hardware step still routes to `error`, but normal
+    // human-paced multi-tx approval never trips it. Reuses the parent
+    // machine's transport ceiling from config so the value stays tunable and
+    // never hardcoded.
     delays: {
         HARDWARE_TIMEOUT: config.signingTransportTimeout,
     },
@@ -67,7 +71,7 @@ export const hardwareSigningMachine = setup({
             error: () => null,
             currentTx: () => 0,
         }),
-        // Fired by the `active` state's `after` timeout. There is no
+        // Fired by a substate's `after` (per-step) timeout. There is no
         // `event.error` on an `after` transition, so we synthesize a
         // retryable-shaped hardware error with kind `'timeout'`. Routing this
         // into the existing `error` state means RETRY (→ active) and
@@ -107,26 +111,89 @@ export const hardwareSigningMachine = setup({
             },
             initial: 'searching',
             states: {
+                // Each substate arms its OWN `HARDWARE_TIMEOUT` on entry.
+                // Because the timer lives on the substate and NOT on
+                // `active`, moving between steps re-arms it without
+                // re-invoking `hardwareSignActor` (the invoke is on `active`).
+                // Activity events (PROGRESS / GROUP_SIGNED / a repeated
+                // AWAITING_APPROVAL while already awaiting) are external
+                // self-transitions: they exit and re-enter the substate, which
+                // cancels and re-schedules its `after`. Only a full ceiling of
+                // genuine inactivity within a single step reaches `error`.
                 searching: {
                     on: {
                         AWAITING_APPROVAL: 'awaiting_approval',
                         SIGNING_STARTED: 'signing',
+                        PROGRESS: {
+                            target: 'searching',
+                            reenter: true,
+                            actions: 'updateProgress',
+                        },
+                        GROUP_SIGNED: {
+                            target: 'searching',
+                            reenter: true,
+                            actions: 'appendResult',
+                        },
+                    },
+                    after: {
+                        HARDWARE_TIMEOUT: {
+                            target: '#hardwareSigningMachine.error',
+                            actions: 'setTimeoutError',
+                        },
                     },
                 },
                 awaiting_approval: {
                     on: {
                         SIGNING_STARTED: 'signing',
+                        // A multi-tx group re-fires AWAITING_APPROVAL per
+                        // signable tx while already in this step — re-enter to
+                        // re-arm the per-step timer rather than let a single
+                        // budget span every on-device approval.
+                        AWAITING_APPROVAL: {
+                            target: 'awaiting_approval',
+                            reenter: true,
+                        },
+                        PROGRESS: {
+                            target: 'awaiting_approval',
+                            reenter: true,
+                            actions: 'updateProgress',
+                        },
+                        GROUP_SIGNED: {
+                            target: 'awaiting_approval',
+                            reenter: true,
+                            actions: 'appendResult',
+                        },
+                    },
+                    after: {
+                        HARDWARE_TIMEOUT: {
+                            target: '#hardwareSigningMachine.error',
+                            actions: 'setTimeoutError',
+                        },
                     },
                 },
                 signing: {
                     on: {
                         AWAITING_APPROVAL: 'awaiting_approval',
+                        PROGRESS: {
+                            target: 'signing',
+                            reenter: true,
+                            actions: 'updateProgress',
+                        },
+                        GROUP_SIGNED: {
+                            target: 'signing',
+                            reenter: true,
+                            actions: 'appendResult',
+                        },
+                    },
+                    after: {
+                        HARDWARE_TIMEOUT: {
+                            target: '#hardwareSigningMachine.error',
+                            actions: 'setTimeoutError',
+                        },
                     },
                 },
             },
             on: {
-                PROGRESS: { actions: 'updateProgress' },
-                GROUP_SIGNED: { actions: 'appendResult' },
                 STRATEGY_ERROR: { target: 'error', actions: 'setError' },
                 // Non-device errors (e.g. ARC-60 validation) bypass the
                 // BLE-class teardown gate — go straight to done with kind:
@@ -135,18 +202,6 @@ export const hardwareSigningMachine = setup({
                 NON_LEDGER_ERROR: { target: 'done', actions: 'setError' },
                 ALL_DONE: 'done',
                 USER_REJECTED_ON_DEVICE: 'rejected',
-            },
-            // Backstop timeout covering time spent in any `active` substate
-            // (searching / awaiting_approval / signing). An `after` on the
-            // parent `active` state is cancelled automatically on exit, so a
-            // normal completion never trips it. Routes to the existing
-            // retryable `error` state so the user can RETRY rather than stare
-            // at an indefinite spinner.
-            after: {
-                HARDWARE_TIMEOUT: {
-                    target: 'error',
-                    actions: 'setTimeoutError',
-                },
             },
         },
 
