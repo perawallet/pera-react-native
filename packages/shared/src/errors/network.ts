@@ -117,21 +117,26 @@ export const getNetworkErrorMessageKeys = (
     if (!isPeraNetworkError(error)) return keysFor('errors.general')
 
     switch (error.kind) {
-        case 'offline':
+        case 'offline': {
             return keysFor('errors.network.no_connection')
-        case 'timeout':
+        }
+        case 'timeout': {
             return keysFor('errors.network.timeout')
-        case 'server':
+        }
+        case 'server': {
             return keysFor('errors.api.server_error')
-        case 'client':
+        }
+        case 'client': {
             if (error.status === 404) return keysFor('errors.api.not_found')
             if (error.status === 401 || error.status === 403) {
                 return keysFor('errors.api.unauthorized')
             }
             return keysFor('errors.api.generic')
+        }
         case 'unknown':
-        default:
+        default: {
             return keysFor('errors.general')
+        }
     }
 }
 
