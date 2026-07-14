@@ -56,14 +56,19 @@ export type CardUxState = BaseStoreState & {
      * Marketing-communication opt-in. Captured (unchecked by default) on the
      * Set-Password screen, sent on the required `email/verify` call, and reused
      * by the address-step `/v2/consent` call (drives marketing + email consents).
+     * `null` = never asked this session (e.g. a resumed sign-in that skipped
+     * the Set-Password screen) — the address step must re-collect it rather
+     * than record a silent "denied".
      */
-    allowMarketing: boolean
+    allowMarketing: Nullable<boolean>
     /**
      * SMS-communication opt-in. Captured alongside `allowMarketing` on the
      * Set-Password screen and sent on `email/verify` (both are required there);
      * drives the `smsNotifications` consent independently at the address step.
+     * `null` = never asked this session, same re-collect rule as
+     * `allowMarketing`.
      */
-    allowSms: boolean
+    allowSms: Nullable<boolean>
     /**
      * Address of the Pera account connected as the card's funding source on the
      * setup checklist's Connect Funds step. Persisted so the row stays "done"

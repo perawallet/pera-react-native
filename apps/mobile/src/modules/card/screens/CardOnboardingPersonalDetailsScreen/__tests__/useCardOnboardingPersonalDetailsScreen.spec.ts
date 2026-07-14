@@ -258,6 +258,108 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         )
     })
 
+    // Prefilled server data makes the form valid with no typing — the lever
+    // used by the submit tests below.
+    const prefillValidForm = () => {
+        mockOnboardingDetails = {
+            verificationState: 'VERIFIED',
+            firstName: 'YASIN',
+            lastName: 'ÇALIŞKAN',
+            dateOfBirth: '1997-11-08T00:00:00.000Z',
+            countryOfNationality: 'GB',
+        }
+    }
+
+    it('submits the details and continues to the address step', async () => {
+        prefillValidForm()
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingAddress'),
+        )
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+                onboardingId: 'mock-onboarding-id',
+                firstName: 'YASIN',
+                dateOfBirth: '1997-11-08',
+            }),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it("surfaces Baanx's own error message when the submit is rejected", async () => {
+        prefillValidForm()
+        mockMutateAsync.mockRejectedValueOnce({
+            response: { status: 400 },
+            data: { message: 'Registration is not in the expected phase' },
+        })
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.personal_details.error_title',
+                'Registration is not in the expected phase',
+            ),
+        )
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the generic error body when the failure carries no message', async () => {
+        prefillValidForm()
+        mockMutateAsync.mockRejectedValueOnce(new Error('network down'))
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.personal_details.error_title',
+                'peraCard.personal_details.error_body',
+            ),
+        )
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('treats a duplicate submission as success and continues to the address step', async () => {
+        prefillValidForm()
+        mockMutateAsync.mockRejectedValueOnce({
+            response: { status: 409 },
+            data: { message: 'Duplicate onboardingId - record already exists' },
+        })
+        const { result } = renderHook(() =>
+            useCardOnboardingPersonalDetailsScreen(),
+        )
+        await waitFor(() => expect(result.current.isValid).toBe(true))
+
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingAddress'),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
     it('stays editable when the server nationality is not in the supported list', async () => {
         // A nationality outside the signup-eligible list (e.g. pulled from the
         // KYC scan) can't be resolved to a picker option. Locking it would

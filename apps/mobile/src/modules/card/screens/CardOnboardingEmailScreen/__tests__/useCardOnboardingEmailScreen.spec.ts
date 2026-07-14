@@ -191,6 +191,68 @@ describe('useCardOnboardingEmailScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
+    describe('email/send submission errors', () => {
+        // Writes schema-valid values straight into the form store — no inputs
+        // are rendered in a hook test, so this is the submit lever.
+        const submitWithValidForm = async (result: {
+            current: ReturnType<typeof useCardOnboardingEmailScreen>
+        }) => {
+            act(() => {
+                Object.assign(result.current.control._formValues, {
+                    email: 'john@example.com',
+                    countryIso: 'FR',
+                })
+            })
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+        }
+
+        it('attributes a conflict (already registered) to the email field', async () => {
+            mockMutateAsync.mockRejectedValueOnce({
+                response: { status: 409 },
+                data: { message: 'Email address already registered' },
+            })
+            const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+            await submitWithValidForm(result)
+
+            expect(result.current.errors.email?.message).toBe(
+                'Email address already registered',
+            )
+            expect(mockErrorToast).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it("surfaces Baanx's own message on a non-conflict failure", async () => {
+            mockMutateAsync.mockRejectedValueOnce({
+                response: { status: 500 },
+                data: { message: 'Registration is temporarily unavailable' },
+            })
+            const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+            await submitWithValidForm(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.create_account.error_title',
+                'Registration is temporarily unavailable',
+            )
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('falls back to the generic body when the failure carries no message', async () => {
+            mockMutateAsync.mockRejectedValueOnce(new Error('network down'))
+            const { result } = renderHook(() => useCardOnboardingEmailScreen())
+
+            await submitWithValidForm(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.create_account.error_title',
+                'peraCard.create_account.error_body',
+            )
+        })
+    })
+
     it('flags an unsupported country as a waitlist country', async () => {
         const { result } = renderHook(() => useCardOnboardingEmailScreen())
 

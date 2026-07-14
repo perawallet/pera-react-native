@@ -80,6 +80,25 @@ describe('useOnboardingDetailsQuery', () => {
         expect(result.current.data?.verificationState).toBeUndefined()
     })
 
+    it('consults a function refetchInterval to schedule polling', async () => {
+        fetchOnboardingDetails.mockResolvedValue({
+            verificationState: VerificationState.Pending,
+        })
+        const refetchInterval = vi.fn(() => false as const)
+
+        const { result } = renderHook(
+            () =>
+                useOnboardingDetailsQuery({
+                    onboardingId: 'ob_1',
+                    refetchInterval,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(refetchInterval).toHaveBeenCalled()
+    })
+
     it('does not fetch when disabled', async () => {
         const { result } = renderHook(
             () =>

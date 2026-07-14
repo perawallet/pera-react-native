@@ -162,4 +162,66 @@ describe('useCardOnboardingPhoneScreen', () => {
         expect(mockMutateAsync).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
+
+    describe('phone/send submission errors', () => {
+        // Writes schema-valid values straight into the form store — no inputs
+        // are rendered in a hook test, so this is the submit lever.
+        const submitWithValidForm = async (result: {
+            current: ReturnType<typeof useCardOnboardingPhoneScreen>
+        }) => {
+            act(() => {
+                Object.assign(result.current.control._formValues, {
+                    phoneCountryCode: '44',
+                    phoneNumber: '7400846282',
+                })
+            })
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+        }
+
+        it('attributes a conflict (already registered) to the phone field', async () => {
+            mockMutateAsync.mockRejectedValueOnce({
+                response: { status: 409 },
+                data: { message: 'Phone number already registered' },
+            })
+            const { result } = renderHook(() => useCardOnboardingPhoneScreen())
+
+            await submitWithValidForm(result)
+
+            expect(result.current.errors.phoneNumber?.message).toBe(
+                'Phone number already registered',
+            )
+            expect(mockErrorToast).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it("surfaces Baanx's own message on a non-conflict failure", async () => {
+            mockMutateAsync.mockRejectedValueOnce({
+                response: { status: 500 },
+                data: { message: 'SMS provider unavailable' },
+            })
+            const { result } = renderHook(() => useCardOnboardingPhoneScreen())
+
+            await submitWithValidForm(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.verify_phone.send_error_title',
+                'SMS provider unavailable',
+            )
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('falls back to the generic body when the failure carries no message', async () => {
+            mockMutateAsync.mockRejectedValueOnce(new Error('network down'))
+            const { result } = renderHook(() => useCardOnboardingPhoneScreen())
+
+            await submitWithValidForm(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.verify_phone.send_error_title',
+                'peraCard.verify_phone.send_error_body',
+            )
+        })
+    })
 })

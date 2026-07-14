@@ -81,6 +81,7 @@ describe('Flow: Card onboarding — identity verification', () => {
         store.setOnboardingId('mock-onboarding-id')
         store.setCountryIso('GB')
         vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        vi.spyOn(Linking, 'canOpenURL').mockResolvedValue(true)
         // The personal-details screen fetches the registration settings for
         // its nationality picker on mount.
         server.use(
@@ -124,6 +125,28 @@ describe('Flow: Card onboarding — identity verification', () => {
         expect(
             screen.getByTestId('card-onboarding-status-pending-label'),
         ).toBeTruthy()
+    })
+
+    it('Given the KYC was never completed (UNVERIFIED), then the row prompts to verify and Enter Details stays locked', async () => {
+        // The bug: an abandoned KYC showed the "Pending" (submitted) row and
+        // enabled the Enter Details step. It must instead prompt to verify and
+        // keep the later steps locked.
+        mockOnboardingDetails('UNVERIFIED')
+
+        renderStatus()
+
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('card-onboarding-status-documents-verify'),
+            ).toBeTruthy(),
+        )
+        // Not shown as submitted/pending, and the details step is not unlocked.
+        expect(
+            screen.queryByTestId('card-onboarding-status-pending-label'),
+        ).toBeNull()
+        expect(
+            screen.queryByTestId('card-onboarding-status-details-cta'),
+        ).toBeNull()
     })
 
     it('Given the identity is VERIFIED, then Enter Your Details continues to personal details', async () => {

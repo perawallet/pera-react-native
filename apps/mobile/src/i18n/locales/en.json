@@ -950,7 +950,9 @@
             "country_error_body": "Please check your connection and try again.",
             "country_retry": "Try again",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't send your verification email. Please try again."
+            "error_body": "We couldn't send your verification email. Please try again.",
+            "already_registered_title": "Account already exists",
+            "already_registered_body": "An account with this email already exists. Please sign in to continue."
         },
         "verify_email": {
             "navigation_title": "Confirm your Email",
@@ -1047,7 +1049,9 @@
             "platform_terms": "I have read and understood Pera's <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't save your address. Please try again."
+            "error_body": "We couldn't save your address. Please try again.",
+            "already_registered_title": "Registration already complete",
+            "already_registered_body": "Your details are already on file. Please sign in to continue setting up your card."
         },
         "verification": {
             "title": "Begin spending\non-chain",
@@ -1057,15 +1061,20 @@
             "logout_button": "Logout",
             "contact_us": "If you have any questions, please do not hesitate to <0>contact us</0>",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't start verification. Please try again."
+            "error_body": "We couldn't start verification. Please try again.",
+            "open_link_error_body": "We couldn't open the verification page. Please try again."
         },
         "setup_status": {
             "title": "Finish setup and start spending on-chain",
             "documents_title": "Submit Your Documents",
             "documents_pending_label": "Pending",
+            "documents_unverified_body": "Please verify your account to begin spending on-chain.",
+            "documents_verify_button": "Verify your Account",
             "documents_pending_body": "Your verification has been submitted. We'll email you once it's complete.",
             "documents_verified_body": "Your identity has been verified.",
             "documents_rejected_body": "We couldn't verify your identity. Please contact support for help.",
+            "documents_error_body": "We couldn't check your verification status. Please try again.",
+            "documents_retry": "Try again",
             "details_title": "Enter Your Details",
             "details_body": "Verify your details and enter your address to proceed.",
             "details_button": "Verify your Account",
