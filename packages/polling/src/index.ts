@@ -12,7 +12,6 @@
 
 export const name = '@perawallet/polling'
 
-export * from './hooks'
 export * from './models'
 export { sendShouldRefreshRequest } from './hooks/endpoints'
 export { usePollingStore } from './store/store'
