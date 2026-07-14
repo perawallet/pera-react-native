@@ -13,10 +13,10 @@
 import {
     queryClient,
     logger,
+    isNotFoundError,
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { HTTPError } from 'ky'
 import { ZodError } from 'zod'
 import {
     applicationResponseSchema,
@@ -48,7 +48,7 @@ export const fetchApplication = async (
         const validated = applicationResponseSchema.parse(response.data)
         return transformApplication(validated)
     } catch (error) {
-        if (error instanceof HTTPError && error.response.status === 404) {
+        if (isNotFoundError(error)) {
             return null
         }
         if (error instanceof ZodError) {

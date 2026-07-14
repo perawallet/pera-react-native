@@ -82,4 +82,17 @@ describe('useAlgodErrorMessage', () => {
 
         expect(mockT).toHaveBeenCalledWith('errors.algod.overspend.title')
     })
+
+    test('remaps network_unavailable to the shared offline copy', () => {
+        const err = new AlgodError('network_unavailable', {})
+        const { result } = renderHook(() => useAlgodErrorMessage())
+
+        const message = result.current.getMessage(err)
+
+        expect(message.title).toBe('errors.network.no_connection.title')
+        expect(message.body).toBe('errors.network.no_connection.body')
+        expect(mockT).not.toHaveBeenCalledWith(
+            'errors.algod.network_unavailable.title',
+        )
+    })
 })

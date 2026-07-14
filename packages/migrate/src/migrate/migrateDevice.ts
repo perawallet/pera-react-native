@@ -33,12 +33,6 @@ export const migrateDeviceIdentifiers = (
             identifiers.notificationUserId,
         )
     }
-    if (identifiers.legacyDeviceId) {
-        settings.setPreference(
-            'legacy.device.legacyDeviceId',
-            identifiers.legacyDeviceId,
-        )
-    }
     if (identifiers.lastSeenNotificationId !== null) {
         settings.setPreference(
             'legacy.device.lastSeenNotificationId',

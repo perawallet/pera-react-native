@@ -14,19 +14,19 @@ import React from 'react'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { StatusChecklistRow } from './StatusChecklistRow'
-import { type DocumentsState } from './useCardOnboardingStatusScreen'
 import { useStyles } from './styles'
 
 type EnterDetailsRowProps = {
     isRegistrationComplete: boolean
-    documentsState: DocumentsState
+    /** KYC is submitted — only then does the details step unlock. */
+    isKycSubmitted: boolean
     onEnterDetails: () => void
 }
 
 /** Checklist row 2 — "Enter Your Details", done once registration completes. */
 export const EnterDetailsRow = ({
     isRegistrationComplete,
-    documentsState,
+    isKycSubmitted,
     onEnterDetails,
 }: EnterDetailsRowProps) => {
     const { t } = useLanguage()
@@ -44,7 +44,7 @@ export const EnterDetailsRow = ({
             }
             testID='card-onboarding-status-details'
         >
-            {!isRegistrationComplete && documentsState !== 'rejected' ? (
+            {!isRegistrationComplete && isKycSubmitted ? (
                 <PWButton
                     variant='primary'
                     title={t('peraCard.setup_status.details_button')}

@@ -31,11 +31,14 @@ export type MockAssetsParams = {
 export const mockAssets = ({
     response,
     status = 200,
-}: MockAssetsParams): HttpHandler => {
+}: MockAssetsParams): HttpHandler[] => {
     validateMockResponse(assetsResponseSchema, response, 'mockAssets')
-    return http.get('*/v1/assets/', () =>
-        HttpResponse.json(response, { status }),
-    )
+    return [
+        http.post('*/v2/assets/', () =>
+            HttpResponse.json(response, { status }),
+        ),
+        http.get('*/v1/assets/', () => HttpResponse.json(response, { status })),
+    ]
 }
 
 export type MockAccountAssetsParams = {

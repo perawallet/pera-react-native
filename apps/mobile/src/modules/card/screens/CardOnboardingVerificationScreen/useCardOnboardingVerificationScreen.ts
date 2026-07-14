@@ -14,20 +14,17 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, Linking, type AppStateStatus } from 'react-native'
 import {
     useCardStore,
-    useOnboardingDetailsQuery,
+    useOnboardingKycPoll,
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import { useWebView } from '@modules/webview'
-import { useCardOnboardingLogout } from '@modules/card/hooks'
+import { useCardErrorToast, useCardOnboardingLogout } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { isForegroundTransition } from '@utils/app-state'
-
-/** How often we re-check `verificationState` while the user is in Veriff. */
-const POLL_INTERVAL_MS = 4000
 
 export type UseCardOnboardingVerificationScreenResult = {
     /** Start request in flight — disables the CTA and shows its spinner. */
@@ -43,6 +40,10 @@ export const useCardOnboardingVerificationScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.verification.error_title',
+            bodyKey: 'peraCard.verification.error_body',
+        })
         const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -51,11 +52,13 @@ export const useCardOnboardingVerificationScreen =
 
         const startVerification = useStartVerificationMutation()
 
-        const onboardingDetails = useOnboardingDetailsQuery({
-            onboardingId,
-            enabled: hasStarted,
-            refetchInterval: hasStarted ? POLL_INTERVAL_MS : false,
-        })
+        const {
+            verificationState,
+            isStateUnknown,
+            hasPollTimedOut,
+            restartPolling,
+            refetch,
+        } = useOnboardingKycPoll({ enabled: hasStarted })
 
         const handleVerify = useCallback(() => {
             // Set by email/verify; if missing, re-verify rather than start a
@@ -75,37 +78,72 @@ export const useCardOnboardingVerificationScreen =
                     const { sessionUrl } = await startVerification.mutateAsync({
                         onboardingId,
                     })
+                    // Guard before opening: a malformed/unopenable session URL
+                    // must not arm the status poll — nothing was opened, so
+                    // there is nothing to wait for.
+                    const canOpen =
+                        sessionUrl.startsWith('https://') &&
+                        (await Linking.canOpenURL(sessionUrl))
+                    if (!canOpen) {
+                        errorToast(
+                            t('peraCard.verification.error_title'),
+                            t('peraCard.verification.open_link_error_body'),
+                        )
+                        return
+                    }
+                    await Linking.openURL(sessionUrl)
+                    // A retry after a give-up starts a fresh session, so the
+                    // poll budget starts over too.
+                    restartPolling()
                     setHasStarted(true)
-                    void Linking.openURL(sessionUrl)
-                } catch {
-                    errorToast(
-                        t('peraCard.verification.error_title'),
-                        t('peraCard.verification.error_body'),
-                    )
+                } catch (error) {
+                    await showError(error)
                 }
             }
             void startKyc()
-        }, [startVerification, onboardingId, errorToast, navigation, t])
+        }, [
+            startVerification,
+            onboardingId,
+            errorToast,
+            showError,
+            restartPolling,
+            navigation,
+            t,
+        ])
 
         const handleOpenSupport = useCallback(() => {
             pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
         }, [pushWebView])
 
-        // Veriff reported back (submitted/decided): continue on the setup
-        // status checklist. Abandoning the browser leaves the state UNVERIFIED
-        // and the user here, with the button still re-tappable.
-        const verificationState =
-            onboardingDetails.data?.verificationState ?? null
+        // Veriff reported back (submitted/decided — including a state we don't
+        // model): continue on the setup status checklist. Abandoning the
+        // browser leaves the state UNVERIFIED and the user here, with the
+        // button still re-tappable.
         useEffect(() => {
-            if (!hasStarted || !verificationState) return
-            if (verificationState !== VerificationState.Unverified) {
-                // Veriff reported back — hand off to the status checklist, which
-                // takes over polling. Stop ours so it doesn't keep refetching in
-                // the background while this screen sits in the stack.
-                setHasStarted(false)
-                navigation.navigate('CardOnboardingStatus')
-            }
-        }, [hasStarted, verificationState, navigation])
+            if (!hasStarted) return
+            const hasReportedBack =
+                isStateUnknown ||
+                (verificationState !== null &&
+                    verificationState !== VerificationState.Unverified)
+            if (!hasReportedBack) return
+            // Hand off to the status checklist, which takes over polling. Stop
+            // ours so it doesn't keep refetching in the background while this
+            // screen sits in the stack.
+            setHasStarted(false)
+            navigation.navigate('CardOnboardingStatus')
+        }, [hasStarted, verificationState, isStateUnknown, navigation])
+
+        // The poll gave up waiting for Veriff to report back (repeated failures,
+        // or a still-processing/abandoned session). Hand off to the setup
+        // checklist rather than stranding the user here with a hard error: the
+        // checklist keeps polling (so a late PENDING still lands automatically)
+        // and, if the session really was abandoned, shows the "verify" row —
+        // without forcing a fresh Veriff session the way a re-tap here would.
+        useEffect(() => {
+            if (!hasStarted || !hasPollTimedOut) return
+            setHasStarted(false)
+            navigation.navigate('CardOnboardingStatus')
+        }, [hasStarted, hasPollTimedOut, navigation])
 
         // When the user returns from the Veriff browser, refetch immediately
         // rather than waiting for the next poll tick. Refs keep the listener
@@ -113,8 +151,8 @@ export const useCardOnboardingVerificationScreen =
         const previousAppState = useRef<AppStateStatus>(AppState.currentState)
         const isPollingRef = useRef(hasStarted)
         isPollingRef.current = hasStarted
-        const refetchRef = useRef(onboardingDetails.refetch)
-        refetchRef.current = onboardingDetails.refetch
+        const refetchRef = useRef(refetch)
+        refetchRef.current = refetch
         useEffect(() => {
             const subscription = AppState.addEventListener(
                 'change',

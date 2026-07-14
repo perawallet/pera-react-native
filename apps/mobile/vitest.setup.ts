@@ -2246,114 +2246,184 @@ vi.mock('@react-native-clipboard/clipboard', () => ({
 }))
 
 // Mock @perawallet/wallet-core-shared
-vi.mock('@perawallet/wallet-core-shared', async () => ({
-    ALGO_ASSET_ID: '0',
-    ALGO_ASSET_NAME: 'ALGO',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    isAlgoAssetName: (value: string) => value === 'ALGO',
-    logger: {
-        debug: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-    },
-    // Real implementations — package schemas evaluate uint64IdSchema at
-    // import time, so it must be a genuine zod schema.
-    uint64IdSchema: (await import('zod')).z
-        .union([
-            (await import('zod')).z.number().int().nonnegative(),
-            (await import('zod')).z.string().regex(/^\d+$/),
-        ])
-        .transform(String),
-    uint64IdNumberSchema: (await import('zod')).z.number().int().nonnegative(),
-    uint64IdToNumber: (id: string | number) => {
-        if (typeof id === 'string' && id.trim() === '') {
-            throw new RangeError('Cannot convert empty string to a uint64 id')
-        }
-        const value = typeof id === 'number' ? id : Number(id)
-        if (!Number.isSafeInteger(value) || value < 0) {
-            throw new RangeError(
-                `Cannot represent uint64 id "${id}" exactly as a JS number`,
-            )
-        }
-        return value
-    },
-    truncateAlgorandAddress: vi.fn(a => a),
-    stripUrlScheme: vi.fn(url => url),
-    // Must mirror the real constant (packages/shared/src/models/constants.ts).
-    // The precision policy reads this, so a wrong value silently invalidates
-    // every precision/formatting assertion.
-    DEFAULT_PRECISION: 2,
-    ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
-    ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
-    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
-    formatDatetime: vi.fn(d => String(d)),
-    formatRelativeTime: vi.fn(d => String(d)),
-    formatTimeRemaining: vi.fn(() => '52m'),
-    formatCurrency: vi.fn(
-        (value, _decimals, currency) => `${currency || '$'}${value}`,
-    ),
-    formatWithUnits: vi.fn(value => String(value)),
-    formatNumber: vi.fn(value => String(value)),
-    formatPercentage: vi.fn(
-        (value: { toFixed: (p: number) => string }, precision = 2) =>
-            `${value.toFixed(precision)}%`,
-    ),
-    generateUniqueId: vi.fn(() => 'mock-uuid'),
-    generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
-    toError: vi.fn((e: unknown) =>
-        e instanceof Error ? e : new Error(String(e)),
-    ),
-    // Mirrors the real semantics (packages/shared/src/api/query-client.ts):
-    // timeouts, network errors, and 5xx HTTPErrors are transient. ky's own
-    // guards match on error name, so name checks are faithful here.
-    isTransientNetworkError: (error: unknown): boolean => {
-        const e = error as {
-            name?: string
-            response?: { status?: number }
-        } | null
-        if (!e) return false
-        if (e.name === 'TimeoutError' || e.name === 'NetworkError') return true
-        return e.name === 'HTTPError' && (e.response?.status ?? 0) >= 500
-    },
-    AppError: class AppError extends Error {
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    class AppError extends Error {
         constructor(message: string) {
             super(message)
             this.name = 'AppError'
         }
-    },
-    ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
-    ErrorCategory: { WALLETCONNECT: 'walletconnect', UI: 'ui' },
-    useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
-    registerStore: vi.fn(),
-    clearAllStores: vi.fn(),
-    resetStoreRegistry: vi.fn(),
-    getStoreRegistry: vi.fn(() => []),
-    createPersistStorage: () => ({
-        getItem: () => null,
-        setItem: () => {},
-        removeItem: () => {},
-    }),
-    buildPrismUrl: vi.fn((url: string, width: number) =>
-        url ? `${url}?width=${width}&quality=70` : undefined,
-    ),
-    getInitials: vi.fn((label: string, maxLetters: number = 2) => {
-        const words = label.trim().split(/\s+/)
-        if (words.length >= maxLetters) {
-            return words
-                .slice(0, maxLetters)
-                .map((w: string) => w[0])
-                .join('')
-                .toUpperCase()
+    }
+
+    // Mirrors packages/shared/src/errors/network.ts — kept minimal but
+    // faithful to the real `kind` taxonomy and key-mapping switch so tests
+    // exercising PeraNetworkError get realistic behavior from the mock.
+    class PeraNetworkError extends AppError {
+        public readonly kind: string
+        public readonly status?: number
+
+        constructor(
+            kind: string,
+            { status }: { status?: number; originalError?: Error } = {},
+        ) {
+            super(`[network:${kind}]`)
+            this.kind = kind
+            this.status = status
         }
-        if (words.length === 1 && words[0].length > 0) {
-            return words[0][0].toUpperCase()
+    }
+
+    const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
+        error instanceof PeraNetworkError
+
+    const keysFor = (base: string): { titleKey: string; bodyKey: string } => ({
+        titleKey: `${base}.title`,
+        bodyKey: `${base}.body`,
+    })
+
+    const getNetworkErrorMessageKeys = (
+        error: unknown,
+    ): { titleKey: string; bodyKey: string } => {
+        if (!isPeraNetworkError(error)) return keysFor('errors.general')
+
+        switch (error.kind) {
+            case 'offline': {
+                return keysFor('errors.network.no_connection')
+            }
+            case 'timeout': {
+                return keysFor('errors.network.timeout')
+            }
+            case 'server': {
+                return keysFor('errors.api.server_error')
+            }
+            case 'client': {
+                if (error.status === 404) return keysFor('errors.api.not_found')
+                if (error.status === 401 || error.status === 403) {
+                    return keysFor('errors.api.unauthorized')
+                }
+                return keysFor('errors.api.generic')
+            }
+            default: {
+                return keysFor('errors.general')
+            }
         }
-        return '?'
-    }),
-    useDebouncedValue: <T>(value: T) => value,
-}))
+    }
+
+    return {
+        ALGO_ASSET_ID: '0',
+        ALGO_ASSET_NAME: 'ALGO',
+        isAlgoAssetId: (assetId: string | number | bigint) =>
+            String(assetId) === '0',
+        isAlgoAssetName: (value: string) => value === 'ALGO',
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
+        // Real implementations — package schemas evaluate uint64IdSchema at
+        // import time, so it must be a genuine zod schema.
+        uint64IdSchema: (await import('zod')).z
+            .union([
+                (await import('zod')).z.number().int().nonnegative(),
+                (await import('zod')).z.string().regex(/^\d+$/),
+            ])
+            .transform(String),
+        uint64IdNumberSchema: (await import('zod')).z
+            .number()
+            .int()
+            .nonnegative(),
+        uint64IdToNumber: (id: string | number) => {
+            if (typeof id === 'string' && id.trim() === '') {
+                throw new RangeError(
+                    'Cannot convert empty string to a uint64 id',
+                )
+            }
+            const value = typeof id === 'number' ? id : Number(id)
+            if (!Number.isSafeInteger(value) || value < 0) {
+                throw new RangeError(
+                    `Cannot represent uint64 id "${id}" exactly as a JS number`,
+                )
+            }
+            return value
+        },
+        truncateAlgorandAddress: vi.fn(a => a),
+        stripUrlScheme: vi.fn(url => url),
+        // Must mirror the real constant (packages/shared/src/models/constants.ts).
+        // The precision policy reads this, so a wrong value silently invalidates
+        // every precision/formatting assertion.
+        DEFAULT_PRECISION: 2,
+        ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
+        ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
+        Networks: { mainnet: 'mainnet', testnet: 'testnet' },
+        formatDatetime: vi.fn(d => String(d)),
+        formatRelativeTime: vi.fn(d => String(d)),
+        formatTimeRemaining: vi.fn(() => '52m'),
+        formatCurrency: vi.fn(
+            (value, _decimals, currency) => `${currency || '$'}${value}`,
+        ),
+        formatWithUnits: vi.fn(value => String(value)),
+        formatNumber: vi.fn(value => String(value)),
+        formatPercentage: vi.fn(
+            (value: { toFixed: (p: number) => string }, precision = 2) =>
+                `${value.toFixed(precision)}%`,
+        ),
+        generateUniqueId: vi.fn(() => 'mock-uuid'),
+        generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
+        toError: vi.fn((e: unknown) =>
+            e instanceof Error ? e : new Error(String(e)),
+        ),
+        // Mirrors the real semantics (packages/shared/src/api/query-client.ts):
+        // timeouts, network errors, and 5xx HTTPErrors are transient. ky's own
+        // guards match on error name, so name checks are faithful here.
+        isTransientNetworkError: (error: unknown): boolean => {
+            const e = error as {
+                name?: string
+                response?: { status?: number }
+            } | null
+            if (!e) return false
+            if (e.name === 'TimeoutError' || e.name === 'NetworkError')
+                return true
+            return e.name === 'HTTPError' && (e.response?.status ?? 0) >= 500
+        },
+        AppError,
+        PeraNetworkError,
+        isPeraNetworkError,
+        getNetworkErrorMessageKeys,
+        ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
+        ErrorCategory: {
+            WALLETCONNECT: 'walletconnect',
+            UI: 'ui',
+            NETWORK: 'network',
+        },
+        useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
+        registerStore: vi.fn(),
+        clearAllStores: vi.fn(),
+        resetStoreRegistry: vi.fn(),
+        getStoreRegistry: vi.fn(() => []),
+        createPersistStorage: () => ({
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        }),
+        buildPrismUrl: vi.fn((url: string, width: number) =>
+            url ? `${url}?width=${width}&quality=70` : undefined,
+        ),
+        getInitials: vi.fn((label: string, maxLetters: number = 2) => {
+            const words = label.trim().split(/\s+/)
+            if (words.length >= maxLetters) {
+                return words
+                    .slice(0, maxLetters)
+                    .map((w: string) => w[0])
+                    .join('')
+                    .toUpperCase()
+            }
+            if (words.length === 1 && words[0].length > 0) {
+                return words[0][0].toUpperCase()
+            }
+            return '?'
+        }),
+        useDebouncedValue: <T>(value: T) => value,
+    }
+})
 
 // Mock @perawallet/wallet-core-projects
 vi.mock('@perawallet/wallet-core-projects', () => ({
@@ -2397,7 +2467,6 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-polling', () => ({
-    usePolling: vi.fn(),
     usePollingStore: {
         getState: vi.fn(() => ({
             lastRefreshedRound: null,

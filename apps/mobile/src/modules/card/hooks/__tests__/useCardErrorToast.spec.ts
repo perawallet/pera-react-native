@@ -61,4 +61,43 @@ describe('useCardErrorToast', () => {
             'peraCard.account.error_body',
         )
     })
+
+    it('uses the provided title/body keys for the fallback', async () => {
+        const { result } = renderHook(() =>
+            useCardErrorToast({
+                titleKey: 'peraCard.verification.error_title',
+                bodyKey: 'peraCard.verification.error_body',
+            }),
+        )
+
+        await act(async () => {
+            await result.current(new Error('boom'))
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.verification.error_title',
+            'peraCard.verification.error_body',
+        )
+    })
+
+    it('prefers the backend message over the provided body key', async () => {
+        const { result } = renderHook(() =>
+            useCardErrorToast({
+                titleKey: 'peraCard.verification.error_title',
+                bodyKey: 'peraCard.verification.error_body',
+            }),
+        )
+
+        await act(async () => {
+            await result.current({
+                response: { status: 400 },
+                data: { message: 'Registration is not in the expected phase' },
+            })
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.verification.error_title',
+            'Registration is not in the expected phase',
+        )
+    })
 })

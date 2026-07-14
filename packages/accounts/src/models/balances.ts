@@ -32,6 +32,7 @@ export type AccountBalancesWithTotals = {
     isFetched: boolean
     isRefetching: boolean
     isError: boolean
+    isPaused: boolean
 }
 
 export type AccountBalance = {

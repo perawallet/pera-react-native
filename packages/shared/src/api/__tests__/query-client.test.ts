@@ -458,19 +458,24 @@ describe('queryClient', () => {
         expect(response.data).toBeUndefined()
     })
 
-    it('still surfaces malformed JSON as a parse error', async () => {
+    it('still surfaces malformed JSON as a parse error, normalized to PeraNetworkError', async () => {
         const { queryClient } = await import('../query-client')
+        const { isPeraNetworkError } = await import('../../errors/network')
         mockText.mockReset()
         mockText.mockResolvedValue('{not valid json')
 
-        await expect(
-            queryClient({
-                backend: 'pera',
-                network: 'mainnet',
-                url: '/broken',
-                method: 'GET',
-            }),
-        ).rejects.toThrow(SyntaxError)
+        const error = await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/broken',
+            method: 'GET',
+        }).catch((thrown: unknown) => thrown)
+
+        expect(isPeraNetworkError(error)).toBe(true)
+        expect((error as { kind: string }).kind).toBe('unknown')
+        expect(
+            (error as { originalError?: Error }).originalError,
+        ).toBeInstanceOf(SyntaxError)
     })
 
     describe('beforeError hook (logError)', () => {

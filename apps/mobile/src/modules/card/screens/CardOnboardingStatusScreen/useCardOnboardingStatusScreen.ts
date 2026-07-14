@@ -19,10 +19,11 @@ import {
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     FundingType,
+    isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
     useCardStore,
     useConnectFundingSourceMutation,
-    useOnboardingDetailsQuery,
+    useOnboardingKycPoll,
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import {
@@ -46,14 +47,57 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
 
-/** How often we re-check the KYC state while Veriff is still reviewing. */
-const POLL_INTERVAL_MS = 4000
+/**
+ * The "Submit Your Documents" checklist row's visual state.
+ * - `unverified`: KYC not submitted yet (or state unknown) — the user must
+ *   still complete Veriff; the later steps stay locked.
+ * - `pending`: submitted and under review — Baanx reviews async, so the later
+ *   steps unlock.
+ */
+export type DocumentsState =
+    | 'unverified'
+    | 'pending'
+    | 'verified'
+    | 'rejected'
+    | 'error'
 
-/** The "Submit Your Documents" checklist row's visual state. */
-export type DocumentsState = 'pending' | 'verified' | 'rejected'
+/**
+ * Maps the polled KYC state to the documents row. Loading shows a neutral
+ * pending row (no actionable CTA) so a cold entry can't flash "verify" at an
+ * already-decided user. Only a submitted-but-unconfirmed review (PENDING) that
+ * the poll gave up on escalates to the retry 'error' row; UNVERIFIED and
+ * unmodelled/unfetched states surface the actionable 'unverified' row.
+ */
+const resolveDocumentsState = (
+    isLoading: boolean,
+    verificationState: Nullable<VerificationState>,
+    hasPollTimedOut: boolean,
+): DocumentsState => {
+    if (isLoading) return 'pending'
+    switch (verificationState) {
+        case VerificationState.Verified: {
+            return 'verified'
+        }
+        case VerificationState.Rejected: {
+            return 'rejected'
+        }
+        case VerificationState.Pending: {
+            return hasPollTimedOut ? 'error' : 'pending'
+        }
+        default: {
+            return 'unverified'
+        }
+    }
+}
 
 export type UseCardOnboardingStatusScreenResult = {
     documentsState: DocumentsState
+    /**
+     * KYC is submitted (PENDING under review, or VERIFIED) — the only states
+     * that unlock the details/address step. UNVERIFIED, rejected, and unknown
+     * states keep it locked behind the "verify" prompt.
+     */
+    isKycSubmitted: boolean
     /** Registration (details + address) is finalized — gates the later steps. */
     isRegistrationComplete: boolean
     /** A Pera account has been linked as the funding source. */
@@ -78,6 +122,10 @@ export type UseCardOnboardingStatusScreenResult = {
     handleCreatePeraCard: () => void
     /** Continues to the personal-details step (allowed while Baanx reviews). */
     handleEnterDetails: () => void
+    /** Resumes KYC from the unverified documents row (reopens the Veriff entry). */
+    handleVerifyIdentity: () => void
+    /** Recovers the documents-row error state (PENDING review) by re-polling. */
+    handleRetryStatus: () => void
     /** Opens the account picker and links the chosen account as funding source. */
     handleConnectAccount: () => void
     handleLogout: () => void
@@ -91,29 +139,41 @@ export const useCardOnboardingStatusScreen =
         const { successToast, errorToast } = useToast()
         const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
-        const onboardingId = useCardStore(state => state.onboardingId)
 
         // You land here once Veriff has reported back (PENDING or a decision).
-        // Poll while the review is still running so the row flips to
-        // verified/rejected live; UNVERIFIED (cold resume) renders as pending.
-        const [isReviewing, setIsReviewing] = useState(true)
-        const { data } = useOnboardingDetailsQuery({
-            onboardingId,
-            refetchInterval: isReviewing ? POLL_INTERVAL_MS : false,
-        })
-        const verificationState = data?.verificationState ?? null
+        // The shared poll keeps the row live until a decision (or gives up);
+        // UNVERIFIED (cold resume) and unmodelled states render the actionable
+        // 'unverified' row, and only the initial in-flight fetch shows 'pending'.
+        const {
+            verificationState,
+            isLoading,
+            hasPollTimedOut,
+            restartPolling,
+        } = useOnboardingKycPoll()
 
-        const documentsState: DocumentsState =
-            verificationState === VerificationState.Verified
-                ? 'verified'
-                : verificationState === VerificationState.Rejected
-                  ? 'rejected'
-                  : 'pending'
+        const documentsState = resolveDocumentsState(
+            isLoading,
+            verificationState,
+            hasPollTimedOut,
+        )
 
-        // Stop polling once Veriff has decided.
-        useEffect(() => {
-            setIsReviewing(documentsState === 'pending')
-        }, [documentsState])
+        // Submitted (PENDING/VERIFIED) gates the later steps — the shared
+        // predicate keeps this in lockstep with the sign-in resume route. Read
+        // from the KYC state, not the row state, so a poll hiccup on a submitted
+        // review (documentsState 'error') doesn't relock the step.
+        const isKycSubmitted = isKycStateSubmitted(verificationState)
+
+        // The documents row's "Verify your Account" CTA — resumes KYC by
+        // reopening the Veriff entry screen.
+        const handleVerifyIdentity = useCallback(() => {
+            navigation.navigate('CardOnboardingVerification')
+        }, [navigation])
+
+        // Only reachable from the PENDING error row (repeated poll failures);
+        // re-arm polling to wait for Baanx's decision again.
+        const handleRetryStatus = useCallback(() => {
+            restartPolling()
+        }, [restartPolling])
 
         // The address step sets Completed, so it doubles as the "details done"
         // signal that unlocks the Connect Funds step.
@@ -326,6 +386,7 @@ export const useCardOnboardingStatusScreen =
 
         return {
             documentsState,
+            isKycSubmitted,
             isRegistrationComplete,
             isFundsConnected,
             connectedAccount,
@@ -338,6 +399,8 @@ export const useCardOnboardingStatusScreen =
             isCreatingCard,
             handleCreatePeraCard,
             handleEnterDetails,
+            handleVerifyIdentity,
+            handleRetryStatus,
             handleConnectAccount,
             handleLogout,
             handleOpenSupport,

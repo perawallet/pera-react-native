@@ -11,6 +11,7 @@
  */
 
 export * from './api/query-client'
+export * from './api/query-render-state'
 export * from './api/account-fast-lookup'
 export * from './api/schemas'
 export * from './constants'
@@ -21,3 +22,4 @@ export * from './utils'
 // Error infrastructure
 export * from './errors/base'
 export * from './errors/network-validation'
+export * from './errors/network'

@@ -143,7 +143,7 @@ describe('Flow: Card sign in', () => {
         expect(screen.queryByTestId('home-tab-stub')).toBeNull()
     })
 
-    it('Given a mid-registration login for an already-verified user, when Sign In is pressed, then the setup checklist opens', async () => {
+    it('Given a verified user whose server phase awaits the address, when Sign In is pressed, then the address form opens', async () => {
         server.use(
             http.post('*/v1/auth/login', () =>
                 HttpResponse.json(
@@ -169,6 +169,37 @@ describe('Flow: Card sign in', () => {
         await fillCredentials()
         fireEvent.click(screen.getByTestId('card-sign-in-submit'))
 
+        // Resume routes to the step the server is waiting for, not a generic
+        // checklist — the phase says the physical address is still missing.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('peracard-dest-CardOnboardingAddress'),
+            ).toBeTruthy(),
+        )
+    })
+
+    it('Given a rejected user, when Sign In is pressed, then the setup checklist opens with the rejection', async () => {
+        server.use(
+            http.post('*/v1/auth/login', () =>
+                HttpResponse.json(
+                    {
+                        accessToken: null,
+                        userId: 'user-123',
+                        isOtpRequired: false,
+                        phase: 'PHYSICAL_ADDRESS',
+                        verificationState: 'REJECTED',
+                    },
+                    { status: 200 },
+                ),
+            ),
+        )
+
+        renderSignIn()
+        await fillCredentials()
+        fireEvent.click(screen.getByTestId('card-sign-in-submit'))
+
+        // A rejected user can't complete the remaining forms; the checklist
+        // shows the rejected documents row and the support link.
         await waitFor(() =>
             expect(
                 screen.getByTestId('peracard-dest-CardOnboardingStatus'),

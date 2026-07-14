@@ -113,6 +113,7 @@ beforeEach(() => {
         isFetched: true,
         isRefetching: false,
         isError: false,
+        isPaused: false,
     })
 })
 

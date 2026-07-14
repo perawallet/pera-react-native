@@ -50,6 +50,10 @@ export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
         queryKey: currencyQueryKeys.algoUsdPrice(network),
         queryFn: () => getAlgoPriceFromDb(network),
         staleTime: Infinity,
+        // SQLite is the source of truth for the ALGO price. Force the queryFn
+        // to run even while offline — TanStack's default networkMode: 'online'
+        // would pause it before the DB read, stranding consumers in `pending`.
+        networkMode: 'always',
         enabled,
     })
 }

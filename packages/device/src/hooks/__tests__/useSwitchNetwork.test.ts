@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 
 const mockCreateDevice = vi.fn()
 const mockUpdateDevice = vi.fn()
@@ -160,6 +161,46 @@ describe('useSwitchNetwork', () => {
     test('re-registers and switches when updating a stale device ID 404s', async () => {
         vi.resetModules()
         mockUpdateDevice.mockRejectedValue({ response: { status: 404 } })
+
+        const { useDeviceStore } = await import('../../store')
+        const { useSwitchNetwork } = await import('../useSwitchNetwork')
+
+        useDeviceStore.getState().resetState()
+
+        const { result: store } = renderHook(() => useDeviceStore())
+
+        act(() => {
+            store.current.setDeviceID('mainnet', 'mainnet-device-id')
+            store.current.setDeviceID('testnet', 'stale-testnet-id')
+            store.current.setPushToken('fcm-token')
+        })
+
+        const { result } = renderHook(() => useSwitchNetwork())
+
+        await act(async () => {
+            await result.current.switchNetwork('testnet', ['ADDR1'])
+        })
+
+        expect(mockUpdateDevice).toHaveBeenCalled()
+        expect(mockCreateDevice).toHaveBeenCalledWith('testnet', {
+            accounts: ['ADDR1'],
+            platform: 'ios',
+            push_token: 'fcm-token',
+            model: 'iPhone 14',
+            application: 'pera',
+            locale: 'en-US',
+        })
+        expect(store.current.deviceIDs.get('testnet')).toBe(
+            'new-testnet-device-id',
+        )
+        expect(mockSetNetwork).toHaveBeenCalledWith('testnet')
+    })
+
+    test('re-registers and switches when updating a stale device ID rejects with a PeraNetworkError 404', async () => {
+        vi.resetModules()
+        mockUpdateDevice.mockRejectedValue(
+            new PeraNetworkError('client', { status: 404 }),
+        )
 
         const { useDeviceStore } = await import('../../store')
         const { useSwitchNetwork } = await import('../useSwitchNetwork')

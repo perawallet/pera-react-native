@@ -14,6 +14,7 @@ import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 
 // Mock mutations
 const mockCreateDevice = vi.fn()
@@ -278,6 +279,44 @@ describe('services/device/hooks', () => {
         expect(mockUpdateDevice).toHaveBeenCalledTimes(1)
         expect(mockCreateDevice).toHaveBeenCalledTimes(1)
         expect(store.current.deviceIDs.get('mainnet')).toBe('fresh-id')
+    })
+
+    test('useDevice falls back to createDevice when updateDevice rejects with a PeraNetworkError 404 (stale id)', async () => {
+        vi.resetModules()
+        mockUpdateDevice.mockRejectedValueOnce(
+            new PeraNetworkError('client', { status: 404 }),
+        )
+        mockCreateDevice.mockResolvedValueOnce({ id: 'fresh-id-2' })
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'stale-id')
+            store.current.setPushToken('test-fcm-token')
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+
+        await act(async () => {
+            await result.current.registerDevice(['account-1'])
+        })
+
+        expect(mockUpdateDevice).toHaveBeenCalledTimes(1)
+        expect(mockCreateDevice).toHaveBeenCalledTimes(1)
+        expect(store.current.deviceIDs.get('mainnet')).toBe('fresh-id-2')
     })
 
     test('useDevice does not retry at the application layer (delegated to ky)', async () => {

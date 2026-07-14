@@ -12,62 +12,166 @@
 
 import { renderHook, act } from '@testing-library/react'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
-import { onlineManager } from '@tanstack/react-query'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useNetworkStatusListener } from '../useNetworkStatusListener'
 import { useNetworkStatusStore } from '../useNetworkStatusStore'
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { OFFLINE_DEBOUNCE_MS, REACHABILITY_URL } from '../../networkStatus'
 
+// Mock dependencies
 vi.mock('@react-native-community/netinfo', () => ({
-    default: { addEventListener: vi.fn() },
+    default: {
+        configure: vi.fn(),
+        fetch: vi.fn(),
+        addEventListener: vi.fn(),
+    },
 }))
 
 vi.mock('@tanstack/react-query', () => ({
-    onlineManager: { setOnline: vi.fn() },
+    onlineManager: {
+        setOnline: vi.fn(),
+    },
 }))
 
 const mockShowToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({
+        showToast: mockShowToast,
+    }),
 }))
+
+const mockGetStringValue = vi.fn()
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    RemoteConfigKeys: {
+        network_reachability_url: 'network_reachability_url',
+    },
+    useRemoteConfig: () => ({
+        getStringValue: mockGetStringValue,
+    }),
+}))
+
+const netInfoState = (partial: Partial<NetInfoState>): NetInfoState =>
+    ({
+        isConnected: null,
+        isInternetReachable: null,
+        ...partial,
+    }) as NetInfoState
+
+const emitNetInfo = (state: NetInfoState): void => {
+    const callback = vi.mocked(NetInfo.addEventListener).mock.calls[0][0]
+    act(() => {
+        callback(state)
+    })
+}
 
 describe('useNetworkStatusListener', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        vi.useFakeTimers()
+        vi.mocked(NetInfo.addEventListener).mockReturnValue(vi.fn())
+        // Default: Remote Config unset → the hook's fallback is returned.
+        mockGetStringValue.mockImplementation((_key, fallback) => fallback)
         useNetworkStatusStore.setState({ hasInternet: true })
     })
 
     afterEach(() => {
+        vi.useRealTimers()
         vi.restoreAllMocks()
     })
 
-    it('subscribes to NetInfo updates and updates store and onlineManager', () => {
-        const mockUnsubscribe = vi.fn()
-        const mockAddEventListener = vi.mocked(NetInfo.addEventListener)
-        mockAddEventListener.mockReturnValue(mockUnsubscribe)
+    it('subscribes to NetInfo on mount and unsubscribes on unmount', () => {
+        const unsubscribe = vi.fn()
+        vi.mocked(NetInfo.addEventListener).mockReturnValue(unsubscribe)
+
+        const { unmount } = renderHook(() => useNetworkStatusListener())
+
+        expect(NetInfo.addEventListener).toHaveBeenCalledTimes(1)
+
+        unmount()
+        expect(unsubscribe).toHaveBeenCalledTimes(1)
+    })
+
+    it('configures NetInfo reachability with the URL from remote config', () => {
+        mockGetStringValue.mockReturnValue('https://pera.test/generate_204')
 
         renderHook(() => useNetworkStatusListener())
 
-        expect(mockAddEventListener).toHaveBeenCalledTimes(1)
+        expect(mockGetStringValue).toHaveBeenCalledWith(
+            'network_reachability_url',
+            REACHABILITY_URL,
+        )
+        expect(NetInfo.configure).toHaveBeenCalledWith(
+            expect.objectContaining({
+                reachabilityUrl: 'https://pera.test/generate_204',
+            }),
+        )
+    })
 
-        const networkCallback = mockAddEventListener.mock.calls[0][0]
+    it('falls back to the default 204 endpoint when remote config is unset', () => {
+        renderHook(() => useNetworkStatusListener())
+
+        expect(NetInfo.configure).toHaveBeenCalledWith(
+            expect.objectContaining({ reachabilityUrl: REACHABILITY_URL }),
+        )
+    })
+
+    it('flips offline on a connected-but-unreachable link after the debounce window', () => {
+        renderHook(() => useNetworkStatusListener())
+
+        // Captive portal: link up, internet unreachable.
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: false }),
+        )
+
+        // Not immediately offline — the transition is debounced.
+        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
+
         act(() => {
-            networkCallback({ isConnected: false } as NetInfoState)
+            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
         })
         expect(useNetworkStatusStore.getState().hasInternet).toBe(false)
-        expect(onlineManager.setOnline).toHaveBeenCalledWith(false)
+    })
+
+    it('does not flip offline when reachability is unknown (null)', () => {
+        renderHook(() => useNetworkStatusListener())
+
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: null }),
+        )
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
+        })
+
+        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
+    })
+
+    it('comes back online immediately', () => {
+        useNetworkStatusStore.setState({ hasInternet: false })
+        renderHook(() => useNetworkStatusListener())
+
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: true }),
+        )
+
+        expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
+    })
+
+    it('does not apply a pending offline transition after unmount', () => {
+        const { unmount } = renderHook(() => useNetworkStatusListener())
+
+        emitNetInfo(
+            netInfoState({ isConnected: true, isInternetReachable: false }),
+        )
+        unmount()
 
         act(() => {
-            networkCallback({ isConnected: true } as NetInfoState)
+            vi.advanceTimersByTime(OFFLINE_DEBOUNCE_MS)
         })
         expect(useNetworkStatusStore.getState().hasInternet).toBe(true)
-        expect(onlineManager.setOnline).toHaveBeenCalledWith(true)
     })
 
     it('does not show a toast when internet is lost (banner supersedes it)', () => {
-        const mockAddEventListener = vi.mocked(NetInfo.addEventListener)
-        mockAddEventListener.mockReturnValue(vi.fn())
-
         const { rerender } = renderHook(() => useNetworkStatusListener())
+
         act(() => {
             useNetworkStatusStore.setState({ hasInternet: false })
         })

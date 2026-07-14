@@ -11,10 +11,14 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    onlineManager,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query'
 import { useAccountSummaryQuery } from '../useAccountSummaryQuery'
 
 const mockGetAccountPortfolioTotals = vi.fn()
@@ -49,6 +53,32 @@ describe('useAccountSummaryQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAlgoPrices.clear()
+    })
+
+    // Restore the global onlineManager singleton so an offline test can't leak
+    // its state into subsequent tests.
+    afterEach(() => {
+        onlineManager.setOnline(true)
+    })
+
+    it('serves the portfolio summary from SQLite while offline', async () => {
+        onlineManager.setOnline(false)
+        mockAlgoPrices.set('0', { usdPrice: new Decimal(2) })
+        mockGetAccountPortfolioTotals.mockResolvedValue({
+            algoAmount: new Decimal(10),
+            nonAlgoUsdValue: new Decimal(80),
+            holdingsCount: 5,
+            missingMetadataCount: 0,
+        })
+
+        const { result } = renderHook(() => useAccountSummaryQuery('ADDR1'), {
+            wrapper: wrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.portfolioUsdValue).toEqual(new Decimal(100))
+        expect(result.current.holdingsCount).toBe(5)
     })
 
     it('derives ALGO + USD totals from the split aggregate', async () => {
