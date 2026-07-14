@@ -33,7 +33,9 @@ export const getRampHistoryRefetchIntervalMs = (
     isActive: boolean,
 ): number | false => {
     if (!isActive) return false
-    return isNotFoundError(error) ? NOT_FOUND_POLL_INTERVAL_MS : POLL_INTERVAL_MS
+    return isNotFoundError(error)
+        ? NOT_FOUND_POLL_INTERVAL_MS
+        : POLL_INTERVAL_MS
 }
 
 export type UseRampHistoryInfiniteQueryParams = {

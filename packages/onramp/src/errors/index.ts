@@ -119,7 +119,9 @@ const ATTESTATION_REQUIRED_MESSAGE =
 export function toOnrampUserMessage(error: unknown): string {
     // The typed network error wraps the original ky error; the parsed Pera
     // body (if any) lives on the original.
-    const raw = isPeraNetworkError(error) ? (error.originalError ?? error) : error
+    const raw = isPeraNetworkError(error)
+        ? (error.originalError ?? error)
+        : error
 
     // The fee-delegation flow throws before the request when no device
     // attestation token is available; surface it with onramp wording.
