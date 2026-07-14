@@ -460,6 +460,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "back_online": "Back online",
         "yes": "Yes",
         "no": "No",
         "enter_stealth_mode": "Enter Stealth Mode",
@@ -604,10 +605,6 @@
                 "title": "Smart contract rejected the transaction",
                 "body": "The contract returned: {{msg}}"
             },
-            "network_unavailable": {
-                "title": "Network unavailable",
-                "body": "Can't reach the Algorand network right now. Check your connection and try again."
-            },
             "unknown_node_error": {
                 "title": "Transaction failed",
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
@@ -622,15 +619,32 @@
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
         "network": {
-            "generic": "Failed to connect to the network.",
-            "timeout": "Didn't receive a response from the network.",
-            "no_connection": "Failed to connect to the network."
+            "no_connection": {
+                "title": "You appear to be offline",
+                "body": "Your device isn't connected to the internet. Check your connection and try again."
+            },
+            "timeout": {
+                "title": "This is taking longer than expected",
+                "body": "We didn't get a response in time. Please try again."
+            }
         },
         "api": {
-            "generic": "An error occurred will fetching data.",
-            "not_found": "The requested resource could not be found.",
-            "unauthorized": "You are not authorized to access this resource.",
-            "server_error": "The server encountered an error while processing the request."
+            "generic": {
+                "title": "Request failed",
+                "body": "Something went wrong while fetching data. Please try again."
+            },
+            "not_found": {
+                "title": "Not found",
+                "body": "The requested resource could not be found."
+            },
+            "unauthorized": {
+                "title": "Not authorized",
+                "body": "You aren't authorized to access this resource."
+            },
+            "server_error": {
+                "title": "Server error",
+                "body": "The server ran into a problem processing your request. Please try again."
+            }
         },
         "validation": {
             "generic": "The data appears to be invalid.",

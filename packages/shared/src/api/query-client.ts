@@ -28,6 +28,7 @@ import {
 } from '../models/queries'
 import { type Network, Networks } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'
+import { PeraNetworkError, isPeraNetworkError } from '../errors/network'
 
 type BackendInstances = {
     algod: KyInstance
@@ -76,6 +77,8 @@ const logRequest = ({ request, options }: BeforeRequestState) => {
  * nature and the error-level RedBox they trigger in dev is pure noise.
  */
 export const isTransientNetworkError = (error: unknown): boolean => {
+    if (isPeraNetworkError(error)) return error.metadata.retryable
+    // Fallback for any not-yet-normalized raw ky error.
     if (isTimeoutError(error) || isNetworkError(error)) return true
     if (isHTTPError(error) && (error.response?.status ?? 0) >= 500) return true
     return false
@@ -244,7 +247,12 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             if (config.debugEnabled) {
                 console.log('Query error', error)
             }
-            throw error
+            // Caller-initiated aborts must keep their identity so TanStack
+            // Query's cancellation handling still recognizes them.
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw error
+            }
+            throw PeraNetworkError.fromKyError(error)
         }
     }
 }
