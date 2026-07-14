@@ -11,6 +11,7 @@
  */
 
 import { setup, assign } from 'xstate'
+import { config } from '@perawallet/wallet-core-config'
 import type {
     HardwareSigningContext,
     HardwareSigningEvent,
@@ -28,6 +29,13 @@ export const hardwareSigningMachine = setup({
     },
     actors: {
         hardwareSignActor,
+    },
+    // Generous machine-level ceiling for the long-lived `active` substates
+    // (searching / awaiting_approval) so a hung hardware-signing step cannot
+    // pin the signing UI indefinitely. Reuses the parent machine's transport
+    // ceiling from config so the value stays tunable and never hardcoded.
+    delays: {
+        HARDWARE_TIMEOUT: config.signingTransportTimeout,
     },
     actions: {
         appendResult: assign({
@@ -58,6 +66,19 @@ export const hardwareSigningMachine = setup({
         clearError: assign({
             error: () => null,
             currentTx: () => 0,
+        }),
+        // Fired by the `active` state's `after` timeout. There is no
+        // `event.error` on an `after` transition, so we synthesize a
+        // retryable-shaped hardware error with kind `'timeout'`. Routing this
+        // into the existing `error` state means RETRY (→ active) and
+        // ACKNOWLEDGE_ERROR (→ done) work unchanged for a timed-out step.
+        setTimeoutError: assign({
+            error: () => ({
+                kind: 'timeout' as const,
+                cause: new Error(
+                    `Hardware signing timed out after ${config.signingTransportTimeout}ms`,
+                ),
+            }),
         }),
     },
 }).createMachine({
@@ -114,6 +135,18 @@ export const hardwareSigningMachine = setup({
                 NON_LEDGER_ERROR: { target: 'done', actions: 'setError' },
                 ALL_DONE: 'done',
                 USER_REJECTED_ON_DEVICE: 'rejected',
+            },
+            // Backstop timeout covering time spent in any `active` substate
+            // (searching / awaiting_approval / signing). An `after` on the
+            // parent `active` state is cancelled automatically on exit, so a
+            // normal completion never trips it. Routes to the existing
+            // retryable `error` state so the user can RETRY rather than stare
+            // at an indefinite spinner.
+            after: {
+                HARDWARE_TIMEOUT: {
+                    target: 'error',
+                    actions: 'setTimeoutError',
+                },
             },
         },
 
