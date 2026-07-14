@@ -72,6 +72,35 @@ describe('assets endpoints', () => {
         )
     })
 
+    test('fetchAssets uses POST /v2/assets/ with device_id when a deviceId is provided', async () => {
+        queryClientMock.mockResolvedValue({ data: validAssetsResponse })
+
+        await fetchAssets(['1', '2', '3'], 'mainnet', '98765')
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'pera',
+                network: 'mainnet',
+                method: 'POST',
+                url: '/v2/assets/',
+                body: '{"device_id":98765,"asset_ids":["1","2","3"],"include_deleted":true}',
+            }),
+        )
+    })
+
+    test('fetchAssets falls back to GET /v1/assets/ when deviceId is null', async () => {
+        queryClientMock.mockResolvedValue({ data: validAssetsResponse })
+
+        await fetchAssets(['1', '2'], 'mainnet', null)
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'GET',
+                url: '/v1/assets/',
+            }),
+        )
+    })
+
     test('fetchAccountAssets calls /v2/accounts/:address/assets/', async () => {
         queryClientMock.mockResolvedValue({ data: validAssetsResponse })
 

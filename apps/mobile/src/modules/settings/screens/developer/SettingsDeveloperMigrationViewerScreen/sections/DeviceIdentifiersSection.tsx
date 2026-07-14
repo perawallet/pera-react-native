@@ -46,10 +46,6 @@ export const DeviceIdentifiersSection = ({
                 }
             />
             <MigrationDataRow
-                label='legacyDeviceId'
-                value={deviceIdentifiers.legacyDeviceId}
-            />
-            <MigrationDataRow
                 label='lastSeenNotificationId'
                 value={deviceIdentifiers.lastSeenNotificationId}
             />

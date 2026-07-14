@@ -196,6 +196,15 @@ export const sendNotificationToWebview = (
 export const BROWSER_FAVORITE_ACTION = 'handleBrowserFavoriteButtonClick'
 
 /**
+ * Action carrying the wallet's device id back to the Discover web app. The web
+ * app requests it (via `peraMobileInterface.getDeviceId`) to load the user's
+ * favorites, which are server-side state keyed by device id — so favorites
+ * survive an in-place upgrade as long as the migrated device id is handed over.
+ * Mirrors Android's `PeraMobileWebInterface.getDeviceId` → `getSendDeviceId`.
+ */
+export const GET_DEVICE_ID_ACTION = 'getDeviceId'
+
+/**
  * Sends an `{ action, payload }` message to the webview's `message` listener.
  * Unlike {@link sendMessageToWebview} (which posts a JSON-RPC *object*), the
  * Discover web app's favorite listener runs `JSON.parse(event.data)`, so

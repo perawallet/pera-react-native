@@ -166,8 +166,11 @@ export async function upsertPeraAssets({
     const now = Date.now()
     const decimalIds = items.map(i => new Decimal(i.assetId))
 
-    // Read existing metadata to preserve device-specific fields (isFavorited, isPriceAlertEnabled)
-    // that are only set by toggle mutations and not returned by the sync API
+    // Read existing metadata to merge the device-specific fields (isFavorited,
+    // isPriceAlertEnabled): a non-device-scoped fetch leaves them null, in which
+    // case the existing local value (set by a toggle mutation or an earlier
+    // device-scoped sync) is kept; a device-scoped fetch returns real booleans
+    // that overwrite.
     const existingRows = await db
         .select({
             assetId: AssetsPeraSchema.assetId,
@@ -199,9 +202,12 @@ export async function upsertPeraAssets({
         const mergedMeta = meta
             ? {
                   ...meta,
-                  isFavorited: existing?.isFavorited ?? meta.isFavorited,
+                  isFavorited:
+                      meta.isFavorited ?? existing?.isFavorited ?? false,
                   isPriceAlertEnabled:
-                      existing?.isPriceAlertEnabled ?? meta.isPriceAlertEnabled,
+                      meta.isPriceAlertEnabled ??
+                      existing?.isPriceAlertEnabled ??
+                      false,
               }
             : undefined
 

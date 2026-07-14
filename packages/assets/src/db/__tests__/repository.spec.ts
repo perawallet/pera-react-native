@@ -295,8 +295,8 @@ describe('asset repository', () => {
         })
     })
 
-    describe('sync preserves device-specific fields', () => {
-        it('preserves isFavorited and isPriceAlertEnabled when sync overwrites metadata', async () => {
+    describe('sync merges device-specific fields by null-ness', () => {
+        it('preserves isFavorited and isPriceAlertEnabled when the sync response omits them (null)', async () => {
             // Initial sync stores asset with defaults
             await upsertAssets({
                 db,
@@ -321,7 +321,59 @@ describe('asset repository', () => {
                 updates: { isFavorited: true, isPriceAlertEnabled: true },
             })
 
-            // Sync runs again with defaults (API doesn't return device-specific fields)
+            // A non-device-scoped (V1) sync response carries no favorite /
+            // price-alert state, so those fields arrive as null/undefined.
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            isFavorited: undefined,
+                            isPriceAlertEnabled: undefined,
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            // Null incoming values keep the existing local state
+            expect(result[0].peraMetadata?.isFavorited).toBe(true)
+            expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(true)
+        })
+
+        it('overwrites isFavorited and isPriceAlertEnabled when the sync response includes them (non-null)', async () => {
+            // A prior toggle set the device-specific flags locally
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            isFavorited: false,
+                            isPriceAlertEnabled: false,
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+            await updateAssetPeraMetadata({
+                db,
+                assetId: '31566704',
+                network: 'mainnet',
+                updates: { isFavorited: true, isPriceAlertEnabled: true },
+            })
+
+            // A device-scoped (V2) response carries this device's real state:
+            // no longer favorited / alerting. Non-null values overwrite.
             await upsertAssets({
                 db,
                 items: [
@@ -343,9 +395,9 @@ describe('asset repository', () => {
                 network: 'mainnet',
             })
 
-            // Device-specific fields should be preserved from the toggle mutation
-            expect(result[0].peraMetadata?.isFavorited).toBe(true)
-            expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(true)
+            // Non-null incoming values win over the stale local toggle values
+            expect(result[0].peraMetadata?.isFavorited).toBe(false)
+            expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(false)
         })
     })
 

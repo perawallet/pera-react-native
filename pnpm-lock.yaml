@@ -1488,6 +1488,9 @@ importers:
       '@perawallet/wallet-core-database':
         specifier: workspace:*
         version: link:../database
+      '@perawallet/wallet-core-device':
+        specifier: workspace:*
+        version: link:../device
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared

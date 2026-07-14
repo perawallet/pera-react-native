@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     assetResponseSchema,
     assetsResponseSchema,
@@ -22,10 +26,25 @@ import {
     type PublicAssetResponse,
 } from './schema'
 
-export const fetchAssets = async (assetIDs: string[], network: Network) => {
-    const response = await queryClient<AssetsResponse, string[]>({
+const fetchAssetsForDevice = (
+    assetIDs: string[],
+    network: Network,
+    deviceId: string,
+) =>
+    queryClient<AssetsResponse, string>({
         backend: 'pera',
-        network: network,
+        network,
+        method: 'POST',
+        url: `/v2/assets/`,
+        body: `{"device_id":${deviceId},"asset_ids":${JSON.stringify(
+            assetIDs,
+        )},"include_deleted":true}`,
+    })
+
+const fetchAssetsUnscoped = (assetIDs: string[], network: Network) =>
+    queryClient<AssetsResponse, string[]>({
+        backend: 'pera',
+        network,
         method: 'GET',
         url: `/v1/assets/`,
         params: {
@@ -33,6 +52,15 @@ export const fetchAssets = async (assetIDs: string[], network: Network) => {
             include_deleted: true,
         },
     })
+
+export const fetchAssets = async (
+    assetIDs: string[],
+    network: Network,
+    deviceId?: Nullable<string>,
+) => {
+    const response = deviceId
+        ? await fetchAssetsForDevice(assetIDs, network, deviceId)
+        : await fetchAssetsUnscoped(assetIDs, network)
 
     return assetsResponseSchema.parse(response.data)
 }
