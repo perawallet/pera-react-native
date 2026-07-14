@@ -13,7 +13,12 @@
 import { useCallback } from 'react'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
-import { AppError, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    getNetworkErrorMessageKeys,
+    isPeraNetworkError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     type ShowNotificationParams,
     type NotifierRoot,
@@ -36,6 +41,9 @@ type UseErrorToastResult = {
  * Centralized error → toast dispatcher.
  *
  * Routes by error type so each call site stays one line:
+ *   - {@link PeraNetworkError} → localized network-taxonomy copy (must be
+ *                                checked before {@link AppError} since it's
+ *                                a subclass)
  *   - {@link AlgodError}       → localized `errors.algod.<code>` title + body
  *   - {@link AppError}         → fallback title + the error's user-facing message
  *   - any other Error          → run through the algod parser; if recognized,
@@ -76,6 +84,11 @@ const resolveMessage = (
     t: (key: string) => string,
     getMessage: (err: unknown) => { title: string; body: string },
 ): { title: string; body: string } => {
+    if (isPeraNetworkError(error)) {
+        const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
+        return { title: t(titleKey), body: t(bodyKey) }
+    }
+
     if (error instanceof AlgodError) {
         return getMessage(error)
     }

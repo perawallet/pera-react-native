@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { useErrorToast } from '../useErrorToast'
@@ -198,6 +198,40 @@ describe('useErrorToast', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             {
                 title: 'Custom title',
+                body: 'errors.general.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('renders offline copy for a PeraNetworkError(offline)', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(new PeraNetworkError('offline'))
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.network.no_connection.title',
+                body: 'errors.network.no_connection.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('renders general copy only for unknown-kind network errors', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(new PeraNetworkError('unknown'))
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.general.title',
                 body: 'errors.general.body',
                 type: 'error',
             },
