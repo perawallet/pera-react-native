@@ -12,18 +12,14 @@
 
 import { useNetwork } from './useNetwork'
 import { useMemo } from 'react'
-import { config } from '@perawallet/wallet-core-config'
-import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { Algodv2, Indexer } from 'algosdk'
 import {
     type PeraEncodedTransactionSigner,
     type PeraTransactionGroup,
     type PeraTransactionSigner,
 } from '../models'
 import { encodeSignedTransactions } from '../utils/transact'
-import { TimeoutHttpClient } from '../utils/TimeoutHttpClient'
+import { createTimeoutBoundedAlgorandClient } from '../utils/createAlgorandClient'
 import { logger } from '@perawallet/wallet-core-shared'
-import { toAlgodError } from '../errors'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
     throw new Error(
@@ -35,32 +31,11 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { networkConfig, network } = useNetwork()
 
     return useMemo(() => {
-        const algod = new Algodv2(
-            new TimeoutHttpClient(
-                { 'X-Algo-API-Token': config.algodApiKey },
-                networkConfig.algodUrl,
-                undefined,
-                config.algodReadTimeout,
-                config.algodSubmitTimeout,
-            ),
-            networkConfig.algodUrl,
-        )
-        const indexer = new Indexer(
-            new TimeoutHttpClient(
-                { 'X-Indexer-API-Token': config.indexerApiKey },
-                networkConfig.indexerUrl,
-                undefined,
-                config.algodReadTimeout,
-                config.algodSubmitTimeout,
-            ),
-            networkConfig.indexerUrl,
-        )
-        const client = AlgorandClient.fromClients({ algod, indexer })
+        const client = createTimeoutBoundedAlgorandClient(networkConfig)
         // algokit-utils defaults this to 10 rounds (~30s) on non-localnet,
         // which expires before a hardware-wallet user can confirm on-device.
         // 1000 rounds (~50min) matches the standard Algorand SDK default.
         client.setDefaultValidityWindow(1000)
-        client.registerErrorTransformer(async error => toAlgodError(error))
         if (signer) {
             const encodingSigner: PeraEncodedTransactionSigner = async (
                 txnGroup: PeraTransactionGroup,

@@ -10,53 +10,20 @@
  limitations under the License
  */
 
-import {
-    config,
-    getNetworkConfig,
-    type Network,
-} from '@perawallet/wallet-core-config'
-import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { Algodv2, Indexer } from 'algosdk'
+import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '../store'
-import { toAlgodError } from '../errors'
-import { TimeoutHttpClient } from './TimeoutHttpClient'
+import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 
 /**
  * Returns an instance of AlgorandClient for a specific network.
  * If no network is provided, defaults to the current active network from the store.
  *
- * The algod and indexer clients are built on {@link TimeoutHttpClient}, which
- * bounds every request with a per-method AbortSignal timeout (read ceiling for
- * GET/DELETE, submit ceiling for POST) so no call site can hang indefinitely.
+ * The algod and indexer clients are built on {@link createTimeoutBoundedAlgorandClient},
+ * so every request is bounded by a per-method AbortSignal timeout (read ceiling for
+ * GET/DELETE, submit ceiling for POST) and no call site can hang indefinitely.
  * @returns {AlgorandClient}
  */
 export const getAlgorandClient = (networkOverride?: Network) => {
     const network = networkOverride ?? useNetworkStore.getState().network
-    const networkConfig = getNetworkConfig(network)
-
-    const algod = new Algodv2(
-        new TimeoutHttpClient(
-            { 'X-Algo-API-Token': config.algodApiKey },
-            networkConfig.algodUrl,
-            undefined,
-            config.algodReadTimeout,
-            config.algodSubmitTimeout,
-        ),
-        networkConfig.algodUrl,
-    )
-
-    const indexer = new Indexer(
-        new TimeoutHttpClient(
-            { 'X-Indexer-API-Token': config.indexerApiKey },
-            networkConfig.indexerUrl,
-            undefined,
-            config.algodReadTimeout,
-            config.algodSubmitTimeout,
-        ),
-        networkConfig.indexerUrl,
-    )
-
-    const client = AlgorandClient.fromClients({ algod, indexer })
-    client.registerErrorTransformer(async error => toAlgodError(error))
-    return client
+    return createTimeoutBoundedAlgorandClient(getNetworkConfig(network))
 }

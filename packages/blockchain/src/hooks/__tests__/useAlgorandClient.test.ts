@@ -106,6 +106,12 @@ describe('services/blockchain/hooks', () => {
         )
     })
 
+    test('registers the algod error transformer on the built client', () => {
+        const { result } = renderHook(() => useAlgorandClient())
+
+        expect(result.current.registerErrorTransformer).toHaveBeenCalledTimes(1)
+    })
+
     test('configures signer when provided', async () => {
         ;(useNetwork as Mock).mockReturnValue({
             network: 'mainnet',
