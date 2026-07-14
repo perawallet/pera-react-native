@@ -580,8 +580,13 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.HOME:
                 default: {
+                    // Reset the Home tab to its stack root (AccountDetails) so a
+                    // HOME deeplink actually returns home even when the user is
+                    // deep in the Home stack (e.g. viewing an asset). Navigating
+                    // to the root screen pops any screens pushed on top of it.
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
+                        params: { screen: 'AccountDetails' },
                     })
                     break
                 }
