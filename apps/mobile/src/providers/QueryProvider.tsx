@@ -22,7 +22,11 @@ import {
     QueryClient,
 } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
-import { isTransientNetworkError, logger } from '@perawallet/wallet-core-shared'
+import {
+    isTransientNetworkError,
+    logger,
+    mutationDefaults,
+} from '@perawallet/wallet-core-shared'
 import { isAccountQuery } from '@perawallet/wallet-core-accounts'
 import { isAssetQuery } from '@perawallet/wallet-core-assets'
 import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
@@ -63,15 +67,14 @@ const queryClient = new QueryClient({
             staleTime: config.reactQueryDefaultStaleTime,
             retry: 0, //ky handles retries
         },
-        mutations: {
-            // Failed mutations surface as `mutation.error` state (the same
-            // contract as queries) instead of re-throwing during render — a
-            // render-phase throw crashes the app for any consumer mounted
-            // outside an error boundary. Failures are logged centrally by
-            // `mutationCache.onError`; user-facing surfacing stays at the
-            // call site.
-            throwOnError: false,
-        },
+        // OFF-004: mutation policy (networkMode 'always' → fail fast offline,
+        // never pause/auto-resume; throwOnError false → surface as
+        // `mutation.error`, not render-phase throw). `mutationDefaults` in
+        // `@perawallet/wallet-core-shared` is the single source of truth so
+        // package-level tests exercise the identical config. Failures are logged
+        // centrally by `mutationCache.onError`; user-facing surfacing stays at
+        // the call site.
+        mutations: mutationDefaults,
     },
 })
 

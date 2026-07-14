@@ -12,6 +12,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { assertOnline } from '@perawallet/wallet-core-shared'
 import { prepareTransactions } from '../api'
 import type { PrepareTransactionsRequest } from '../api'
 
@@ -19,9 +20,14 @@ export const usePrepareTransactionsMutation = () => {
     const { network } = useNetwork()
 
     return useMutation({
-        mutationFn: (data: PrepareTransactionsRequest) =>
-            prepareTransactions(data, network),
-        // Handled by the caller — opt out of the global throwOnError default.
+        // OFF-004: fail fast offline before building/quoting a swap, so the
+        // caller surfaces a readable error instead of the mutation pausing and
+        // silently auto-resuming against a stale quote on reconnect.
+        mutationFn: (data: PrepareTransactionsRequest) => {
+            assertOnline()
+            return prepareTransactions(data, network)
+        },
+        // Surfacing is handled by the caller — see `mutationDefaults`.
         throwOnError: false,
     })
 }

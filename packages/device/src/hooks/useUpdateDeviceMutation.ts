@@ -28,9 +28,9 @@ export const useUpdateDeviceMutation = (
         // for a device ID the backend no longer knows — e.g. after an env
         // switch) is handled by `useDevice.registerDevice`, which re-registers
         // the device, and by `useDeviceRegistration`, which logs and swallows.
-        // The global mutation config sets `throwOnError: true`; without opting
-        // out here React Query would re-throw the already-handled error on the
-        // next render and crash the app with a render error.
+        // Mirrors `mutationDefaults` (@perawallet/wallet-core-shared), which
+        // already sets throwOnError: false — re-throwing an already-handled
+        // error on the next render would crash the app with a render error.
         throwOnError: false,
         mutationFn: ({
             deviceId,

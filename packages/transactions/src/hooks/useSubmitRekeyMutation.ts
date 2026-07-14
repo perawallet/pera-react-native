@@ -23,6 +23,7 @@ import {
     submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import { assertOnline } from '@perawallet/wallet-core-shared'
 import { RekeyError } from '../errors'
 import { requestRekeySignatures } from './requestRekeySignatures'
 
@@ -83,15 +84,13 @@ export const useSubmitRekeyMutation = ({
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     const mutation = useMutation({
-        // The global default mutation config sets throwOnError: true so that
-        // unhandled mutation errors surface to the nearest ErrorBoundary. All
-        // callers of this hook (rekey-to-standard, rekey-to-ledger,
-        // rekey-to-shared, undo-rekey confirm screens) wrap submitAsync in a
-        // try/catch that surfaces errors via showError/showToast, so we opt
-        // out — otherwise a Ledger timeout or signing failure would re-throw
-        // on the next render (TanStack Query keeps mutation.error populated
-        // until reset()), crashing the confirm screen into a Render Error
-        // overlay after the toast had already been shown.
+        // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
+        // throwOnError: false. This explicit override is kept as a load-bearing
+        // reminder: every caller (rekey-to-standard/-ledger/-shared, undo-rekey
+        // confirm screens) wraps submitAsync in a try/catch that surfaces errors
+        // via showError/showToast. A re-throw on the next render (TanStack keeps
+        // mutation.error populated until reset()) would crash the confirm screen
+        // into a Render Error overlay after the toast had already been shown.
         throwOnError: false,
         mutationFn: async ({
             sourceAddress,
@@ -99,6 +98,10 @@ export const useSubmitRekeyMutation = ({
         }: SubmitRekeyParams): Promise<string[]> => {
             let unsignedTxn: PeraTransaction
             try {
+                // OFF-004: fail fast offline BEFORE the signing pipeline opens
+                // (no Ledger prompt / no biometric on a request that can't be
+                // submitted). Surfaces through the existing build_failed path.
+                assertOnline()
                 const suggestedParams = await algokit.getSuggestedParams()
                 const suggestedMinFee = BigInt(suggestedParams.minFee)
                 // The rekey txn is signed by sourceAddress's CURRENT auth

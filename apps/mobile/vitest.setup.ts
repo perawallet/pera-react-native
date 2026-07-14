@@ -2422,6 +2422,17 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return '?'
         }),
         useDebouncedValue: <T>(value: T) => value,
+        // OFF-004 mutation policy. `mutationDefaults` is read at module-eval
+        // time by QueryProvider, so it must be a real object (not a vi.fn).
+        // Mirrors packages/shared/src/api/mutation-policy.ts.
+        mutationDefaults: { throwOnError: false, networkMode: 'always' },
+        assertOnline: vi.fn(),
+        NoConnectionError: class NoConnectionError extends Error {
+            constructor() {
+                super('No network connection found')
+                this.name = 'NoConnectionError'
+            }
+        },
     }
 })
 
