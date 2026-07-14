@@ -497,6 +497,32 @@ describe('usePeraWebviewInterface', () => {
         )
     })
 
+    it('returns the device id to the Discover web app for getDeviceId action', () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        act(() => {
+            result.current.handleMessage({
+                id: 'gd-1',
+                jsonrpc: '2.0',
+                method: 'getDeviceId',
+                params: {},
+            })
+        })
+
+        const injected = mockWebview.injectJavaScript.mock.calls.at(
+            -1,
+        )?.[0] as string
+        const eventData = JSON.parse(
+            injected.replace(/^window\.postMessage\(/, '').replace(/\);$/, ''),
+        )
+        expect(JSON.parse(eventData)).toEqual({
+            action: 'getDeviceId',
+            payload: 'device-id',
+        })
+    })
+
     it('should handle getPublicSettings action', () => {
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true, null),
@@ -978,6 +1004,29 @@ describe('usePeraWebviewInterface', () => {
                     id: '16',
                     jsonrpc: '2.0',
                     method: 'getSettings',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
+        })
+
+        it('should send Unauthorized error for getDeviceId when connection is insecure', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'gd-2',
+                    jsonrpc: '2.0',
+                    method: 'getDeviceId',
                     params: {},
                 })
             })
