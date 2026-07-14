@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
 import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
 import React from 'react'
 import { Decimal } from 'decimal.js'
@@ -56,6 +60,12 @@ describe('useAlgoUsdPriceQuery', () => {
         vi.clearAllMocks()
     })
 
+    afterEach(() => {
+        // onlineManager is a global singleton — restore connectivity so an
+        // offline test can't leak into the next one.
+        onlineManager.setOnline(true)
+    })
+
     const wrapper = ({ children }: { children: React.ReactNode }) =>
         React.createElement(
             QueryClientProvider,
@@ -92,6 +102,22 @@ describe('useAlgoUsdPriceQuery', () => {
 
         expect(result.current.fetchStatus).toBe('idle')
         expect(mockAll).not.toHaveBeenCalled()
+    })
+
+    it('serves the ALGO price from SQLite while offline', async () => {
+        // SQLite is the source of truth; a DB-backed price read must run and
+        // resolve even when onlineManager reports offline, instead of pausing
+        // its queryFn (TanStack's default networkMode: 'online' behaviour).
+        onlineManager.setOnline(false)
+        mockAll.mockResolvedValue([{ usdPrice: new Decimal('0.15') }])
+
+        const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data).toEqual(new Decimal('0.15'))
     })
 
     it('returns zero when no price found in DB', async () => {

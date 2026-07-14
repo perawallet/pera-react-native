@@ -33,6 +33,7 @@ export type UseAccountAssetsQueryResult = {
     isPending: boolean
     isRefetching: boolean
     isError: boolean
+    isPaused: boolean
 }
 
 /**
@@ -64,6 +65,11 @@ export const useAccountAssetsQuery = (
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
+        // SQLite is the source of truth; run the queryFn even while offline
+        // instead of pausing it (TanStack's default networkMode: 'online'),
+        // which would strand consumers in `pending`. Network segments are
+        // already caught in the syncer.
+        networkMode: 'always',
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the summary query's fetch).
@@ -83,5 +89,6 @@ export const useAccountAssetsQuery = (
         isPending: query.isPending,
         isRefetching: query.isRefetching,
         isError: query.isError,
+        isPaused: query.isPaused,
     }
 }

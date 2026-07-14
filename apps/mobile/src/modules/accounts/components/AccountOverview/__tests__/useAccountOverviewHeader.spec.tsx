@@ -145,6 +145,7 @@ describe('useAccountOverviewHeader', () => {
             isComplete: true,
             isPending: false,
             isError: false,
+            isPaused: false,
         })
         vi.mocked(useAllAccounts).mockReturnValue([
             { address: 'a' },
@@ -169,6 +170,7 @@ describe('useAccountOverviewHeader', () => {
             isComplete: true,
             isPending: false,
             isError: false,
+            isPaused: false,
         })
         vi.mocked(useAllAccounts).mockReturnValue([
             { address: 'a' },
