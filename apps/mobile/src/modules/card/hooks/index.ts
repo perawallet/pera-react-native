@@ -20,7 +20,7 @@ export {
 } from './useCardAddAccount'
 export { useCardComingSoonToast } from './useCardComingSoonToast'
 export { useCardConfirmMutation } from './useCardConfirmMutation'
-export { useCardErrorToast } from './useCardErrorToast'
+export { useCardErrorToast, type CardErrorToastKeys } from './useCardErrorToast'
 export {
     useCardFreezeAction,
     type CardFreezeOutcome,

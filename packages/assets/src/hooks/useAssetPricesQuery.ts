@@ -23,6 +23,7 @@ type UseAssetPricesQueryResult = {
     isFetched: boolean
     isRefetching: boolean
     isError: boolean
+    isPaused: boolean
 }
 
 export const useAssetPricesQuery = (
@@ -45,6 +46,10 @@ export const useAssetPricesQuery = (
         enabled: enabled ?? true,
         staleTime: Infinity,
         queryFn: () => getAssetPricesByIds({ assetIds: stableIds, network }),
+        // SQLite is the source of truth; run the queryFn even while offline instead
+        // of pausing it (TanStack's default networkMode: 'online'), which would strand
+        // consumers in `pending`.
+        networkMode: 'always',
     })
 
     return useMemo(() => {
@@ -61,6 +66,7 @@ export const useAssetPricesQuery = (
             isFetched: query.isFetched,
             isRefetching: query.isRefetching,
             isError: query.isError,
+            isPaused: query.isPaused,
         }
     }, [
         query.data,
@@ -68,5 +74,6 @@ export const useAssetPricesQuery = (
         query.isFetched,
         query.isRefetching,
         query.isError,
+        query.isPaused,
     ])
 }

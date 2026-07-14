@@ -2408,7 +2408,6 @@ vi.mock('@perawallet/wallet-core-swaps', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-polling', () => ({
-    usePolling: vi.fn(),
     usePollingStore: {
         getState: vi.fn(() => ({
             lastRefreshedRound: null,

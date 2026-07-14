@@ -40,6 +40,11 @@ export const CardOnboardingAddressScreen = () => {
         selectedUsState,
         cardTermsAccepted,
         platformTermsAccepted,
+        showsConsentOptIns,
+        allowMarketing,
+        allowSms,
+        handleToggleMarketing,
+        handleToggleSms,
         handleSelectCountry,
         handleSelectUsState,
         handleToggleCardTerms,
@@ -220,6 +225,29 @@ export const CardOnboardingAddressScreen = () => {
                 </PWView>
 
                 <PWView style={styles.checkboxes}>
+                    {/* A resumed sign-in skipped the Set-Password screen, so the
+                        marketing/SMS consents were never asked this session —
+                        re-collect them here (same copy; SMS gates Continue). */}
+                    {showsConsentOptIns ? (
+                        <>
+                            <CardConsentCheckboxRow
+                                checked={allowSms}
+                                onPress={handleToggleSms}
+                                testID='card-onboarding-address-sms-checkbox'
+                            >
+                                {t('peraCard.create_password.sms_opt_in')}
+                            </CardConsentCheckboxRow>
+
+                            <CardConsentCheckboxRow
+                                checked={allowMarketing}
+                                onPress={handleToggleMarketing}
+                                testID='card-onboarding-address-marketing-checkbox'
+                            >
+                                {t('peraCard.create_password.marketing_opt_in')}
+                            </CardConsentCheckboxRow>
+                        </>
+                    ) : null}
+
                     <CardConsentCheckboxRow
                         checked={cardTermsAccepted}
                         onPress={handleToggleCardTerms}

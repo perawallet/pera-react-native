@@ -38,7 +38,6 @@ const buildIdentifiers = (
     notificationUserId: null,
     mainnetDeviceId: null,
     testnetDeviceId: null,
-    legacyDeviceId: null,
     lastSeenNotificationId: null,
     ...overrides,
 })
@@ -86,11 +85,10 @@ describe('migrateDeviceIdentifiers', () => {
         expect(deviceStoreMock.setDeviceID).toHaveBeenCalledTimes(2)
     })
 
-    it('persists notificationUserId, legacyDeviceId, and lastSeenNotificationId as preferences', () => {
+    it('persists notificationUserId and lastSeenNotificationId as preferences', () => {
         migrateDeviceIdentifiers(
             buildIdentifiers({
                 notificationUserId: 'user-1',
-                legacyDeviceId: 'legacy-1',
                 lastSeenNotificationId: 42,
             }),
         )
@@ -98,10 +96,6 @@ describe('migrateDeviceIdentifiers', () => {
         expect(settingsStoreMock.setPreference).toHaveBeenCalledWith(
             'legacy.device.notificationUserId',
             'user-1',
-        )
-        expect(settingsStoreMock.setPreference).toHaveBeenCalledWith(
-            'legacy.device.legacyDeviceId',
-            'legacy-1',
         )
         expect(settingsStoreMock.setPreference).toHaveBeenCalledWith(
             'legacy.device.lastSeenNotificationId',

@@ -24,7 +24,6 @@ const mockPickFundingSource = vi.fn()
 const mockDelegateTo = vi.fn()
 const mockCanDelegate = vi.fn()
 let mockVerificationState: string | null = null
-let mockQueryOptions: { refetchInterval?: number | false } | undefined
 let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
 let mockStoredFundingType: FundingType | null = null
@@ -36,16 +35,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     >('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useOnboardingDetailsQuery: (options: {
-            refetchInterval?: number | false
-        }) => {
-            mockQueryOptions = options
-            return {
-                data: { verificationState: mockVerificationState },
-                isLoading: false,
-                refetch: vi.fn(),
-            }
-        },
+        // The poll mechanics (give-up limits, restart) are unit-tested in the
+        // card package's useOnboardingKycPoll.test — here only the wiring matters.
+        useOnboardingKycPoll: () => ({
+            verificationState: mockVerificationState,
+            isStateUnknown: mockIsStateUnknown,
+            isLoading: mockIsLoading,
+            hasPollTimedOut: mockHasPollTimedOut,
+            restartPolling: mockRestartPolling,
+            refetch: vi.fn(),
+        }),
         useConnectFundingSourceMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockConnectAsync,
@@ -101,6 +100,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 const mockLogout = vi.fn()
 const mockShowCardError = vi.fn()
+let mockHasPollTimedOut = false
+let mockIsStateUnknown = false
+let mockIsLoading = false
+const mockRestartPolling = vi.fn()
 // Passes through to the delegate fn by default so existing Auto tests still
 // observe the delegation; the declined-authorization test overrides it.
 const mockAuthorizeDelegation = vi.fn(passThroughAuthorizeDelegation)
@@ -188,7 +191,9 @@ const account = (
 beforeEach(() => {
     vi.clearAllMocks()
     mockVerificationState = null
-    mockQueryOptions = undefined
+    mockHasPollTimedOut = false
+    mockIsStateUnknown = false
+    mockIsLoading = false
     mockOnboardingStep = OnboardingStep.Verification
     mockConnectedAddress = null
     mockStoredFundingType = null
@@ -205,24 +210,18 @@ beforeEach(() => {
 })
 
 describe('useCardOnboardingStatusScreen', () => {
-    it('reports pending (and keeps polling) while Veriff reviews', () => {
+    it('reports pending while Veriff reviews', () => {
         mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('pending')
-        expect(mockQueryOptions?.refetchInterval).not.toBe(false)
     })
 
-    it('reports verified and stops polling once the identity is confirmed', async () => {
+    it('reports verified once the identity is confirmed', () => {
         mockVerificationState = 'VERIFIED'
-        const { result, rerender } = renderHook(() =>
-            useCardOnboardingStatusScreen(),
-        )
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('verified')
-        // The post-decision render disables the poll interval.
-        act(() => rerender())
-        expect(mockQueryOptions?.refetchInterval).toBe(false)
     })
 
     it('reports rejected when verification failed', () => {
@@ -230,6 +229,86 @@ describe('useCardOnboardingStatusScreen', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('rejected')
+    })
+
+    it('reports unverified when the KYC was never submitted', () => {
+        // The bug: an abandoned KYC (UNVERIFIED) used to render as "pending"
+        // (submitted). It must be its own actionable state instead.
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('reports unverified while the KYC state is unknown', () => {
+        mockVerificationState = null
+        mockIsStateUnknown = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('shows a neutral pending row (no verify CTA) while the state is still loading', () => {
+        // A cold entry (e.g. a REJECTED sign-in resume) must not flash the
+        // "verify" prompt before the first fetch lands.
+        mockVerificationState = null
+        mockIsLoading = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('pending')
+        expect(result.current.isKycSubmitted).toBe(false)
+    })
+
+    it('keeps an unsubmitted KYC actionable even after the poll gives up', () => {
+        // The give-up signal must not turn an unsubmitted KYC into the retry
+        // "error" row — the right action is still "verify your account".
+        mockVerificationState = 'UNVERIFIED'
+        mockHasPollTimedOut = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('sends the verify CTA to the KYC entry screen', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleVerifyIdentity()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
+    })
+
+    it('unlocks the details step only once KYC is submitted (PENDING/VERIFIED)', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result, rerender } = renderHook(() =>
+            useCardOnboardingStatusScreen(),
+        )
+        expect(result.current.isKycSubmitted).toBe(false)
+
+        mockVerificationState = 'PENDING'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(true)
+
+        mockVerificationState = 'VERIFIED'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(true)
+
+        mockVerificationState = 'REJECTED'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(false)
+    })
+
+    it('keeps the details step unlocked when a submitted review poll errors', () => {
+        // documentsState becomes 'error' on a PENDING poll failure, but the
+        // user has still submitted — the step must stay unlocked.
+        mockVerificationState = 'PENDING'
+        mockHasPollTimedOut = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('error')
+        expect(result.current.isKycSubmitted).toBe(true)
     })
 
     it('redirects a back action to the wallet home once KYC is verified', () => {
@@ -271,6 +350,31 @@ describe('useCardOnboardingStatusScreen', () => {
 
         // No back interceptor is registered, so back falls through to default.
         expect(mockBeforeRemoveCallback).toBeNull()
+    })
+
+    describe('timed-out poll handling', () => {
+        it('flips a reviewing (PENDING) row to error when the poll gives up', () => {
+            // Only a submitted-but-unconfirmed (PENDING) review that stops
+            // responding becomes the retry "error" row.
+            mockVerificationState = 'PENDING'
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+            expect(result.current.documentsState).toBe('error')
+        })
+
+        it('restarts polling on retry after failures', () => {
+            mockVerificationState = 'PENDING'
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+            act(() => {
+                result.current.handleRetryStatus()
+            })
+
+            expect(mockRestartPolling).toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
     })
 
     it('continues to personal details and advances the stored step', () => {

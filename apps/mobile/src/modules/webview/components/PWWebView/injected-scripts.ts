@@ -70,6 +70,7 @@ window.peraMobileInterface = {
     openNativeURI: (params) => window.peraRPC.sendRNMessage('openNativeURI', params),
     notifyUser: (params) => window.peraRPC.sendRNMessage('notifyUser', params),
     getAddresses: () => window.peraRPC.sendRNMessage('getAddresses'),
+    getDeviceId: () => window.peraRPC.sendRNMessage('getDeviceId'),
     getSettings: () => window.peraRPC.sendRNMessage('getSettings'),
     getPublicSettings: () => window.peraRPC.sendRNMessage('getPublicSettings'),
     onBackPressed: () => window.peraRPC.sendRNMessage('onBackPressed'),

@@ -959,7 +959,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+        // HOME should return to the Home tab's stack ROOT (AccountDetails), so
+        // it actually "goes home" even when the user is deep in the Home stack.
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
     })
 
     it('should handle ASSET_TRANSACTIONS deeplink', async () => {

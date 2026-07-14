@@ -28,6 +28,7 @@ import {
     useSyncNewAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
@@ -110,6 +111,11 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     )
 }
 
+const DeviceRegistrar = ({ addresses }: { addresses: string[] }) => {
+    useDeviceRegistration(addresses)
+    return null
+}
+
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const { network } = useNetwork()
     const accounts = useAllAccounts()
@@ -127,7 +133,8 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     )
     const hasAccounts = addresses.length > 0
 
-    useDeviceRegistration(addresses)
+    const { isChecking, needsMigration } = useNeedsMigration()
+    const migrationInProgress = isChecking || needsMigration
     useSyncMultisigAccountsOnNetworkSwitch()
     // Accounts added mid-session (import/create/watch/discovery) get an
     // immediate fetch + asset/price enrichment — the gated background poll
@@ -196,6 +203,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     return (
         <BottomSheetModalProvider>
+            {!migrationInProgress && <DeviceRegistrar addresses={addresses} />}
             <AutoLockGuard>
                 <WalletConnectProvider>
                     <RootContentContainer fcmToken={fcmToken} />

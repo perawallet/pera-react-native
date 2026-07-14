@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockMutateAsync = vi.fn()
+const mockSetOnboardingStep = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -29,6 +30,12 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             error: null,
             data: null,
             reset: vi.fn(),
+        }),
+        useCardStore: Object.assign(vi.fn(), {
+            getState: () => ({
+                contactVerificationId: 'mock-contact-id',
+                setOnboardingStep: mockSetOnboardingStep,
+            }),
         }),
     }
 })
@@ -110,5 +117,102 @@ describe('useCardSignInScreen', () => {
             result.current.onChangeOtp('123456')
         })
         expect(result.current.isOtpValid).toBe(true)
+    })
+
+    describe('mid-onboarding resume routing', () => {
+        // Writes credentials straight into the form store — no inputs are
+        // rendered in a hook test, so this is the sign-in lever.
+        const signIn = async (result: {
+            current: ReturnType<typeof useCardSignInScreen>
+        }) => {
+            act(() => {
+                Object.assign(result.current.control._formValues, {
+                    email: 'user@example.com',
+                    password: 'hunter2hunter22!',
+                })
+            })
+            await act(async () => {
+                result.current.handleSignIn()
+            })
+        }
+
+        const midOnboarding = (
+            phase: string,
+            verificationState: string | null,
+        ) => ({
+            accessToken: null,
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase,
+            verificationState,
+            isLinked: false,
+        })
+
+        it('resumes on the KYC entry when the server awaits details but KYC never ran', async () => {
+            mockMutateAsync.mockResolvedValue(
+                midOnboarding('PERSONAL_INFORMATION', 'UNVERIFIED'),
+            )
+            const { result } = renderHook(() => useCardSignInScreen())
+
+            await signIn(result)
+
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingVerification' },
+            })
+            expect(mockSetOnboardingStep).toHaveBeenCalledWith('VERIFICATION')
+        })
+
+        it('resumes on the personal details form once KYC has been submitted', async () => {
+            mockMutateAsync.mockResolvedValue(
+                midOnboarding('PERSONAL_INFORMATION', 'PENDING'),
+            )
+            const { result } = renderHook(() => useCardSignInScreen())
+
+            await signIn(result)
+
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingPersonalDetails' },
+            })
+            expect(mockSetOnboardingStep).toHaveBeenCalledWith(
+                'PERSONAL_DETAILS',
+            )
+        })
+
+        it('sends a rejected user to the status checklist without touching the stored step', async () => {
+            mockMutateAsync.mockResolvedValue(
+                midOnboarding('PHYSICAL_ADDRESS', 'REJECTED'),
+            )
+            const { result } = renderHook(() => useCardSignInScreen())
+
+            await signIn(result)
+
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'CardOnboarding',
+                params: { screen: 'CardOnboardingStatus', params: {} },
+            })
+            expect(mockSetOnboardingStep).not.toHaveBeenCalled()
+        })
+
+        it('shows the failure toast when login returns neither token, code, nor phase', async () => {
+            mockMutateAsync.mockResolvedValue({
+                accessToken: null,
+                userId: null,
+                isOtpRequired: false,
+                phase: null,
+                verificationState: null,
+                isLinked: false,
+            })
+            const { result } = renderHook(() => useCardSignInScreen())
+
+            await signIn(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.sign_in.error_title',
+                'peraCard.sign_in.error_body',
+            )
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
     })
 })

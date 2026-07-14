@@ -48,6 +48,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     BROWSER_FAVORITE_ACTION,
+    GET_DEVICE_ID_ACTION,
     JsonRpcErrorCode,
     requireSecure,
     sendActionToWebview,
@@ -726,6 +727,27 @@ export const usePeraWebviewInterface = (
         ],
     )
 
+    const getDeviceId = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'getDeviceId',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!deviceID) {
+                        return
+                    }
+                    sendActionToWebview(GET_DEVICE_ID_ACTION, deviceID, webview)
+                },
+            )
+        },
+        [securedConnection, sourceUrl, deviceID, webview],
+    )
+
     const getPublicSettings = useCallback(
         (message: WebviewMessage) => {
             const payload = {
@@ -846,6 +868,10 @@ export const usePeraWebviewInterface = (
                         getSettings(message)
                         break
                     }
+                    case 'getDeviceId': {
+                        getDeviceId(message)
+                        break
+                    }
                     case 'getPublicSettings': {
                         getPublicSettings(message)
                         break
@@ -896,6 +922,7 @@ export const usePeraWebviewInterface = (
             notifyUser,
             getAddresses,
             getSettings,
+            getDeviceId,
             getPublicSettings,
             onBackPressed,
             logAnalyticsEvent,

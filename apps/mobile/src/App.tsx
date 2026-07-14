@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import NetInfo from '@react-native-community/netinfo'
-import { onlineManager } from '@tanstack/react-query'
+import { initNetworkStatus } from '@modules/network'
 
-NetInfo.fetch()
-    .then(state => onlineManager.setOnline(state.isConnected === true))
-    .catch(() => onlineManager.setOnline(false))
+// Seed reachability-aware connectivity and wire onlineManager before the query
+// layer mounts, so early queries never fire-and-fail against a dead link.
+void initNetworkStatus()
 
 import {
     initDecimalConfig,
