@@ -27,4 +27,18 @@ describe('config/main', () => {
         const result = getConfig()
         expect(configSchema.safeParse(result).success).toBe(true)
     })
+
+    test('exposes bounded-timeout defaults in milliseconds', () => {
+        expect(config.algodReadTimeout).toBe(10_000)
+        expect(config.algodSubmitTimeout).toBe(30_000)
+        expect(config.signingTransportTimeout).toBe(35_000)
+    })
+
+    test('schema rejects a non-integer algodReadTimeout', () => {
+        const result = configSchema.safeParse({
+            ...config,
+            algodReadTimeout: 10.5,
+        })
+        expect(result.success).toBe(false)
+    })
 })

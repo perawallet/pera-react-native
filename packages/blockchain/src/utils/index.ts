@@ -20,6 +20,8 @@ import {
 } from './transact'
 
 export * from './algorandClient'
+export * from './createAlgorandClient'
+export * from './TimeoutHttpClient'
 export * from './addresses'
 export * from './transactions'
 export * from './rawTransactions'

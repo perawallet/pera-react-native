@@ -30,6 +30,12 @@ export const toAlgodError = (err: unknown): AlgodError => {
     if (maybeError && isFetchTypeError(maybeError)) {
         return new AlgodError('network_unavailable', {}, maybeError)
     }
+    // Checked independently of `maybeError`: AbortSignal.timeout(...) throws a
+    // DOMException which, in some runtimes (e.g. jsdom), is not `instanceof
+    // Error` despite being structurally Error-shaped (name/message/stack).
+    if (isAbortError(err)) {
+        return new AlgodError('network_unavailable', {}, err)
+    }
 
     if (maybeError) {
         const parsed = parseAlgodMessage(maybeError.message)
@@ -124,6 +130,19 @@ const isFetchTypeError = (err: Error): boolean => {
         m.includes('fetch failed') ||
         m.includes('failed to fetch')
     )
+}
+
+// Thrown by AbortSignal.timeout(...) / AbortController.abort() as a
+// DOMException (`name === 'TimeoutError'` / `'AbortError'`). Duck-typed on
+// `name` rather than gated behind `instanceof Error` because DOMException is
+// not always `instanceof Error` (e.g. jsdom), even though it is structurally
+// Error-shaped. These are transient transport failures and must classify as
+// the retryable network_unavailable code, not the terminal
+// unknown_node_error fallback.
+const isAbortError = (err: unknown): err is Error => {
+    if (typeof err !== 'object' || err === null) return false
+    const name = (err as { name?: unknown }).name
+    return name === 'AbortError' || name === 'TimeoutError'
 }
 
 const stringifyUnknown = (err: unknown): string => {

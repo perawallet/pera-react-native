@@ -102,6 +102,30 @@ describe('toAlgodError', () => {
         )
     })
 
+    test('maps a DOMException TimeoutError (AbortSignal.timeout) to retryable network_unavailable', () => {
+        const abort = new DOMException(
+            'The operation timed out.',
+            'TimeoutError',
+        )
+        const e = toAlgodError(abort)
+
+        expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
+        expect(e.metadata.retryable).toBe(true)
+        expect(e.originalError).toBe(abort)
+    })
+
+    test('maps a DOMException AbortError (manual abort) to retryable network_unavailable', () => {
+        const abort = new DOMException(
+            'The operation was aborted.',
+            'AbortError',
+        )
+        const e = toAlgodError(abort)
+
+        expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
+        expect(e.metadata.retryable).toBe(true)
+        expect(e.originalError).toBe(abort)
+    })
+
     test('retryable flag reflects the code (network_unavailable=true, overspend=false)', () => {
         const network = toAlgodError(
             Object.assign(new Error('upstream timeout'), {
