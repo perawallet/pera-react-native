@@ -222,6 +222,26 @@ describe('useErrorToast', () => {
         )
     })
 
+    it('ignores a provided fallbackTitle for a specific-kind PeraNetworkError(offline)', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(
+                new PeraNetworkError('offline'),
+                'Custom fallback title',
+            )
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.network.no_connection.title',
+                body: 'errors.network.no_connection.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
     it('renders general copy only for unknown-kind network errors', () => {
         const { result } = renderHook(() => useErrorToast())
 
@@ -232,6 +252,26 @@ describe('useErrorToast', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             {
                 title: 'errors.general.title',
+                body: 'errors.general.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('honors a provided fallbackTitle for unknown-kind network errors', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(
+                new PeraNetworkError('unknown'),
+                'Custom fallback title',
+            )
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'Custom fallback title',
                 body: 'errors.general.body',
                 type: 'error',
             },

@@ -86,7 +86,11 @@ const resolveMessage = (
 ): { title: string; body: string } => {
     if (isPeraNetworkError(error)) {
         const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
-        return { title: t(titleKey), body: t(bodyKey) }
+        const title =
+            error.kind === 'unknown'
+                ? (fallbackTitle ?? t(titleKey))
+                : t(titleKey)
+        return { title, body: t(bodyKey) }
     }
 
     if (error instanceof AlgodError) {
