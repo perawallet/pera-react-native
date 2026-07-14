@@ -23,6 +23,7 @@ import {
     OnboardingStep,
     useCardStore,
     useConnectFundingSourceMutation,
+    useOnboardingKycPoll,
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import {
@@ -39,7 +40,6 @@ import {
     useCardFundingDelegation,
     useCardFundingSourcePicker,
     useCardOnboardingLogout,
-    useOnboardingKycPoll,
 } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'

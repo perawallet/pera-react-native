@@ -30,6 +30,19 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     >('@perawallet/wallet-core-card')
     return {
         ...actual,
+        // The poll mechanics (give-up limits) are unit-tested in the card
+        // package's useOnboardingKycPoll.test — here we drive its output to
+        // exercise the screen's handoff/give-up wiring.
+        useOnboardingKycPoll: (options: { enabled?: boolean }) => {
+            mockPollOptions = options
+            return {
+                verificationState: mockVerificationState,
+                isStateUnknown: mockIsStateUnknown,
+                hasPollTimedOut: mockHasPollTimedOut,
+                restartPolling: mockRestartPolling,
+                refetch: mockRefetch,
+            }
+        },
         useStartVerificationMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockStartMutateAsync,
@@ -49,25 +62,13 @@ vi.mock('@perawallet/wallet-core-card', async () => {
 const mockLogout = vi.fn()
 vi.mock('@modules/card/hooks', async () => {
     // Real error-toast hook (single file, not the whole barrel) so the specs
-    // keep asserting the actual message-resolution behavior. The poll
-    // mechanics (give-up limits) are unit-tested in useOnboardingKycPoll.spec —
-    // here we drive its output to exercise the screen's handoff/give-up wiring.
+    // keep asserting the actual message-resolution behavior.
     const { useCardErrorToast } = await vi.importActual<
         typeof import('../../../hooks/useCardErrorToast')
     >('../../../hooks/useCardErrorToast')
     return {
         useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
         useCardErrorToast,
-        useOnboardingKycPoll: (options: { enabled?: boolean }) => {
-            mockPollOptions = options
-            return {
-                verificationState: mockVerificationState,
-                isStateUnknown: mockIsStateUnknown,
-                hasPollTimedOut: mockHasPollTimedOut,
-                restartPolling: mockRestartPolling,
-                refetch: mockRefetch,
-            }
-        },
     }
 })
 

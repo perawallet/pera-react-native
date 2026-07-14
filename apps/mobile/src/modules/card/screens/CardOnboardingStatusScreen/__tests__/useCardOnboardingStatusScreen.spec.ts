@@ -35,6 +35,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     >('@perawallet/wallet-core-card')
     return {
         ...actual,
+        // The poll mechanics (give-up limits, restart) are unit-tested in the
+        // card package's useOnboardingKycPoll.test — here only the wiring matters.
+        useOnboardingKycPoll: () => ({
+            verificationState: mockVerificationState,
+            isStateUnknown: mockIsStateUnknown,
+            isLoading: mockIsLoading,
+            hasPollTimedOut: mockHasPollTimedOut,
+            restartPolling: mockRestartPolling,
+            refetch: vi.fn(),
+        }),
         useConnectFundingSourceMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockConnectAsync,
@@ -100,16 +110,6 @@ const mockAuthorizeDelegation = vi.fn(passThroughAuthorizeDelegation)
 vi.mock('@modules/card/hooks', () => ({
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
     useCardErrorToast: () => mockShowCardError,
-    // The poll mechanics (give-up limits, restart) are unit-tested in
-    // useOnboardingKycPoll.spec — here only the wiring matters.
-    useOnboardingKycPoll: () => ({
-        verificationState: mockVerificationState,
-        isStateUnknown: mockIsStateUnknown,
-        isLoading: mockIsLoading,
-        hasPollTimedOut: mockHasPollTimedOut,
-        restartPolling: mockRestartPolling,
-        refetch: vi.fn(),
-    }),
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mockPickFundingSource,
     }),

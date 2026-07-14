@@ -14,16 +14,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, Linking, type AppStateStatus } from 'react-native'
 import {
     useCardStore,
+    useOnboardingKycPoll,
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import { useWebView } from '@modules/webview'
-import {
-    useCardErrorToast,
-    useCardOnboardingLogout,
-    useOnboardingKycPoll,
-} from '@modules/card/hooks'
+import { useCardErrorToast, useCardOnboardingLogout } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'

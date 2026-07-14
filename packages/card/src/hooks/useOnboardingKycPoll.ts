@@ -11,12 +11,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-    useCardStore,
-    useOnboardingDetailsQuery,
-    VerificationState,
-} from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { VerificationState } from '../models'
+import { useCardStore } from '../store'
+import { useOnboardingDetailsQuery } from './useOnboardingDetailsQuery'
 
 /** How often we re-check the KYC state while a decision is pending. */
 const POLL_INTERVAL_MS = 4000

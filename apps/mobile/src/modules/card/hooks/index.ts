@@ -22,10 +22,6 @@ export { useCardComingSoonToast } from './useCardComingSoonToast'
 export { useCardConfirmMutation } from './useCardConfirmMutation'
 export { useCardErrorToast, type CardErrorToastKeys } from './useCardErrorToast'
 export {
-    useOnboardingKycPoll,
-    type UseOnboardingKycPollResult,
-} from './useOnboardingKycPoll'
-export {
     useCardFreezeAction,
     type CardFreezeOutcome,
 } from './useCardFreezeAction'

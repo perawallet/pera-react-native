@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@test-utils/render'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 type MockQuery = {
@@ -34,27 +34,28 @@ const queryData = () =>
         ? undefined
         : { verificationState: mockVerificationState }
 
-vi.mock('@perawallet/wallet-core-card', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-card')
-    >('@perawallet/wallet-core-card')
-    return {
-        ...actual,
-        useOnboardingDetailsQuery: (options: MockQueryOptions) => {
-            mockQueryOptions = options
-            return {
-                data: queryData(),
-                isLoading: mockIsLoading,
-                refetch: mockRefetch,
-                dataUpdatedAt: mockDataUpdatedAt,
-                errorUpdatedAt: mockErrorUpdatedAt,
-            }
-        },
-        useCardStore: (
-            selector: (state: { onboardingId: string | null }) => unknown,
-        ) => selector({ onboardingId: 'mock-onboarding-id' }),
-    }
-})
+// Stub the wrapped query and the store directly (the two sibling modules the
+// hook composes) so the poll/give-up mechanics are exercised in isolation.
+// `VerificationState` from ../models stays real, so the hook's state
+// comparisons match the strings driven below.
+vi.mock('../useOnboardingDetailsQuery', () => ({
+    useOnboardingDetailsQuery: (options: MockQueryOptions) => {
+        mockQueryOptions = options
+        return {
+            data: queryData(),
+            isLoading: mockIsLoading,
+            refetch: mockRefetch,
+            dataUpdatedAt: mockDataUpdatedAt,
+            errorUpdatedAt: mockErrorUpdatedAt,
+        }
+    },
+}))
+
+vi.mock('../../store', () => ({
+    useCardStore: (
+        selector: (state: { onboardingId: string | null }) => unknown,
+    ) => selector({ onboardingId: 'mock-onboarding-id' }),
+}))
 
 import { useOnboardingKycPoll } from '../useOnboardingKycPoll'
 
