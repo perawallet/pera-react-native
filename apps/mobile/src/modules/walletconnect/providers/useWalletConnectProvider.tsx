@@ -20,7 +20,11 @@ import {
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useEffect, useRef, useState } from 'react'
-import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    generateUniqueId,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { scannerNotifier } from '@components/QRScannerView'
 import { useToast } from '@hooks/useToast'
@@ -92,9 +96,20 @@ export const useWalletConnectProvider = () => {
                     enableCloseOnBackdropPress: false,
                     autoCreateContainer: false,
                 },
-            }).finally(() => {
-                connectionSheetIdRef.current = null
             })
+                // request() rejects loudly when no BottomSheetManager host
+                // is mounted — treat that the same as any other connection
+                // failure instead of an unhandled rejection.
+                .catch((error: unknown) => {
+                    handleConnectionError(
+                        error instanceof Error
+                            ? error
+                            : new Error(String(error)),
+                    )
+                })
+                .finally(() => {
+                    connectionSheetIdRef.current = null
+                })
         } else if (!shouldShowConnection && connectionSheetIdRef.current) {
             const id = connectionSheetIdRef.current
             connectionSheetIdRef.current = null
@@ -108,10 +123,22 @@ export const useWalletConnectProvider = () => {
         successOpenRef.current = true
         let cancelled = false
         void (async () => {
-            await requestBottomSheet<void>({
-                contents: <ConnectionSuccessContent request={successRequest} />,
-                options: { size: 'auto', enablePanDownToClose: true },
-            })
+            try {
+                await requestBottomSheet<void>({
+                    contents: (
+                        <ConnectionSuccessContent request={successRequest} />
+                    ),
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
+            } catch (error) {
+                // request() rejects loudly when no BottomSheetManager host
+                // is mounted — fall through to the same cleanup as a normal
+                // dismissal instead of an unhandled rejection, but still
+                // surface it for observability.
+                logger.error('Failed to show WalletConnect success sheet', {
+                    error: error instanceof Error ? error : String(error),
+                })
+            }
             if (cancelled) return
             successOpenRef.current = false
             setSuccessRequest(null)

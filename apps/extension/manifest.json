@@ -5,11 +5,32 @@
   "description": "Algorand wallet by Pera — browser extension (development build)",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Pera Wallet"
+    "default_title": "Pera Wallet",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png",
+    "192": "icons/icon-192.png"
   },
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["storage", "alarms"]
+  "permissions": ["storage", "alarms", "offscreen"],
+  "host_permissions": [
+    "https://*.perawallet.app/*",
+    "https://*.algonode.cloud/*",
+    "https://*.baanx.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; font-src 'self'"
+  }
 }

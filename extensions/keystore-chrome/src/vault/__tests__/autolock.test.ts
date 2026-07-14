@@ -15,9 +15,13 @@ import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import { createVault, isUnlocked, unlockVault, lockVault } from '../vault'
 import {
     AUTO_LOCK_ALARM,
+    AUTO_LOCK_MINUTES_KEY,
+    DEFAULT_AUTO_LOCK_MINUTES,
     armAutoLock,
     disarmAutoLock,
+    getAutoLockMinutes,
     handleAutoLockAlarm,
+    setAutoLockMinutes,
 } from '../autolock'
 
 describe('auto-lock', () => {
@@ -92,5 +96,34 @@ describe('auto-lock', () => {
         expect(fake.alarms.has(AUTO_LOCK_ALARM)).toBe(true)
         await lockVault()
         expect(fake.alarms.has(AUTO_LOCK_ALARM)).toBe(false)
+    })
+
+    describe('auto-lock minutes preference', () => {
+        it('defaults to DEFAULT_AUTO_LOCK_MINUTES when unset', async () => {
+            expect(await getAutoLockMinutes()).toBe(DEFAULT_AUTO_LOCK_MINUTES)
+        })
+
+        it('persists and reads back a valid option', async () => {
+            await setAutoLockMinutes(30)
+            expect(await getAutoLockMinutes()).toBe(30)
+            expect(fake.data.get(AUTO_LOCK_MINUTES_KEY)).toBe(30)
+        })
+
+        it('rejects values outside AUTO_LOCK_MINUTES_OPTIONS', async () => {
+            await expect(setAutoLockMinutes(7)).rejects.toThrow(/auto-lock/i)
+        })
+
+        it('armAutoLock with no argument uses the persisted preference', async () => {
+            await setAutoLockMinutes(5)
+            await armAutoLock()
+            expect(fake.alarms.get(AUTO_LOCK_ALARM)).toEqual({
+                delayInMinutes: 5,
+            })
+        })
+
+        it('falls back to the default for a corrupt stored value', async () => {
+            fake.data.set(AUTO_LOCK_MINUTES_KEY, 'garbage')
+            expect(await getAutoLockMinutes()).toBe(DEFAULT_AUTO_LOCK_MINUTES)
+        })
     })
 })

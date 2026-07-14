@@ -72,6 +72,9 @@ catalogs:
     '@scure/bip39':
       specifier: ^2.2.0
       version: 2.2.0
+    '@sqlite.org/sqlite-wasm':
+      specifier: 3.53.0-build1
+      version: 3.53.0-build1
     '@tanstack/query-async-storage-persister':
       specifier: ^5.99.0
       version: 5.101.2
@@ -321,6 +324,9 @@ importers:
       '@perawallet/wallet-extension-platform-chrome':
         specifier: workspace:*
         version: link:../../extensions/platform-chrome
+      '@sqlite.org/sqlite-wasm':
+        specifier: 'catalog:'
+        version: 3.53.0-build1
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -328,15 +334,33 @@ importers:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.61.1
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@types/chrome':
         specifier: 'catalog:'
         version: 0.0.328
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      '@vitejs/plugin-react':
+        specifier: 'catalog:'
+        version: 6.0.3(babel-plugin-react-compiler@1.0.0)(vite@8.1.0(@types/node@20.19.43)(esbuild@0.25.12)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
       esbuild:
         specifier: 'catalog:'
         version: 0.25.12
+      jsdom:
+        specifier: 'catalog:'
+        version: 27.4.0(@noble/hashes@2.2.0)
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      react-dom:
+        specifier: 19.2.3
+        version: 19.2.3(react@19.2.3)
+      react-native-web:
+        specifier: ^0.21.2
+        version: 0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -809,9 +833,6 @@ importers:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.2(@testing-library/dom@10.4.1)(@types/react@19.2.17)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@types/chrome':
-        specifier: 'catalog:'
-        version: 0.0.328
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.17
@@ -1105,6 +1126,9 @@ importers:
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../platform
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(expo-sqlite@57.0.0(expo@57.0.2)(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -6361,6 +6385,10 @@ packages:
 
   '@sinclair/typebox@0.27.10':
     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
+
+  '@sqlite.org/sqlite-wasm@3.53.0-build1':
+    resolution: {integrity: sha512-PfWPWN2n+/37doa8oh2/oUXk4OOsRYZsxc1W1sDXIGb/Pu5Yrb+f2eyYpgQMGITVX7HVgxhs9P18Rc6I97ym/g==}
+    engines: {node: '>=22'}
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -13105,6 +13133,8 @@ snapshots:
 
   '@sinclair/typebox@0.27.10': {}
 
+  '@sqlite.org/sqlite-wasm@3.53.0-build1': {}
+
   '@standard-schema/spec@1.1.0': {}
 
   '@standard-schema/utils@0.3.0': {}
@@ -13337,6 +13367,13 @@ snapshots:
       '@types/yargs-parser': 21.0.3
 
   '@ungap/structured-clone@1.3.1': {}
+
+  '@vitejs/plugin-react@6.0.3(babel-plugin-react-compiler@1.0.0)(vite@8.1.0(@types/node@20.19.43)(esbuild@0.25.12)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.1
+      vite: 8.1.0(@types/node@20.19.43)(esbuild@0.25.12)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3)
+    optionalDependencies:
+      babel-plugin-react-compiler: 1.0.0
 
   '@vitejs/plugin-react@6.0.3(babel-plugin-react-compiler@1.0.0)(vite@8.1.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))':
     dependencies:

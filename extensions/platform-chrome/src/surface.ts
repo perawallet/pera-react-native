@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-export type ExtensionSurface = 'popup' | 'expanded' | 'approval'
+export type ExtensionSurface = 'popup' | 'expanded' | 'approval' | 'offscreen'
 
-const SURFACES: readonly string[] = ['popup', 'expanded', 'approval']
+const SURFACES: readonly string[] = [
+    'popup',
+    'expanded',
+    'approval',
+    'offscreen',
+]
 
 /**
  * Reads the surface flag injected by the extension build: each surface HTML

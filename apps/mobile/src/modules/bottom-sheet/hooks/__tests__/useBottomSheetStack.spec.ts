@@ -18,6 +18,7 @@ import { useBottomSheetStack } from '../useBottomSheetStack'
 describe('useBottomSheetStack', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it('reflects requests and exposes remove + dismissAll', () => {

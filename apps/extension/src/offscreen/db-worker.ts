@@ -1,0 +1,130 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// Dedicated worker hosting sqlite-wasm over OPFS. Uses the SyncAccessHandle
+// pool VFS (installOpfsSAHPoolVfs): no COOP/COEP/SharedArrayBuffer needed,
+// but sync access handles only exist inside dedicated workers — which is why
+// the offscreen document spawns this worker instead of opening the DB itself.
+// Result semantics mirror the proven drizzle sqlite-proxy callbacks in
+// extensions/platform-react-native/src/services/database.ts and
+// packages/database/src/test-utils/memory-database.ts:
+//   run  -> rows: []
+//   else -> rows: array of row VALUE arrays (rowMode 'array').
+//
+// IMPORTANT: This module is bundled as ESM and MUST be instantiated with
+// `new Worker(url, { type: 'module' })` — the offscreen bootstrap depends
+// on module semantics for top-level await and import resolution.
+import sqlite3InitModule from '@sqlite.org/sqlite-wasm'
+
+type WorkerRequest =
+    | {
+          id: number
+          op: 'exec'
+          name: string
+          sql: string
+          params: unknown[]
+          method: 'run' | 'all' | 'values' | 'get'
+      }
+    | { id: number; op: 'delete'; name: string }
+
+type WorkerResponse =
+    | { id: number; ok: true; rows: unknown[][] }
+    | { id: number; ok: false; error: string }
+
+// sqlite-wasm 3.53's published .d.mts intentionally omits the init
+// function's parameter list (see sqlite/sqlite-wasm#129) even though the
+// runtime (dist/index.mjs) still reads `locateFile`/`print`/`printErr` off
+// the first argument, same as older Emscripten-based builds. Narrowing the
+// import's type locally so we can pass that config without widening the
+// public SqlExecutor/host surface.
+const initSqlite3 = sqlite3InitModule as unknown as (options: {
+    locateFile: (file: string) => string
+    print?: (message: string) => void
+    printErr?: (message: string) => void
+    // oxlint-disable-next-line @typescript-eslint/no-explicit-any -- Sqlite3Static shape, not our SqlExecutor surface
+}) => Promise<any>
+
+const ready = (async () => {
+    const sqlite3 = await initSqlite3({
+        // The wasm binary sits next to this bundled worker at the dist root
+        // (copied by scripts/build.mjs). chrome.* APIs are unavailable in
+        // workers, so resolve relative to the worker script URL.
+        locateFile: (file: string) => new URL(file, self.location.href).href,
+        print: () => undefined,
+        printErr: (message: string) => console.error('[db-worker]', message),
+    })
+    const poolUtil = await sqlite3.installOpfsSAHPoolVfs({
+        directory: '.pera-sqlite',
+    })
+    return poolUtil
+})()
+
+// oxlint-disable-next-line -- sqlite-wasm's oo1 DB type is provided by the lib
+const databases = new Map<string, any>()
+
+const getDb = async (name: string): Promise<unknown> => {
+    const poolUtil = await ready
+    let db = databases.get(name)
+    if (!db) {
+        db = new poolUtil.OpfsSAHPoolDb(`/${name}`)
+        databases.set(name, db)
+    }
+    return db
+}
+
+const respond = (response: WorkerResponse): void => {
+    self.postMessage(response)
+}
+
+self.onmessage = async (event: MessageEvent<WorkerRequest>): Promise<void> => {
+    const message = event.data
+    try {
+        if (message.op === 'delete') {
+            const poolUtil = await ready
+            const db = databases.get(message.name)
+            if (db) {
+                db.close()
+                databases.delete(message.name)
+            }
+            poolUtil.unlink(`/${message.name}`)
+            respond({ id: message.id, ok: true, rows: [] })
+            return
+        }
+        // oxlint-disable-next-line -- oo1 DB API
+        const db = (await getDb(message.name)) as any
+        const bind = message.params.map(value =>
+            value === undefined ? null : value,
+        )
+        if (message.method === 'run') {
+            db.exec({
+                sql: message.sql,
+                bind: bind.length > 0 ? bind : undefined,
+            })
+            respond({ id: message.id, ok: true, rows: [] })
+            return
+        }
+        const rows: unknown[][] = []
+        db.exec({
+            sql: message.sql,
+            bind: bind.length > 0 ? bind : undefined,
+            rowMode: 'array',
+            resultRows: rows,
+        })
+        respond({ id: message.id, ok: true, rows })
+    } catch (error) {
+        respond({
+            id: message.id,
+            ok: false,
+            error: error instanceof Error ? error.message : String(error),
+        })
+    }
+}

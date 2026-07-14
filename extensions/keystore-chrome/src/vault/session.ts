@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-export const SESSION_MASTER_KEY = 'vault:master-key'
+import { SESSION_MASTER_KEY } from '../storage-keys'
+
+export { SESSION_MASTER_KEY }
 
 // JS strings are immutable heap copies until GC, so .fill(0) on the byte
 // arrays below is best-effort, not a complete guarantee — inherent to

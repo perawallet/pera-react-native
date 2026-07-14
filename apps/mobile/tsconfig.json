@@ -3,8 +3,7 @@
   "compilerOptions": {
     "types": [
       "vitest",
-      "vitest/globals",
-      "chrome"
+      "vitest/globals"
     ],
     "paths": {
       "@components/*": [
@@ -104,8 +103,15 @@
       "@perawallet/wallet-extension-keystore-chrome/bootstrap": [
         "../../extensions/keystore-chrome/src/bootstrap.ts"
       ],
+      // bare-package path pulls the full platform-chrome graph (drizzle-orm,
+      // hardware-wallet registry) into tsc; web code above the App.web
+      // boundary must import '@perawallet/wallet-extension-platform-chrome/bootstrap'
+      // only (Metro enforces at runtime; tsc does not).
       "@perawallet/wallet-extension-platform-chrome": [
-        "../../extensions/platform-chrome/src/surface.ts"
+        "../../extensions/platform-chrome/src/index.ts"
+      ],
+      "@perawallet/wallet-extension-platform-chrome/bootstrap": [
+        "../../extensions/platform-chrome/src/bootstrap.ts"
       ],
       "@perawallet/wallet-extension-platform-driver": [
         "../../extensions/platform-driver/src/index.ts"

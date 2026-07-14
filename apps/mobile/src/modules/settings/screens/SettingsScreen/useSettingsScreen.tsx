@@ -11,10 +11,12 @@
  */
 
 import { useCallback } from 'react'
+import { Linking } from 'react-native'
 
 import {
     deferToNextCycle,
     generateUniqueId,
+    logger,
 } from '@perawallet/wallet-core-shared'
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
@@ -27,8 +29,8 @@ import {
     useDeleteAllData,
 } from '@modules/settings/hooks/useDeleteAllData'
 import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessContent'
-import { RatingsContent } from '@modules/settings/components/RatingsContent'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 import { useSettingsOptions } from './useSettingsOptions'
 
 import type { SettingsStackParamsList } from '@modules/settings/routes'
@@ -41,7 +43,13 @@ export const useSettingsScreen = () => {
     const { request: requestBottomSheet } = useBottomSheet()
     const { settingsOptions } = useSettingsOptions()
 
-    const openRatingModal = useCallback(() => {
+    // Dynamic import: react-native-rate-app (behind RatingsContent) has no
+    // web build of its own and is dead weight in the web bundle, since the
+    // capability that renders this option is off there. Splitting it into
+    // its own chunk keeps it out of the shipped web AppShell bundle.
+    const openRatingModal = useCallback(async () => {
+        const { RatingsContent } =
+            await import('@modules/settings/components/RatingsContent')
         void requestBottomSheet({
             contents: <RatingsContent />,
             options: {
@@ -56,6 +64,10 @@ export const useSettingsScreen = () => {
     }
 
     const openWebView = (url: string) => {
+        if (!routeCapabilities.inAppWebView) {
+            void Linking.openURL(url)
+            return
+        }
         const id = generateUniqueId()
         pushWebView({
             url,
@@ -77,7 +89,9 @@ export const useSettingsScreen = () => {
         } else if (page.url) {
             openWebView(page.url)
         } else {
-            openRatingModal()
+            openRatingModal().catch(error => {
+                logger.error('Failed to open rating modal', { error })
+            })
         }
     }
 

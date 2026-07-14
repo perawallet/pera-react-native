@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./bootstrap": {
+      "types": "./dist/bootstrap.d.ts",
+      "default": "./dist/bootstrap.js"
     }
   },
   "scripts": {
@@ -18,7 +22,8 @@
   },
   "dependencies": {
     "@perawallet/wallet-extension-platform": "workspace:*",
-    "@perawallet/wallet-core-hardware-wallet": "workspace:*"
+    "@perawallet/wallet-core-hardware-wallet": "workspace:*",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",

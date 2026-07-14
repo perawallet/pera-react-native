@@ -22,9 +22,6 @@ import {
     type BiometricType,
     type BiometricsService,
     type CrashReportingService,
-    type Database,
-    type DatabaseDriver,
-    type DatabaseService,
     type LegacyMigrationData,
     type LegacyMigrationSourcePlatform,
     type MigrationPlanSummary,
@@ -140,26 +137,4 @@ export class ChromeMigrationService implements MigrationService {
         throw new Error('simulatePreSixxAccounts is unavailable on web')
     }
     async resetLegacyData(): Promise<void> {}
-}
-
-const databaseUnavailable = (): never => {
-    throw new Error(
-        'Database is not implemented on web yet — arrives in milestone 3 ' +
-            '(sqlite-wasm in the offscreen document).',
-    )
-}
-
-export class ChromeDatabaseService implements DatabaseService {
-    async open(_name: string): Promise<DatabaseDriver> {
-        return databaseUnavailable()
-    }
-    async getDatabase(_name: string): Promise<Database> {
-        return databaseUnavailable()
-    }
-    async close(_name: string): Promise<void> {
-        databaseUnavailable()
-    }
-    async delete(_name: string): Promise<void> {
-        databaseUnavailable()
-    }
 }

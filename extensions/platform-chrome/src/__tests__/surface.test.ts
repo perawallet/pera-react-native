@@ -18,7 +18,7 @@ describe('getSurface', () => {
         delete (globalThis as { __PERA_SURFACE__?: string }).__PERA_SURFACE__
     })
 
-    it.each(['popup', 'expanded', 'approval'] as const)(
+    it.each(['popup', 'expanded', 'approval', 'offscreen'] as const)(
         'returns %s when the build-injected flag is set',
         surface => {
             ;(globalThis as { __PERA_SURFACE__?: string }).__PERA_SURFACE__ =

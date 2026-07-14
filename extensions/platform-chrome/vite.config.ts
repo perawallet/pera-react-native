@@ -30,14 +30,18 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
+            entry: {
+                index: resolve(__dirname, 'src/index.ts'),
+                bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
+            },
             formats: ['es'],
-            fileName: 'index',
         },
         rollupOptions: {
             external: [
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-extension-platform',
+                'drizzle-orm',
+                'drizzle-orm/sqlite-proxy',
             ],
         },
     },

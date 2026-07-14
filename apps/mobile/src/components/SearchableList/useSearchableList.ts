@@ -19,6 +19,7 @@ import {
     useState,
 } from 'react'
 import {
+    Platform,
     type LayoutChangeEvent,
     type NativeScrollEvent,
     type NativeSyntheticEvent,
@@ -31,6 +32,14 @@ import { type Nullable } from '@perawallet/wallet-core-shared'
 const SEARCH_KEY = '__searchable_list_search__'
 const HEADER_KEY = '__searchable_list_header__'
 const DEFAULT_ITEM_HEIGHT_ESTIMATE = 56
+// react-native-web's ScrollView never emits onScrollBeginDrag/onScrollEndDrag
+// (see ScrollViewBase — it only wires up onScroll/onTouchMove/onWheel), so the
+// native unpin-on-drag path below never fires on web regardless of input
+// device. Tolerance (px) for treating the settle-scroll onScroll tick — fired
+// while handleSearchFocus's own scrollToOffset animation is still converging
+// on headerHeightRef.current — as "arrived", vs. a real subsequent user
+// scroll away from that pinned offset.
+const WEB_PIN_SETTLE_EPSILON = 1
 
 export type SearchSentinel = {
     readonly __searchableListSearch: true
@@ -159,6 +168,24 @@ export const useSearchableList = <T>({
     // Snap logic only kicks in once latched — while the header is still
     // expanded or partially expanded, the user scrolls freely.
     const isCollapsedRef = useRef(false)
+    // Mirrors `isSearching` for handleScroll's web-only unpin check below,
+    // which needs the freshest value without retriggering the callback's
+    // identity (handleScroll is passed straight through to the native scroll
+    // event, so churning its reference on every keystroke is wasteful).
+    const isSearchingRef = useRef(false)
+    // Web-only: true once a scroll tick has actually landed at (within
+    // WEB_PIN_SETTLE_EPSILON of) the pinned offset, i.e. handleSearchFocus's
+    // own scrollToOffset animation has finished converging. Gates the unpin
+    // check so that animation's own in-flight onScroll ticks don't
+    // immediately undo the pin they're performing.
+    const hasReachedWebPinOffsetRef = useRef(false)
+
+    useLayoutEffect(() => {
+        isSearchingRef.current = isSearching
+        if (!isSearching) {
+            hasReachedWebPinOffsetRef.current = false
+        }
+    }, [isSearching])
 
     useImperativeHandle(forwardedRef, () => ({
         scrollToOffset: params => listRef.current?.scrollToOffset(params),
@@ -266,8 +293,33 @@ export const useSearchableList = <T>({
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
             onScroll?.(event)
             const headerH = headerHeightRef.current
-            if (headerH > 0 && event.nativeEvent.contentOffset.y >= headerH) {
+            const offsetY = event.nativeEvent.contentOffset.y
+            if (headerH > 0 && offsetY >= headerH) {
                 isCollapsedRef.current = true
+            }
+
+            // Web has no onScrollBeginDrag/onScrollEndDrag to drive
+            // handleScrollBeginDrag's unpin below (react-native-web's
+            // ScrollView never emits them), so mirror native's "any scroll
+            // gesture exits search mode" off the one signal that does fire
+            // reliably on web: onScroll itself. Once the pin-scroll has
+            // settled at headerH, any further movement away from it — either
+            // direction — means the user is manually scrolling, so unpin.
+            if (
+                Platform.OS === 'web' &&
+                isSearchingRef.current &&
+                headerH > 0
+            ) {
+                const distanceFromPin = Math.abs(offsetY - headerH)
+                if (!hasReachedWebPinOffsetRef.current) {
+                    if (distanceFromPin <= WEB_PIN_SETTLE_EPSILON) {
+                        hasReachedWebPinOffsetRef.current = true
+                    }
+                } else if (distanceFromPin > WEB_PIN_SETTLE_EPSILON) {
+                    hasReachedWebPinOffsetRef.current = false
+                    setIsSearching(false)
+                    overlayRef.current?.blur()
+                }
             }
         },
         [onScroll],

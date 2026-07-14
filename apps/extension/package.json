@@ -8,18 +8,25 @@
     "bundle": "node scripts/build.mjs",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
-    "lint": "oxlint --config ../../.oxlintrc.json src scripts e2e"
+    "lint": "oxlint --config ../../.oxlintrc.json src scripts e2e web-shims"
   },
   "dependencies": {
     "@perawallet/wallet-extension-keystore-chrome": "workspace:*",
-    "@perawallet/wallet-extension-platform-chrome": "workspace:*"
+    "@perawallet/wallet-extension-platform-chrome": "workspace:*",
+    "@sqlite.org/sqlite-wasm": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@playwright/test": "catalog:",
+    "@testing-library/react": "catalog:",
     "@types/chrome": "catalog:",
     "@types/node": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
     "esbuild": "catalog:",
+    "jsdom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-native-web": "^0.21.2",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

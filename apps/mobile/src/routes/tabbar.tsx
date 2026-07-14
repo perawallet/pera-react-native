@@ -12,41 +12,19 @@
 
 import { Platform } from 'react-native'
 import { type IconName, PWIcon } from '@components/core'
-import { withAgeGate } from '@components/AgeGated'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
-import { trackEvent, TabbarEvent } from '@analytics'
+import { trackEvent } from '@analytics'
 import { screenListeners } from './listeners'
-import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
-import { OnrampScreen } from '@modules/onramp/screens/OnrampScreen'
-import { SwapScreen } from '@modules/swap/screens/SwapScreen'
-import { MenuScreen } from '@modules/menu/screens/MenuScreen'
-import { headeredLayout, safeAreaLayout } from '@layouts/index'
 import { TabLabel } from '@components/TabLabel'
-import { AccountStackNavigator } from '@modules/accounts/routes'
-import { type AccountStackParamsList } from '@modules/accounts/routes/types'
-import { type SwapScreenParams } from '@modules/swap/routes/types'
-import { type OnrampScreenParams } from '@modules/onramp/routes/types'
-import { type NavigatorScreenParams } from '@react-navigation/native'
-import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
+import { tabScreens } from './tab-screens'
+import type { TabBarStackParamList } from './tab-types'
 
-export type TabBarStackParamList = {
-    Home: NavigatorScreenParams<AccountStackParamsList>
-    Discover: { path?: string } | undefined
-    Swap: Optional<SwapScreenParams>
-    Fund: Optional<OnrampScreenParams>
-    Menu: undefined
-}
+export type { TabBarStackParamList } from './tab-types'
 
 const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
-
-// Age-gated at the navigator so the screens (and their side effects) only mount
-// for users who pass the gate; blocked users see the restricted view instead.
-const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
-const GatedSwapScreen = withAgeGate(SwapScreen)
-const GatedOnrampScreen = withAgeGate(OnrampScreen)
 
 export const TabBarStackNavigator = () => {
     const insets = useSafeAreaInsets()
@@ -110,36 +88,18 @@ export const TabBarStackNavigator = () => {
             })}
             screenListeners={screenListeners}
         >
-            <TabBarStack.Screen
-                name='Home'
-                component={AccountStackNavigator}
-                listeners={{ tabPress: () => trackEvent(TabbarEvent.Home) }}
-            />
-            <TabBarStack.Screen
-                name='Discover'
-                layout={headeredLayout}
-                component={GatedDiscoverScreen}
-                listeners={{ tabPress: () => trackEvent(TabbarEvent.Discover) }}
-            />
-            <TabBarStack.Screen
-                name='Swap'
-                layout={safeAreaLayout}
-                component={GatedSwapScreen}
-                listeners={{ tabPress: () => trackEvent(TabbarEvent.Swap) }}
-            />
-            <TabBarStack.Screen
-                name='Fund'
-                layout={headeredLayout}
-                component={GatedOnrampScreen}
-                listeners={{ tabPress: () => trackEvent(TabbarEvent.Fund) }}
-            />
-            <TabBarStack.Screen
-                name='Menu'
-                layout={safeAreaLayout}
-                component={MenuScreen}
-                options={{ tabBarButtonTestID: 'tab_menu_button' }}
-                listeners={{ tabPress: () => trackEvent(TabbarEvent.Menu) }}
-            />
+            {tabScreens.map(descriptor => (
+                <TabBarStack.Screen
+                    key={descriptor.name}
+                    name={descriptor.name}
+                    component={descriptor.component}
+                    layout={descriptor.layout}
+                    options={descriptor.options}
+                    listeners={{
+                        tabPress: () => trackEvent(descriptor.event),
+                    }}
+                />
+            ))}
         </TabBarStack.Navigator>
     )
 }

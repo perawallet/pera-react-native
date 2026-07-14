@@ -12,13 +12,10 @@
 
 import { base64 } from '@scure/base'
 import { PasskeyUnlockError, VaultCorruptedError } from '../errors'
+import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
 import { putSessionMasterKey } from './session'
 import { unwrapMasterKeyWithPassword } from './vault'
-
-// Storage keys — extension infrastructure, not kv:/keystore: prefixed.
-const PRF_BLOB_KEY = 'vault:wrapped-master-key-prf'
-const PRF_CRED_ID_KEY = 'vault:prf-credential-id'
 
 // The fixed info string used in HKDF derivation — must match exactly on both
 // enable and unlock paths.
@@ -96,6 +93,48 @@ const deriveKekFromPrf = async (
 }
 
 /**
+ * Requests a WebAuthn assertion scoped to `credentialIdBytes` (or any
+ * resident credential if `null`) with the PRF extension evaluated against
+ * `salt`, and returns the raw PRF output.
+ *
+ * Shared by the enable-time assertion and `unlockWithPasskey` so both paths
+ * build the exact same request shape — this is what keeps them from drifting
+ * apart and reintroducing a salt-mismatch class of bug.
+ */
+const assertPrf = async (
+    credentialIdBytes: Uint8Array | null,
+    salt: Uint8Array,
+): Promise<ArrayBuffer | null> => {
+    const allowCredentials: PublicKeyCredentialDescriptor[] =
+        credentialIdBytes !== null
+            ? [
+                  {
+                      type: 'public-key',
+                      id: credentialIdBytes.buffer as ArrayBuffer,
+                  },
+              ]
+            : []
+    const assertion = await navigator.credentials.get({
+        publicKey: {
+            challenge: crypto.getRandomValues(new Uint8Array(32)),
+            allowCredentials,
+            userVerification: 'required',
+            extensions: {
+                prf: {
+                    eval: {
+                        first: salt.buffer as ArrayBuffer,
+                    },
+                },
+            } as AuthenticationExtensionsClientInputs,
+        },
+    })
+    return (
+        ((assertion as PublicKeyCredential | null)?.getClientExtensionResults()
+            ?.prf?.results?.first as ArrayBuffer | undefined) ?? null
+    )
+}
+
+/**
  * Returns true if the browser supports WebAuthn with the PRF extension.
  * Feature-detects conservatively: first checks the capability API (Chrome
  * 132+), otherwise falls back to checking PublicKeyCredential existence alone
@@ -135,10 +174,12 @@ export const isPasskeyUnlockEnabled = async (): Promise<boolean> => {
  * This establishes a second KEK path for the same master key — password
  * unlock remains valid and is the recovery path.
  *
- * Chrome 116–131 support: `create()` requests `extensions: { prf: {} }` and
- * only checks `prf.enabled` (Chrome didn't return `prf.results` from create
- * until ~132). We then perform a follow-up `get()` assertion with the eval
- * salt to obtain the PRF output for the initial wrap.
+ * `create()` requests `extensions: { prf: {} }` with NO eval input (no salt
+ * exists yet), so it only checks `prf.enabled`. The PRF output for the
+ * initial wrap always comes from a follow-up `get()` assertion evaluated
+ * against the freshly generated `prfEvalSalt` — never from create-time
+ * results, which some browsers return even without an eval input but which
+ * are computed against no salt and would wrap an unrecoverable blob.
  *
  * NOTE: If `prf.enabled` is false after create, we throw — but a credential
  * may still have been registered. There is no WebAuthn API to delete it; the
@@ -193,58 +234,25 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
         const pkCred = credential as PublicKeyCredential | null
         const prfEnabled =
             pkCred?.getClientExtensionResults()?.prf?.enabled ?? false
-
-        // prf.results.first from create is only returned on Chrome 132+.
-        // For Chrome 116–131, prf.enabled is true but results is absent —
-        // perform a follow-up assertion to obtain the PRF output.
-        prfOutput =
-            (pkCred?.getClientExtensionResults()?.prf?.results?.first as
-                | ArrayBuffer
-                | undefined) ?? null
-
-        if (!prfEnabled && prfOutput === null) {
+        if (!prfEnabled) {
             throw new Error(
                 'PRF extension not supported or not returned by the authenticator.',
             )
         }
 
-        if (prfOutput === null) {
-            // Chrome 116–131 path: prf.enabled but no results from create.
-            // Perform a follow-up assertion to obtain the PRF output.
-            const credRawIdBytes = new Uint8Array(
-                (pkCred as PublicKeyCredential & { rawId: ArrayBuffer }).rawId,
-            )
-            const assertion = await navigator.credentials.get({
-                publicKey: {
-                    challenge: crypto.getRandomValues(new Uint8Array(32)),
-                    allowCredentials: [
-                        {
-                            type: 'public-key',
-                            id: credRawIdBytes.buffer as ArrayBuffer,
-                        },
-                    ],
-                    userVerification: 'required',
-                    extensions: {
-                        prf: {
-                            eval: {
-                                first: prfEvalSalt.buffer as ArrayBuffer,
-                            },
-                        },
-                    } as AuthenticationExtensionsClientInputs,
-                },
-            })
-            prfOutput =
-                ((
-                    assertion as PublicKeyCredential | null
-                )?.getClientExtensionResults()?.prf?.results?.first as
-                    | ArrayBuffer
-                    | undefined) ?? null
+        // PRF output MUST come from an assertion evaluated against the
+        // persisted prfEvalSalt — create-time results (returned by some
+        // browsers even without an eval input) are computed against no salt
+        // and would wrap an unrecoverable blob.
+        const credRawIdBytes = new Uint8Array(
+            (pkCred as PublicKeyCredential & { rawId: ArrayBuffer }).rawId,
+        )
+        prfOutput = await assertPrf(credRawIdBytes, prfEvalSalt)
 
-            if (!prfOutput) {
-                throw new Error(
-                    'PRF extension not supported or not returned by the authenticator.',
-                )
-            }
+        if (!prfOutput) {
+            throw new Error(
+                'PRF extension not supported or not returned by the authenticator.',
+            )
         }
 
         // Derive a KEK from the PRF output and wrap the master key.
@@ -271,13 +279,9 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
 
         // Fix: store rawId bytes (base64-encoded) not the base64url string id —
         // allowCredentials descriptors require the raw binary credential id.
-        const credRawId = new Uint8Array(
-            (pkCred as PublicKeyCredential & { rawId: ArrayBuffer }).rawId,
-        )
-
         await chrome.storage.local.set({
             [PRF_BLOB_KEY]: JSON.stringify(blob),
-            [PRF_CRED_ID_KEY]: base64.encode(credRawId),
+            [PRF_CRED_ID_KEY]: base64.encode(credRawIdBytes),
         })
     } finally {
         masterKey.fill(0)
@@ -309,46 +313,31 @@ export const unlockWithPasskey = async (): Promise<void> => {
         throw new VaultCorruptedError()
     }
 
+    // enablePasskeyUnlock (above) always writes a 32-byte prfEvalSalt, a
+    // 16-byte hkdfSalt, and a 12-byte iv — any other decoded length is
+    // corruption, not a bad assertion.
+    if (
+        prfEvalSaltBytes.length !== 32 ||
+        hkdfSaltBytes.length !== 16 ||
+        ivBytes.length !== 12
+    ) {
+        throw new VaultCorruptedError()
+    }
+
     const credIdStored = await chrome.storage.local.get(PRF_CRED_ID_KEY)
     const credentialIdEncoded = credIdStored[PRF_CRED_ID_KEY]
 
     // Fix: decode stored base64 → raw bytes for the allowCredentials descriptor.
     // Previously this used TextEncoder which produced ASCII bytes of the string,
     // matching no real credential and causing NotAllowedError on every attempt.
-    const allowCredentials: PublicKeyCredentialDescriptor[] =
+    const credentialIdBytes: Uint8Array | null =
         typeof credentialIdEncoded === 'string'
-            ? [
-                  {
-                      type: 'public-key',
-                      id: base64.decode(credentialIdEncoded)
-                          .buffer as ArrayBuffer,
-                  },
-              ]
-            : []
+            ? base64.decode(credentialIdEncoded)
+            : null
 
     let prfOutput: ArrayBuffer | null = null
     try {
-        const assertion = await navigator.credentials.get({
-            publicKey: {
-                challenge: crypto.getRandomValues(new Uint8Array(32)),
-                allowCredentials,
-                userVerification: 'required',
-                extensions: {
-                    prf: {
-                        eval: {
-                            first: prfEvalSaltBytes.buffer as ArrayBuffer,
-                        },
-                    },
-                } as AuthenticationExtensionsClientInputs,
-            },
-        })
-
-        prfOutput =
-            ((
-                assertion as PublicKeyCredential | null
-            )?.getClientExtensionResults()?.prf?.results?.first as
-                | ArrayBuffer
-                | undefined) ?? null
+        prfOutput = await assertPrf(credentialIdBytes, prfEvalSaltBytes)
 
         if (!prfOutput) {
             throw new Error(

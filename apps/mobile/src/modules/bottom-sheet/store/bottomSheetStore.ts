@@ -27,6 +27,7 @@ import { getRegisteredBottomSheet } from '../registry/registry'
 
 type BottomSheetState = {
     requests: InternalRequest[]
+    hostCount: number
 }
 
 type BottomSheetActions = {
@@ -40,6 +41,8 @@ type BottomSheetActions = {
     dismiss: (id?: string) => void
     dismissAll: () => void
     remove: (id: string) => void
+    registerBottomSheetHost: () => void
+    unregisterBottomSheetHost: () => void
     resetState: () => void
 }
 
@@ -47,6 +50,7 @@ type BottomSheetStore = BottomSheetState & BottomSheetActions
 
 const initialState: BottomSheetState = {
     requests: [],
+    hostCount: 0,
 }
 
 // Captured value per id, populated by resolve, delivered on remove.
@@ -56,6 +60,18 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
     create<BottomSheetStore>()((set, get) => ({
         ...initialState,
         request: <T>(req: BottomSheetRequest) => {
+            if (get().hostCount === 0) {
+                // Fail loud (M2 final-review mandate): a request with no
+                // BottomSheetManager mounted previously returned a promise
+                // that never settled — import flows silently dead-ended.
+                return Promise.reject(
+                    new Error(
+                        'Bottom sheet requested but no BottomSheetManager is ' +
+                            'mounted. Mount <BottomSheetManager /> in the ' +
+                            'shell before requesting sheets.',
+                    ),
+                ) as Promise<Optional<T>>
+            }
             const id = req.id ?? generateOrderedUniqueId()
             let resolver!: (value: Optional<T>) => void
             const promise = new Promise<Optional<T>>(res => {
@@ -154,6 +170,25 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
                     requests: state.requests.filter(r => r.id !== id),
                 }
             })
+        },
+        registerBottomSheetHost: () => {
+            set(state => ({ hostCount: state.hostCount + 1 }))
+        },
+        unregisterBottomSheetHost: () => {
+            const hostCount = Math.max(0, get().hostCount - 1)
+            if (hostCount > 0) {
+                set({ hostCount })
+                return
+            }
+            // Last host unmounted: settle every in-flight request the same
+            // way a normal backdrop dismiss does (resolve with undefined,
+            // same as dismiss()+remove()) instead of leaving callers hanging
+            // forever on a request no host remains to render or dismiss.
+            for (const req of get().requests) {
+                req.resolver(undefined)
+            }
+            pendingValues.clear()
+            set({ hostCount, requests: [] })
         },
         resetState: () => {
             // Resolve any pending promises with undefined so callers don't hang.

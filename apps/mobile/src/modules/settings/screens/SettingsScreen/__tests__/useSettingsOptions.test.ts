@@ -31,6 +31,31 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped and web-shaped `routeCapabilities` maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: {
+        discoverTab: true,
+        swapTab: true,
+        fundTab: true,
+        staking: true,
+        peraCard: true,
+        giftCards: true,
+        inAppWebView: true,
+        qrScanner: true,
+        pushNotificationSettings: true,
+        walletConnectSettings: true,
+        passkeysAutofillSettings: true,
+        storeRating: true,
+        developerSettings: true,
+        vaultSecuritySettings: false,
+    },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
 describe('useSettingsOptions', () => {
     const mockT = vi.fn((key: string) => key)
 
@@ -38,6 +63,22 @@ describe('useSettingsOptions', () => {
         vi.clearAllMocks()
         ;(useLanguage as Mock).mockReturnValue({
             t: mockT,
+        })
+        Object.assign(mockCapabilities, {
+            discoverTab: true,
+            swapTab: true,
+            fundTab: true,
+            staking: true,
+            peraCard: true,
+            giftCards: true,
+            inAppWebView: true,
+            qrScanner: true,
+            pushNotificationSettings: true,
+            walletConnectSettings: true,
+            passkeysAutofillSettings: true,
+            storeRating: true,
+            developerSettings: true,
+            vaultSecuritySettings: false,
         })
     })
 
@@ -89,5 +130,87 @@ describe('useSettingsOptions', () => {
         renderHook(() => useSettingsOptions())
         expect(mockT).toHaveBeenCalledWith('settings.main.account_section')
         expect(mockT).toHaveBeenCalledWith('settings.main.security_title')
+    })
+
+    describe('capability gating', () => {
+        it('includes every capability-gated item when capabilities are native-shaped (all on)', () => {
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions).toHaveLength(3)
+            expect(settingsOptions[0].items.map(item => item.route)).toEqual([
+                'SecuritySettings',
+                'NotificationsSettings',
+                'WalletConnectSettings',
+                'PasskeysSettings',
+            ])
+            expect(settingsOptions[2].items).toHaveLength(4)
+            expect(settingsOptions[2].items[0]).toEqual({
+                icon: 'star',
+                title: 'settings.main.rate_title',
+            })
+            expect(settingsOptions[2].items[3]).toEqual({
+                route: 'DeveloperSettings',
+                icon: 'code',
+                title: 'settings.main.developer_title',
+            })
+        })
+
+        it('omits capability-gated items and empty sections when capabilities are web-shaped (v1 off)', () => {
+            Object.assign(mockCapabilities, {
+                pushNotificationSettings: false,
+                walletConnectSettings: false,
+                passkeysAutofillSettings: false,
+                storeRating: false,
+                developerSettings: false,
+            })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            // Account section keeps only the (still-registered) Security item.
+            expect(settingsOptions[0].items).toEqual([
+                {
+                    route: 'SecuritySettings',
+                    icon: 'shield-check',
+                    title: 'settings.main.security_title',
+                },
+            ])
+
+            // Support section drops Rate + Developer, keeps Terms/Privacy webview links.
+            const supportSection = settingsOptions.find(
+                section => section.title === 'settings.main.support_section',
+            )
+            expect(supportSection?.items).toEqual([
+                {
+                    icon: 'text-document',
+                    title: 'settings.main.terms_title',
+                    url: 'https://terms.example.com',
+                },
+                {
+                    icon: 'text-document',
+                    title: 'settings.main.privacy_title',
+                    url: 'https://privacy.example.com',
+                },
+            ])
+
+            // No section is left empty.
+            expect(
+                settingsOptions.every(section => section.items.length > 0),
+            ).toBe(true)
+        })
+
+        it('routes the security item to VaultSecuritySettings when the capability is on', () => {
+            Object.assign(mockCapabilities, { vaultSecuritySettings: true })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items[0]).toEqual({
+                route: 'VaultSecuritySettings',
+                icon: 'shield-check',
+                title: 'settings.main.security_title',
+            })
+        })
     })
 })

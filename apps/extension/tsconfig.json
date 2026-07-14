@@ -2,6 +2,7 @@
   "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
   "compilerOptions": {
     "noEmit": true,
+    "lib": ["ESNext", "DOM", "WebWorker"],
     "types": ["chrome", "node"],
     "paths": {
       "@perawallet/wallet-extension-keystore-chrome/vault/autolock": [

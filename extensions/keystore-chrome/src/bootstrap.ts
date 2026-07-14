@@ -14,4 +14,8 @@
 // Exports only hydrateKeystoreStorage — no @algorandfoundation/keystore graph,
 // no xhd-wallet-api, no native-module-touching deps. The full keystore surface
 // (extension, store, vault) lives behind the dynamic AppShell import.
+//
+// See index.ts for why this reference is here: this file is a separate root
+// pulled into consumer tsc programs (apps/mobile) independently of index.ts.
+/// <reference types="chrome" />
 export { hydrateKeystoreStorage } from './storage/chrome-storage'

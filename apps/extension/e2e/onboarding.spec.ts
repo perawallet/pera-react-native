@@ -84,6 +84,26 @@ test('onboards in the expanded tab: password → create wallet → home', async 
     // selector timeout below.
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 
+    // Terms gate (M3): the sheet must appear, and accepting must record
+    // consent — assert both; a missing sheet or missing record is a failure.
+    await expect(page.getByTestId('terms_agree_button')).toBeVisible({
+        timeout: 20_000,
+    })
+
+    // consent must not exist before the Agree tap — the M2 auto-acceptor regression class
+    const [serviceWorkerPreTap] = context.serviceWorkers()
+    const settingsRawPreTap = await serviceWorkerPreTap.evaluate(async () => {
+        const stored = await chrome.storage.local.get('kv:settings-store')
+        return stored['kv:settings-store'] as string | undefined
+    })
+    if (settingsRawPreTap) {
+        expect(
+            JSON.parse(settingsRawPreTap).state.preferences,
+        ).not.toHaveProperty('acceptedTermsVersion')
+    }
+
+    await page.getByTestId('terms_agree_button').click()
+
     // --- Name account: accept default name and finish ---
     // BIP39 + HD derivation takes a couple of seconds before navigation lands
     // on NameAccount. Wait for visible first, then click.
@@ -93,12 +113,40 @@ test('onboards in the expanded tab: password → create wallet → home', async 
     })
     await page.getByTestId('name_account_finish_button').click()
 
-    // --- Home: account address must appear ---
-    // testID from AppShell.web.tsx: 'account-home-address'
-    await expect(page.getByTestId('account-home-address')).toBeVisible({
+    // --- Home: real portfolio screen must appear ---
+    // testID from AccountScreen.tsx:67
+    await expect(page.getByTestId('account_screen')).toBeVisible({
         timeout: 30_000,
     })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
+
+    // Regression guard (M3 home-crash): the home screen's corner-radius
+    // reveal animation (useAccountScreenAnimation) assigns a shared value a
+    // couple hundred ms after mount. On web that goes through reanimated's
+    // valueSetter, which previously threw `_getAnimationTimestamp is not a
+    // function` because the web-shims/react-native-worklets.js stub never set
+    // that global — an uncaught error with no error boundary in the web tree,
+    // which unmounts React's entire root and blanks the screen. Wait past
+    // that window and assert the screen is still there with no new errors.
+    await page.waitForTimeout(2000)
+    await expect(page.getByTestId('account_screen')).toBeVisible()
+    expect(pageErrors, 'page threw an uncaught error').toEqual([])
+
+    // Terminal-state assertion: the real consent record, not just UI
+    // progress. STORE_NAME = 'settings-store' (packages/settings/src/store/
+    // store.ts) + KV_PREFIX = 'kv:' (ChromeKeyValueStorageService) ->
+    // 'kv:settings-store'.
+    const [serviceWorker] = context.serviceWorkers()
+    const settingsRaw = await serviceWorker.evaluate(async () => {
+        const stored = await chrome.storage.local.get('kv:settings-store')
+        return stored['kv:settings-store'] as string | undefined
+    })
+    expect(settingsRaw).toBeTruthy()
+    // Persisted zustand JSON: { state: { preferences: { acceptedTermsVersion: '1' } } … }
+    expect(JSON.parse(settingsRaw ?? '{}').state.preferences).toHaveProperty(
+        'acceptedTermsVersion',
+    )
+
     await page.close()
 })
 
@@ -141,10 +189,36 @@ test('locked popup shows unlock; wrong password errors; right password unlocks',
     await expect(async () => {
         await page.getByTestId('unlock-password-input').fill(PASSWORD)
         await page.getByTestId('unlock-submit').click()
-        await expect(page.getByTestId('account-home-address')).toBeVisible({
+        await expect(page.getByTestId('account_screen')).toBeVisible({
             timeout: 1000,
         })
     }).toPass({ timeout: 15_000 })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
+    await page.close()
+})
+
+// Phase 4: Corrupted vault blob. MUST be the LAST test in this file — it
+// overwrites the real wrapped-master-key blob with an unrecoverable one, so
+// no later test in this serial suite can unlock the vault again.
+// Key literals cross-reference extensions/keystore-chrome/src/storage-keys.ts:
+// SESSION_MASTER_KEY = 'vault:master-key', VAULT_STORAGE_KEY = 'vault:wrapped-master-key'.
+test('corrupted vault blob surfaces the corrupted error, not wrong-password', async () => {
+    const [serviceWorker] = context.serviceWorkers()
+    await serviceWorker.evaluate(async () => {
+        await chrome.storage.session.remove('vault:master-key')
+        const stored = await chrome.storage.local.get(
+            'vault:wrapped-master-key',
+        )
+        const blob = JSON.parse(stored['vault:wrapped-master-key'] as string)
+        blob.salt = 'AAAA' // decodes to 3 bytes — fails the length validation
+        await chrome.storage.local.set({
+            'vault:wrapped-master-key': JSON.stringify(blob),
+        })
+    })
+    const page = await context.newPage()
+    await page.goto(`chrome-extension://${extensionId}/popup.html`)
+    await page.getByTestId('unlock-password-input').fill(PASSWORD)
+    await page.getByTestId('unlock-submit').click()
+    await expect(page.getByTestId('unlock-corrupted-error')).toBeVisible()
     await page.close()
 })

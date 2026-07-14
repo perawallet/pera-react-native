@@ -15,7 +15,6 @@ import {
     ChromeAgeGateService,
     ChromeAppIntegrityService,
     ChromeBiometricsService,
-    ChromeDatabaseService,
     ChromeMigrationService,
     ChromePushNotificationService,
     ChromeRemoteConfigService,
@@ -58,11 +57,5 @@ describe('capability stubs', () => {
             await new ChromePushNotificationService().initializeNotifications()
         expect(result.token).toBeUndefined()
         expect(() => result.unsubscribe()).not.toThrow()
-    })
-
-    it('database throws a milestone-3 pointer', async () => {
-        await expect(new ChromeDatabaseService().open('pera')).rejects.toThrow(
-            /milestone 3/i,
-        )
     })
 })

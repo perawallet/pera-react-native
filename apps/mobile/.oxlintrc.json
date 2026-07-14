@@ -68,6 +68,18 @@
       "rules": {
         "max-lines": "off"
       }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "chrome",
+            "message": "apps/mobile must not reference the ambient chrome global directly — go through an extension package (e.g. @perawallet/wallet-extension-platform-chrome, @perawallet/wallet-extension-keystore-chrome) or its typed accessor instead."
+          }
+        ]
+      }
     }
   ]
 }

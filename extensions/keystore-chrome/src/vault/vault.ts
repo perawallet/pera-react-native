@@ -17,6 +17,11 @@ import {
     VaultExistsError,
     VaultNotInitializedError,
 } from '../errors'
+import {
+    PRF_BLOB_KEY,
+    PRF_CRED_ID_KEY,
+    VAULT_STORAGE_KEY,
+} from '../storage-keys'
 import { armAutoLock, disarmAutoLock } from './autolock'
 import {
     clearSessionMasterKey,
@@ -25,13 +30,15 @@ import {
     SESSION_MASTER_KEY,
 } from './session'
 
-// Root-level chrome.storage.local key (NOT kv:/keystore: prefixed) — the
-// wrapped master key is extension infrastructure, not an app KV entry.
-const VAULT_STORAGE_KEY = 'vault:wrapped-master-key'
-
 // MetaMask-parity floor per the design spec. Argon2id is the noted upgrade
 // path (would ship as version: 2 blobs).
 export const PBKDF2_ITERATIONS = 600_000
+
+// ~17x the floor; anything above is corruption or DoS, not a legitimate
+// blob. Unlock derives a key at `blob.iterations`, so an unbounded value lets
+// a corrupted (or maliciously written) blob make unlock take arbitrarily
+// long — this ceiling turns that into an immediate VaultCorruptedError.
+export const PBKDF2_MAX_ITERATIONS = 10_000_000
 
 type WrappedMasterKeyV1 = {
     version: 1
@@ -51,7 +58,8 @@ const isValidBlob = (x: unknown): x is WrappedMasterKeyV1 =>
     typeof (x as WrappedMasterKeyV1).iv === 'string' &&
     typeof (x as WrappedMasterKeyV1).ciphertext === 'string' &&
     Number.isSafeInteger((x as WrappedMasterKeyV1).iterations) &&
-    (x as WrappedMasterKeyV1).iterations >= PBKDF2_ITERATIONS
+    (x as WrappedMasterKeyV1).iterations >= PBKDF2_ITERATIONS &&
+    (x as WrappedMasterKeyV1).iterations <= PBKDF2_MAX_ITERATIONS
 
 const deriveKek = async (
     password: string,
@@ -152,6 +160,12 @@ const unwrapMasterKey = async (password: string): Promise<Uint8Array> => {
         throw new VaultCorruptedError()
     }
 
+    // writeWrappedMasterKey always writes a 16-byte salt / 12-byte IV — any
+    // other decoded length is corruption, never a wrong password.
+    if (saltBytes.length !== 16 || ivBytes.length !== 12) {
+        throw new VaultCorruptedError()
+    }
+
     const kek = await deriveKek(password, saltBytes, blob.iterations)
     try {
         return new Uint8Array(
@@ -181,12 +195,10 @@ export const createVault = async (password: string): Promise<void> => {
         await writeWrappedMasterKey(password, masterKey)
         // Evict any stale PRF blob so a re-created vault cannot be opened
         // with a passkey that was wrapping the previous master key.
-        // Keys are inlined here (rather than calling disablePasskeyUnlock) to
-        // avoid a circular import between vault.ts ↔ passkey.ts.
-        await chrome.storage.local.remove([
-            'vault:wrapped-master-key-prf',
-            'vault:prf-credential-id',
-        ])
+        // Keys are imported from storage-keys.ts (rather than calling
+        // disablePasskeyUnlock) to avoid a circular import between
+        // vault.ts ↔ passkey.ts.
+        await chrome.storage.local.remove([PRF_BLOB_KEY, PRF_CRED_ID_KEY])
         await putSessionMasterKey(masterKey)
         await armAutoLock()
     } finally {

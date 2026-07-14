@@ -10,6 +10,15 @@
  limitations under the License
  */
 
+// This package's source uses the ambient `chrome` global directly (no local
+// imports) — its own tsconfig lists "chrome" in `types`, but downstream
+// consumers whose tsconfig does NOT (apps/mobile, since Task 12) still pull
+// this source into their tsc program via path-aliased imports. A `types`
+// list is program-wide, but an explicit triple-slash reference is honored
+// regardless of the consuming project's `types` list, so this keeps the
+// package self-contained without forcing "chrome" back onto every consumer.
+/// <reference types="chrome" />
+
 export const name = '@perawallet/wallet-extension-platform-chrome'
 
 export {
@@ -23,4 +32,41 @@ export {
 } from './services'
 export { getPlatformServices, hydratePlatform } from './resources'
 export { getSurface, type ExtensionSurface } from './surface'
+export {
+    openExpandedTab,
+    consumeInitialExpandedFlow,
+    type ExpandedFlow,
+} from './navigation'
+export { isTrustedExtensionPageSender } from './trusted-sender'
 export { ensureDeviceID, DEVICE_ID_STORAGE_KEY } from './device-id'
+export {
+    DB_SCOPE,
+    DB_CONTROL_SCOPE,
+    encodeWireValues,
+    decodeWireValues,
+    isDbMessage,
+    type DbMessage,
+    type DbExecMessage,
+    type DbExecResponse,
+    type DbPingResponse,
+    type DbMethod,
+    type EnsureOffscreenMessage,
+} from './database/protocol'
+export {
+    DatabaseHost,
+    startDatabaseHost,
+    setActiveDatabaseHost,
+    getActiveDatabaseHost,
+    type SqlExecutor,
+} from './database/host'
+export { createWorkerExecutor } from './database/worker-executor'
+export { onLocalStorageKeyChanged } from './storage-events'
+export {
+    STORAGE_PROXY_SCOPE,
+    STORAGE_EVENT_SCOPE,
+    startStorageProxyHost,
+    installOffscreenStorageShim,
+    type StorageProxyMessage,
+    type StorageProxyResponse,
+    type StorageChangedBroadcast,
+} from './storage-proxy'

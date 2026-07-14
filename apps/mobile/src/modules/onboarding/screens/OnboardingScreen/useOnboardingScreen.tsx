@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { Platform } from 'react-native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
@@ -56,10 +55,6 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     // only resolves `true` via "I Agree", so a falsy result means "don't
     // proceed". Skipped entirely once the current terms version is accepted.
     const ensureTermsAccepted = useCallback(async (): Promise<boolean> => {
-        // Terms gate deferred on web for M2 (human-approved): the native terms sheet
-        // crashes in the extension environment and silently auto-accepting fabricates
-        // consent. M3 ships a web terms screen; no acceptance record is written here.
-        if (Platform.OS === 'web') return true
         if (!needsAcceptance) return true
         const accepted = await requestBottomSheet<boolean>({
             contents: <TermsAndConditionsSheet />,

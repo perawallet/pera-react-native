@@ -14,9 +14,10 @@ import { Store } from '@tanstack/store'
 import type { KeyData, KeyStoreState } from '@algorandfoundation/keystore'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
-import { createVault } from '../../vault/vault'
+import { createVault, lockVault } from '../../vault/vault'
 import { hydrateKeystoreStorage, storage } from '../chrome-storage'
 import { commit, decode, encode, fetchSecret, removeSecret } from '../state'
+import { VaultLockedError } from '../../errors'
 
 const makeStore = (): Store<KeyStoreState> =>
     new Store<KeyStoreState>({ keys: [], status: 'idle' })
@@ -101,5 +102,18 @@ describe('keystore state', () => {
         )
         // The store must not reflect the key — the write never persisted.
         expect(store.state.keys).toHaveLength(0)
+    })
+
+    it('rejects commit with VaultLockedError when the vault is locked, without writing', async () => {
+        await lockVault()
+        const store = makeStore()
+        const keyData = makeKeyData()
+        const storedBefore = new Map(fake.data)
+        await expect(
+            commit({ store, keyData, options: undefined }),
+        ).rejects.toBeInstanceOf(VaultLockedError)
+        expect(fake.data).toEqual(storedBefore)
+        expect(store.state.keys).toHaveLength(0)
+        expect(store.state.status).toBe('idle') // finally resets status
     })
 })

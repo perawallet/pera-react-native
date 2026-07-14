@@ -10,6 +10,15 @@
  limitations under the License
  */
 
+// This package's source uses the ambient `chrome` global directly (no local
+// imports) — its own tsconfig lists "chrome" in `types`, but downstream
+// consumers whose tsconfig does NOT (apps/mobile, since Task 12) still pull
+// this source into their tsc program via path-aliased imports. A `types`
+// list is program-wide, but an explicit triple-slash reference is honored
+// regardless of the consuming project's `types` list, so this keeps the
+// package self-contained without forcing "chrome" back onto every consumer.
+/// <reference types="chrome" />
+
 export * from './errors'
 export * from './extension'
 export * from './storage'
@@ -25,14 +34,19 @@ export {
     onLockStateChanged,
     unlockVault,
     PBKDF2_ITERATIONS,
+    PBKDF2_MAX_ITERATIONS,
 } from './vault/vault'
 export { getSessionMasterKey, SESSION_MASTER_KEY } from './vault/session'
 export {
     AUTO_LOCK_ALARM,
+    AUTO_LOCK_MINUTES_KEY,
+    AUTO_LOCK_MINUTES_OPTIONS,
     DEFAULT_AUTO_LOCK_MINUTES,
     armAutoLock,
     disarmAutoLock,
+    getAutoLockMinutes,
     handleAutoLockAlarm,
+    setAutoLockMinutes,
 } from './vault/autolock'
 export {
     isPasskeyUnlockSupported,

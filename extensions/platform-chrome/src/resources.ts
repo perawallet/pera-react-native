@@ -20,13 +20,13 @@ import {
     ChromeCrashReportingService,
     ChromeDatabaseService,
     ChromeDeviceInfoService,
-    ChromeKeyValueStorageService,
     ChromeMigrationService,
     ChromePushNotificationService,
     ChromeRemoteConfigService,
 } from './services'
+import { keyValueStorage } from './key-value-singleton'
 
-const keyValueStorage = new ChromeKeyValueStorageService()
+export { hydratePlatform } from './key-value-singleton'
 
 export const platformServices: PlatformServices = {
     analytics: new ChromeAnalyticsService(),
@@ -44,12 +44,3 @@ export const platformServices: PlatformServices = {
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices
-
-/**
- * Async platform bootstrap: hydrates the synchronous key-value cache from
- * chrome.storage.local. The web app shell MUST await this before its first
- * render — sync storage reads throw until it resolves.
- */
-export const hydratePlatform = async (): Promise<void> => {
-    await keyValueStorage.hydrate()
-}

@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SyncService } from '../service/sync-service'
+import type { SyncServiceDeps } from '../models'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
 
 // Drain queued microtasks (the async tick body chains several awaits with no
@@ -798,6 +799,26 @@ describe('SyncService', () => {
             queryClient,
             ['ADDR1'],
         )
+    })
+
+    describe('pollIntervalMs', () => {
+        it('uses the injected pollIntervalMs as the reschedule cadence', async () => {
+            const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+            const custom = new SyncService({
+                queryClient,
+                pollIntervalMs: 12345,
+            } as SyncServiceDeps)
+
+            custom.start()
+            await vi.advanceTimersByTimeAsync(0)
+            custom.stop()
+
+            expect(
+                setTimeoutSpy.mock.calls.some(call => call[1] === 12345),
+            ).toBe(true)
+
+            setTimeoutSpy.mockRestore()
+        })
     })
 
     it('does not invalidate transaction queries when every account transaction fetch fails', async () => {

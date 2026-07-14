@@ -18,29 +18,18 @@ import {
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
-import {
-    createRef,
-    type PropsWithChildren,
-    useCallback,
-    useEffect,
-    useRef,
-} from 'react'
+import { createRef, useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
-import {
-    Keyboard,
-    Platform,
-    type StyleProp,
-    useWindowDimensions,
-    View,
-    type ViewStyle,
-} from 'react-native'
+import { Keyboard, Platform, useWindowDimensions, View } from 'react-native'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWInBottomSheetContext } from './inSheetContext'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 
 export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
+export type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 
 type DefaultPropsReturn = {
     snapPoints?: string[]
@@ -64,23 +53,6 @@ const DEFAULT_PROPS: Record<PWBottomSheetSize, DefaultPropsReturn> = {
         snapPoints: ['100%'],
     },
 }
-
-export type PWBottomSheetSize = 'full' | 'modal' | 'auto'
-
-export type PWBottomSheetProps = {
-    isVisible: boolean
-    onBackdropPress?: () => void
-    onDismiss?: () => void
-    innerContainerStyle?: StyleProp<ViewStyle>
-    containerStyle?: StyleProp<ViewStyle>
-    snapPoints?: (string | number)[]
-    enablePanDownToClose?: boolean
-    enableContentPanningGesture?: boolean
-    size?: PWBottomSheetSize
-    autoCreateContainer?: boolean
-    testID?: string
-    enableCloseOnBackdropPress?: boolean
-} & PropsWithChildren
 
 export const PWBottomSheet = ({
     isVisible,

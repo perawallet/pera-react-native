@@ -13,4 +13,6 @@
 export { VaultGate } from './components/VaultGate'
 export { UnlockScreen } from './components/UnlockScreen'
 export { CreatePasswordScreen } from './screens/CreatePasswordScreen'
+export { VaultSecuritySettingsScreen } from './screens/VaultSecuritySettingsScreen'
 export { useVaultLockState } from './hooks/useVaultLockState'
+export { useAutoLockActivity } from './hooks/useAutoLockActivity'

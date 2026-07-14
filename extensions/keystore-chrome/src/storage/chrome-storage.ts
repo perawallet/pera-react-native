@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-// Namespaces keystore entries apart from app KV (kv:) and device identity in
-// the shared chrome.storage.local area. Mirrors mobile's dedicated
-// MMKV({ id: 'keystore' }) namespace.
-const KEYSTORE_PREFIX = 'keystore:'
+import { KEYSTORE_PREFIX } from '../storage-keys'
 
 export type SecureEntryStorage = {
     getString(key: string): string | undefined

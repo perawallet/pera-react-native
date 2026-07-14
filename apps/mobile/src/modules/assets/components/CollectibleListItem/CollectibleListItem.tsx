@@ -17,7 +17,11 @@ import { useStyles } from './styles'
 import { type CollectibleItemProps } from '@modules/assets/types/collectible'
 import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
 
-const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
+const CollectibleListItemBase = ({
+    item,
+    onPress,
+    style,
+}: CollectibleItemProps) => {
     const styles = useStyles()
     const {
         thumbnailUrl,
@@ -37,7 +41,7 @@ const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
 
     return (
         <PWListItemLayout
-            style={styles.container}
+            style={[styles.container, style]}
             onPress={onPress}
             left={
                 <PWView style={styles.thumbnail}>

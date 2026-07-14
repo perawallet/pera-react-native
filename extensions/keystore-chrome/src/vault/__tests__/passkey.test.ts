@@ -20,7 +20,7 @@ import {
     unlockWithPasskey,
     disablePasskeyUnlock,
 } from '../passkey'
-import { PasskeyUnlockError } from '../../errors'
+import { PasskeyUnlockError, VaultCorruptedError } from '../../errors'
 import { getSessionMasterKey } from '../session'
 import { createVault, unlockVault, lockVault } from '../vault'
 import { InvalidPasswordError } from '../../errors'
@@ -31,17 +31,41 @@ const FAKE_PRF_BYTES = new Uint8Array(32).fill(0xab)
 // ensure we're storing/reading raw bytes, not string-encoded bytes.
 const FAKE_RAW_ID = new Uint8Array([0xde, 0xad, 0xbe, 0xef, 0x01, 0x02, 0x03])
 
+type WebAuthnMockOptions = {
+    /**
+     * Poison: PRF results.first returned directly from create() (Chrome
+     * 132+ behavior — computed against NO eval salt). The implementation
+     * must never derive a KEK from these.
+     */
+    createPrfResults?: Uint8Array
+    /** Computes get()'s prf.results.first from the eval.first salt the caller passed. */
+    getPrfResultsForSalt?: (salt: Uint8Array) => Uint8Array
+    rawId?: Uint8Array
+}
+
 /**
- * Build a fake credential whose `get()` mock validates that
- * `allowCredentials` was called with the exact raw-byte id of the enrolled
- * credential (not the ASCII bytes of the base64url string).
+ * Build fake `navigator.credentials.create`/`get` mocks.
  *
- * `getMock` is exposed so tests can inspect call args.
+ * `create()` asserts its `prf` extension carries NO `eval` input (no salt
+ * exists yet at create time) and, if `createPrfResults` is given, returns
+ * poisoned create-time PRF results — simulating Chrome 132+, which returns
+ * `prf.results` from create() even though it was called with `prf: {}`.
+ *
+ * `get()` validates `allowCredentials` against the exact raw-byte id of the
+ * enrolled credential (not the ASCII bytes of the base64url string) AND
+ * asserts `extensions.prf.eval.first` is present, returning
+ * `getPrfResultsForSalt(salt)` as the PRF output for that salt.
  */
-const installCredentialsMock = (
-    prfOutput: Uint8Array = FAKE_PRF_BYTES,
-    rawId: Uint8Array = FAKE_RAW_ID,
-): { getMock: ReturnType<typeof vi.fn> } => {
+const installWebAuthnMocks = (
+    options: WebAuthnMockOptions = {},
+): {
+    getMock: ReturnType<typeof vi.fn>
+    createMock: ReturnType<typeof vi.fn>
+} => {
+    const rawId = options.rawId ?? FAKE_RAW_ID
+    const getPrfResultsForSalt =
+        options.getPrfResultsForSalt ?? (() => FAKE_PRF_BYTES)
+
     const makeCredential = (prfResults: { first: ArrayBuffer } | null) => ({
         id: 'ZGVhZGJlZWYwMTAyMDM', // base64url of FAKE_RAW_ID — intentionally different bytes than rawId
         rawId: rawId.buffer as ArrayBuffer,
@@ -55,14 +79,32 @@ const installCredentialsMock = (
         authenticatorAttachment: null,
     })
 
-    const createCred = makeCredential(null) // Chrome 116–131: no results from create
+    const createMock = vi.fn(
+        async (
+            createOptions?: CredentialCreationOptions,
+        ): Promise<Credential | null> => {
+            const prfExt = createOptions?.publicKey?.extensions as
+                | AuthenticationExtensionsClientInputs
+                | undefined
+            if (prfExt?.prf && 'eval' in prfExt.prf) {
+                throw new Error(
+                    'create() must not pass prf.eval — no salt exists at create time',
+                )
+            }
+            const createResults = options.createPrfResults
+                ? { first: options.createPrfResults.buffer as ArrayBuffer }
+                : null
+            return makeCredential(createResults)
+        },
+    )
 
-    // get() validates that allowCredentials contains the raw id bytes.
+    // get() validates that allowCredentials contains the raw id bytes and
+    // that a PRF eval salt was provided.
     const getMock = vi.fn(
         async (
-            options?: CredentialRequestOptions,
+            requestOptions?: CredentialRequestOptions,
         ): Promise<Credential | null> => {
-            const allowed = options?.publicKey?.allowCredentials ?? []
+            const allowed = requestOptions?.publicKey?.allowCredentials ?? []
             const providedId =
                 allowed.length > 0
                     ? new Uint8Array(allowed[0].id as ArrayBuffer)
@@ -81,12 +123,26 @@ const installCredentialsMock = (
                 }
             }
 
-            return makeCredential({ first: prfOutput.buffer as ArrayBuffer })
+            const prfExt = requestOptions?.publicKey?.extensions as
+                | AuthenticationExtensionsClientInputs
+                | undefined
+            const saltBuffer = prfExt?.prf?.eval?.first
+            if (!saltBuffer) {
+                throw new Error(
+                    'get() must pass prf.eval.first — the persisted salt',
+                )
+            }
+            const salt = new Uint8Array(saltBuffer as ArrayBuffer)
+            const prfBytes = getPrfResultsForSalt(salt)
+
+            return makeCredential({
+                first: prfBytes.buffer as ArrayBuffer,
+            })
         },
     )
 
     const credsMock = {
-        create: vi.fn().mockResolvedValue(createCred),
+        create: createMock,
         get: getMock,
     } as unknown as CredentialsContainer
 
@@ -105,8 +161,21 @@ const installCredentialsMock = (
         })
     }
 
-    return { getMock }
+    return { getMock, createMock }
 }
+
+/**
+ * Build a fake credential whose `get()` mock validates that
+ * `allowCredentials` was called with the exact raw-byte id of the enrolled
+ * credential (not the ASCII bytes of the base64url string).
+ *
+ * `getMock` is exposed so tests can inspect call args.
+ */
+const installCredentialsMock = (
+    prfOutput: Uint8Array = FAKE_PRF_BYTES,
+    rawId: Uint8Array = FAKE_RAW_ID,
+): { getMock: ReturnType<typeof vi.fn> } =>
+    installWebAuthnMocks({ getPrfResultsForSalt: () => prfOutput, rawId })
 
 describe('passkey vault', () => {
     let fake: ChromeFake
@@ -230,6 +299,26 @@ describe('passkey vault', () => {
             expect(await getSessionMasterKey()).toBeNull()
         })
 
+        it('never derives the KEK from create-time PRF results (eval-salt mismatch)', async () => {
+            // create() returns PRF results NOT computed against prfEvalSalt
+            // (create was called with prf:{} — no eval input). Deriving from
+            // them bricks the blob. The implementation must ignore them and
+            // use the follow-up assertion, which evaluates against the
+            // persisted salt.
+            const poisonBytes = new Uint8Array(32).fill(0xff)
+            const deterministicPrf = (salt: Uint8Array): Uint8Array => salt
+            installWebAuthnMocks({
+                createPrfResults: poisonBytes,
+                getPrfResultsForSalt: salt => deterministicPrf(salt),
+            })
+
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+            await unlockWithPasskey()
+            expect(await getSessionMasterKey()).not.toBeNull()
+        })
+
         it('propagates NotAllowedError (user cancel) without suppressing', async () => {
             await createVault('test-password')
             await enablePasskeyUnlock('test-password')
@@ -258,6 +347,50 @@ describe('passkey vault', () => {
 
             await expect(unlockWithPasskey()).rejects.toThrow(DOMException)
             expect(await getSessionMasterKey()).toBeNull()
+        })
+    })
+
+    describe('unlockWithPasskey blob validation', () => {
+        it('rejects a stored PRF blob whose hkdfSalt decodes to the wrong byte length', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+            const blob = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key-prf')),
+            )
+            blob.hkdfSalt = base64.encode(new Uint8Array(3)) // enable path writes 16 bytes
+            fake.data.set('vault:wrapped-master-key-prf', JSON.stringify(blob))
+            await expect(unlockWithPasskey()).rejects.toBeInstanceOf(
+                VaultCorruptedError,
+            )
+        })
+
+        it('rejects a stored PRF blob whose iv decodes to the wrong byte length', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+            const blob = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key-prf')),
+            )
+            blob.iv = base64.encode(new Uint8Array(4)) // enable path writes 12 bytes
+            fake.data.set('vault:wrapped-master-key-prf', JSON.stringify(blob))
+            await expect(unlockWithPasskey()).rejects.toBeInstanceOf(
+                VaultCorruptedError,
+            )
+        })
+
+        it('rejects a stored PRF blob whose prfEvalSalt decodes to the wrong byte length', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+            const blob = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key-prf')),
+            )
+            blob.prfEvalSalt = base64.encode(new Uint8Array(8)) // enable path writes 32 bytes
+            fake.data.set('vault:wrapped-master-key-prf', JSON.stringify(blob))
+            await expect(unlockWithPasskey()).rejects.toBeInstanceOf(
+                VaultCorruptedError,
+            )
         })
     })
 

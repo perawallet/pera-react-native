@@ -22,6 +22,7 @@ import {
     onLockStateChanged,
     unlockVault,
     PBKDF2_ITERATIONS,
+    PBKDF2_MAX_ITERATIONS,
 } from '../vault'
 import { getSessionMasterKey } from '../session'
 import {
@@ -134,6 +135,42 @@ describe('vault', () => {
             String(fake.data.get('vault:wrapped-master-key')),
         )
         blob.iterations = 1000
+        fake.data.set('vault:wrapped-master-key', JSON.stringify(blob))
+        await expect(unlockVault('correct horse')).rejects.toBeInstanceOf(
+            VaultCorruptedError,
+        )
+    })
+
+    it('rejects an iterations count above PBKDF2_MAX_ITERATIONS as corruption (DoS ceiling)', async () => {
+        await createVault('correct horse')
+        const blob = JSON.parse(
+            String(fake.data.get('vault:wrapped-master-key')),
+        )
+        blob.iterations = PBKDF2_MAX_ITERATIONS + 1
+        fake.data.set('vault:wrapped-master-key', JSON.stringify(blob))
+        await expect(unlockVault('correct horse')).rejects.toBeInstanceOf(
+            VaultCorruptedError,
+        )
+    })
+
+    it('rejects a salt that decodes to the wrong byte length as corruption, not invalid password', async () => {
+        await createVault('correct horse')
+        const blob = JSON.parse(
+            String(fake.data.get('vault:wrapped-master-key')),
+        )
+        blob.salt = base64.encode(new Uint8Array(3)) // not 16 bytes
+        fake.data.set('vault:wrapped-master-key', JSON.stringify(blob))
+        await expect(unlockVault('correct horse')).rejects.toBeInstanceOf(
+            VaultCorruptedError,
+        )
+    })
+
+    it('rejects an iv that decodes to the wrong byte length as corruption', async () => {
+        await createVault('correct horse')
+        const blob = JSON.parse(
+            String(fake.data.get('vault:wrapped-master-key')),
+        )
+        blob.iv = base64.encode(new Uint8Array(4)) // not 12 bytes
         fake.data.set('vault:wrapped-master-key', JSON.stringify(blob))
         await expect(unlockVault('correct horse')).rejects.toBeInstanceOf(
             VaultCorruptedError,

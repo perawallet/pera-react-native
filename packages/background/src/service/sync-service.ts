@@ -62,7 +62,7 @@ export class SyncService {
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
     private hasCompletedInitialSync = false
-    private currentInterval = POLL_INTERVAL
+    private currentInterval: number
     // Per-network timestamps of the last asset-metadata / price passes, so the
     // expensive whole-portfolio reads only run when holdings changed or the
     // coarse interval elapsed — not on every poll tick.
@@ -83,8 +83,12 @@ export class SyncService {
     // while running so an offline→online transition can trigger an immediate
     // tick. Cleared on stop() so the subscription lifecycle tracks running.
     private onlineUnsubscribe: Nullable<() => void> = null
+    private readonly baseInterval: number
 
-    constructor(private readonly deps: SyncServiceDeps) {}
+    constructor(private readonly deps: SyncServiceDeps) {
+        this.baseInterval = deps.pollIntervalMs ?? POLL_INTERVAL
+        this.currentInterval = this.baseInterval
+    }
 
     private debouncedInvalidate(
         key: string,
@@ -146,7 +150,7 @@ export class SyncService {
     restart(): void {
         this.stop()
         this.hasCompletedInitialSync = false
-        this.currentInterval = POLL_INTERVAL
+        this.currentInterval = this.baseInterval
         this.start()
     }
 
@@ -200,11 +204,11 @@ export class SyncService {
                               BACKOFF_MULTIPLIER,
                               MAX_BACKOFF_INTERVAL,
                           )
-                        : POLL_INTERVAL
+                        : this.baseInterval
             } else {
                 // No networks needed syncing (should-refresh reported no work,
                 // or there are no accounts) — a successful, cheap tick.
-                this.currentInterval = POLL_INTERVAL
+                this.currentInterval = this.baseInterval
             }
         } catch (error) {
             logger.warn('Sync tick failed', { error })

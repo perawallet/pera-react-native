@@ -10,7 +10,16 @@
  limitations under the License
  */
 
+// Main entry deliberately re-exports only the pieces that never carry a
+// react-native-pager-view dependency. `MessagesSpotBanners` (->
+// SpotBannerCarousel) and `BannersCarouselModalScreen` (-> BannerCarousel)
+// both use PagerView; re-exporting them here would mean any consumer that
+// imports so much as `HomeBannersStrip` from this barrel drags the carousel
+// — and its native dependency — along too (this is exactly how M3 Task 7
+// found react-native-pager-view leaking into the web bundle: AccountScreen
+// only wanted HomeBannersStrip). Import those two directly from their own
+// subpaths (`@modules/banners/components/MessagesSpotBanners`,
+// `@modules/banners/screens/BannersCarouselModalScreen`) so a screen that
+// doesn't need the carousel doesn't pull it into its bundle graph either.
 export * from './components/HomeBannersStrip'
-export * from './components/MessagesSpotBanners'
-export * from './screens/BannersCarouselModalScreen'
 export * from './hooks'

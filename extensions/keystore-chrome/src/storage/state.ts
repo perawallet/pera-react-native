@@ -91,9 +91,13 @@ export async function commit({
     setStatus({ store, status: 'commiting' })
 
     // Divergence from RN source: masterKey is captured so it can be zeroed in
-    // the finally block. Fresh copy per call on web, safe to zero.
-    const masterKey = await getMasterKey(options)
+    // the finally block. Fresh copy per call on web, safe to zero. Declared
+    // here (not assigned via a pre-try await) so a locked vault's
+    // VaultLockedError from getMasterKey still hits the finally below —
+    // otherwise the store would stay stuck at status 'commiting' forever.
+    let masterKey: Uint8Array | undefined
     try {
+        masterKey = await getMasterKey(options)
         // Never allow the master key to touch memory longer than needed.
         // Divergence from RN source: storage.set is awaited — chrome.storage is
         // async where MMKV was synchronous; a failed write must fail the commit.
@@ -115,7 +119,7 @@ export async function commit({
             keys: [{ ...keyState }, ...state.keys],
         }))
     } finally {
-        clearBuffer(masterKey)
+        if (masterKey) clearBuffer(masterKey)
         clearKeyData(keyData)
         setStatus({ store, status: 'idle' })
     }

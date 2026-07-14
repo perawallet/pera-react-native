@@ -37,6 +37,7 @@ const renderWithId = (id = 'sheet-1') =>
 describe('ConfirmActionContent', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
         vi.clearAllMocks()
     })
 

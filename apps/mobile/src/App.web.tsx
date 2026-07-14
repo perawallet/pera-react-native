@@ -16,7 +16,11 @@ import React, { useEffect, useState } from 'react'
 // must not import @components/core (store-bearing graph) before hydration.
 // guardrails-ignore-next-line: no-primitive-rn-components -- temporary bootstrap; real shell loaded dynamically after hydration
 import { Text, View } from 'react-native'
-import { hydratePlatform } from '@perawallet/wallet-extension-platform-driver'
+import {
+    getSurface,
+    hydratePlatform,
+    installOffscreenStorageShim,
+} from '@perawallet/wallet-extension-platform-chrome/bootstrap'
 // Bootstrap-only subpath: exports hydrateKeystoreStorage without pulling the full
 // @algorandfoundation/keystore graph (sign.js / verify.js use node:crypto which
 // routes to the native bridge on web). The /bootstrap subpath is storage-only.
@@ -24,13 +28,88 @@ import { hydrateKeystoreStorage } from '@perawallet/wallet-extension-keystore-ch
 
 type ShellComponent = React.ComponentType
 
+const OffscreenStatus = (): React.JSX.Element => (
+    <View style={{ flex: 1 }}>
+        <Text testID='offscreen-status'>offscreen host running</Text>
+    </View>
+)
+
+// Outermost mount guard, ABOVE ThemeProvider. AppShell.web has its own themed
+// WebShellErrorBoundary, but that boundary lives *inside* ThemeProvider — a
+// throw in AppShell's own render body (theme construction) or in ThemeProvider
+// itself is above it and would white-screen the whole tree. This boundary is
+// the last line of defence, so it stays store-free and unthemed (plain RN
+// primitives only, per this file's boot-order contract) and renders a
+// reload-to-recover fallback instead of a blank page.
+class RootBoundary extends React.Component<
+    { children: React.ReactNode },
+    { hasError: boolean }
+> {
+    state = { hasError: false }
+
+    static getDerivedStateFromError(): { hasError: boolean } {
+        return { hasError: true }
+    }
+
+    render(): React.ReactNode {
+        if (!this.state.hasError) return this.props.children
+        return (
+            <View
+                style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 24,
+                }}
+            >
+                <Text
+                    testID='root-boundary-fallback'
+                    style={{ marginBottom: 16 }}
+                >
+                    Pera Wallet failed to start.
+                </Text>
+                <Text
+                    testID='root-boundary-reload'
+                    accessibilityRole='button'
+                    onPress={() => globalThis.location.reload()}
+                    style={{ fontWeight: '600' }}
+                >
+                    Reload
+                </Text>
+            </View>
+        )
+    }
+}
+
 export const App = (): React.JSX.Element => {
     const [Shell, setShell] = useState<ShellComponent | null>(null)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         const bootstrap = async (): Promise<void> => {
-            await Promise.all([hydratePlatform(), hydrateKeystoreStorage()])
+            const isOffscreen = getSurface() === 'offscreen'
+            if (isOffscreen) {
+                // Offscreen documents expose only chrome.runtime — install
+                // the SW-proxied chrome.storage shim BEFORE any hydrator
+                // reads chrome.storage.local.
+                installOffscreenStorageShim()
+            }
+            await Promise.all([
+                hydratePlatform(),
+                // Nothing in the offscreen document reads keystore storage — no vault UI ever mounts there.
+                ...(isOffscreen ? [] : [hydrateKeystoreStorage()]),
+            ])
+
+            if (isOffscreen) {
+                // Headless surface: no shell, no React tree beyond the status
+                // line. Store-bearing imports stay behind this dynamic import
+                // (same boot-order contract as AppShell).
+                const mod = await import('./offscreen/runOffscreenApp')
+                await mod.runOffscreenApp()
+                setShell(() => OffscreenStatus)
+                return
+            }
+
             // BOOT-ORDER CONTRACT: Zustand persist stores read
             // getProvider().keyValueStorage at module evaluation, which throws
             // before hydrate() resolves. Everything that (transitively)
@@ -44,7 +123,12 @@ export const App = (): React.JSX.Element => {
         })
     }, [])
 
-    if (Shell) return <Shell />
+    if (Shell)
+        return (
+            <RootBoundary>
+                <Shell />
+            </RootBoundary>
+        )
     return (
         <View
             style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}

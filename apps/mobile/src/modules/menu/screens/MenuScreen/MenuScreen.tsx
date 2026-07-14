@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Linking } from 'react-native'
 import {
     PWIcon,
     PWScreen,
@@ -32,6 +33,7 @@ import { useCallback } from 'react'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { trackEvent, MenuEvent, FundEvent } from '@analytics'
+import { routeCapabilities } from '@routes/capabilities'
 
 export const MenuScreen = () => {
     const styles = useStyles()
@@ -66,6 +68,11 @@ export const MenuScreen = () => {
     }, [requestBottomSheet])
 
     const openHelpCenter = useCallback(() => {
+        if (!routeCapabilities.inAppWebView) {
+            // react-native-web maps Linking.openURL to window.open (new tab).
+            void Linking.openURL(config.supportBaseUrl)
+            return
+        }
         pushWebView({
             url: config.supportBaseUrl,
             id: 'help-center',
@@ -103,18 +110,20 @@ export const MenuScreen = () => {
                     </PWText>
                 </PWView>
                 <PWView style={styles.iconBarActions}>
-                    <PWTouchableOpacity
-                        onPress={() => {
-                            trackEvent(MenuEvent.QrScan)
-                            scanner.open()
-                        }}
-                        testID='menu_button'
-                    >
-                        <PWIcon
-                            name='camera'
-                            variant='primary'
-                        />
-                    </PWTouchableOpacity>
+                    {routeCapabilities.qrScanner && (
+                        <PWTouchableOpacity
+                            onPress={() => {
+                                trackEvent(MenuEvent.QrScan)
+                                scanner.open()
+                            }}
+                            testID='menu_button'
+                        >
+                            <PWIcon
+                                name='camera'
+                                variant='primary'
+                            />
+                        </PWTouchableOpacity>
+                    )}
                     <PWTouchableOpacity
                         onPress={goToSettings}
                         testID='menu_settings_button'
@@ -128,21 +137,25 @@ export const MenuScreen = () => {
             </PWView>
 
             <PWView style={styles.menuContainer}>
-                <PanelButton
-                    title={t('menu.staking')}
-                    titleWeight='h3'
-                    leftIcon='dot-stack'
-                    rightIcon='chevron-right'
-                    onPress={goToStaking}
-                    testID='menu_staking_button'
-                />
-                <PanelButton
-                    title={t('menu.buy_gift_card')}
-                    titleWeight='h3'
-                    leftIcon='gift'
-                    rightIcon='chevron-right'
-                    onPress={openBidali}
-                />
+                {routeCapabilities.staking && (
+                    <PanelButton
+                        title={t('menu.staking')}
+                        titleWeight='h3'
+                        leftIcon='dot-stack'
+                        rightIcon='chevron-right'
+                        onPress={goToStaking}
+                        testID='menu_staking_button'
+                    />
+                )}
+                {routeCapabilities.giftCards && (
+                    <PanelButton
+                        title={t('menu.buy_gift_card')}
+                        titleWeight='h3'
+                        leftIcon='gift'
+                        rightIcon='chevron-right'
+                        onPress={openBidali}
+                    />
+                )}
                 <PanelButton
                     title={t('menu.receive')}
                     titleWeight='h3'
@@ -166,12 +179,14 @@ export const MenuScreen = () => {
                     onPress={openHelpCenter}
                 />
             </PWView>
-            <QRScannerView
-                isVisible={scanner.isOpen}
-                onSuccess={scanner.close}
-                onClose={scanner.close}
-                animationType='slide'
-            />
+            {routeCapabilities.qrScanner && (
+                <QRScannerView
+                    isVisible={scanner.isOpen}
+                    onSuccess={scanner.close}
+                    onClose={scanner.close}
+                    animationType='slide'
+                />
+            )}
         </PWScreen>
     )
 }

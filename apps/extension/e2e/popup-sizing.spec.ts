@@ -81,3 +81,31 @@ test('popup.html body is fixed at 360x600 regardless of ambient viewport', async
     expect(size).toEqual({ width: '360px', height: '600px' })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
+
+// Regression guard (M3 rendering-cluster, scroll feel): react-native-web
+// renders <Text> as selectable HTML by default (native RN text isn't
+// selectable), so a click-drag over a label selects text instead of feeling
+// like a native drag gesture — the actual wheel-scroll mechanism was never
+// broken, but this made the whole surface feel like a web page instead of an
+// app. Global `user-select: none` (scripts/build.mjs GLOBAL_WEB_CSS) fixes
+// the feel; inputs are re-enabled explicitly so typing/selecting-to-copy
+// still works — assert both sides.
+test('global CSS disables text selection but keeps inputs selectable', async () => {
+    const page = await context.newPage()
+    await page.goto(`chrome-extension://${extensionId}/popup.html`)
+    await expect(page.getByTestId('create-password-input')).toBeVisible({
+        timeout: 20_000,
+    })
+
+    const styles = await page.evaluate(() => {
+        const input = document.querySelector('input')
+        const label = document.querySelector('div[dir="auto"]')
+        return {
+            inputUserSelect: input ? getComputedStyle(input).userSelect : null,
+            labelUserSelect: label ? getComputedStyle(label).userSelect : null,
+        }
+    })
+
+    expect(styles.inputUserSelect).toBe('text')
+    expect(styles.labelUserSelect).toBe('none')
+})

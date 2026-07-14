@@ -12,13 +12,13 @@
 
 export { ChromeKeyValueStorageService } from './key-value-storage'
 export { ChromeDeviceInfoService } from './device'
+export { ChromeDatabaseService } from './database'
 export {
     ChromeAgeGateService,
     ChromeAnalyticsService,
     ChromeAppIntegrityService,
     ChromeBiometricsService,
     ChromeCrashReportingService,
-    ChromeDatabaseService,
     ChromeMigrationService,
     ChromePushNotificationService,
     ChromeRemoteConfigService,

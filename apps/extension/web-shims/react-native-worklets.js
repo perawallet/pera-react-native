@@ -60,8 +60,28 @@ export const setDynamicFeatureFlag = noop
 export const isBundleModeEnabled = () => false
 export const toggleSlowAnimationsOnUIRuntime = noop
 export const callMicrotasks = noop
-// Runtime kind
-export const getRuntimeKind = () => 1  // 1 = ReactNative runtime kind (0 is invalid/unset)
+// Runtime kind — numeric enum matching the real package's runtimeKind.js
+// (ReactNative=1, UI=2, Worker=3). Reanimated's easing/layout-animation
+// validators destructure `RuntimeKind` directly and compare
+// `globalThis.__RUNTIME_KIND === RuntimeKind.ReactNative`, so both the enum
+// object and the global must be present, not just the `getRuntimeKind()`
+// accessor, or that comparison throws on `undefined.ReactNative`.
+export const RuntimeKind = { ReactNative: 1, UI: 2, Worker: 3 }
+globalThis.__RUNTIME_KIND = RuntimeKind.ReactNative
+// The real package's initializers.js runs this exact assignment at
+// module-eval time (called from its index.js top level via init()). Since
+// this shim replaces that module wholesale, the assignment never happened,
+// leaving globalThis._getAnimationTimestamp undefined. Reanimated's shared
+// value setter (valueSetter.js) and useAnimatedStyle call
+// `global.__frameTimestamp || global._getAnimationTimestamp()` unconditionally
+// whenever a shared value is assigned an animation (withTiming/withDelay/etc),
+// even on web where reanimated runs on the single JS runtime (RuntimeKind.
+// ReactNative, set above) — so the crash isn't native-only behavior being
+// exercised. performance.now() is a real timestamp source in every browser.
+globalThis._WORKLET = false
+globalThis._log = console.log
+globalThis._getAnimationTimestamp = () => performance.now()
+export const getRuntimeKind = () => RuntimeKind.ReactNative
 export const isRNRuntime = () => true
 export const isUIRuntime = () => false
 export const isWorkerRuntime = () => false

@@ -21,6 +21,11 @@ const fs = require('fs');
 // Find the monorepo root (2 levels up from apps/mobile)
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
+// Web-only platform shims live with the extension build they belong to
+// (apps/extension), not comingled in the mobile app tree. Metro resolves them
+// from here for the web bundle; `.web.tsx` component variants stay colocated
+// with their native siblings under src/.
+const webShimsRoot = path.resolve(projectRoot, '../extension/web-shims');
 
 const defaultConfig = getDefaultConfig(projectRoot);
 
@@ -75,18 +80,54 @@ const polyfillMap = {
 // ledger-react-native-usb / passkey-autofill → same-shaped no-op stubs").
 const webStubs = {
     // BLE transport: react-native-ble-plx calls NativeModules.BlePlx at eval time.
-    '@perawallet/wallet-extension-ledger-react-native': 'web-shims/ledger-react-native.js',
+    '@perawallet/wallet-extension-ledger-react-native': 'ledger-react-native.js',
     // USB HID transport: @ledgerhq/react-native-hid requires the native bridge.
-    '@perawallet/wallet-extension-ledger-react-native-usb': 'web-shims/ledger-react-native-usb.js',
+    '@perawallet/wallet-extension-ledger-react-native-usb': 'ledger-react-native-usb.js',
     // Native credential provider: requireNativeModule('ReactNativePasskeyAutofill') throws on web.
-    '@algorandfoundation/react-native-passkey-autofill': 'web-shims/react-native-passkey-autofill.js',
+    '@algorandfoundation/react-native-passkey-autofill': 'react-native-passkey-autofill.js',
     // Worklets runtime: installWorkletsSupport() calls react-native's NativeModules bridge at eval.
     // On web, react-native-reanimated uses CSS animations and does not require the worklet runtime.
-    'react-native-worklets': 'web-shims/react-native-worklets.js',
+    'react-native-worklets': 'react-native-worklets.js',
     // Nitro Modules: index.ts calls installWorkletsSupport() at eval time which transitively
     // requires BatchedBridge (NativeModules) and throws __fbBatchedBridgeConfig on web.
     // Hybrid objects are native-only; the shim exposes a safe stub for web.
-    'react-native-nitro-modules': 'web-shims/react-native-nitro-modules.js',
+    'react-native-nitro-modules': 'react-native-nitro-modules.js',
+    // Share sheet: react-native-share calls TurboModuleRegistry.getEnforcing('RNShare')
+    // at module-eval time (undefined.getEnforcing on web). Pulled in transitively by
+    // the Home/Contacts screen graphs (@utils/shareText, @utils/shareCsvFile). The
+    // shim prefers the real Web Share API and otherwise throws a clear error.
+    'react-native-share': 'react-native-share.js',
+    // Push notifications: @notifee/react-native constructs its native module class
+    // at eval time, touching the legacy NativeModules bridge and throwing
+    // "__fbBatchedBridgeConfig is not set" on web. pushNotificationSettings is
+    // capability-gated off on web (routes/capabilities.web.ts); this stub only
+    // needs to satisfy useSystemNotificationPermission.ts without crashing.
+    '@notifee/react-native': 'notifee-react-native.js',
+    // Lists: @shopify/flash-list v2 renders a Fabric-only AutoLayoutView native
+    // component and touches the legacy NativeModules bridge at import time
+    // ("__fbBatchedBridgeConfig is not set" on web — no web target exists for
+    // FlashList v2). PWFlatList (core/@components) is the only runtime
+    // consumer; the shim is a real FlatList-backed list, not an inert no-op.
+    '@shopify/flash-list': 'flash-list.js',
+    // Carousels: react-native-pager-view requires the native RNCViewPager view
+    // manager and touches the legacy NativeModules bridge at import time
+    // ("__fbBatchedBridgeConfig is not set" on web — no web build exists).
+    // Was pulled in transitively by @modules/banners' barrel (BannerCarousel /
+    // SpotBannerCarousel) even when only HomeBannersStrip was imported — M3
+    // Task 8 split that barrel (modules/banners/index.ts) so the carousel
+    // pieces are no longer in the module's main entry; the shim stays because
+    // MediaCarousel/FullScreenMediaViewer/BannerCarousel/SpotBannerCarousel/
+    // OnrampScreen still import react-native-pager-view directly. The shim is
+    // a real horizontal paging ScrollView, not an inert no-op.
+    'react-native-pager-view': 'react-native-pager-view.js',
+    // Store rating: react-native-rate-app calls TurboModuleRegistry.getEnforcing
+    // ('RateApp') at module-eval time (undefined.getEnforcing on web). Pulled in
+    // by useSettingsScreen.tsx's static top-level import of RatingsContent
+    // (Settings tab is mounted on web), even though storeRating is
+    // capability-gated off on web (routes/capabilities.web.ts) — the "Rate the
+    // app" option itself never renders, but the module import isn't gated.
+    // See M3 Task 8 report for why this wasn't converted to a lazy import.
+    'react-native-rate-app': 'react-native-rate-app.js',
 };
 
 // Custom resolver function
@@ -125,7 +166,7 @@ const customResolveRequest = (context, moduleName, platform) => {
     // unavailable in browser environments — redirect to the pure-JS web shim.
     if (platform === 'web' && moduleName === 'react-native-quick-base64') {
         return {
-            filePath: path.resolve(projectRoot, 'web-shims/react-native-quick-base64.js'),
+            filePath: path.resolve(webShimsRoot, 'react-native-quick-base64.js'),
             type: 'sourceFile',
         };
     }
@@ -144,7 +185,7 @@ const customResolveRequest = (context, moduleName, platform) => {
         )
     ) {
         return {
-            filePath: path.resolve(projectRoot, 'web-shims/node-crypto.js'),
+            filePath: path.resolve(webShimsRoot, 'node-crypto.js'),
             type: 'sourceFile',
         };
     }
@@ -153,7 +194,7 @@ const customResolveRequest = (context, moduleName, platform) => {
     // same-shaped no-op shims so Metro can bundle the onboarding graph on web.
     if (platform === 'web' && webStubs[moduleName]) {
         return {
-            filePath: path.resolve(projectRoot, webStubs[moduleName]),
+            filePath: path.resolve(webShimsRoot, webStubs[moduleName]),
             type: 'sourceFile',
         };
     }
@@ -208,6 +249,26 @@ const customResolveRequest = (context, moduleName, platform) => {
             monorepoRoot,
             'extensions',
             'keystore-chrome',
+            'src',
+            'bootstrap.ts',
+        );
+        return context.resolveRequest(context, sourcePath, platform);
+    }
+    // Subpath: App.web.tsx statically imports only the platform-chrome
+    // bootstrap (getSurface/hydratePlatform/installOffscreenStorageShim) to
+    // avoid pulling ChromeDatabaseService (drizzle-orm) and the
+    // hardware-wallet registry into the pre-hydration web bundle. Native
+    // keeps the real react-native platform driver, so this subpath must only
+    // resolve on web (same guard as the keystore-chrome/bootstrap branch
+    // above).
+    if (
+        platform === 'web' &&
+        moduleName === '@perawallet/wallet-extension-platform-chrome/bootstrap'
+    ) {
+        const sourcePath = path.resolve(
+            monorepoRoot,
+            'extensions',
+            'platform-chrome',
             'src',
             'bootstrap.ts',
         );

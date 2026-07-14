@@ -61,7 +61,6 @@ import { ConnectionSuccessContent } from '@modules/walletconnect/components/Conn
 import { WalletConnectErrorContent } from '@modules/walletconnect/components/WalletConnectErrorContent'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
 import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessContent'
-import { RatingsContent } from '@modules/settings/components/RatingsContent'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
 import { StakingDisclaimerContent } from '@modules/staking/components/StakingDisclaimerContent'
 import { StakingHelpContent } from '@modules/staking/components/StakingHelpContent'
@@ -81,6 +80,17 @@ import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-wallet
 
 const A = MOCK_ADDRESS
 const A2 = MOCK_ADDRESS_2
+
+// Lazy: RatingsContent is the only entry in this catalog backed by a
+// native-only dependency (react-native-rate-app has no web build) — every
+// other item here is a cross-platform component the real app already ships
+// on web. Keeping this one behind a dynamic import (mirrors QRScannerView's
+// createQRCameraScanner) keeps it out of the web AppShell bundle entirely.
+const RatingsGalleryContent = React.lazy(() =>
+    import('@modules/settings/components/RatingsContent').then(module => ({
+        default: module.RatingsContent,
+    })),
+)
 
 export const getSheetSections = (): GallerySection[] => [
     {
@@ -955,7 +965,9 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <RatingsContent />
+                                <React.Suspense fallback={null}>
+                                    <RatingsGalleryContent />
+                                </React.Suspense>
                             </GallerySheetBoundary>
                         ),
                         options: { enablePanDownToClose: true },

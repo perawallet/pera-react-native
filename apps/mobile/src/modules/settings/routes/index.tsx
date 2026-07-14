@@ -17,6 +17,8 @@ import {
     type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { screenListeners } from '@routes/listeners'
+import { routeCapabilities } from '@routes/capabilities'
+import { VaultSecuritySettingsScreen } from './vault-security'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
 import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
@@ -202,6 +204,7 @@ const WalletConnectSettingsStackNavigator = () => {
 export type SettingsStackParamsList = {
     SettingsHome: undefined
     SecuritySettings: undefined
+    VaultSecuritySettings: undefined
     NotificationsSettings: undefined
     WalletConnectSettings: undefined
     PasskeysSettings: undefined
@@ -240,6 +243,16 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsSecurityScreen}
             />
+            {routeCapabilities.vaultSecuritySettings &&
+                VaultSecuritySettingsScreen && (
+                    <SettingsStack.Screen
+                        name='VaultSecuritySettings'
+                        options={{
+                            title: 'screens.security',
+                        }}
+                        component={VaultSecuritySettingsScreen}
+                    />
+                )}
             <SettingsStack.Screen
                 name='NotificationsSettings'
                 options={{
