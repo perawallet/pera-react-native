@@ -43,7 +43,6 @@ export const InputScreen = () => {
     const {
         asset,
         accountAssetBalance,
-        params,
         accountInformation,
         cryptoValue,
         setMax,
@@ -146,7 +145,13 @@ export const InputScreen = () => {
         title: headerTitle,
     })
 
-    if (!asset || !accountAssetBalance || !params || !accountInformation) {
+    // `params` is deliberately NOT gated here: suggested params are a
+    // network-only fetch that pauses offline, and they're only needed to
+    // build the transaction (fetched fresh at build time in
+    // useTransactionSendFlow) — not to render the amount form. Gating on
+    // them kept the whole Send entry point on a spinner while offline
+    // (PERA-4579). The DB-backed gates below resolve offline.
+    if (!asset || !accountAssetBalance || !accountInformation) {
         return <LoadingView variant='circle' />
     }
 

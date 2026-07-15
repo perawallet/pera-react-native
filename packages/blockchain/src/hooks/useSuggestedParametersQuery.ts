@@ -14,11 +14,21 @@ import { useQuery } from '@tanstack/react-query'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getSuggestedParametersQueryKey } from './querykeys'
 
+// Suggested params carry a validity window, so a cached copy is only
+// trustworthy for a few seconds — never long enough to build from minutes
+// later (PERA-4579).
+const SUGGESTED_PARAMS_STALE_TIME_MS = 10_000
+
 export const useSuggestedParametersQuery = () => {
     const algokit = useAlgorandClient()
 
     return useQuery({
         queryKey: getSuggestedParametersQueryKey(),
         queryFn: async () => await algokit.getSuggestedParams(),
+        staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
+        // Run the fetch even while offline so consumers get a fast typed
+        // rejection instead of a silent pause — a paused query kept the
+        // whole Send input screen on a spinner (PERA-4579).
+        networkMode: 'always',
     })
 }
