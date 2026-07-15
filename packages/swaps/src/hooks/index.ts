@@ -12,7 +12,6 @@
 
 export * from './useSwaps'
 export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
 export * from './useSwapHistoryInfiniteQuery'
 export * from './useDistinctPairsHistoryQuery'
 export * from './useProvidersQuery'
