@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-export * from './constants'
-export * from './currency-decimals'
-export * from './errors'
-export * from './models'
-export * from './quotes'
-export * from './api'
-export * from './store'
-export * from './hooks'
-export * from './utils'
+import type { RampHistoryItem } from './models'
+
+/** Whether any order in a ramp history slice still awaits user attention. */
+export const hasPendingRampOrder = (items: RampHistoryItem[]): boolean =>
+    items.some(item => item.status === 'pending')

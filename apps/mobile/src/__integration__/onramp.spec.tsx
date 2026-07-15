@@ -767,8 +767,14 @@ describe('Flow: Onramp buy (native XO)', () => {
                     ).toBeNull(),
                 { timeout: 5000 },
             )
+            // Async: the pending-filtered key loads fresh — the badge no
+            // longer pre-warms it with a duplicate pending-status query.
             expect(
-                screen.getByTestId('onramp-history-item-h-pending'),
+                await screen.findByTestId(
+                    'onramp-history-item-h-pending',
+                    {},
+                    { timeout: 5000 },
+                ),
             ).toBeTruthy()
 
             // Back to All: both rows must return (regression: the list used
