@@ -252,7 +252,7 @@ describe('SyncService', () => {
         expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 42)
     })
 
-    it('does not advance the round when any account fetch fails', async () => {
+    it('freezes the round when any account fetch fails', async () => {
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
 
@@ -260,8 +260,10 @@ describe('SyncService', () => {
             refresh: true,
             round: 42,
         })
-        // One account fails — its new state was not persisted, so the
-        // checkpoint must stay put and the next tick retries.
+        // One account fails — advancing on the others' success would let the
+        // checkpoint skip past the failed account's unfetched rounds, leaving
+        // it stale until its next on-chain activity. The failed pass is
+        // retried at backoff cadence instead (see failure-aware backoff).
         vi.mocked(fetchAndPersistAccount).mockImplementation(
             async (address: string) => {
                 if (address === 'ADDR2') {
@@ -277,7 +279,33 @@ describe('SyncService', () => {
 
         service.start()
 
-        // First tick: force-sync; second tick: shouldRefresh-gated sync.
+        // First tick: force-sync (partial failure backs the loop off to 6 s);
+        // second tick: shouldRefresh-gated sync.
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise(resolve => setTimeout(resolve, 6200))
+        vi.useFakeTimers()
+
+        service.stop()
+
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+        expect(mockSetLastRefreshedRound).not.toHaveBeenCalled()
+    }, 10_000)
+
+    it('does not advance the round when every account fetch fails', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: true,
+            round: 42,
+        })
+        vi.mocked(fetchAndPersistAccount).mockRejectedValue(
+            new Error('indexer down'),
+        )
+
+        service.start()
+
         vi.useRealTimers()
         await new Promise(resolve => setTimeout(resolve, 50))
         await new Promise(resolve => setTimeout(resolve, 3100))
@@ -285,7 +313,6 @@ describe('SyncService', () => {
 
         service.stop()
 
-        expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
         expect(mockSetLastRefreshedRound).not.toHaveBeenCalled()
     })
 
@@ -877,6 +904,51 @@ describe('SyncService', () => {
                 round: null,
             })
         }
+
+        it('backs off on a partial account failure so the frozen checkpoint does not storm', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            mockSendShouldRefreshRequest.mockResolvedValue({
+                refresh: true,
+                round: 42,
+            })
+            // One failing account freezes the checkpoint, so every tick would
+            // re-sync the whole network. Backing off bounds that retry.
+            vi.mocked(fetchAndPersistAccount).mockImplementation(
+                async (address: string) => {
+                    if (address === 'ADDR2') {
+                        throw new Error('indexer hiccup')
+                    }
+                    return {
+                        changed: false,
+                        holdingsChanged: false,
+                        observedRound: 42,
+                    }
+                },
+            )
+
+            service.start()
+            await flushMicrotasks() // tick 1: partial failure → back off to 6000
+            const callsAfterTick1 = vi.mocked(fetchAndPersistAccount).mock.calls
+                .length
+            expect(callsAfterTick1).toBeGreaterThan(0)
+
+            // At the base interval no new tick fires — the loop backed off.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(vi.mocked(fetchAndPersistAccount).mock.calls.length).toBe(
+                callsAfterTick1,
+            )
+
+            // At the doubled interval the retry fires.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(
+                vi.mocked(fetchAndPersistAccount).mock.calls.length,
+            ).toBeGreaterThan(callsAfterTick1)
+
+            service.stop()
+        })
 
         it('doubles the interval when a tick makes no successful progress even though syncAll does not throw', async () => {
             const { fetchAndPersistAccount } =
