@@ -258,10 +258,14 @@ export class SyncService {
                     round: result.round ?? null,
                 }
             }
-        } catch {
+        } catch (error) {
             if (neverSynced) {
                 return { networks: [activeNetwork], round: null }
             }
+            // Rethrow so the tick's catch engages backoff — swallowing here
+            // kept a persistently failing should-refresh retrying at the base
+            // 3 s interval forever.
+            throw error
         }
 
         return { networks: [], round: null }

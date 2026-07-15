@@ -943,6 +943,42 @@ describe('SyncService', () => {
             service.stop()
         })
 
+        it('backs off when shouldRefresh keeps failing after the first sync', async () => {
+            const { usePollingStore } =
+                await import('@perawallet/wallet-core-polling')
+            const originalGetState = usePollingStore.getState
+            usePollingStore.getState = (() => ({
+                lastRefreshedRound: { mainnet: 42, testnet: null },
+                setLastRefreshedRound: mockSetLastRefreshedRound,
+            })) as typeof usePollingStore.getState
+
+            mockSendShouldRefreshRequest.mockRejectedValue(
+                new Error('HTTP 500 Internal Server Error'),
+            )
+
+            service.start()
+            await flushMicrotasks() // tick 1: initial force-sync, no shouldRefresh
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks() // tick 2: shouldRefresh fails → back off
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+
+            // Without backoff the next attempt would fire at +3000 already.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+
+            // The doubled interval elapses → next attempt fires.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(2)
+
+            service.stop()
+            usePollingStore.getState = originalGetState
+            mockSendShouldRefreshRequest.mockReset()
+        })
+
         it('resets to the base interval after a successful tick following a backoff', async () => {
             const { fetchAndPersistAccount } =
                 await import('@perawallet/wallet-core-accounts')
