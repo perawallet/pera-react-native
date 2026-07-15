@@ -45,26 +45,18 @@ describe('PasskeyAutofillService', () => {
     beforeEach(() => setPlatform('ios'))
     afterEach(() => vi.clearAllMocks())
 
-    describe('hex normalization', () => {
-        it('strips a 0x/0X prefix and trims whitespace before handing the key to native', async () => {
+    describe('key material handling', () => {
+        it('hands the master key to native as raw bytes, unchanged', async () => {
             const native = makeNative()
             const service = new PasskeyAutofillService(native)
+            const secret = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
 
-            await service.setMasterKey('  0xABCDEF  ')
+            await service.setMasterKey(secret)
 
-            expect(native.setMasterKey).toHaveBeenCalledWith('ABCDEF')
+            expect(native.setMasterKey).toHaveBeenCalledWith(secret)
         })
 
-        it('passes an un-prefixed hex string through unchanged', async () => {
-            const native = makeNative()
-            const service = new PasskeyAutofillService(native)
-
-            await service.setMasterKey('deadbeef')
-
-            expect(native.setMasterKey).toHaveBeenCalledWith('deadbeef')
-        })
-
-        it('normalizes the derived main key the same way', async () => {
+        it('normalizes the derived main key hex', async () => {
             const setDerivedMainKey = vi.fn().mockResolvedValue(undefined)
             const service = new PasskeyAutofillService(
                 makeNative({ setDerivedMainKey }),
