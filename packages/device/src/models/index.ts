@@ -38,6 +38,9 @@ export interface DeviceResponse {
 export type DeviceState = BaseStoreState & {
     pushToken: Nullable<string>
     deviceIDs: Map<Network, Nullable<string>>
+    /** Networks whose last registration attempt failed and awaits a retry. */
+    pendingRegistrationNetworks: Network[]
     setPushToken: (token: Nullable<string>) => void
     setDeviceID: (network: Network, id: Nullable<string>) => void
+    setRegistrationPending: (network: Network, isPending: boolean) => void
 }
