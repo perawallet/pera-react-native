@@ -211,7 +211,12 @@ export const PWBottomSheet = ({
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
             enablePanDownToClose={enablePanDownToClose}
-            enableContentPanningGesture={enableContentPanningGesture}
+            // Content panning only serves pan-down-to-close (snap points are
+            // never draggable here); on non-closable sheets it just competes
+            // with taps on Android and can swallow them (PERA-4437).
+            enableContentPanningGesture={
+                enableContentPanningGesture ?? enablePanDownToClose
+            }
             enableOverDrag={false}
         >
             <NotifierWrapper
