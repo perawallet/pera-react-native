@@ -53,8 +53,13 @@ import {
     type RemoteConfigKey,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
+import { withTimeout } from '@perawallet/wallet-core-shared'
 
 const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
+
+// FCM/APNs registration is a known indefinite-hang surface offline. Bound the
+// token fetch so cold-start degrades to a no-token result instead of stalling.
+const FCM_TOKEN_FETCH_TIMEOUT_MS = 5000
 
 export const androidForegroundNotification = (
     channelId: string,
@@ -184,8 +189,18 @@ export class RNFirebaseService
     }
 
     async initializeNotifications(): Promise<PushNotificationInitResult> {
-        // Allow user to opt into notifications
-        const settings = await notifee.requestPermission()
+        // Allow user to opt into notifications. A rejection here (native
+        // permission surface failing offline) degrades to "not authorized"
+        // rather than rejecting the whole cold-start bootstrap.
+        let settings: Awaited<ReturnType<typeof notifee.requestPermission>>
+        try {
+            settings = await notifee.requestPermission()
+        } catch {
+            return {
+                token: undefined,
+                unsubscribe: () => {},
+            }
+        }
 
         if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
             return {
@@ -204,13 +219,21 @@ export class RNFirebaseService
             })
         }
 
-        // FCM registration + token
+        // FCM registration + token. Time-boxed because getMessaging/getToken
+        // can hang indefinitely offline; a timeout rejection is swallowed here
+        // so `token` simply stays undefined.
         let token: string | undefined
         try {
-            this.messaging = await getMessaging()
-            token = await getToken(this.messaging)
+            token = await withTimeout(
+                (async () => {
+                    this.messaging = await getMessaging()
+                    return getToken(this.messaging)
+                })(),
+                FCM_TOKEN_FETCH_TIMEOUT_MS,
+                'FCM token fetch',
+            )
         } catch {
-            // noop
+            // noop — degrade to no token (offline or timed-out registration)
         }
 
         // Foreground message handler (show a local notification)
