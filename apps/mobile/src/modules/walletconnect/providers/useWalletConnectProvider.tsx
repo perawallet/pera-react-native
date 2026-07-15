@@ -15,6 +15,7 @@ import {
     getConnectionErrorClientId,
     useWalletConnect,
     useWalletConnectForegroundReconnect,
+    useWalletConnectNetworkReconnect,
     useWalletConnectSessionRequests,
     useWalletConnectStore,
     type WalletConnectSessionRequest,
@@ -32,6 +33,9 @@ export const useWalletConnectProvider = () => {
     // Without this, a backgrounded session silently drops outgoing signed
     // responses and incoming dApp requests until the app reconnects.
     useWalletConnectForegroundReconnect()
+    // And without this, a network drop-and-regain while the app stays
+    // foregrounded leaves session sockets dead until the next bg→fg trip.
+    useWalletConnectNetworkReconnect()
 
     const { sessionRequests, removeSessionRequest } =
         useWalletConnectSessionRequests()

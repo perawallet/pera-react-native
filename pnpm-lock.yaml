@@ -3553,6 +3553,9 @@ importers:
       '@perawallet/walletconnect':
         specifier: 1.0.0
         version: 1.0.0
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.2.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
