@@ -141,6 +141,41 @@ describe('useDeviceRegistration', () => {
         ])
     })
 
+    test('registers with an empty list when no accounts exist', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        renderHook(() => useDeviceRegistration([]))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledWith([])
+        })
+    })
+
+    test('swallows push-token cleanup failures on network switch', async () => {
+        mockClearDevicePushToken.mockRejectedValueOnce(new Error('boom'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender, result } = renderHook(() =>
+            useDeviceRegistration(['acct-1']),
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        rerender()
+
+        // Cleanup failure is logged, never re-thrown — registration on the
+        // new network still proceeds.
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(result.current).toBeUndefined()
+    })
+
     test('swallows registration failures (best-effort)', async () => {
         mockRegisterDevice.mockRejectedValueOnce(new Error('boom'))
 
