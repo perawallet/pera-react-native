@@ -28,7 +28,9 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
+import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
 import { PermissionItem } from '../PermissionItem'
 
 export type ConnectionViewHeaderProps = {
@@ -41,6 +43,14 @@ export const ConnectionViewHeader = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+
+    // Same registry lookup the signing views use (SourceMetadataView): the
+    // peer-asserted URL resolves to a Pera-curated verification tier so a
+    // spoofed name/icon at least can't claim the verified checkmark.
+    const { data: project } = useProjectByUrlQuery({
+        url: request.peerMeta.url,
+        isEnabled: !!request.peerMeta.url,
+    })
 
     const preferredIcon =
         request.peerMeta.icons?.find(
@@ -100,14 +110,22 @@ export const ConnectionViewHeader = ({
                 </PWView>
             )}
             <PWView style={styles.titleContainer}>
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('walletconnect.request.title', {
-                        name: request.peerMeta.name,
-                    })}
-                </PWText>
+                <PWView style={styles.nameRow}>
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
+                    >
+                        {t('walletconnect.request.title', {
+                            name: request.peerMeta.name,
+                        })}
+                    </PWText>
+                    {!!project?.verificationTier && (
+                        <ProjectVerificationIcon
+                            tier={project.verificationTier}
+                            size='sm'
+                        />
+                    )}
+                </PWView>
                 {!!request.peerMeta.url && (
                     <PWButton
                         variant='link'
