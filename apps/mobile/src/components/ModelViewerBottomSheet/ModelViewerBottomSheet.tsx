@@ -101,11 +101,14 @@ export const ModelViewerBottomSheet = ({
                         containerStyle={styles.webviewContainer}
                         scrollEnabled={false}
                         bounces={false}
-                        originWhitelist={['*']}
+                        // sanitizeModelUrl already hard-rejects non-https
+                        // model URLs and the viewer script is https, so the
+                        // bridge-less frame gets no http navigation or
+                        // mixed-content allowance either.
+                        originWhitelist={['https://*']}
                         javaScriptEnabled
                         allowsInlineMediaPlayback
                         androidLayerType='hardware'
-                        mixedContentMode='always'
                         onMessage={handleMessage}
                         testID='model-viewer-webview'
                     />

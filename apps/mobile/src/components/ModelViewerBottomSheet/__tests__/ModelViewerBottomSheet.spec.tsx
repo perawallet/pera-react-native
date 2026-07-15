@@ -15,10 +15,19 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { ModelViewerBottomSheet } from '../ModelViewerBottomSheet'
 
+let lastWebViewProps: Record<string, unknown> | undefined
+
 vi.mock('react-native-webview', () => ({
-    WebView: ({ testID }: { testID?: string; [key: string]: unknown }) => (
-        <div data-testid={testID}>WebView</div>
-    ),
+    WebView: ({
+        testID,
+        ...props
+    }: {
+        testID?: string
+        [key: string]: unknown
+    }) => {
+        lastWebViewProps = props
+        return <div data-testid={testID}>WebView</div>
+    },
 }))
 
 describe('ModelViewerBottomSheet', () => {
@@ -32,6 +41,19 @@ describe('ModelViewerBottomSheet', () => {
         )
 
         expect(screen.getByTestId('model-viewer-webview')).toBeTruthy()
+    })
+
+    it('restricts the webview to https origins with mixed content blocked', () => {
+        render(
+            <ModelViewerBottomSheet
+                isVisible
+                onClose={vi.fn()}
+                modelUrl='https://example.com/model.glb'
+            />,
+        )
+
+        expect(lastWebViewProps?.originWhitelist).toEqual(['https://*'])
+        expect(lastWebViewProps?.mixedContentMode).toBeUndefined()
     })
 
     it('calls onClose when the close button is pressed', () => {
