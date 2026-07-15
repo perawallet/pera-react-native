@@ -11,19 +11,24 @@
  */
 
 import { type Query } from '@tanstack/react-query'
+import type { Network } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'asa-inbox'
 
 export const getArc59SendSummaryQueryKey = (
     receiverAddress: string,
     assetId: string,
-) => [MODULE_PREFIX, 'arc59-send-summary', { receiverAddress, assetId }]
-
-export const getArc59AssetRequestsQueryKey = (address: string) => [
+    network: Network,
+) => [
     MODULE_PREFIX,
-    'arc59-asset-requests',
-    { address },
+    'arc59-send-summary',
+    { receiverAddress, assetId, network },
 ]
+
+export const getArc59AssetRequestsQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'arc59-asset-requests', { address, network }]
 
 export const invalidateAllPredicate = (query: Query) =>
     query.queryKey.at(0) === MODULE_PREFIX

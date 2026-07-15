@@ -19,6 +19,11 @@ import { fetchOnChainAccountInformation } from './endpoints'
 import { mapOnChainAccountInformation } from './mappers'
 import { getOnChainAccountInformationQueryKey } from './querykeys'
 
+// Short freshness window instead of refetch-on-every-mount: send-flow
+// navigation remounts consumers several times back-to-back, and each remount
+// was a guaranteed algod hit.
+const ON_CHAIN_ACCOUNT_INFO_STALE_TIME_MS = 15_000
+
 export const useOnChainAccountInformationQuery = (address: string) => {
     const { network } = useNetwork()
     const algokit = useAlgorandClient()
@@ -28,7 +33,6 @@ export const useOnChainAccountInformationQuery = (address: string) => {
         queryFn: () => fetchOnChainAccountInformation(algokit, address),
         select: mapOnChainAccountInformation,
         enabled: !!address,
-        staleTime: 0,
-        refetchOnMount: 'always',
+        staleTime: ON_CHAIN_ACCOUNT_INFO_STALE_TIME_MS,
     })
 }

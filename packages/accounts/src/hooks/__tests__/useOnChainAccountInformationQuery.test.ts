@@ -104,6 +104,25 @@ describe('useOnChainAccountInformationQuery', () => {
         expect(result.current.data?.assets).toEqual([])
     })
 
+    test('serves the fresh cache on remount instead of refetching', async () => {
+        mockFetchOnChainAccountInformation.mockResolvedValue(mockResponse)
+
+        const first = renderHook(
+            () => useOnChainAccountInformationQuery(mockAddress),
+            { wrapper },
+        )
+        await waitFor(() => expect(first.result.current.isSuccess).toBe(true))
+        first.unmount()
+
+        const second = renderHook(
+            () => useOnChainAccountInformationQuery(mockAddress),
+            { wrapper },
+        )
+        await waitFor(() => expect(second.result.current.isSuccess).toBe(true))
+
+        expect(mockFetchOnChainAccountInformation).toHaveBeenCalledTimes(1)
+    })
+
     test('is disabled when address is empty', () => {
         const { result } = renderHook(
             () => useOnChainAccountInformationQuery(''),

@@ -319,6 +319,7 @@ const mainnetAlgodClient = ky.create({
         ],
     },
     prefix: config.mainnetAlgodUrl,
+    retry: peraRetryConfig,
 })
 const testnetAlgodClient = ky.create({
     hooks: {
@@ -335,6 +336,7 @@ const testnetAlgodClient = ky.create({
         ],
     },
     prefix: config.testnetAlgodUrl,
+    retry: peraRetryConfig,
 })
 
 const mainnetIndexerClient = ky.create({
@@ -355,6 +357,7 @@ const mainnetIndexerClient = ky.create({
         ],
     },
     prefix: config.mainnetIndexerUrl,
+    retry: peraRetryConfig,
 })
 const testnetIndexerClient = ky.create({
     hooks: {
@@ -374,6 +377,7 @@ const testnetIndexerClient = ky.create({
         ],
     },
     prefix: config.testnetIndexerUrl,
+    retry: peraRetryConfig,
 })
 
 clients.set(Networks.mainnet, {
@@ -391,6 +395,9 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
     const applyHeaders = (instance: KyInstance): KyInstance =>
         instance.extend({
             hooks: {
+                // ky merges extend hooks by concatenation onto the base
+                // client's, which already ends with logRequest — re-listing
+                // it here would log every request twice.
                 beforeRequest: [
                     setStandardHeaders,
                     ({ request }) => {
@@ -398,7 +405,6 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
                             request.headers.set(k, v)
                         })
                     },
-                    logRequest,
                 ],
                 // afterResponse intentionally empty: see comment on standardHooks.
                 afterResponse: [],

@@ -12,6 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAlgorandClient } from './useAlgorandClient'
+import { useNetwork } from './useNetwork'
 import { getSuggestedParametersQueryKey } from './querykeys'
 
 // Suggested params carry a validity window, so a cached copy is only
@@ -21,9 +22,10 @@ const SUGGESTED_PARAMS_STALE_TIME_MS = 10_000
 
 export const useSuggestedParametersQuery = () => {
     const algokit = useAlgorandClient()
+    const { network } = useNetwork()
 
     return useQuery({
-        queryKey: getSuggestedParametersQueryKey(),
+        queryKey: getSuggestedParametersQueryKey(network),
         queryFn: async () => await algokit.getSuggestedParams(),
         staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
         // Run the fetch even while offline so consumers get a fast typed

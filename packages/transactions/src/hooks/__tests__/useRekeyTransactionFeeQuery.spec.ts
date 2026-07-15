@@ -33,6 +33,7 @@ const mockAlgokit = {
 const mockUseNetwork = vi.fn(() => ({ network: 'mainnet' }))
 const mockUseAllAccounts = vi.fn()
 const mockUseMinimumFeeConfig = vi.fn()
+const mockUseSuggestedParametersQuery = vi.fn()
 const mockResolveMinFeeForSender = vi.fn()
 
 // Full replacement (not importActual): the real barrels pull in
@@ -46,6 +47,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => mockAlgokit,
     useNetwork: () => mockUseNetwork(),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
+    useSuggestedParametersQuery: () => mockUseSuggestedParametersQuery(),
     microAlgosToAlgos: (microAlgos: bigint) =>
         new Decimal(microAlgos.toString()).dividedBy(1_000_000),
 }))
@@ -98,6 +100,10 @@ beforeEach(() => {
     vi.clearAllMocks()
     mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
+    mockUseSuggestedParametersQuery.mockReturnValue({
+        data: { minFee: 1000n },
+        isPending: false,
+    })
     mockUseMinimumFeeConfig.mockReturnValue({
         minTxnFee: 1000n,
         pqMultiplier: 3n,
@@ -129,6 +135,62 @@ describe('useRekeyTransactionFeeQuery', () => {
                 receiver: 'SRC',
                 rekeyTo: 'TGT',
             }),
+        )
+    })
+
+    it('reuses the shared suggested-params query instead of fetching its own', async () => {
+        mockPayment.mockResolvedValueOnce({ fee: 2000n })
+        const { wrapper } = buildWrapper()
+
+        const { result } = renderHook(
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(mockGetSuggestedParams).not.toHaveBeenCalled()
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            expect.objectContaining({ suggestedMinFee: 1000n }),
+        )
+    })
+
+    it('stays pending until the shared suggested-params query resolves', async () => {
+        mockUseSuggestedParametersQuery.mockReturnValue({
+            data: undefined,
+            isPending: true,
+        })
+        const { wrapper } = buildWrapper()
+
+        const { result } = renderHook(
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            { wrapper },
+        )
+
+        expect(result.current.isPending).toBe(true)
+        expect(mockPayment).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the config min fee when the shared params query errors', async () => {
+        // Offline / algod down: the shared query rejects fast (networkMode
+        // 'always'). The fee query must still settle — a permanently pending
+        // fee leaves the confirm CTA disabled with no error and no retry.
+        mockUseSuggestedParametersQuery.mockReturnValue({
+            data: undefined,
+            isPending: false,
+            isError: true,
+        })
+        mockPayment.mockResolvedValueOnce({ fee: 2000n })
+        const { wrapper } = buildWrapper()
+
+        const { result } = renderHook(
+            () => useRekeyTransactionFeeQuery('SRC', 'TGT'),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.feeAlgos?.toString()).toBe('0.002')
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
+            expect.objectContaining({ suggestedMinFee: 1000n }),
         )
     })
 

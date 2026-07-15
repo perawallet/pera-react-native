@@ -12,36 +12,20 @@
 
 import { describe, test, expect } from 'vitest'
 import {
-    getAccountInformationQueryKey,
     getSuggestedParametersQueryKey,
     getTransactionDetailQueryKey,
 } from '../querykeys'
 
 describe('querykeys', () => {
-    describe('getAccountInformationQueryKey', () => {
-        test('includes the address in the key', () => {
-            const key = getAccountInformationQueryKey('ADDR123')
+    describe('getSuggestedParametersQueryKey', () => {
+        test('includes the network in the key', () => {
+            const key = getSuggestedParametersQueryKey('mainnet')
 
             expect(key).toEqual([
                 'blockchain',
-                'account-information',
-                { address: 'ADDR123' },
+                'suggested-parameters',
+                { network: 'mainnet' },
             ])
-        })
-
-        test('produces different keys for different addresses', () => {
-            const key1 = getAccountInformationQueryKey('ADDR1')
-            const key2 = getAccountInformationQueryKey('ADDR2')
-
-            expect(key1).not.toEqual(key2)
-        })
-    })
-
-    describe('getSuggestedParametersQueryKey', () => {
-        test('returns a stable key', () => {
-            const key = getSuggestedParametersQueryKey()
-
-            expect(key).toEqual(['blockchain', 'suggested-parameters'])
         })
     })
 

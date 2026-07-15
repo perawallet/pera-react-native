@@ -22,7 +22,7 @@ export const useArc59AssetRequestsQuery = (
     const { network } = useNetwork()
 
     return useQuery({
-        queryKey: getArc59AssetRequestsQueryKey(address ?? ''),
+        queryKey: getArc59AssetRequestsQueryKey(address ?? '', network),
         queryFn: () => fetchArc59AssetRequests(network, address!),
         enabled: !!address,
     })
