@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -23,11 +23,10 @@ import {
 import { CopyableText } from '@components/CopyableText'
 import { AssetNameBadge } from '@modules/assets/components'
 import { useLanguage } from '@hooks/useLanguage'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useAssetClaimDetailScreen } from './useAssetClaimDetailScreen'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
@@ -103,17 +102,14 @@ export const AssetClaimDetailScreen = () => {
                         request.asset.peraMetadata?.verificationTier
                     }
                 />
-                <CurrencyDisplay
+                <AssetAmount
                     variant='h2'
                     value={amount}
-                    currency={request.asset?.unitName ?? ''}
-                    precision={request.asset?.decimals}
-                    minPrecision={DEFAULT_PRECISION}
+                    asset={request.asset}
                 />
-                <PreferredCurrencyDisplay
+                <PreferredAmount
                     sourceAmount={amount}
                     sourceAssetId={request.asset?.assetId}
-                    precision={DEFAULT_PRECISION}
                     showSymbol
                     style={styles.usdText}
                     usdPrice={request.usdValue ?? undefined}
@@ -172,14 +168,12 @@ export const AssetClaimDetailScreen = () => {
                             address={senderItem.sender.address}
                             showCopy={false}
                         />
-                        <CurrencyDisplay
+                        <AssetAmount
                             value={baseUnitsToDisplayUnits(
                                 senderItem.amount,
                                 request.asset.decimals,
                             )}
-                            currency={request.asset?.unitName ?? ''}
-                            precision={request.asset?.decimals}
-                            minPrecision={DEFAULT_PRECISION}
+                            asset={request.asset}
                             prefix={'+'}
                             style={styles.senderAmountText}
                         />

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,6 +14,7 @@ import { useRef, useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import { config } from '@perawallet/wallet-core-config'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/useToast'
 import { Pressable } from 'react-native'
@@ -32,7 +33,12 @@ const Version = () => {
     const { getAppVersion, getAppBuild } = provider.deviceInfo
 
     const appVersion = useMemo(() => {
-        return getAppVersion()
+        // On CI tag builds, show the full release tag (e.g. v7.0.0-alpha.9) so QA
+        // sees the exact prerelease; stable tags carry no suffix and local/off-tag
+        // builds fall back to the native store version. Leading "v" stripped.
+        return config.releaseTag
+            ? config.releaseTag.replace(/^v/, '')
+            : getAppVersion()
     }, [getAppVersion])
 
     const appBuild = useMemo(() => {

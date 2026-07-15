@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -25,15 +25,19 @@ const initialState = {
     email: null,
     countryIso: null,
     verificationCode: null,
-    phoneVerificationCode: null,
     codeVerificationError: null,
     phoneCountryCode: null,
     phoneNumber: null,
     contactVerificationId: null,
     onboardingId: null,
     consentSetId: null,
-    // Defaults to opted-in, matching the address screen's pre-checked box.
-    allowMarketing: true,
+    // Consent opt-ins start as "never asked" — the user ticks them on the
+    // Set-Password screen (explicit opt-in, committed on success), and they're
+    // sent on the required email/verify call. A resumed session that skipped
+    // that screen sees null here and the address step re-collects them instead
+    // of recording a silent "denied".
+    allowMarketing: null,
+    allowSms: null,
     connectedFundingSourceAddress: null,
     selectedFundingType: null,
     cardId: null,
@@ -52,8 +56,6 @@ export const useCardStore: UseBoundStore<
             setEmail: email => set({ email }),
             setCountryIso: countryIso => set({ countryIso }),
             setVerificationCode: verificationCode => set({ verificationCode }),
-            setPhoneVerificationCode: phoneVerificationCode =>
-                set({ phoneVerificationCode }),
             setCodeVerificationError: target =>
                 set({ codeVerificationError: target }),
             setPhone: ({ phoneCountryCode, phoneNumber }) =>
@@ -62,6 +64,7 @@ export const useCardStore: UseBoundStore<
             setOnboardingId: id => set({ onboardingId: id }),
             setConsentSetId: id => set({ consentSetId: id }),
             setAllowMarketing: allowMarketing => set({ allowMarketing }),
+            setAllowSms: allowSms => set({ allowSms }),
             setConnectedFundingSourceAddress: address =>
                 set({ connectedFundingSourceAddress: address }),
             setSelectedFundingType: type => set({ selectedFundingType: type }),
@@ -81,7 +84,6 @@ export const useCardStore: UseBoundStore<
                     email: initialState.email,
                     countryIso: initialState.countryIso,
                     verificationCode: initialState.verificationCode,
-                    phoneVerificationCode: initialState.phoneVerificationCode,
                     codeVerificationError: initialState.codeVerificationError,
                     phoneCountryCode: initialState.phoneCountryCode,
                     phoneNumber: initialState.phoneNumber,
@@ -89,6 +91,7 @@ export const useCardStore: UseBoundStore<
                     onboardingId: initialState.onboardingId,
                     consentSetId: initialState.consentSetId,
                     allowMarketing: initialState.allowMarketing,
+                    allowSms: initialState.allowSms,
                     connectedFundingSourceAddress:
                         initialState.connectedFundingSourceAddress,
                     selectedFundingType: initialState.selectedFundingType,
@@ -98,19 +101,21 @@ export const useCardStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
-            // `verificationCode` and `phoneVerificationCode` are intentionally
-            // omitted — transient OTPs that should never be written to disk.
+            // `verificationCode` is intentionally omitted — a transient OTP
+            // that should never be written to disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
             // omitted: KYC PII must not sit in unencrypted MMKV. The trade-off
             // is that a mid-onboarding resume re-prompts for them.
+            // `allowMarketing`/`allowSms` are also omitted — they're captured
+            // afresh on the Set-Password screen each onboarding, so persisting
+            // them would only let a stale opted-in value survive an upgrade and
+            // silently pre-check the (explicit opt-in) consent boxes.
             partialize: state => ({
                 onboardingStep: state.onboardingStep,
                 countryIso: state.countryIso,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
                 consentSetId: state.consentSetId,
-                allowMarketing: state.allowMarketing,
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,
                 selectedFundingType: state.selectedFundingType,
@@ -119,27 +124,6 @@ export const useCardStore: UseBoundStore<
                 lastKnownPanLast4: state.lastKnownPanLast4,
                 transactionFilters: state.transactionFilters,
             }),
-            // v2: earlier builds persisted these KYC PII fields to unencrypted
-            // MMKV. `partialize` now excludes them, but that only governs future
-            // writes — strip any values already on disk so existing installs are
-            // cleaned on upgrade instead of carrying PII until the next write.
-            migrate: (persistedState: unknown) => {
-                if (
-                    persistedState == null ||
-                    typeof persistedState !== 'object'
-                ) {
-                    return persistedState
-                }
-                // Omit the PII keys by destructuring into a fresh object
-                // rather than mutating the input, keeping `migrate` pure.
-                const {
-                    email: _email,
-                    phoneCountryCode: _phoneCountryCode,
-                    phoneNumber: _phoneNumber,
-                    ...rest
-                } = persistedState as Record<string, unknown>
-                return rest
-            },
         },
     ),
 )

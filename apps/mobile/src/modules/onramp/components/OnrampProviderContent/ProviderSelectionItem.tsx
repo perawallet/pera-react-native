@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import { PWChip, PWRadioButton, PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     quoteDestinationAmount,
@@ -23,9 +23,6 @@ import {
     getOnrampTotalFee,
 } from '../onrampQuoteDisplay'
 import { useStyles } from './styles'
-
-// Display precision for the destination amount and fee.
-const AMOUNT_DECIMALS = 2
 
 export type ProviderSelectionItemProps = {
     label: string
@@ -76,19 +73,19 @@ export const ProviderSelectionItem = ({
                     ) : null}
                 </PWView>
                 <PWView style={styles.rightColumn}>
-                    <CurrencyDisplay
+                    <CurrencyAmount
                         currency={getOnrampDestinationCurrency(quote)}
                         value={quoteDestinationAmount(quote, sourceAmount)}
-                        precision={AMOUNT_DECIMALS}
+                        precision='compact'
                         showSymbol
                         alignRight
                         variant='body'
                         style={styles.amountText}
                     />
-                    <CurrencyDisplay
+                    <CurrencyAmount
                         currency={getOnrampFeeCurrency(quote)}
                         value={getOnrampTotalFee(quote)}
-                        precision={AMOUNT_DECIMALS}
+                        precision='compact'
                         showSymbol
                         alignRight
                         variant='caption'

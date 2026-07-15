@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,13 +11,12 @@
  */
 
 import {
-    isAlgoAsset,
     PeraAssetType,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
+import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetItemViewResult = {
     isCollectible: boolean
@@ -34,7 +33,7 @@ export const useAssetItemView = (
     asset: DisplayableAsset,
 ): UseAssetItemViewResult => {
     const meta = asset.peraMetadata
-    const isAlgo = isAlgoAsset(asset.assetId)
+    const isAlgo = isAlgoAssetId(asset.assetId)
     const isCollectible = meta?.type === PeraAssetType.collectible
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'

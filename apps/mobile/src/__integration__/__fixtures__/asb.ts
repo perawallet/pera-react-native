@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,7 +15,7 @@ import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { mnemonicToEntropy } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import { seedFromMnemonic } from 'algosdk'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { ALGO25_TEST_MNEMONIC, ALGO25_TEST_ADDRESS } from './onboarding'

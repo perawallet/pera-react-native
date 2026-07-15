@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,7 +17,6 @@ import {
     toDecimalUnits,
     isPureNft,
     isCollectible,
-    isAlgoAsset,
     formatCollectibleAmount,
     formatAssetAmount,
 } from '../utils'
@@ -348,21 +347,6 @@ describe('utils', () => {
                 unitName: 'ALGO',
             })
             expect(result).toBe('1.50 ALGO')
-        })
-    })
-
-    describe('isAlgoAsset', () => {
-        test('returns true for the ALGO string id', () => {
-            expect(isAlgoAsset('0')).toBe(true)
-        })
-
-        test('returns true for the ALGO numeric id', () => {
-            expect(isAlgoAsset(0)).toBe(true)
-        })
-
-        test('returns false for non-ALGO ids', () => {
-            expect(isAlgoAsset('31566704')).toBe(false)
-            expect(isAlgoAsset(31566704)).toBe(false)
         })
     })
 })

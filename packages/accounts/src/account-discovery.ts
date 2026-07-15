@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,7 +21,7 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
 import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { type Account } from '@algorandfoundation/algokit-utils/indexer-client'
+import type { indexerModels } from 'algosdk'
 import {
     AccountTypes,
     type HDWalletAccount,
@@ -278,18 +278,19 @@ export async function discoverAccounts({
 async function checkRekeyed(
     algorandClient: AlgorandClient,
     address: string,
-): Promise<Account[]> {
-    const accounts: Account[] = []
+): Promise<indexerModels.Account[]> {
+    const accounts: indexerModels.Account[] = []
     let next: string | undefined
     let pages = 0
 
     // Follow the indexer's pagination token so accounts beyond the first
     // page are not silently dropped.
     do {
-        const result = await algorandClient.client.indexer.searchForAccounts({
-            authAddr: address,
-            next,
-        })
+        let request = algorandClient.client.indexer
+            .searchAccounts()
+            .authAddr(address)
+        if (next) request = request.nextToken(next)
+        const result = await request.do()
         accounts.push(...result.accounts)
         next = result.nextToken
         pages += 1

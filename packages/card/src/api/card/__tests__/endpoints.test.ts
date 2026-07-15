@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -64,6 +64,27 @@ describe('card endpoints', () => {
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({ method: 'GET', path: '/v1/card/status' }),
         )
+    })
+
+    it('parses the real status payload without holderName/expiryDate', async () => {
+        // The live /v1/card/status omits holderName/expiryDate (and includes
+        // extra fields like isFreezable we don't model); it must still validate
+        // so the frozen state surfaces.
+        request.mockResolvedValue({
+            data: {
+                id: '9539550809881888677',
+                panLast4: '8533',
+                status: 'FROZEN',
+                type: 'VIRTUAL',
+                isFreezable: true,
+                orderedAt: '2026-06-23T09:39:30.771Z',
+            },
+        })
+
+        const card = await fetchCardStatus({ network: 'mainnet' })
+
+        expect(card?.status).toBe('FROZEN')
+        expect(card?.panLast4).toBe('8533')
     })
 
     it('returns null when no card exists (404)', async () => {

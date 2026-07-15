@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,6 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import {
+    ALGO_ASSET_NAME,
     DEFAULT_PRECISION,
     formatCurrency,
     type Nullable,
@@ -106,7 +107,7 @@ export const useAssetClaimDetailScreen =
                     ALGO_ASSET.decimals,
                 ),
                 ALGO_ASSET.decimals,
-                'ALGO',
+                ALGO_ASSET_NAME,
                 deviceInfo.getDeviceLocale(),
                 false,
                 false,

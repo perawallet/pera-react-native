@@ -1,0 +1,96 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { renderHook } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const mockPushWebView = vi.fn()
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-blockchain',
+    )
+    return {
+        ...actual,
+        useNetwork: () => ({
+            networkConfig: { explorerUrl: 'https://explorer.test' },
+        }),
+    }
+})
+
+vi.mock('@modules/webview/hooks', () => ({
+    useWebView: () => ({ pushWebView: mockPushWebView }),
+}))
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({
+        copyToClipboard: mockCopyToClipboard,
+        readText: vi.fn(),
+    }),
+}))
+
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { useTransactionHashRow } from '../useTransactionHashRow'
+
+const TX_HASH = 'H2KQF3YLVJZP4W6XNBTAM5RUE7DCGS2IK4LMOQ6PYAWBVXCZE3TR'
+
+describe('useTransactionHashRow', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('derives the display hash through the shared middle-truncation util', () => {
+        // The global unit setup mocks the util as identity; the exact "AB...YZ"
+        // output is covered by the integration test and the util's own suite.
+        const { result } = renderHook(() =>
+            useTransactionHashRow(TX_HASH, 'algorand'),
+        )
+
+        expect(truncateAlgorandAddress).toHaveBeenCalledWith(TX_HASH, 12)
+        expect(result.current.truncatedHash).toBe(
+            vi.mocked(truncateAlgorandAddress).mock.results[0].value,
+        )
+    })
+
+    it('opens the explorer transaction page in the in-app webview', () => {
+        const { result } = renderHook(() =>
+            useTransactionHashRow(TX_HASH, 'algorand'),
+        )
+
+        result.current.onOpenExplorer?.()
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: `https://explorer.test/tx/${TX_HASH}`,
+            }),
+        )
+    })
+
+    it('offers no explorer action for a non-Algorand funding leg', () => {
+        const { result } = renderHook(() =>
+            useTransactionHashRow('0xb92de09d893e', 'linea'),
+        )
+
+        expect(result.current.onOpenExplorer).toBeUndefined()
+    })
+
+    it('copies the full (untruncated) hash', () => {
+        const { result } = renderHook(() =>
+            useTransactionHashRow(TX_HASH, 'algorand'),
+        )
+
+        result.current.onCopy()
+
+        expect(mockCopyToClipboard).toHaveBeenCalledWith(TX_HASH)
+    })
+})

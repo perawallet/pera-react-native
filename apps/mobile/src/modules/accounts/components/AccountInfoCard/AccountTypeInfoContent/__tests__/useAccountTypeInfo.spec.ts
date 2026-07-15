@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -206,6 +206,17 @@ describe('useAccountTypeInfo', () => {
         )
 
         expect(result.current.title).toBe('account_type_info.no_auth_title')
+    })
+
+    it('resolves quantum account type', () => {
+        const { result } = renderHook(() =>
+            useAccountTypeInfo({ account: accountOfType('quantum') }),
+        )
+
+        expect(result.current.title).toBe('account_type_info.quantum_title')
+        expect(result.current.description).toBe(
+            'account_type_info.quantum_description',
+        )
     })
 
     it('resolves watch account type', () => {

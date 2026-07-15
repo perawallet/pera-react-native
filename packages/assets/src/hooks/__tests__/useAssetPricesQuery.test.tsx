@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,12 +11,12 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useAssetPricesQuery } from '../useAssetPricesQuery'
 import { Decimal } from 'decimal.js'
 import { createWrapper } from './test-utils'
-import { QueryClient } from '@tanstack/react-query'
-import { ALGO_ASSET_ID } from '../../models'
+import { QueryClient, onlineManager } from '@tanstack/react-query'
 
 const mocks = vi.hoisted(() => ({
     getAssetPricesByIds: vi.fn(),
@@ -44,6 +44,34 @@ describe('useAssetPricesQuery', () => {
                     retry: false,
                 },
             },
+        })
+    })
+
+    afterEach(() => {
+        // Restore the global onlineManager singleton so offline state set by a
+        // test can't leak into subsequent tests.
+        onlineManager.setOnline(true)
+    })
+
+    it('serves prices from SQLite while offline', async () => {
+        onlineManager.setOnline(false)
+
+        mocks.getAssetPricesByIds.mockReturnValue([
+            { assetId: '123', usdPrice: new Decimal('2.0') },
+        ])
+
+        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
+            wrapper: createWrapper(queryClient),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.data.get('123')?.usdPrice).toEqual(
+            new Decimal(2.0),
+        )
+        expect(mocks.getAssetPricesByIds).toHaveBeenCalledWith({
+            assetIds: ['123'],
+            network: 'mainnet',
         })
     })
 

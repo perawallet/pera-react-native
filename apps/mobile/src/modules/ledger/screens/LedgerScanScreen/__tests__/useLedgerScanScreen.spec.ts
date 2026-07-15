@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,16 +19,20 @@ const {
     mockStopScan,
     mockRequestPermissions,
     mockOpenSettings,
+    mockOpenLocationSettings,
     mockErrorToast,
     mockRequestEnable,
     blePermissionsState,
     bluetoothState,
+    connectionState,
+    platformState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockStartScan: vi.fn(),
     mockStopScan: vi.fn(),
     mockRequestPermissions: vi.fn(),
     mockOpenSettings: vi.fn(),
+    mockOpenLocationSettings: vi.fn(),
     mockErrorToast: vi.fn(),
     mockRequestEnable: vi.fn(),
     blePermissionsState: {
@@ -44,6 +48,16 @@ const {
             | 'unsupported'
             | 'resetting'
             | 'unknown',
+    },
+    connectionState: { error: null as Error | null },
+    platformState: { os: 'android' as 'android' | 'ios' },
+}))
+
+vi.mock('react-native', () => ({
+    Platform: {
+        get OS() {
+            return platformState.os
+        },
     },
 }))
 
@@ -65,7 +79,7 @@ vi.mock('../../../hooks', () => ({
         isScanning: true,
         startScan: mockStartScan,
         stopScan: mockStopScan,
-        error: null,
+        error: connectionState.error,
     }),
     useBlePermissions: () => ({
         hasPermissions: blePermissionsState.hasPermissions,
@@ -73,6 +87,7 @@ vi.mock('../../../hooks', () => ({
         isBlocked: blePermissionsState.isBlocked,
         requestPermissions: mockRequestPermissions,
         openSettings: mockOpenSettings,
+        openLocationSettings: mockOpenLocationSettings,
     }),
     useBluetoothState: () => ({
         adapterState: bluetoothState.adapterState,
@@ -87,6 +102,10 @@ vi.mock('../../../hooks', () => ({
 }))
 
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    LedgerConnectionError,
+    LedgerLocationServicesDisabledError,
+} from '@perawallet/wallet-core-ledger'
 
 import { useLedgerScanScreen } from '../useLedgerScanScreen'
 
@@ -106,7 +125,11 @@ describe('useLedgerScanScreen', () => {
         blePermissionsState.isChecking = false
         blePermissionsState.isBlocked = false
         bluetoothState.adapterState = 'poweredOn'
+        connectionState.error = null
+        platformState.os = 'android'
         mockRequestPermissions.mockResolvedValue(true)
+        mockOpenSettings.mockResolvedValue(undefined)
+        mockOpenLocationSettings.mockResolvedValue(undefined)
     })
 
     it('starts scanning on mount and stops on unmount when permissions are granted', () => {
@@ -306,5 +329,40 @@ describe('useLedgerScanScreen', () => {
         // (timed-out) scan, then start fresh.
         expect(mockStopScan).toHaveBeenCalled()
         expect(mockStartScan).toHaveBeenCalled()
+    })
+
+    it('flags isLocationServicesDisabled for a location-services scan error', () => {
+        connectionState.error = new LedgerLocationServicesDisabledError()
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isLocationServicesDisabled).toBe(true)
+    })
+
+    it('does not flag isLocationServicesDisabled for other scan errors', () => {
+        connectionState.error = new LedgerConnectionError('generic ble failure')
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isLocationServicesDisabled).toBe(false)
+    })
+
+    it('never flags isLocationServicesDisabled on iOS (Android-only copy)', () => {
+        platformState.os = 'ios'
+        connectionState.error = new LedgerLocationServicesDisabledError()
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isLocationServicesDisabled).toBe(false)
+    })
+
+    it('delegates handleOpenLocationSettings to the permissions hook', () => {
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        act(() => {
+            result.current.handleOpenLocationSettings()
+        })
+
+        expect(mockOpenLocationSettings).toHaveBeenCalledTimes(1)
     })
 })

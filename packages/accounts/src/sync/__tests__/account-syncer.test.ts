@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,10 +12,53 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
+import {
+    fetchAndPersistAccount,
+    ensureAccountFetched,
+    HOLDINGS_PAGE_LIMIT,
+} from '../account-syncer'
 
-const mockAccountInformation = vi.fn()
-const mockLookupAccountAssets = vi.fn()
+// algosdk v9 exposes fluent builders: `algod.accountInformation(addr).do()`
+// and `indexer.lookupAccountAssets(addr).limit(n).nextToken(t).do()`. These
+// data mocks back the builders' `.do()` so the existing
+// `mockResolvedValue`/`mockRejectedValue` setups (and call-count assertions on
+// `.do()`) keep working unchanged.
+const mockAccountInformationDo = vi.fn()
+const mockLookupAccountAssetsDo = vi.fn()
+
+// Factory spies record the builder-chain args (address, exclude, limit,
+// nextToken) so the call-arg assertions can inspect what the source requested.
+const mockAccountInformation = vi.fn((_address: string) => {
+    const builder = {
+        exclude: vi.fn((value: string) => {
+            mockAccountInformation.lastExclude = value
+            return builder
+        }),
+        do: () => mockAccountInformationDo(),
+    }
+    return builder
+}) as ReturnType<typeof vi.fn> & { lastExclude?: string }
+
+const mockLookupAccountAssets = vi.fn((_address: string) => {
+    const builder = {
+        limit: vi.fn((value: number) => {
+            mockLookupAccountAssets.lastLimits.push(value)
+            return builder
+        }),
+        nextToken: vi.fn((token: string) => {
+            mockLookupAccountAssets.lastNextTokens.push(token)
+            return builder
+        }),
+        do: () => mockLookupAccountAssetsDo(),
+    }
+    return builder
+}) as ReturnType<typeof vi.fn> & {
+    lastNextTokens: string[]
+    lastLimits: number[]
+}
+mockLookupAccountAssets.lastNextTokens = []
+mockLookupAccountAssets.lastLimits = []
+
 const mockGetAlgorandClient = vi.fn(() => ({
     client: {
         algod: { accountInformation: mockAccountInformation },
@@ -28,7 +71,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))
@@ -49,14 +91,17 @@ vi.mock('../../db', () => ({
 describe('fetchAndPersistAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockAccountInformation.lastExclude = undefined
+        mockLookupAccountAssets.lastNextTokens = []
+        mockLookupAccountAssets.lastLimits = []
         mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockGetAccountBalance.mockResolvedValue(undefined)
-        mockLookupAccountAssets.mockResolvedValue({ assets: [] })
+        mockLookupAccountAssetsDo.mockResolvedValue({ assets: [] })
     })
 
     it('persists balance and holdings from a single full algod read', async () => {
-        mockAccountInformation.mockResolvedValue({
+        mockAccountInformationDo.mockResolvedValue({
             amount: 1_500_000n,
             minBalance: 100_000n,
             totalAssetsOptedIn: 2,
@@ -110,7 +155,7 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it('reports the algod round the inline read observed', async () => {
-        mockAccountInformation.mockResolvedValue({
+        mockAccountInformationDo.mockResolvedValue({
             amount: 0n,
             minBalance: 0n,
             round: 1234n,
@@ -122,7 +167,7 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it('defaults missing optional fields', async () => {
-        mockAccountInformation.mockResolvedValue({
+        mockAccountInformationDo.mockResolvedValue({
             amount: 0n,
             minBalance: 0n,
             // no totals, no status, no authAddr
@@ -149,7 +194,7 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it('treats a missing asset amount as zero', async () => {
-        mockAccountInformation.mockResolvedValue({
+        mockAccountInformationDo.mockResolvedValue({
             amount: 0n,
             minBalance: 0n,
             assets: [{ assetId: 42n }],
@@ -177,8 +222,11 @@ describe('fetchAndPersistAccount', () => {
             status: 'Offline',
             authAddress: null,
         })
-        mockAccountInformation.mockResolvedValue({ amount: 0n, minBalance: 0n })
-        mockLookupAccountAssets
+        mockAccountInformationDo.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+        })
+        mockLookupAccountAssetsDo
             .mockResolvedValueOnce({
                 assets: [{ assetId: 1n, amount: 1n }],
                 nextToken: 'page2',
@@ -191,17 +239,19 @@ describe('fetchAndPersistAccount', () => {
 
         // Goes straight to the asset-less info read — no doomed full read.
         expect(mockAccountInformation).toHaveBeenCalledTimes(1)
-        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1', {
-            exclude: 'all',
-        })
-        expect(mockLookupAccountAssets).toHaveBeenNthCalledWith(1, 'ADDR1', {
-            limit: 1000,
-            next: undefined,
-        })
-        expect(mockLookupAccountAssets).toHaveBeenNthCalledWith(2, 'ADDR1', {
-            limit: 1000,
-            next: 'page2',
-        })
+        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
+        expect(mockAccountInformation.lastExclude).toBe('all')
+        expect(mockLookupAccountAssets).toHaveBeenNthCalledWith(1, 'ADDR1')
+        expect(mockLookupAccountAssets).toHaveBeenNthCalledWith(2, 'ADDR1')
+        // Every page (initial + paginated follow-up) must request
+        // HOLDINGS_PAGE_LIMIT — dropping `.limit()` silently falls back to the
+        // indexer default of 100, ~10x-ing request counts for large accounts.
+        expect(mockLookupAccountAssets.lastLimits).toEqual([
+            HOLDINGS_PAGE_LIMIT,
+            HOLDINGS_PAGE_LIMIT,
+        ])
+        // First page sends no token; the second follows the page-1 token.
+        expect(mockLookupAccountAssets.lastNextTokens).toEqual(['page2'])
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
             expect.objectContaining({
                 holdings: [
@@ -223,14 +273,14 @@ describe('fetchAndPersistAccount', () => {
             status: 'Offline',
             authAddress: null,
         })
-        mockAccountInformation.mockResolvedValue({
+        mockAccountInformationDo.mockResolvedValue({
             amount: 0n,
             minBalance: 0n,
             round: 1200n,
         })
         // The indexer trails algod — the lower round must win so the
         // checkpoint can't run ahead of what was actually read.
-        mockLookupAccountAssets.mockResolvedValue({
+        mockLookupAccountAssetsDo.mockResolvedValue({
             assets: [],
             currentRound: 1188n,
         })
@@ -245,19 +295,18 @@ describe('fetchAndPersistAccount', () => {
         const capError = Object.assign(new Error('Result limit exceeded'), {
             status: 400,
         })
-        mockAccountInformation
+        mockAccountInformationDo
             .mockRejectedValueOnce(capError)
             .mockResolvedValueOnce({ amount: 0n, minBalance: 0n })
-        mockLookupAccountAssets.mockResolvedValue({
+        mockLookupAccountAssetsDo.mockResolvedValue({
             assets: [{ assetId: 7n, amount: 3n }],
         })
 
         await fetchAndPersistAccount('ADDR1', 'mainnet')
 
         expect(mockAccountInformation).toHaveBeenNthCalledWith(1, 'ADDR1')
-        expect(mockAccountInformation).toHaveBeenNthCalledWith(2, 'ADDR1', {
-            exclude: 'all',
-        })
+        expect(mockAccountInformation).toHaveBeenNthCalledWith(2, 'ADDR1')
+        expect(mockAccountInformation.lastExclude).toBe('all')
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
             expect.objectContaining({
                 holdings: [
@@ -269,7 +318,7 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it('propagates non-resource-cap errors from the full read without falling back', async () => {
-        mockAccountInformation.mockRejectedValue(
+        mockAccountInformationDo.mockRejectedValue(
             Object.assign(new Error('Too Many Requests: 429'), {
                 status: 429,
             }),
@@ -284,7 +333,7 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it('reports no change when balance and holdings are unchanged', async () => {
-        mockAccountInformation.mockResolvedValue({
+        mockAccountInformationDo.mockResolvedValue({
             amount: 1_000_000n,
             minBalance: 100_000n,
             totalAssetsOptedIn: 0,
@@ -313,7 +362,10 @@ describe('fetchAndPersistAccount', () => {
     })
 
     it('coalesces concurrent fetches for the same account', async () => {
-        mockAccountInformation.mockResolvedValue({ amount: 0n, minBalance: 0n })
+        mockAccountInformationDo.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+        })
 
         const [a, b] = await Promise.all([
             fetchAndPersistAccount('ADDR1', 'mainnet'),
@@ -328,10 +380,16 @@ describe('fetchAndPersistAccount', () => {
 describe('ensureAccountFetched', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockAccountInformation.lastExclude = undefined
+        mockLookupAccountAssets.lastNextTokens = []
+        mockLookupAccountAssets.lastLimits = []
         mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
-        mockLookupAccountAssets.mockResolvedValue({ assets: [] })
-        mockAccountInformation.mockResolvedValue({ amount: 0n, minBalance: 0n })
+        mockLookupAccountAssetsDo.mockResolvedValue({ assets: [] })
+        mockAccountInformationDo.mockResolvedValue({
+            amount: 0n,
+            minBalance: 0n,
+        })
     })
 
     it('skips the fetch when a balance row already exists', async () => {
@@ -352,7 +410,7 @@ describe('ensureAccountFetched', () => {
 
     it('swallows fetch errors (never throws to the caller)', async () => {
         mockGetAccountBalance.mockResolvedValue(undefined)
-        mockAccountInformation.mockRejectedValue(new Error('algod down'))
+        mockAccountInformationDo.mockRejectedValue(new Error('algod down'))
 
         await expect(
             ensureAccountFetched('ADDR1', 'mainnet'),

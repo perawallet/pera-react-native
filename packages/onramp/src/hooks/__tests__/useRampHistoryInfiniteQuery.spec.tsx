@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,6 +14,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { setupServer } from 'msw/node'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
 import { mockRampHistory } from '../../test-handlers'
@@ -21,7 +22,10 @@ import type {
     RampHistoryItemApiResponse,
     RampHistoryPageApiResponse,
 } from '../../api/history/schema'
-import { useRampHistoryInfiniteQuery } from '../useRampHistoryInfiniteQuery'
+import {
+    useRampHistoryInfiniteQuery,
+    getRampHistoryRefetchIntervalMs,
+} from '../useRampHistoryInfiniteQuery'
 
 const server = setupServer()
 
@@ -145,5 +149,26 @@ describe('onramp/useRampHistoryInfiniteQuery', () => {
 
         expect(result.current.items).toEqual([])
         expect(result.current.isLoading).toBe(false)
+    })
+})
+
+describe('getRampHistoryRefetchIntervalMs', () => {
+    test('backs off to 60s on a 404 PeraNetworkError (post-migration shape)', () => {
+        const notFound = new PeraNetworkError('client', { status: 404 })
+        expect(getRampHistoryRefetchIntervalMs(notFound, true)).toBe(60_000)
+    })
+
+    test('polls at 10s for a non-404 error while active', () => {
+        const serverError = new PeraNetworkError('server', { status: 500 })
+        expect(getRampHistoryRefetchIntervalMs(serverError, true)).toBe(10_000)
+    })
+
+    test('polls at 10s when there is no error', () => {
+        expect(getRampHistoryRefetchIntervalMs(null, true)).toBe(10_000)
+    })
+
+    test('stops polling when inactive regardless of error', () => {
+        const notFound = new PeraNetworkError('client', { status: 404 })
+        expect(getRampHistoryRefetchIntervalMs(notFound, false)).toBe(false)
     })
 })

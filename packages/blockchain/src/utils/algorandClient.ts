@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,35 +10,20 @@
  limitations under the License
  */
 
-import {
-    config,
-    getNetworkConfig,
-    type Network,
-} from '@perawallet/wallet-core-config'
-import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '../store'
-import { toAlgodError } from '../errors'
+import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 
 /**
  * Returns an instance of AlgorandClient for a specific network.
  * If no network is provided, defaults to the current active network from the store.
+ *
+ * The algod and indexer clients are built on {@link createTimeoutBoundedAlgorandClient},
+ * so every request is bounded by a per-method AbortSignal timeout (read ceiling for
+ * GET/DELETE, submit ceiling for POST) and no call site can hang indefinitely.
  * @returns {AlgorandClient}
  */
 export const getAlgorandClient = (networkOverride?: Network) => {
     const network = networkOverride ?? useNetworkStore.getState().network
-    const networkConfig = getNetworkConfig(network)
-
-    const algodConfig = {
-        server: networkConfig.algodUrl,
-        token: config.algodApiKey,
-    }
-
-    const indexerConfig = {
-        server: networkConfig.indexerUrl,
-        token: config.indexerApiKey,
-    }
-
-    const client = AlgorandClient.fromConfig({ algodConfig, indexerConfig })
-    client.registerErrorTransformer(async error => toAlgodError(error))
-    return client
+    return createTimeoutBoundedAlgorandClient(getNetworkConfig(network))
 }

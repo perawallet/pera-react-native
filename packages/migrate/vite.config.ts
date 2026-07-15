@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -52,7 +52,7 @@ export default defineConfig({
                 '@algorandfoundation/react-native-keystore',
                 '@scure/bip39',
                 '@scure/bip39/wordlists/english.js',
-                '@algorandfoundation/algokit-utils/algo25',
+                'algosdk',
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-assets',
                 '@perawallet/wallet-core-blockchain',

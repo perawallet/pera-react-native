@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -53,15 +53,11 @@ export const useOnrampStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             // Only the destination sticks across sessions; the source is
             // session-only so it's unset on every fresh entry.
             partialize: state => ({
                 selectedDestinationTokenId: state.selectedDestinationTokenId,
             }),
-            // Any older persisted shape (v1 used pair ids) is dropped; keep only
-            // a null destination so the seed effect picks the default.
-            migrate: () => ({ selectedDestinationTokenId: null }),
         },
     ),
 )

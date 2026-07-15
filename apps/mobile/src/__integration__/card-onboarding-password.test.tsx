@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,10 +29,9 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPasswordScreen } from '@modules/card/screens/CardOnboardingPasswordScreen'
 import { CardOnboardingEmailScreen } from '@modules/card/screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
-import { CardOnboardingPhoneVerifyScreen } from '@modules/card/screens/CardOnboardingPhoneVerifyScreen'
-import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
+import { CardOnboardingPhoneScreen } from '@modules/card/screens/CardOnboardingPhoneScreen'
 
-const VALID_PASSWORD = 'Passw0rd!'
+const VALID_PASSWORD = 'Passw0rd!Longer1'
 
 // GET /v1/auth/settings — consumed by the email screen the missing-data guard
 // restarts at, to load the country list.
@@ -51,9 +50,8 @@ const SETTINGS_RESPONSE = {
 
 // The screen reads the flow's data from the store (no nav params), so seed it.
 // Email is registered so the "missing email-step data" guard can restart there,
-// EmailVerify so the "missing code" guard can route back to it, PhoneVerify for
-// the deferred phone/verify failure path, and Verification so a successful
-// submit can advance to the KYC entry.
+// EmailVerify so the "missing code"/rejected-code paths can route back to it,
+// and Phone so a successful submit can advance to the phone steps.
 const renderPassword = () =>
     renderWithNavigation(
         CardOnboardingPasswordScreen,
@@ -69,12 +67,8 @@ const renderPassword = () =>
                     component: CardOnboardingEmailVerifyScreen,
                 },
                 {
-                    name: 'CardOnboardingPhoneVerify',
-                    component: CardOnboardingPhoneVerifyScreen,
-                },
-                {
-                    name: 'CardOnboardingVerification',
-                    component: CardOnboardingVerificationScreen,
+                    name: 'CardOnboardingPhone',
+                    component: CardOnboardingPhoneScreen,
                 },
             ],
         },
@@ -88,23 +82,27 @@ describe('card onboarding — password', () => {
         store.setEmail('john@example.com')
         store.setCountryIso('GB')
         store.setVerificationCode('123456')
-        store.setPhone({ phoneCountryCode: '44', phoneNumber: '7400846282' })
-        store.setPhoneVerificationCode('123456')
         store.setContactVerificationId('mock-contact-id')
     })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('submits email/verify then the deferred phone/verify, and advances to the KYC entry', async () => {
-        const verifySpy = vi.fn(() =>
-            HttpResponse.json({ onboardingId: 'mock' }, { status: 200 }),
-        )
+    it('submits email/verify and advances to the phone step', async () => {
+        let verifyBody: Record<string, unknown> | undefined
+        const verifySpy = vi.fn(async ({ request }) => {
+            verifyBody = (await request.json()) as Record<string, unknown>
+            return HttpResponse.json({ onboardingId: 'mock' }, { status: 200 })
+        })
         const phoneVerifySpy = vi.fn(() =>
             HttpResponse.json({}, { status: 200 }),
         )
         server.use(
             http.post('*/v1/auth/register/email/verify', verifySpy),
             http.post('*/v1/auth/register/phone/verify', phoneVerifySpy),
+            // The phone screen the flow advances to loads the country list.
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
         )
 
         renderPassword()
@@ -125,32 +123,41 @@ describe('card onboarding — password', () => {
         expect(verifySpy).not.toHaveBeenCalled()
 
         // Once the confirmation matches, the form validates (error clears, the
-        // button enables) and submission fires the (mocked) email/verify call.
+        // button enables). Tick both consent opt-ins so email/verify carries them.
         fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
         await waitFor(() =>
             expect(confirm.getAttribute('errormessage')).toBeFalsy(),
         )
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-password-marketing-checkbox'),
+        )
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-password-sms-checkbox'),
+        )
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
         await waitFor(() => expect(verifySpy).toHaveBeenCalled())
-        await waitFor(() => expect(phoneVerifySpy).toHaveBeenCalled())
 
-        // Both verifications done: the flow advances to the KYC entry screen.
+        // The required consent flags are sent with the real user choices.
+        expect(verifyBody).toMatchObject({
+            allowMarketing: true,
+            allowSms: true,
+        })
+
+        // Email verified + password set: the flow advances to the phone step,
+        // and phone/verify is NOT fired here (it runs on the phone screens now).
         await waitFor(() =>
             expect(
-                screen.getByTestId('card-onboarding-verification'),
+                screen.getByTestId('card-onboarding-phone-input'),
             ).toBeTruthy(),
         )
+        expect(phoneVerifySpy).not.toHaveBeenCalled()
     })
 
-    it('routes back to the phone code screen when the deferred phone/verify fails', async () => {
-        server.use(
-            http.post('*/v1/auth/register/email/verify', () =>
-                HttpResponse.json({ onboardingId: 'mock' }, { status: 200 }),
-            ),
-            http.post('*/v1/auth/register/phone/verify', () =>
-                HttpResponse.json({ message: 'wrong code' }, { status: 400 }),
-            ),
+    it('keeps Continue disabled (and never calls email/verify) until SMS consent is ticked', async () => {
+        const verifySpy = vi.fn(() =>
+            HttpResponse.json({ onboardingId: 'mock' }, { status: 200 }),
         )
+        server.use(http.post('*/v1/auth/register/email/verify', verifySpy))
 
         renderPassword()
         const password = screen.getByTestId('card-onboarding-password-input')
@@ -162,21 +169,18 @@ describe('card onboarding — password', () => {
         await waitFor(() =>
             expect(confirm.getAttribute('errormessage')).toBeFalsy(),
         )
-        fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
 
-        // The password is set, but the stashed phone code was rejected — the
-        // user fixes it on the phone code screen (which then verifies directly),
-        // where the rejection is surfaced inline on the code input.
-        await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-phone-verify-input'),
-            ).toBeTruthy(),
+        // A valid password alone does NOT enable Continue — SMS is required.
+        const submit = screen.getByTestId('card-onboarding-password-confirm')
+        expect(submit.getAttribute('disabled')).not.toBeNull()
+        fireEvent.click(submit)
+        expect(verifySpy).not.toHaveBeenCalled()
+
+        // Ticking the SMS consent enables it.
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-password-sms-checkbox'),
         )
-        await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-phone-verify-input-error'),
-            ).toBeTruthy(),
-        )
+        await waitFor(() => expect(submit.getAttribute('disabled')).toBeNull())
     })
 
     it('routes back to the email code screen, with an inline error, when email/verify rejects the code', async () => {
@@ -194,6 +198,10 @@ describe('card onboarding — password', () => {
         fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
         await waitFor(() =>
             expect(confirm.getAttribute('errormessage')).toBeFalsy(),
+        )
+        // SMS consent is required, so tick it to enable Continue.
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-password-sms-checkbox'),
         )
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
 
@@ -223,20 +231,20 @@ describe('card onboarding — password', () => {
         ).toBeTruthy()
     })
 
-    it('skips email/verify and re-runs only phone/verify when an onboarding id already exists', async () => {
-        // The user returned here after the deferred phone/verify failed:
-        // email/verify already ran (the onboarding id + password are set), so it
-        // must not fire again with the now-spent email code.
+    it('skips email/verify and advances to the phone step when an onboarding id already exists', async () => {
+        // The user backed into this screen after already verifying: email/verify
+        // ran (the onboarding id + password are set), so it must not fire again
+        // with the now-spent email code.
         useCardStore.getState().setOnboardingId('existing-ob-id')
         const verifySpy = vi.fn(() =>
             HttpResponse.json({ onboardingId: 'mock' }, { status: 200 }),
         )
-        const phoneVerifySpy = vi.fn(() =>
-            HttpResponse.json({}, { status: 200 }),
-        )
         server.use(
             http.post('*/v1/auth/register/email/verify', verifySpy),
-            http.post('*/v1/auth/register/phone/verify', phoneVerifySpy),
+            // The phone screen the flow advances to loads the country list.
+            http.get('*/v1/auth/settings', () =>
+                HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
+            ),
         )
 
         renderPassword()
@@ -249,16 +257,19 @@ describe('card onboarding — password', () => {
         await waitFor(() =>
             expect(confirm.getAttribute('errormessage')).toBeFalsy(),
         )
+        // SMS consent is required, so tick it to enable Continue.
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-password-sms-checkbox'),
+        )
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
 
-        // Only phone/verify runs; the flow still advances to the KYC entry.
-        await waitFor(() => expect(phoneVerifySpy).toHaveBeenCalled())
-        expect(verifySpy).not.toHaveBeenCalled()
+        // No email/verify call; the flow still advances to the phone step.
         await waitFor(() =>
             expect(
-                screen.getByTestId('card-onboarding-verification'),
+                screen.getByTestId('card-onboarding-phone-input'),
             ).toBeTruthy(),
         )
+        expect(verifySpy).not.toHaveBeenCalled()
     })
 
     it('routes back to verify (without calling email/verify) when the code is missing', async () => {
@@ -280,6 +291,10 @@ describe('card onboarding — password', () => {
         fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
         await waitFor(() =>
             expect(confirm.getAttribute('errormessage')).toBeFalsy(),
+        )
+        // SMS consent is required, so tick it to enable Continue.
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-password-sms-checkbox'),
         )
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
 
@@ -318,6 +333,10 @@ describe('card onboarding — password', () => {
         fireEvent.change(confirm, { target: { value: VALID_PASSWORD } })
         await waitFor(() =>
             expect(confirm.getAttribute('errormessage')).toBeFalsy(),
+        )
+        // SMS consent is required, so tick it to enable Continue.
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-password-sms-checkbox'),
         )
         fireEvent.click(screen.getByTestId('card-onboarding-password-confirm'))
 

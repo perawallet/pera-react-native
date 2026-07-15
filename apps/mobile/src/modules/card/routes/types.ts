@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,4 +18,12 @@ export type PeraCardStackParamList = {
     CardSignIn: undefined
     CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
     PeraCardAccount: undefined
+    CardAddFunds: undefined
+    CardConfirmSwap: { sourceAssetId: string; amount: string }
+    CardWithdraw: undefined
+    CardTransactions: undefined
+    // The row's internal `id` (the list key) — NOT the model's external
+    // `transactionId` field. The full object can't be passed: it holds Decimal
+    // instances, which aren't serializable navigation state.
+    CardTransactionDetail: { id: string }
 }

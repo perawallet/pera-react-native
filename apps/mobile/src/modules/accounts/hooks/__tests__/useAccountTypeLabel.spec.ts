@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -89,6 +89,7 @@ describe('useAccountTypeLabel', () => {
         ['algo25', 'account_info.type_algo25'],
         ['hardware', 'account_info.type_ledger'],
         ['watch', 'account_info.type_watch'],
+        ['quantum', 'account_info.type_quantum'],
     ] as const)('maps non-rekeyed %s account to label %s', (type, expected) => {
         const { result } = renderHook(() =>
             useAccountTypeLabel(accountOfType(type)),

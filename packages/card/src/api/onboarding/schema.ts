@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -57,9 +57,12 @@ export const sendEmailVerificationResponseSchema = z.object({
 })
 
 // POST /v1/auth/register/email/verify — returns the onboarding id every later
-// registration step requires.
+// registration step requires. When the email already has an account Baanx
+// answers 200 with `hasAccount: true` and a null onboardingId instead, so both
+// are modelled as nullable/optional to tell those two success shapes apart.
 export const verifyEmailResponseSchema = z.object({
-    onboardingId: z.string(),
+    onboardingId: z.string().nullish(),
+    hasAccount: z.boolean().nullish(),
 })
 
 // POST /v1/auth/register/verification — pre-auth (client key only); returns the
@@ -75,7 +78,9 @@ export type RegisterVerificationApiResponse = z.infer<
 // state the verification screen polls plus the profile fields used to prefill
 // the personal-details form on resume; Zod strips the rest.
 export const onboardingDetailsResponseSchema = z.object({
-    verificationState: z.string(),
+    // Nullish so an absent/null state resolves to `null` via toEnumValueOrNull
+    // (same "unknown" bucket as an unmodelled string) instead of throwing.
+    verificationState: z.string().nullish(),
     firstName: z.string().optional().nullable(),
     lastName: z.string().optional().nullable(),
     /** ISO datetime, e.g. `1997-11-08T00:00:00.000Z`. */

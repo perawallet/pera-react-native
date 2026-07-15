@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -54,7 +54,7 @@ import {
     buildMixedAsbBackup,
     buildSingleAccountAsbBackup,
 } from './__fixtures__/asb'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import { seedFromMnemonic } from 'algosdk'
 
 // Backup decryption is synchronous but the screen yields to React after
 // setting `isProcessing` so the loading overlay can paint; together with

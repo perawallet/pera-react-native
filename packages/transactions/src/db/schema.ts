@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -30,6 +30,7 @@ export const TransactionsSchema = sqliteTable('transactions', {
     assetJson: text('asset_json'),
     swapGroupDetailJson: text('swap_group_detail_json'),
     interpretedMeaningJson: text('interpreted_meaning_json'),
+    balanceImpactsJson: text('balance_impacts_json'),
     updatedAt: integer('updated_at').notNull(),
 })
 

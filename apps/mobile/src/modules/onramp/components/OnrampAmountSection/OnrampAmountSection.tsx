@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,13 +14,9 @@ import { type Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText } from '@components/core'
 import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    DEFAULT_PRECISION,
-    ZERO_DECIMAL,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
 import { type RampToken } from '@perawallet/wallet-core-onramp'
 import { buildDisplayableAssetFromRampToken } from '../buildDisplayableAssetFromRampToken'
 import { useStyles } from './styles'
@@ -131,13 +127,11 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                 />
             }
             fiat={
-                <PreferredCurrencyDisplay
+                <PreferredAmount
                     sourceAmount={fiatBaseAmount}
                     sourceAssetId={token?.id ?? ''}
                     usdPrice={token?.priceInUsd ?? ZERO_DECIMAL}
                     forceFallback={shouldUseUsdFallback}
-                    precision={DEFAULT_PRECISION}
-                    minPrecision={DEFAULT_PRECISION}
                     variant='body'
                     style={styles.fiatValue}
                     testID={`onramp-${variant}-fiat-value`}

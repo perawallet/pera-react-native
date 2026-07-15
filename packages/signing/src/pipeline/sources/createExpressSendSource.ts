@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -42,7 +42,7 @@ export const createExpressSendSource = (
         | 'createAssetOptInTransaction'
         | 'encodeTransaction'
         | 'getAccountInfo'
-        | 'getSuggestedParams'
+        | 'resolveMinFeeForSender'
         | 'assetMbr'
     >,
 ): DataSource<ExpressSendSourceParams> => {
@@ -52,7 +52,7 @@ export const createExpressSendSource = (
         createAssetOptInTransaction,
         encodeTransaction,
         getAccountInfo,
-        getSuggestedParams,
+        resolveMinFeeForSender,
         assetMbr,
     } = deps
 
@@ -63,13 +63,14 @@ export const createExpressSendSource = (
         const { amount: currentBalance, minBalance: currentMbr } =
             await getAccountInfo(receiver)
 
-        // Get suggested params for fee calculation
-        const suggestedParams = await getSuggestedParams()
+        const senderFee = await resolveMinFeeForSender(sender)
+        const receiverFee = await resolveMinFeeForSender(receiver)
 
-        // After opt-in the receiver's MBR increases by ASSET_MBR
-        // The opt-in tx fee is also paid from the receiver's balance
+        // After opt-in the receiver's MBR increases by ASSET_MBR.
+        // The opt-in tx fee is paid from the receiver's balance at the
+        // receiver's own (PQ-aware) rate, so reserve exactly that.
         const mbrAfterOptIn = currentMbr + assetMbr
-        const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+        const balanceNeeded = mbrAfterOptIn + receiverFee
         const fundingNeeded =
             balanceNeeded > currentBalance ? balanceNeeded - currentBalance : 0n
 
@@ -84,6 +85,7 @@ export const createExpressSendSource = (
                 sender,
                 receiver,
                 amount: fundingNeeded,
+                fee: senderFee,
             })
             senderIndicesToSign.push(transactions.length)
             transactions.push(fundingTx)
@@ -93,6 +95,7 @@ export const createExpressSendSource = (
         const optInTx = await createAssetOptInTransaction({
             sender: receiver,
             assetId,
+            fee: receiverFee,
         })
         // Note: opt-in is NOT in senderIndicesToSign - it's signed by receiver
         transactions.push(optInTx)
@@ -103,6 +106,7 @@ export const createExpressSendSource = (
             receiver,
             amount,
             assetId,
+            fee: senderFee,
         })
         senderIndicesToSign.push(transactions.length)
         transactions.push(transferTx)

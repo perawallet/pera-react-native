@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -30,12 +30,14 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 const mockRemoveItem = vi.fn()
 const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
 const mockClearDatabase = vi.fn().mockResolvedValue(undefined)
+const mockResetLegacyData = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
     getProvider: () => ({
         keyValueStorage: { removeItem: mockRemoveItem },
         database: {},
+        migration: { resetLegacyData: mockResetLegacyData },
     }),
     clearKeystore: (...args: unknown[]) => mockClearKeystore(...args),
 }))
@@ -126,6 +128,7 @@ describe('useDeleteAllData', () => {
         // connection, which would free the native handle out from under any
         // in-flight statement and crash libexpo-sqlite.so [PERA crash fix].
         expect(mockClearDatabase).toHaveBeenCalledTimes(1)
+        expect(mockResetLegacyData).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 
@@ -268,6 +271,21 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockClearDatabase).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledWith()
+    })
+
+    it('should continue if legacy migration reset fails', async () => {
+        mockResetLegacyData.mockRejectedValueOnce(
+            new Error('legacy reset error'),
+        )
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockResetLegacyData).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
     })
 })

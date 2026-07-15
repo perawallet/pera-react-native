@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -22,7 +22,6 @@ let mockPhoneNumber: string | null = '7400846282'
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockContactVerificationId: string | null = 'mock-contact-id'
 let mockCodeVerificationError: 'email' | 'phone' | null = null
-const mockSetPhoneVerificationCode = vi.fn()
 const mockSetCodeVerificationError = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
@@ -58,7 +57,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 onboardingId: string | null
                 contactVerificationId: string | null
                 codeVerificationError: 'email' | 'phone' | null
-                setPhoneVerificationCode: (code: string | null) => void
                 setCodeVerificationError: (
                     target: 'email' | 'phone' | null,
                 ) => void
@@ -70,7 +68,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 onboardingId: mockOnboardingId,
                 contactVerificationId: mockContactVerificationId,
                 codeVerificationError: mockCodeVerificationError,
-                setPhoneVerificationCode: mockSetPhoneVerificationCode,
                 setCodeVerificationError: mockSetCodeVerificationError,
             }),
     }
@@ -182,6 +179,25 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
+    it("surfaces Baanx's own message when a non-code failure carries one", async () => {
+        mockVerifyMutateAsync.mockRejectedValue({
+            response: { status: 500 },
+            data: { message: 'Verification service unavailable' },
+        })
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode(VALID_CODE))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'peraCard.verify_phone.verify_error_title',
+            'Verification service unavailable',
+        )
+        expect(mockSetCodeVerificationError).not.toHaveBeenCalled()
+    })
+
     it('exposes the inline code error when a prior attempt was rejected', () => {
         mockCodeVerificationError = 'phone'
         const { result } = renderVerifyHook()
@@ -200,10 +216,10 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockSetCodeVerificationError).toHaveBeenCalledWith(null)
     })
 
-    it('stashes the code for the password step when there is no onboarding id yet', async () => {
-        // First pass: email/verify (which returns the onboardingId the real
-        // phone/verify needs) only fires at the password step, so the code is
-        // stashed and the flow continues there.
+    it('routes back to the password step (no verify) when there is no onboarding id', async () => {
+        // email/verify (which issues the onboardingId phone/verify needs) runs
+        // on the password step before this screen; without it the code can't be
+        // verified, so the user is routed back rather than POSTing blind.
         mockOnboardingId = null
         const { result } = renderVerifyHook()
 
@@ -213,7 +229,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         })
 
         expect(mockVerifyMutateAsync).not.toHaveBeenCalled()
-        expect(mockSetPhoneVerificationCode).toHaveBeenCalledWith(VALID_CODE)
+        expect(mockErrorToast).toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
     })
 

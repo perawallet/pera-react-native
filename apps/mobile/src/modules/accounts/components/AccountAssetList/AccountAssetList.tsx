@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,6 +11,7 @@
  */
 
 import { PWButton, PWText, PWView, type PWFlatListRef } from '@components/core'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
@@ -18,7 +19,6 @@ import {
     type WalletAccount,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
 import { SearchableList } from '@components/SearchableList'
@@ -94,7 +94,7 @@ export const AccountAssetList = ({
         ({ item }: { item: AccountHoldingsLiteRow }) => {
             const isSwipeable =
                 !renderItemProps.isReadOnly &&
-                item.assetId !== ALGO_ASSET_ID &&
+                !isAlgoAssetId(item.assetId) &&
                 item.amount.isZero()
 
             return (

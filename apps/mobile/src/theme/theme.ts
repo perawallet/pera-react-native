@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -160,6 +160,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             accountIconPinkBg: '#F5B2C6',
             accountIconPeachBg: palette.salmon[100],
             accountIconNeutralBg: palette.gray[100],
+            accountIconQuantumBg: palette.turquoise[300],
 
             // ASA Icons
             trustedIconBg: palette.turquoise[600],
@@ -367,6 +368,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             accountIconPinkBg: '#F5B2C6',
             accountIconPeachBg: palette.salmon[100],
             accountIconNeutralBg: palette.gray[100],
+            accountIconQuantumBg: palette.turquoise[300],
 
             // ASA Icons
             trustedIconBg: palette.turquoise[600],

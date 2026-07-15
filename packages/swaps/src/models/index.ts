@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,11 @@
 
 import { type Decimal } from 'decimal.js'
 
-import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    BaseStoreState,
+    Network,
+    Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 
 export type SwapsState = BaseStoreState & {
@@ -160,4 +164,61 @@ export interface SwapStatusUpdateResult {
     platform?: string
     countryCode?: string
     swapVersion?: SwapVersion
+}
+
+/**
+ * A single slot in a group's submission order, serialized for persistence.
+ * Mirrors the app-side `GroupSlot` but with the pre-signed transaction stored
+ * as base64 (no `Uint8Array`/`PeraSignedTransaction` in persisted state).
+ */
+export type SerializedGroupSlot =
+    | { kind: 'preSigned'; signedTxnBase64: string }
+    | { kind: 'toSign'; flatIndex: number }
+
+/** One atomic group's submission plan, serialized for persistence. */
+export interface SerializedGroupPlan {
+    slots: SerializedGroupSlot[]
+}
+
+/**
+ * A shared-account swap waiting on co-signer signatures. Persisted by the
+ * proposer's device so the swap can be completed in real time while the app
+ * is foregrounded, or rehydrated and finished on next launch if the co-signer
+ * signed while the app was closed. Holds only serializable data — the resolver
+ * reconstructs the algod client / encoders / API callbacks each session.
+ */
+export interface SwapHandoffRecord {
+    /** Canonical swap id (decimal string — backend ids exceed 2^53). */
+    swapIdStr: string
+    /** Backend multisig sign-request id this swap is waiting on. */
+    signRequestId: string
+    /** Network the sign request lives on. */
+    network: Network
+    /** The shared (multisig) account proposing the swap. */
+    multisigAddress: string
+    /** Persistent device id for the `with-signatures` + `mark-confirmed` calls. */
+    deviceId: string
+    /** Canonical multisig metadata for composite-signature assembly. */
+    msigMetadata: { version: number; threshold: number; addresses: string[] }
+    /**
+     * Per-group submission plan. Pre-signed slots carry their base64 signed
+     * bytes; to-sign slots index into the flat assembled-signature order the
+     * resolver produces from the backend's collected signatures.
+     */
+    plan: SerializedGroupPlan[]
+    /**
+     * Base64 raw (unsigned) transactions the proposer signed and sent to the
+     * backend — the trust anchor. The resolver refuses to submit if the poll's
+     * raw transactions differ from these (the proposer never reviewed them).
+     */
+    expectedRawTransactionsBase64: string[]
+    /** Epoch ms when registered; used for ordering / staleness only. */
+    registeredAt: number
+}
+
+export type SwapHandoffState = BaseStoreState & {
+    /** Pending shared-account swap handoffs, keyed by signRequestId. */
+    handoffs: Record<string, SwapHandoffRecord>
+    registerHandoff: (record: SwapHandoffRecord) => void
+    removeHandoff: (signRequestId: string) => void
 }

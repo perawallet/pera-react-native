@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,6 +14,7 @@ import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
+    isAlgoAssetId,
     logger,
     pow10,
     type Network,
@@ -25,7 +26,7 @@ import type {
     AssetWithAccountBalance,
     WalletAccount,
 } from '../models'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
 import {
@@ -97,6 +98,11 @@ export const useAccountBalancesQuery = (
                 queryKey: getAccountBalancesQueryKey(address, network, filters),
                 enabled: !!address && enabled,
                 staleTime: Infinity,
+                // SQLite is the source of truth; run the queryFn even while offline
+                // instead of pausing it (TanStack's default networkMode: 'online'),
+                // which would strand consumers in `pending`. Network segments are
+                // already caught in the syncer.
+                networkMode: 'always' as const,
                 queryFn: () => readAccountFromDb(address, network, filters),
             }
         })
@@ -130,6 +136,7 @@ export const useAccountBalancesQuery = (
         isFetched,
         isRefetching,
         isError,
+        isPaused,
     } = useMemo(() => {
         if (!hasAccounts) {
             return {
@@ -139,6 +146,7 @@ export const useAccountBalancesQuery = (
                 isFetched: false,
                 isRefetching: false,
                 isError: false,
+                isPaused: false,
             }
         }
 
@@ -147,13 +155,13 @@ export const useAccountBalancesQuery = (
             // ALGO is itself a holding row now; its joined price is the ALGO/USD
             // rate used to express every holding's value in ALGO terms.
             const usdAlgoPrice =
-                holdings.find(h => h.assetId === ALGO_ASSET_ID)?.usdPrice ??
+                holdings.find(h => isAlgoAssetId(h.assetId))?.usdPrice ??
                 new Decimal(0)
 
             let algoValue = new Decimal(0)
             const assetBalances: AssetWithAccountBalance[] = holdings.map(
                 holding => {
-                    const isAlgo = holding.assetId === ALGO_ASSET_ID
+                    const isAlgo = isAlgoAssetId(holding.assetId)
                     // ALGO metadata is seeded, but fall back defensively so the
                     // native balance always renders even mid-sync.
                     const asset = holding.asset ?? (isAlgo ? ALGO_ASSET : null)
@@ -214,6 +222,7 @@ export const useAccountBalancesQuery = (
         const isFetched = results.every(r => r.isFetched)
         const isRefetching = results.some(r => r.isRefetching)
         const isError = results.some(r => r.isError)
+        const isPaused = results.some(r => r.isPaused)
 
         return {
             accountBalances: isPending ? new Map() : accountBalances,
@@ -222,6 +231,7 @@ export const useAccountBalancesQuery = (
             isFetched,
             isRefetching,
             isError,
+            isPaused,
         }
     }, [results, accounts, hasAccounts])
 
@@ -232,6 +242,7 @@ export const useAccountBalancesQuery = (
         isFetched,
         isRefetching,
         isError,
+        isPaused,
     }
 }
 
@@ -239,11 +250,17 @@ export const useAccountAssetBalanceQuery = (
     account?: WalletAccount,
     assetId?: string,
 ) => {
-    const { accountBalances, isPending, isFetched, isRefetching, isError } =
-        useAccountBalancesQuery(
-            account ? [account] : [],
-            !!account && assetId !== null && assetId !== undefined,
-        )
+    const {
+        accountBalances,
+        isPending,
+        isFetched,
+        isRefetching,
+        isError,
+        isPaused,
+    } = useAccountBalancesQuery(
+        account ? [account] : [],
+        !!account && assetId !== null && assetId !== undefined,
+    )
 
     const assetBalance = useMemo<Nullable<AssetWithAccountBalance>>(() => {
         return (
@@ -261,5 +278,6 @@ export const useAccountAssetBalanceQuery = (
         isFetched,
         isRefetching,
         isError,
+        isPaused,
     }
 }

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,10 +16,12 @@ import {
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
-import { buildSeedMetadata } from '../utils'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { buildSeedMetadata, entropyChildMetadata } from '../utils'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
 import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
+import { commitSecret } from '../storage/secrets'
 import { zeroBytes } from '../crypto/secure-memory'
 import { SeedScheme } from '../constants'
 
@@ -49,13 +51,31 @@ export const useHDWallet = () => {
     }): Promise<HDWalletKeyResult> => {
         const { keyId, rootKey, entropy } = prepared
 
-        const metadata = buildSeedMetadata({
-            scheme: SeedScheme.Bip39,
-            entropy,
-        })
+        const metadata = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
 
         try {
             // The seed entry holds the 96-byte XHD root in `privateKey`.
+            //
+            // `extractable: true` is intentional and required: the root must
+            // stay re-exportable to reconstruct the BIP-39 mnemonic for
+            // non-custodial backup/recovery (executeWithMnemonic ->
+            // withExportedKey in useKMS/useKMSServices). Derived child keys
+            // are minted `extractable: false`.
+            //
+            // The flag is NOT the at-rest protection. Every keystore entry is
+            // persisted as AES-256-GCM ciphertext; the symmetric master key
+            // lives in the OS keystore (iOS Keychain / Android Keystore), and
+            // `keyStore.export` is an internal API gated by `checkAccess` --
+            // it is never reachable from dApp/WebView JS. Flipping this to
+            // `false` would only break mnemonic recovery, not harden storage.
+            //
+            // Known hardening gaps tracked as separate work, not regressions
+            // of the above: (1) on iOS the passkey-autofill bootstrap mirrors
+            // the master key into App-Group UserDefaults so the AutoFill
+            // extension can read it, which weakens the at-rest guarantee on
+            // that platform (Android wraps the mirrored copy with a hardware
+            // Keystore key; iOS stores it unwrapped); (2) `checkAccess` is
+            // fail-open for a seed carrying no ACL entries.
             const seed: Omit<Seed, 'id'> & { id: string } = {
                 id: keyId,
                 type: 'seed',
@@ -67,6 +87,26 @@ export const useHDWallet = () => {
             }
 
             await keyStore.import(seed, 'raw')
+
+            // Entropy lives in a separate `secret-key` child, not in the seed
+            // metadata, so it never leaks through the seed's reactive snapshot
+            // or `keyStore.export()`. The child is found later by its metadata
+            // (`entropyChildMetadata`), not a derived id. `commitSecret` copies
+            // the bytes; the originals are zeroed below.
+            //
+            // Transactional: a seed without its entropy child can't rebuild its
+            // mnemonic, so it's unrecoverable. If the commit fails, roll back
+            // the just-imported seed rather than persist that partial state.
+            try {
+                await commitSecret({
+                    id: generateOrderedUniqueId(),
+                    bytes: entropy,
+                    metadata: entropyChildMetadata(keyId),
+                })
+            } catch (error) {
+                await keyStore.remove(keyId).catch(() => {})
+                throw error
+            }
         } finally {
             zeroBytes(rootKey, entropy)
         }

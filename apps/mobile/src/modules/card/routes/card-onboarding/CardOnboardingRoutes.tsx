@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -52,6 +52,11 @@ export const CardOnboardingStackNavigator = () => {
                 options={{ title: 'peraCard.verify_email.navigation_title' }}
             />
             <Stack.Screen
+                name='CardOnboardingPassword'
+                component={CardOnboardingPasswordScreen}
+                options={{ title: 'peraCard.create_password.navigation_title' }}
+            />
+            <Stack.Screen
                 name='CardOnboardingPhone'
                 component={CardOnboardingPhoneScreen}
                 options={{
@@ -62,11 +67,6 @@ export const CardOnboardingStackNavigator = () => {
                 name='CardOnboardingPhoneVerify'
                 component={CardOnboardingPhoneVerifyScreen}
                 options={{ title: 'peraCard.verify_phone.navigation_title' }}
-            />
-            <Stack.Screen
-                name='CardOnboardingPassword'
-                component={CardOnboardingPasswordScreen}
-                options={{ title: 'peraCard.create_password.navigation_title' }}
             />
             <Stack.Screen
                 name='CardOnboardingVerification'

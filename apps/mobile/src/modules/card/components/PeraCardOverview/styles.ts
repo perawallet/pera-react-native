@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -36,18 +36,12 @@ export const useStyles = makeStyles(theme => ({
     balanceLabel: {
         color: theme.colors.textGray,
     },
-    // Compact funding row: hugs its content (icon + label + chevron) instead
+    // Compact spendable line: hugs its content (label + info icon) instead
     // of stretching edge-to-edge.
-    fundingRow: {
+    spendableRow: {
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
-        gap: theme.spacing.xs,
-    },
-    fundingTextGroup: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
     },
     fundingLabel: {
         color: theme.colors.textGray,
@@ -93,25 +87,5 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.xs,
-    },
-    txRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-    },
-    txTextBlock: {
-        flex: 1,
-        minWidth: 0,
-    },
-    txSubtitle: {
-        color: theme.colors.textGray,
-    },
-    txAmountDebit: {
-        color: theme.colors.negative,
-    },
-    txAmountCredit: {
-        color: theme.colors.positive,
     },
 }))

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -60,6 +60,18 @@ describe('parsePeraWebQrPayload', () => {
     it('rejects QR strings that are not JSON', () => {
         try {
             parsePeraWebQrPayload('not even json {')
+            throw new Error('expected throw')
+        } catch (e) {
+            expect(e).toBeInstanceOf(PeraWebImportError)
+            expect((e as PeraWebImportError).reason).toBe(
+                PeraWebImportErrorReason.MalformedQr,
+            )
+        }
+    })
+
+    it('rejects an oversized QR string before parsing (defence-in-depth)', () => {
+        try {
+            parsePeraWebQrPayload('A'.repeat(8 * 1024 + 1))
             throw new Error('expected throw')
         } catch (e) {
             expect(e).toBeInstanceOf(PeraWebImportError)

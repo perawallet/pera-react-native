@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -105,11 +105,10 @@ export const useCsvExportMutation = (
     const { network, onSuccess, onError } = params
 
     const mutation = useMutation({
-        // The global default mutation config sets throwOnError: true so that
-        // unhandled mutation errors surface to the nearest ErrorBoundary. This
-        // mutation has its own onError handler (toast surfacing), so we opt
-        // out — otherwise an API failure (e.g. 404 on empty history) would
-        // double-fire as both a toast and a critical ErrorBoundary trip.
+        // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
+        // throwOnError: false; this mirrors it locally. Surfacing is this
+        // mutation's own onError handler (toast). Kept explicit so the
+        // toast-only contract is obvious next to the mutationFn.
         throwOnError: false,
         mutationFn: async (exportParams: ExportMutationParams) => {
             return fetchTransactionsCsv({

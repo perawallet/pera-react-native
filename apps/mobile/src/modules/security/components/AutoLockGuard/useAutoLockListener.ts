@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -149,11 +149,12 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         }
     }, [checkPinEnabled, isInitialized, isMounted])
 
-    // Honour explicit lock requests (currently emitted by the shake-to-lock
-    // listener; see ShakeToLockHandler). The first observation seeds the ref
-    // so we don't lock on mount; subsequent changes flip isLocked to true,
-    // but only when a PIN is set — locking without a PIN to unlock with
-    // would strand the user.
+    // Honour explicit lock requests (emitted by the shake-to-lock listener and
+    // by the migration flow once it finishes writing the PIN; see
+    // ShakeToLockHandler and useMigrationSplashScreen). The first observation
+    // seeds the ref so we don't lock on mount; subsequent changes flip isLocked
+    // to true, but only when a PIN is set — locking without a PIN to unlock
+    // with would strand the user.
     useEffect(() => {
         if (seenLockRequestVersionRef.current === null) {
             seenLockRequestVersionRef.current = lockRequestVersion

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,7 +14,6 @@ import { type QueryClient } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
-    ALGO_ASSET_ID,
     fetchAndPersistAssets,
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
@@ -29,6 +28,7 @@ import {
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
 import { useAccountsStore } from '../store'
 import {
+    ALGO_ASSET_ID,
     logger,
     type Network,
     type Nullable,
@@ -36,7 +36,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 // Max holdings per indexer page, used by the large-account fallback path.
-const HOLDINGS_PAGE_LIMIT = 1000
+export const HOLDINGS_PAGE_LIMIT = 1000
 
 // algod rejects full account reads (exclude=none) with HTTP 400 once the
 // account's total resources (asset holdings + created assets + app local
@@ -200,7 +200,9 @@ async function fetchAccountSnapshot(
 ) {
     if (priorResourceCount < MAX_INLINE_RESOURCES) {
         try {
-            const info = await algokit.client.algod.accountInformation(address)
+            const info = await algokit.client.algod
+                .accountInformation(address)
+                .do()
             const holdings: HoldingInput[] = (info.assets ?? []).map(asset => ({
                 assetId: `${asset.assetId}`,
                 amount: new Decimal((asset.amount ?? 0n).toString()),
@@ -211,9 +213,10 @@ async function fetchAccountSnapshot(
         }
     }
 
-    const info = await algokit.client.algod.accountInformation(address, {
-        exclude: 'all',
-    })
+    const info = await algokit.client.algod
+        .accountInformation(address)
+        .exclude('all')
+        .do()
     const { holdings, currentRound } = await fetchAllHoldings(algokit, address)
     return {
         info,
@@ -231,10 +234,11 @@ async function fetchAllHoldings(
     let next: Optional<string>
 
     do {
-        const page = await algokit.client.indexer.lookupAccountAssets(address, {
-            limit: HOLDINGS_PAGE_LIMIT,
-            next,
-        })
+        let request = algokit.client.indexer
+            .lookupAccountAssets(address)
+            .limit(HOLDINGS_PAGE_LIMIT)
+        if (next) request = request.nextToken(next)
+        const page = await request.do()
         currentRound = minRound(currentRound, toRound(page.currentRound))
         for (const asset of page.assets ?? []) {
             holdings.push({

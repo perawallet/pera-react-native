@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,12 +11,15 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { Address } from '@algorandfoundation/algokit-utils/common'
 import {
+    Address,
     Transaction,
     TransactionType,
-    encodeTransaction,
-} from '@algorandfoundation/algokit-utils/transact'
+    encodeUnsignedTransaction,
+    msgpackRawDecodeAsMap,
+    msgpackRawEncode,
+} from 'algosdk'
+import { encodeTransaction } from '../../utils/transact'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { resolveArc0001SignTxnRequest } from '../resolve'
@@ -29,18 +32,19 @@ const addrC = new Address(new Uint8Array(32).fill(3))
 
 const baseParams = {
     fee: 1000n,
+    minFee: 1000n,
     firstValid: 1000n,
     lastValid: 2000n,
-    genesisId: 'mainnet-v1.0',
+    genesisID: 'mainnet-v1.0',
     genesisHash: new Uint8Array(32).fill(0xab),
 }
 
 const makePayment = (sender: Address, amount: bigint = 1n): Transaction =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender,
-        ...baseParams,
-        payment: { receiver: addrB, amount },
+        suggestedParams: baseParams,
+        paymentParams: { receiver: addrB, amount },
     })
 
 const wrap = (
@@ -50,6 +54,17 @@ const wrap = (
     txn: encodeToBase64(encodeTransaction(tx)),
     ...extras,
 })
+
+// algosdk v3 rejects a zero-address `rekeyTo` at construction, so `new
+// Transaction` can't build one. Reproduce the real dApp wire payload by
+// injecting a zero `rekey` field into a valid payment's msgpack.
+const zeroRekeyTxnBase64 = (): string => {
+    const map = msgpackRawDecodeAsMap(
+        encodeUnsignedTransaction(makePayment(addrA)),
+    ) as Map<string, unknown>
+    map.set('rekey', new Uint8Array(32))
+    return encodeToBase64(msgpackRawEncode(map))
+}
 
 describe('resolveArc0001SignTxnRequest', () => {
     describe('happy path — signers absent', () => {
@@ -345,6 +360,25 @@ describe('resolveArc0001SignTxnRequest', () => {
                 expect.objectContaining({
                     code: Arc0001ErrorCode.InvalidInput,
                     data: expect.objectContaining({ field: 'txn' }),
+                }),
+            )
+        })
+
+        // PERA-4503: algosdk v3 rejects a zero-address rekeyTo (algokit v10
+        // tolerated it). Strict rejection is intended — this asserts it stays
+        // a well-formed ARC-0001 InvalidInput carrying the decode reason (not
+        // an unhandled crash); transports log the relayed rejection.
+        it('rejects a zero-address rekeyTo with a 4300 carrying the reason', () => {
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    { transactions: [{ txn: zeroRekeyTxnBase64() }] },
+                    { signableAddresses: new Set([addrA.toString()]) },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.InvalidInput,
+                    message: expect.stringContaining('zero address'),
+                    data: expect.objectContaining({ index: 0, field: 'txn' }),
                 }),
             )
         })

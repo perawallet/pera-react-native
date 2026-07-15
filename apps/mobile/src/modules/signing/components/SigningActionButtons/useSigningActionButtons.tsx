@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -43,6 +43,7 @@ import {
 export type UseSigningActionButtonsResult = {
     handleSignAndSend: () => void
     handleReject: () => void
+    slideResetKey: number
     isLoading: boolean
     hasMultipleTransactions: boolean
     currentRequest: Optional<SignRequest>
@@ -66,6 +67,9 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         useNavigation<StackNavigationProp<SigningStackParamList>>()
     const { getPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
+
+    // Bumped to remount the slide-to-confirm slider so it resets as needed
+    const [slideResetKey, setSlideResetKey] = useState(0)
 
     const handleEvent = useCallback(
         (event: SigningPipelineEvent) => {
@@ -164,8 +168,13 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                         )
                     }
                     pipeline.next()
-                } else if (result === 'go-to-settings') {
-                    navigation.navigate('SecuritySettings')
+                } else {
+                    // Not proceeding to signing — reset the slider so it is
+                    // unslid when the user returns to the sign screen.
+                    setSlideResetKey(key => key + 1)
+                    if (result === 'go-to-settings') {
+                        navigation.navigate('SecuritySettings')
+                    }
                 }
             })()
             return
@@ -206,6 +215,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     return {
         handleSignAndSend,
         handleReject,
+        slideResetKey,
         isLoading,
         hasMultipleTransactions: allTransactions.length > 1,
         currentRequest,

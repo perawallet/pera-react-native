@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -114,14 +114,14 @@ describe('useCardOnboardingEmailVerifyScreen', () => {
         expect(result.current.isValid).toBe(true)
     })
 
-    it('stashes a full code and navigates to the phone screen', () => {
+    it('stashes a full code and navigates to the password screen', () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(VALID_CODE))
         act(() => result.current.handleConfirm())
 
         expect(mockSetVerificationCode).toHaveBeenCalledWith(VALID_CODE)
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPhone')
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingPassword')
     })
 
     it('does not navigate on an incomplete code', () => {

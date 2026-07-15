@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,13 +14,14 @@ import {
     useAccountBalancesQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { PWView, type PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
 import { AccountDisplay } from '../AccountDisplay'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { PreferredAmount } from '@components/PreferredAmount'
 
 export type AccountWithBalanceProps = {
     account: WalletAccount
@@ -46,23 +47,20 @@ export const AccountWithBalance = ({
                 showAccountType
             />
             <PWView style={styles.balanceContainer}>
-                <CurrencyDisplay
-                    currency='ALGO'
+                <AssetAmount
+                    asset={ALGO_ASSET}
                     value={accountBalances.get(account.address)?.algoValue}
-                    precision={ALGO_ASSET.decimals}
-                    maxPrecision={2}
-                    minPrecision={2}
+                    density='compact'
                     variant='bodyLarge'
                     weight={500}
                 />
 
-                <PreferredCurrencyDisplay
+                <PreferredAmount
                     sourceAssetId={ALGO_ASSET_ID}
                     sourceAmount={
                         accountBalances.get(account.address)?.algoValue
                     }
-                    precision={2}
-                    minPrecision={2}
+                    density='compact'
                     variant='footnoteMedium'
                     weight={400}
                     style={styles.fiatBalance}

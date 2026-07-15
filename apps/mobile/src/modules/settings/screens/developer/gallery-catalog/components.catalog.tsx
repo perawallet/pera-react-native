@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -879,6 +879,16 @@ registerPreview({
                             icon='accounts/glyph/ledger-account'
                             size='sm'
                             variant='accountPurple'
+                        />
+                    ),
+                },
+                {
+                    label: 'quantum glyph / md / accountQuantum',
+                    node: (
+                        <PWRoundIcon
+                            icon='accounts/glyph/quantum-account'
+                            size='md'
+                            variant='accountQuantum'
                         />
                     ),
                 },

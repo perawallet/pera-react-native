@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,17 +18,17 @@ import {
 } from '@react-native-firebase/crashlytics'
 import {
     fetchAndActivate,
-    type FirebaseRemoteConfigTypes,
     getRemoteConfig,
-    setConfigSettings,
-    setDefaults,
     getValue,
+    type RemoteConfig,
 } from '@react-native-firebase/remote-config'
 import {
     type FirebaseMessagingTypes,
+    getInitialNotification,
     getMessaging,
     getToken,
     onMessage,
+    onNotificationOpenedApp,
 } from '@react-native-firebase/messaging'
 import {
     type Analytics,
@@ -44,29 +44,99 @@ import notifee, {
 } from '@notifee/react-native'
 import {
     type CrashReportingService,
+    type NotificationOpenListener,
     type PushNotificationInitResult,
+    type PushNotificationService,
     type RemoteConfigService,
     type AnalyticsService,
     RemoteConfigDefaults,
     type RemoteConfigKey,
 } from '@perawallet/wallet-extension-platform'
-import { config } from '@perawallet/wallet-core-config'
+import { config, isDebug } from '@perawallet/wallet-core-config'
+import { withTimeout } from '@perawallet/wallet-core-shared'
+
+const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
+
+// FCM/APNs registration is a known indefinite-hang surface offline. Bound the
+// token fetch so cold-start degrades to a no-token result instead of stalling.
+const FCM_TOKEN_FETCH_TIMEOUT_MS = 5000
+
+export const androidForegroundNotification = (
+    channelId: string,
+): NotificationAndroid => ({
+    channelId,
+    smallIcon: NOTIFICATION_SMALL_ICON,
+})
+
+/**
+ * Pulls the deeplink URL out of a push payload. Both notifee and FCM expose
+ * the dApp-supplied custom fields under `data`; we mirror the in-app
+ * notification schema, which carries the deeplink in `url`.
+ */
+const extractDeeplinkUrl = (
+    data: Record<string, unknown> | undefined,
+): string | undefined => {
+    const url = data?.url
+    return typeof url === 'string' && url.length > 0 ? url : undefined
+}
 
 export class RNFirebaseService
-    implements CrashReportingService, RemoteConfigService, AnalyticsService
+    implements
+        CrashReportingService,
+        RemoteConfigService,
+        AnalyticsService,
+        PushNotificationService
 {
-    remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
+    remoteConfig: RemoteConfig | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: Analytics | null = null
     crashlytics: FirebaseCrashlyticsTypes.Module | null = null
 
-    async initializeRemoteConfig() {
-        this.remoteConfig = await getRemoteConfig()
-        await setConfigSettings(this.remoteConfig, {
-            minimumFetchIntervalMillis: config.remoteConfigRefreshTime,
-        })
+    // Single listener (the app registers one at the root). A cold-start tap
+    // resolves during init, before the app mounts its listener, so the URL is
+    // buffered and replayed on the first registration.
+    private notificationOpenListener: NotificationOpenListener | null = null
+    private pendingNotificationUrl: string | null = null
 
-        await setDefaults(this.remoteConfig, RemoteConfigDefaults)
+    private emitNotificationOpen(
+        data: Record<string, unknown> | undefined,
+    ): void {
+        const url = extractDeeplinkUrl(data)
+        if (!url) {
+            return
+        }
+        if (this.notificationOpenListener) {
+            this.notificationOpenListener(url)
+        } else {
+            this.pendingNotificationUrl = url
+        }
+    }
+
+    addNotificationOpenListener(
+        listener: NotificationOpenListener,
+    ): () => void {
+        this.notificationOpenListener = listener
+        if (this.pendingNotificationUrl) {
+            listener(this.pendingNotificationUrl)
+            this.pendingNotificationUrl = null
+        }
+        return () => {
+            if (this.notificationOpenListener === listener) {
+                this.notificationOpenListener = null
+            }
+        }
+    }
+
+    async initializeRemoteConfig() {
+        this.remoteConfig = getRemoteConfig()
+        // v25 removed the modular setConfigSettings/setDefaults functions;
+        // assign the Firebase-JS-v9 settings/defaultConfig properties instead
+        // (assignment eagerly seeds the in-memory value cache).
+        this.remoteConfig.settings = {
+            ...this.remoteConfig.settings,
+            minimumFetchIntervalMillis: config.remoteConfigRefreshTime,
+        }
+        this.remoteConfig.defaultConfig = RemoteConfigDefaults
 
         try {
             await fetchAndActivate(this.remoteConfig)
@@ -90,7 +160,19 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? false
             }
-            return getValue(this.remoteConfig, key).asBoolean()
+            const value = getValue(this.remoteConfig, key)
+            // `initializeRemoteConfig` seeds every boolean flag via
+            // `setDefaults`, so `getValue` resolves without throwing even when
+            // nothing has been fetched — it just returns the baked-in default
+            // (source 'default'), or 'static' when the key is unknown. Treating
+            // that as a real value would silently override the caller's
+            // fallback (e.g. hiding Pera Card in dev/staging, where the fallback
+            // is meant to enable it). Only trust a genuinely fetched value;
+            // otherwise honour the caller's fallback.
+            if (value.getSource() === 'remote') {
+                return value.asBoolean()
+            }
+            return fallback ?? false
         } catch {
             return fallback ?? false
         }
@@ -107,8 +189,18 @@ export class RNFirebaseService
     }
 
     async initializeNotifications(): Promise<PushNotificationInitResult> {
-        // Allow user to opt into notifications
-        const settings = await notifee.requestPermission()
+        // Allow user to opt into notifications. A rejection here (native
+        // permission surface failing offline) degrades to "not authorized"
+        // rather than rejecting the whole cold-start bootstrap.
+        let settings: Awaited<ReturnType<typeof notifee.requestPermission>>
+        try {
+            settings = await notifee.requestPermission()
+        } catch {
+            return {
+                token: undefined,
+                unsubscribe: () => {},
+            }
+        }
 
         if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
             return {
@@ -127,13 +219,21 @@ export class RNFirebaseService
             })
         }
 
-        // FCM registration + token
+        // FCM registration + token. Time-boxed because getMessaging/getToken
+        // can hang indefinitely offline; a timeout rejection is swallowed here
+        // so `token` simply stays undefined.
         let token: string | undefined
         try {
-            this.messaging = await getMessaging()
-            token = await getToken(this.messaging)
+            token = await withTimeout(
+                (async () => {
+                    this.messaging = await getMessaging()
+                    return getToken(this.messaging)
+                })(),
+                FCM_TOKEN_FETCH_TIMEOUT_MS,
+                'FCM token fetch',
+            )
         } catch {
-            // noop
+            // noop — degrade to no token (offline or timed-out registration)
         }
 
         // Foreground message handler (show a local notification)
@@ -148,20 +248,21 @@ export class RNFirebaseService
                       body,
                       data: remoteMessage.data,
                       android: Platform.select({
-                          android: { channelId: 'default' },
+                          android: androidForegroundNotification('default'),
                           ios: undefined,
                       }) as NotificationAndroid,
                   })
               })
             : () => {}
 
-        // Foreground notification events
+        // Foreground notification events — a tap on a notifee-displayed
+        // notification routes its deeplink to the registered listener.
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(
-            async ({ type }) => {
+            async ({ type, detail }) => {
                 switch (type) {
                     case EventType.ACTION_PRESS:
                     case EventType.PRESS: {
-                        // TODO: Handle taps or actions using deeplink parser when we have it
+                        this.emitNotificationOpen(detail.notification?.data)
                         break
                     }
                     default: {
@@ -171,18 +272,43 @@ export class RNFirebaseService
             },
         )
 
+        // Tap that resumed the app from the background (FCM notification
+        // message handled natively while backgrounded).
+        const unsubscribeOnOpened = this.messaging
+            ? onNotificationOpenedApp(this.messaging, remoteMessage => {
+                  this.emitNotificationOpen(remoteMessage?.data)
+              })
+            : () => {}
+
+        // Tap that cold-started the app. Buffered until the app registers its
+        // listener (see addNotificationOpenListener).
+        if (this.messaging) {
+            void getInitialNotification(this.messaging).then(remoteMessage => {
+                if (remoteMessage) {
+                    this.emitNotificationOpen(remoteMessage.data)
+                }
+            })
+        }
+
         return {
             token,
             unsubscribe: () => {
                 unsubscribeOnMessage?.()
                 unsubscribeNotifeeForeground()
+                unsubscribeOnOpened()
             },
         }
     }
 
     initializeCrashReporting(): void {
         this.crashlytics = getCrashlytics()
-        setCrashlyticsCollectionEnabled(this.crashlytics, true)
+        // Collect only from signed releases (staging QA + store prod). Debug
+        // builds — local Metro/Expo bundles of either variant — otherwise
+        // report local-only failures (unresolved dev modules, hot-reload
+        // errors) into the SAME Firebase app as their variant's signed
+        // release, drowning real crashes in noise. `isDebug` is the
+        // debug-vs-release axis; the app variant is the wrong signal here.
+        setCrashlyticsCollectionEnabled(this.crashlytics, !isDebug)
     }
 
     recordNonFatalError(error: unknown): void {

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -35,6 +35,16 @@ describe('WalletConnect Parser', () => {
                 'perawallet-wc:test@1?bridge=test&key=test',
             )
             expect(result).toBeDefined()
+            expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+            if (result?.type === DeeplinkType.WALLET_CONNECT) {
+                expect(result.uri).toContain('wc:')
+            }
+        })
+
+        it('routes algorand-wc: through to WALLET_CONNECT', () => {
+            const result = parseDeeplink(
+                'algorand-wc:test@1?bridge=test&key=test',
+            )
             expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
             if (result?.type === DeeplinkType.WALLET_CONNECT) {
                 expect(result.uri).toContain('wc:')
@@ -106,6 +116,26 @@ describe('WalletConnect Parser', () => {
         it('rejects a wc: URI with an empty bridge param', () => {
             expect(
                 parseWalletConnectUri('wc:test@1?bridge=&key=test'),
+            ).toBeNull()
+        })
+
+        it('parses and normalizes algorand-wc: URI', () => {
+            const result = parseWalletConnectUri(
+                'algorand-wc:test@1?bridge=test&key=test',
+            )
+            expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+            expect(result?.uri).toBe('wc:test@1?bridge=test&key=test')
+        })
+
+        it('unwraps a valid encoded wc: URI in an algorand-wc wrapper', () => {
+            const inner = 'wc:test@1?bridge=test&key=test'
+            const wrapped = 'algorand-wc://wc?uri=' + encodeURIComponent(inner)
+            expect(parseWalletConnectUri(wrapped)?.uri).toBe(inner)
+        })
+
+        it('rejects an algorand-wc: URI with no bridge', () => {
+            expect(
+                parseWalletConnectUri('algorand-wc:test@1?key=test'),
             ).toBeNull()
         })
     })

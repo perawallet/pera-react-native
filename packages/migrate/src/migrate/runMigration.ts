@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,6 +21,7 @@ import {
     type ExtrasMigrationResult,
 } from './runExtrasMigration'
 import { runMigrationLoop } from './runMigrationLoop'
+import { scrubLegacyPayloadSecrets } from './scrubLegacyPayload'
 import type { MigrationDeps, MigrationResult } from './types'
 
 export type MigrationRunIncompleteReason =
@@ -87,10 +88,23 @@ export const runMigration = async (
         }
     }
 
+    try {
+        return await runMigrationWithLegacyData(migration, deps, data)
+    } finally {
+        scrubLegacyPayloadSecrets(data)
+    }
+}
+
+const runMigrationWithLegacyData = async (
+    migration: MigrationService,
+    deps: MigrationDeps,
+    data: LegacyMigrationData,
+): Promise<MigrationRunResult> => {
     let accountResult: MigrationResult
     try {
         accountResult = await runMigrationLoop({
             accounts: data.accounts,
+            undecodableAccounts: data.undecodableAccounts,
             hdWallets: data.hdWallets,
             ...deps,
         })

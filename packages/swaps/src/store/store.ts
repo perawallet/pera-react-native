@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,6 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SwapsState } from '../models'
 import {
+    ALGO_ASSET_ID,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -22,10 +23,10 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'swaps-store'
 
-// TODO: Replace with ALGO_ASSET_ID and KNOWN_ASSET_IDS.USDC from @perawallet/wallet-core-assets
+// TODO: Replace toAsset with KNOWN_ASSET_IDS.USDC from @perawallet/wallet-core-assets
 // once the assets barrel (which re-exports hooks) no longer causes Metro evaluation order issues
 const initialState = {
-    fromAsset: '0', // ALGO
+    fromAsset: ALGO_ASSET_ID,
     toAsset: '31566704', // USDC mainnet
     slippage: null as Nullable<string>,
 }
@@ -48,24 +49,6 @@ export const useSwapsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 3,
-            migrate: (persisted, version) => {
-                if (version < 2) {
-                    return {
-                        ...(persisted as Partial<SwapsState>),
-                        slippage: null,
-                    } as SwapsState
-                }
-                if (version < 3) {
-                    const {
-                        fromAsset: _fromAsset,
-                        toAsset: _toAsset,
-                        ...rest
-                    } = persisted as Record<string, unknown>
-                    return rest as SwapsState
-                }
-                return persisted as SwapsState
-            },
             partialize: state => ({
                 slippage: state.slippage,
             }),

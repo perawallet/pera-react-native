@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
 import {
     decodePrivateKeyBytes,
     secretboxOpenWithPrependedNonce,
@@ -22,6 +22,11 @@ import type {
     PeraWebBackupPayload,
     PeraWebBackupResponse,
 } from '../models'
+
+// Defence-in-depth cap on the encrypted content before decode/decrypt/parse.
+// The decrypted plaintext never exceeds the ciphertext, so this also bounds the
+// downstream JSON.parse. Generous relative to any real backup.
+const MAX_PERAWEB_CIPHERTEXT_BYTES = 5 * 1024 * 1024
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -111,7 +116,11 @@ export const decryptPeraWebBackupPayload = (
     try {
         let ciphertext: Uint8Array
         try {
-            ciphertext = decodeFromBase64(response.encrypted_content)
+            ciphertext = decodeBoundedBase64(
+                response.encrypted_content,
+                MAX_PERAWEB_CIPHERTEXT_BYTES,
+                'pera-web encrypted content',
+            )
         } catch {
             throw new PeraWebImportError(
                 PeraWebImportErrorReason.MalformedPayload,

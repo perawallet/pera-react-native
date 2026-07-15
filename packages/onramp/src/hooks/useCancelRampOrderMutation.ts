@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -32,8 +32,9 @@ export const useCancelRampOrderMutation =
         const mutation = useMutation({
             mutationFn: (params: CancelRampOrderParams) =>
                 cancelRampOrder(params, network),
-            // Handled inline by the caller (toast); don't escalate to the app's
-            // root error boundary (mutations default throwOnError:true).
+            // Handled inline by the caller (toast). Mirrors `mutationDefaults`
+            // (@perawallet/wallet-core-shared), which already sets
+            // throwOnError: false.
             throwOnError: false,
             // Refresh the history list so the cancelled order updates ASAP.
             onSuccess: () =>

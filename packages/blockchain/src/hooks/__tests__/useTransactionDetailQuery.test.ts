@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -33,6 +33,7 @@ describe('useTransactionDetailQuery', () => {
     let queryClient: QueryClient
     let wrapper: React.FC<{ children: React.ReactNode }>
     let mockLookupTransactionById: Mock
+    let mockDo: Mock
 
     const mockTransaction = {
         id: 'TX123',
@@ -62,13 +63,14 @@ describe('useTransactionDetailQuery', () => {
                 children,
             )
 
-        mockLookupTransactionById = vi
-            .fn()
-            .mockResolvedValue({ transaction: mockTransaction })
+        mockDo = vi.fn().mockResolvedValue({ transaction: mockTransaction })
+        // mockLookupTransactionById stands in for the `.lookupTransactionByID(id)`
+        // builder call — it receives the id and returns the `.do()` executor.
+        mockLookupTransactionById = vi.fn(() => ({ do: mockDo }))
         ;(useAlgorandClient as Mock).mockReturnValue({
             client: {
                 indexer: {
-                    lookupTransactionById: mockLookupTransactionById,
+                    lookupTransactionByID: mockLookupTransactionById,
                 },
             },
         })
@@ -108,7 +110,7 @@ describe('useTransactionDetailQuery', () => {
 
     test('handles errors', async () => {
         const mockError = new Error('Transaction not found')
-        mockLookupTransactionById.mockRejectedValue(mockError)
+        mockDo.mockRejectedValue(mockError)
 
         const { result } = renderHook(
             () =>

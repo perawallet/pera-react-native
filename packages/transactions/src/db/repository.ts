@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,12 +10,59 @@
  limitations under the License
  */
 
-import { eq, and, desc, lt, sql } from 'drizzle-orm'
+import { eq, and, desc, lt, gte, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import type { TransactionHistoryItem } from '../models/types'
+import type {
+    TransactionHistoryItem,
+    TransactionBalanceImpact,
+} from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isoDateToUnixSeconds,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
+
+/**
+ * Serializes balance impacts to JSON for persistence. The signed `amount`
+ * Decimal is stored as a string so it round-trips without precision loss.
+ */
+function serializeBalanceImpacts(
+    impacts: TransactionBalanceImpact[],
+): Nullable<string> {
+    if (impacts.length === 0) return null
+    return JSON.stringify(
+        impacts.map(impact => ({
+            assetId: impact.assetId,
+            unitName: impact.unitName,
+            fractionDecimals: impact.fractionDecimals,
+            amount: impact.amount.toString(),
+        })),
+    )
+}
+
+/**
+ * Rehydrates persisted balance impacts, restoring `amount` to a Decimal.
+ * Rows persisted before the balance-impacts column existed yield an empty list.
+ */
+function deserializeBalanceImpacts(
+    json: Nullable<string>,
+): TransactionBalanceImpact[] {
+    if (!json) return []
+    const parsed = JSON.parse(json) as Array<{
+        assetId: string
+        unitName: string
+        fractionDecimals: number
+        amount: string
+    }>
+    return parsed.map(impact => ({
+        assetId: impact.assetId,
+        unitName: impact.unitName,
+        fractionDecimals: impact.fractionDecimals,
+        amount: new Decimal(impact.amount),
+    }))
+}
 
 function toDb(item: TransactionHistoryItem) {
     return {
@@ -40,6 +87,7 @@ function toDb(item: TransactionHistoryItem) {
         interpretedMeaningJson: item.interpretedMeaning
             ? JSON.stringify(item.interpretedMeaning)
             : null,
+        balanceImpactsJson: serializeBalanceImpacts(item.balanceImpacts),
     }
 }
 
@@ -59,6 +107,7 @@ function fromDb(row: {
     assetJson: Nullable<string>
     swapGroupDetailJson: Nullable<string>
     interpretedMeaningJson: Nullable<string>
+    balanceImpactsJson: Nullable<string>
 }): TransactionHistoryItem {
     return {
         id: row.id,
@@ -80,6 +129,7 @@ function fromDb(row: {
         interpretedMeaning: row.interpretedMeaningJson
             ? JSON.parse(row.interpretedMeaningJson)
             : null,
+        balanceImpacts: deserializeBalanceImpacts(row.balanceImpactsJson),
     }
 }
 
@@ -127,6 +177,7 @@ export async function upsertTransactions({
                     assetJson: row.assetJson,
                     swapGroupDetailJson: row.swapGroupDetailJson,
                     interpretedMeaningJson: row.interpretedMeaningJson,
+                    balanceImpactsJson: row.balanceImpactsJson,
                     updatedAt: now,
                 },
             })
@@ -161,6 +212,10 @@ type GetTransactionHistoryParams = {
     assetId?: string
     limit?: number
     beforeRoundTime?: number
+    /** Optional: only include txs on/after this date (YYYY-MM-DD, inclusive) */
+    afterTime?: string
+    /** Optional: only include txs on/before this date (YYYY-MM-DD, inclusive) */
+    beforeTime?: string
 }
 
 export async function getTransactionHistory({
@@ -170,6 +225,8 @@ export async function getTransactionHistory({
     assetId,
     limit = 25,
     beforeRoundTime,
+    afterTime,
+    beforeTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
     const conditions = [
         eq(AccountTransactionsSchema.accountAddress, accountAddress),
@@ -185,6 +242,25 @@ export async function getTransactionHistory({
     if (beforeRoundTime !== undefined) {
         conditions.push(
             lt(AccountTransactionsSchema.roundTime, beforeRoundTime),
+        )
+    }
+
+    const afterRoundTime = isoDateToUnixSeconds(afterTime)
+    if (Number.isFinite(afterRoundTime) && afterRoundTime >= 0) {
+        conditions.push(
+            gte(AccountTransactionsSchema.roundTime, afterRoundTime),
+        )
+    }
+
+    const beforeStartOfDay = isoDateToUnixSeconds(beforeTime)
+    if (Number.isFinite(beforeStartOfDay) && beforeStartOfDay >= 0) {
+        // `beforeTime` names a day; include the whole day by cutting off at the
+        // start of the next day (day-grain, matching the Pera API semantics).
+        conditions.push(
+            lt(
+                AccountTransactionsSchema.roundTime,
+                beforeStartOfDay + SECONDS_PER_DAY,
+            ),
         )
     }
 
@@ -205,6 +281,7 @@ export async function getTransactionHistory({
             assetJson: TransactionsSchema.assetJson,
             swapGroupDetailJson: TransactionsSchema.swapGroupDetailJson,
             interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
+            balanceImpactsJson: TransactionsSchema.balanceImpactsJson,
         })
         .from(AccountTransactionsSchema)
         .innerJoin(

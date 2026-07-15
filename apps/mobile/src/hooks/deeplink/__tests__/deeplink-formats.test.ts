@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -57,6 +57,7 @@ const {
     mockErrorToast,
     mockInfoToast,
     mockPeraWebSetQr,
+    mockShowSignRequest,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockDispatch: vi.fn(),
@@ -79,6 +80,17 @@ const {
     mockErrorToast: vi.fn(),
     mockInfoToast: vi.fn(),
     mockPeraWebSetQr: vi.fn(),
+    mockShowSignRequest: vi.fn(),
+}))
+
+vi.mock('@modules/multisig/hooks/usePendingSignaturesSheet', () => ({
+    usePendingSignaturesSheet: () => ({
+        showSignRequest: mockShowSignRequest,
+    }),
+}))
+
+vi.mock('../../useIsPeraCardEnabled', () => ({
+    useIsPeraCardEnabled: () => true,
 }))
 
 vi.mock('@routes/navigationRef', () => ({
@@ -97,6 +109,9 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_ID: '0',
+    isAlgoAssetId: (assetId: string | number | bigint) =>
+        String(assetId) === '0',
     logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
     decodeFromBase64: vi.fn((b64: string) =>
@@ -318,7 +333,7 @@ type Channel =
     | { kind: 'addSignRequest' }
     | { kind: 'sendFunds' }
     | { kind: 'peraWebImport' }
-    | { kind: 'errorToast' }
+    | { kind: 'signRequest'; signRequestId: string }
 
 type Case = {
     name: string
@@ -352,11 +367,14 @@ const cases: Case[] = [
     ...newPair(
         'Add Contact',
         `add-contact/?address=${ADDRESS}&label=${LABEL_ENC}`,
-        { kind: 'navigate', screen: 'AddContact' },
+        { kind: 'navigate', screen: 'Contacts' },
         () => {
-            expect(mockNavigate).toHaveBeenCalledWith('AddContact', {
-                address: ADDRESS,
-                label: LABEL,
+            expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+                screen: 'AddContact',
+                params: {
+                    address: ADDRESS,
+                    label: LABEL,
+                },
             })
         },
     ),
@@ -365,11 +383,14 @@ const cases: Case[] = [
     ...newPair(
         'Edit Contact',
         `edit-contact/?address=${ADDRESS}&label=${LABEL_ENC}`,
-        { kind: 'navigate', screen: 'EditContact' },
+        { kind: 'navigate', screen: 'Contacts' },
         () => {
-            expect(mockNavigate).toHaveBeenCalledWith('EditContact', {
-                address: ADDRESS,
-                label: LABEL,
+            expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+                screen: 'EditContact',
+                params: {
+                    address: ADDRESS,
+                    label: LABEL,
+                },
             })
         },
     ),
@@ -580,13 +601,15 @@ const cases: Case[] = [
         },
     ),
 
-    // -- Cards (still toast-only) -----------------------------------------
+    // -- Cards ------------------------------------------------------------
     ...newPair(
         'Cards',
         `cards-path/?path=onboarding/select-country`,
-        { kind: 'errorToast' }, // infoToast — assert via extra
+        { kind: 'navigate', screen: 'PeraCard' },
         () => {
-            expect(mockInfoToast).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'PeraCardIntro',
+            })
         },
     ),
 
@@ -655,6 +678,12 @@ const cases: Case[] = [
         },
     ),
 
+    // -- Sign Request -------------------------------------------------
+    ...newPair('Sign request', `sign-request/?signRequestId=req-123`, {
+        kind: 'signRequest',
+        signRequestId: 'req-123',
+    }),
+
     // -- Internal Browser ---------------------------------------------
     ...newPair(
         'Internal Browser',
@@ -670,6 +699,7 @@ const cases: Case[] = [
         () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
+                params: { screen: 'AccountDetails' },
             })
         },
     ),
@@ -762,9 +792,11 @@ const cases: Case[] = [
     {
         name: 'Old: Cards (perawallet://cards?path=…)',
         url: `perawallet://cards?path=onboarding/select-country`,
-        expect: { kind: 'errorToast' },
+        expect: { kind: 'navigate', screen: 'PeraCard' },
         extra: () => {
-            expect(mockInfoToast).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
+                screen: 'PeraCardIntro',
+            })
         },
     },
     {
@@ -851,6 +883,7 @@ const cases: Case[] = [
         extra: () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
+                params: { screen: 'AccountDetails' },
             })
         },
     },
@@ -943,10 +976,10 @@ describe('deeplink format coverage', () => {
                 )
                 break
             }
-            case 'errorToast': {
-                // Catch-all for unimplemented handlers that fall back to
-                // info/error toasts (Cards, etc.).
-                expect(mockInfoToast).toHaveBeenCalled()
+            case 'signRequest': {
+                expect(mockShowSignRequest).toHaveBeenCalledWith(
+                    channel.signRequestId,
+                )
                 break
             }
         }

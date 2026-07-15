@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,6 +19,7 @@ import {
     type HardwareWalletAccount,
     type HDWalletAccount,
     type Algo25Account,
+    type QuantumAccount,
     type MultiSigAccount,
     type WatchAccount,
     type ImportAccountType,
@@ -64,6 +65,12 @@ export const isAlgo25Account = (
     return account.type === AccountTypes.algo25
 }
 
+export const isQuantumAccount = (
+    account: WalletAccount,
+): account is QuantumAccount => {
+    return account.type === AccountTypes.quantum
+}
+
 export const isWatchAccount = (
     account: WalletAccount,
 ): account is WatchAccount => {
@@ -95,6 +102,8 @@ const canSignDirectly = (account: WalletAccount): boolean =>
  * propose-based, so one local signable participant is enough. A participant
  * counts only with its OWN key — slots bind to the participant's pubkey, so
  * rekey indirection is not followed and watch-only participants don't count.
+ * Quantum participants don't count either: multisig slots verify Ed25519
+ * signatures only, so a post-quantum key can never satisfy a slot.
  */
 export const canSignViaParticipants = (
     participantAddresses: string[],
@@ -102,7 +111,11 @@ export const canSignViaParticipants = (
 ): boolean =>
     participantAddresses.some(addr => {
         const participant = accounts.find(a => a.address === addr)
-        return !!participant && canSignDirectly(participant)
+        return (
+            !!participant &&
+            !isQuantumAccount(participant) &&
+            canSignDirectly(participant)
+        )
     })
 
 /**
@@ -321,7 +334,8 @@ export const rekeyTransitionFor = (
  * True when `target` may be chosen as the new auth address for a "rekey to
  * standard account" flow originating from `sourceAddress`. Mirrors Android
  * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`:
- * the target must be a standard signing account (algo25 / HD wallet),
+ * the target must be a standard signing account (algo25 / HD wallet) or a
+ * quantum account (the rekey-in migration path to post-quantum keys),
  * not the source itself, hold its own signing keys, and not already be
  * rekeyed away.
  */
@@ -332,12 +346,53 @@ export const isEligibleRekeyTarget = (
     if (target.address === sourceAddress) return false
     if (
         target.type !== AccountTypes.algo25 &&
-        target.type !== AccountTypes.hdWallet
+        target.type !== AccountTypes.hdWallet &&
+        target.type !== AccountTypes.quantum
     )
         return false
     if (!hasSigningKeys(target)) return false
     if (isRekeyedAccount(target)) return false
     return true
+}
+
+/**
+ * True when `account`'s effective signing authority is a quantum key — i.e.
+ * following a single rekey hop lands on a quantum account. A broken auth chain
+ * (the auth account is not held locally, so {@link resolveAuthAccount} throws)
+ * is treated as non-quantum: we cannot assert protection we cannot resolve.
+ */
+const hasQuantumAuthority = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    try {
+        return isQuantumAccount(resolveAuthAccount(account, accounts))
+    } catch {
+        return false
+    }
+}
+
+/**
+ * True iff rekeying `source` to `target` removes quantum protection: `source`'s
+ * effective signing authority is quantum, but `target`'s is not (Ed25519 —
+ * standard / ledger / multisig).
+ *
+ * Both sides are compared by *effective* authority (resolved through one rekey
+ * hop), not raw account type, because that is where the protection actually
+ * lives:
+ * - An Ed25519 account rekeyed to a quantum auth (the rekey-in migration) is
+ *   quantum-protected and IS downgraded when rekeyed back to Ed25519, even
+ *   though its own `type` is still `algo25`.
+ * - A quantum-typed account already rekeyed away to Ed25519 has no quantum
+ *   protection left, so rekeying it further is NOT a downgrade.
+ */
+export const isQuantumDowngrade = (
+    source: WalletAccount,
+    target: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    if (!hasQuantumAuthority(source, accounts)) return false
+    return !hasQuantumAuthority(target, accounts)
 }
 
 /**
@@ -449,6 +504,14 @@ export type MnemonicAccountTypeResult =
     | { success: true; accountType: ImportAccountType }
     | { success: false; wordCount: number }
 
+/**
+ * Auto-detects the import account type from the mnemonic's word count.
+ *
+ * NOTE: quantum mnemonics are ALSO 25 words — indistinguishable from algo25
+ * by count. 25 words deliberately resolves to algo25 (the insertion order of
+ * MNEMONIC_WORD_COUNT guarantees it); quantum import never goes through
+ * auto-detection, only through its dedicated entrypoint (PQ-009).
+ */
 export const resolveImportAccountType = (
     mnemonic: string,
 ): MnemonicAccountTypeResult => {

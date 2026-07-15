@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -22,6 +22,7 @@ const PART_KEY: Record<AccountType, string> = {
     [AccountTypes.hardware]: 'account_info.rekey_part_ledger',
     [AccountTypes.multisig]: 'account_info.rekey_part_shared',
     [AccountTypes.watch]: 'account_info.rekey_part_watch',
+    [AccountTypes.quantum]: 'account_info.rekey_part_quantum',
 }
 
 export type RekeyLabelI18n = {

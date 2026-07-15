@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,11 +21,13 @@ import {
 import { AppState, type AppStateStatus } from 'react-native'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
+const securityStoreState = vi.hoisted(() => ({ lockRequestVersion: 0 }))
+
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
     useSecurityStore: (
         selector: (state: { lockRequestVersion: number }) => unknown,
-    ) => selector({ lockRequestVersion: 0 }),
+    ) => selector(securityStoreState),
 }))
 
 vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
@@ -57,6 +59,7 @@ describe('useAutoLockListener', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         appStateChangeHandler = null
+        securityStoreState.lockRequestVersion = 0
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckAutoLock.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({
@@ -335,6 +338,43 @@ describe('useAutoLockListener', () => {
             expect(result.current.isChecking).toBe(false)
         })
 
+        expect(result.current.isLocked).toBe(false)
+    })
+
+    it('should re-check and lock when a lock is requested and a PIN is enabled', async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
+
+        const { result, rerender } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+        expect(result.current.isLocked).toBe(false)
+
+        mockCheckPinEnabled.mockResolvedValue(true)
+        securityStoreState.lockRequestVersion = 1
+        rerender()
+
+        await waitFor(() => {
+            expect(result.current.isLocked).toBe(true)
+        })
+    })
+
+    it('should not lock on a lock request when no PIN is enabled', async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
+
+        const { result, rerender } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        securityStoreState.lockRequestVersion = 1
+        rerender()
+
+        await waitFor(() => {
+            expect(mockCheckPinEnabled.mock.calls.length).toBeGreaterThan(1)
+        })
         expect(result.current.isLocked).toBe(false)
     })
 

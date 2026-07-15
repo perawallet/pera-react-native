@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -43,12 +43,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'
 import { act, renderHook, screen, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-    encodeTransaction,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
+import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
 
 import { createTestQueryClient, render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -84,9 +80,11 @@ const senderB = new Address(new Uint8Array(32).fill(2))
 
 const baseTxParams = {
     fee: 1000n,
+    minFee: 1000n,
+    flatFee: true,
     firstValid: 1000n,
     lastValid: 2000n,
-    genesisId: 'mainnet-v1.0',
+    genesisID: 'mainnet-v1.0',
     genesisHash: new Uint8Array(32).fill(0xab),
 }
 
@@ -99,19 +97,19 @@ const TESTNET_GENESIS_HASH = new Uint8Array(
 /** User's payment transaction — will be in `txs` (signable) */
 const makeTx0 = () =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: senderA,
-        ...baseTxParams,
-        payment: { receiver: senderB, amount: 1_000_000n },
+        suggestedParams: baseTxParams,
+        paymentParams: { receiver: senderB, amount: 1_000_000n },
     })
 
 /** External party's payment transaction — only in `groupContext` (index 1) */
 const makeTx1 = () =>
     new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: senderB,
-        ...baseTxParams,
-        payment: { receiver: senderA, amount: 500_000n },
+        suggestedParams: baseTxParams,
+        paymentParams: { receiver: senderA, amount: 500_000n },
     })
 
 const SIGNING_ACCOUNT: WalletAccount = {
@@ -251,6 +249,16 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
             })
             const connector = walletConnectClientStub.last()!
 
+            // The provider consumes `connectionError` (shows a toast, then
+            // clears the store), so capture the surfaced error as it lands
+            // rather than reading it back off the store afterwards.
+            const surfaced: { error: Error | null } = { error: null }
+            const unsubscribe = useWalletConnectStore.subscribe(state => {
+                if (state.connectionError) {
+                    surfaced.error = state.connectionError
+                }
+            })
+
             const requestId = 9001
             act(() => {
                 connector.fire('algo_signTxn', null, {
@@ -272,17 +280,15 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
                 'WalletConnectInvalidSessionError',
             )
 
-            // Same throw is dispatched onto the store via `surfaceError`
-            // — production reads `connectionError` to decide between
-            // toast and bottom-sheet UI.
+            // Same throw is dispatched onto the store via `surfaceError`; the
+            // provider surfaces it as a toast and then clears the store.
             await waitFor(() => {
-                expect(
-                    useWalletConnectStore.getState().connectionError,
-                ).toBeTruthy()
+                expect(surfaced.error).toBeTruthy()
             })
-            expect(useWalletConnectStore.getState().connectionError?.name).toBe(
+            expect(surfaced.error?.name).toBe(
                 'WalletConnectInvalidSessionError',
             )
+            unsubscribe()
             // No success-path side-effect — connector.approveRequest is
             // not called.
             expect(connector.approveRequestCalls).toHaveLength(0)
@@ -391,14 +397,18 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
             // places the transaction in `toSign` (an empty toSign short-circuits
             // before analysis, bypassing the genesis-hash check entirely).
             const foreignNetworkTx = new Transaction({
-                type: TransactionType.Payment,
+                type: TransactionType.pay,
                 sender: Address.fromString(SIGNING_ACCOUNT.address),
-                fee: 1000n,
-                firstValid: 1000n,
-                lastValid: 2000n,
-                genesisId: 'testnet-v1.0',
-                genesisHash: TESTNET_GENESIS_HASH,
-                payment: { receiver: senderB, amount: 1_000_000n },
+                suggestedParams: {
+                    fee: 1000n,
+                    minFee: 1000n,
+                    flatFee: true,
+                    firstValid: 1000n,
+                    lastValid: 2000n,
+                    genesisID: 'testnet-v1.0',
+                    genesisHash: TESTNET_GENESIS_HASH,
+                },
+                paymentParams: { receiver: senderB, amount: 1_000_000n },
             })
             const txnBase64 = encodeToBase64(
                 encodeTransaction(foreignNetworkTx),
@@ -500,6 +510,61 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
             act(() => {
                 req.current.removeSignRequest(request)
             })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a session imported by migration after the provider already mounted, when the imported session is written to the store, then a live connector with the sign handler is reconciled without a cold relaunch',
+        async () => {
+            render(
+                <WalletConnectProvider>
+                    <div data-testid='child' />
+                </WalletConnectProvider>,
+            )
+
+            // Ignore connectors from the empty-store mount.
+            walletConnectClientStub.reset()
+
+            const migratedConnection = {
+                clientId: 'migrated-client',
+                version: 1,
+                bridge: 'https://relay.example.test',
+                connected: false,
+                createdAt: new Date(0),
+                session: {
+                    connected: true,
+                    accounts: [SIGNING_ACCOUNT.address],
+                    chainId: AlgorandChainId.mainnet,
+                    bridge: 'https://relay.example.test',
+                    key: 'migrated-key',
+                    clientId: 'migrated-client',
+                    peerId: 'migrated-peer',
+                    peerMeta: {
+                        name: 'Migrated dApp',
+                        url: 'https://migrated.example',
+                        icons: [],
+                        description: '',
+                    },
+                    handshakeId: 0,
+                    handshakeTopic: 'migrated-topic',
+                },
+            }
+
+            act(() => {
+                useWalletConnectStore
+                    .getState()
+                    .setWalletConnectConnections([migratedConnection as never])
+            })
+
+            await waitFor(() => {
+                expect(
+                    walletConnectClientStub.instances.length,
+                ).toBeGreaterThan(0)
+            })
+            expect(
+                walletConnectClientStub.last()!.handlers.has('algo_signTxn'),
+            ).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

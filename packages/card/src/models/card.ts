@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -27,9 +27,10 @@ export type CardType = (typeof CardType)[keyof typeof CardType]
 /** Non-sensitive card summary from GET /v1/card/status. */
 export type Card = {
     id: string
-    holderName: string
-    /** Display value, e.g. "2027/05". Non-sensitive. */
-    expiryDate: string
+    /** Optional — not returned by GET /v1/card/status. */
+    holderName?: string
+    /** Display value, e.g. "2027/05". Optional — not in the status payload. */
+    expiryDate?: string
     /** Last 4 PAN digits — the only PAN data safe to retain. */
     panLast4: string
     status: CardStatus
@@ -41,12 +42,24 @@ export type Card = {
 /**
  * SENSITIVE secure-view handle from `POST /v1/card/{details,pin}/token`. Baanx
  * returns a single-use token + an `imageUrl` rendering the PAN/CVV (or PIN) as
- * an image — raw values are never exposed via the API. Held only transiently
- * by the rendering screen; never persisted or cached.
+ * an image — raw values are never exposed via the API. Held in memory by the
+ * rendering screen for the screen visit; never persisted to disk.
  */
 export type CardSecureView = {
     token: string
     imageUrl: string
+}
+
+/**
+ * Optional server-side styling for the secure details image — the
+ * `POST /v1/card/details/token` request body. All values are hex colors.
+ * (The pin/token endpoint has a different, smaller customCss shape.)
+ */
+export type CardImageCustomCss = {
+    cardBackgroundColor?: string
+    cardTextColor?: string
+    panBackgroundColor?: string
+    panTextColor?: string
 }
 
 /**

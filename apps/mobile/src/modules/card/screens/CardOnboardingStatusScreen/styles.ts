@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -46,18 +46,6 @@ export const useStyles = makeStyles(theme => ({
     detailsButton: {
         marginTop: theme.spacing.md,
     },
-    // Header shown in the account-picker sheet (passed via AccountMenu's
-    // headerContent), replacing the default portfolio summary.
-    pickerHeader: {
-        paddingTop: theme.spacing.md,
-        gap: theme.spacing.sm,
-    },
-    pickerHeaderTitle: {
-        color: theme.colors.textMain,
-    },
-    pickerHeaderSubtitle: {
-        color: theme.colors.textGray,
-    },
     connectedCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -75,23 +63,6 @@ export const useStyles = makeStyles(theme => ({
     optionsList: {
         marginTop: theme.spacing.sm,
         gap: theme.spacing.md,
-    },
-    // Radio sits on the left (row-reverse flips PWRadioButton's default layout).
-    optionCard: {
-        flexDirection: 'row-reverse',
-        padding: theme.spacing.md,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.sm,
-    },
-    optionCardSelected: {
-        borderColor: theme.colors.positive,
-    },
-    optionText: {
-        gap: theme.spacing.xs,
-    },
-    optionDescription: {
-        color: theme.colors.textGray,
     },
     infoContent: {
         gap: theme.spacing.lg,

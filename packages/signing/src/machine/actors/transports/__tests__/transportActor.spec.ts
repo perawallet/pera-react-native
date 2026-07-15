@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -47,12 +47,12 @@ const mockSigningResult: SigningResult = {
     signers: [{ address: MOCK_ADDRESS }],
 }
 
+// algosdk's builder shape: sendRawTransaction(...).do() does the network call.
+const mockSendRawDo = vi.fn().mockResolvedValue({ txid: 'mock-tx-id' })
 const mockAlgokit = {
     client: {
         algod: {
-            sendRawTransaction: vi
-                .fn()
-                .mockResolvedValue({ txid: 'mock-tx-id' }),
+            sendRawTransaction: vi.fn(() => ({ do: mockSendRawDo })),
         },
     },
 }
@@ -81,9 +81,10 @@ const makeInput = (
 describe('transportActor', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAlgokit.client.algod.sendRawTransaction.mockResolvedValue({
-            txid: 'mock-tx-id',
+        mockAlgokit.client.algod.sendRawTransaction.mockReturnValue({
+            do: mockSendRawDo,
         })
+        mockSendRawDo.mockResolvedValue({ txid: 'mock-tx-id' })
     })
 
     it('routes to algod transport for local source', async () => {
@@ -139,9 +140,7 @@ describe('transportActor', () => {
     })
 
     it('throws when algod sendRawTransaction fails', async () => {
-        mockAlgokit.client.algod.sendRawTransaction.mockRejectedValue(
-            new Error('network error'),
-        )
+        mockSendRawDo.mockRejectedValue(new Error('network error'))
         const source: SourceMetadata = { type: 'local' }
         const actor = createActor(transportActor, { input: makeInput(source) })
         actor.start()

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -50,6 +50,23 @@ describe('hdWalletEntropyToMnemonic', () => {
         const arg = vi.mocked(entropyToMnemonic).mock.calls[0][0]
         expect(arg).toBeInstanceOf(Uint8Array)
         expect(arg).toHaveLength(32)
+    })
+
+    it('wipes the transient entropy copy after deriving the mnemonic', () => {
+        hdWalletEntropyToMnemonic(
+            buildWallet({ entropy: new Uint8Array(32).fill(0xab) }),
+        )
+
+        const passedCopy = vi.mocked(entropyToMnemonic).mock.calls[0][0]
+        expect(passedCopy.every(b => b === 0)).toBe(true)
+    })
+
+    it('leaves the source entropy on the wallet intact for the caller to wipe', () => {
+        const entropy = new Uint8Array(32).fill(0xab)
+
+        hdWalletEntropyToMnemonic(buildWallet({ entropy }))
+
+        expect(entropy.every(b => b === 0xab)).toBe(true)
     })
 
     it('throws when entropy is null', () => {

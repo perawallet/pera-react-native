@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -40,6 +40,16 @@ describe('getMnemonicBackupKeyId', () => {
             keyPairId: 'kp-2',
         }
         expect(getMnemonicBackupKeyId(account)).toBe('kp-2')
+    })
+
+    test('returns keyPairId for Quantum accounts (25-word recovery phrase, algo25 wire format)', () => {
+        const account: WalletAccount = {
+            id: 'acc-quantum',
+            type: AccountTypes.quantum,
+            address: 'ADDR_Q',
+            keyPairId: 'kp-quantum',
+        }
+        expect(getMnemonicBackupKeyId(account)).toBe('kp-quantum')
     })
 
     test('returns null for multisig, hardware, watch', () => {

@@ -1,0 +1,154 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { isHTTPError, isNetworkError, isTimeoutError } from 'ky'
+import { AppError, ErrorCategory, ErrorSeverity } from './base'
+
+/**
+ * Coarse network-failure taxonomy shared across the app so UIs can say *why*
+ * a request failed instead of falling back to a generic error.
+ */
+export type PeraNetworkErrorKind =
+    | 'offline' // device/network unreachable (fetch TypeError / ky isNetworkError)
+    | 'timeout' // ky TimeoutError
+    | 'server' // HTTP 5xx
+    | 'client' // HTTP 4xx (status preserved)
+    | 'unknown' // anything else (parse errors, non-ky throwables)
+
+const RETRYABLE_BY_KIND: Record<PeraNetworkErrorKind, boolean> = {
+    offline: true,
+    timeout: true,
+    server: true,
+    client: false,
+    unknown: false,
+}
+
+const SEVERITY_BY_KIND: Record<PeraNetworkErrorKind, ErrorSeverity> = {
+    offline: ErrorSeverity.MEDIUM,
+    timeout: ErrorSeverity.MEDIUM,
+    server: ErrorSeverity.MEDIUM,
+    client: ErrorSeverity.LOW,
+    unknown: ErrorSeverity.MEDIUM,
+}
+
+type PeraNetworkErrorOptions = {
+    status?: number
+    originalError?: Error
+}
+
+/**
+ * Typed representation of a network failure. Subclasses {@link AppError} so
+ * existing catch-sites and `isRetryableError`/logging keep working.
+ */
+export class PeraNetworkError extends AppError {
+    public readonly kind: PeraNetworkErrorKind
+    public readonly status?: number
+
+    constructor(
+        kind: PeraNetworkErrorKind,
+        { status, originalError }: PeraNetworkErrorOptions = {},
+    ) {
+        super(
+            `[network:${kind}]${status !== undefined ? ` ${status}` : ''} ${originalError?.message ?? kind}`,
+            {
+                severity: SEVERITY_BY_KIND[kind],
+                category: ErrorCategory.NETWORK,
+                retryable: RETRYABLE_BY_KIND[kind],
+            },
+            originalError,
+        )
+        this.kind = kind
+        this.status = status
+    }
+
+    /**
+     * Normalize any thrown value from the ky client into a typed error. Uses
+     * ky's runtime predicates exactly as the request layer does elsewhere.
+     */
+    static fromKyError(error: unknown): PeraNetworkError {
+        if (error instanceof PeraNetworkError) return error
+
+        const originalError = error instanceof Error ? error : undefined
+
+        if (isTimeoutError(error)) {
+            return new PeraNetworkError('timeout', { originalError })
+        }
+        if (isNetworkError(error)) {
+            return new PeraNetworkError('offline', { originalError })
+        }
+        if (isHTTPError(error)) {
+            const status = error.response?.status
+            const kind: PeraNetworkErrorKind =
+                (status ?? 0) >= 500 ? 'server' : 'client'
+            return new PeraNetworkError(kind, { status, originalError })
+        }
+        return new PeraNetworkError('unknown', { originalError })
+    }
+}
+
+/** Type guard for {@link PeraNetworkError}. */
+export const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
+    error instanceof PeraNetworkError
+
+export type NetworkErrorMessageKeys = { titleKey: string; bodyKey: string }
+
+const keysFor = (base: string): NetworkErrorMessageKeys => ({
+    titleKey: `${base}.title`,
+    bodyKey: `${base}.body`,
+})
+
+/**
+ * Single source of truth mapping a typed network error to the i18n *keys* for
+ * its title/body. Returns keys (not localized strings) so this stays i18n-free;
+ * the app layer resolves them via `t()`.
+ */
+export const getNetworkErrorMessageKeys = (
+    error: unknown,
+): NetworkErrorMessageKeys => {
+    if (!isPeraNetworkError(error)) return keysFor('errors.general')
+
+    switch (error.kind) {
+        case 'offline': {
+            return keysFor('errors.network.no_connection')
+        }
+        case 'timeout': {
+            return keysFor('errors.network.timeout')
+        }
+        case 'server': {
+            return keysFor('errors.api.server_error')
+        }
+        case 'client': {
+            if (error.status === 404) return keysFor('errors.api.not_found')
+            if (error.status === 401 || error.status === 403) {
+                return keysFor('errors.api.unauthorized')
+            }
+            return keysFor('errors.api.generic')
+        }
+        case 'unknown':
+        default: {
+            return keysFor('errors.general')
+        }
+    }
+}
+
+/**
+ * True when an error represents an HTTP 404. Understands the typed
+ * {@link PeraNetworkError} and falls back to the structural `.response.status`
+ * shape for any not-yet-normalized error.
+ */
+export const isNotFoundError = (error: unknown): boolean => {
+    if (isPeraNetworkError(error)) return error.status === 404
+    if (typeof error !== 'object' || error === null) return false
+    return (
+        (error as { response?: { status?: number } }).response?.status === 404
+    )
+}

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,7 +17,7 @@ import { PWButton, PWText } from '@components/core'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { CopyableText } from '@components/CopyableText'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import { CurrencyInput } from '@components/CurrencyInput'
 import { EmptyView } from '@components/EmptyView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
@@ -113,10 +113,10 @@ registerPreview({
                 {
                     label: 'USD / large / h2',
                     node: (
-                        <CurrencyDisplay
+                        <CurrencyAmount
                             currency='USD'
                             value={new Decimal('1234567.89')}
-                            precision={2}
+                            precision='compact'
                             variant='h2'
                         />
                     ),
@@ -124,10 +124,11 @@ registerPreview({
                 {
                     label: 'ALGO / medium / h3',
                     node: (
-                        <CurrencyDisplay
+                        <CurrencyAmount
                             currency='ALGO'
                             value={new Decimal('42.500000')}
-                            precision={6}
+                            precision='assetFull'
+                            assetDecimals={6}
                             variant='h3'
                         />
                     ),
@@ -135,10 +136,10 @@ registerPreview({
                 {
                     label: 'USD / small / body',
                     node: (
-                        <CurrencyDisplay
+                        <CurrencyAmount
                             currency='USD'
                             value={new Decimal('0.01')}
-                            precision={2}
+                            precision='compact'
                             variant='body'
                         />
                     ),
@@ -146,10 +147,10 @@ registerPreview({
                 {
                     label: 'USD / zero / body',
                     node: (
-                        <CurrencyDisplay
+                        <CurrencyAmount
                             currency='USD'
                             value={new Decimal('0')}
-                            precision={2}
+                            precision='compact'
                             variant='body'
                         />
                     ),
@@ -755,7 +756,7 @@ export const getSharedComponentSections = (): GallerySection[] => [
             },
             {
                 id: 'comp-currency-display',
-                label: 'CurrencyDisplay',
+                label: 'CurrencyAmount',
                 launch: { kind: 'preview' },
             },
             {
@@ -950,7 +951,7 @@ export const getSharedComponentSections = (): GallerySection[] => [
             },
             {
                 id: 'comp-preferred-currency-display',
-                label: 'PreferredCurrencyDisplay (needs live state)',
+                label: 'PreferredAmount (needs live state)',
                 launch: { kind: 'action', run: () => undefined },
             },
             {

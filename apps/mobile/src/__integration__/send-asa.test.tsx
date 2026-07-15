@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -238,6 +238,164 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
             // A signed asset-transfer group is well over 100 bytes;
             // empty / placeholder bodies would be tiny.
             expect(body.byteLength).toBeGreaterThan(50)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // Seed the local DB rows the confirmation screen reads (holding +
+    // algo-balance) so the screen renders and the confirm button enables.
+    // Mirrors the happy-path test's inline setup.
+    const seedAsaHolding = async (address: string) => {
+        await insertAssetHolding({
+            accountAddress: address,
+            assetId: USDC_TEST_ASSET_ID,
+            network: 'mainnet',
+            amount: '10000000',
+        })
+        await upsertAccountBalance({
+            accountAddress: address,
+            network: 'mainnet',
+            algoBalance: new Decimal(5_000_000),
+            totalAssetsOptedIn: 1,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(200_000),
+            status: 'Offline',
+            authAddress: null,
+        })
+    }
+
+    it(
+        'Given the recipient is not opted into the asset, when the user confirms, then algod rejects the asset transfer and the processing screen surfaces an error toast instead of success',
+        async () => {
+            const sender = await seedAlgo25Sender()
+            await seedAsaHolding(sender.address)
+
+            useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal('1.5'))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // A normal-mode ASA send builds a plain asset-transfer; nothing in
+            // the confirmation → processing stack pre-checks the receiver's
+            // opt-in (the opt-in gate lives on the upstream destination
+            // screen). The faithful failure is algod rejecting the submission
+            // with the "receiver not opted in" node error — the pipeline's
+            // submit step throws, `execute()` rejects, and the processing
+            // screen raises an error toast and navigates back.
+            const rejectSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        message:
+                            'TransactionPool.Remember: transaction ABC: receiver error: must optin, asset 31566704 missing from receiver',
+                    },
+                    { status: 400 },
+                ),
+            )
+            server.use(http.post('*/v2/transactions', rejectSpy))
+
+            renderSendStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(rejectSpy).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            await waitFor(
+                () => {
+                    expect(
+                        vi.mocked(Notifier.showNotification),
+                    ).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            await waitFor(() => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the sender cannot cover the transaction fee, when the user confirms the asset transfer, then algod rejects the submission and the processing screen surfaces an error toast instead of success',
+        async () => {
+            const sender = await seedAlgo25Sender()
+            await seedAsaHolding(sender.address)
+
+            useSendFundsStore.getState().setSelectedAssetId(USDC_TEST_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal('1.5'))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // ASA amount is held in the asset, not ALGO; the fee is still paid
+            // in ALGO. There's no client-side ALGO-for-fee gate on this stack,
+            // so an under-funded account is caught only when algod rejects the
+            // group for underspending the fee. Same surface as above: error
+            // toast, no success screen.
+            const rejectSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        message:
+                            'TransactionPool.Remember: transaction ABC: overspend (account ABC, data {raw 0})',
+                    },
+                    { status: 400 },
+                ),
+            )
+            server.use(http.post('*/v2/transactions', rejectSpy))
+
+            renderSendStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(rejectSpy).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            await waitFor(
+                () => {
+                    expect(
+                        vi.mocked(Notifier.showNotification),
+                    ).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(screen.queryByTestId('PWResultView')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -37,6 +37,14 @@ const watch = (address: string, rekeyAddress?: string): WalletAccount =>
 
 const hardware = (address: string): WalletAccount =>
     ({ type: AccountTypes.hardware, address }) as WalletAccount
+
+const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
+    ({
+        type: AccountTypes.quantum,
+        address,
+        keyPairId: `kp-${address}`,
+        ...(rekeyAddress ? { rekeyAddress } : {}),
+    }) as WalletAccount
 
 const multisig = (
     address: string,
@@ -124,6 +132,31 @@ describe('resolveSignerForAccount — tagged resolution', () => {
         expect(
             resolveSignerForAccount(account, [account, participant]),
         ).toEqual({ kind: 'ok', signer: account })
+    })
+
+    it('kind="ok" for a quantum account holding its own key', () => {
+        const account = quantum('F')
+        expect(resolveSignerForAccount(account, [account])).toEqual({
+            kind: 'ok',
+            signer: account,
+        })
+    })
+
+    it('kind="ok" with a quantum auth as signer for a rekeyed account', () => {
+        const auth = quantum('FAUTH')
+        const account = watch('A', 'FAUTH')
+        expect(resolveSignerForAccount(account, [account, auth])).toEqual({
+            kind: 'ok',
+            signer: auth,
+        })
+    })
+
+    it('kind="noLocalParticipant" when a multisig\'s only held participant is quantum (Ed25519-only protocol)', () => {
+        const participant = quantum('F1')
+        const account = multisig('M', ['F1', 'P2'])
+        expect(
+            resolveSignerForAccount(account, [account, participant]),
+        ).toEqual({ kind: 'noLocalParticipant', account })
     })
 
     it('kind="noLocalParticipant" for a multisig with no local signable participant', () => {

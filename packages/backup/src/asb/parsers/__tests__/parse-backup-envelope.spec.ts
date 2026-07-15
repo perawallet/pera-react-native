@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -49,6 +49,12 @@ describe('parseBackupEnvelope', () => {
     it('rejects empty input', () => {
         expectReason('', AsbErrorReason.EmptyFile)
         expectReason('   \n  ', AsbErrorReason.EmptyFile)
+    })
+
+    it('rejects an oversized file before decoding (defence-in-depth)', () => {
+        // ~7 MB of base64 → ~5.25 MB decoded, over the 5 MB cap. Maps to the
+        // existing decode-failure reason.
+        expectReason('A'.repeat(7 * 1024 * 1024), AsbErrorReason.NotBase64)
     })
 
     it('rejects non-base64 input that decodes to non-JSON', () => {

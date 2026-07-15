@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,34 +13,39 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { type Decimal } from 'decimal.js'
 import { bottomSheetNotifier } from '@components/core'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddNoteContent } from '../../../components/send-funds/AddNoteContent'
 import {
+    isQuantumAccount,
     useAccountAssetBalanceQuery,
     useOnChainAccountInformationQuery,
     useSelectedAccount,
+    useSignerFor,
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
-    ALGO_ASSET_ID,
     isCollectible,
     toWholeUnits,
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    displayUnitsToBaseUnits,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { displayUnitsToBaseUnits } from '@perawallet/wallet-core-blockchain'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    type Maybe,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
@@ -50,6 +55,7 @@ type useTransactionConfirmationScreenResult = {
     selectedAssetId: Optional<string>
     params: Optional<{ minFee: bigint }>
     paramsPending: boolean
+    isQuantumFee: boolean
     currentBalance: Nullable<AssetWithAccountBalance>
     currentBalancePending: boolean
     note: Optional<string>
@@ -86,8 +92,19 @@ export const useTransactionConfirmationScreen =
         const { showToast } = useToast()
         const { request: requestBottomSheet } = useBottomSheet()
 
-        const { data: params, isPending: paramsPending } =
-            useSuggestedParametersQuery()
+        const { minFee, isPending: paramsPending } = useMinFeeForSender(
+            selectedAccount?.address,
+        )
+        const params = minFee !== undefined ? { minFee } : undefined
+
+        // The quantum fee premium is driven by the effective signer (resolving
+        // one rekey hop), matching the fee-multiplier logic — not the raw sender.
+        const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
+        const signer = useSignerFor(selectedAccount?.address)
+        const isQuantumFee =
+            isQuantumAccountsEnabled &&
+            signer !== null &&
+            isQuantumAccount(signer)
 
         const openNote = useCallback(() => {
             void requestBottomSheet({
@@ -106,7 +123,7 @@ export const useTransactionConfirmationScreen =
                 selectedAssetId,
             )
 
-        const isAlgoSend = selectedAssetId === ALGO_ASSET_ID
+        const isAlgoSend = isAlgoAssetId(selectedAssetId)
         const {
             data: recipientAccountInfo,
             isPending: recipientAccountInfoPending,
@@ -211,6 +228,7 @@ export const useTransactionConfirmationScreen =
             selectedAssetId,
             params,
             paramsPending,
+            isQuantumFee,
             currentBalance,
             currentBalancePending,
             note,

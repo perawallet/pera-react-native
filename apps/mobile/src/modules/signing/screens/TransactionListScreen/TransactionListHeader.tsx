@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,10 @@
 import { PWDivider, PWText, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
+import {
+    BalanceImpactSummary,
+    useBalanceImpactSummary,
+} from '@modules/signing/components/BalanceImpactSummary'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,6 +34,11 @@ export const TransactionListHeader = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
+    const { hasImpact, isSimulating } = useBalanceImpactSummary()
+
+    // Hide the whole section (and its flanking divider) when no assets change
+    // hands, so the layout doesn't show two dividers around an empty gap.
+    const showBalanceImpact = hasImpact || isSimulating
 
     return (
         <>
@@ -48,6 +57,16 @@ export const TransactionListHeader = ({
             </PWView>
 
             <PWDivider color={theme.colors.layerGray} />
+
+            {showBalanceImpact && (
+                <>
+                    <PWView style={styles.balanceImpactContainer}>
+                        <BalanceImpactSummary />
+                    </PWView>
+
+                    <PWDivider color={theme.colors.layerGray} />
+                </>
+            )}
 
             <PWText style={styles.listSubheaderText}>
                 {t('signing.transactions.transactions_count', {

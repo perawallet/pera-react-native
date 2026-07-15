@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,6 +19,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
+import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import type { AccountMenuProps } from './AccountMenu'
 
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
@@ -84,12 +85,14 @@ export const useAccountMenu = (
     const connectedFundingSourceAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
+    const isPeraCardEnabled = useIsPeraCardEnabled()
 
     const listItems = useMemo<AccountMenuListItem[]>(() => {
         const accountItems = sortedAccounts.map(
             (account): AccountMenuListItem => ({ kind: 'account', account }),
         )
-        if (!props.showPeraCardActivation) return accountItems
+        if (!props.showPeraCardActivation || !isPeraCardEnabled)
+            return accountItems
 
         const connectedIndex =
             isAuthenticated && connectedFundingSourceAddress
@@ -115,6 +118,7 @@ export const useAccountMenu = (
     }, [
         sortedAccounts,
         props.showPeraCardActivation,
+        isPeraCardEnabled,
         isAuthenticated,
         connectedFundingSourceAddress,
     ])

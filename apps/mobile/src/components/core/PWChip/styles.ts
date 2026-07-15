@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,12 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export type PWChipVariant = 'helper' | 'secondary' | 'outline'
+export type PWChipVariant =
+    | 'helper'
+    | 'secondary'
+    | 'outline'
+    | 'positive'
+    | 'negative'
 
 type Props = {
     variant: PWChipVariant
@@ -39,6 +44,18 @@ export const useStyles = makeStyles(
                 borderColor: theme.colors.layerGray,
                 borderWidth: theme.borders.sm,
                 color: theme.colors.textMain,
+            },
+            positive: {
+                backgroundColor: theme.colors.positiveLighter,
+                color: theme.colors.positive,
+                borderWidth: 0,
+                borderColor: 'transparent',
+            },
+            negative: {
+                backgroundColor: theme.colors.negativeLighter,
+                color: theme.colors.negative,
+                borderWidth: 0,
+                borderColor: 'transparent',
             },
         }
 

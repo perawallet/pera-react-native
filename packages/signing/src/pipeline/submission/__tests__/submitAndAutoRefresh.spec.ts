@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,10 +10,31 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { submitAndAutoRefreshCore } from '../submitAndAutoRefresh'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    submitAndAutoRefresh,
+    submitAndAutoRefreshCore,
+} from '../submitAndAutoRefresh'
+import { setOnConfirmedHandler } from '../onConfirmedRegistry'
+import {
+    AccountTypes,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    useNetworkStore,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
+
+const { mockWaitForConfirmation } = vi.hoisted(() => ({
+    mockWaitForConfirmation: vi.fn(),
+}))
+
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
+    waitForConfirmation: mockWaitForConfirmation,
+}))
 
 const WALLET = 'WALLET_A'
 const EXTERNAL = 'EXTERNAL'
@@ -41,7 +62,9 @@ describe('submitAndAutoRefreshCore', () => {
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX1') => ({
         client: {
             algod: {
-                sendRawTransaction: vi.fn().mockResolvedValue({ txid }),
+                sendRawTransaction: vi.fn().mockReturnValue({
+                    do: vi.fn().mockResolvedValue({ txid }),
+                }),
             },
         },
     })
@@ -124,7 +147,9 @@ describe('submitAndAutoRefreshCore', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi.fn().mockResolvedValue({}),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockResolvedValue({}),
+                    }),
                 },
             },
         }
@@ -174,13 +199,62 @@ describe('submitAndAutoRefreshCore', () => {
         expect(onConfirmed).not.toHaveBeenCalled()
     })
 
+    test('MOCK(quantum): uses a synthetic txid and does not call algod when isQuantumMock', async () => {
+        const algokit = makeAlgokit('TX1')
+        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
+        const onConfirmed = vi.fn()
+
+        const { txIds } = await submitAndAutoRefreshCore({
+            algokit,
+            encodeSignedTransactions: () => [new Uint8Array([1, 2, 3])],
+            waitForConfirmation,
+            walletAddresses: [WALLET],
+            network: 'mainnet',
+            onConfirmed,
+            signedTxns: [makeSigned(WALLET, EXTERNAL)],
+            isQuantumMock: true,
+        })
+
+        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
+        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
+        expect(waitForConfirmation).not.toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet'),
+        )
+    })
+
+    test('uses the real path and waits for confirmation when not a quantum mock', async () => {
+        const algokit = makeAlgokit('REALTXID')
+        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
+        const onConfirmed = vi.fn()
+
+        const { txIds } = await submitAndAutoRefreshCore({
+            algokit,
+            encodeSignedTransactions,
+            waitForConfirmation,
+            walletAddresses: [WALLET],
+            network: 'mainnet',
+            onConfirmed,
+            signedTxns: [makeSigned(WALLET, EXTERNAL)],
+            // isQuantumMock omitted
+        })
+
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
+        expect(txIds).toEqual(['REALTXID'])
+        await vi.waitFor(() =>
+            expect(waitForConfirmation).toHaveBeenCalledWith('REALTXID'),
+        )
+    })
+
     test('propagates submission errors to the caller', async () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi
-                        .fn()
-                        .mockRejectedValue(new Error('algod rejected')),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi
+                            .fn()
+                            .mockRejectedValue(new Error('algod rejected')),
+                    }),
                 },
             },
         }
@@ -201,5 +275,99 @@ describe('submitAndAutoRefreshCore', () => {
 
         expect(waitForConfirmation).not.toHaveBeenCalled()
         expect(onConfirmed).not.toHaveBeenCalled()
+    })
+})
+
+describe('submitAndAutoRefresh (public, self-detection)', () => {
+    const PUBLIC_WALLET = 'PUBLIC_WALLET'
+    const PUBLIC_EXTERNAL = 'PUBLIC_EXTERNAL'
+
+    const makeAlgokit = (txid: Optional<string | string[]> = 'TX1') => ({
+        client: {
+            algod: {
+                sendRawTransaction: vi.fn().mockReturnValue({
+                    do: vi.fn().mockResolvedValue({ txid }),
+                }),
+            },
+        },
+    })
+    const encodeSignedTransactions = vi
+        .fn()
+        .mockReturnValue([new Uint8Array([1])])
+
+    const quantumAccount = (address: string): WalletAccount =>
+        ({
+            id: address,
+            address,
+            type: AccountTypes.quantum,
+            keyPairId: 'kp-quantum',
+        }) as WalletAccount
+
+    const algo25Account = (address: string): WalletAccount =>
+        ({
+            id: address,
+            address,
+            type: AccountTypes.algo25,
+            keyPairId: 'kp',
+        }) as WalletAccount
+
+    beforeEach(() => {
+        useAccountsStore.getState().resetState()
+        useNetworkStore.getState().resetState()
+        mockWaitForConfirmation.mockReset().mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+        setOnConfirmedHandler(null)
+    })
+
+    test('MOCK(quantum): self-detects a quantum sender with no flag passed — synthetic txid, algod not called, waitForConfirmation skipped, onConfirmed still fires', async () => {
+        useAccountsStore.getState().setAccounts([quantumAccount(PUBLIC_WALLET)])
+        const onConfirmed = vi.fn()
+        setOnConfirmedHandler(onConfirmed)
+
+        const algokit = makeAlgokit('TX1')
+
+        const txIds = await submitAndAutoRefresh(
+            algokit,
+            encodeSignedTransactions,
+            [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
+        )
+
+        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
+        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
+        expect(mockWaitForConfirmation).not.toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith(
+                [PUBLIC_WALLET],
+                expect.anything(),
+            ),
+        )
+    })
+
+    test('uses the real submission path for a non-quantum (algo25) sender — regression guard', async () => {
+        useAccountsStore.getState().setAccounts([algo25Account(PUBLIC_WALLET)])
+        const onConfirmed = vi.fn()
+        setOnConfirmedHandler(onConfirmed)
+
+        const algokit = makeAlgokit('REALTXID')
+
+        const txIds = await submitAndAutoRefresh(
+            algokit,
+            encodeSignedTransactions,
+            [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
+        )
+
+        expect(txIds).toEqual(['REALTXID'])
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
+        await vi.waitFor(() =>
+            expect(mockWaitForConfirmation).toHaveBeenCalled(),
+        )
+        await vi.waitFor(() =>
+            expect(onConfirmed).toHaveBeenCalledWith(
+                [PUBLIC_WALLET],
+                expect.anything(),
+            ),
+        )
     })
 })

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -35,6 +35,18 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
         configOverrides: mockConfigOverrides,
         setConfigOverride: mockSetConfigOverride,
     }),
+    RemoteConfigKeys: {
+        enable_pera_card: 'enable_pera_card',
+        enable_motion_lock: 'enable_motion_lock',
+        terms_version: 'terms_version',
+        fee_warning_standard_fee: 'fee_warning_standard_fee',
+    },
+    RemoteConfigDefaults: {
+        enable_pera_card: false, // boolean
+        enable_motion_lock: true, // boolean
+        terms_version: '1', // string
+        fee_warning_standard_fee: 0.001, // number
+    },
 }))
 
 describe('useFeatureFlagOverrides', () => {
@@ -127,6 +139,19 @@ describe('useFeatureFlagOverrides', () => {
             const { result } = renderHook(() => useFeatureFlagOverrides())
 
             expect(result.current.prettifyKey('')).toBe('')
+        })
+    })
+
+    describe('booleanFlagKeys', () => {
+        it('includes only boolean-valued remote config flags', () => {
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            // String (terms_version) and number (fee_warning_standard_fee) flags
+            // are excluded — this screen only renders boolean toggles.
+            expect(result.current.booleanFlagKeys).toEqual([
+                'enable_pera_card',
+                'enable_motion_lock',
+            ])
         })
     })
 

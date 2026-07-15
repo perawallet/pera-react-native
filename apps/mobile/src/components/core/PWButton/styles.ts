@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,10 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 import { type TextStyle } from 'react-native'
-import type { PWButtonProps } from './PWButton'
 import { type Optional } from '@perawallet/wallet-core-shared'
-
-const TITLE_LINE_HEIGHT = 15
+import { getIconPixelSize } from '@components/core/PWIcon'
+import { getTypography } from '@theme/typography'
+import { getButtonIconSize } from './sizing'
+import type { PWButtonProps } from './PWButton'
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const variantStyles = {
@@ -91,6 +92,14 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const { paddingHorizontal, paddingVertical, minWidth } =
         paddingStyles[props.paddingStyle ?? 'normal']
 
+    // The spinner must occupy the same box as the content it replaces so the
+    // button keeps its height while loading: the h4 line-height for a titled
+    // button, otherwise the icon size the button renders.
+    const loadingSize = props.title
+        ? (getTypography(theme, 'h4').lineHeight ??
+          getIconPixelSize(theme, 'md'))
+        : getIconPixelSize(theme, getButtonIconSize(props.paddingStyle))
+
     const titleStyle: TextStyle = {
         flexWrap: 'nowrap',
         flexShrink: 1,
@@ -106,12 +115,11 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         loadingStyle: {
             color,
         },
-        // Match the title's line-height so the button doesn't grow when its
-        // content swaps from the title text to the ActivityIndicator (which
-        // is ~20px tall while the title sits at 15px).
+        // Sized to the content it replaces (see loadingSize) so the button's
+        // height is the same whether it shows its label/icon or the spinner.
         loadingContainer: {
-            height: TITLE_LINE_HEIGHT,
-            width: TITLE_LINE_HEIGHT,
+            height: loadingSize,
+            width: loadingSize,
             alignItems: 'center' as const,
             justifyContent: 'center' as const,
         },

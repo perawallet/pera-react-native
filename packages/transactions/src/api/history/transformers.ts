@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,6 +21,7 @@ import type {
     TransactionAssetSummary,
     TransactionSwapGroupDetail,
     TransactionInterpretedMeaning,
+    TransactionBalanceImpact,
 } from '../../models/types'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -55,6 +56,20 @@ const transformAssetSummary = (
         decimals: asset.decimals ?? 0,
     }
 }
+
+/**
+ * Transforms the balance-impact list from API response format to domain format.
+ * Defaults to an empty array when the API omits the field.
+ */
+const transformBalanceImpacts = (
+    impacts: TransactionHistoryItemApiResponse['balance_impacts'],
+): TransactionBalanceImpact[] =>
+    (impacts ?? []).map(impact => ({
+        assetId: impact.asset_id,
+        unitName: impact.unit_name ?? '',
+        fractionDecimals: impact.fraction_decimals ?? 0,
+        amount: new Decimal(impact.amount),
+    }))
 
 /**
  * Transforms an interpreted meaning from API response format to domain format.
@@ -97,6 +112,7 @@ export const transformTransactionItem = (
         item.inner_transaction_count != null
             ? Number(item.inner_transaction_count)
             : null,
+    balanceImpacts: transformBalanceImpacts(item.balance_impacts),
 })
 
 /**

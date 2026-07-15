@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -48,6 +48,29 @@ describe('useAgeGate', () => {
         expect(result.current.isAdult).toBe(true)
         act(() => result.current.ensureChecked())
         expect(resolveAgeGate).not.toHaveBeenCalled()
+    })
+
+    it('cached adult → isChecking false (no loading screen for a resolved user)', () => {
+        storeStatus = 'adult'
+        const { result } = renderHook(() => useAgeGate())
+        expect(result.current.isChecking).toBe(false)
+    })
+
+    it('status null → isChecking seeded true so the gate shows loading immediately', () => {
+        storeStatus = null
+        const { result } = renderHook(() => useAgeGate())
+        expect(result.current.isChecking).toBe(true)
+    })
+
+    it('isChecking flips back to false once the check resolves', async () => {
+        resolveAgeGate.mockResolvedValue({ kind: 'resolved', status: 'minor' })
+        storeStatus = null
+        const { result } = renderHook(() => useAgeGate())
+
+        act(() => result.current.ensureChecked())
+        expect(result.current.isChecking).toBe(true)
+
+        await waitFor(() => expect(result.current.isChecking).toBe(false))
     })
 
     it('cached minor → ensureChecked does not call resolveAgeGate', () => {

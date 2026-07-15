@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -212,6 +212,28 @@ export class LedgerPermissionDeniedError extends AppError {
 }
 
 /**
+ * BLE scanning cannot run because the OS location services (GPS) toggle is
+ * off. Android ≤ 11 requires location services to be enabled for BLE
+ * discovery even when the location *permission* is granted — the scan
+ * otherwise fails with `react-native-ble-plx` `BleErrorCode.LocationServicesDisabled`
+ * (601) and no devices are ever surfaced, leaving the user stuck on "Scan
+ * Again". Android 12+ (`neverForLocation`) is unaffected.
+ */
+export class LedgerLocationServicesDisabledError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'Location services must be enabled to search for nearby Ledger devices',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
  * BLE scan completed without locating the target device. Distinct from
  * `LedgerTimeoutError` (which covers any device-communication timeout) so
  * the UI can render scan-specific copy and the troubleshooting link.
@@ -352,6 +374,64 @@ const getStatusCode = (error: unknown): Nullable<number> => {
 }
 
 /**
+ * `@ledgerhq/react-native-hw-transport-ble` remaps raw `react-native-ble-plx`
+ * scan/connect failures to an `@ledgerhq/errors` `HwTransportError` before they
+ * reach us. The original numeric `BleErrorCode` survives in two places: the
+ * typed `.type` field (for the handful of codes the lib maps) and appended to
+ * the message as `". Origin: <code>"` (for every code). We read both so Android
+ * BLE scan failures surface as actionable, typed errors instead of a generic
+ * retry. Detected structurally (by `name`) to avoid coupling to the lib's
+ * class identity across versions.
+ *
+ * Ref: `@ledgerhq/react-native-hw-transport-ble/.../remapErrors` →
+ * `mapBleErrorToHwTransportError`.
+ */
+const isHwTransportError = (
+    error: unknown,
+): error is Error & { type?: string } =>
+    error instanceof Error && error.name === 'HwTransportError'
+
+/** `react-native-ble-plx` `BleErrorCode` values seen in the remapped message. */
+const BLE_ERROR_CODE = {
+    BLUETOOTH_POWERED_OFF: 102,
+    LOCATION_SERVICES_DISABLED: 601,
+} as const
+
+const parseBleOriginCode = (message: string): Nullable<number> => {
+    const match = message.match(/Origin:\s*(\d+)\s*$/)
+    return match ? Number(match[1]) : null
+}
+
+/**
+ * Maps the specific BLE-adapter/location failures we can act on. Returns
+ * `null` for anything else so the caller falls through to the shared
+ * message-based heuristics (disconnect/timeout) rather than flattening every
+ * unmapped transport error to a generic connection error.
+ */
+const classifyHwTransportError = (
+    error: Error & { type?: string },
+): Nullable<AppError> => {
+    const originCode = parseBleOriginCode(error.message)
+
+    if (
+        error.type === 'LocationServicesDisabled' ||
+        originCode === BLE_ERROR_CODE.LOCATION_SERVICES_DISABLED
+    ) {
+        return new LedgerLocationServicesDisabledError(error)
+    }
+    // The lib labels a location-permission failure `LocationServicesUnauthorized`
+    // (Android maps `BleErrorCode.BluetoothUnauthorized` → this). It's a
+    // permission problem, so route it to the permission-denied preset.
+    if (error.type === 'LocationServicesUnauthorized') {
+        return new LedgerPermissionDeniedError(error)
+    }
+    if (originCode === BLE_ERROR_CODE.BLUETOOTH_POWERED_OFF) {
+        return new LedgerBluetoothDisabledError(error)
+    }
+    return null
+}
+
+/**
  * Maps raw errors from `@algorandfoundation/ledger-algorand-js` or BLE transport
  * to typed Ledger error classes. Pass-through for already-classified
  * AppError instances so re-classification at catch sites preserves the
@@ -363,6 +443,13 @@ const getStatusCode = (error: unknown): Nullable<number> => {
  */
 export const classifyLedgerError = (error: unknown): AppError => {
     if (error instanceof AppError) return error
+
+    if (isHwTransportError(error)) {
+        const mapped = classifyHwTransportError(error)
+        if (mapped) return mapped
+        // No specific BLE mapping — fall through to the message-based
+        // heuristics below (disconnect/timeout), then the generic default.
+    }
 
     const statusCode = getStatusCode(error)
 

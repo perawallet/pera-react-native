@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,9 +20,8 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { AssetTitle } from '@modules/assets/components'
 import { LoadingView } from '@components/LoadingView'
 
@@ -41,7 +40,7 @@ export const ARC59SendSummaryScreen = () => {
         handleSend,
         handleClose,
         handleReadMore,
-        sliderResetKey,
+        isProcessing,
     } = useARC59SendSummaryScreen()
 
     if (isLoading) {
@@ -53,9 +52,9 @@ export const ARC59SendSummaryScreen = () => {
             footer={
                 <PWView style={styles.footer}>
                     <PWSlideToConfirm
-                        key={sliderResetKey}
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleSend}
+                        isLoading={isProcessing}
                         isDisabled={!summary}
                         testID='arc59_send_confirm_slide'
                     />
@@ -101,11 +100,9 @@ export const ARC59SendSummaryScreen = () => {
                                 <PWText variant='h4'>{assetId}</PWText>
                             )}
                         </PWView>
-                        <CurrencyDisplay
+                        <AssetAmount
                             value={amount}
-                            currency={asset?.unitName ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={DEFAULT_PRECISION}
+                            asset={asset}
                             variant='h4'
                             ignorePrivacyMode
                         />
@@ -117,11 +114,9 @@ export const ARC59SendSummaryScreen = () => {
                         <PWText style={styles.rowLabel}>
                             {t('send_funds.arc59_summary.fees_label')}
                         </PWText>
-                        <CurrencyDisplay
+                        <AssetAmount
                             value={fee}
-                            currency={'ALGO'}
-                            precision={ALGO_ASSET.decimals}
-                            minPrecision={DEFAULT_PRECISION}
+                            asset={ALGO_ASSET}
                             ignorePrivacyMode
                         />
                     </PWView>

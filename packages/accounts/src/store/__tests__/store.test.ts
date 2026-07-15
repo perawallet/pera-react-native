@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -345,100 +345,6 @@ describe('services/accounts/store', () => {
             const before = useAccountsStore.getState().accounts
             useAccountsStore.getState().updateAccountRekeyAddress('A', 'B')
             expect(useAccountsStore.getState().accounts).toBe(before)
-        })
-    })
-
-    describe('migration to v3', () => {
-        type PersistedMultisigDetails = {
-            threshold: number
-            addresses: string[]
-            version?: number
-        }
-        type MigratedState = {
-            accounts: {
-                type: string
-                multisigDetails?: PersistedMultisigDetails
-            }[]
-        }
-
-        const getMigrate = () =>
-            useAccountsStore.persist.getOptions().migrate as (
-                state: unknown,
-                version: number,
-            ) => unknown
-
-        test('backfills version 1 on multisig accounts, preserving an existing version and non-multisig accounts', () => {
-            const v2State = {
-                accounts: [
-                    {
-                        type: 'multisig',
-                        address: 'MSIG-LEGACY',
-                        multisigDetails: {
-                            threshold: 2,
-                            addresses: ['A', 'B'],
-                        },
-                    },
-                    {
-                        type: 'multisig',
-                        address: 'MSIG-VERSIONED',
-                        multisigDetails: {
-                            threshold: 3,
-                            addresses: ['C', 'D', 'E'],
-                            version: 7,
-                        },
-                    },
-                    { type: 'algo25', address: 'STD', keyPairId: 'k' },
-                ],
-            }
-
-            const migrated = getMigrate()(v2State, 2) as MigratedState
-
-            expect(migrated.accounts[0].multisigDetails?.version).toBe(1)
-            expect(migrated.accounts[1].multisigDetails?.version).toBe(7)
-            expect(migrated.accounts[2].multisigDetails).toBeUndefined()
-        })
-
-        test('does not throw on malformed persisted state', () => {
-            const migrate = getMigrate()
-
-            expect(() => migrate({}, 2)).not.toThrow()
-            expect(() => migrate({ accounts: 'not-an-array' }, 2)).not.toThrow()
-            expect(() =>
-                migrate({ accounts: [null, 'oops', { type: 'multisig' }] }, 2),
-            ).not.toThrow()
-        })
-    })
-
-    describe('migration to v4', () => {
-        type MigratedState = { accounts: { id?: string; address?: string }[] }
-
-        const getMigrate = () =>
-            useAccountsStore.persist.getOptions().migrate as (
-                state: unknown,
-                version: number,
-            ) => unknown
-
-        test('backfills missing id from address, preserving an existing id', () => {
-            const v3State = {
-                accounts: [
-                    { type: 'hardware', address: 'HW-LEGACY' },
-                    { type: 'algo25', address: 'STD', id: 'existing-id' },
-                ],
-            }
-
-            const migrated = getMigrate()(v3State, 3) as MigratedState
-
-            expect(migrated.accounts[0].id).toBe('HW-LEGACY')
-            expect(migrated.accounts[1].id).toBe('existing-id')
-        })
-
-        test('backfills a generated id when address is absent', () => {
-            const v3State = { accounts: [{ type: 'watch' }] }
-
-            const migrated = getMigrate()(v3State, 3) as MigratedState
-
-            expect(migrated.accounts[0].id).toEqual(expect.any(String))
-            expect(migrated.accounts[0].id).not.toBe('')
         })
     })
 })

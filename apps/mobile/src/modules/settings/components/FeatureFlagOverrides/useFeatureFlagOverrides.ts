@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,11 +10,25 @@
  limitations under the License
  */
 
-import { useRemoteConfigOverrides } from '@perawallet/wallet-core-remote-config'
+import {
+    RemoteConfigDefaults,
+    RemoteConfigKeys,
+    useRemoteConfigOverrides,
+} from '@perawallet/wallet-core-remote-config'
 import { useMemo } from 'react'
 
 export const useFeatureFlagOverrides = () => {
     const { configOverrides, setConfigOverride } = useRemoteConfigOverrides()
+
+    // This screen renders each flag as a boolean toggle, so only surface
+    // remote-config values that are actually booleans. String/number values
+    // (e.g. terms_version, thresholds) can't be toggled and are hidden here.
+    const booleanFlagKeys = useMemo(() => {
+        const defaults = RemoteConfigDefaults as Record<string, unknown>
+        return Object.keys(RemoteConfigKeys).filter(
+            key => typeof defaults[key] === 'boolean',
+        )
+    }, [])
 
     const expanded = useMemo(
         () => Object.keys(configOverrides),
@@ -45,6 +59,7 @@ export const useFeatureFlagOverrides = () => {
     return {
         configOverrides,
         setConfigOverride,
+        booleanFlagKeys,
         expanded,
         toggleExpand,
         toggleOverride,

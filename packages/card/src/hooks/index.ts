@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,6 +20,7 @@ export * from './useCardStatusQuery'
 export * from './useOrderCardMutation'
 export * from './useFreezeCardMutation'
 export * from './useUnfreezeCardMutation'
+export * from './useIsCardUnfreezing'
 
 // User / profile
 export * from './useCardUserQuery'
@@ -33,6 +34,17 @@ export * from './useSetCardPinMutation'
 export * from './useCardTransactionsQuery'
 export * from './useExportCardStatementMutation'
 
+// Funding (deposit / top-up)
+export * from './useDepositToCardMutation'
+
+// Internal wallet (balance / withdraw)
+export * from './useCardInternalWalletsQuery'
+export * from './useWithdrawFromCardMutation'
+
+// Funding delegation (auto-funding LSig lifecycle)
+export * from './useCardExternalWalletsQuery'
+export * from './useUpdateCardFundingDelegationMutation'
+
 // Onboarding / KYC
 export * from './useSendEmailVerificationMutation'
 export * from './useVerifyEmailMutation'
@@ -45,6 +57,7 @@ export * from './useLinkConsentMutation'
 export * from './useConnectFundingSourceMutation'
 export * from './useStartVerificationMutation'
 export * from './useOnboardingDetailsQuery'
+export * from './useOnboardingKycPoll'
 export * from './useRegistrationSettingsQuery'
 export * from './useCurrentRegionQuery'
 export * from './useRequestCountryAvailabilityMutation'

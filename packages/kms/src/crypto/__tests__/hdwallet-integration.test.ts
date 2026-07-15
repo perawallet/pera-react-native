@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,7 +19,7 @@ import {
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 
 /**
  * Integration test for HD wallet (BIP39 24-word mnemonic) key derivation.
@@ -27,6 +27,8 @@ import { encodeAddress } from '@algorandfoundation/algokit-utils'
  *
  * Derivation path: m/44'/283'/0'/0/0 with Peikert derivation type.
  * This must produce the same address as the native iOS/Android Pera apps.
+ *
+ * THROWAWAY TEST VECTOR — published in source; NEVER fund EXPECTED_ADDRESS.
  */
 
 const TEST_MNEMONIC =

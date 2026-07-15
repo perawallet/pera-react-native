@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    MultisigAccount,
-    type MultisigMetadata,
-} from '@algorandfoundation/algokit-utils/transact'
-import { Address } from '@algorandfoundation/algokit-utils'
+import { multisigAddress, type MultisigMetadata } from 'algosdk'
 
 export const generateMultisigAddress = (
     version: number,
@@ -24,9 +20,8 @@ export const generateMultisigAddress = (
     const params: MultisigMetadata = {
         version,
         threshold,
-        addrs: addresses.map(addr => Address.fromString(addr)),
+        addrs: addresses,
     }
 
-    const msig = new MultisigAccount(params, [])
-    return msig.addr.toString()
+    return multisigAddress(params).toString()
 }

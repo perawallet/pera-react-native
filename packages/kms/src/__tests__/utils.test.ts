@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,8 @@
 import { describe, test, expect, vi } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore'
 
-vi.mock('@algorandfoundation/algokit-utils', () => ({
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
     encodeAddress: (bytes: Uint8Array) =>
         `ADDR_${Buffer.from(bytes).toString('hex')}`,
 }))
@@ -23,13 +24,15 @@ import {
     algo25AddressOf,
     buildSeedMetadata,
     createdAtOf,
+    entropyChildIdOf,
+    entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
     isSeedKey,
     seedSchemeOf,
 } from '../utils'
 import { AccessControlPermission } from '../models'
-import { SeedScheme } from '../constants'
+import { QUANTUM_SEED_LENGTH, SeedScheme } from '../constants'
 
 const seedKey = (
     overrides: Partial<Key> & { metadata?: Record<string, unknown> } = {},
@@ -52,6 +55,12 @@ describe('seedSchemeOf', () => {
         expect(
             seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Algo25 } })),
         ).toBe(SeedScheme.Algo25)
+    })
+
+    test('returns "quantum" for a seed with scheme=quantum metadata', () => {
+        expect(
+            seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Quantum } })),
+        ).toBe(SeedScheme.Quantum)
     })
 
     test('returns null for a seed with no scheme metadata', () => {
@@ -104,6 +113,12 @@ describe('isSeedKey', () => {
         ).toBe(true)
         expect(isSeedKey(seedKey())).toBe(false)
     })
+
+    test('treats a quantum seed as a wallet-root seed', () => {
+        expect(
+            isSeedKey(seedKey({ metadata: { scheme: SeedScheme.Quantum } })),
+        ).toBe(true)
+    })
 })
 
 describe('algo25AddressOf', () => {
@@ -154,8 +169,15 @@ describe('aclOf / createdAtOf / expiresAtOf', () => {
         expect(expiresAtOf(key)?.toISOString()).toBe(expiresAt.toISOString())
     })
 
-    test('aclOf defaults to [] when pera metadata is absent', () => {
-        expect(aclOf(seedKey())).toEqual([])
+    test('aclOf defaults to the wallet own-origin ACL when pera metadata is absent', () => {
+        // Fail-closed default: no explicit ACL means "scoped to the wallet's
+        // own signing/backup origins", not allow-all.
+        expect(aclOf(seedKey())).toEqual([
+            {
+                domains: ['pera.accounts', 'backup-flow'],
+                permissions: ['read-private'],
+            },
+        ])
     })
 
     test('createdAtOf defaults to "now" when pera metadata is absent', () => {
@@ -168,6 +190,18 @@ describe('aclOf / createdAtOf / expiresAtOf', () => {
             metadata: buildSeedMetadata({ scheme: SeedScheme.Bip39 }),
         })
         expect(expiresAtOf(key)).toBeUndefined()
+    })
+
+    test('aclOf gives a quantum seed the same fail-closed default ACL as algo25', () => {
+        const quantumSeed = seedKey({
+            metadata: { scheme: SeedScheme.Quantum, pera: {} },
+        })
+        const acl = aclOf(quantumSeed)
+        expect(acl).toHaveLength(1)
+        expect(acl[0].domains).toEqual(['pera.accounts', 'backup-flow'])
+        expect(acl[0].permissions).toEqual([
+            AccessControlPermission.ReadPrivate,
+        ])
     })
 })
 
@@ -194,24 +228,70 @@ describe('buildSeedMetadata', () => {
         expect(created).toBeGreaterThanOrEqual(before)
     })
 
-    test('stashes entropy as a lowercase hex string when provided', () => {
-        const entropy = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
-        expect(meta.entropy).toBe('deadbeef')
-    })
-
-    test('omits the entropy field entirely when not provided', () => {
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Algo25 })
+    test('never stores entropy in the metadata, even for a bip39 seed', () => {
+        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
         expect('entropy' in meta).toBe(false)
     })
 })
 
+describe('entropyChildMetadata', () => {
+    test('stamps parentKeyId and the entropyKey marker', () => {
+        expect(entropyChildMetadata('seed-123')).toEqual({
+            parentKeyId: 'seed-123',
+            entropyKey: true,
+        })
+    })
+})
+
+describe('entropyChildIdOf', () => {
+    const keys = [
+        { id: 'seed-123', type: 'seed', metadata: { scheme: 'bip39' } },
+        {
+            id: 'random-child-id',
+            type: 'secret-key',
+            metadata: entropyChildMetadata('seed-123'),
+        },
+        {
+            id: 'derived',
+            type: 'hd-derived-ed25519',
+            metadata: { parentKeyId: 'seed-123' },
+        },
+    ] as unknown as Key[]
+
+    test('finds the entropy child by its metadata, regardless of id', () => {
+        expect(entropyChildIdOf('seed-123', keys)).toBe('random-child-id')
+    })
+
+    test('ignores non-entropy children of the same seed', () => {
+        const onlyDerived = keys.filter(k => k.id !== 'random-child-id')
+        expect(entropyChildIdOf('seed-123', onlyDerived)).toBeUndefined()
+    })
+
+    test('returns undefined when the seed has no entropy child', () => {
+        expect(entropyChildIdOf('other-seed', keys)).toBeUndefined()
+    })
+})
+
 describe('hexToBytes', () => {
-    test('round-trips with the hex emitted by buildSeedMetadata', () => {
-        const entropy = new Uint8Array([1, 2, 3, 255])
-        const meta = buildSeedMetadata({ scheme: SeedScheme.Bip39, entropy })
-        expect(Array.from(hexToBytes(meta.entropy!))).toEqual(
-            Array.from(entropy),
-        )
+    test('decodes a lowercase hex string to its bytes', () => {
+        expect(Array.from(hexToBytes('010203ff'))).toEqual([1, 2, 3, 255])
+    })
+
+    test('throws on an odd-length string instead of dropping the last nibble', () => {
+        expect(() => hexToBytes('abc')).toThrow()
+    })
+
+    test('throws on non-hex characters instead of decoding them to 0', () => {
+        expect(() => hexToBytes('zz')).toThrow()
+    })
+})
+
+describe('quantum scheme constants', () => {
+    test('SeedScheme.Quantum is the literal "quantum"', () => {
+        expect(SeedScheme.Quantum).toBe('quantum')
+    })
+
+    test('QUANTUM_SEED_LENGTH matches the 32-byte algo25 entropy size', () => {
+        expect(QUANTUM_SEED_LENGTH).toBe(32)
     })
 })

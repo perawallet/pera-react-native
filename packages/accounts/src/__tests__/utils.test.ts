@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -25,6 +25,8 @@ import {
     isEligibleLedgerRekeyTarget,
     isEligibleRekeyTarget,
     isEligibleSharedRekeyTarget,
+    isQuantumAccount,
+    isQuantumDowngrade,
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -36,6 +38,7 @@ import {
     resolveImportAccountType,
 } from '../utils'
 import { AccountTypes, type WalletAccount } from '../models'
+import { MNEMONIC_WORD_COUNT } from '../constants'
 import { RekeyTargetNotFoundError } from '../errors'
 
 vi.mock('tweetnacl', () => ({
@@ -615,12 +618,20 @@ describe('services/accounts/utils - resolveImportAccountType', () => {
     const words = (count: number) =>
         Array.from({ length: count }, (_, i) => `word${i}`).join(' ')
 
+    test('quantum mnemonics are 25 words', () => {
+        expect(MNEMONIC_WORD_COUNT.quantum).toBe(25)
+    })
+
     test('returns hdWallet for 24-word mnemonic', () => {
         const result = resolveImportAccountType(words(24))
         expect(result).toEqual({ success: true, accountType: 'hdWallet' })
     })
 
-    test('returns algo25 for 25-word mnemonic', () => {
+    test('25-word mnemonic still auto-resolves to algo25, never quantum', () => {
+        // Product decision: a 25-word quantum mnemonic is indistinguishable
+        // from legacy algo25 by word count. Auto-detection deliberately keeps
+        // resolving 25 words to algo25; quantum import only happens through
+        // its dedicated explicit entrypoint (PQ-009).
         const result = resolveImportAccountType(words(25))
         expect(result).toEqual({ success: true, accountType: 'algo25' })
     })
@@ -744,6 +755,59 @@ const multisig = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
         ...overrides,
     }) as WalletAccount
 
+const quantum = (overrides: Partial<WalletAccount> = {}): WalletAccount =>
+    ({
+        id: overrides.id ?? 'f',
+        address: overrides.address ?? 'F',
+        type: AccountTypes.quantum,
+        keyPairId: 'kp-quantum',
+        ...overrides,
+    }) as WalletAccount
+
+describe('services/accounts/utils - quantum accounts', () => {
+    test('isQuantumAccount returns true only for quantum accounts', () => {
+        expect(isQuantumAccount(quantum())).toBe(true)
+        expect(isQuantumAccount(algo25())).toBe(false)
+        expect(isQuantumAccount(hd())).toBe(false)
+        expect(isQuantumAccount(ledger())).toBe(false)
+        expect(isQuantumAccount(watch())).toBe(false)
+        expect(isQuantumAccount(multisig())).toBe(false)
+    })
+
+    test('other type guards reject quantum accounts', () => {
+        expect(isAlgo25Account(quantum())).toBe(false)
+        expect(isHDWalletAccount(quantum())).toBe(false)
+        expect(isWatchAccount(quantum())).toBe(false)
+        expect(isMultisigAccount(quantum())).toBe(false)
+    })
+
+    test('hasSigningKeys is true for a keyPairId-backed quantum account', () => {
+        expect(hasSigningKeys(quantum())).toBe(true)
+    })
+
+    test('canSignArbitraryData and canSignArc60 are true for quantum', () => {
+        expect(canSignArbitraryData(quantum())).toBe(true)
+        expect(canSignArc60(quantum())).toBe(true)
+    })
+
+    test('canSignWith resolves a quantum account as its own signer', () => {
+        const account = quantum()
+        expect(canSignWith(account, [account])).toBe(true)
+    })
+
+    test('canSignWith resolves a quantum auth account for a rekeyed account', () => {
+        const auth = quantum({ address: 'FAUTH' })
+        const rekeyed = watch({ address: 'A', rekeyAddress: 'FAUTH' })
+        expect(canSignWith(rekeyed, [rekeyed, auth])).toBe(true)
+    })
+
+    test('quantum keys are not valid multisig participants (Ed25519-only protocol)', () => {
+        expect(canSignViaParticipants(['F'], [quantum({ address: 'F' })])).toBe(
+            false,
+        )
+    })
+})
+
 describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     test('rejects target equal to source', () => {
         expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'A')).toBe(false)
@@ -782,6 +846,100 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
             true,
         )
         expect(isEligibleRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(true)
+    })
+
+    test('accepts a quantum target (rekey-in migration path)', () => {
+        expect(isEligibleRekeyTarget(quantum({ address: 'F' }), 'SRC')).toBe(
+            true,
+        )
+    })
+
+    test('rejects a quantum target already rekeyed away', () => {
+        expect(
+            isEligibleRekeyTarget(
+                quantum({ address: 'F', rekeyAddress: 'X' }),
+                'SRC',
+            ),
+        ).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - isQuantumDowngrade', () => {
+    test('quantum source to a plain Ed25519 target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = algo25({ address: 'A' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
+        expect(
+            isQuantumDowngrade(source, hd({ address: 'H' }), [
+                source,
+                hd({ address: 'H' }),
+            ]),
+        ).toBe(true)
+    })
+
+    test('quantum source to a quantum target is not a downgrade', () => {
+        const source = quantum({ address: 'F1' })
+        const target = quantum({ address: 'F2' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('Ed25519 source to a quantum target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = quantum({ address: 'F' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('Ed25519 source to an Ed25519 target is not a downgrade', () => {
+        const source = algo25({ address: 'A' })
+        const target = hd({ address: 'H' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
+    })
+
+    test('quantum source to a target whose effective auth is quantum is not a downgrade', () => {
+        // Target is itself rekeyed to a quantum account, so its effective
+        // signing authority resolves to quantum via resolveAuthAccount.
+        const source = quantum({ address: 'F1' })
+        const quantumAuth = quantum({ address: 'FAUTH' })
+        const target = watch({ address: 'T', rekeyAddress: 'FAUTH' })
+        expect(
+            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
+        ).toBe(false)
+    })
+
+    test('quantum source to a hardware/ledger target is a downgrade', () => {
+        const source = quantum({ address: 'F' })
+        const target = ledger({ address: 'L' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(true)
+    })
+
+    test('Ed25519 source rekeyed to a quantum auth (rekey-in), rekeying to an Ed25519 target, is a downgrade', () => {
+        // The flagship migration path: the account's own type stays algo25,
+        // but its effective signer is quantum — rekeying to Ed25519 strips it.
+        const quantumAuth = quantum({ address: 'FAUTH' })
+        const source = algo25({ address: 'A', rekeyAddress: 'FAUTH' })
+        const target = algo25({ address: 'B' })
+        expect(
+            isQuantumDowngrade(source, target, [source, target, quantumAuth]),
+        ).toBe(true)
+    })
+
+    test('quantum-typed source already rekeyed to an Ed25519 auth is not a downgrade', () => {
+        // Its effective signer is already Ed25519 — there is no quantum
+        // protection left to remove, so the warning would be untrue.
+        const ed25519Auth = algo25({ address: 'EAUTH' })
+        const source = quantum({ address: 'F', rekeyAddress: 'EAUTH' })
+        const target = algo25({ address: 'B' })
+        expect(
+            isQuantumDowngrade(source, target, [source, target, ed25519Auth]),
+        ).toBe(false)
+    })
+
+    test('source whose auth is not held locally (broken chain) is not a downgrade', () => {
+        // resolveAuthAccount throws when the auth is unheld; we cannot assert
+        // quantum protection we cannot resolve.
+        const source = quantum({ address: 'F', rekeyAddress: 'MISSING' })
+        const target = algo25({ address: 'B' })
+        expect(isQuantumDowngrade(source, target, [source, target])).toBe(false)
     })
 })
 

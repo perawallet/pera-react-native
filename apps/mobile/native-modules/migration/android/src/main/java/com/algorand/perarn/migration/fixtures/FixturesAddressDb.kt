@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 Pera Wallet, LDA
+ * Copyright 2022-2026 Pera Wallet, LDA
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -193,7 +193,7 @@ internal object FixturesAddressDb {
         ),
     )
 
-    private const val DERIVATION_TYPE_PEIKERT = 0
+    private const val DERIVATION_TYPE_PEIKERT = 9
 
     private fun hexToBytes(hex: String): ByteArray {
         require(hex.length % 2 == 0) { "hex string must have even length: ${hex.length}" }

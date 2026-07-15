@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,28 +19,34 @@ import {
 } from '../errors'
 import { zeroBytes } from '../crypto/secure-memory'
 import {
+    entropyChildIdOf,
     expiresAtOf,
-    hexToBytes,
     isSeedKey,
     seedSchemeOf,
-    type SeedMetadata,
 } from '../utils'
 import { SeedScheme } from '../constants'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
+import { useQuantum } from './useQuantum'
+export type { QuantumKeyResult } from './useQuantum'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
-import { entropyToMnemonic } from '../crypto/hdwallet-utils'
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import { entropyToIndices } from '../crypto/hdwallet-utils'
+import { algo25SeedToIndices } from '../crypto/algo25-utils'
+import { withSecret } from '../storage/secrets'
+import { falconSignMock } from '../crypto/falcon-utils'
 
-export type ExecuteWithMnemonicHandler<T> = (words: string[]) => T | Promise<T>
+export type ExecuteWithMnemonicHandler<T> = (
+    indices: Uint16Array,
+) => T | Promise<T>
 
 export const useKMS = () => {
     const keystoreKeys = useKeystoreKeys()
     const { createAlgo25Key } = useAlgo25()
+    const { createQuantumKey } = useQuantum()
     const {
         createHDWalletKey,
         persistHDMasterKey,
@@ -141,6 +147,40 @@ export const useKMS = () => {
         [getKey],
     )
 
+    // MOCK(quantum): replace with real Falcon-1024 implementation when keystore support lands. See EPIC phase 2.
+    /**
+     * Signs each payload with the mocked quantum signer. The quantum child
+     * entry holds no private material — the signature derives from the
+     * parent seed's private bytes, exported only for the duration of this
+     * call and zeroed in `finally`.
+     */
+    const signWithQuantumSeed = (
+        seedKey: Key,
+        payloads: Uint8Array[],
+    ): Promise<Uint8Array[]> =>
+        withExportedKey(seedKey.id, seedData => {
+            if (!seedData.privateKey) {
+                throw new KeyManagementError(
+                    'Quantum seed has no private key bytes',
+                )
+            }
+            const seedBytes = new Uint8Array(seedData.privateKey)
+            try {
+                return payloads.map(payload =>
+                    falconSignMock(seedBytes, payload),
+                )
+            } finally {
+                zeroBytes(seedBytes)
+            }
+        })
+
+    const hasSeedWithEntropy = useCallback((seedKeyId: string): boolean => {
+        const keys = getKeystoreStore().state.keys
+        const seed = keys.find(k => k.id === seedKeyId)
+        if (!seed || !isSeedKey(seed)) return false
+        return entropyChildIdOf(seedKeyId, keys) !== undefined
+    }, [])
+
     /**
      * Signs each item with the child key at `childKeyId`.
      */
@@ -151,6 +191,9 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
+        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
+            return signWithQuantumSeed(seedKey, encodedTxs)
+        }
         return Promise.all(encodedTxs.map(tx => keyStore.sign(childKeyId, tx)))
     }
 
@@ -161,6 +204,9 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
+        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
+            return signWithQuantumSeed(seedKey, data)
+        }
         return Promise.all(data.map(d => keyStore.sign(childKeyId, d)))
     }
 
@@ -180,8 +226,17 @@ export const useKMS = () => {
     )
 
     /**
-     * Runs `handler` with the mnemonic words for the seed that minted
-     * `childKeyId`.
+     * Runs `handler` with the mnemonic for the seed that minted `childKeyId`,
+     * passed as a zeroable `Uint16Array` of BIP39 wordlist indices. The phrase
+     * is rebuilt from keystore material (the BIP39 entropy secret-key, or the
+     * algo25 seed) only for the duration of this call; the intermediate byte
+     * buffers and the index buffer are all zeroed in `finally`.
+     *
+     * Indices (not `string[]`) are the currency here so the secret retained
+     * across the handler's work — which may be async and PIN-gated — is a
+     * buffer we can actually scrub, and holds opaque numbers rather than the
+     * dictionary words a memory scanner could grep for. Handlers materialize
+     * individual words via `mnemonicIndexToWord` only at the point of use.
      */
     const executeWithMnemonic = async <T>(
         childKeyId: string,
@@ -193,42 +248,48 @@ export const useKMS = () => {
         const scheme = seedSchemeOf(seedKey)
         if (!scheme) throw new InvalidKeyError(seedKey.id)
 
-        return withExportedKey(seedKey.id, async seedData => {
-            let words: string[]
-
-            if (scheme === SeedScheme.Bip39) {
-                const meta = (seedData.metadata ?? {}) as SeedMetadata
-                if (!meta.entropy) {
-                    throw new KeyManagementError(
-                        'HD seed is missing entropy metadata for mnemonic recovery',
-                    )
-                }
-                const entropyBytes = hexToBytes(meta.entropy)
-                try {
-                    words = entropyToMnemonic(entropyBytes).split(' ')
-                } finally {
-                    zeroBytes(entropyBytes)
-                }
-            } else {
-                if (!seedData.privateKey) {
-                    throw new KeyManagementError(
-                        'Algo25 seed has no private key bytes',
-                    )
-                }
-                const seedBytes = new Uint8Array(seedData.privateKey)
-                try {
-                    words = mnemonicFromSeed(seedBytes).split(' ')
-                } finally {
-                    zeroBytes(seedBytes)
-                }
-            }
-
-            const bytes = new TextEncoder().encode(words.join(' '))
+        const runWithIndices = async (indices: Uint16Array): Promise<T> => {
             try {
-                return await handler(words)
+                return await handler(indices)
             } finally {
-                zeroBytes(bytes)
+                zeroBytes(indices)
             }
+        }
+
+        if (scheme === SeedScheme.Bip39) {
+            // The HD entropy lives in its own `secret-key` child (located by
+            // metadata, not a derived id), so the seed's XHD root is never
+            // exported just to recover the phrase. entropy → indices directly:
+            // the phrase is never a string on the heap.
+            const entropyId = entropyChildIdOf(seedKey.id, keystoreKeys)
+            const indices = entropyId
+                ? await withSecret(entropyId, entropy =>
+                      entropyToIndices(entropy),
+                  )
+                : null
+            if (!indices) {
+                throw new KeyManagementError(
+                    'HD seed is missing its entropy secret',
+                )
+            }
+            return runWithIndices(indices)
+        }
+
+        // algo25 / quantum: the phrase derives from the seed's own
+        // private-key bytes — both schemes share the 25-word format
+        // (24 data words + 1 checksum over 32 bytes of entropy).
+        return withExportedKey(seedKey.id, async seedData => {
+            if (!seedData.privateKey) {
+                throw new KeyManagementError('Seed has no private key bytes')
+            }
+            const seedBytes = new Uint8Array(seedData.privateKey)
+            let indices: Uint16Array
+            try {
+                indices = algo25SeedToIndices(seedBytes)
+            } finally {
+                zeroBytes(seedBytes)
+            }
+            return runWithIndices(indices)
         })
     }
 
@@ -239,7 +300,9 @@ export const useKMS = () => {
         deleteKey,
         getKey,
         getKeyOrThrow,
+        hasSeedWithEntropy,
         createAlgo25Key,
+        createQuantumKey,
         createHDWalletKey,
         persistHDMasterKey,
         generateDerivedKey,

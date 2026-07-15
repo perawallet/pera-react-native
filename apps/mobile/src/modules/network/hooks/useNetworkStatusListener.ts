@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,53 +11,56 @@
  */
 
 import { useEffect } from 'react'
-import { AppState } from 'react-native'
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
-import { onlineManager } from '@tanstack/react-query'
-import { useToast } from '@hooks/useToast'
-import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
-import { useNetworkStatusStore } from './useNetworkStatusStore'
+import {
+    RemoteConfigKeys,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
+import {
+    computeHasInternet,
+    configureNetInfo,
+    handleConnectivityChange,
+    cancelPendingConnectivityChange,
+    REACHABILITY_URL,
+} from '../networkStatus'
 
 /**
  * Hook that initializes network status listeners.
- * Call this once at the app root to set up:
- * - NetInfo subscription to track connectivity
- * - Toast notifications for offline status
+ * Call this once at the app root to set up a NetInfo subscription that tracks
+ * connectivity into the network store and TanStack Query's onlineManager.
+ * Offline UX is surfaced by the global <OfflineBanner /> (see RootComponent),
+ * not a transient toast.
  *
  * @example
  * // In RootComponent
  * useNetworkStatusListener()
  */
 export const useNetworkStatusListener = (): void => {
-    const { showToast } = useToast()
-    const setHasInternet = useNetworkStatusStore(state => state.setHasInternet)
-    const hasInternet = useNetworkStatusStore(state => state.hasInternet)
+    const reachabilityUrl = useRemoteConfig().getStringValue(
+        RemoteConfigKeys.network_reachability_url,
+        REACHABILITY_URL,
+    )
 
-    // Subscribe to network status changes
+    // Configure NetInfo's reachability probe from the Remote Config URL (falls
+    // back to the baked-in 204 endpoint). Done here rather than at module load
+    // because the provider — and thus Remote Config — is only ready inside the
+    // React tree.
+    useEffect(() => {
+        configureNetInfo(reachabilityUrl)
+    }, [reachabilityUrl])
+
+    // Subscribe to network status changes. Reachability-aware connectivity is
+    // computed and debounced in networkStatus; the store (wired to
+    // onlineManager via initNetworkStatus) remains the single source of truth.
     useEffect(() => {
         const netInfoSubscription = NetInfo.addEventListener(
             (state: NetInfoState) => {
-                const isConnected = state.isConnected === true
-                setHasInternet(isConnected)
-                onlineManager.setOnline(isConnected)
+                handleConnectivityChange(computeHasInternet(state))
             },
         )
         return () => {
             netInfoSubscription()
+            cancelPendingConnectivityChange()
         }
-    }, [setHasInternet])
-
-    // Show toast when going offline
-    useEffect(() => {
-        if (!hasInternet && AppState.currentState === 'active') {
-            showToast(
-                {
-                    title: 'No Internet Connection',
-                    body: 'Some data may not be up to date.',
-                    type: 'warning',
-                },
-                { duration: LONG_NOTIFICATION_DURATION },
-            )
-        }
-    }, [hasInternet, showToast])
+    }, [])
 }

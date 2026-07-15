@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useRef } from 'react'
-import { useQueries } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 import {
     getSignRequestsWithSignatures,
     getSignRequestsWithSignaturesQueryKey,
@@ -22,13 +21,15 @@ import {
     classifyHandoffPoll,
     resolveHandoffOutcome,
     type ResolverMessages,
+    type TerminalHandoffOutcome,
 } from '../pipeline/classifyHandoffPoll'
+import type { PendingWalletConnectHandoff } from '../pipeline/walletConnectHandoffs'
 import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
+import { useHandoffResolver } from './useHandoffResolver'
 
-/** Poll cadence while the backend is responding. */
-const BASE_POLL_INTERVAL_MS = 3000
-/** Slower cadence right after a failed poll, so a down backend isn't hammered. */
-const ERROR_POLL_INTERVAL_MS = 30_000
+/** Stable accessor (module-level so the core's dispatch effect isn't churned). */
+const handoffKey = (handoff: PendingWalletConnectHandoff): string =>
+    handoff.signRequestId
 
 export type UseWalletConnectHandoffResolverArgs = {
     /**
@@ -54,10 +55,12 @@ export type UseWalletConnectHandoffResolverArgs = {
  *     a clean rejection with no in-app connection-error banner.
  *   - `'failed'`: `error` — the connection-error banner is appropriate.
  *
- * One `useQueries` poll per registered handoff. Mounted once at the app
- * root. The handoff registry is in-memory, so an app kill drops tracking —
- * the on-chain sign-request still exists and the user can finish it from
- * the inbox flow.
+ * A thin adapter over {@link useHandoffResolver}: it sources handoffs from the
+ * in-memory registry and delivers terminal outcomes to the dApp. No
+ * active-network filter — every handoff is polled on its own captured network
+ * and delivered to the peer regardless of the wallet's current network. The
+ * registry is in-memory, so an app kill drops tracking; the on-chain
+ * sign-request still exists and the user can finish it from the inbox flow.
  *
  * Platform-agnostic — callers pass `isAppActive` and `messages` so the
  * hook itself has no `react-native` or `react-i18next` dependency.
@@ -72,76 +75,49 @@ export const useWalletConnectHandoffResolver = ({
     const handoffsMap = useWalletConnectHandoffsStore(s => s.handoffs)
     const handoffs = useMemo(() => Object.values(handoffsMap), [handoffsMap])
 
-    // Sign-request ids already delivered a terminal callback — guards
-    // against a late poll re-delivering before the registry-unregister
-    // re-render lands. Pruned to the live handoff set in the effect below.
-    const resolvedRef = useRef<Set<string>>(new Set())
-
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
 
-    // One poll query per handoff. `useQueries` handles the dynamic count;
-    // results stay index-aligned with `handoffs`.
-    const queries = useMemo(
-        () =>
-            handoffs.map(handoff => ({
-                queryKey: getSignRequestsWithSignaturesQueryKey(
-                    handoff.network,
-                    handoff.signRequestId,
-                ),
-                queryFn: () =>
-                    getSignRequestsWithSignatures(handoff.network, {
-                        device_id: handoff.deviceId,
-                        proposed_sign_request_ids: [handoff.signRequestId],
-                    }),
-                select: (data: SignRequestResponse[]) =>
-                    data.find(item => item.id === handoff.signRequestId),
-                enabled: isAppActive,
-                staleTime: 0,
-                gcTime: 0,
-                // `fetchFailureCount` resets every fetch — each interval
-                // poll is a fresh fetch — so a stateless two-tier cadence
-                // stands in for an exponential backoff: fast while healthy,
-                // slow right after an error.
-                refetchInterval: (query: { state: { status: string } }) =>
-                    query.state.status === 'error'
-                        ? ERROR_POLL_INTERVAL_MS
-                        : BASE_POLL_INTERVAL_MS,
-            })),
-        [handoffs, isAppActive],
+    const poll = useCallback(
+        (handoff: PendingWalletConnectHandoff) => ({
+            queryKey: getSignRequestsWithSignaturesQueryKey(
+                handoff.network,
+                handoff.signRequestId,
+            ),
+            queryFn: () =>
+                getSignRequestsWithSignatures(handoff.network, {
+                    device_id: handoff.deviceId,
+                    proposed_sign_request_ids: [handoff.signRequestId],
+                }),
+            select: (data: SignRequestResponse[]) =>
+                data.find(item => item.id === handoff.signRequestId),
+            enabled: isAppActive,
+        }),
+        [isAppActive],
     )
 
-    const queryResults = useQueries({ queries })
-
-    useEffect(() => {
-        // Drop guard entries for handoffs that have left the registry so the
-        // set stays bounded across a long-lived session.
-        const activeIds = new Set(
-            handoffs.map(handoff => handoff.signRequestId),
-        )
-        for (const id of resolvedRef.current) {
-            if (!activeIds.has(id)) resolvedRef.current.delete(id)
-        }
-
-        queryResults.forEach((result, index) => {
-            const handoff = handoffs[index]
-            if (!handoff) return
-            if (resolvedRef.current.has(handoff.signRequestId)) return
-
-            const detail = result.data
-            if (!detail) return
-
-            const outcome = classifyHandoffPoll(detail, handoff)
-            if (outcome.kind === 'keep-polling') return
-
-            // Claim it synchronously so a re-render cannot re-deliver, then
-            // hand the outcome to the dApp.
-            resolvedRef.current.add(handoff.signRequestId)
-            void resolveHandoffOutcome({
+    const resolve = useCallback(
+        (
+            outcome: TerminalHandoffOutcome,
+            handoff: PendingWalletConnectHandoff,
+        ) =>
+            resolveHandoffOutcome({
                 outcome,
                 handoff,
                 messages,
                 markConfirmed,
-            })
-        })
-    }, [queryResults, handoffs, messages, markConfirmed])
+            }),
+        [messages, markConfirmed],
+    )
+
+    useHandoffResolver<
+        PendingWalletConnectHandoff,
+        SignRequestResponse[],
+        SignRequestResponse
+    >({
+        handoffs,
+        keyOf: handoffKey,
+        poll,
+        classify: classifyHandoffPoll,
+        resolve,
+    })
 }

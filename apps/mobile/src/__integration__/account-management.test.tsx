@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -30,6 +30,12 @@ import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
+
+// Pera Card is gated behind a remote-config feature flag; enable it so the
+// account-switcher card row renders in these flows.
+vi.mock('@hooks/useIsPeraCardEnabled', () => ({
+    useIsPeraCardEnabled: () => true,
+}))
 
 // Production opens the account-options sheet through `requestBottomSheet`
 // (see useAccountOverview.openAccountOptions). Mirror that here so the

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Dimensions } from 'react-native'
+import { Dimensions, Platform } from 'react-native'
 
 const BASE_WIDTH = 375
 const MIN_SCALE = 1
@@ -31,15 +31,30 @@ export const moderateScale = (
     return size * clamped
 }
 
-// RN scales fontSize by the OS font scale but NOT an explicit lineHeight, so
-// accessibility-scaled text clips (Issue 2). Scale the line box by the same
-// factor. fontScale is clamped to maxMultiplier because maxFontSizeMultiplier
-// caps the rendered font there while the OS keeps reporting the raw scale.
+// RN's native text stack already multiplies an explicit `lineHeight` by the
+// OS font scale — iOS clamps that at maxFontSizeMultiplier, Android applies
+// the raw scale (sp conversion, no clamp). Pre-dividing by that native
+// multiplier lets us pick the rendered line box exactly:
+// `fontSize × clampedScale + leading`, so glyphs grow with accessibility
+// font sizes while the design's leading (lineHeight − fontSize) stays
+// constant — scaling the whole box would multiply the leading too,
+// ballooning vertical rhythm in rows and multi-line titles (Issue 2).
 export const scaleLineHeight = (
     lineHeight: number | undefined,
+    fontSize: number | undefined,
     fontScale: number,
     maxMultiplier: number,
-): number | undefined =>
-    lineHeight === undefined
-        ? undefined
-        : lineHeight * Math.min(fontScale, maxMultiplier)
+): number | undefined => {
+    if (lineHeight === undefined) return undefined
+    if (fontScale <= 0 || fontScale === 1) return lineHeight
+    const clampedScale = Math.min(fontScale, maxMultiplier)
+    const nativeMultiplier =
+        Platform.OS === 'android' ? fontScale : clampedScale
+    if (fontSize === undefined || fontSize <= 0) {
+        // No font size to anchor the leading on: keep the whole-box scaling
+        // but neutralize the native multiplication so it applies once.
+        return (lineHeight * clampedScale) / nativeMultiplier
+    }
+    const leading = Math.max(lineHeight - fontSize, 0)
+    return (fontSize * clampedScale + leading) / nativeMultiplier
+}

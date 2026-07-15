@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -43,6 +43,7 @@ import ErrorCircleIcon from '@assets/icons/error-circle.svg'
 import EyeIcon from '@assets/icons/eye.svg'
 import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
+import FlagIcon from '@assets/icons/flag.svg'
 import FullViewIcon from '@assets/icons/full-view.svg'
 import FundIcon from '@assets/icons/fund.svg'
 import FunnelIcon from '@assets/icons/funnel.svg'
@@ -76,6 +77,7 @@ import ProgressIcon from '@assets/icons/progress.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
 import QrIcon from '@assets/icons/qr.svg'
+import QuantumIcon from '@assets/icons/quantum.svg'
 import QuestionMarkIcon from '@assets/icons/question-mark.svg'
 import RekeyIcon from '@assets/icons/rekey.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
@@ -134,6 +136,7 @@ import HdWalletAccountGlyph from '@assets/icons/accounts/glyph/hdwallet-account.
 import LedgerAccountGlyph from '@assets/icons/accounts/glyph/ledger-account.svg'
 import MultisigAccountGlyph from '@assets/icons/accounts/glyph/multisig-account.svg'
 import NoAuthAccountGlyph from '@assets/icons/accounts/glyph/noauth-account.svg'
+import QuantumAccountGlyph from '@assets/icons/accounts/glyph/quantum-account.svg'
 import RekeyedLedgerGlyph from '@assets/icons/accounts/glyph/rekeyed-ledger.svg'
 import RekeyedMultisigGlyph from '@assets/icons/accounts/glyph/rekeyed-multisig.svg'
 import RekeyedStandardGlyph from '@assets/icons/accounts/glyph/rekeyed-standard.svg'
@@ -159,6 +162,7 @@ import TxReceiveIcon from '@assets/icons/transactions/receive.svg'
 import TxSendIcon from '@assets/icons/transactions/send.svg'
 import TxSwapIcon from '@assets/icons/transactions/swap.svg'
 import DocumentDownloadIcon from '@assets/icons/document-download.svg'
+import DownloadIcon from '@assets/icons/download.svg'
 import GridViewIcon from '@assets/icons/grid-view.svg'
 import ListViewIcon from '@assets/icons/list-view.svg'
 
@@ -189,6 +193,7 @@ export const ICON_LIBRARY = {
     delete: DeleteIcon,
     dollar: DollarIcon,
     'document-download': DocumentDownloadIcon,
+    download: DownloadIcon,
     'grid-view': GridViewIcon,
     'list-view': ListViewIcon,
     'dot-stack': DotStackIcon,
@@ -199,6 +204,7 @@ export const ICON_LIBRARY = {
     eye: EyeIcon,
     faceid: FaceIdIcon,
     feedback: FeedbackIcon,
+    flag: FlagIcon,
     'full-view': FullViewIcon,
     fund: FundIcon,
     funnel: FunnelIcon,
@@ -232,6 +238,7 @@ export const ICON_LIBRARY = {
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
     qr: QrIcon,
+    quantum: QuantumIcon,
     'question-mark': QuestionMarkIcon,
     rekey: RekeyIcon,
     reload: ReloadIcon,
@@ -287,6 +294,7 @@ export const ICON_LIBRARY = {
     'accounts/glyph/ledger-account': LedgerAccountGlyph,
     'accounts/glyph/multisig-account': MultisigAccountGlyph,
     'accounts/glyph/noauth-account': NoAuthAccountGlyph,
+    'accounts/glyph/quantum-account': QuantumAccountGlyph,
     'accounts/glyph/rekeyed-ledger': RekeyedLedgerGlyph,
     'accounts/glyph/rekeyed-multisig': RekeyedMultisigGlyph,
     'accounts/glyph/rekeyed-standard': RekeyedStandardGlyph,

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,10 @@
 
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+
+const STORE_NAME = 'migration-gate-store'
 
 type MigrationGateState = {
     isChecking: boolean
@@ -54,7 +57,7 @@ export const useMigrationGateStore = create<MigrationGateStore>()(
             resetState: () => set(initialState),
         }),
         {
-            name: 'migration-gate-store',
+            name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             // Only `skipped` survives cold launches. Session-local fields
             // (isChecking, needsMigration, dismissed, hasStarted) re-evaluate
@@ -63,3 +66,14 @@ export const useMigrationGateStore = create<MigrationGateStore>()(
         },
     ),
 )
+
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useMigrationGateStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useMigrationGateStore.getState().resetState(),
+})

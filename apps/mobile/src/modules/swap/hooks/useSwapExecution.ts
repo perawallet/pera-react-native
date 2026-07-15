@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,8 +14,16 @@ import { useState, useCallback } from 'react'
 import {
     useTransactionEncoder,
     useAlgorandClient,
+    useNetwork,
+    mapToDisplayableTransaction,
+    type PeraDisplayableTransaction,
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    isMultisigAccount,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     submitAndAutoRefresh,
     useSigningRequest,
@@ -23,9 +31,13 @@ import {
 import {
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
+    useSwapHandoffStore,
+    validateSwapGroupAgainstQuote,
     type PrepareTransactionsResult,
+    type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
 import {
+    encodeToBase64,
     logger,
     type Nullable,
     type Optional,
@@ -35,10 +47,12 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     buildGroupPlans,
     scatterSigned,
+    serializeGroupPlans,
     SwapUserRejectedError,
 } from './swapGroupPlan'
 import {
     requestSwapSignatures,
+    requestSwapProposal,
     reportSwapFailure,
 } from './swapExecutionHelpers'
 
@@ -49,6 +63,9 @@ export type SwapExecutionStatus =
     | 'submitting'
     | 'updating-status'
     | 'success'
+    // Shared-account swap: proposed to the backend, waiting for the co-signer.
+    // The cosign resolver finishes submission asynchronously.
+    | 'pending-cosign'
     | 'error'
 
 export type SwapExecutionErrorPhase =
@@ -68,10 +85,12 @@ export type SwapExecutionError = {
 export type SwapExecutionOutcome =
     | { kind: 'success' }
     | { kind: 'cancelled' }
+    // Shared-account swap proposed; co-signer must approve before it submits.
+    | { kind: 'pending-cosign' }
     | { kind: 'error'; phase: SwapExecutionErrorPhase; message: string }
 
 type UseSwapExecutionResult = {
-    execute: (quoteIdStr: string) => Promise<SwapExecutionOutcome>
+    execute: (quote: SwapQuote) => Promise<SwapExecutionOutcome>
     status: SwapExecutionStatus
     error: Nullable<SwapExecutionError>
     txIds: string[]
@@ -92,14 +111,26 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
         encodeSignedTransactions,
     } = useTransactionEncoder()
     const algorandClient = useAlgorandClient()
+    const { network } = useNetwork()
+    const account = useSelectedAccount()
+    const deviceId = useDeviceID(network)
+    const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
         usePrepareTransactionsMutation()
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
 
     const execute = useCallback(
-        async (quoteIdStr: string): Promise<SwapExecutionOutcome> => {
+        async (quote: SwapQuote): Promise<SwapExecutionOutcome> => {
             setError(null)
             setTxIds([])
+
+            const quoteIdStr = quote.quoteIdStr
+            if (!quoteIdStr) {
+                const message = 'Swap quote is missing its id'
+                setError({ phase: 'prepare', message })
+                setStatus('error')
+                return { kind: 'error', phase: 'prepare', message }
+            }
 
             let prepareResult: Optional<PrepareTransactionsResult>
 
@@ -139,6 +170,99 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     decodeSignedTransaction,
                 },
             )
+
+            // Fail-closed: the prepared group is backend-built and these flows
+            // skip the standard signing review sheet, so verify it only spends
+            // what the reviewed quote implies before signing it.
+            try {
+                const signableDisplayable = unsignedTxs
+                    .map(mapToDisplayableTransaction)
+                    .filter(
+                        (tx): tx is PeraDisplayableTransaction => tx !== null,
+                    )
+                validateSwapGroupAgainstQuote(signableDisplayable, quote)
+            } catch (e) {
+                const message =
+                    e instanceof Error ? e.message : 'Swap validation failed'
+                setError({ phase: 'prepare', message })
+                setStatus('error')
+                void reportSwapFailure(
+                    updateSwapStatus,
+                    prepareResult.swapIdStr,
+                )
+                return { kind: 'error', phase: 'prepare', message }
+            }
+
+            // Shared-account (multisig) branch. When the sender is a multisig
+            // account we can't submit inline: only the proposer's local key(s)
+            // are available, so we propose a `sync` multisig sign-request
+            // (backend collects sigs but won't broadcast) and register a
+            // persisted handoff. The cosign resolver assembles the composite
+            // multisig, interleaves the pre-signed slots, and submits to algod
+            // once the co-signer approves from their inbox. Skipped when every
+            // slot is pre-signed (nothing to co-sign).
+            if (
+                account &&
+                isMultisigAccount(account) &&
+                account.multisigDetails &&
+                unsignedTxs.length > 0 &&
+                prepareResult.swapIdStr
+            ) {
+                const swapIdStr = prepareResult.swapIdStr
+                const { threshold, addresses } = account.multisigDetails
+                const multisigAddress = account.address
+                try {
+                    setStatus('signing')
+                    const serializedPlan = serializeGroupPlans(
+                        plans,
+                        encodeSignedTransactions,
+                        encodeToBase64,
+                    )
+                    await requestSwapProposal(
+                        addSignRequest,
+                        {
+                            name: t('swap.signing.source_name'),
+                            description: t('swap.signing.source_description'),
+                        },
+                        unsignedTxs,
+                        groupContext,
+                        ({ signRequestId, rawTransactionsBase64 }) => {
+                            registerHandoff({
+                                swapIdStr,
+                                signRequestId,
+                                network,
+                                multisigAddress,
+                                deviceId: deviceId ?? '',
+                                msigMetadata: {
+                                    version: 1,
+                                    threshold,
+                                    addresses,
+                                },
+                                plan: serializedPlan,
+                                expectedRawTransactionsBase64:
+                                    rawTransactionsBase64,
+                                registeredAt: Date.now(),
+                            })
+                        },
+                    )
+                    setStatus('pending-cosign')
+                    return { kind: 'pending-cosign' }
+                } catch (e) {
+                    const isRejection = e instanceof SwapUserRejectedError
+                    const message = isRejection
+                        ? t('swap.execution.user_rejected')
+                        : e instanceof Error
+                          ? e.message
+                          : 'Failed to propose transactions'
+                    setError({ phase: 'signing', message })
+                    setStatus('error')
+                    if (isRejection) {
+                        return { kind: 'cancelled' }
+                    }
+                    void reportSwapFailure(updateSwapStatus, swapIdStr)
+                    return { kind: 'error', phase: 'signing', message }
+                }
+            }
 
             // Phase 2: Sign transactions via the signing pipeline.
             // Skip the pipeline entirely when every txn is already pre-signed.
@@ -238,6 +362,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             updateSwapStatus,
             t,
             getMessage,
+            network,
+            account,
+            deviceId,
+            registerHandoff,
         ],
     )
 

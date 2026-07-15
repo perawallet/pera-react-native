@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -25,15 +25,14 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import {
     type AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     type PeraAsset,
     useSingleAssetDetailsQuery,
@@ -57,7 +56,6 @@ export const AssetHoldings = ({
 }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
-    const { preferredCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
 
@@ -112,31 +110,26 @@ export const AssetHoldings = ({
                     </PWView>
 
                     <PWView style={styles.primaryValueContainer}>
-                        <CurrencyDisplay
+                        <AssetAmount
                             variant='h1'
                             value={cryptoAmount}
-                            currency={asset.unitName ?? ''}
-                            precision={asset.decimals}
-                            minPrecision={2}
+                            asset={asset}
                         />
                     </PWView>
 
                     <PWView style={styles.secondaryValueContainer}>
                         {selectedPoint ? (
-                            <CurrencyDisplay
+                            <PreferredAmount
                                 value={selectedPreferredValue}
-                                currency={preferredCurrency}
-                                precision={2}
-                                minPrecision={2}
+                                density='compact'
                             />
                         ) : (
-                            <PreferredCurrencyDisplay
+                            <PreferredAmount
                                 sourceAmount={
                                     assetHolding?.amount ?? new Decimal(0)
                                 }
                                 sourceAssetId={asset.assetId}
-                                precision={2}
-                                minPrecision={2}
+                                density='compact'
                             />
                         )}
                         {!!selectedPoint && (

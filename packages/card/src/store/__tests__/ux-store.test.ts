@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -66,18 +66,16 @@ describe('useCardStore', () => {
         expect(result.current.phoneNumber).toBe('7400846282')
     })
 
-    test('the verification codes are transient — never persisted', async () => {
+    test('the verification code is transient — never persisted', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
 
         act(() => {
             result.current.setVerificationCode('123456')
-            result.current.setPhoneVerificationCode('654321')
         })
 
         expect(result.current.verificationCode).toBe('123456')
-        expect(result.current.phoneVerificationCode).toBe('654321')
-        // The persisted snapshot must exclude both OTPs.
+        // The persisted snapshot must exclude the OTP.
         const persisted = (
             useCardStore as unknown as {
                 persist: {
@@ -90,7 +88,6 @@ describe('useCardStore', () => {
             .getOptions()
             .partialize?.(useCardStore.getState())
         expect(persisted).not.toHaveProperty('verificationCode')
-        expect(persisted).not.toHaveProperty('phoneVerificationCode')
     })
 
     test('setCodeVerificationError is transient and clears on reset', async () => {
@@ -149,32 +146,6 @@ describe('useCardStore', () => {
         expect(persisted).not.toHaveProperty('phoneNumber')
     })
 
-    test('migration strips KYC PII left on disk by earlier builds, preserving non-PII fields', async () => {
-        const { useCardStore } = await import('../ux-store')
-
-        const migratedState = (
-            useCardStore as unknown as {
-                persist: {
-                    getOptions: () => {
-                        migrate?: (state: unknown) => Record<string, unknown>
-                    }
-                }
-            }
-        ).persist
-            .getOptions()
-            .migrate?.({
-                onboardingId: 'ob-1',
-                email: 'john@example.com',
-                phoneCountryCode: '44',
-                phoneNumber: '7400846282',
-            })
-
-        expect(migratedState).not.toHaveProperty('email')
-        expect(migratedState).not.toHaveProperty('phoneCountryCode')
-        expect(migratedState).not.toHaveProperty('phoneNumber')
-        expect(migratedState).toMatchObject({ onboardingId: 'ob-1' })
-    })
-
     test('resetState clears the onboarding contact inputs', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
@@ -197,15 +168,23 @@ describe('useCardStore', () => {
         expect(result.current.phoneNumber).toBeNull()
     })
 
-    test('setAllowMarketing updates the consent flag (defaults to opted-in)', async () => {
+    test('setAllowMarketing / setAllowSms update the consent flags (default never-asked)', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
 
+        // Consent opt-ins start as "never asked" (null) — a resumed session
+        // that skipped the Set-Password screen re-collects them at the address
+        // step instead of recording a silent "denied".
+        expect(result.current.allowMarketing).toBeNull()
+        expect(result.current.allowSms).toBeNull()
+
+        act(() => {
+            result.current.setAllowMarketing(true)
+            result.current.setAllowSms(true)
+        })
+
         expect(result.current.allowMarketing).toBe(true)
-
-        act(() => result.current.setAllowMarketing(false))
-
-        expect(result.current.allowMarketing).toBe(false)
+        expect(result.current.allowSms).toBe(true)
     })
 
     test('setSelectedFundingType stores (and persists) the chosen funding type', async () => {
@@ -275,7 +254,8 @@ describe('useCardStore', () => {
             result.current.setConsentSetId('cs_1')
             result.current.setConnectedFundingSourceAddress('ADDR1')
             result.current.setSelectedFundingType(FundingType.Auto)
-            result.current.setAllowMarketing(false)
+            result.current.setAllowMarketing(true)
+            result.current.setAllowSms(true)
             // Card-snapshot / filters should survive a fresh sign-up.
             result.current.setCardSnapshot({
                 cardId: 'card_1',
@@ -307,7 +287,9 @@ describe('useCardStore', () => {
         expect(result.current.consentSetId).toBeNull()
         expect(result.current.connectedFundingSourceAddress).toBeNull()
         expect(result.current.selectedFundingType).toBeNull()
-        expect(result.current.allowMarketing).toBe(true)
+        // Back to "never asked" so a fresh sign-up re-collects the consents.
+        expect(result.current.allowMarketing).toBeNull()
+        expect(result.current.allowSms).toBeNull()
         // Card snapshot / filters preserved.
         expect(result.current.cardId).toBe('card_1')
         expect(result.current.lastKnownStatus).toBe(CardStatus.Active)

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach, Mock } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
 import React from 'react'
 
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
@@ -79,6 +83,12 @@ describe('useTransactionHistoryQuery', () => {
         mockPersistTransactions.mockResolvedValue(undefined)
     })
 
+    afterEach(() => {
+        // onlineManager is a global singleton — restore connectivity so an
+        // offline test can't leak into the next one.
+        onlineManager.setOnline(true)
+    })
+
     test('reads transaction history from database on first page', async () => {
         const { result } = renderHook(
             () =>
@@ -100,6 +110,97 @@ describe('useTransactionHistoryQuery', () => {
         )
         // Should NOT call API for first page
         expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
+    })
+
+    test('serves the first DB page while offline', async () => {
+        // SQLite is the source of truth for the first page. It must load even
+        // when onlineManager reports offline, instead of pausing its queryFn
+        // (TanStack's default networkMode: 'online'), which would leave the
+        // history screen stuck on skeletons though the rows exist in pera.db.
+        onlineManager.setOnline(false)
+        mockGetTransactionHistory.mockResolvedValue([mockTransaction])
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.transactions).toEqual([mockTransaction]),
+        )
+        expect(result.current.isError).toBe(false)
+    })
+
+    test('stops paginating without erroring when load-more runs offline', async () => {
+        // With networkMode: 'always' the queryFn runs offline, so a load-more
+        // that would hit the network must be guarded: the DB-backed first page
+        // stays rendered, the query does not flip to `isError`, and pagination
+        // halts (no terminal error, no phantom API call) until connectivity
+        // returns.
+        const fullPage = Array.from({ length: 25 }, (_, i) => ({
+            ...mockTransaction,
+            id: `TX${i}`,
+            confirmedRound: 12345 - i,
+            roundTime: 1704067200 - i,
+        }))
+        mockGetTransactionHistory.mockResolvedValue(fullPage)
+        ;(endpoints.fetchTransactionHistory as Mock).mockRejectedValue(
+            new Error('network unreachable'),
+        )
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.transactions).toHaveLength(25),
+        )
+        expect(result.current.hasNextPage).toBe(true)
+
+        // Drop offline, then attempt to load more.
+        onlineManager.setOnline(false)
+        result.current.fetchNextPage()
+
+        await waitFor(() =>
+            expect(result.current.isFetchingNextPage).toBe(false),
+        )
+
+        // No network attempt, no error, DB rows intact, pagination halted.
+        expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
+        expect(result.current.isError).toBe(false)
+        expect(result.current.transactions).toHaveLength(25)
+        expect(result.current.hasNextPage).toBe(false)
+    })
+
+    test('applies afterTime/beforeTime filters to the first DB page', async () => {
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                    afterTime: '2024-01-01',
+                    beforeTime: '2024-01-31',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        expect(mockGetTransactionHistory).toHaveBeenCalledWith(
+            expect.objectContaining({
+                afterTime: '2024-01-01',
+                beforeTime: '2024-01-31',
+            }),
+        )
     })
 
     test('provides loading state initially', () => {

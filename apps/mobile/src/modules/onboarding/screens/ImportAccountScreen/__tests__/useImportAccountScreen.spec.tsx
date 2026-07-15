@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -61,6 +61,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     MNEMONIC_WORD_COUNT: {
         hdWallet: 24,
         algo25: 25,
+        quantum: 25,
     },
 }))
 
@@ -524,6 +525,88 @@ describe('useImportAccountScreen', () => {
             })
             // markBackupComplete is NOT called yet — the user hasn't committed addresses.
             expect(mockMarkBackupComplete).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('quantum account type', () => {
+        beforeEach(() => {
+            vi.mocked(useRoute).mockReturnValue({
+                params: { accountType: 'quantum' },
+            } as never)
+        })
+
+        it('uses a 25-word grid for quantum imports', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            expect(result.current.mnemonicLength).toBe(25)
+            expect(result.current.words).toHaveLength(25)
+        })
+
+        it('forwards the explicit quantum type to importAccount', async () => {
+            mockImportAccount.mockResolvedValue({ type: 'quantum' })
+            const words = Array.from({ length: 25 }, (_, i) => `word${i}`)
+            const mnemonic = words.join(' ')
+
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord(mnemonic, 0)
+            })
+
+            await act(async () => {
+                result.current.handleImportAccount()
+                await new Promise(resolve => setTimeout(resolve, 0))
+            })
+
+            expect(mockImportAccount).toHaveBeenCalledWith({
+                mnemonic,
+                type: 'quantum',
+            })
+        })
+
+        it('exposes quantum title and info note keys', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            expect(result.current.titleKey).toBe(
+                'onboarding.import_account.quantum_title',
+            )
+            expect(result.current.infoNoteKey).toBe(
+                'onboarding.import_account.quantum_info_note',
+            )
+        })
+    })
+
+    describe('algo25 account type', () => {
+        beforeEach(() => {
+            vi.mocked(useRoute).mockReturnValue({
+                params: { accountType: 'algo25' },
+            } as never)
+        })
+
+        it('forwards the explicit algo25 type to importAccount and uses generic copy', async () => {
+            mockImportAccount.mockResolvedValue({ type: 'algo25' })
+            const words = Array.from({ length: 25 }, (_, i) => `word${i}`)
+            const mnemonic = words.join(' ')
+
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord(mnemonic, 0)
+            })
+
+            await act(async () => {
+                result.current.handleImportAccount()
+                await new Promise(resolve => setTimeout(resolve, 0))
+            })
+
+            expect(mockImportAccount).toHaveBeenCalledWith({
+                mnemonic,
+                type: 'algo25',
+            })
+            expect(result.current.titleKey).toBe(
+                'onboarding.import_account.title',
+            )
+            expect(result.current.infoNoteKey).toBeNull()
         })
     })
 })

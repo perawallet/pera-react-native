@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -100,6 +100,30 @@ describe('toAlgodError', () => {
         expect(toAlgodError(undefined).code).toBe(
             AlgodErrorCode.UNKNOWN_NODE_ERROR,
         )
+    })
+
+    test('maps a DOMException TimeoutError (AbortSignal.timeout) to retryable network_unavailable', () => {
+        const abort = new DOMException(
+            'The operation timed out.',
+            'TimeoutError',
+        )
+        const e = toAlgodError(abort)
+
+        expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
+        expect(e.metadata.retryable).toBe(true)
+        expect(e.originalError).toBe(abort)
+    })
+
+    test('maps a DOMException AbortError (manual abort) to retryable network_unavailable', () => {
+        const abort = new DOMException(
+            'The operation was aborted.',
+            'AbortError',
+        )
+        const e = toAlgodError(abort)
+
+        expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
+        expect(e.metadata.retryable).toBe(true)
+        expect(e.originalError).toBe(abort)
     })
 
     test('retryable flag reflects the code (network_unavailable=true, overspend=false)', () => {

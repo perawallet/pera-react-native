@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,7 +14,11 @@ import { Decimal } from 'decimal.js'
 import { type Network } from '@perawallet/wallet-core-config'
 
 import { type PeraCollectible } from './collectibles'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_ID,
+    ALGO_ASSET_NAME,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 export const PeraAssetVerificationTier = {
     verified: 'verified',
@@ -110,10 +114,6 @@ export type PeraAssetMetadata = {
     isPriceAlertEnabled?: boolean
 }
 
-export const ALGO_ASSET_ID = '0'
-
-export const ALGO_ASSET_UNIT_NAME = 'ALGO'
-
 export const KNOWN_ASSET_IDS = {
     USDC: { mainnet: '31566704', testnet: '10458941' },
 } as const satisfies Record<string, Record<'mainnet' | 'testnet', string>>
@@ -126,7 +126,7 @@ export const getKnownAssetId = (key: KnownAssetKey, network: Network): string =>
 export const ALGO_ASSET: PeraAsset = {
     assetId: ALGO_ASSET_ID,
     name: 'Algo',
-    unitName: ALGO_ASSET_UNIT_NAME,
+    unitName: ALGO_ASSET_NAME,
     decimals: 6,
     totalSupply: new Decimal('10000000000000000000'), //10,000 T microalgos
     creator: {

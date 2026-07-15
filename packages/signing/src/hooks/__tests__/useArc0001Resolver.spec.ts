@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,12 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Address } from '@algorandfoundation/algokit-utils/common'
-import {
-    Transaction,
-    TransactionType,
-    encodeTransaction,
-} from '@algorandfoundation/algokit-utils/transact'
+import { Address, Transaction, TransactionType } from 'algosdk'
+import { encodeTransaction } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 import { useArc0001Resolver } from '../useArc0001Resolver'
@@ -27,18 +23,19 @@ const addrB = new Address(new Uint8Array(32).fill(2)).toString()
 
 const baseParams = {
     fee: 1000n,
+    minFee: 1000n,
     firstValid: 1000n,
     lastValid: 2000n,
-    genesisId: 'mainnet-v1.0',
+    genesisID: 'mainnet-v1.0',
     genesisHash: new Uint8Array(32).fill(0xab),
 }
 
 const buildPaymentTxnB64 = (sender: string): string => {
     const tx = new Transaction({
-        type: TransactionType.Payment,
+        type: TransactionType.pay,
         sender: new Address(Address.fromString(sender).publicKey),
-        ...baseParams,
-        payment: {
+        suggestedParams: baseParams,
+        paymentParams: {
             receiver: new Address(Address.fromString(addrB).publicKey),
             amount: 1n,
         },

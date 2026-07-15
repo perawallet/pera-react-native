@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,11 +11,11 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { Address } from '@algorandfoundation/algokit-utils'
 import {
-    decodeMsgpack,
-    encodeMsgpack,
-} from '@algorandfoundation/algokit-utils/common'
+    Address,
+    msgpackRawDecode as decodeMsgpack,
+    msgpackRawEncode as encodeMsgpack,
+} from 'algosdk'
 import nacl from 'tweetnacl'
 import {
     assembleSignedMultisigTransactions,
@@ -102,14 +102,13 @@ describe('assembleSignedMultisigTransactions', () => {
 
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
 
         expect(Object.keys(decoded).sort()).toEqual(['msig', 'txn'])
 
         const msig = decoded.msig as Record<string, unknown>
-        expect(msig.v).toBe(1)
-        expect(msig.thr).toBe(2)
+        expect(Number(msig.v)).toBe(1)
+        expect(Number(msig.thr)).toBe(2)
         const subsigs = msig.subsig as Array<{
             pk: Uint8Array
             s?: Uint8Array
@@ -139,10 +138,10 @@ describe('assembleSignedMultisigTransactions', () => {
         if (result.kind !== 'success') throw new Error('expected success')
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
-        // The inner txn map was `{ "x": 1 }` — survives roundtrip.
-        expect(decoded.txn).toEqual({ x: 1 })
+        // The inner txn map was `{ "x": 1 }` — survives roundtrip. msgpack
+        // ints decode to bigint.
+        expect(decoded.txn).toEqual({ x: 1n })
     })
 
     test('rejects a signature paired with transaction bytes the participant never signed', () => {
@@ -288,6 +287,22 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
+    test('rejects an oversized raw transaction (defence-in-depth byte cap)', () => {
+        const result = assembleSignedMultisigTransactions({
+            // ~128 KB of base64 → ~96 KB decoded, over the 64 KB cap.
+            rawTransactionsBase64: ['A'.repeat(128 * 1024)],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 1,
+            responses: [buildResponse(ADDR_1, 'signed', [SIG_1])],
+        })
+
+        expect(result.kind).toBe('error')
+        if (result.kind === 'error') {
+            expect(result.reason).toMatch(/invalid base64 raw transaction/i)
+        }
+    })
+
     test('produces empty list for empty input', () => {
         const result = assembleSignedMultisigTransactions({
             rawTransactionsBase64: [],
@@ -365,7 +380,6 @@ describe('assembleSignedMultisigTransactions', () => {
         if (result.kind !== 'success') return
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
 
         expect(Object.keys(decoded).sort()).toEqual(['msig', 'sgnr', 'txn'])
@@ -395,7 +409,6 @@ describe('assembleSignedMultisigTransactions', () => {
         if (result.kind !== 'success') return
         const decoded = decodeMsgpack(
             result.signedTransactionsBytes[0],
-            Object,
         ) as Record<string, unknown>
         expect(Object.keys(decoded).sort()).toEqual(['msig', 'txn'])
     })

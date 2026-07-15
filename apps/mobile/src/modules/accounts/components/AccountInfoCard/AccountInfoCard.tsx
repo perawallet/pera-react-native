@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -24,7 +24,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
 import { AccountIcon } from '../AccountIcon'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { AccountStructureTree } from './AccountStructureTree'
 import { InfoButton, useInfoButton } from '@components/InfoButton'
@@ -149,11 +149,9 @@ export const AccountInfoCard = ({
                     <InfoButton
                         title={t('min_balance_info.title')}
                         trigger={
-                            <CurrencyDisplay
-                                currency='ALGO'
+                            <AssetAmount
+                                asset={ALGO_ASSET}
                                 value={minBalanceAlgos}
-                                precision={ALGO_ASSET.decimals}
-                                minPrecision={2}
                                 showSymbol
                                 symbolPosition='start'
                                 isLoading={isMinBalanceLoading}

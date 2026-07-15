@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -191,6 +191,29 @@ describe('Deeplink Parser - New Format', () => {
                 'perawallet://app/joint-account-import/',
             )
             expect(result?.type).not.toBe(DeeplinkType.SHARED_ACCOUNT_IMPORT)
+        })
+    })
+
+    describe('Sign request', () => {
+        it('parses sign-request and its joint/shared aliases', () => {
+            for (const path of [
+                'sign-request',
+                'joint-account-sign-request',
+                'shared-account-sign-request',
+            ]) {
+                const result = parseDeeplink(
+                    `perawallet://app/${path}/?signRequestId=req-123`,
+                )
+                expect(result?.type).toBe(DeeplinkType.SIGN_REQUEST)
+                if (result?.type === DeeplinkType.SIGN_REQUEST) {
+                    expect(result.signRequestId).toBe('req-123')
+                }
+            }
+        })
+
+        it('rejects a sign request without a signRequestId', () => {
+            const result = parseDeeplink('perawallet://app/sign-request/')
+            expect(result?.type).not.toBe(DeeplinkType.SIGN_REQUEST)
         })
     })
 

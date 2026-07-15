@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,6 +19,13 @@
 export const PERAWALLET_SCHEME = 'perawallet'
 export const PERAWALLET_WC_SCHEME = 'perawallet-wc'
 export const WC_SCHEME = 'wc'
+
+/**
+ * Native-parity WalletConnect wrapper scheme. The native iOS app registered
+ * `algorand-wc`; the parser rewrites `algorand-wc:` → `wc:` so existing
+ * WalletConnect deep links keep routing after the RN migration.
+ */
+export const ALGORAND_WC_SCHEME = 'algorand-wc'
 export const ALGORAND_SCHEME = 'algorand'
 export const ALGO_SCHEME = 'algo'
 /**

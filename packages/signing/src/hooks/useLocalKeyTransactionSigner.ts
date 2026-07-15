@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,6 +12,7 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
+import { SignedTransaction } from 'algosdk'
 import {
     Address,
     encodeAlgorandAddress,
@@ -109,14 +110,16 @@ export const useLocalKeyTransactionSigner =
                         const senderPublicKey = encodeAlgorandAddress(
                             txn.sender.publicKey,
                         )
-                        signed.push({
-                            txn,
-                            sig: signatures[idx],
-                            authAddress:
-                                account.address !== senderPublicKey
-                                    ? Address.fromString(account.address)
-                                    : undefined,
-                        })
+                        signed.push(
+                            new SignedTransaction({
+                                txn,
+                                sig: signatures[idx],
+                                sgnr:
+                                    account.address !== senderPublicKey
+                                        ? Address.fromString(account.address)
+                                        : undefined,
+                            }),
+                        )
                     })
                 }
 
@@ -131,9 +134,9 @@ export const useLocalKeyTransactionSigner =
                 indexesToSign: number[],
                 account: WalletAccount,
             ): Promise<PeraSignedTransaction[]> => {
-                const result = txnGroup.map(txn => ({
-                    txn,
-                })) as PeraSignedTransaction[]
+                const result = txnGroup.map(
+                    txn => new SignedTransaction({ txn }),
+                )
 
                 const toSign = indexesToSign.map(i => txnGroup[i])
                 const signedTxns = await signSingleAccountTransactions(

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,11 +29,12 @@ export const AccountTypes = {
     hardware: 'hardware',
     multisig: 'multisig',
     watch: 'watch',
+    quantum: 'quantum',
 } as const
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
 
-export type ImportAccountType = 'hdWallet' | 'algo25'
+export type ImportAccountType = 'hdWallet' | 'algo25' | 'quantum'
 
 export type HDWalletDetails = {
     account: number
@@ -67,6 +68,7 @@ export type WalletAccount =
     | MultiSigAccount
     | HardwareWalletAccount
     | WatchAccount
+    | QuantumAccount
 
 export type BaseWalletAccount = {
     /**
@@ -91,6 +93,20 @@ export type BaseWalletAccount = {
 
 export type Algo25Account = BaseWalletAccount & {
     type: typeof AccountTypes.algo25
+    address: string
+    keyPairId: string
+}
+
+/**
+ * Account backed by a post-quantum signature keypair. Flat and single-key
+ * like {@link Algo25Account}: the key material lives in the KMS under
+ * `keyPairId`; there is no derivation path or device metadata. The concrete
+ * signature scheme (Falcon today) is a KMS / signing-pipeline detail that the
+ * model deliberately does not encode, so the scheme can change without a
+ * data migration.
+ */
+export type QuantumAccount = BaseWalletAccount & {
+    type: typeof AccountTypes.quantum
     address: string
     keyPairId: string
 }

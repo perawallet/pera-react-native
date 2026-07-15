@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -145,76 +145,12 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 4,
             partialize: state => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
                 sortMode: state.sortMode,
                 manualAccountOrder: state.manualAccountOrder,
             }),
-            migrate: (persistedState: unknown, version: number) => {
-                const state = persistedState as Record<string, unknown>
-                // v3: persist the Algorand multisig version on multisig
-                // accounts so they can be re-registered on each network's
-                // backend. Accounts created before v3 predate any non-1
-                // version, so backfill 1.
-                if (version < 3) {
-                    const accounts = state.accounts
-                    if (Array.isArray(accounts)) {
-                        accounts.forEach(account => {
-                            if (
-                                account == null ||
-                                typeof account !== 'object'
-                            ) {
-                                return
-                            }
-                            const typed = account as {
-                                type?: unknown
-                                multisigDetails?: Record<string, unknown>
-                            }
-                            if (typed.type !== AccountTypes.multisig) return
-                            const details = typed.multisigDetails
-                            if (
-                                details != null &&
-                                typeof details === 'object' &&
-                                typeof details.version !== 'number'
-                            ) {
-                                details.version = 1
-                            }
-                        })
-                    }
-                }
-                // v4: `id` became required on every WalletAccount. Accounts
-                // persisted before v4 (hardware accounts in particular were
-                // deliberately stored without one) have `id` unset, so backfill
-                // it. The on-chain address is a stable, unique handle for every
-                // account kind that exists today; fall back to a generated id
-                // for the (currently impossible) address-less account.
-                if (version < 4) {
-                    const accounts = state.accounts
-                    if (Array.isArray(accounts)) {
-                        accounts.forEach(account => {
-                            if (
-                                account == null ||
-                                typeof account !== 'object'
-                            ) {
-                                return
-                            }
-                            const typed = account as {
-                                id?: unknown
-                                address?: unknown
-                            }
-                            if (typeof typed.id === 'string' && typed.id) return
-                            typed.id =
-                                typeof typed.address === 'string' &&
-                                typed.address
-                                    ? typed.address
-                                    : generateOrderedUniqueId()
-                        })
-                    }
-                }
-                return state as AccountsState
-            },
         },
     ),
 )

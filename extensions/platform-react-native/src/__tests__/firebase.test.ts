@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -25,16 +25,9 @@ vi.mock('react-native', () => ({
 }))
 
 // Mock Firebase modules with simple implementations
-const {
-    mockGetValue,
-    mockFetchAndActivate,
-    mockSetConfigSettings,
-    mockSetDefaults,
-} = vi.hoisted(() => ({
+const { mockGetValue, mockFetchAndActivate } = vi.hoisted(() => ({
     mockGetValue: vi.fn(),
     mockFetchAndActivate: vi.fn().mockResolvedValue(true),
-    mockSetConfigSettings: vi.fn().mockResolvedValue(undefined),
-    mockSetDefaults: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@react-native-firebase/crashlytics', () => ({
@@ -45,8 +38,6 @@ vi.mock('@react-native-firebase/crashlytics', () => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: vi.fn(() => ({})),
-    setConfigSettings: mockSetConfigSettings,
-    setDefaults: mockSetDefaults,
     fetchAndActivate: mockFetchAndActivate,
     getValue: mockGetValue,
 }))
@@ -61,6 +52,8 @@ vi.mock('@react-native-firebase/messaging', () => ({
     registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
     getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
     onMessage: vi.fn(() => vi.fn()),
+    onNotificationOpenedApp: vi.fn(() => vi.fn()),
+    getInitialNotification: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('@notifee/react-native', () => ({
@@ -180,6 +173,7 @@ describe('RNFirebaseService', () => {
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
+                    getSource: () => 'remote',
                 } as any)
                 const result = service.getBooleanValue('welcome_message')
                 expect(result).toEqual(true)
@@ -190,6 +184,7 @@ describe('RNFirebaseService', () => {
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
+                    getSource: () => 'remote',
                 } as any)
                 const result = service.getBooleanValue('welcome_message', false)
                 expect(result).toEqual(true)
@@ -208,6 +203,39 @@ describe('RNFirebaseService', () => {
                     throw new Error('no value')
                 })
                 const result = service.getBooleanValue('welcome_message')
+                expect(result).toEqual(false)
+            })
+
+            it('returns the fallback when the value is a baked-in setDefaults default rather than a remote fetch', () => {
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
+                    asString: () => 'false',
+                    asBoolean: () => false,
+                    asNumber: () => 0,
+                    getSource: () => 'default',
+                } as any)
+                const result = service.getBooleanValue('enable_pera_card', true)
+                expect(result).toEqual(true)
+            })
+
+            it('returns the fallback when the value is only a static default', () => {
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
+                    asString: () => 'false',
+                    asBoolean: () => false,
+                    asNumber: () => 0,
+                    getSource: () => 'static',
+                } as any)
+                const result = service.getBooleanValue('enable_pera_card', true)
+                expect(result).toEqual(true)
+            })
+
+            it('returns the remote value when the source is a real remote fetch, ignoring the fallback', () => {
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
+                    asString: () => 'false',
+                    asBoolean: () => false,
+                    asNumber: () => 0,
+                    getSource: () => 'remote',
+                } as any)
+                const result = service.getBooleanValue('enable_pera_card', true)
                 expect(result).toEqual(false)
             })
         })
@@ -356,6 +384,45 @@ describe('RNFirebaseService', () => {
                 expect(result).toHaveProperty('unsubscribe')
             })
 
+            it('times out the FCM token fetch and resolves with token undefined within budget', async () => {
+                vi.useFakeTimers()
+                try {
+                    mockNotifee.requestPermission.mockResolvedValue({
+                        authorizationStatus: 1, //AUTHORIZED
+                    })
+                    // getToken never settles — the known indefinite-hang surface.
+                    vi.mocked(messaging.getToken).mockReturnValue(
+                        new Promise<string>(() => {}),
+                    )
+
+                    const resultPromise = service.initializeNotifications()
+                    // Advance past the 5s FCM token fetch budget.
+                    await vi.advanceTimersByTimeAsync(5000)
+                    const result = await resultPromise
+
+                    expect(result.token).toBeUndefined()
+                    expect(typeof result.unsubscribe).toBe('function')
+                } finally {
+                    // Restore a settling implementation so the never-resolving
+                    // stub cannot leak into later tests.
+                    vi.mocked(messaging.getToken).mockResolvedValue(
+                        'mock-fcm-token',
+                    )
+                    vi.useRealTimers()
+                }
+            })
+
+            it('resolves without a token when notifee.requestPermission() rejects', async () => {
+                mockNotifee.requestPermission.mockRejectedValueOnce(
+                    new Error('permission request failed'),
+                )
+
+                const result = await service.initializeNotifications()
+
+                expect(result.token).toBeUndefined()
+                expect(typeof result.unsubscribe).toBe('function')
+            })
+
             it('should register onMessage and onForegroundEvent handlers', async () => {
                 mockNotifee.requestPermission.mockResolvedValue({
                     authorizationStatus: 1, //AUTHORIZED
@@ -391,7 +458,11 @@ describe('RNFirebaseService', () => {
                     title: 'Test Title',
                     body: 'Test Body',
                     data: { key: 'value' },
-                    android: { channelId: 'default' }, // Platform.select returns android value due to mock
+                    // Platform.select returns the android value due to mock
+                    android: {
+                        channelId: 'default',
+                        smallIcon: 'ic_notification_small',
+                    },
                 })
             })
 
@@ -416,42 +487,58 @@ describe('RNFirebaseService', () => {
                     title: 'Notification',
                     body: undefined,
                     data: { key: 'value' },
-                    android: { channelId: 'default' }, // Platform.select returns android value due to mock
+                    // Platform.select returns the android value due to mock
+                    android: {
+                        channelId: 'default',
+                        smallIcon: 'ic_notification_small',
+                    },
                 })
             })
 
-            it('should handle onForegroundEvent callback for PRESS event', async () => {
+            it('routes a foreground PRESS tap to the notification-open listener', async () => {
                 mockNotifee.requestPermission.mockResolvedValue({
                     authorizationStatus: 1, //AUTHORIZED
                 })
+                const listener = vi.fn()
+                service.addNotificationOpenListener(listener)
                 await service.initializeNotifications()
 
-                // Get the callback that was passed to onForegroundEvent
                 const onForegroundEventCallback = (
                     notifee.onForegroundEvent as any
                 ).mock.calls[0][0] as (event: any) => Promise<void>
                 expect(onForegroundEventCallback).toBeDefined()
 
-                await onForegroundEventCallback({ type: 0 }) // EventType.PRESS
+                await onForegroundEventCallback({
+                    type: 0, // EventType.PRESS
+                    detail: {
+                        notification: { data: { url: 'pera://deeplink' } },
+                    },
+                })
 
-                // Should not throw, currently no-op
+                expect(listener).toHaveBeenCalledWith('pera://deeplink')
             })
 
-            it('should handle onForegroundEvent callback for ACTION_PRESS event', async () => {
+            it('routes a foreground ACTION_PRESS tap to the notification-open listener', async () => {
                 mockNotifee.requestPermission.mockResolvedValue({
                     authorizationStatus: 1, //AUTHORIZED
                 })
+                const listener = vi.fn()
+                service.addNotificationOpenListener(listener)
                 await service.initializeNotifications()
 
-                // Get the callback that was passed to onForegroundEvent
                 const onForegroundEventCallback = (
                     mockNotifee.onForegroundEvent as any
                 ).mock.calls[0][0] as (event: any) => Promise<void>
                 expect(onForegroundEventCallback).toBeDefined()
 
-                await onForegroundEventCallback({ type: 1 }) // EventType.ACTION_PRESS
+                await onForegroundEventCallback({
+                    type: 1, // EventType.ACTION_PRESS
+                    detail: {
+                        notification: { data: { url: 'pera://action' } },
+                    },
+                })
 
-                // Should not throw, currently no-op
+                expect(listener).toHaveBeenCalledWith('pera://action')
             })
 
             it('should handle onForegroundEvent callback for unknown event type', async () => {

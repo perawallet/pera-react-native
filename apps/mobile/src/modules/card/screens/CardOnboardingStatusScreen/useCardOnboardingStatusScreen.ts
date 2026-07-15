@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-import {
-    createElement,
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     useNavigation,
     useRoute,
@@ -26,56 +19,85 @@ import {
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     FundingType,
+    isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
     useCardStore,
     useConnectFundingSourceMutation,
-    useOnboardingDetailsQuery,
+    useOnboardingKycPoll,
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import {
-    isAlgo25Account,
-    isHardwareWalletAccount,
-    isHDWalletAccount,
-    isRekeyedAccount,
     useAllAccounts,
     useSelectedAccountAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import {
-    AccountMenuContent,
-    type AccountMenuContentResult,
-} from '@modules/accounts/components/AccountMenuContent'
-import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
-import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
-import { useCardAddAccount, useCardOnboardingLogout } from '@modules/card/hooks'
+import {
+    useAuthorizeCardDelegation,
+    useCardErrorToast,
+    useCardFundingDelegation,
+    useCardFundingSourcePicker,
+    useCardOnboardingLogout,
+} from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
-import { ConnectAccountHeader } from './ConnectAccountHeader'
-
-/** How often we re-check the KYC state while Veriff is still reviewing. */
-const POLL_INTERVAL_MS = 4000
-
-/** The "Submit Your Documents" checklist row's visual state. */
-export type DocumentsState = 'pending' | 'verified' | 'rejected'
 
 /**
- * Accounts eligible as the card's funding source: standard, HD, and Ledger
- * accounts that can sign — watch-only and multisig (by type) and any rekeyed
- * account are excluded, since they can't act as a funding source.
+ * The "Submit Your Documents" checklist row's visual state.
+ * - `unverified`: KYC not submitted yet (or state unknown) — the user must
+ *   still complete Veriff; the later steps stay locked.
+ * - `pending`: submitted and under review — Baanx reviews async, so the later
+ *   steps unlock.
  */
-const isEligibleFundingSource = (account: WalletAccount): boolean =>
-    (isAlgo25Account(account) ||
-        isHDWalletAccount(account) ||
-        isHardwareWalletAccount(account)) &&
-    !isRekeyedAccount(account)
+export type DocumentsState =
+    | 'unverified'
+    | 'pending'
+    | 'verified'
+    | 'rejected'
+    | 'error'
+
+/**
+ * Maps the polled KYC state to the documents row. Loading shows a neutral
+ * pending row (no actionable CTA) so a cold entry can't flash "verify" at an
+ * already-decided user. Only a submitted-but-unconfirmed review (PENDING) that
+ * the poll gave up on escalates to the retry 'error' row; UNVERIFIED and
+ * unmodelled/unfetched states surface the actionable 'unverified' row.
+ */
+const resolveDocumentsState = (
+    isLoading: boolean,
+    verificationState: Nullable<VerificationState>,
+    hasPollTimedOut: boolean,
+): DocumentsState => {
+    if (isLoading) return 'pending'
+    switch (verificationState) {
+        case VerificationState.Verified: {
+            return 'verified'
+        }
+        case VerificationState.Rejected: {
+            return 'rejected'
+        }
+        case VerificationState.Pending: {
+            return hasPollTimedOut ? 'error' : 'pending'
+        }
+        default: {
+            return 'unverified'
+        }
+    }
+}
 
 export type UseCardOnboardingStatusScreenResult = {
     documentsState: DocumentsState
+    /**
+     * KYC is submitted (PENDING under review, or VERIFIED) — the only states
+     * that unlock the details/address step. UNVERIFIED, rejected, and unknown
+     * states keep it locked behind the "verify" prompt.
+     */
+    isKycSubmitted: boolean
     /** Registration (details + address) is finalized — gates the later steps. */
     isRegistrationComplete: boolean
     /** A Pera account has been linked as the funding source. */
@@ -90,10 +112,20 @@ export type UseCardOnboardingStatusScreenResult = {
     selectedFundingType: FundingType
     /** Selects a funding type — local state until "Create Pera Card" commits it. */
     handleSelectFundingType: (type: FundingType) => void
+    /** True when Auto can't be picked (kill-switch off, or account can't sign). */
+    isAutoFundingUnavailable: boolean
+    /** False when the auto-funding kill-switch is off — Auto is "coming soon". */
+    isAutoFundingEnabled: boolean
+    /** True while the auto-funding delegation is being signed and submitted. */
+    isCreatingCard: boolean
     /** Persists the funding type and finishes onboarding (card creation deferred). */
     handleCreatePeraCard: () => void
     /** Continues to the personal-details step (allowed while Baanx reviews). */
     handleEnterDetails: () => void
+    /** Resumes KYC from the unverified documents row (reopens the Veriff entry). */
+    handleVerifyIdentity: () => void
+    /** Recovers the documents-row error state (PENDING review) by re-polling. */
+    handleRetryStatus: () => void
     /** Opens the account picker and links the chosen account as funding source. */
     handleConnectAccount: () => void
     handleLogout: () => void
@@ -105,32 +137,43 @@ export const useCardOnboardingStatusScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { successToast, errorToast } = useToast()
-        const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
-        const onboardingId = useCardStore(state => state.onboardingId)
 
         // You land here once Veriff has reported back (PENDING or a decision).
-        // Poll while the review is still running so the row flips to
-        // verified/rejected live; UNVERIFIED (cold resume) renders as pending.
-        const [isReviewing, setIsReviewing] = useState(true)
-        const { data } = useOnboardingDetailsQuery({
-            onboardingId,
-            refetchInterval: isReviewing ? POLL_INTERVAL_MS : false,
-        })
-        const verificationState = data?.verificationState ?? null
+        // The shared poll keeps the row live until a decision (or gives up);
+        // UNVERIFIED (cold resume) and unmodelled states render the actionable
+        // 'unverified' row, and only the initial in-flight fetch shows 'pending'.
+        const {
+            verificationState,
+            isLoading,
+            hasPollTimedOut,
+            restartPolling,
+        } = useOnboardingKycPoll()
 
-        const documentsState: DocumentsState =
-            verificationState === VerificationState.Verified
-                ? 'verified'
-                : verificationState === VerificationState.Rejected
-                  ? 'rejected'
-                  : 'pending'
+        const documentsState = resolveDocumentsState(
+            isLoading,
+            verificationState,
+            hasPollTimedOut,
+        )
 
-        // Stop polling once Veriff has decided.
-        useEffect(() => {
-            setIsReviewing(documentsState === 'pending')
-        }, [documentsState])
+        // Submitted (PENDING/VERIFIED) gates the later steps — the shared
+        // predicate keeps this in lockstep with the sign-in resume route. Read
+        // from the KYC state, not the row state, so a poll hiccup on a submitted
+        // review (documentsState 'error') doesn't relock the step.
+        const isKycSubmitted = isKycStateSubmitted(verificationState)
+
+        // The documents row's "Verify your Account" CTA — resumes KYC by
+        // reopening the Veriff entry screen.
+        const handleVerifyIdentity = useCallback(() => {
+            navigation.navigate('CardOnboardingVerification')
+        }, [navigation])
+
+        // Only reachable from the PENDING error row (repeated poll failures);
+        // re-arm polling to wait for Baanx's decision again.
+        const handleRetryStatus = useCallback(() => {
+            restartPolling()
+        }, [restartPolling])
 
         // The address step sets Completed, so it doubles as the "details done"
         // signal that unlocks the Connect Funds step.
@@ -153,7 +196,6 @@ export const useCardOnboardingStatusScreen =
             mutateAsync: connectFundingSourceAsync,
             isPending: isConnecting,
         } = useConnectFundingSourceMutation()
-        const { handleCreateAccount } = useCardAddAccount()
 
         // Funding type is chosen locally and committed by "Create Pera Card".
         // Seed from the persisted choice (so a prior selection survives a
@@ -243,83 +285,79 @@ export const useCardOnboardingStatusScreen =
             navigation.navigate('CardOnboardingPersonalDetails')
         }, [navigation])
 
+        const { pickFundingSource } = useCardFundingSourcePicker()
         const handleConnectAccount = useCallback(() => {
-            // Reuse the standard account menu as-is, customised only through its
-            // existing props: a "Choose Card account" header (via headerContent)
-            // and the eligible-funding-source filter. Tapping a row links it;
-            // "+" runs the standard add-account flow; Sort opens the sort sheet
-            // and reopens the picker.
-            const openPicker = async (): Promise<void> => {
-                const result = await request<AccountMenuContentResult>({
-                    id: 'card-connect-funding-source',
-                    contents: createElement(AccountMenuContent, {
-                        headerContent: createElement(ConnectAccountHeader),
-                        accountFilter: isEligibleFundingSource,
-                        // Fresh on first connect (null → nothing highlighted);
-                        // the connected source is highlighted on "Change".
-                        selectedAddress: connectedAddress,
-                    }),
-                    options: {
-                        size: 'full',
-                        enablePanDownToClose: false,
-                        enableContentPanningGesture: false,
-                        autoCreateContainer: false,
-                    },
-                })
-                if (!result) return
-                switch (result.kind) {
-                    case 'selected': {
-                        try {
-                            await connectFundingSourceAsync({
-                                address: result.account.address,
-                            })
-                        } catch {
-                            errorToast(
-                                t('peraCard.setup_status.connect_error_title'),
-                                t('peraCard.setup_status.connect_error_body'),
-                            )
-                        }
-                        return
-                    }
-                    case 'add-account': {
-                        handleCreateAccount()
-                        return
-                    }
-                    case 'sort': {
-                        await request<void>({
-                            contents: createElement(AccountSortContent),
-                            options: {
-                                size: 'modal',
-                                enablePanDownToClose: false,
-                                enableContentPanningGesture: false,
-                                autoCreateContainer: false,
-                            },
-                        })
-                        // After sorting, reopen the picker so the user can choose.
-                        void openPicker()
-                        return
-                    }
-                    case 'search': {
-                        return
-                    }
+            void (async () => {
+                const account = await pickFundingSource()
+                if (!account) return
+                try {
+                    await connectFundingSourceAsync({
+                        address: account.address,
+                    })
+                } catch {
+                    errorToast(
+                        t('peraCard.setup_status.connect_error_title'),
+                        t('peraCard.setup_status.connect_error_body'),
+                    )
                 }
+            })()
+        }, [pickFundingSource, connectFundingSourceAsync, errorToast, t])
+
+        const {
+            delegateTo,
+            canDelegate,
+            isPending: isCreatingCard,
+        } = useCardFundingDelegation()
+        const { authorizeDelegation } = useAuthorizeCardDelegation()
+        const showError = useCardErrorToast()
+        const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
+        const isAutoFundingUnavailable =
+            !isAutoFundingEnabled ||
+            (connectedAccount != null && !canDelegate(connectedAccount))
+
+        // A connected account that can't sign (e.g. Ledger) can't use Auto, so
+        // fall back to Manual. Without this the Auto option stays selected but
+        // disabled, and "Create Pera Card" dead-ends trying to sign a
+        // delegation the account can't produce.
+        useEffect(() => {
+            if (
+                isAutoFundingUnavailable &&
+                selectedFundingType === FundingType.Auto
+            ) {
+                setSelectedFundingType(FundingType.Manual)
             }
-            void openPicker()
-        }, [
-            request,
-            connectFundingSourceAsync,
-            handleCreateAccount,
-            connectedAddress,
-            errorToast,
-            t,
-        ])
+        }, [isAutoFundingUnavailable, selectedFundingType])
 
         // One-shot guard so a fast double-tap can't fire the toast + navigation
-        // twice before the screen unmounts.
+        // twice before the screen unmounts; reset on failure so retry works.
         const hasCreatedRef = useRef(false)
-        const handleCreatePeraCard = useCallback(() => {
+        const createPeraCard = useCallback(async () => {
             if (hasCreatedRef.current) return
             hasCreatedRef.current = true
+            // Auto funding only takes effect once Baanx holds the signed
+            // delegation, so it is created here, before finishing onboarding.
+            if (selectedFundingType === FundingType.Auto) {
+                if (!connectedAccount) {
+                    hasCreatedRef.current = false
+                    await showError(null)
+                    return
+                }
+                try {
+                    // Consent + live PIN/biometric before signing the grant.
+                    const authorized = await authorizeDelegation(
+                        connectedAccount,
+                        delegateTo,
+                    )
+                    if (!authorized) {
+                        hasCreatedRef.current = false
+                        return
+                    }
+                } catch (error) {
+                    hasCreatedRef.current = false
+                    await showError(error)
+                    return
+                }
+            }
             useCardStore.getState().setSelectedFundingType(selectedFundingType)
             successToast(
                 t('peraCard.setup_status.create_card_success_title'),
@@ -328,7 +366,19 @@ export const useCardOnboardingStatusScreen =
             // TODO(card): call the Baanx card-creation API and route to the card
             // dashboard once that slice lands; for now Home is the terminus.
             navigation.navigate('TabBar', { screen: 'Home' })
-        }, [selectedFundingType, successToast, navigation, t])
+        }, [
+            selectedFundingType,
+            connectedAccount,
+            delegateTo,
+            authorizeDelegation,
+            showError,
+            successToast,
+            navigation,
+            t,
+        ])
+        const handleCreatePeraCard = useCallback(() => {
+            void createPeraCard()
+        }, [createPeraCard])
 
         const handleOpenSupport = useCallback(() => {
             pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
@@ -336,6 +386,7 @@ export const useCardOnboardingStatusScreen =
 
         return {
             documentsState,
+            isKycSubmitted,
             isRegistrationComplete,
             isFundsConnected,
             connectedAccount,
@@ -343,8 +394,13 @@ export const useCardOnboardingStatusScreen =
             isConnecting,
             selectedFundingType,
             handleSelectFundingType,
+            isAutoFundingUnavailable,
+            isAutoFundingEnabled,
+            isCreatingCard,
             handleCreatePeraCard,
             handleEnterDetails,
+            handleVerifyIdentity,
+            handleRetryStatus,
             handleConnectAccount,
             handleLogout,
             handleOpenSupport,

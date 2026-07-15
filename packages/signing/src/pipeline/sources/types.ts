@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -63,6 +63,8 @@ export interface SourceDependencies {
         amount: bigint
         closeRemainderTo?: string
         note?: string
+        /** Fee in µAlgo the built transaction must carry (flat fee, PQ-aware, resolved per sender) */
+        fee: bigint
     }) => Promise<PeraTransaction>
 
     /** Function to create an asset transfer transaction */
@@ -72,12 +74,16 @@ export interface SourceDependencies {
         amount: bigint
         assetId: bigint
         note?: string
+        /** Fee in µAlgo the built transaction must carry (flat fee, PQ-aware, resolved per sender) */
+        fee: bigint
     }) => Promise<PeraTransaction>
 
     /** Function to create an asset opt-in transaction */
     createAssetOptInTransaction: (params: {
         sender: string
         assetId: bigint
+        /** Fee in µAlgo the built transaction must carry (flat fee, PQ-aware, resolved per sender) */
+        fee: bigint
     }) => Promise<PeraTransaction>
 
     /** Function to encode a transaction to bytes */
@@ -94,4 +100,11 @@ export interface SourceDependencies {
 
     /** Minimum balance requirement for an asset */
     assetMbr: bigint
+
+    /**
+     * Resolves the minimum fee in µAlgo a transaction sent by
+     * `senderAddress` must carry (PQ-aware: quantum-signed senders pay
+     * base × multiplier). See minFeeResolver.ts for semantics.
+     */
+    resolveMinFeeForSender: (senderAddress: string) => Promise<bigint>
 }

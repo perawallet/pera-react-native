@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,6 +29,14 @@ export type {
     CardTransportRequest,
     CardTransportResponse,
 } from './api/transport/types'
+
+// Funding seam — the deposit pipeline routes through getCardFundingProvider().
+// Defaults to unavailableFundingProvider until the Baanx Algorand provider ships.
+export {
+    getCardFundingProvider,
+    setCardFundingProvider,
+    resetCardFundingProvider,
+} from './api/funding'
 
 // API error normalization — lets screens attribute a Baanx failure to a field.
 export {

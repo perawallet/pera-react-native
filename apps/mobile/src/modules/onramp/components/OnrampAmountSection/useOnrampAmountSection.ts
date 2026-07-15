@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -81,7 +81,7 @@ export const sanitizeAmountInput = (
 
 // Token-unit amount for the fiat (preferred-currency) row. Empty, invalid, or
 // non-positive input computes as zero so the row shows a "0.00" placeholder
-// (matching the web AssetInput) instead of CurrencyDisplay's "---".
+// (matching the web AssetInput) instead of CurrencyAmount's "---".
 export const getFiatBaseAmount = (
     amount: string | Nullable<Decimal>,
 ): Decimal => {

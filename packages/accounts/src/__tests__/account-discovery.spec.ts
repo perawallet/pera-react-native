@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -199,15 +199,51 @@ describe('discoverAccounts', () => {
 describe('discoverRekeyedAccounts', () => {
     const derivationType = BIP32DerivationType.Peikert
 
+    // algosdk v9: `indexer.searchAccounts().authAddr(a).nextToken(t).do()`.
+    // The factory returns a builder that records the chained `authAddr`/
+    // `nextToken` args (so the per-auth-addr and pagination assertions keep
+    // working) and delegates `.do()` to the supplied data fn. `calls` mirrors
+    // the old `searchForAccounts` call log: one entry per `.do()`, carrying the
+    // builder's `authAddr`/`next` so existing call-arg assertions translate.
+    type SearchDataFn = (params: {
+        authAddr?: string
+        next?: string
+    }) => Promise<{ accounts: { address: string }[]; nextToken?: string }>
+
+    const makeSearchAccounts = (dataFn: SearchDataFn) => {
+        const searchAccounts = vi.fn(() => {
+            const chain: { authAddr?: string; next?: string } = {}
+            const builder = {
+                authAddr: (value: string) => {
+                    chain.authAddr = value
+                    return builder
+                },
+                nextToken: (value: string) => {
+                    chain.next = value
+                    return builder
+                },
+                do: () => {
+                    searchAccounts.calls.push({ ...chain })
+                    return dataFn(chain)
+                },
+            }
+            return builder
+        }) as ReturnType<typeof vi.fn> & {
+            calls: { authAddr?: string; next?: string }[]
+        }
+        searchAccounts.calls = []
+        return searchAccounts
+    }
+
+    const installIndexer = (searchAccounts: ReturnType<typeof vi.fn>) => {
+        vi.mocked(getAlgorandClient).mockReturnValue({
+            client: { indexer: { searchAccounts } },
+        } as any)
+    }
+
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(getAlgorandClient).mockReturnValue({
-            client: {
-                indexer: {
-                    searchForAccounts: vi.fn(),
-                },
-            },
-        } as any)
+        installIndexer(makeSearchAccounts(async () => ({ accounts: [] })))
     })
 
     afterEach(() => {
@@ -215,24 +251,12 @@ describe('discoverRekeyedAccounts', () => {
     })
 
     it('should find rekeyed accounts', async () => {
-        const mockSearchForAccounts = vi
-            .fn()
-            .mockImplementation(async params => {
-                if (params && params.authAddr === 'ADDRESS_0_0') {
-                    return {
-                        accounts: [{ address: 'REKEYED_ACC_1' }],
-                    }
-                }
-                return { accounts: [] }
-            })
-
-        vi.mocked(getAlgorandClient).mockReturnValue({
-            client: {
-                indexer: {
-                    searchForAccounts: mockSearchForAccounts,
-                },
-            },
-        } as any)
+        const searchAccounts = makeSearchAccounts(async params =>
+            params.authAddr === 'ADDRESS_0_0'
+                ? { accounts: [{ address: 'REKEYED_ACC_1' }] }
+                : { accounts: [] },
+        )
+        installIndexer(searchAccounts)
 
         const accounts = await discoverRekeyedAccounts({
             getPublicKey: createMockGetPublicKey(),
@@ -247,24 +271,12 @@ describe('discoverRekeyedAccounts', () => {
     })
 
     it('should use provided accountAddresses instead of HD derivation', async () => {
-        const mockSearchForAccounts = vi
-            .fn()
-            .mockImplementation(async params => {
-                if (params && params.authAddr === 'EXPLICIT_ADDRESS') {
-                    return {
-                        accounts: [{ address: 'REKEYED_FROM_EXPLICIT' }],
-                    }
-                }
-                return { accounts: [] }
-            })
-
-        vi.mocked(getAlgorandClient).mockReturnValue({
-            client: {
-                indexer: {
-                    searchForAccounts: mockSearchForAccounts,
-                },
-            },
-        } as any)
+        const searchAccounts = makeSearchAccounts(async params =>
+            params.authAddr === 'EXPLICIT_ADDRESS'
+                ? { accounts: [{ address: 'REKEYED_FROM_EXPLICIT' }] }
+                : { accounts: [] },
+        )
+        installIndexer(searchAccounts)
 
         // When accountAddresses is provided, getPublicKey is unused. Pass a
         // throwing stub to verify it is never invoked.
@@ -283,42 +295,28 @@ describe('discoverRekeyedAccounts', () => {
     })
 
     it('follows the indexer pagination token across pages', async () => {
-        const mockSearchForAccounts = vi
-            .fn()
-            .mockResolvedValueOnce({
-                accounts: [{ address: 'REKEYED_PAGE_1' }],
-                nextToken: 'token-1',
-            })
-            .mockResolvedValueOnce({
-                accounts: [{ address: 'REKEYED_PAGE_2' }],
-            })
-
-        vi.mocked(getAlgorandClient).mockReturnValue({
-            client: {
-                indexer: {
-                    searchForAccounts: mockSearchForAccounts,
-                },
-            },
-        } as any)
+        let page = 0
+        const searchAccounts = makeSearchAccounts(async () => {
+            page += 1
+            return page === 1
+                ? {
+                      accounts: [{ address: 'REKEYED_PAGE_1' }],
+                      nextToken: 'token-1',
+                  }
+                : { accounts: [{ address: 'REKEYED_PAGE_2' }] }
+        })
+        installIndexer(searchAccounts)
 
         const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet')
 
         expect(addresses).toEqual(['REKEYED_PAGE_1', 'REKEYED_PAGE_2'])
-        expect(mockSearchForAccounts).toHaveBeenCalledTimes(2)
-        expect(mockSearchForAccounts.mock.calls[1][0]).toMatchObject({
-            next: 'token-1',
-        })
+        expect(searchAccounts.calls).toHaveLength(2)
+        expect(searchAccounts.calls[1]).toMatchObject({ next: 'token-1' })
     })
 
     it('propagates indexer errors instead of returning an empty result', async () => {
         const indexerError = new Error('indexer unreachable')
-        vi.mocked(getAlgorandClient).mockReturnValue({
-            client: {
-                indexer: {
-                    searchForAccounts: vi.fn().mockRejectedValue(indexerError),
-                },
-            },
-        } as any)
+        installIndexer(makeSearchAccounts(() => Promise.reject(indexerError)))
 
         await expect(
             fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet'),

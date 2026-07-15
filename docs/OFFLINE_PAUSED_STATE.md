@@ -1,0 +1,101 @@
+# Offline-first reads & the paused-state UI contract
+
+Pera's offline story is built on one rule: **SQLite is the source of truth.**
+Account, asset, transaction, and price data is read from the local database
+(`pera.db`) and only refreshed from the network in the background. Because of
+that, those queries are deliberately excluded from AsyncStorage persistence in
+`apps/mobile/src/providers/QueryProvider.tsx` — the DB _is_ the cache.
+
+This document codifies two things every data-backed surface must follow:
+
+1. **How DB-first queries are configured** so they actually serve SQLite while
+   offline.
+2. **The render-state contract** consumers use to tell "offline" apart from
+   "loading" and "error".
+
+---
+
+## 1. DB-first queries must use `networkMode: 'always'`
+
+TanStack Query defaults to `networkMode: 'online'`. Under that default, while
+`onlineManager` reports offline a query is **paused _before its `queryFn`
+runs_**. For a query whose `queryFn` reads SQLite, that means the DB read never
+executes: on a cold offline launch there is no memory cache and no persisted
+snapshot, so the query sits in `pending`/`paused` forever — the "loads forever"
+skeleton QA reported.
+
+The fix is per-query, not global:
+
+```ts
+useQuery({
+    queryKey: ...,
+    queryFn: () => readSomethingFromDb(...),
+    staleTime: Infinity,
+    // SQLite is the source of truth; run the queryFn even while offline
+    // instead of pausing it, which would strand consumers in `pending`.
+    networkMode: 'always',
+})
+```
+
+> **Do NOT flip the global default in `QueryProvider`.** Pure-network queries
+> (e.g. balance history, price history, asset search) must keep pausing until
+> their own surface tickets give them explicit offline UX. Flipping the global
+> default would make them throw offline instead.
+
+### Guarding the network segment
+
+Some DB-first `queryFn`s also touch the network (self-heal fetches, load-more
+pages). With `networkMode: 'always'` those segments now run while offline too,
+so they must not reject the whole `queryFn`:
+
+- If the network path is already wrapped so its errors are caught/swallowed (the
+  account syncer) or it uses `Promise.allSettled` (asset detail API fallback),
+  nothing more is needed — the DB read still resolves.
+- Otherwise, guard explicitly. `useTransactionHistoryQuery` reads the first page
+  from the DB and only hits the network for load-more pages; it checks
+  `onlineManager.isOnline()` before the network branch and returns a **terminal
+  page** when offline, so the DB-backed first page stays rendered and the query
+  never flips to `isError`.
+
+> `onlineManager.isOnline` is a **method** — call `onlineManager.isOnline()`, not
+> `onlineManager.isOnline`.
+
+---
+
+## 2. The paused-state render contract
+
+Offline is not an error, and it is not "loading". A paused query has a distinct
+render state. Use `getQueryRenderState` from `@perawallet/wallet-core-shared` to
+normalise any `useQuery`/`useInfiniteQuery` result into the shared contract:
+
+```ts
+import { getQueryRenderState } from '@perawallet/wallet-core-shared'
+
+const { data, isPending, isPaused, isFetching, isError, error } =
+    getQueryRenderState(query)
+```
+
+| Flag         | Meaning                                                            | Render                                                              |
+| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `isError`    | `status === 'error'`                                               | Error state **with a retry affordance**                             |
+| `isPaused`   | `fetchStatus === 'paused'` (offline)                               | Offline / cached surface — **not** a spinner                        |
+| `isFetching` | `fetchStatus === 'fetching'`                                       | Spinner, or a background-refresh indicator if `data` already exists |
+| `isPending`  | cold idle load: `status === 'pending'` && `fetchStatus === 'idle'` | Initial skeleton                                                    |
+
+**Precedence** (highest first): `isError` → `isPaused` → `isFetching` →
+`isPending`.
+
+`isPending` is intentionally narrower than TanStack's own `isPending`: a query
+that is `pending` because it is `paused` (offline, no cache) raises `isPaused`,
+**not** `isPending`, so consumers render the offline surface instead of an
+eternal skeleton.
+
+### Why DB-first hooks still expose `isPaused`
+
+A DB-first query with `networkMode: 'always'` never actually pauses, so its
+`isPaused` is always `false`. It is still exposed on those hooks' result types
+(`useAccountSummaryQuery`, `useAccountAssetsQuery`, `useAccountBalancesQuery`,
+`useAssetPricesQuery`, `useTransactionHistoryQuery`, …) so that screens can
+consume one uniform, paused-aware shape regardless of whether the underlying
+query is DB-first or pure-network. Surface tickets (PERA-4578..4581, PERA-4584)
+adopt this contract.

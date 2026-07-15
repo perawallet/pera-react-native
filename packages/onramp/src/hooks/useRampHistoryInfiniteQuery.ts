@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { isNotFoundError, type Optional } from '@perawallet/wallet-core-shared'
 
 import { getRampHistory, getRampHistoryByUrl } from '../api'
 import type { RampHistoryPage } from '../api/history/transformers'
@@ -26,12 +26,16 @@ import { onrampQueryKeys } from './querykeys'
 const POLL_INTERVAL_MS = 10_000
 const NOT_FOUND_POLL_INTERVAL_MS = 60_000
 
-// ky's HTTPError carries the failed Response on `error.response`. Detected
-// structurally to avoid a direct ky dependency in this package.
-const isNotFoundError = (error: unknown): boolean => {
-    if (typeof error !== 'object' || error === null) return false
-    const response = (error as { response?: { status?: number } }).response
-    return response?.status === 404
+// Exported so the backoff decision is directly unit-testable without having
+// to drive a full TanStack Query refetch cycle through the hook.
+export const getRampHistoryRefetchIntervalMs = (
+    error: unknown,
+    isActive: boolean,
+): number | false => {
+    if (!isActive) return false
+    return isNotFoundError(error)
+        ? NOT_FOUND_POLL_INTERVAL_MS
+        : POLL_INTERVAL_MS
 }
 
 export type UseRampHistoryInfiniteQueryParams = {
@@ -81,11 +85,7 @@ export const useRampHistoryInfiniteQuery = ({
             lastPage.next ?? undefined,
         enabled: Boolean(deviceId && accountAddress),
         refetchInterval: currentQuery =>
-            isActive
-                ? isNotFoundError(currentQuery.state.error)
-                    ? NOT_FOUND_POLL_INTERVAL_MS
-                    : POLL_INTERVAL_MS
-                : false,
+            getRampHistoryRefetchIntervalMs(currentQuery.state.error, isActive),
     })
 
     // Stable identity while pages are unchanged — consumers feed this to lists.

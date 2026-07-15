@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,6 +10,26 @@
  limitations under the License
  */
 
-export const BASE_ACCOUNT_MBR = 100_000n // 0.1 ALGO — minimum balance for any account
-export const ASSET_MBR = 100_000n // 0.1 ALGO — additional MBR per opted-in asset
-export const MIN_TXN_FEE = 1000n // 0.001 ALGO — minimum transaction fee
+/**
+ * Base minimum balance for any account, in µAlgo (0.1 ALGO).
+ *
+ * Fallback only — do not read directly at runtime; use `useMinimumFeeConfig`,
+ * which sources the value from remote config.
+ */
+export const FALLBACK_BASE_ACCOUNT_MBR = 100_000n
+
+/**
+ * Additional minimum balance per opted-in asset, in µAlgo (0.1 ALGO).
+ *
+ * Fallback only — do not read directly at runtime; use `useMinimumFeeConfig`,
+ * which sources the value from remote config.
+ */
+export const FALLBACK_ASSET_MBR = 100_000n
+
+/**
+ * Minimum transaction fee, in µAlgo (0.001 ALGO).
+ *
+ * Fallback only — do not read directly at runtime; use `useMinimumFeeConfig`,
+ * which sources the value from remote config.
+ */
+export const FALLBACK_MIN_TXN_FEE = 1000n

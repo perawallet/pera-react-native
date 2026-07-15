@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,7 +18,7 @@ import {
     isInvalidInputError,
     signInSchema,
     useCardLoginMutation,
-    VerificationState,
+    useCardStore,
     type SignInFormValues,
 } from '@perawallet/wallet-core-card'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -26,6 +26,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCountdown } from '@hooks/useCountdown'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
+import { getOnboardingResumeRoute } from './getOnboardingResumeRoute'
 
 /** Seconds the user must wait before the OTP code can be re-requested. */
 const RESEND_COOLDOWN_SECONDS = 60
@@ -123,24 +124,28 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 }
 
                 // A non-null `phase` (with no token) means registration is
-                // unfinished. Route by KYC state: an unverified user resumes on
-                // the "Begin spending on-chain" KYC entry; otherwise the setup
-                // checklist.
+                // unfinished. Resume on the screen the server is actually
+                // waiting for — the phase names the pending step, and the KYC
+                // state decides whether verification must run first.
                 if (result.phase) {
-                    const isUnverified =
-                        result.verificationState === null ||
-                        result.verificationState ===
-                            VerificationState.Unverified
-                    if (isUnverified) {
+                    const { screen, step } = getOnboardingResumeRoute(
+                        result.phase,
+                        result.verificationState,
+                        useCardStore.getState().contactVerificationId !== null,
+                    )
+                    if (step !== null) {
+                        useCardStore.getState().setOnboardingStep(step)
+                    }
+                    if (screen === 'CardOnboardingStatus') {
                         navigation.navigate('PeraCard', {
                             screen: 'CardOnboarding',
-                            params: { screen: 'CardOnboardingVerification' },
+                            params: { screen, params: {} },
                         })
                         return
                     }
                     navigation.navigate('PeraCard', {
                         screen: 'CardOnboarding',
-                        params: { screen: 'CardOnboardingStatus', params: {} },
+                        params: { screen },
                     })
                     return
                 }

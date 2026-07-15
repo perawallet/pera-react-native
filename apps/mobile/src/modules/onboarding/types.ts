@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type IconName } from '@components/core'
+import { type IconName, type PWBadgeProps } from '@components/core'
 
 export type AccountOption = {
     testID: string
@@ -19,4 +19,8 @@ export type AccountOption = {
     leftIcon: IconName
     onPress: () => void
     isDisabled?: boolean
+    /** Optional badge (e.g. a "NEW" pill) shown next to the option title. */
+    badge?: { labelKey: string; variant?: PWBadgeProps['variant'] }
+    /** Optional "Learn more"-style link with its own press handler. */
+    learnMore?: { labelKey: string; onPress: () => void }
 }

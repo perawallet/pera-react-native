@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useLedgerAccountPreview } from '../useLedgerAccountPreview'
 
 const mocks = vi.hoisted(() => ({
@@ -43,8 +44,6 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: mocks.useCurrency,
 }))
 
-const ALGO_ID = '0'
-
 beforeEach(() => {
     vi.clearAllMocks()
     mocks.useCurrency.mockReturnValue({
@@ -53,7 +52,10 @@ beforeEach(() => {
     mocks.useAssetsQuery.mockReturnValue({ data: new Map(), isPending: false })
     mocks.useAssetPricesQuery.mockReturnValue({
         data: new Map([
-            [ALGO_ID, { assetId: ALGO_ID, usdPrice: new Decimal(2) }],
+            [
+                ALGO_ASSET_ID,
+                { assetId: ALGO_ASSET_ID, usdPrice: new Decimal(2) },
+            ],
         ]),
         isPending: false,
     })

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -81,5 +81,47 @@ describe('PanelButton', () => {
 
         expect(screen.getByText('With Icon')).toBeTruthy()
         expect(screen.getByTestId('panel_btn_view')).toBeTruthy()
+    })
+
+    it('renders the badge label when a badge is provided', () => {
+        render(
+            <PanelButton
+                title='Quantum'
+                titleWeight='h3'
+                badge={{ label: 'NEW' }}
+                onPress={() => {}}
+            />,
+        )
+
+        expect(screen.getByText('NEW')).toBeTruthy()
+    })
+
+    it('does not render a badge when none is provided', () => {
+        render(
+            <PanelButton
+                title='No Badge'
+                titleWeight='h3'
+                onPress={() => {}}
+            />,
+        )
+
+        expect(screen.queryByText('NEW')).toBeNull()
+    })
+
+    it('renders the learn-more link and fires its own onPress without triggering the row onPress', () => {
+        const onPress = vi.fn()
+        const onLearnMore = vi.fn()
+        render(
+            <PanelButton
+                title='Quantum'
+                titleWeight='h3'
+                learnMore={{ label: 'Learn more', onPress: onLearnMore }}
+                onPress={onPress}
+            />,
+        )
+
+        fireEvent.click(screen.getByText('Learn more'))
+        expect(onLearnMore).toHaveBeenCalledTimes(1)
+        expect(onPress).not.toHaveBeenCalled()
     })
 })

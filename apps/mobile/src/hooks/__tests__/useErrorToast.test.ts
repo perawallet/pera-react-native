@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { useErrorToast } from '../useErrorToast'
@@ -198,6 +198,80 @@ describe('useErrorToast', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             {
                 title: 'Custom title',
+                body: 'errors.general.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('renders offline copy for a PeraNetworkError(offline)', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(new PeraNetworkError('offline'))
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.network.no_connection.title',
+                body: 'errors.network.no_connection.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('ignores a provided fallbackTitle for a specific-kind PeraNetworkError(offline)', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(
+                new PeraNetworkError('offline'),
+                'Custom fallback title',
+            )
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.network.no_connection.title',
+                body: 'errors.network.no_connection.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('renders general copy only for unknown-kind network errors', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(new PeraNetworkError('unknown'))
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.general.title',
+                body: 'errors.general.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('honors a provided fallbackTitle for unknown-kind network errors', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(
+                new PeraNetworkError('unknown'),
+                'Custom fallback title',
+            )
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'Custom fallback title',
                 body: 'errors.general.body',
                 type: 'error',
             },

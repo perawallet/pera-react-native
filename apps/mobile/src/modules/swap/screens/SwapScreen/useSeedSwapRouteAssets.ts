@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,13 +13,12 @@
 import { useEffect } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import {
-    ALGO_ASSET_ID,
     getAssetsQueryKey,
     useAssetByIdQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { type Network } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Network } from '@perawallet/wallet-core-shared'
 
 type UseSeedSwapRouteAssetsParams = {
     assetInId?: string
@@ -50,8 +49,7 @@ export const useSeedSwapRouteAssets = ({
     const queryClient = useQueryClient()
 
     // ALGO is always in the DB and the API skips it, so only seed non-ALGO ids.
-    const canFetch = (id?: string): boolean =>
-        Boolean(id) && id !== ALGO_ASSET_ID
+    const canFetch = (id?: string): boolean => Boolean(id) && !isAlgoAssetId(id)
 
     const { data: outAsset } = useAssetByIdQuery(assetOutId ?? '', {
         enabled: canFetch(assetOutId),

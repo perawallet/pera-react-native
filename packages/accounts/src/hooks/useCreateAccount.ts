@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -24,6 +24,7 @@ import {
     algo25SignKeyId,
     hdDerivedKeyId,
     KeyNotFoundError,
+    quantumSignKeyId,
     useKMS,
 } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
@@ -41,6 +42,13 @@ export type Algo25SeedReference = {
     address: string
 }
 
+export type QuantumSeedReference = {
+    /** Keystore id of the quantum seed entry. */
+    seedKeyId: string
+    /** Encoded Algorand address derived from the seed. */
+    address: string
+}
+
 export const useCreateAccount = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
@@ -51,6 +59,7 @@ export const useCreateAccount = () => {
         getKey,
         createHDWalletKey,
         createAlgo25Key,
+        createQuantumKey,
         getDerivedPublicKey,
         removeKeyAndChildren,
     } = useKMS()
@@ -220,6 +229,45 @@ export const useCreateAccount = () => {
         }
     }
 
+    // Unlike buildAlgo25WalletAccount there is no getKey(id) reuse branch:
+    // a quantum seed entry carries no derivable public key at this layer
+    // (the signing child holds it, inside the KMS), so a bare `id` is
+    // passed through to createQuantumKey instead.
+    const buildQuantumWalletAccount = async ({
+        seed,
+        id,
+    }: {
+        seed?: QuantumSeedReference
+        id?: string
+    } = {}): Promise<WalletAccount> => {
+        if (seed) {
+            return {
+                id: generateOrderedUniqueId(),
+                address: seed.address,
+                type: AccountTypes.quantum,
+                keyPairId: quantumSignKeyId(seed.seedKeyId),
+            }
+        }
+
+        const result = await createQuantumKey({ id })
+        const createdKeyId = result.seedKey.id
+        try {
+            const newAccount: WalletAccount = {
+                id: generateOrderedUniqueId(),
+                address: result.address,
+                type: AccountTypes.quantum,
+                keyPairId: result.signKeyId,
+            }
+
+            setPendingAccountRollback(() => removeKeyAndChildren(createdKeyId))
+
+            return newAccount
+        } catch (error) {
+            await removeKeyAndChildren(createdKeyId).catch(() => {})
+            throw error
+        }
+    }
+
     const saveAccount = async (account: WalletAccount) => {
         await saveAndUpdateAccounts(account)
     }
@@ -253,13 +301,24 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
+    const createQuantumWalletAccount = async (params?: {
+        seed?: QuantumSeedReference
+        id?: string
+    }) => {
+        const newAccount = await buildQuantumWalletAccount(params)
+        await saveAndUpdateAccounts(newAccount)
+        return newAccount
+    }
+
     return {
         createHdWalletAccount,
         createHdWalletAccountForSeed,
         createAlgo25WalletAccount,
+        createQuantumWalletAccount,
         buildHdWalletAccount,
         buildHdWalletAccountForSeed,
         buildAlgo25WalletAccount,
+        buildQuantumWalletAccount,
         saveAccount,
     }
 }

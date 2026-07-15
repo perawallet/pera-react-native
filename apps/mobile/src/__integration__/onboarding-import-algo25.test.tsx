@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -154,6 +154,12 @@ describe('Flow: Onboarding → Import Algo25 (legacy)', () => {
             await waitFor(() =>
                 screen.getByTestId('import_account_word_input_24'),
             )
+
+            // The Quantum-only collision explainer must NOT appear on a
+            // standard algo25 import (it shares the ImportAccountScreen).
+            expect(
+                screen.queryByTestId('import_account_quantum_note'),
+            ).toBeNull()
 
             typeWordsIndividually(ALGO25_TEST_MNEMONIC_WORDS)
 

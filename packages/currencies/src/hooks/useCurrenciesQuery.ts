@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { fetchCurrenciesList } from '../api/currencies'
 import { getCurrenciesQueryKey } from './querykeys'
 
@@ -27,9 +28,9 @@ export const useCurrenciesQuery = () => {
         return results.data
             ? [
                   {
-                      id: 'ALGO',
+                      id: ALGO_ASSET_NAME,
                       name: 'Algorand',
-                      symbol: 'ALGO',
+                      symbol: ALGO_ASSET_NAME,
                   },
                   ...results.data,
               ]

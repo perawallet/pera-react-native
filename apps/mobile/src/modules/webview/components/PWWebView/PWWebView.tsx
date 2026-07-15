@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -42,6 +42,7 @@ import {
     isTrustedWebviewOrigin,
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
+import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
 import { EmptyView } from '@components/EmptyView'
 import {
     PWView,
@@ -53,6 +54,7 @@ import { LoadingView } from '@components/LoadingView'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
+import { toLoadableUrl } from './toLoadableUrl'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebViewStore, type WebViewFavorite } from '../../hooks'
@@ -63,6 +65,11 @@ export type PWWebViewProps = {
     enablePeraConnect: boolean
     requestId?: string
     showControls?: boolean
+    // Gates the bottom back/forward/home bar independently of showControls (which
+    // also drives the top close/reload bar). Defaults to true; set false for
+    // single-page-app hosts (e.g. Bidali) where the WebView history-based
+    // navigation the bar relies on never tracks in-app routing.
+    showFooterBar?: boolean
     onClose?: () => void
     onBack?: () => void
     inBottomSheet?: boolean
@@ -83,6 +90,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         enablePeraConnect,
         requestId,
         showControls = false,
+        showFooterBar = true,
         onClose,
         onBack,
         customJavaScript,
@@ -96,7 +104,8 @@ export const PWWebView = (props: PWWebViewProps) => {
     // A bottom sheet supplies no bottom inset of its own, so the footer must
     // clear the home indicator / system nav bar itself. Outside a sheet the
     // host screen handles insets, so keep it 0 to avoid double-insetting.
-    const styles = useStyles({ bottomInset: inBottomSheet ? insets.bottom : 0 })
+    const footerBottomInset = inBottomSheet ? insets.bottom : 0
+    const styles = useStyles({ bottomInset: footerBottomInset })
     const { theme } = useTheme()
     const removeWebView = useWebViewStore(state => state.removeWebView)
     const internalRef = useRef<WebView>(null)
@@ -114,6 +123,12 @@ export const PWWebView = (props: PWWebViewProps) => {
         webview,
         enablePeraConnect ? contextFingerprints : undefined,
     )
+
+    // Normalize before loading: a scheme-less url (e.g. a bare host typed into
+    // the Discover URL bar) is otherwise resolved by WKWebView as a bundle-
+    // relative path and never loads. Trust/origin checks below still run on the
+    // live navigation url, so this only affects the initial load target.
+    const loadableUrl = toLoadableUrl(url)
 
     // Re-evaluated on every navigation event below — the bridge must downgrade
     // to untrusted as soon as the WebView leaves the trusted base origin
@@ -147,6 +162,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         onCloseRequested,
         onBack,
     )
+
+    const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard()
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
@@ -282,7 +299,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 ref={webview}
                 {...rest}
                 source={{
-                    uri: url,
+                    uri: loadableUrl,
                 }}
                 style={styles.webview}
                 renderLoading={() => (
@@ -325,6 +342,10 @@ export const PWWebView = (props: PWWebViewProps) => {
                 onHttpError={showError}
                 dataDetectorTypes={[]}
                 onNavigationStateChange={navigationStateChange}
+                onShouldStartLoadWithRequest={
+                    rest.onShouldStartLoadWithRequest ??
+                    onShouldStartLoadWithRequest
+                }
                 nestedScrollEnabled
             />
         )
@@ -336,6 +357,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         showLoadError,
         showError,
         navigationStateChange,
+        onShouldStartLoadWithRequest,
         isDarkMode,
         userAgent,
         jsToLoad,
@@ -345,7 +367,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         webview,
         styles.absoluteFill,
         t,
-        url,
+        loadableUrl,
     ])
 
     return (
@@ -366,12 +388,13 @@ export const PWWebView = (props: PWWebViewProps) => {
                 {renderWebView()}
             </PWScrollView>
 
-            {showControls && (
+            {showControls && showFooterBar && (
                 <WebViewFooterBar
                     webview={webview}
-                    homeUrl={url}
+                    homeUrl={loadableUrl}
                     navigationState={navigationState}
                     favorite={favorite}
+                    bottomInset={footerBottomInset}
                 />
             )}
         </PWView>

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,14 +18,17 @@ import type { AlgokitClientInterface } from '../types'
 const makeAlgokit = (response: unknown): AlgokitClientInterface => ({
     client: {
         algod: {
-            sendRawTransaction: vi.fn().mockResolvedValue(response),
+            // algosdk's builder shape: sendRawTransaction(...).do()
+            sendRawTransaction: vi.fn().mockReturnValue({
+                do: vi.fn().mockResolvedValue(response),
+            }),
         },
     },
 })
 
-const signedTxn = (txId?: () => string): PeraSignedTransaction =>
+const signedTxn = (txID?: () => string): PeraSignedTransaction =>
     ({
-        txn: txId ? { txId } : {},
+        txn: txID ? { txID } : {},
         blob: new Uint8Array([1]),
     }) as unknown as PeraSignedTransaction
 

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,7 +21,9 @@ import {
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { WealthChart } from '@components/WealthChart'
 import {
     formatDatetime,
@@ -151,19 +153,19 @@ export const PortfolioView = ({
                             </InfoButton>
                         </PWView>
                     </PWView>
-                    <CurrencyDisplay
+                    <AssetAmount
                         variant='h2'
                         value={
                             selectedPoint
                                 ? selectedPoint.algoValue
                                 : portfolioAlgoValue
                         }
-                        currency='ALGO'
-                        precision={2}
+                        asset={ALGO_ASSET}
+                        density='compact'
                         style={styles.primaryCurrency}
                         isLoading={isPending}
                     />
-                    <CurrencyDisplay
+                    <PreferredAmount
                         variant='h4'
                         style={styles.valueTitle}
                         value={
@@ -171,9 +173,8 @@ export const PortfolioView = ({
                                 ? selectedPoint.preferredValue
                                 : portfolioPreferredValue
                         }
-                        currency={preferredCurrency}
                         prefix='≈ '
-                        precision={2}
+                        density='compact'
                         isLoading={isPending}
                     />
                 </PWView>

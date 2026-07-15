@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,11 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
 import { type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    isAlgoAssetId,
+    ALGO_ASSET_ID,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
@@ -29,7 +34,6 @@ import {
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, AssetDetailsEvent } from '@analytics'
 
 export type AssetActionButtonsProps = {
@@ -70,7 +74,7 @@ export const AssetActionButtons = ({
     }
 
     const handleSwap = useCallback(() => {
-        const isAlgo = asset.assetId === '0'
+        const isAlgo = isAlgoAssetId(asset.assetId)
         if (isAlgo) {
             trackEvent(AssetDetailsEvent.SwapAlgo)
         }
@@ -78,7 +82,7 @@ export const AssetActionButtons = ({
             screen: 'Swap',
             params: isAlgo
                 ? undefined
-                : { assetInId: '0', assetOutId: asset.assetId },
+                : { assetInId: ALGO_ASSET_ID, assetOutId: asset.assetId },
         })
     }, [asset.assetId, navigation])
 

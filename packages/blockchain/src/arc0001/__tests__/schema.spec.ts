@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -108,6 +108,37 @@ describe('arc0001SignTxnRequestSchema', () => {
                 (result.error.issues[0] as { keys?: string[] }).keys,
             ).toEqual(['unknownField'])
         }
+    })
+
+    it('rejects an oversized txn (defence-in-depth byte cap)', () => {
+        const result = arc0001SignTxnRequestSchema.safeParse([
+            { txn: 'A'.repeat(64 * 1024 + 1) },
+        ])
+        expect(result.success).toBe(false)
+        if (!result.success) {
+            expect(result.error.issues[0].path).toEqual([0, 'txn'])
+        }
+    })
+
+    it('rejects an oversized message string', () => {
+        const result = arc0001SignTxnRequestSchema.safeParse([
+            { txn: 'AAAA', message: 'x'.repeat(4 * 1024 + 1) },
+        ])
+        expect(result.success).toBe(false)
+    })
+
+    it('rejects an msig.addrs list longer than the participant cap', () => {
+        const result = arc0001SignTxnRequestSchema.safeParse([
+            {
+                txn: 'AAAA',
+                msig: {
+                    version: 1,
+                    threshold: 2,
+                    addrs: Array.from({ length: 257 }, () => 'addr'),
+                },
+            },
+        ])
+        expect(result.success).toBe(false)
     })
 
     it('rejects when the top-level payload is not an array', () => {

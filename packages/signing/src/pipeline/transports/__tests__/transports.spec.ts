@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -57,7 +57,9 @@ describe('createAlgodTransport', () => {
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX_ID') => ({
         client: {
             algod: {
-                sendRawTransaction: vi.fn().mockResolvedValue({ txid }),
+                sendRawTransaction: vi.fn().mockReturnValue({
+                    do: vi.fn().mockResolvedValue({ txid }),
+                }),
             },
         },
     })
@@ -96,14 +98,14 @@ describe('createAlgodTransport', () => {
         expect(result).toEqual({ type: 'submitted', txIds: ['TX1', 'TX2'] })
     })
 
-    test('falls back to signedTxn.txn.txId() when response omits txid', async () => {
+    test('falls back to signedTxn.txn.txID() when response omits txid', async () => {
         const txIdFn = vi.fn().mockReturnValue('COMPUTED_ID')
         const signedWithId = {
             signedData: {
                 type: 'transactions',
                 signed: [
                     {
-                        txn: { txId: txIdFn },
+                        txn: { txID: txIdFn },
                         blob: new Uint8Array(),
                     } as never,
                 ],
@@ -113,7 +115,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi.fn().mockResolvedValue({}),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockResolvedValue({}),
+                    }),
                 },
             },
         }
@@ -151,9 +155,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi
-                        .fn()
-                        .mockRejectedValue(new Error('algod down')),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(new Error('algod down')),
+                    }),
                 },
             },
         }
@@ -172,7 +176,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi.fn().mockRejectedValue('boom'),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue('boom'),
+                    }),
                 },
             },
         }
@@ -245,9 +251,9 @@ describe('createAlgodTransport', () => {
         const algokit = {
             client: {
                 algod: {
-                    sendRawTransaction: vi
-                        .fn()
-                        .mockRejectedValue(new Error('algod down')),
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(new Error('algod down')),
+                    }),
                 },
             },
         }
@@ -583,6 +589,30 @@ describe('createMultisigProposeTransport', () => {
         })
         // Local source: no handoff registered (in-app inbox owns delivery).
         expect(walletConnectHandoffs.list()).toEqual([])
+    })
+
+    test('honors transportOptions.multisig.proposeMode (sync) for a local source', async () => {
+        // Shared-account swaps propose locally but must use the sync protocol
+        // so the backend doesn't broadcast — the proposer submits to algod.
+        const proposeSignRequest = vi.fn().mockResolvedValue({
+            signRequestId: 'swap-req',
+            status: 'pending',
+            rawTransactionsBase64: [],
+        })
+        const transport = buildPropose(proposeSignRequest)
+
+        await transport.send(
+            transactionResult,
+            {
+                type: 'local',
+                transportOptions: { multisig: { proposeMode: 'sync' } },
+            },
+            'JOINT_ADDR',
+        )
+
+        expect(proposeSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'sync' }),
+        )
     })
 
     test('throws when multisigAddress is missing', async () => {

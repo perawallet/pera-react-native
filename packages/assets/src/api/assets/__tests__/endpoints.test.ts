@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -68,6 +68,35 @@ describe('assets endpoints', () => {
             expect.objectContaining({
                 url: '/v1/assets/',
                 params: { asset_ids: '1,2,3', include_deleted: true },
+            }),
+        )
+    })
+
+    test('fetchAssets uses POST /v2/assets/ with device_id when a deviceId is provided', async () => {
+        queryClientMock.mockResolvedValue({ data: validAssetsResponse })
+
+        await fetchAssets(['1', '2', '3'], 'mainnet', '98765')
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'pera',
+                network: 'mainnet',
+                method: 'POST',
+                url: '/v2/assets/',
+                body: '{"device_id":98765,"asset_ids":["1","2","3"],"include_deleted":true}',
+            }),
+        )
+    })
+
+    test('fetchAssets falls back to GET /v1/assets/ when deviceId is null', async () => {
+        queryClientMock.mockResolvedValue({ data: validAssetsResponse })
+
+        await fetchAssets(['1', '2'], 'mainnet', null)
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'GET',
+                url: '/v1/assets/',
             }),
         )
     })

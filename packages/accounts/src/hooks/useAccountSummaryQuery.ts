@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,12 +11,10 @@
  */
 
 import { useMemo } from 'react'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import {
-    ALGO_ASSET_ID,
-    useAssetPricesQuery,
-} from '@perawallet/wallet-core-assets'
+import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountPortfolioTotals } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
@@ -38,6 +36,7 @@ export type UseAccountSummaryResult = {
     isComplete: boolean
     isPending: boolean
     isError: boolean
+    isPaused: boolean
 }
 
 /**
@@ -58,6 +57,11 @@ export const useAccountSummaryQuery = (
         queryKey: getAccountSummaryQueryKey(address ?? '', network),
         enabled: !!address,
         staleTime: Infinity,
+        // SQLite is the source of truth; run the queryFn even while offline
+        // instead of pausing it (TanStack's default networkMode: 'online'),
+        // which would strand consumers in `pending`. Network segments are
+        // already caught in the syncer.
+        networkMode: 'always',
         queryFn: async () => {
             // Self-heal a freshly imported/selected account the background sync
             // hasn't populated yet (deduped with the holdings-page fetch).
@@ -97,6 +101,7 @@ export const useAccountSummaryQuery = (
                 !!query.data && (query.data.missingMetadataCount ?? 0) === 0,
             isPending: query.isPending,
             isError: query.isError,
+            isPaused: query.isPaused,
         }
-    }, [query.data, query.isPending, query.isError, algoPrices])
+    }, [query.data, query.isPending, query.isError, query.isPaused, algoPrices])
 }

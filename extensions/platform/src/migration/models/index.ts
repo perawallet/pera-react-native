@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -34,7 +34,7 @@ export interface MigrationService {
     simulateLegacyDatabase(args: SimulateLegacyDatabaseArgs): Promise<void>
     /** ⚠️ DEV-ONLY: writes the pre-6.x encrypted account blob — never call from app code. */
     simulatePreSixxAccounts(): Promise<void>
-    /** ⚠️ DEV-ONLY: destructive wipe — never call from app code. */
+    /** Removes all legacy (v6) migration data and clears the migration sentinel. */
     resetLegacyData(): Promise<void>
 }
 
@@ -78,6 +78,13 @@ export interface LegacyMigrationData {
     tooltipPreferences: LegacyTooltipPreferences
     dismissedBanners: LegacyDismissedBanners
     schemaReplayResults?: Record<string, LegacySchemaReplayResult>
+    undecodableAccounts: LegacyUndecodableAccount[]
+}
+
+export interface LegacyUndecodableAccount {
+    address: string
+    name: string
+    error: string
 }
 
 export type LegacySchemaReplayResult =
@@ -274,6 +281,5 @@ export interface LegacyDeviceIdentifiers {
     notificationUserId: string | null
     mainnetDeviceId: string | null
     testnetDeviceId: string | null
-    legacyDeviceId?: string | null
     lastSeenNotificationId: number | null
 }

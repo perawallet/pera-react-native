@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,10 +14,16 @@ import type {
     PlatformExtension,
     PushNotificationInitResult,
 } from '@perawallet/wallet-extension-platform'
+import { logger, withTimeout } from '@perawallet/wallet-core-shared'
 
 import { platformServices } from './resources'
 
 export type ReactNativePlatformExtension = PlatformExtension
+
+// Outer bound on push-notification init. Must exceed the inner 5s FCM token
+// timeout so the inner degradation wins for a token hang; this outer bound
+// only bites when an earlier step (e.g. a hung permission request) stalls.
+const NOTIFICATIONS_INIT_TIMEOUT_MS = 8000
 
 /**
  * wallet-provider Extension that provides all React Native platform service
@@ -44,12 +50,30 @@ export const WithReactNativePlatformExtension = (
             analyticsInit,
         ])
 
-        const notificationResults =
-            await platformServices.pushNotification.initializeNotifications()
+        // Push-notification init can hang (FCM/APNs registration) or reject
+        // offline. Bound it and degrade to a no-token result so cold-start
+        // bootstrap never stalls or fails on this branch.
+        try {
+            const notificationResults = await withTimeout(
+                platformServices.pushNotification.initializeNotifications(),
+                NOTIFICATIONS_INIT_TIMEOUT_MS,
+                'push notification initialization',
+            )
 
-        return {
-            token: notificationResults.token,
-            unsubscribe: notificationResults.unsubscribe,
+            return {
+                token: notificationResults.token,
+                unsubscribe: notificationResults.unsubscribe,
+            }
+        } catch (error) {
+            logger.warn(
+                'Push notification initialization timed out or failed; continuing without a token',
+                { error },
+            )
+
+            return {
+                token: undefined,
+                unsubscribe: () => {},
+            }
         }
     }
 

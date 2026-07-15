@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,10 @@ export { useKMSService } from './hooks/useKMSServices'
 export * from './models'
 export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
+export {
+    mnemonicIndexToWord,
+    mnemonicWordsToIndices,
+} from './crypto/mnemonic-indices'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
 export { zeroBytes } from './crypto/secure-memory'
 export {
@@ -28,11 +32,26 @@ export {
     deriveLiquidAuthMainKey,
 } from './crypto/hdwallet-utils'
 export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
-export { SeedScheme, ALGO25_SEED_LENGTH } from './constants'
+export {
+    deriveFalconAddressMock,
+    deriveFalconKeypairMock,
+    falconSignMock,
+    FALCON_PUBLIC_KEY_LENGTH,
+    FALCON_SIGNATURE_LENGTH,
+} from './crypto/falcon-utils'
+export {
+    SeedScheme,
+    ALGO25_SEED_LENGTH,
+    QUANTUM_SEED_LENGTH,
+    SIGNING_ACCESS_DOMAIN,
+    BACKUP_ACCESS_DOMAIN,
+} from './constants'
 export {
     aclOf,
     algo25AddressOf,
     createdAtOf,
+    entropyChildIdOf,
+    entropyChildMetadata,
     expiresAtOf,
     hexToBytes,
     isSeedKey,

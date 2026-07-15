@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,13 +19,13 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 import { KeyValueRow } from '@components/KeyValueRow'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
 import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
@@ -46,6 +46,7 @@ export const TransactionConfirmationScreen = () => {
         selectedAssetId,
         params,
         paramsPending,
+        isQuantumFee,
         currentBalance,
         currentBalancePending,
         note,
@@ -88,22 +89,18 @@ export const TransactionConfirmationScreen = () => {
         >
             <PWView style={styles.scrollContent}>
                 <KeyValueRow title={t('send_funds.confirmation.amount')}>
-                    <CurrencyDisplay
+                    <AssetAmount
                         variant='h3'
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? DEFAULT_PRECISION}
-                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                        asset={asset}
                         showSymbol
                         ignorePrivacyMode
                         value={amount ?? new Decimal(0)}
                     />
                     {!isCollectible && (
-                        <PreferredCurrencyDisplay
+                        <PreferredAmount
                             style={styles.secondaryAmount}
                             sourceAmount={amount}
                             sourceAssetId={selectedAssetId ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={DEFAULT_PRECISION}
                             showSymbol
                             ignorePrivacyMode
                         />
@@ -127,39 +124,36 @@ export const TransactionConfirmationScreen = () => {
                     </KeyValueRow>
                 )}
                 <KeyValueRow title={t('send_funds.confirmation.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
-                        showSymbol
-                        ignorePrivacyMode
-                        value={
-                            params?.minFee != null
-                                ? toWholeUnits(params.minFee, ALGO_ASSET)
-                                : null
-                        }
-                        isLoading={paramsPending}
-                    />
+                    <PWView style={styles.feeValueContainer}>
+                        <AssetAmount
+                            asset={ALGO_ASSET}
+                            showSymbol
+                            ignorePrivacyMode
+                            value={
+                                params?.minFee != null
+                                    ? toWholeUnits(params.minFee, ALGO_ASSET)
+                                    : null
+                            }
+                            isLoading={paramsPending}
+                        />
+                        {isQuantumFee && <QuantumFeeExplainer />}
+                    </PWView>
                 </KeyValueRow>
                 <PWDivider />
                 {currentBalance && (
                     <KeyValueRow
                         title={t('send_funds.confirmation.current_balance')}
                     >
-                        <CurrencyDisplay
-                            currency={asset?.unitName ?? ''}
-                            precision={asset?.decimals ?? DEFAULT_PRECISION}
-                            minPrecision={isCollectible ? 0 : DEFAULT_PRECISION}
+                        <AssetAmount
+                            asset={asset}
                             showSymbol
                             value={currentBalance.amount}
                             isLoading={currentBalancePending}
                         />
                         {!isCollectible && (
-                            <PreferredCurrencyDisplay
+                            <PreferredAmount
                                 sourceAmount={currentBalance.amount}
                                 sourceAssetId={selectedAssetId ?? ''}
-                                precision={asset?.decimals ?? DEFAULT_PRECISION}
-                                minPrecision={DEFAULT_PRECISION}
                                 showSymbol
                                 style={styles.secondaryAmount}
                             />

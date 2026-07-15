@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,7 +16,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { validateTransactionRoundTrip } from '../validateTransactionRoundTrip'
 import { TransactionRoundTripError } from '../../pipeline/errors'
 
-const encodeTransactionRawMock = vi.fn<[PeraTransaction], Uint8Array>()
+const encodeTransactionRawMock = vi.fn<(tx: PeraTransaction) => Uint8Array>()
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const original =

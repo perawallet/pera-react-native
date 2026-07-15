@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWScreen, PWView } from '@components/core'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
 import { GroupDetailHeader } from './GroupDetailHeader'
@@ -39,17 +39,22 @@ export const GroupDetailScreen = () => {
         [styles.itemSeparator],
     )
 
+    // PWScreen scroll='never' gives the list a fixed full-height body so it
+    // can render and own its own in-sheet scrolling — a plain PWView wrapper
+    // collapsed the list to zero height (only the header showed).
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.contentContainer}>
-                <GroupDetailHeader transactionCount={transactions.length} />
-                <PWFlatList
-                    data={transactions}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor}
-                    ItemSeparatorComponent={ItemSeparator}
-                />
-            </PWView>
-        </PWView>
+        <PWScreen scroll='never'>
+            <PWFlatList
+                data={transactions}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                ItemSeparatorComponent={ItemSeparator}
+                ListHeaderComponent={
+                    <GroupDetailHeader transactionCount={transactions.length} />
+                }
+                showsVerticalScrollIndicator={false}
+                inBottomSheet
+            />
+        </PWScreen>
     )
 }

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -85,11 +85,14 @@ const parseResponse = async <TData>(
 }
 
 /**
- * Performs a direct call to Baanx. The access token is read from the encrypted
- * keystore on demand via `withSecret` — the decoded value lives only inside the
- * handler (its bytes are zeroed afterwards) and the request is made there, so
- * the token is never cached in app memory. Pre-auth calls (login, register/*)
- * run without a Bearer. Non-2xx responses reject with ky's `HTTPError`.
+ * Performs a direct call to Baanx. When the request is marked `authenticated`
+ * the per-user access token is read from the encrypted keystore on demand via
+ * `withSecret` — the decoded value lives only inside the handler (its bytes are
+ * zeroed afterwards) and the request is made there, so the token is never
+ * cached in app memory. Pre-auth calls (the default: registration, login,
+ * settings, onboarding consent) run with `x-client-key` only, never a Bearer —
+ * a stale token must not leak into them ("Missing User Data"). Non-2xx
+ * responses reject with ky's `HTTPError`.
  */
 export const baanxDirectRequest = async <TData, TVars = unknown>(
     req: CardTransportRequest<TVars>,
@@ -108,7 +111,7 @@ export const baanxDirectRequest = async <TData, TVars = unknown>(
             },
         })
 
-    if (hasSecret(ACCESS_TOKEN_SECRET_ID)) {
+    if (req.authenticated && hasSecret(ACCESS_TOKEN_SECRET_ID)) {
         const result = await withSecret(ACCESS_TOKEN_SECRET_ID, bytes =>
             send(`Bearer ${textDecoder.decode(bytes)}`).then(response =>
                 parseResponse<TData>(response, req.responseType),

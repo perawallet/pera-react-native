@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,10 @@
  */
 
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountType,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type {
     PeraTransaction,
     PeraSignedTransaction,
@@ -158,6 +161,25 @@ export const isExternalCallbackSource = (
     (EXTERNAL_CALLBACK_SOURCES as readonly SourceType[]).includes(sourceType)
 
 /**
+ * Optional, transport-routing hints for a sign request. Namespaced by concern
+ * so the generic pipeline types don't accumulate one-off top-level flags;
+ * everything here is advisory to the transport layer (absence = defaults).
+ */
+export interface SignRequestTransportOptions {
+    /** Multisig-propose route tuning. */
+    multisig?: {
+        /**
+         * Propose `type` sent to the backend. Local in-app sends default to
+         * `'async'` (backend broadcasts once threshold is met); external
+         * handoffs default to `'sync'`. Shared-account swaps set `'sync'` so the
+         * backend does NOT broadcast — the proposer assembles the composite
+         * multisig, interleaves the pre-signed slots, and submits to algod.
+         */
+        proposeMode?: 'sync' | 'async'
+    }
+}
+
+/**
  * Metadata about where signable data came from
  */
 export interface SourceMetadata {
@@ -190,6 +212,12 @@ export interface SourceMetadata {
 
     /** For multisig co-sign: the sign request ID */
     signRequestId?: string
+
+    /**
+     * Optional transport-routing hints (e.g. multisig propose mode). Namespaced
+     * by concern so this generic type stays free of one-off flags.
+     */
+    transportOptions?: SignRequestTransportOptions
 
     /** Original request ID for callbacks */
     requestId?: string
@@ -233,6 +261,18 @@ export interface SourceCallbacks {
      * the original `algo_signTxn` request before responding.
      */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
+    /**
+     * Fired by the multisig propose transport once the backend sign-request
+     * is created, before the headless propose flow resolves. Lets an in-app
+     * proposer that delivers asynchronously — the shared-account swap flow —
+     * capture the backend `signRequestId` and the exact raw transactions sent,
+     * so it can register a handoff to finish the swap once threshold is met.
+     */
+    onProposed?: (info: {
+        signRequestId: string
+        status: SignRequestStatus
+        rawTransactionsBase64: string[]
+    }) => Promise<void>
 }
 
 /**
@@ -406,6 +446,13 @@ export interface SignerInfo {
     address: string
     /** For multisig: base64 signatures per item */
     signatures?: Nullable<string>[]
+    /**
+     * Account type of the signer, when the signing strategy knows it. Lets the
+     * submission boundary detect quantum signers without parsing signature
+     * bytes. Populated by createLocalKeyStrategy (and, once it lands, the
+     * dedicated quantum strategy — PQ-006).
+     */
+    accountType?: AccountType
 }
 
 /**

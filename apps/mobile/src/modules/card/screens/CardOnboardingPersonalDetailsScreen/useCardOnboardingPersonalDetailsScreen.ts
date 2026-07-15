@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,6 +15,8 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     dobToIsoDate,
+    getCardApiError,
+    isDuplicateError,
     isoDateToDob,
     personalDetailsSchema,
     useCardStore,
@@ -26,6 +28,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -52,6 +55,10 @@ export const useCardOnboardingPersonalDetailsScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.personal_details.error_title',
+            bodyKey: 'peraCard.personal_details.error_body',
+        })
         const { request } = useBottomSheet()
         const onboardingId = useCardStore(state => state.onboardingId)
         const countryIso = useCardStore(state => state.countryIso)
@@ -202,11 +209,17 @@ export const useCardOnboardingPersonalDetailsScreen =
                         countryOfNationality,
                     })
                     navigation.navigate('CardOnboardingAddress')
-                } catch {
-                    errorToast(
-                        t('peraCard.personal_details.error_title'),
-                        t('peraCard.personal_details.error_body'),
-                    )
+                } catch (error) {
+                    // A duplicate means Baanx already holds these details (a
+                    // retried non-idempotent submit) — continue rather than
+                    // strand the user. Otherwise prefer Baanx's own message so
+                    // the real reason shows (e.g. a wrong-phase rejection).
+                    const apiError = await getCardApiError(error)
+                    if (isDuplicateError(apiError)) {
+                        navigation.navigate('CardOnboardingAddress')
+                        return
+                    }
+                    await showError(error, apiError)
                 }
             },
         )

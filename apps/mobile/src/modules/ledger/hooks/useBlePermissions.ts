@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -28,6 +28,13 @@ type UseBlePermissionsResult = {
     isBlocked: boolean
     requestPermissions: () => Promise<boolean>
     openSettings: () => Promise<void>
+    /**
+     * Send the user to enable location services. Location services (the OS
+     * location toggle) are a BLE-scan prerequisite on Android ≤ 11 but can't be
+     * enabled from a runtime prompt, so this deep-links to the OS location
+     * screen on Android and falls back to the app settings elsewhere.
+     */
+    openLocationSettings: () => Promise<void>
 }
 
 /**
@@ -132,11 +139,26 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
         await Linking.openSettings()
     }, [])
 
+    const openLocationSettings = useCallback(async () => {
+        if (Platform.OS === 'android') {
+            try {
+                await Linking.sendIntent(
+                    'android.settings.LOCATION_SOURCE_SETTINGS',
+                )
+                return
+            } catch {
+                // Fall through to the generic settings screen.
+            }
+        }
+        await Linking.openSettings()
+    }, [])
+
     return {
         hasPermissions,
         isChecking,
         isBlocked,
         requestPermissions,
         openSettings,
+        openLocationSettings,
     }
 }

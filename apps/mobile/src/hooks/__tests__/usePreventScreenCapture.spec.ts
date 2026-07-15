@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,7 +16,10 @@ import {
     preventScreenCaptureAsync,
     allowScreenCaptureAsync,
 } from 'expo-screen-capture'
-import { usePreventScreenCapture } from '../usePreventScreenCapture'
+import {
+    usePreventScreenCapture,
+    SECURE_SCREEN_CAPTURE_TAG,
+} from '../usePreventScreenCapture'
 
 // Mutable so each test can flip the build-time flag the hook reads.
 const { mockConfig } = vi.hoisted(() => ({
@@ -38,12 +41,47 @@ describe('usePreventScreenCapture', () => {
             usePreventScreenCapture('mnemonic'),
         )
 
-        expect(preventScreenCaptureAsync).toHaveBeenCalledWith('mnemonic')
+        expect(preventScreenCaptureAsync).toHaveBeenCalledWith(
+            SECURE_SCREEN_CAPTURE_TAG,
+        )
         expect(allowScreenCaptureAsync).not.toHaveBeenCalled()
 
         unmount()
 
-        expect(allowScreenCaptureAsync).toHaveBeenCalledWith('mnemonic')
+        expect(allowScreenCaptureAsync).toHaveBeenCalledWith(
+            SECURE_SCREEN_CAPTURE_TAG,
+        )
+    })
+
+    test('collapses concurrent secure screens onto a single native lock', () => {
+        // Two secure screens mounted at once with DIFFERENT tags — the exact
+        // backup mnemonic + verification overlap. iOS `preventScreenshots()` is
+        // not idempotent, so a second native prevent re-parents the key-window
+        // layer under a second secure text field and blacks out the screen. The
+        // hook must therefore issue exactly ONE native prevent across holders.
+        const first = renderHook(() =>
+            usePreventScreenCapture('backup-mnemonic'),
+        )
+        const second = renderHook(() =>
+            usePreventScreenCapture('backup-verification'),
+        )
+
+        expect(preventScreenCaptureAsync).toHaveBeenCalledTimes(1)
+        expect(preventScreenCaptureAsync).toHaveBeenCalledWith(
+            SECURE_SCREEN_CAPTURE_TAG,
+        )
+
+        // Releasing the first holder must NOT drop protection while the second
+        // secure screen is still mounted.
+        first.unmount()
+        expect(allowScreenCaptureAsync).not.toHaveBeenCalled()
+
+        // Protection is released only once the last holder unmounts.
+        second.unmount()
+        expect(allowScreenCaptureAsync).toHaveBeenCalledTimes(1)
+        expect(allowScreenCaptureAsync).toHaveBeenCalledWith(
+            SECURE_SCREEN_CAPTURE_TAG,
+        )
     })
 
     test('does nothing while enabled is false', () => {

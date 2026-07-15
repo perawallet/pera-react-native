@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,7 +20,12 @@ export { algo25SecretKeyToMnemonic }
 
 export const hdWalletEntropyToMnemonic = (parent: LegacyHDWallet): string => {
     if (parent.entropy && parent.entropy.length > 0) {
-        return entropyToMnemonic(Uint8Array.from(parent.entropy))
+        const entropy = Uint8Array.from(parent.entropy)
+        try {
+            return entropyToMnemonic(entropy)
+        } finally {
+            entropy.fill(0)
+        }
     }
     throw new Error(`HD wallet ${parent.walletId} has no entropy`)
 }

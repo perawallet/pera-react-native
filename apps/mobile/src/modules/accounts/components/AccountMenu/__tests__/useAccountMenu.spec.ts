@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -27,6 +27,11 @@ const { mockSetSelected, ACCT_A, ACCT_B } = vi.hoisted(() => ({
 const mockCardState = vi.hoisted(() => ({
     isAuthenticated: false as boolean,
     connectedFundingSourceAddress: null as string | null,
+}))
+const mockPeraCardFlag = vi.hoisted(() => ({ enabled: true }))
+
+vi.mock('@hooks/useIsPeraCardEnabled', () => ({
+    useIsPeraCardEnabled: () => mockPeraCardFlag.enabled,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -139,6 +144,7 @@ describe('useAccountMenu pera card row', () => {
         mockState.globalSelected = 'ADDR_A'
         mockCardState.isAuthenticated = false
         mockCardState.connectedFundingSourceAddress = null
+        mockPeraCardFlag.enabled = true
     })
 
     it('omits the pera-card row when showPeraCardActivation is off', () => {
@@ -217,5 +223,18 @@ describe('useAccountMenu pera card row', () => {
             activated: true,
             nested: false,
         })
+    })
+
+    it('omits the pera-card row when the feature flag is disabled', () => {
+        mockPeraCardFlag.enabled = false
+
+        const { result } = renderHook(() =>
+            useAccountMenu({ ...baseProps(), showPeraCardActivation: true }),
+        )
+
+        expect(result.current.listItems).toHaveLength(2)
+        expect(
+            result.current.listItems.every(item => item.kind === 'account'),
+        ).toBe(true)
     })
 })

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 import {
     applyDeclaration,
@@ -24,6 +24,7 @@ import { AgeDeclarationContent } from '@modules/age-gate/components/AgeDeclarati
 type UseAgeGateResult = {
     status: AgeGateStatus
     isAdult: boolean
+    isChecking: boolean
     ensureChecked: () => void
     retry: () => void
 }
@@ -32,21 +33,37 @@ export const useAgeGate = (): UseAgeGateResult => {
     const status = useAgeGateStore(state => state.status) ?? 'unknown'
     const { request } = useBottomSheet()
 
+    // True while a platform age check / declaration is in flight. Seeded true
+    // when the status is still unresolved so the gate shows the loading screen
+    // from the first frame (the platform check can take a few seconds) instead
+    // of briefly flashing the restricted fallback.
+    const [isChecking, setIsChecking] = useState(
+        status !== 'adult' && status !== 'minor',
+    )
+
     const run = useCallback(
         async (force: boolean) => {
-            const result = await resolveAgeGate(force ? { force: true } : {})
-            if (result.kind === 'needs-declaration') {
-                // confirm => 'I am 18 or older' (true); cancel => 'I am under 18'
-                // resolves undefined. Anything not affirmative => minor (no bypass).
-                const answer = await request<boolean>({
-                    contents: <AgeDeclarationContent />,
-                    options: {
-                        size: 'auto',
-                        enablePanDownToClose: false,
-                        enableCloseOnBackdropPress: false,
-                    },
-                })
-                applyDeclaration(answer === true)
+            setIsChecking(true)
+            try {
+                const result = await resolveAgeGate(
+                    force ? { force: true } : {},
+                )
+                if (result.kind === 'needs-declaration') {
+                    // confirm => 'I am 18 or older' (true); cancel => 'I am under
+                    // 18' resolves undefined. Anything not affirmative => minor
+                    // (no bypass).
+                    const answer = await request<boolean>({
+                        contents: <AgeDeclarationContent />,
+                        options: {
+                            size: 'auto',
+                            enablePanDownToClose: false,
+                            enableCloseOnBackdropPress: false,
+                        },
+                    })
+                    applyDeclaration(answer === true)
+                }
+            } finally {
+                setIsChecking(false)
             }
         },
         [request],
@@ -61,5 +78,11 @@ export const useAgeGate = (): UseAgeGateResult => {
         void run(true)
     }, [run])
 
-    return { status, isAdult: status === 'adult', ensureChecked, retry }
+    return {
+        status,
+        isAdult: status === 'adult',
+        isChecking,
+        ensureChecked,
+        retry,
+    }
 }

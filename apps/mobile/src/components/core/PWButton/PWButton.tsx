@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,7 @@
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
+import { getButtonIconSize } from './sizing'
 import {
     PWIcon,
     type IconName,
@@ -110,16 +111,13 @@ export const PWButton = ({
             allowRapidPress={allowRapidPress}
             {...getTestProps(testID)}
             {...props}
+            accessibilityState={{ disabled: !!(isDisabled || isLoading) }}
         >
             {!!icon && !isLoading && (
                 <PWIcon
                     name={icon}
                     variant={iconVariant}
-                    size={
-                        paddingStyle === 'dense' || paddingStyle === 'none'
-                            ? 'sm'
-                            : 'md'
-                    }
+                    size={getButtonIconSize(paddingStyle)}
                 />
             )}
             {!!title && !isLoading && (
@@ -138,11 +136,7 @@ export const PWButton = ({
                 <PWIcon
                     name={iconRight}
                     variant={iconVariant}
-                    size={
-                        paddingStyle === 'dense' || paddingStyle === 'none'
-                            ? 'sm'
-                            : 'md'
-                    }
+                    size={getButtonIconSize(paddingStyle)}
                 />
             )}
 

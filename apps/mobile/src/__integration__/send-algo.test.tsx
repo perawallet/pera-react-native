@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,6 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
@@ -40,7 +41,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
 import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
@@ -378,6 +379,140 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         SLOW_TEST_TIMEOUT_MS,
     )
 
+    it(
+        'Given valid send params, when algod rejects the submission, then the processing screen surfaces an error toast, navigates back to confirmation, and never reaches success',
+        async () => {
+            await seedAlgo25Sender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // There is no client-side spendable-balance gate on the
+            // confirmation → processing stack (that lives upstream on the
+            // amount-input screen). The faithful failure here is algod
+            // rejecting the submitted group — e.g. overspend / insufficient
+            // balance at the node. The signing pipeline's submit step throws,
+            // `useTransactionSendFlow.execute()` rejects, and the processing
+            // screen's catch raises an error toast then navigates back.
+            const rejectSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        message:
+                            'TransactionPool.Remember: transaction ABC: overspend',
+                    },
+                    { status: 400 },
+                ),
+            )
+            server.use(http.post('*/v2/transactions', rejectSpy))
+
+            renderSendConfirmationStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            // The submission was attempted (the pipeline signed and POSTed)
+            // but algod rejected it.
+            await waitFor(
+                () => {
+                    expect(rejectSpy).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+
+            // Error surfaced as a toast and the flow returned to the
+            // confirmation screen — success never rendered.
+            await waitFor(
+                () => {
+                    expect(
+                        vi.mocked(Notifier.showNotification),
+                    ).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(screen.queryByTestId('PWResultView')).toBeNull()
+            await waitFor(() => {
+                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
+            })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given valid send params, when the submission fails with a network error, then the processing screen surfaces an error toast and returns to confirmation without reaching success',
+        async () => {
+            await seedAlgo25Sender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // A transport-level failure on the submit POST (dropped
+            // connection, DNS, etc). The headless callback pipeline does not
+            // auto-retry — it rejects through the request's `error` callback —
+            // so the processing screen catches and surfaces the error rather
+            // than silently retrying.
+            const failSpy = vi.fn(() => HttpResponse.error())
+            server.use(http.post('*/v2/transactions', failSpy))
+
+            renderSendConfirmationStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(failSpy).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            await waitFor(
+                () => {
+                    expect(
+                        vi.mocked(Notifier.showNotification),
+                    ).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(screen.queryByTestId('PWResultView')).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // Kept last on purpose. A missing auth account fails inside the local-key
+    // signer's auth-resolution step; that failure path leaves the signing
+    // lifecycle's module-scoped actor registry occupied, and the single-flight
+    // queue guard then blocks any request a *subsequent* test enqueues. The
+    // registry has no barrel-exported reset, so ordering this case last is the
+    // only in-test way to keep it from poisoning the others.
     it(
         'Given a rekeyed sender whose auth account is missing from the wallet, when the user confirms the send, then the pipeline rejects (no algod POST) and an error is surfaced',
         async () => {

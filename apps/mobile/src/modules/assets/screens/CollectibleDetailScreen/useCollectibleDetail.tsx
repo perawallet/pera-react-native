@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -246,7 +246,11 @@ export const useCollectibleDetail = (
         if (!saveableMediaUrl) return
 
         try {
-            const { status } = await MediaLibrary.requestPermissionsAsync()
+            // writeOnly: we only save to the gallery, never read it. On
+            // Android 13+ this needs no runtime permission (scoped MediaStore
+            // write), so the app doesn't request READ_MEDIA_IMAGES — which Play
+            // gates under its Photo & Video Permissions policy.
+            const { status } = await MediaLibrary.requestPermissionsAsync(true)
 
             if (status !== 'granted') {
                 showToast({

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -109,6 +109,8 @@ describe('onboarding mutation hooks', () => {
             verificationCode: '123456',
             contactVerificationId: 'cv_1',
             countryOfResidence: 'GB',
+            allowMarketing: true,
+            allowSms: false,
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -116,13 +118,14 @@ describe('onboarding mutation hooks', () => {
             expect.objectContaining({
                 verificationCode: '123456',
                 contactVerificationId: 'cv_1',
+                allowMarketing: true,
+                allowSms: false,
                 network: 'mainnet',
             }),
         )
         expect(useCardStore.getState().onboardingId).toBe('ob_new')
-        // The step does NOT advance here: the phone screens already ran (UI
-        // order is phone → password) and the deferred phone/verify that
-        // follows this call advances to Verification.
+        // email/verify only stores the onboarding id — it doesn't advance the
+        // step. The phone/send and phone/verify calls that follow move it on.
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.EmailSend,
         )
@@ -153,9 +156,7 @@ describe('onboarding mutation hooks', () => {
         )
     })
 
-    it('useVerifyPhoneMutation forwards the code, clears the stash, and advances', async () => {
-        // The phone code is stashed during the first pass; verifying consumes it.
-        useCardStore.getState().setPhoneVerificationCode('654321')
+    it('useVerifyPhoneMutation forwards the code and advances to verification', async () => {
         const { result } = renderHook(() => useVerifyPhoneMutation(), {
             wrapper,
         })
@@ -175,12 +176,10 @@ describe('onboarding mutation hooks', () => {
                 network: 'mainnet',
             }),
         )
-        // Phone verified → the KYC (verification) step comes next, and the
-        // transient stash is dropped.
+        // Phone verified → the KYC (verification) step comes next.
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Verification,
         )
-        expect(useCardStore.getState().phoneVerificationCode).toBeNull()
     })
 
     it('useSubmitPersonalDetailsMutation wraps the details with the network', async () => {
@@ -268,6 +267,7 @@ describe('onboarding mutation hooks', () => {
         result.current.mutate({
             onboardingId: 'ob_1',
             allowMarketing: true,
+            allowSms: false,
             cardTermsAccepted: true,
             platformTermsAccepted: true,
         })
@@ -277,6 +277,7 @@ describe('onboarding mutation hooks', () => {
             expect.objectContaining({
                 onboardingId: 'ob_1',
                 allowMarketing: true,
+                allowSms: false,
                 cardTermsAccepted: true,
                 platformTermsAccepted: true,
                 network: 'mainnet',

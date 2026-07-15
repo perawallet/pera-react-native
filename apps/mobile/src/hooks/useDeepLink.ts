@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,7 @@
 
 import { Linking } from 'react-native'
 import { useToast } from './useToast'
-import { logger } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import {
@@ -21,7 +21,9 @@ import {
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
+import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
 import {
+    getConnectionErrorClientId,
     useWalletConnect,
     useWalletConnectStore,
 } from '@perawallet/wallet-core-walletconnect'
@@ -35,6 +37,7 @@ import {
     hasStrongBiometricOrCredential,
 } from '@perawallet/wallet-core-security'
 import { useLanguage } from './useLanguage'
+import { useIsPeraCardEnabled } from './useIsPeraCardEnabled'
 import { navigateToScreen } from './deeplink/navigateToScreen'
 import {
     buildAccountDeeplink,
@@ -53,33 +56,62 @@ import {
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 import { withTimeout } from './deeplink/handlers/timeout'
 
+type WalletConnectSessionOutcome =
+    | { type: 'session' }
+    | { type: 'error'; error: Error }
+    | { type: 'timeout' }
+
 /**
- * Subscribe to the WalletConnect store and resolve `true` as soon as a
- * session_request lands whose `clientId` wasn't in `beforeIds`. Resolves
- * `false` if none arrives within `timeoutMs`. Used by the WC deeplink
- * dispatcher to detect dead bridges (no event ever fires) and surface
- * an actionable error instead of silently leaving the user staring at
- * the screen they came from.
+ * Subscribe to the WalletConnect store and resolve as soon as one of three
+ * things happens after a `connect`, all scoped to `pairingClientId` — the
+ * connector this QR pairing created:
+ *   - a session_request lands for this connector       → `session`
+ *   - a connection error is surfaced for this connector → `error`
+ *   - neither happens within `timeoutMs`                → `timeout`
+ *
+ * Scoping to the connector is essential: `connectionError` / `sessionRequests`
+ * are shared across every active connector, so an unrelated dApp session that
+ * errors (or a stale request) during the wait must NOT be mistaken for this
+ * pairing being rejected.
+ *
+ * The `error` branch matters for the QR flow: when a handshake is rejected
+ * (most commonly the QR was scanned on the wrong network) the dApp DID
+ * respond, so we react immediately instead of blocking for the full timeout
+ * and then reporting a misleading "no response" error. The `timeout` branch
+ * still detects genuinely dead bridges (no event ever fires).
  */
-const waitForNewSessionRequest = (
-    beforeIds: Set<string>,
+const waitForSessionOutcome = (
+    pairingClientId: string,
     timeoutMs: number,
-): Promise<boolean> =>
+): Promise<WalletConnectSessionOutcome> =>
     new Promise(resolve => {
-        const timer = setTimeout(() => {
+        const settle = (outcome: WalletConnectSessionOutcome) => {
+            clearTimeout(timer)
             unsub()
-            resolve(false)
-        }, timeoutMs)
-        const unsub = useWalletConnectStore.subscribe(state => {
-            const nowNew = state.sessionRequests.find(
-                r => !beforeIds.has(r.clientId),
-            )
-            if (nowNew) {
-                clearTimeout(timer)
-                unsub()
-                resolve(true)
+            resolve(outcome)
+        }
+        const evaluate = (
+            state: ReturnType<typeof useWalletConnectStore.getState>,
+        ) => {
+            const { connectionError } = state
+            if (
+                connectionError &&
+                getConnectionErrorClientId(connectionError) === pairingClientId
+            ) {
+                settle({ type: 'error', error: connectionError })
+                return
             }
-        })
+            if (
+                state.sessionRequests.some(r => r.clientId === pairingClientId)
+            ) {
+                settle({ type: 'session' })
+            }
+        }
+        const timer = setTimeout(() => settle({ type: 'timeout' }), timeoutMs)
+        const unsub = useWalletConnectStore.subscribe(evaluate)
+        // Guard against the store settling synchronously in the gap between
+        // `connect` resolving and this subscription being registered.
+        evaluate(useWalletConnectStore.getState())
     })
 
 type LinkSource = 'qr' | 'deeplink'
@@ -92,6 +124,7 @@ type UseDeepLinkResult = {
         source: LinkSource,
         onError?: () => void,
         onSuccess?: () => void,
+        onConnectionError?: () => void,
     ) => Promise<void>
     parseDeeplink: typeof parseDeeplink
     buildAccountDeeplink: typeof buildAccountDeeplink
@@ -105,6 +138,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { t } = useLanguage()
     const { connect } = useWalletConnect(network)
     const { requestByType } = useBottomSheetStore()
+    const { showSignRequest } = usePendingSignaturesSheet()
+    const isPeraCardEnabled = useIsPeraCardEnabled()
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
@@ -126,6 +161,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
         source: LinkSource,
         onError?: () => void,
         onSuccess?: () => void,
+        onConnectionError?: () => void,
     ) => {
         const parsedData = parseDeeplink(url)
 
@@ -141,17 +177,26 @@ export const useDeepLink = (): UseDeepLinkResult => {
         try {
             switch (parsedData.type) {
                 case DeeplinkType.ADD_CONTACT: {
-                    navigateToScreen(replaceCurrentScreen, 'AddContact', {
-                        address: parsedData.address,
-                        label: parsedData.label,
+                    // AddContact lives inside the nested Contacts stack, so it
+                    // must be targeted via its parent route — a bare
+                    // 'AddContact' on the root navigator is a silent no-op.
+                    navigateToScreen(replaceCurrentScreen, 'Contacts', {
+                        screen: 'AddContact',
+                        params: {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
                     })
                     break
                 }
 
                 case DeeplinkType.EDIT_CONTACT: {
-                    navigateToScreen(replaceCurrentScreen, 'EditContact', {
-                        address: parsedData.address,
-                        label: parsedData.label,
+                    navigateToScreen(replaceCurrentScreen, 'Contacts', {
+                        screen: 'EditContact',
+                        params: {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
                     })
                     break
                 }
@@ -187,7 +232,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.ALGO_TRANSFER: {
                     openSendFunds({
-                        assetId: '0',
+                        assetId: ALGO_ASSET_ID,
                         destination: parsedData.receiverAddress,
                         // ALGO amounts arrive in microAlgos; the store holds
                         // the display value (ALGOs) so convert here.
@@ -238,11 +283,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // including the legacy pera bridge that older QR
                     // codes embed. The client doesn't surface this as a
                     // sync throw, so we have to detect it ourselves:
-                    // snapshot the session-request store before connect,
-                    // wait briefly for a NEW request to land, and toast
-                    // a clear error if it never does.
+                    // `connect` returns the new connector's clientId; we then
+                    // wait briefly for a session_request / error on THAT
+                    // connector and toast a clear error if neither lands.
+                    let pairingClientId: string
                     try {
-                        await withTimeout(
+                        pairingClientId = await withTimeout(
                             'walletConnect.connect',
                             10_000,
                             connect({
@@ -263,16 +309,23 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         onError?.()
                         return
                     }
-                    const beforeIds = new Set(
-                        useWalletConnectStore
-                            .getState()
-                            .sessionRequests.map(r => r.clientId),
-                    )
-                    const sawNewSessionRequest = await waitForNewSessionRequest(
-                        beforeIds,
+                    const outcome = await waitForSessionOutcome(
+                        pairingClientId,
                         8000,
                     )
-                    if (!sawNewSessionRequest) {
+                    if (outcome.type === 'error') {
+                        // The dApp responded but the handshake was rejected —
+                        // most commonly the QR was scanned on the wrong
+                        // network. The WalletConnect provider surfaces this as
+                        // a toast, routed to the scanner's own notifier when
+                        // the scanner is open so it shows on top of the live
+                        // camera. Keep the scanner open and re-armed rather
+                        // than closing it or firing the misleading "no
+                        // response" error below.
+                        onConnectionError?.()
+                        return
+                    }
+                    if (outcome.type === 'timeout') {
                         showError({
                             variant: 'walletconnect',
                             sourceUrl: parsedData.sourceUrl,
@@ -354,8 +407,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.CARDS: {
-                    // TODO: Navigate to cards screen
-                    infoToast('Cards', 'Cards screen not implemented yet')
+                    // Mirrors native's feature-gate: the PeraCard navigator is
+                    // only registered when the remote-config flag is on, so a
+                    // deeplink to it is a no-op while the feature is hidden.
+                    // The `path` carries no destination yet (parity with the
+                    // unused Staking path), so we land on the card intro.
+                    if (!isPeraCardEnabled) return
+                    navigateToScreen(replaceCurrentScreen, 'PeraCard', {
+                        screen: 'PeraCardIntro',
+                    })
                     break
                 }
 
@@ -425,6 +485,11 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         screen: 'ImportSharedAccount',
                         params: { address: parsedData.address },
                     })
+                    break
+                }
+
+                case DeeplinkType.SIGN_REQUEST: {
+                    showSignRequest(parsedData.signRequestId)
                     break
                 }
 
@@ -515,8 +580,13 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.HOME:
                 default: {
+                    // Reset the Home tab to its stack root (AccountDetails) so a
+                    // HOME deeplink actually returns home even when the user is
+                    // deep in the Home stack (e.g. viewing an asset). Navigating
+                    // to the root screen pops any screens pushed on top of it.
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
+                        params: { screen: 'AccountDetails' },
                     })
                     break
                 }

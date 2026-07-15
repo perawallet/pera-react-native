@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useWindowDimensions } from 'react-native'
 import { PinEntry } from '@modules/security/components/PinEntry'
 import {
     type PinEntryMode,
@@ -34,12 +33,8 @@ export const PinEditView = ({
     testID,
     savePinHandler,
 }: PinEditViewProps) => {
-    const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
-    const styles = useStyles({
-        height: height - insets.top - insets.bottom,
-        insets,
-    })
+    const styles = useStyles({ insets })
 
     const {
         title,

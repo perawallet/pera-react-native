@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -50,6 +50,16 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     './src/test-utils/keyboard-controller-stub.tsx',
+                ),
+            },
+            {
+                // react-native-error-boundary ships untranspiled JSX that
+                // vitest can't parse; the stub mirrors its catch/resetError
+                // contract so boundary specs stay behavioral.
+                find: 'react-native-error-boundary',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/error-boundary-stub.tsx',
                 ),
             },
             {
@@ -255,6 +265,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/accounts/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-card/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/card/src/test-handlers.ts',
                 ),
             },
             {

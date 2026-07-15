@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,6 +29,7 @@ import { TabBarStackNavigator } from './tabbar'
 import { ContactsStackNavigator } from '@modules/contacts/routes'
 import { SettingsStackNavigator } from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
+import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -66,6 +67,7 @@ export const MainRoutes = () => {
     const hasAccounts = useHasAccounts()
     const { isOnboarding } = useIsOnboarding()
     const { needsMigration } = useNeedsMigration()
+    const isPeraCardEnabled = useIsPeraCardEnabled()
 
     return (
         <NavigationContainer
@@ -128,10 +130,12 @@ export const MainRoutes = () => {
                             name='Multisig'
                             component={MultisigStackNavigator}
                         />
-                        <RootStack.Screen
-                            name='PeraCard'
-                            component={PeraCardStackNavigator}
-                        />
+                        {isPeraCardEnabled && (
+                            <RootStack.Screen
+                                name='PeraCard'
+                                component={PeraCardStackNavigator}
+                            />
+                        )}
                         <RootStack.Screen
                             name='BackupWallet'
                             component={BackupStackNavigator}

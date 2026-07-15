@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,10 +15,12 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
     LegacyHDWallet,
+    LegacyUndecodableAccount,
 } from '@perawallet/wallet-extension-platform'
 import {
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    markLegacyBackedUpAccounts,
 } from './accountStoreOps'
 import {
     classifyLegacyAccountRoute,
@@ -35,6 +37,7 @@ import type {
 export type RunMigrationLoopArgs = MigrationDeps & {
     accounts: LegacyAccount[]
     hdWallets: LegacyHDWallet[]
+    undecodableAccounts?: LegacyUndecodableAccount[]
 }
 
 export const runMigrationLoop = async (
@@ -62,6 +65,7 @@ export const runMigrationLoop = async (
                 importAccount: args.importAccount,
                 createHdWalletAccount: args.createHdWalletAccount,
                 createHDWalletKey: args.createHDWalletKey,
+                hasSeedWithEntropy: args.hasSeedWithEntropy,
             })
             existingAddresses.add(created.address)
             pendingMetadata.push({ created, legacy: account })
@@ -84,7 +88,23 @@ export const runMigrationLoop = async (
         }
     }
 
+    for (const undecodable of args.undecodableAccounts ?? []) {
+        if (existingAddresses.has(undecodable.address)) {
+            summary.skipped += 1
+            continue
+        }
+        logger.error('Legacy account undecodable; recording as failure', {
+            address: undecodable.address,
+        })
+        summary.failed.push({
+            address: undecodable.address,
+            name: undecodable.name,
+            reason: `[undecodable] ${undecodable.error}`,
+        })
+    }
+
     applyAllLegacyMetadata(pendingMetadata)
+    markLegacyBackedUpAccounts(pendingMetadata, args.markAccountBackedUp)
     applyLegacyAccountOrder(args.accounts)
 
     return summary

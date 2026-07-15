@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,6 +29,7 @@ const mockNewGroup = vi.fn(() => ({
 const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
 const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
+const mockUseMinimumFeeConfig = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
@@ -48,12 +49,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
     useAlgorandClient: () => ({
         client: {
-            algod: { accountInformation: mockAccountInformation },
+            algod: {
+                accountInformation: () => ({ do: mockAccountInformation }),
+            },
         },
         getSuggestedParams: mockGetSuggestedParams,
         newGroup: mockNewGroup,
     }),
-    ASSET_MBR: 100000n,
+    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
 
 describe('useAssetOptInMutation', () => {
@@ -69,6 +72,12 @@ describe('useAssetOptInMutation', () => {
             transactions: [{ txn: { sender: 'SENDER' } }],
         })
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
+        mockUseMinimumFeeConfig.mockReturnValue({
+            minTxnFee: 1000n,
+            pqMultiplier: 3n,
+            assetMbr: 100000n,
+            baseAccountMbr: 100000n,
+        })
     })
 
     it('builds an opt-in via composer and submits via the pipeline helper', async () => {
@@ -121,6 +130,33 @@ describe('useAssetOptInMutation', () => {
     it('throws InsufficientBalanceForOptInError without calling the pipeline', async () => {
         mockAccountInformation.mockResolvedValueOnce({
             amount: 1n,
+            minBalance: 100000n,
+            assets: [],
+        })
+
+        const { result } = renderHook(() => useAssetOptInMutation())
+
+        await act(async () => {
+            await expect(
+                result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
+            ).rejects.toBeInstanceOf(InsufficientBalanceForOptInError)
+        })
+
+        expect(mockSubmit).not.toHaveBeenCalled()
+    })
+
+    it('balance check follows the remote-config asset MBR', async () => {
+        // Non-default asset MBR (200000). Balance 250000 clears the old
+        // threshold (100000 + 100000 + 1000 = 201000) but not the new one
+        // (100000 + 200000 + 1000 = 301000), so the opt-in must be rejected.
+        mockUseMinimumFeeConfig.mockReturnValue({
+            minTxnFee: 1000n,
+            pqMultiplier: 3n,
+            assetMbr: 200000n,
+            baseAccountMbr: 100000n,
+        })
+        mockAccountInformation.mockResolvedValueOnce({
+            amount: 250000n,
             minBalance: 100000n,
             assets: [],
         })

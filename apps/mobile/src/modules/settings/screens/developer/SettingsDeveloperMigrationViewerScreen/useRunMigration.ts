@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,6 +16,7 @@ import {
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     runMigration,
@@ -32,7 +33,8 @@ export type UseRunMigrationResult = {
 export const useRunMigration = (): UseRunMigrationResult => {
     const importAccount = useImportAccount()
     const { createHdWalletAccountForSeed } = useCreateAccount()
-    const { createHDWalletKey } = useKMS()
+    const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
+    const markAccountBackedUp = useMarkMnemonicBackupComplete()
     const [isMigrating, setIsMigrating] = useState(false)
     const [result, setResult] = useState<MigrationRunResult | null>(null)
     const [error, setError] = useState<Error | null>(null)
@@ -46,6 +48,8 @@ export const useRunMigration = (): UseRunMigrationResult => {
                 importAccount,
                 createHdWalletAccount: createHdWalletAccountForSeed,
                 createHDWalletKey,
+                hasSeedWithEntropy,
+                markAccountBackedUp,
             })
             setResult(runResult)
             return runResult
@@ -56,7 +60,13 @@ export const useRunMigration = (): UseRunMigrationResult => {
         } finally {
             setIsMigrating(false)
         }
-    }, [importAccount, createHdWalletAccountForSeed, createHDWalletKey])
+    }, [
+        importAccount,
+        createHdWalletAccountForSeed,
+        createHDWalletKey,
+        hasSeedWithEntropy,
+        markAccountBackedUp,
+    ])
 
     return { run, isMigrating, result, error }
 }

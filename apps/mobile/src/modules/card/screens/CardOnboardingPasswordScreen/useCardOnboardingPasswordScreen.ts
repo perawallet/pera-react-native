@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,9 +18,9 @@ import {
     passwordSetSchema,
     useCardStore,
     useVerifyEmailMutation,
-    useVerifyPhoneMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -32,22 +32,27 @@ export type UseCardOnboardingPasswordScreenResult = {
     password: string
     isValid: boolean
     isSubmitting: boolean
+    /** Marketing-consent opt-in; sent on email/verify. Optional — doesn't gate submit. */
+    allowMarketing: boolean
+    /** SMS-consent opt-in; sent on email/verify. Required by Baanx — gates submit. */
+    allowSms: boolean
+    handleToggleMarketing: () => void
+    handleToggleSms: () => void
     handleConfirm: () => void
 }
 
 export const useCardOnboardingPasswordScreen =
     (): UseCardOnboardingPasswordScreenResult => {
         const { t } = useLanguage()
-        const { errorToast } = useToast()
+        const { errorToast, infoToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.create_account.error_title',
+            bodyKey: 'peraCard.create_account.error_body',
+        })
         const navigation = useAppNavigation()
         const email = useCardStore(state => state.email)
         const countryIso = useCardStore(state => state.countryIso)
         const verificationCode = useCardStore(state => state.verificationCode)
-        const phoneVerificationCode = useCardStore(
-            state => state.phoneVerificationCode,
-        )
-        const phoneCountryCode = useCardStore(state => state.phoneCountryCode)
-        const phoneNumber = useCardStore(state => state.phoneNumber)
         const contactVerificationId = useCardStore(
             state => state.contactVerificationId,
         )
@@ -55,14 +60,18 @@ export const useCardOnboardingPasswordScreen =
         const setCodeVerificationError = useCardStore(
             state => state.setCodeVerificationError,
         )
+        // Consent opt-ins, collected here and required by email/verify.
+        const allowMarketing = useCardStore(state => state.allowMarketing)
+        const allowSms = useCardStore(state => state.allowSms)
+        const setAllowMarketing = useCardStore(state => state.setAllowMarketing)
+        const setAllowSms = useCardStore(state => state.setAllowSms)
         const verifyEmail = useVerifyEmailMutation()
-        const verifyPhone = useVerifyPhoneMutation()
 
         const {
             control,
             handleSubmit,
             watch,
-            formState: { isValid, errors },
+            formState: { isValid: isFormValid, errors },
         } = useForm<PasswordSetFormValues>({
             resolver: zodResolver(passwordSetSchema),
             mode: 'onChange',
@@ -71,11 +80,15 @@ export const useCardOnboardingPasswordScreen =
 
         const password = watch('password')
 
-        // The password step fires the two deferred Baanx calls back to back:
-        // email/verify (completes email verification, sets the password, and
-        // returns the onboardingId) and then phone/verify (which needs that
-        // onboardingId — the reason the phone code screen only stashed it).
+        // This step fires email/verify — the Baanx call that completes email
+        // verification, sets the password, and returns the onboardingId. It runs
+        // right after the email code is entered (the previous screen), so the
+        // code is still fresh; the phone steps come next and use the onboardingId.
         const submitPassword = handleSubmit(async ({ password }) => {
+            // SMS consent is required by Baanx and gates the Continue button;
+            // guard here too so no edge path (a stray/programmatic submit, a
+            // render race) can POST email/verify with allowSms:false.
+            if (!allowSms) return
             // The flow's data lives in the store, not nav params. Email,
             // country, and contactVerificationId are all established by the
             // email/send call on the first screen, so if any is missing (app
@@ -94,9 +107,9 @@ export const useCardOnboardingPasswordScreen =
                 navigation.navigate('CardOnboardingEmail')
                 return
             }
-            // The verification codes are transient OTPs that aren't persisted;
-            // if one is missing, send the user back to the matching verify
-            // screen rather than POSTing an empty code.
+            // The email code is a transient OTP that isn't persisted; if it's
+            // missing, send the user back to re-enter it rather than POSTing an
+            // empty code.
             if (verificationCode === null) {
                 errorToast(
                     t('peraCard.create_account.error_title'),
@@ -105,82 +118,64 @@ export const useCardOnboardingPasswordScreen =
                 navigation.navigate('CardOnboardingEmailVerify')
                 return
             }
-            if (
-                phoneCountryCode === null ||
-                phoneNumber === null ||
-                phoneVerificationCode === null
-            ) {
-                errorToast(
-                    t('peraCard.verify_phone.verify_error_title'),
-                    t('peraCard.verify_phone.verify_error_body'),
-                )
-                navigation.navigate(
-                    phoneCountryCode === null || phoneNumber === null
-                        ? 'CardOnboardingPhone'
-                        : 'CardOnboardingPhoneVerify',
-                )
+            // If an onboardingId already exists, email/verify already ran (the
+            // user backed into this screen after moving on): the password is set
+            // and the email code is spent, so skip the call and continue to the
+            // phone steps. The consent boxes were still shown and answered on
+            // this screen, so commit them like the success path does — leaving
+            // marketing null here would make the address step re-ask.
+            if (existingOnboardingId !== null) {
+                setAllowMarketing(allowMarketing ?? false)
+                navigation.navigate('CardOnboardingPhone')
                 return
             }
-            // email/verify sets the password and completes email verification,
-            // so it runs on the first pass. If an onboardingId already exists
-            // (the user came back here after the deferred phone/verify failed),
-            // the password is set and the email code is already spent — skip it
-            // and re-run only the phone/verify below.
-            let onboardingId = existingOnboardingId
-            if (onboardingId === null) {
-                try {
-                    const result = await verifyEmail.mutateAsync({
+            try {
+                const { onboardingId, hasAccount } =
+                    await verifyEmail.mutateAsync({
                         email,
                         password,
                         verificationCode,
                         contactVerificationId,
                         countryOfResidence: countryIso,
+                        allowMarketing: allowMarketing ?? false,
+                        allowSms,
                     })
-                    onboardingId = result.onboardingId
-                } catch (error) {
-                    // A rejected submission here most plausibly means the
-                    // deferred email code was wrong/expired (the password
-                    // passed client rules and the ids are server-issued), so
-                    // route back to re-enter it with an inline error. Other
-                    // failures keep the generic toast.
-                    const apiError = await getCardApiError(error)
-                    if (isInvalidInputError(apiError)) {
-                        setCodeVerificationError('email')
-                        navigation.navigate('CardOnboardingEmailVerify')
-                        return
-                    }
-                    errorToast(
-                        t('peraCard.create_account.error_title'),
-                        t('peraCard.create_account.error_body'),
+                // Baanx answers 200 with `hasAccount: true` (and no onboardingId)
+                // when the email is already registered — send the user to sign
+                // in rather than showing a generic failure.
+                if (hasAccount) {
+                    infoToast(
+                        t('peraCard.create_account.already_registered_title'),
+                        t('peraCard.create_account.already_registered_body'),
                     )
+                    navigation.navigate('CardSignIn')
                     return
                 }
-            }
-            try {
-                await verifyPhone.mutateAsync({
-                    onboardingId,
-                    phoneCountryCode,
-                    phoneNumber,
-                    contactVerificationId,
-                    verificationCode: phoneVerificationCode,
-                })
-                // Both verifications done: KYC (identity verification) is next.
-                navigation.navigate('CardOnboardingVerification')
+                // A 200 with neither an account flag nor a usable id is malformed
+                // — surface a clean error instead of advancing to the phone step
+                // with a null onboardingId (which dead-ends at phone/verify).
+                if (onboardingId === null) {
+                    await showError(null)
+                    return
+                }
+                // Commit the answered consents (an untouched marketing box is
+                // an explicit "declined", not "never asked") so the address
+                // step's consent call reuses them instead of re-collecting.
+                setAllowMarketing(allowMarketing ?? false)
+                // Email verified and password set: on to the phone steps.
+                navigation.navigate('CardOnboardingPhone')
             } catch (error) {
-                // Route back to the phone code screen so the user can retry
-                // (the onboardingId now exists, so the retry verifies
-                // directly). Only flag it as a bad code for a 400/422 — other
-                // failures (network, 5xx) keep just the generic toast rather
-                // than mislabeling them as an incorrect code.
+                // A rejected submission here most plausibly means the email code
+                // was wrong/expired (the password passed client rules and the
+                // ids are server-issued), so route back to re-enter it with an
+                // inline error. Other failures keep the generic toast.
                 const apiError = await getCardApiError(error)
                 if (isInvalidInputError(apiError)) {
-                    setCodeVerificationError('phone')
+                    setCodeVerificationError('email')
+                    navigation.navigate('CardOnboardingEmailVerify')
+                    return
                 }
-                errorToast(
-                    t('peraCard.verify_phone.verify_error_title'),
-                    t('peraCard.verify_phone.verify_error_body'),
-                )
-                navigation.navigate('CardOnboardingPhoneVerify')
+                await showError(error, apiError)
             }
         })
 
@@ -188,12 +183,21 @@ export const useCardOnboardingPasswordScreen =
             void submitPassword()
         }
 
+        const handleToggleMarketing = () => setAllowMarketing(!allowMarketing)
+        const handleToggleSms = () => setAllowSms(!allowSms)
+
         return {
             control,
             errors,
             password,
-            isValid,
-            isSubmitting: verifyEmail.isPending || verifyPhone.isPending,
+            // Baanx requires SMS consent to register, so it gates submission
+            // (marketing stays optional) — mirrors the address step's T&C gating.
+            isValid: isFormValid && allowSms === true,
+            isSubmitting: verifyEmail.isPending,
+            allowMarketing: allowMarketing ?? false,
+            allowSms: allowSms ?? false,
+            handleToggleMarketing,
+            handleToggleSms,
             handleConfirm,
         }
     }

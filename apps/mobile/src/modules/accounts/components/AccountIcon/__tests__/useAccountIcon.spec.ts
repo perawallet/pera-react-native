@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -120,6 +120,40 @@ describe('useAccountIcon', () => {
             useAccountIcon(account(AccountTypes.algo25), {
                 displayState: 'rekeyedUnsignable',
             }),
+        )
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/noauth-account',
+            variant: 'accountPeach',
+        })
+    })
+
+    it('returns the quantum glyph with the quantum variant for a base quantum account', () => {
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.quantum)),
+        )
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/quantum-account',
+            variant: 'accountQuantum',
+        })
+    })
+
+    it('falls through to the standard rekeyed glyph for a rekeyed-signable quantum account', () => {
+        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useCanSignWith).mockReturnValue(true)
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.quantum)),
+        )
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/rekeyed-standard',
+            variant: 'accountTurquoise',
+        })
+    })
+
+    it('shows the noauth glyph for a rekeyed-unsignable quantum account', () => {
+        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useCanSignWith).mockReturnValue(false)
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.quantum)),
         )
         expect(result.current).toEqual({
             name: 'accounts/glyph/noauth-account',

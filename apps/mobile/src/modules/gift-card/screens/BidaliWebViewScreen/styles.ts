@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,9 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     container: {
         backgroundColor: theme.colors.background,
         flex: 1,
+        // The Bidali page renders to the bottom edge; pad by the safe-area inset
+        // so its content/controls aren't hidden behind the home indicator.
+        paddingBottom: bottomInset,
     },
 }))

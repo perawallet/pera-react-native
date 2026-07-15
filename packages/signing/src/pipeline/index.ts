@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -51,8 +51,18 @@ export {
     resolveHandoffOutcome,
     errorReasonToMessage,
     type HandoffPollDetail,
+    type HandoffAssemblyContext,
     type ResolverMessages,
     type HandoffErrorReason,
     type HandoffPollOutcome,
     type TerminalHandoffOutcome,
 } from './classifyHandoffPoll'
+
+// Multisig-handoff completion orchestration. Owns the submit → record →
+// mark-confirmed / decline-on-failure sequence shared by submit-type
+// consumers (the shared-account swap resolver today); consumers supply only
+// their submission + status semantics as deps.
+export {
+    completeMultisigHandoff,
+    type MultisigHandoffCompletionDeps,
+} from './completeMultisigHandoff'

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Dimensions } from 'react-native'
+import { Dimensions, Platform } from 'react-native'
 import { moderateScale, scaleLineHeight } from '../scaling'
 
 describe('moderateScale', () => {
@@ -61,19 +61,63 @@ describe('moderateScale', () => {
 })
 
 describe('scaleLineHeight', () => {
+    // The style value is pre-divided by the platform's native multiplier;
+    // asserting the RENDERED box (style value × native multiplier) keeps the
+    // tests readable. iOS multiplies by the clamped scale, Android by the
+    // raw font scale.
+    const renderedOnIos = (
+        styleValue: number | undefined,
+        fontScale: number,
+        max = 1.5,
+    ) => (styleValue ?? NaN) * Math.min(fontScale, max)
+    const renderedOnAndroid = (
+        styleValue: number | undefined,
+        fontScale: number,
+    ) => (styleValue ?? NaN) * fontScale
+
     it('returns the line height unchanged at font scale 1', () => {
-        expect(scaleLineHeight(24, 1, 1.5)).toBe(24)
+        expect(scaleLineHeight(24, 13, 1, 1.5)).toBe(24)
     })
 
-    it('scales the line height by the font scale', () => {
-        expect(scaleLineHeight(24, 1.3, 1.5)).toBeCloseTo(31.2, 5)
+    it('renders scaled glyphs with constant leading on iOS', () => {
+        Platform.OS = 'ios'
+        // rendered box: 13 * 1.3 + leading 11
+        expect(
+            renderedOnIos(scaleLineHeight(24, 13, 1.3, 1.5), 1.3),
+        ).toBeCloseTo(27.9, 5)
     })
 
-    it('clamps the font scale at the max multiplier', () => {
-        expect(scaleLineHeight(24, 3.1, 1.5)).toBe(36) // 24 * 1.5
+    it('compensates for the unclamped native scaling on Android', () => {
+        Platform.OS = 'android'
+        // native multiplies by the raw 1.7 while glyphs cap at 1.5:
+        // rendered box must still be 13 * 1.5 + 11 = 30.5
+        expect(
+            renderedOnAndroid(scaleLineHeight(24, 13, 1.7, 1.5), 1.7),
+        ).toBeCloseTo(30.5, 5)
+        Platform.OS = 'ios'
+    })
+
+    it('clamps the glyph growth at the max multiplier', () => {
+        Platform.OS = 'ios'
+        expect(
+            renderedOnIos(scaleLineHeight(24, 13, 3.1, 1.5), 3.1),
+        ).toBeCloseTo(30.5, 5) // 13 * 1.5 + 11
+    })
+
+    it('never shrinks the glyph box below the scaled font size', () => {
+        Platform.OS = 'ios'
+        // lineHeight below fontSize -> leading treated as 0
+        expect(renderedOnIos(scaleLineHeight(12, 16, 1.5, 1.5), 1.5)).toBe(24)
+    })
+
+    it('scales the whole box once without a font size', () => {
+        Platform.OS = 'ios'
+        expect(
+            renderedOnIos(scaleLineHeight(24, undefined, 1.3, 1.5), 1.3),
+        ).toBeCloseTo(31.2, 5)
     })
 
     it('leaves an undefined line height untouched', () => {
-        expect(scaleLineHeight(undefined, 2, 1.5)).toBeUndefined()
+        expect(scaleLineHeight(undefined, 13, 2, 1.5)).toBeUndefined()
     })
 })

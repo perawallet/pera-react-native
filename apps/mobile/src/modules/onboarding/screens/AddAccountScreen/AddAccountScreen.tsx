@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,6 +29,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
+import { type AccountOption } from '@modules/onboarding/types'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 
@@ -38,6 +39,7 @@ export const AddAccountScreen = () => {
     const styles = useStyles(insets)
     const {
         isCreatingAccount,
+        creatingTitleKey,
         mainOptions,
         otherOptions,
         handleClose,
@@ -49,6 +51,33 @@ export const AddAccountScreen = () => {
         isOtherOptionsVisible,
         handleToggleOtherOptions,
     } = useAddAccountScreen()
+
+    // Single render path for both option lists so their prop wiring (badge,
+    // learn-more, etc.) can never drift apart.
+    const renderOption = (option: AccountOption) => (
+        <PanelButton
+            key={option.testID}
+            testID={option.testID}
+            title={t(option.titleKey)}
+            description={t(option.descriptionKey)}
+            titleWeight='h3'
+            leftIcon={option.leftIcon}
+            onPress={option.onPress}
+            disabled={option.isDisabled}
+            badge={
+                option.badge && {
+                    label: t(option.badge.labelKey),
+                    variant: option.badge.variant,
+                }
+            }
+            learnMore={
+                option.learnMore && {
+                    label: t(option.learnMore.labelKey),
+                    onPress: option.learnMore.onPress,
+                }
+            }
+        />
+    )
 
     return (
         <>
@@ -79,32 +108,10 @@ export const AddAccountScreen = () => {
                     />
 
                     <PWView style={styles.mainContainer}>
-                        {mainOptions.map(option => (
-                            <PanelButton
-                                key={option.testID}
-                                testID={option.testID}
-                                title={t(option.titleKey)}
-                                description={t(option.descriptionKey)}
-                                titleWeight='h3'
-                                leftIcon={option.leftIcon}
-                                onPress={option.onPress}
-                                disabled={option.isDisabled}
-                            />
-                        ))}
+                        {mainOptions.map(renderOption)}
 
                         {isOtherOptionsVisible &&
-                            otherOptions.map(option => (
-                                <PanelButton
-                                    key={option.testID}
-                                    testID={option.testID}
-                                    title={t(option.titleKey)}
-                                    description={t(option.descriptionKey)}
-                                    titleWeight='h3'
-                                    leftIcon={option.leftIcon}
-                                    onPress={option.onPress}
-                                    disabled={option.isDisabled}
-                                />
-                            ))}
+                            otherOptions.map(renderOption)}
                     </PWView>
 
                     {!isOtherOptionsVisible && (
@@ -146,7 +153,7 @@ export const AddAccountScreen = () => {
 
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}
-                title={t('onboarding.create_account.processing')}
+                title={t(creatingTitleKey)}
             />
 
             <MultisigIntroductionDialog

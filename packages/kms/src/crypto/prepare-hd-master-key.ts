@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -38,9 +38,14 @@ export const prepareHDMasterKey = async (params?: {
     const keyId = params?.id ?? generateOrderedUniqueId()
     const masterKey = await generateHDMasterKey(params?.mnemonic)
 
-    const rootKey = fromSeed(masterKey.seed)
-
-    zeroBytes(masterKey.seed)
+    let rootKey: Uint8Array
+    try {
+        rootKey = fromSeed(masterKey.seed)
+    } finally {
+        // Wipe the BIP39 seed unconditionally — if `fromSeed` throws, the seed
+        // would otherwise stay resident on the heap until GC.
+        zeroBytes(masterKey.seed)
+    }
 
     return {
         keyId,

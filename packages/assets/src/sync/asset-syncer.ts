@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,9 +12,14 @@
 
 import { fetchAssets, transformAssetResponse } from '../api'
 import { upsertAssets, getStaleOrMissingAssetIds } from '../db'
-import { ALGO_ASSET_ID } from '../models'
+
 import { ASSET_BULK_CHUNK_SIZE, ASSET_CACHE_TTL_MS } from '../constants'
-import { partition, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    partition,
+    type Network,
+} from '@perawallet/wallet-core-shared'
+import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 const ASSET_FETCH_CONCURRENCY = 5
 
@@ -28,7 +33,7 @@ export async function fetchAndPersistAssets(
     assetIds: string[],
     network: Network,
 ): Promise<void> {
-    const nonAlgoIds = assetIds.filter(id => id !== ALGO_ASSET_ID)
+    const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     if (nonAlgoIds.length === 0) return
 
     const toFetch = await getStaleOrMissingAssetIds({
@@ -37,6 +42,8 @@ export async function fetchAndPersistAssets(
         ttlMs: ASSET_CACHE_TTL_MS,
     })
     if (toFetch.length === 0) return
+
+    const deviceId = useDeviceStore.getState().deviceIDs?.get(network) ?? null
 
     const batches = partition(toFetch, ASSET_BULK_CHUNK_SIZE)
 
@@ -48,7 +55,7 @@ export async function fetchAndPersistAssets(
         const slice = batches.slice(i, i + ASSET_FETCH_CONCURRENCY)
         await Promise.allSettled(
             slice.map(async batch => {
-                const response = await fetchAssets(batch, network)
+                const response = await fetchAssets(batch, network, deviceId)
                 const assets = response.results.map(transformAssetResponse)
                 await upsertAssets({ items: assets, network })
             }),

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,13 +12,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+vi.mock('algosdk', async importOriginal => ({
+    ...(await importOriginal<typeof import('algosdk')>()),
     mnemonicFromSeed: vi.fn(
         (seed: Uint8Array) => `mnemonic-from-${seed.length}-bytes`,
     ),
 }))
 
-import { mnemonicFromSeed } from '@algorandfoundation/algokit-utils/algo25'
+import { mnemonicFromSeed } from 'algosdk'
 import { algo25SecretKeyToMnemonic } from '../algo25-utils'
 
 beforeEach(() => {

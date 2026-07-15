@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,7 +21,11 @@ import {
     type RampToken,
 } from '@perawallet/wallet-core-onramp'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    ALGO_ASSET_NAME,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     OnrampCountryInfoContent,
@@ -32,7 +36,7 @@ import { trackEvent, OnrampEvent } from '@analytics'
 import { type OnrampScreenParams } from '@modules/onramp/routes/types'
 import { useOnrampIntroduction } from './useOnrampIntroduction'
 
-const DEFAULT_DESTINATION_TOKEN_ID = 'ALGO'
+const DEFAULT_DESTINATION_TOKEN_ID = ALGO_ASSET_NAME
 
 type UseOnrampScreenResult = {
     isReady: boolean

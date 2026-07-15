@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,7 @@
 import { PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
-    DEFAULT_PRECISION,
+    ALGO_ASSET_ID,
     type HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
@@ -25,9 +25,8 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { TrendIndicator } from '@components/TrendIndicator'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 export type WealthTrendProps = {
     account?: WalletAccount
@@ -84,11 +83,10 @@ export const WealthTrend = ({
         <></>
     ) : (
         <PWView style={styles.container}>
-            <PreferredCurrencyDisplay
+            <PreferredAmount
                 sourceAmount={absolute}
                 sourceAssetId={ALGO_ASSET_ID}
-                precision={DEFAULT_PRECISION}
-                minPrecision={DEFAULT_PRECISION}
+                density='compact'
                 showSymbol
                 style={isPositive ? styles.itemUp : styles.itemDown}
             />

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -68,6 +68,21 @@ describe('useRequiresMnemonicBackup', () => {
             type: AccountTypes.algo25,
             address: 'ADDR',
             keyPairId: 'kp-unbacked',
+        }
+
+        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
+        expect(result.current).toBe(true)
+    })
+
+    test('returns true when a quantum account root is not backed up', async () => {
+        const { useRequiresMnemonicBackup } =
+            await import('../useRequiresMnemonicBackup')
+
+        const account: WalletAccount = {
+            id: 'acc-quantum',
+            type: AccountTypes.quantum,
+            address: 'ADDR',
+            keyPairId: 'kp-quantum-unbacked',
         }
 
         const { result } = renderHook(() => useRequiresMnemonicBackup(account))

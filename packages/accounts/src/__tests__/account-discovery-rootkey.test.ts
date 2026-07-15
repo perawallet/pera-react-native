@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,7 +19,7 @@ import {
     KeyContext,
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { encodeAddress } from 'algosdk'
 
 const USER_MNEMONIC =
     'achieve plunge scare have music possible will garden expect kangaroo impulse deny obvious inhale expand process betray voice crash insane electric mean test rude'

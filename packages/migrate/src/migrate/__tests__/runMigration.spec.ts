@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,7 +18,11 @@ import type {
 } from '@perawallet/wallet-extension-platform'
 
 const emptyLegacyData = (): LegacyMigrationData =>
-    ({ accounts: [], hdWallets: [] }) as unknown as LegacyMigrationData
+    ({
+        auth: { pin: null },
+        accounts: [],
+        hdWallets: [],
+    }) as unknown as LegacyMigrationData
 
 import { runMigration } from '../runMigration'
 import { runMigrationLoop } from '../runMigrationLoop'
@@ -52,6 +56,8 @@ const buildDeps = (): MigrationDeps => ({
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
     createHDWalletKey: vi.fn() as unknown as MigrationDeps['createHDWalletKey'],
+    hasSeedWithEntropy:
+        vi.fn() as unknown as MigrationDeps['hasSeedWithEntropy'],
 })
 
 const successfulAccountResult = { imported: 1, skipped: 0, failed: [] }
@@ -222,6 +228,7 @@ describe('runMigration', () => {
             importAccount: deps.importAccount,
             createHdWalletAccount: deps.createHdWalletAccount,
             createHDWalletKey: deps.createHDWalletKey,
+            hasSeedWithEntropy: deps.hasSeedWithEntropy,
         })
     })
 

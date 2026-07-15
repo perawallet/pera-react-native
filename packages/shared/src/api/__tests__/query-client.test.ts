@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,7 +20,8 @@ const mockLogger = {
     warn: vi.fn(),
     critical: vi.fn(),
 }
-vi.mock('../utils', () => ({
+vi.mock('../../utils', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../utils')>()),
     logger: mockLogger,
 }))
 
@@ -45,80 +46,99 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 // Mock ky with hooks support
-const { mockKy, mockJson, mockText, mockStatus } = vi.hoisted(() => {
-    const mockJson = vi.fn()
-    const mockText = vi.fn()
-    const mockStatus = { value: 200 }
-    const capturedHooks: any = {
-        beforeRequest: [],
-        afterResponse: [],
-        beforeError: [],
-        beforeRetry: [],
+const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
+    () => {
+        const mockJson = vi.fn()
+        const mockText = vi.fn()
+        const mockStatus = { value: 200 }
+        const capturedHooks: any = {
+            beforeRequest: [],
+            afterResponse: [],
+            beforeError: [],
+            beforeRetry: [],
+        }
+
+        const mockKy: any = vi.fn(async (path: string, options: any) => {
+            // ky always provides a `context` object on hook state
+            const hookOptions = { ...options, context: options.context ?? {} }
+            // Execute beforeRequest hooks
+            const mockRequest = {
+                url: path,
+                headers: new Map<string, string>(),
+            }
+            if (capturedHooks.beforeRequest) {
+                for (const hook of capturedHooks.beforeRequest) {
+                    await hook({
+                        request: mockRequest,
+                        options: hookOptions,
+                        retryCount: 0,
+                    })
+                }
+            }
+
+            const response = {
+                json: mockJson,
+                text: mockText,
+                status: mockStatus.value,
+                statusText: 'OK',
+            }
+
+            // Execute afterResponse hooks
+            if (capturedHooks.afterResponse) {
+                for (const hook of capturedHooks.afterResponse) {
+                    await hook({
+                        request: mockRequest,
+                        options: hookOptions,
+                        response,
+                        retryCount: 0,
+                    })
+                }
+            }
+
+            return response
+        })
+
+        mockKy.create = vi.fn((config: any) => {
+            // Capture hooks from config
+            if (config.hooks) {
+                Object.assign(capturedHooks, config.hooks)
+            }
+            return mockKy
+        })
+
+        mockKy.extend = vi.fn((config: any) => {
+            // Merge hooks from extend
+            if (config.hooks) {
+                Object.keys(config.hooks).forEach(hookType => {
+                    capturedHooks[hookType] = config.hooks[hookType]
+                })
+            }
+            return mockKy
+        })
+
+        return { mockKy, mockJson, mockText, mockStatus, capturedHooks }
+    },
+)
+
+// Name-based stand-ins for ky's error classifiers — enough fidelity for the
+// beforeError hook branches under test.
+class MockHTTPError extends Error {
+    response?: { status: number }
+    constructor(status: number) {
+        super(`Request failed with status code ${status}`)
+        this.name = 'HTTPError'
+        this.response = { status }
     }
-
-    const mockKy: any = vi.fn(async (path: string, options: any) => {
-        // ky always provides a `context` object on hook state
-        const hookOptions = { ...options, context: options.context ?? {} }
-        // Execute beforeRequest hooks
-        const mockRequest = {
-            url: path,
-            headers: new Map<string, string>(),
-        }
-        if (capturedHooks.beforeRequest) {
-            for (const hook of capturedHooks.beforeRequest) {
-                await hook({
-                    request: mockRequest,
-                    options: hookOptions,
-                    retryCount: 0,
-                })
-            }
-        }
-
-        const response = {
-            json: mockJson,
-            text: mockText,
-            status: mockStatus.value,
-            statusText: 'OK',
-        }
-
-        // Execute afterResponse hooks
-        if (capturedHooks.afterResponse) {
-            for (const hook of capturedHooks.afterResponse) {
-                await hook({
-                    request: mockRequest,
-                    options: hookOptions,
-                    response,
-                    retryCount: 0,
-                })
-            }
-        }
-
-        return response
-    })
-
-    mockKy.create = vi.fn((config: any) => {
-        // Capture hooks from config
-        if (config.hooks) {
-            Object.assign(capturedHooks, config.hooks)
-        }
-        return mockKy
-    })
-
-    mockKy.extend = vi.fn((config: any) => {
-        // Merge hooks from extend
-        if (config.hooks) {
-            Object.keys(config.hooks).forEach(hookType => {
-                capturedHooks[hookType] = config.hooks[hookType]
-            })
-        }
-        return mockKy
-    })
-
-    return { mockKy, mockJson, mockText, mockStatus, capturedHooks }
-})
+}
 
 vi.mock('ky', () => ({
     default: mockKy,
+    HTTPError: MockHTTPError,
+    isHTTPError: (error: unknown) => error instanceof MockHTTPError,
+    isTimeoutError: (error: unknown) =>
+        error instanceof Error && error.name === 'TimeoutError',
+    isNetworkError: (error: unknown) =>
+        error instanceof Error && error.name === 'TypeError',
 }))
 
 describe('queryClient', () => {
@@ -438,18 +458,66 @@ describe('queryClient', () => {
         expect(response.data).toBeUndefined()
     })
 
-    it('still surfaces malformed JSON as a parse error', async () => {
+    it('still surfaces malformed JSON as a parse error, normalized to PeraNetworkError', async () => {
         const { queryClient } = await import('../query-client')
+        const { isPeraNetworkError } = await import('../../errors/network')
         mockText.mockReset()
         mockText.mockResolvedValue('{not valid json')
 
-        await expect(
-            queryClient({
-                backend: 'pera',
-                network: 'mainnet',
-                url: '/broken',
-                method: 'GET',
-            }),
-        ).rejects.toThrow(SyntaxError)
+        const error = await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/broken',
+            method: 'GET',
+        }).catch((thrown: unknown) => thrown)
+
+        expect(isPeraNetworkError(error)).toBe(true)
+        expect((error as { kind: string }).kind).toBe('unknown')
+        expect(
+            (error as { originalError?: Error }).originalError,
+        ).toBeInstanceOf(SyntaxError)
+    })
+
+    describe('beforeError hook (logError)', () => {
+        const runBeforeError = async (error: Error) => {
+            await import('../query-client')
+            const [beforeError] = capturedHooks.beforeError
+            return beforeError({
+                request: { url: 'https://mainnet.pera.algo/v1/assets' },
+                options: { context: { startTime: Date.now() } },
+                error,
+            })
+        }
+
+        it('logs caller-initiated aborts at debug level, not error', async () => {
+            const abortError = new DOMException(
+                'This operation was aborted',
+                'AbortError',
+            )
+
+            const result = await runBeforeError(abortError)
+
+            expect(result).toBe(abortError)
+            expect(mockLogger.debug).toHaveBeenCalledWith(
+                'Request aborted',
+                expect.objectContaining({
+                    url: 'https://mainnet.pera.algo/v1/assets',
+                }),
+            )
+            expect(mockLogger.error).not.toHaveBeenCalled()
+            expect(mockLogger.warn).not.toHaveBeenCalled()
+        })
+
+        it('still logs unexpected errors at error level', async () => {
+            const unexpectedError = new Error('boom')
+
+            const result = await runBeforeError(unexpectedError)
+
+            expect(result).toBe(unexpectedError)
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                'Request error encountered',
+                expect.objectContaining({ message: 'boom' }),
+            )
+        })
     })
 })

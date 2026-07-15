@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -31,6 +31,10 @@ import { useStyles } from './styles'
 export type SwapConfirmationResult =
     | { kind: 'confirm' }
     | { kind: 'cancelled' }
+    // Shared-account swap proposed to the backend; the co-signer must approve
+    // from their inbox before it submits. The form shows an informational
+    // toast rather than the swap-completed one.
+    | { kind: 'pending-cosign' }
     | { kind: 'error'; message: string }
 
 export type SwapConfirmationContentProps = {

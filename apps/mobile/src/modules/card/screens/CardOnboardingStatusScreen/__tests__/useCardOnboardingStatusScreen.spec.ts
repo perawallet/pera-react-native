@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,13 +15,15 @@ import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 
 const mockSetOnboardingStep = vi.fn()
 const mockSetSelectedFundingType = vi.fn()
 const mockConnectAsync = vi.fn()
-const mockHandleCreateAccount = vi.fn()
+const mockPickFundingSource = vi.fn()
+const mockDelegateTo = vi.fn()
+const mockCanDelegate = vi.fn()
 let mockVerificationState: string | null = null
-let mockQueryOptions: { refetchInterval?: number | false } | undefined
 let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
 let mockStoredFundingType: FundingType | null = null
@@ -33,16 +35,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     >('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useOnboardingDetailsQuery: (options: {
-            refetchInterval?: number | false
-        }) => {
-            mockQueryOptions = options
-            return {
-                data: { verificationState: mockVerificationState },
-                isLoading: false,
-                refetch: vi.fn(),
-            }
-        },
+        // The poll mechanics (give-up limits, restart) are unit-tested in the
+        // card package's useOnboardingKycPoll.test — here only the wiring matters.
+        useOnboardingKycPoll: () => ({
+            verificationState: mockVerificationState,
+            isStateUnknown: mockIsStateUnknown,
+            isLoading: mockIsLoading,
+            hasPollTimedOut: mockHasPollTimedOut,
+            restartPolling: mockRestartPolling,
+            refetch: vi.fn(),
+        }),
         useConnectFundingSourceMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockConnectAsync,
@@ -96,32 +98,30 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-const mockRequest = vi.fn()
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({
-        request: mockRequest,
-        requestByType: vi.fn(),
-        dismiss: vi.fn(),
-        dismissAll: vi.fn(),
-    }),
-}))
-
-vi.mock('@modules/accounts/components/AccountMenuContent', () => ({
-    AccountMenuContent: () => null,
-}))
-
-vi.mock('@modules/accounts/components/AccountSortContent', () => ({
-    AccountSortContent: () => null,
-}))
-
-vi.mock('../ConnectAccountHeader', () => ({
-    ConnectAccountHeader: () => null,
-}))
-
 const mockLogout = vi.fn()
+const mockShowCardError = vi.fn()
+let mockHasPollTimedOut = false
+let mockIsStateUnknown = false
+let mockIsLoading = false
+const mockRestartPolling = vi.fn()
+// Passes through to the delegate fn by default so existing Auto tests still
+// observe the delegation; the declined-authorization test overrides it.
+const mockAuthorizeDelegation = vi.fn(passThroughAuthorizeDelegation)
 vi.mock('@modules/card/hooks', () => ({
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
-    useCardAddAccount: () => ({ handleCreateAccount: mockHandleCreateAccount }),
+    useCardErrorToast: () => mockShowCardError,
+    useCardFundingSourcePicker: () => ({
+        pickFundingSource: mockPickFundingSource,
+    }),
+    useCardFundingDelegation: () => ({
+        delegateTo: mockDelegateTo,
+        cancelDelegation: vi.fn(),
+        isPending: false,
+        canDelegate: mockCanDelegate,
+    }),
+    useAuthorizeCardDelegation: () => ({
+        authorizeDelegation: mockAuthorizeDelegation,
+    }),
 }))
 
 const mockPushWebView = vi.fn()
@@ -175,7 +175,11 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
+let mockIsAutoFundingEnabled = true
+vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
+    useIsCardAutoFundingEnabled: () => mockIsAutoFundingEnabled,
+}))
+
 import { useCardOnboardingStatusScreen } from '../useCardOnboardingStatusScreen'
 
 const account = (
@@ -187,7 +191,9 @@ const account = (
 beforeEach(() => {
     vi.clearAllMocks()
     mockVerificationState = null
-    mockQueryOptions = undefined
+    mockHasPollTimedOut = false
+    mockIsStateUnknown = false
+    mockIsLoading = false
     mockOnboardingStep = OnboardingStep.Verification
     mockConnectedAddress = null
     mockStoredFundingType = null
@@ -196,27 +202,26 @@ beforeEach(() => {
     mockRouteParams = undefined
     mockSelectedAddress = null
     mockBeforeRemoveCallback = null
+    mockPickFundingSource.mockResolvedValue(null)
+    mockDelegateTo.mockResolvedValue(undefined)
+    mockCanDelegate.mockReturnValue(true)
+    mockIsAutoFundingEnabled = true
+    mockAuthorizeDelegation.mockImplementation(passThroughAuthorizeDelegation)
 })
 
 describe('useCardOnboardingStatusScreen', () => {
-    it('reports pending (and keeps polling) while Veriff reviews', () => {
+    it('reports pending while Veriff reviews', () => {
         mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('pending')
-        expect(mockQueryOptions?.refetchInterval).not.toBe(false)
     })
 
-    it('reports verified and stops polling once the identity is confirmed', async () => {
+    it('reports verified once the identity is confirmed', () => {
         mockVerificationState = 'VERIFIED'
-        const { result, rerender } = renderHook(() =>
-            useCardOnboardingStatusScreen(),
-        )
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('verified')
-        // The post-decision render disables the poll interval.
-        act(() => rerender())
-        expect(mockQueryOptions?.refetchInterval).toBe(false)
     })
 
     it('reports rejected when verification failed', () => {
@@ -224,6 +229,86 @@ describe('useCardOnboardingStatusScreen', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('rejected')
+    })
+
+    it('reports unverified when the KYC was never submitted', () => {
+        // The bug: an abandoned KYC (UNVERIFIED) used to render as "pending"
+        // (submitted). It must be its own actionable state instead.
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('reports unverified while the KYC state is unknown', () => {
+        mockVerificationState = null
+        mockIsStateUnknown = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('shows a neutral pending row (no verify CTA) while the state is still loading', () => {
+        // A cold entry (e.g. a REJECTED sign-in resume) must not flash the
+        // "verify" prompt before the first fetch lands.
+        mockVerificationState = null
+        mockIsLoading = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('pending')
+        expect(result.current.isKycSubmitted).toBe(false)
+    })
+
+    it('keeps an unsubmitted KYC actionable even after the poll gives up', () => {
+        // The give-up signal must not turn an unsubmitted KYC into the retry
+        // "error" row — the right action is still "verify your account".
+        mockVerificationState = 'UNVERIFIED'
+        mockHasPollTimedOut = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('sends the verify CTA to the KYC entry screen', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleVerifyIdentity()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
+    })
+
+    it('unlocks the details step only once KYC is submitted (PENDING/VERIFIED)', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result, rerender } = renderHook(() =>
+            useCardOnboardingStatusScreen(),
+        )
+        expect(result.current.isKycSubmitted).toBe(false)
+
+        mockVerificationState = 'PENDING'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(true)
+
+        mockVerificationState = 'VERIFIED'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(true)
+
+        mockVerificationState = 'REJECTED'
+        act(() => rerender())
+        expect(result.current.isKycSubmitted).toBe(false)
+    })
+
+    it('keeps the details step unlocked when a submitted review poll errors', () => {
+        // documentsState becomes 'error' on a PENDING poll failure, but the
+        // user has still submitted — the step must stay unlocked.
+        mockVerificationState = 'PENDING'
+        mockHasPollTimedOut = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('error')
+        expect(result.current.isKycSubmitted).toBe(true)
     })
 
     it('redirects a back action to the wallet home once KYC is verified', () => {
@@ -267,6 +352,31 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(mockBeforeRemoveCallback).toBeNull()
     })
 
+    describe('timed-out poll handling', () => {
+        it('flips a reviewing (PENDING) row to error when the poll gives up', () => {
+            // Only a submitted-but-unconfirmed (PENDING) review that stops
+            // responding becomes the retry "error" row.
+            mockVerificationState = 'PENDING'
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+            expect(result.current.documentsState).toBe('error')
+        })
+
+        it('restarts polling on retry after failures', () => {
+            mockVerificationState = 'PENDING'
+            mockHasPollTimedOut = true
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+            act(() => {
+                result.current.handleRetryStatus()
+            })
+
+            expect(mockRestartPolling).toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+    })
+
     it('continues to personal details and advances the stored step', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
@@ -306,10 +416,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('connects the chosen account and persists it via the mutation', async () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectAsync.mockResolvedValue({ fundingSourceId: 'fs_1' })
-        mockRequest.mockResolvedValue({
-            kind: 'selected',
-            account: account('ADDR1', 'hdWallet'),
-        })
+        mockPickFundingSource.mockResolvedValue(account('ADDR1', 'hdWallet'))
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -327,10 +434,7 @@ describe('useCardOnboardingStatusScreen', () => {
     it('shows an error toast when connecting the account fails', async () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectAsync.mockRejectedValue(new Error('nope'))
-        mockRequest.mockResolvedValue({
-            kind: 'selected',
-            account: account('ADDR1', 'algo25'),
-        })
+        mockPickFundingSource.mockResolvedValue(account('ADDR1', 'algo25'))
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -340,83 +444,17 @@ describe('useCardOnboardingStatusScreen', () => {
         await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
     })
 
-    it('runs the standard add-account flow when the add button is tapped', async () => {
+    it('does nothing when the picker resolves without an account', async () => {
         mockOnboardingStep = OnboardingStep.Completed
-        mockRequest.mockResolvedValue({ kind: 'add-account' })
+        mockPickFundingSource.mockResolvedValue(null)
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
             result.current.handleConnectAccount()
         })
 
-        await waitFor(() => expect(mockHandleCreateAccount).toHaveBeenCalled())
+        await act(async () => {})
         expect(mockConnectAsync).not.toHaveBeenCalled()
-    })
-
-    it('opens the account menu with the card header and the funding-source filter', () => {
-        mockOnboardingStep = OnboardingStep.Completed
-        mockRequest.mockResolvedValue(undefined)
-        const { result } = renderHook(() => useCardOnboardingStatusScreen())
-
-        act(() => {
-            result.current.handleConnectAccount()
-        })
-
-        const props = mockRequest.mock.calls[0][0].contents.props as {
-            headerContent: unknown
-            accountFilter: (account: WalletAccount) => boolean
-            selectedAddress: string | null
-        }
-        // The "Choose Card account" header is passed via the existing prop.
-        expect(props.headerContent).toBeTruthy()
-        // Fresh pick: nothing connected yet → no account pre-highlighted.
-        expect(props.selectedAddress).toBeNull()
-        // Eligible: standard / HD / Ledger, non-rekeyed.
-        expect(props.accountFilter(account('A', 'algo25'))).toBe(true)
-        expect(props.accountFilter(account('B', 'hdWallet'))).toBe(true)
-        expect(props.accountFilter(account('C', 'hardware'))).toBe(true)
-        expect(props.accountFilter(account('D', 'watch'))).toBe(false)
-        expect(props.accountFilter(account('E', 'multisig'))).toBe(false)
-        expect(
-            props.accountFilter(account('F', 'algo25', { rekeyAddress: 'X' })),
-        ).toBe(false)
-    })
-
-    it('highlights the connected funding source when changing it', () => {
-        mockOnboardingStep = OnboardingStep.Completed
-        mockConnectedAddress = 'ADDR1'
-        mockRequest.mockResolvedValue(undefined)
-        const { result } = renderHook(() => useCardOnboardingStatusScreen())
-
-        act(() => {
-            result.current.handleConnectAccount()
-        })
-
-        const props = mockRequest.mock.calls[0][0].contents.props as {
-            selectedAddress: string | null
-        }
-        expect(props.selectedAddress).toBe('ADDR1')
-    })
-
-    it('opens the sort sheet then reopens the picker when Sort is tapped', async () => {
-        mockOnboardingStep = OnboardingStep.Completed
-        mockRequest
-            .mockResolvedValueOnce({ kind: 'sort' }) // initial picker
-            .mockResolvedValueOnce(undefined) // sort sheet
-            .mockResolvedValueOnce(undefined) // reopened picker
-        const { result } = renderHook(() => useCardOnboardingStatusScreen())
-
-        act(() => {
-            result.current.handleConnectAccount()
-        })
-
-        await waitFor(() => expect(mockRequest).toHaveBeenCalledTimes(3))
-        // The second request opens the account sort sheet.
-        expect(mockRequest.mock.calls[1][0].contents.type).toBe(
-            AccountSortContent,
-        )
-        expect(mockConnectAsync).not.toHaveBeenCalled()
-        expect(mockHandleCreateAccount).not.toHaveBeenCalled()
     })
 
     it('seeds the funding type from the persisted store on mount', () => {
@@ -438,7 +476,7 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(result.current.selectedFundingType).toBe(FundingType.Manual)
     })
 
-    it('persists the funding type and finishes onboarding on Create Pera Card', () => {
+    it('persists the funding type and finishes onboarding on Create Pera Card', async () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -448,11 +486,173 @@ describe('useCardOnboardingStatusScreen', () => {
             result.current.handleCreatePeraCard()
         })
 
-        expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
-            FundingType.Manual,
+        await waitFor(() =>
+            expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
+                FundingType.Manual,
+            ),
         )
+        // Manual funding needs no delegation.
+        expect(mockDelegateTo).not.toHaveBeenCalled()
         expect(mockSuccessToast).toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+    })
+
+    it('signs the delegation with the connected account before finishing when Auto is selected', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        const connected = account('ADDR1', 'algo25')
+        mockAccounts = [connected]
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() =>
+            expect(mockDelegateTo).toHaveBeenCalledWith(connected),
+        )
+        expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
+            FundingType.Auto,
+        )
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+    })
+
+    it('stays on the screen and allows retry when the delegation fails', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockDelegateTo.mockRejectedValueOnce(new Error('baanx down'))
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() => expect(mockShowCardError).toHaveBeenCalled())
+        expect(mockSetSelectedFundingType).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+
+        // The one-shot guard resets on failure so a retry can go through.
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+            }),
+        )
+    })
+
+    it('routes the Auto grant through the consent + auth gate', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        const connected = account('ADDR1', 'algo25')
+        mockAccounts = [connected]
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() =>
+            expect(mockAuthorizeDelegation).toHaveBeenCalledWith(
+                connected,
+                expect.any(Function),
+            ),
+        )
+    })
+
+    it('stays on the screen and allows retry when authorization is declined', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockAuthorizeDelegation.mockResolvedValueOnce(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() => expect(mockAuthorizeDelegation).toHaveBeenCalled())
+        expect(mockDelegateTo).not.toHaveBeenCalled()
+        expect(mockSetSelectedFundingType).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+
+        // The one-shot guard reset on decline so a retry can go through.
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+            }),
+        )
+    })
+
+    it('flags auto funding unavailable when the connected account cannot sign', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'hardware')]
+        mockCanDelegate.mockReturnValue(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.isAutoFundingUnavailable).toBe(true)
+    })
+
+    it('falls back from Auto to Manual when the connected account cannot sign', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'hardware')]
+        mockCanDelegate.mockReturnValue(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        // Auto is impossible for a non-signing account, so the default Auto
+        // selection migrates to Manual instead of staying stuck on the
+        // disabled Auto option.
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
+    })
+
+    it('creates the card via the Manual path (no delegation) for a non-signing account', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'hardware')]
+        mockCanDelegate.mockReturnValue(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() =>
+            expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
+                FundingType.Manual,
+            ),
+        )
+        // A Ledger can't sign a delegation, so Create must not attempt one and
+        // must not dead-end on an error.
+        expect(mockDelegateTo).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+    })
+
+    it('flags auto funding unavailable when the kill-switch flag is off', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockIsAutoFundingEnabled = false
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.isAutoFundingUnavailable).toBe(true)
+        expect(result.current.isAutoFundingEnabled).toBe(false)
+    })
+
+    it('migrates the Auto default to Manual when the kill-switch flag is off', () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockIsAutoFundingEnabled = false
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
     })
 
     it('wires logout and the support link', () => {

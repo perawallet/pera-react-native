@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,7 +16,7 @@ import { useCardStore } from '@perawallet/wallet-core-card'
 import { type AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { useCardComingSoonToast } from '../../hooks'
 
 type UsePeraCardAccountScreenResult = {
     /** Pera Card identity rendered in the shared AccountSelection trigger. */
@@ -29,7 +29,6 @@ type UsePeraCardAccountScreenResult = {
 
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     const { t } = useLanguage()
-    const { infoToast } = useToast()
     const navigation = useAppNavigation()
     const accounts = useAllAccounts()
     const connectedAddress = useCardStore(
@@ -54,12 +53,7 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     }, [navigation])
 
     // TODO(card): wire the more/scan/inbox actions once their destinations exist.
-    const showComingSoon = useCallback(() => {
-        infoToast(
-            t('peraCard.account.coming_soon_title'),
-            t('peraCard.account.coming_soon_body'),
-        )
-    }, [infoToast, t])
+    const showComingSoon = useCardComingSoonToast()
 
     return {
         cardDisplay,

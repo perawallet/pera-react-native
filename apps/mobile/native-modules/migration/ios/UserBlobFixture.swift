@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -96,10 +96,45 @@ enum UserBlobFixture {
                 ledgerName: "Ledger Nano S",
                 index: FixtureIdentities.ledgerNullIdIndex
             ))
+            list.append(rekeyedToLedger(
+                address: FixtureIdentities.rekeyedToLedgerAddress,
+                name: "Rekeyed To Ledger",
+                order: 9,
+                authAddress: FixtureIdentities.rekeyAuthLedgerAddress,
+                ledgerId: FixtureIdentities.rekeyAuthLedgerPeripheralId,
+                ledgerName: FixtureIdentities.rekeyAuthLedgerName,
+                ledgerIndex: FixtureIdentities.rekeyAuthLedgerIndex
+            ))
         }
         list.append(joint())
 
         return list
+    }
+
+    private static func rekeyedToLedger(
+        address: String,
+        name: String,
+        order: Int,
+        authAddress: String,
+        ledgerId: String,
+        ledgerName: String,
+        ledgerIndex: Int
+    ) -> [String: Any] {
+        [
+            "address": address,
+            "name": name,
+            "type": "standard",
+            "preferredOrder": order,
+            "isBackedUp": false,
+            "receivesNotification": true,
+            "rekeyDetail": [
+                authAddress: [
+                    "id": ledgerId,
+                    "name": ledgerName,
+                    "index": ledgerIndex,
+                ] as [String: Any],
+            ] as [String: Any],
+        ]
     }
 
     private static func standard(

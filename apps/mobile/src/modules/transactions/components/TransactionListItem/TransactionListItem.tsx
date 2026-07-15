@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,14 +11,13 @@
  */
 
 import { PWListItemLayout, PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import {
-    useTransactionListItem,
-    type AmountDisplay,
-} from './useTransactionListItem'
+import { useTransactionListItem } from './useTransactionListItem'
+import { type AmountDisplay } from './amounts'
 
 export type TransactionListItemProps = {
     /** The transaction data to display */
@@ -32,11 +31,18 @@ export const TransactionListItem = ({
     onPress,
 }: TransactionListItemProps) => {
     const styles = useStyles()
-    const { iconType, title, subtitle, amounts, handlePress } =
-        useTransactionListItem({
-            transaction,
-            onPress,
-        })
+    const { t } = useLanguage()
+    const {
+        iconType,
+        title,
+        subtitle,
+        amounts,
+        amountsOverflowCount,
+        handlePress,
+    } = useTransactionListItem({
+        transaction,
+        onPress,
+    })
 
     const getAmountStyle = (amount: AmountDisplay) => {
         if (amount.prefix === '+') return styles.amountPositive
@@ -58,13 +64,11 @@ export const TransactionListItem = ({
             right={
                 <PWView style={styles.amountContainer}>
                     {amounts.map((amount, index) => (
-                        <CurrencyDisplay
+                        <CurrencyAmount
                             key={index}
                             value={amount.value}
                             currency={amount.currency}
-                            precision={amount.precision}
-                            maxPrecision={2}
-                            minPrecision={0}
+                            precision='compact'
                             prefix={amount.prefix}
                             showSymbol
                             symbolPosition='end'
@@ -72,6 +76,13 @@ export const TransactionListItem = ({
                             variant='h4'
                         />
                     ))}
+                    {amountsOverflowCount > 0 && (
+                        <PWText style={styles.amountOverflow}>
+                            {t('transactions.list_item.more_impacts', {
+                                count: amountsOverflowCount,
+                            })}
+                        </PWText>
+                    )}
                 </PWView>
             }
         >

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -129,6 +129,14 @@ describe('useAccountOptions', () => {
         type: AccountTypes.watch,
     }
 
+    const quantumAccount: WalletAccount = {
+        id: 'acc-q',
+        address: 'QUANTUMADDRESS',
+        type: AccountTypes.quantum,
+        keyPairId: 'key-q',
+        name: 'My Quantum Account',
+    }
+
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
         address: 'REKEYEDADDRESS',
@@ -175,6 +183,7 @@ describe('useAccountOptions', () => {
         mockUseCanSignWith.mockImplementation(account => {
             switch (account?.address) {
                 case algo25Account.address:
+                case quantumAccount.address:
                 case rekeyedAccount.address:
                 case rekeyedWatchAccount.address:
                 case hardwareAccount.address:
@@ -209,6 +218,28 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+
+        it('offers view-passphrase for a quantum account (25-word recovery phrase)', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: quantumAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+            // Distinct label: a quantum account can share its 25 words with an
+            // algo25 twin (same mnemonic, different address). Reusing the algo25
+            // "View wallet passphrase" copy would read as a duplicate/bug, so
+            // quantum gets its own string.
+            expect(passphraseOption).toBeDefined()
+            expect(passphraseOption?.title).toBe(
+                'account_options.view_passphrase_quantum',
+            )
         })
 
         it('shows only applicable options for a watch account', () => {
@@ -298,6 +329,27 @@ describe('useAccountOptions', () => {
     })
 
     describe('handlers', () => {
+        // Removal is an inline state machine (none → backup-warning → remove-confirm) rather than
+        // stacked confirm bottom-sheets. Drive it: onPress → acknowledge backup → confirm remove.
+        // handleConfirmBackupWarning is a harmless no-op when already on 'remove-confirm' (watch
+        // accounts skip the backup step), so this works for every account type.
+        const driveFullRemoval = async (result: {
+            current: ReturnType<typeof useAccountOptions>
+        }): Promise<void> => {
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+            await act(async () => {
+                await removeOption?.onPress()
+            })
+            await act(async () => {
+                result.current.handleConfirmBackupWarning()
+            })
+            await act(async () => {
+                result.current.handleConfirmRemove()
+            })
+        }
+
         it('copies address and closes when copy address is pressed', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -477,8 +529,7 @@ describe('useAccountOptions', () => {
             expect(mockUpdateAccount).not.toHaveBeenCalled()
         })
 
-        it('requests backup warning bottom sheet when remove is pressed for non-watch account', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        it('shows the backup warning inline when remove is pressed for a non-watch account', async () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -495,19 +546,12 @@ describe('useAccountOptions', () => {
                 await removeOption?.onPress()
             })
 
-            expect(mockOnClose).toHaveBeenCalled()
-            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
-            const arg = mockRequestBottomSheet.mock.calls[0][0]
-            expect(arg.options).toEqual({
-                size: 'auto',
-                enablePanDownToClose: true,
-            })
-            // Backup warning cancelled — should not proceed to remove
+            // Inline confirmation: signing accounts see the backup warning first.
+            expect(result.current.removeConfirmView).toBe('backup-warning')
             expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
         })
 
-        it('skips backup warning and goes straight to remove confirm for watch account', async () => {
-            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+        it('skips the backup warning and goes straight to remove confirm for a watch account', async () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: watchAccount,
@@ -524,15 +568,11 @@ describe('useAccountOptions', () => {
                 await removeOption?.onPress()
             })
 
-            expect(mockOnClose).toHaveBeenCalled()
-            // Only one sheet (the confirm) requested, no backup warning
-            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            // Watch accounts have no signing keys → no backup warning.
+            expect(result.current.removeConfirmView).toBe('remove-confirm')
         })
 
-        it("opens remove confirm when backup warning resolves with 'continue'", async () => {
-            mockRequestBottomSheet
-                .mockResolvedValueOnce('continue')
-                .mockResolvedValueOnce(undefined)
+        it('advances to remove confirm when the backup warning is acknowledged', async () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -548,14 +588,15 @@ describe('useAccountOptions', () => {
             await act(async () => {
                 await removeOption?.onPress()
             })
+            await act(async () => {
+                result.current.handleConfirmBackupWarning()
+            })
 
-            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(2)
+            expect(result.current.removeConfirmView).toBe('remove-confirm')
+            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
         })
 
-        it("removes account and navigates home when confirm sheet resolves with 'confirm'", async () => {
-            mockRequestBottomSheet
-                .mockResolvedValueOnce('continue')
-                .mockResolvedValueOnce('confirm')
+        it('cancelling the confirmation does not remove the account', async () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -571,6 +612,24 @@ describe('useAccountOptions', () => {
             await act(async () => {
                 await removeOption?.onPress()
             })
+            await act(async () => {
+                result.current.handleCancelRemove()
+            })
+
+            expect(result.current.removeConfirmView).toBe('none')
+            expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
+        })
+
+        it('removes account and navigates home when the inline confirm is pressed', async () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await driveFullRemoval(result)
 
             expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
@@ -798,9 +857,6 @@ describe('useAccountOptions', () => {
 
         it('does not navigate when removing the last account', async () => {
             mockAllAccounts.mockReturnValue([algo25Account])
-            mockRequestBottomSheet
-                .mockResolvedValueOnce('continue')
-                .mockResolvedValueOnce('confirm')
 
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -810,13 +866,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
-                o => o.id === 'remove-account',
-            )
-
-            await act(async () => {
-                await removeOption?.onPress()
-            })
+            await driveFullRemoval(result)
 
             expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
@@ -833,9 +883,6 @@ describe('useAccountOptions', () => {
                 rekeyAddress: 'ALGO25ADDRESS',
             }
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
-            mockRequestBottomSheet
-                .mockResolvedValueOnce('continue')
-                .mockResolvedValueOnce('confirm')
 
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -845,13 +892,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
-                o => o.id === 'remove-account',
-            )
-
-            await act(async () => {
-                await removeOption?.onPress()
-            })
+            await driveFullRemoval(result)
 
             expect(mockRemoveAccountByAddress).not.toHaveBeenCalled()
             expect(mockShowToast).toHaveBeenCalledWith({
@@ -863,9 +904,6 @@ describe('useAccountOptions', () => {
 
         it('allows removal when no other accounts are rekeyed to it', async () => {
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedAccount])
-            mockRequestBottomSheet
-                .mockResolvedValueOnce('continue')
-                .mockResolvedValueOnce('confirm')
 
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -875,13 +913,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
-                o => o.id === 'remove-account',
-            )
-
-            await act(async () => {
-                await removeOption?.onPress()
-            })
+            await driveFullRemoval(result)
 
             expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
@@ -904,9 +936,6 @@ describe('useAccountOptions', () => {
                 },
             }
             mockAllAccounts.mockReturnValue([algo25Account, ledgerAccount])
-            mockRequestBottomSheet
-                .mockResolvedValueOnce('continue')
-                .mockResolvedValueOnce('confirm')
 
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -916,13 +945,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
-            const removeOption = result.current.options.find(
-                o => o.id === 'remove-account',
-            )
-
-            await act(async () => {
-                await removeOption?.onPress()
-            })
+            await driveFullRemoval(result)
 
             expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
                 'LEDGERADDRESS',

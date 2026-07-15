@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,4 +20,27 @@ describe('PWChip', () => {
         render(<PWChip title='new' />)
         expect(screen.getByText('NEW')).toBeTruthy()
     })
+
+    it('keeps the title casing when forceUppercase is off', () => {
+        render(
+            <PWChip
+                title='Completed'
+                forceUppercase={false}
+            />,
+        )
+        expect(screen.getByText('Completed')).toBeTruthy()
+    })
+
+    it.each(['positive', 'negative'] as const)(
+        'renders the %s variant',
+        variant => {
+            render(
+                <PWChip
+                    title='status'
+                    variant={variant}
+                />,
+            )
+            expect(screen.getByText('STATUS')).toBeTruthy()
+        },
+    )
 })

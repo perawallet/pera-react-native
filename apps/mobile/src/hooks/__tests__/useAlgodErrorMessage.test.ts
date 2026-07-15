@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -81,5 +81,18 @@ describe('useAlgodErrorMessage', () => {
         result.current.getMessage(raw)
 
         expect(mockT).toHaveBeenCalledWith('errors.algod.overspend.title')
+    })
+
+    test('remaps network_unavailable to the shared offline copy', () => {
+        const err = new AlgodError('network_unavailable', {})
+        const { result } = renderHook(() => useAlgodErrorMessage())
+
+        const message = result.current.getMessage(err)
+
+        expect(message.title).toBe('errors.network.no_connection.title')
+        expect(message.body).toBe('errors.network.no_connection.body')
+        expect(mockT).not.toHaveBeenCalledWith(
+            'errors.algod.network_unavailable.title',
+        )
     })
 })

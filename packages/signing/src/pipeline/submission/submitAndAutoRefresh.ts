@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,17 +10,21 @@
  limitations under the License
  */
 
-import {
-    waitForConfirmation as algokitWaitForConfirmation,
-    type AlgorandClient,
-} from '@algorandfoundation/algokit-utils'
+import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    concatBytes,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
+import { synthesizeQuantumTxid } from './synthesizeQuantumSubmission'
+import { containsQuantumSigner } from './containsQuantumSigner'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
@@ -51,6 +55,13 @@ export interface SubmitAndAutoRefreshCoreInput {
         network: Network,
     ) => void | Promise<void>
     signedTxns: readonly PeraSignedTransaction[]
+    /**
+     * MOCK(quantum): when true, the group contains a quantum signer whose
+     * Falcon signature no node can yet accept. Submission returns a synthetic
+     * txid and the confirmation wait is skipped, but account-refresh callbacks
+     * still fire. See EPIC phase 2.
+     */
+    isQuantumMock?: boolean
 }
 
 /**
@@ -68,11 +79,20 @@ export interface SubmitAndAutoRefreshCoreInput {
 export const submitAndAutoRefreshCore = async (
     input: SubmitAndAutoRefreshCoreInput,
 ): Promise<{ txIds: string[] }> => {
-    const txIds = await submitSignedTransactionGroup(
-        input.algokit,
-        input.encodeSignedTransactions,
-        [...input.signedTxns],
-    )
+    const txIds = input.isQuantumMock
+        ? // MOCK(quantum): synthetic submission until node release supports Falcon — see EPIC phase 2
+          [
+              synthesizeQuantumTxid(
+                  concatBytes(
+                      ...input.encodeSignedTransactions([...input.signedTxns]),
+                  ),
+              ),
+          ]
+        : await submitSignedTransactionGroup(
+              input.algokit,
+              input.encodeSignedTransactions,
+              [...input.signedTxns],
+          )
 
     void backgroundConfirmAndRefresh(input, txIds)
 
@@ -85,14 +105,18 @@ const backgroundConfirmAndRefresh = async (
 ): Promise<void> => {
     if (txIds.length === 0) return
 
-    try {
-        await input.waitForConfirmation(txIds[0]!)
-    } catch (error) {
-        logger.warn(
-            'submitAndAutoRefresh: confirmation wait failed; relying on periodic sync',
-            { error, txIds },
-        )
-        return
+    // MOCK(quantum): synthetic submissions have no on-chain txid to poll —
+    // skip the confirmation wait but still run the account-refresh callbacks.
+    if (!input.isQuantumMock) {
+        try {
+            await input.waitForConfirmation(txIds[0]!)
+        } catch (error) {
+            logger.warn(
+                'submitAndAutoRefresh: confirmation wait failed; relying on periodic sync',
+                { error, txIds },
+            )
+            return
+        }
     }
 
     const transactions = input.signedTxns.map(s => s.txn)
@@ -133,21 +157,28 @@ export const submitAndAutoRefresh = async (
     signedTxns: PeraSignedTransaction[],
 ): Promise<string[]> => {
     const network = useNetworkStore.getState().network
-    const walletAddresses = useAccountsStore
-        .getState()
-        .accounts.map(a => a.address)
+    const accounts = useAccountsStore.getState().accounts
+    const walletAddresses = accounts.map(a => a.address)
+
+    // MOCK(quantum): a group authorized by any quantum signer cannot broadcast
+    // (no node accepts Falcon yet) — route it to synthetic submission.
+    const isQuantumMock = containsQuantumSigner(
+        signedTxns.map(s => s.txn),
+        accounts,
+    )
 
     const { txIds } = await submitAndAutoRefreshCore({
         algokit,
         encodeSignedTransactions,
         waitForConfirmation: txId =>
             // The runtime instance is always an AlgorandClient whose
-            // .client.algod is the SDK Algodv2; the cast bridges the
+            // .client.algod is the SDK AlgodClient; the cast bridges the
             // intentionally-narrow AlgokitClientInterface used for testing.
-            algokitWaitForConfirmation(
+            // algosdk's signature is (client, txid, waitRounds).
+            algosdkWaitForConfirmation(
+                (algokit as unknown as AlgorandClient).client.algod,
                 txId,
                 DEFAULT_ROUNDS_TO_WAIT,
-                (algokit as unknown as AlgorandClient).client.algod,
             ).then(() => undefined),
         walletAddresses,
         network,
@@ -156,6 +187,7 @@ export const submitAndAutoRefresh = async (
             return handler?.(addresses, networkAtSubmission)
         },
         signedTxns,
+        isQuantumMock,
     })
 
     return txIds

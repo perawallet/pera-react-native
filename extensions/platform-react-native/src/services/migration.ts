@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,7 @@ import {
     type LegacyMigrationData,
     type LegacyMigrationSourcePlatform,
     type LegacyPasskey,
+    type LegacyUndecodableAccount,
     type LegacyWalletConnectV1Session,
     type LegacyWalletConnectV2Session,
     MIGRATION_SENTINEL_KEY,
@@ -244,6 +245,36 @@ const decodeBase64 = (value: unknown): Uint8Array | null => {
     return decodeFromBase64(value)
 }
 
+const errorMessage = (err: unknown): string =>
+    err instanceof Error ? err.message : String(err)
+
+const decodePerEntry = <Raw, Decoded>(
+    entries: Raw[],
+    decode: (entry: Raw) => Decoded,
+    onError: (entry: Raw, err: unknown) => void,
+): Decoded[] => {
+    const decoded: Decoded[] = []
+    for (const entry of entries) {
+        try {
+            decoded.push(decode(entry))
+        } catch (err) {
+            onError(entry, err)
+        }
+    }
+    return decoded
+}
+
+const decodeAuthPin = (pin: Base64): Uint8Array | null => {
+    try {
+        return decodeBase64(pin)
+    } catch (err) {
+        warn('decodeBase64 failed for auth.pin; treating as no PIN', {
+            error: errorMessage(err),
+        })
+        return null
+    }
+}
+
 type Base64 = string | null
 type LongString = string | null
 
@@ -335,6 +366,7 @@ const decodeLegacyMigrationData = (
             `Unsupported legacy migration schema version: ${raw.schemaVersion} (expected ${LEGACY_MIGRATION_SCHEMA_VERSION})`,
         )
     }
+    const { accounts, undecodableAccounts } = decodeAccounts(raw.accounts)
     return {
         schemaVersion: raw.schemaVersion,
         sourcePlatform: raw.sourcePlatform,
@@ -353,9 +385,10 @@ const decodeLegacyMigrationData = (
                 'notificationRefreshTimestampMs',
             ),
         },
-        auth: { pin: decodeBase64(raw.auth.pin) },
-        accounts: raw.accounts.map(decodeAccount),
-        hdWallets: raw.hdWallets.map(decodeHDWallet),
+        auth: { pin: decodeAuthPin(raw.auth.pin) },
+        accounts,
+        undecodableAccounts,
+        hdWallets: decodeHDWallets(raw.hdWallets),
         contacts: raw.contacts,
         notificationFilters: raw.notificationFilters,
         walletConnectV1: raw.walletConnectV1.map(decodeWalletConnectV1Session),
@@ -396,11 +429,41 @@ const decodeAccount = (raw: RawLegacyAccount): LegacyAccount => ({
     secretKey: decodeBase64(raw.secretKey),
 })
 
+const decodeAccounts = (
+    raw: RawLegacyAccount[],
+): {
+    accounts: LegacyAccount[]
+    undecodableAccounts: LegacyUndecodableAccount[]
+} => {
+    const undecodableAccounts: LegacyUndecodableAccount[] = []
+    const accounts = decodePerEntry(raw, decodeAccount, (entry, err) => {
+        const error = errorMessage(err)
+        warn('decodeAccount failed; recording account as undecodable', {
+            address: entry.address,
+            error,
+        })
+        undecodableAccounts.push({
+            address: entry.address,
+            name: entry.name,
+            error,
+        })
+    })
+    return { accounts, undecodableAccounts }
+}
+
 const decodeHDWallet = (raw: RawLegacyHDWallet): LegacyHDWallet => ({
     ...raw,
     entropy: decodeBase64(raw.entropy),
     keys: raw.keys.map(decodeHDKey),
 })
+
+const decodeHDWallets = (raw: RawLegacyHDWallet[]): LegacyHDWallet[] =>
+    decodePerEntry(raw, decodeHDWallet, (entry, err) => {
+        warn(
+            'decodeHDWallet failed; dropping wallet (its accounts will fail migration)',
+            { walletId: entry.walletId, error: errorMessage(err) },
+        )
+    })
 
 const decodeHDKey = (raw: RawLegacyHDKey): LegacyHDKey => ({
     ...raw,
@@ -468,6 +531,7 @@ const emptyLegacyMigrationData = (): LegacyMigrationData => ({
     },
     auth: { pin: null },
     accounts: [],
+    undecodableAccounts: [],
     hdWallets: [],
     contacts: [],
     notificationFilters: [],

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,21 +10,39 @@
  limitations under the License
  */
 
-import type { Transaction as IndexerTransaction } from '@algorandfoundation/algokit-utils/indexer-client'
-import type {
-    SignedTransaction,
-    Transaction,
-} from '@algorandfoundation/algokit-utils/transact'
+import type { SignedTransaction, Transaction, indexerModels } from 'algosdk'
 import { type BaseStoreState } from '@perawallet/wallet-core-shared'
-import { type Address } from '@algorandfoundation/algokit-utils'
+import { type Address } from 'algosdk'
+
+type IndexerTransaction = indexerModels.Transaction
 
 export const MAX_TX_NOTE_BYTES = 1024
 
 export type BlockchainStore = BaseStoreState
 
-export { Address } from '@algorandfoundation/algokit-utils'
+export { Address } from 'algosdk'
 
-export type PeraDisplayableTransaction = IndexerTransaction & {
+// algosdk's indexer models are classes implementing Encodable (each carries
+// `getEncodingSchema`/`toEncodingData` methods). The displayable transaction is
+// built as a plain object, so strip method-valued properties recursively to get
+// a structural, literal-assignable shape while keeping every data field.
+type PlainModel<T> = T extends Uint8Array
+    ? T
+    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      T extends (...args: any[]) => any
+      ? never
+      : T extends (infer U)[]
+        ? PlainModel<U>[]
+        : T extends object
+          ? {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                [K in keyof T as T[K] extends (...args: any[]) => any
+                    ? never
+                    : K]: PlainModel<T[K]>
+            }
+          : T
+
+export type PeraDisplayableTransaction = PlainModel<IndexerTransaction> & {
     roundTimeMillis?: number
     rawTransaction?: PeraTransaction
 }

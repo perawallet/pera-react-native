@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -45,21 +45,18 @@ import {
  * app's `WalletConnectProvider` reads `connectionError` and dispatches
  * (toast for network mismatch, bottom sheet otherwise).
  */
-const surfaceError = (error: Error) => {
+const surfaceError = (error: Error, clientId?: string) => {
     logger.error('An error occurred when handling a wallet connect message', {
         error,
     })
+    // Stamp the originating connector so consumers can scope handling to a
+    // single pairing/session (see `getConnectionErrorClientId`). `connectionError`
+    // is one shared store field written from every connector.
+    if (clientId) {
+        ;(error as { clientId?: string }).clientId = clientId
+    }
     useWalletConnectStore.getState().setConnectionError(error)
 }
-
-/**
- * Module-level latch so the cold-start `reconnectAllSessions` runs exactly
- * once across the entire process — even when several components mount
- * `useWalletConnect` simultaneously. Without this, every mounted consumer
- * would re-iterate every stored connection, churning the store and stacking
- * up rebind cycles.
- */
-let coldStartReconnectDone = false
 
 /** Re-binds the dApp request handlers onto a (re)created connector. */
 type BindRequestHandlers = (connector: WalletConnect) => void
@@ -76,8 +73,8 @@ export const useWalletConnect = (network: Network) => {
 
     // Refs let the connector's registered event handlers always read the
     // latest values. Without this, network changes don't propagate because
-    // the closures captured at `connect()` time are frozen until
-    // reconnectAllSessions runs again.
+    // the closures captured at `connect()` time are frozen; the refs keep the
+    // live handlers reading current values without recreating the connector.
     const networkRef = useRef(network)
     networkRef.current = network
     const handleSignDataRef = useRef(handleSignData)
@@ -90,11 +87,6 @@ export const useWalletConnect = (network: Network) => {
     // through this ref, so a recovered connector's handlers still read
     // fresh hook state (network, accounts, callbacks).
     const bindRequestHandlersRef = useRef<BindRequestHandlers>(() => {})
-
-    // Kept as a stable identity for callers that may already wire it into
-    // an effect dep array. Cold-start reconnect now runs once per process
-    // (see effect below), so this is a no-op outside that initial pass.
-    const initWalletConnect = useCallback(() => {}, [])
 
     const connect = useCallback(
         async ({ connection }: { connection: WalletConnectConnection }) => {
@@ -118,51 +110,36 @@ export const useWalletConnect = (network: Network) => {
             // so its socket liveness is tracked for delivery recovery.
             bindRequestHandlersRef.current(connector)
             registerConnector(connector.clientId, connector)
+            // Return the connector id so a caller pairing via QR can scope its
+            // wait to this connector's session_request / connection error
+            // rather than reacting to any WalletConnect activity.
+            return connector.clientId
         },
         [],
     )
 
-    const reconnectAllSessions = useCallback(() => {
+    const connectSessions = useCallback(() => {
         if (!connections) {
             return
         }
 
-        logger.debug('[WC] Reconnecting WC sessions', {
-            count: connections.length,
-        })
-
         connections.forEach(connection => {
-            // Fire-and-forget, but never unguarded: a stored connection with a
-            // missing/empty bridge makes the WC v1 `Connector` constructor throw
-            // synchronously, which would otherwise surface as an uncaught promise
-            // rejection on cold start. Log and skip the bad session instead.
+            if (!connection.clientId || getConnector(connection.clientId)) {
+                return
+            }
+
+            logger.debug('[WC] Establishing stored session', {
+                clientId: connection.clientId,
+            })
+
+            // A missing/empty bridge makes the WC v1 Connector throw synchronously — skip it.
             connect({ connection }).catch(error => {
                 logger.error(
-                    '[WC] Failed to reconnect stored session — skipping',
+                    '[WC] Failed to establish stored session — skipping',
                     { clientId: connection.clientId, error },
                 )
             })
         })
-
-        // Only push a new array if at least one connection's `connected`
-        // flag actually flipped. Unconditional `setConnections` here
-        // ticks every subscriber on every reconnect cycle and drives a
-        // render storm across the multiple components that call
-        // useWalletConnect.
-        let changed = false
-        const next = connections.map(connection => {
-            const nextConnected = connection.clientId
-                ? (getConnector(connection.clientId)?.connected ?? false)
-                : false
-            if (nextConnected !== connection.connected) {
-                changed = true
-                return { ...connection, connected: nextConnected }
-            }
-            return connection
-        })
-        if (changed) {
-            setConnections(next)
-        }
     }, [connect, connections])
 
     const disconnect = useCallback(
@@ -295,7 +272,7 @@ export const useWalletConnect = (network: Network) => {
                     id: payload?.id,
                     error: e as Error,
                 })
-                surfaceError(e as Error)
+                surfaceError(e as Error, connector.clientId)
             }
         })
 
@@ -317,7 +294,7 @@ export const useWalletConnect = (network: Network) => {
                     id: payload?.id,
                     error: e as Error,
                 })
-                surfaceError(e as Error)
+                surfaceError(e as Error, connector.clientId)
             }
         })
 
@@ -329,7 +306,7 @@ export const useWalletConnect = (network: Network) => {
         connector.on('session_request', (error, payload) => {
             if (error) {
                 logger.error(error)
-                surfaceError(error)
+                surfaceError(error, connector.clientId)
                 return
             }
             const { peerMeta, chainId, permissions } = payload.params[0]
@@ -353,7 +330,10 @@ export const useWalletConnect = (network: Network) => {
                     network: currentNetwork,
                 })
                 connector.rejectSession()
-                surfaceError(new WalletConnectInvalidNetworkError())
+                surfaceError(
+                    new WalletConnectInvalidNetworkError(),
+                    connector.clientId,
+                )
                 return
             }
 
@@ -372,7 +352,7 @@ export const useWalletConnect = (network: Network) => {
         connector.on('error', error => {
             logger.error('WC error received', { error })
             if (error) {
-                surfaceError(error)
+                surfaceError(error, connector.clientId)
             }
         })
     }
@@ -387,24 +367,9 @@ export const useWalletConnect = (network: Network) => {
         )
     }, [])
 
-    // Cold-start reconnect: re-establish a connector for every persisted
-    // connection so handlers are bound and the bridge socket is alive
-    // before the dApp starts emitting requests. Runs once per process
-    // (the latch is module-level), regardless of how many components
-    // mount `useWalletConnect`. State changes during a session
-    // (approve/disconnect/etc.) don't re-trigger this — they handle
-    // registry bookkeeping inline.
-    useEffect(() => {
-        if (coldStartReconnectDone) return
-        coldStartReconnectDone = true
-        reconnectAllSessions()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
     return {
         connections,
-        initWalletConnect,
-        reconnectAllSessions,
+        connectSessions,
         connect,
         disconnect,
         approveSession,

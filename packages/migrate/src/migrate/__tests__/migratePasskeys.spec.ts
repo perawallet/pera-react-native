@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -48,6 +48,21 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     entropyToMnemonic: entropyToMnemonicMock,
+    // Locate the entropy child by metadata, mirroring the real entropyChildIdOf.
+    entropyChildIdOf: (
+        seedKeyId: string,
+        keys: Array<{ id: string; metadata?: Record<string, unknown> }>,
+    ) =>
+        keys.find(
+            k =>
+                k.metadata?.parentKeyId === seedKeyId &&
+                k.metadata?.entropyKey === true,
+        )?.id,
+    // Resolves the mnemonic only when that child's entry is in the keystore.
+    withSecret: async (id: string, handler: (bytes: Uint8Array) => unknown) =>
+        keystoreState.keys.some(k => k.id === id)
+            ? handler(Uint8Array.from([0xaa, 0xbb, 0xcc]))
+            : null,
     zeroBytes: (...buffers: Array<Uint8Array | null | undefined>) => {
         for (const buf of buffers) if (buf) buf.fill(0)
     },
@@ -135,7 +150,12 @@ beforeEach(() => {
 
     accountsState.accounts = [{ address: ADDRESS, keyPairId: DERIVED_KEY_ID }]
     keystoreState.keys = [
-        { id: SEED_ID, type: 'seed', metadata: { entropy: 'aabbcc' } },
+        { id: SEED_ID, type: 'seed', metadata: { scheme: 'bip39' } },
+        {
+            id: `${SEED_ID}-bip39-entropy`,
+            type: 'secret-key',
+            metadata: { parentKeyId: SEED_ID, entropyKey: true },
+        },
         {
             id: DERIVED_KEY_ID,
             type: 'hd-derived-ed25519',

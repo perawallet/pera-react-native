@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { type PeraAsset } from '@perawallet/wallet-core-assets'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
@@ -33,10 +34,7 @@ export const AssetTitle = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const isAlgo = useMemo(
-        () => asset.assetId === ALGO_ASSET_ID,
-        [asset.assetId],
-    )
+    const isAlgo = useMemo(() => isAlgoAssetId(asset.assetId), [asset.assetId])
 
     const isSuspicious = useMemo(
         () => asset.peraMetadata?.verificationTier === 'suspicious',

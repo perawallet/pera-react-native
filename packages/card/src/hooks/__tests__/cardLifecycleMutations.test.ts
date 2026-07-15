@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
+import { mutationDefaults } from '@perawallet/wallet-core-shared'
 import React from 'react'
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
@@ -28,6 +33,8 @@ vi.mock('../../api/card', () => api)
 
 import { useFreezeCardMutation } from '../useFreezeCardMutation'
 import { useUnfreezeCardMutation } from '../useUnfreezeCardMutation'
+import { cardQueryKeys } from '../querykeys'
+import { CardStatus, type Card } from '../../models/card'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -45,6 +52,10 @@ describe('card lifecycle mutation hooks', () => {
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         api.freezeCard.mockResolvedValue(undefined)
         api.unfreezeCard.mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+        onlineManager.setOnline(true)
     })
 
     it('useFreezeCardMutation freezes and invalidates card status', async () => {
@@ -81,6 +92,40 @@ describe('card lifecycle mutation hooks', () => {
         )
     })
 
+    it('useFreezeCardMutation marks the cached card frozen on success', async () => {
+        const key = cardQueryKeys.status('mainnet')
+        queryClient.setQueryData<Card>(key, {
+            status: CardStatus.Active,
+        } as Card)
+        const { result } = renderHook(() => useFreezeCardMutation(), {
+            wrapper,
+        })
+
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(queryClient.getQueryData<Card>(key)?.status).toBe(
+            CardStatus.Frozen,
+        )
+    })
+
+    it('useUnfreezeCardMutation clears the frozen state on success', async () => {
+        const key = cardQueryKeys.status('mainnet')
+        queryClient.setQueryData<Card>(key, {
+            status: CardStatus.Frozen,
+        } as Card)
+        const { result } = renderHook(() => useUnfreezeCardMutation(), {
+            wrapper,
+        })
+
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(queryClient.getQueryData<Card>(key)?.status).toBe(
+            CardStatus.Active,
+        )
+    })
+
     it('useFreezeCardMutation surfaces the error and skips status invalidation on failure', async () => {
         api.freezeCard.mockRejectedValue(new Error('freeze failed'))
         const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
@@ -107,5 +152,31 @@ describe('card lifecycle mutation hooks', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error?.message).toBe('unfreeze failed')
         expect(invalidate).not.toHaveBeenCalled()
+    })
+
+    // OFF-004: offline, freezing must fail fast rather than pause and silently
+    // auto-resume when connectivity returns.
+    it('useFreezeCardMutation rejects promptly offline instead of pausing', async () => {
+        queryClient = new QueryClient({
+            defaultOptions: {
+                queries: { retry: false },
+                mutations: { ...mutationDefaults, retry: false },
+            },
+        })
+        onlineManager.setOnline(false)
+        api.freezeCard.mockRejectedValue(new Error('Network request failed'))
+
+        const { result } = renderHook(() => useFreezeCardMutation(), {
+            wrapper,
+        })
+        result.current.mutate()
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        // networkMode:'always' ran the mutationFn (which rejected) instead of
+        // pausing while offline — proving fail-fast, not pause-and-resume.
+        expect(api.freezeCard).toHaveBeenCalled()
+        expect(queryClient.getMutationCache().getAll()[0]?.state.isPaused).toBe(
+            false,
+        )
     })
 })

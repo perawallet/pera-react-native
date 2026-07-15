@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,12 @@ describe('zeroBytes', () => {
         zeroBytes(a, b)
         expect(Array.from(a)).toEqual([0, 0])
         expect(Array.from(b)).toEqual([0, 0, 0])
+    })
+
+    it('zeros a Uint16Array of wordlist indices in place', () => {
+        const indices = new Uint16Array([3, 2047, 1024])
+        zeroBytes(indices)
+        expect(Array.from(indices)).toEqual([0, 0, 0])
     })
 
     it('skips null and undefined entries without throwing', () => {

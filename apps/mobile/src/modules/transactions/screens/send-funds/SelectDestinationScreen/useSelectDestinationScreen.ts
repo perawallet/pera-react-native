@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,6 +11,7 @@
  */
 
 import { useSendFunds } from '@modules/transactions/hooks'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
     canSignWith,
@@ -19,7 +20,7 @@ import {
     useOnChainAccountInformationQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { type StackNavigationProp } from '@react-navigation/stack'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -88,7 +89,7 @@ export const useSelectDestinationScreen = () => {
             // ALGO sends always go through normal flow
             if (
                 !selectedAsset?.assetId ||
-                selectedAsset.assetId === ALGO_ASSET_ID
+                isAlgoAssetId(selectedAsset.assetId)
             ) {
                 setSendMode('normal')
                 navigation.navigate('ConfirmTransaction')

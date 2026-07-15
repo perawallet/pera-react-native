@@ -21,6 +21,9 @@
         "remove_assets": "Remove Assets"
     },
     "age_gate": {
+        "loading": {
+            "title": "Confirming age…"
+        },
         "declare": {
             "title": "Confirm your age",
             "body": "We are required by law in some jurisdictions to confirm your age to allow access to some kinds of content.  This information remains on your device.  Please confirm whether you are 18 or older.",
@@ -36,7 +39,8 @@
     "app": {
         "initialization_failed": {
             "title": "App Launch Failed",
-            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain."
+            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain.",
+            "retry": "Try again"
         }
     },
     "asset_sort": {
@@ -294,6 +298,7 @@
         "show_address": "Show Address",
         "view_passphrase_hd": "View root wallet passphrase",
         "view_passphrase_algo25": "View wallet passphrase",
+        "view_passphrase_quantum": "View Quantum account passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_to_ledger": "Rekey to Ledger Account",
@@ -336,12 +341,14 @@
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
         "type_multisig": "Shared Account",
+        "type_quantum": "Quantum Account",
         "type_rekeyed": "Rekeyed Account",
         "type_rekeyed_transition": "Rekeyed ({{from}} to {{to}})",
         "rekey_part_standard": "Standard",
         "rekey_part_ledger": "Ledger",
         "rekey_part_watch": "Watch",
         "rekey_part_shared": "Shared Account",
+        "rekey_part_quantum": "Quantum",
         "type_no_auth": "No Auth",
         "type_unknown": "Unknown Account"
     },
@@ -364,6 +371,8 @@
         "multisig_title": "Shared Account",
         "multisig_description": "Your account is a shared account. Transactions for this account must be approved by multiple signers.",
         "multisig_no_auth_description": "This is a shared account, but none of its signer accounts are in your wallet. You can't sign transactions for it. To sign, add one of its signer accounts to your wallet.",
+        "quantum_title": "Quantum Account",
+        "quantum_description": "A standard account protected with post-quantum cryptography, designed to keep your assets secure even against future quantum computers.",
         "learn_more": "Learn More"
     },
     "min_balance_info": {
@@ -431,6 +440,10 @@
             "title": "No camera device found or missing permissions.",
             "body": "Please double check in your system settings that you have enabled camera permissions for the app."
         },
+        "scanner_load_failed": {
+            "title": "Couldn't load the QR scanner",
+            "body": "Something went wrong while opening the camera. Please try again."
+        },
         "find_qr": {
             "title": "Find a QR Code to Scan"
         }
@@ -448,6 +461,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "back_online": "Back online",
         "yes": "Yes",
         "no": "No",
         "enter_stealth_mode": "Enter Stealth Mode",
@@ -482,6 +496,10 @@
         "copied_to_clipboard": {
             "title": "Copied to clipboard",
             "body": ""
+        },
+        "email_failed": {
+            "title": "Couldn't open email app",
+            "body": "No email app is set up on this device. You can write to {{email}} directly."
         },
         "error": {
             "title": "An error has occurred",
@@ -588,10 +606,6 @@
                 "title": "Smart contract rejected the transaction",
                 "body": "The contract returned: {{msg}}"
             },
-            "network_unavailable": {
-                "title": "Network unavailable",
-                "body": "Can't reach the Algorand network right now. Check your connection and try again."
-            },
             "unknown_node_error": {
                 "title": "Transaction failed",
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
@@ -606,15 +620,32 @@
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
         "network": {
-            "generic": "Failed to connect to the network.",
-            "timeout": "Didn't receive a response from the network.",
-            "no_connection": "Failed to connect to the network."
+            "no_connection": {
+                "title": "You appear to be offline",
+                "body": "Your device isn't connected to the internet. Check your connection and try again."
+            },
+            "timeout": {
+                "title": "This is taking longer than expected",
+                "body": "We didn't get a response in time. Please try again."
+            }
         },
         "api": {
-            "generic": "An error occurred will fetching data.",
-            "not_found": "The requested resource could not be found.",
-            "unauthorized": "You are not authorized to access this resource.",
-            "server_error": "The server encountered an error while processing the request."
+            "generic": {
+                "title": "Request failed",
+                "body": "Something went wrong while fetching data. Please try again."
+            },
+            "not_found": {
+                "title": "Not found",
+                "body": "The requested resource could not be found."
+            },
+            "unauthorized": {
+                "title": "Not authorized",
+                "body": "You aren't authorized to access this resource."
+            },
+            "server_error": {
+                "title": "Server error",
+                "body": "The server ran into a problem processing your request. Please try again."
+            }
         },
         "validation": {
             "generic": "The data appears to be invalid.",
@@ -659,13 +690,6 @@
             "unsupported_url": "Unsupported URL: {{url}}"
         }
     },
-    "image_picker": {
-        "permission_title": "Photo library access needed",
-        "permission_body": "Pera needs permission to access your photo library so you can pick a contact avatar. Open Settings to enable it.",
-        "open_settings": {
-            "label": "Open Settings"
-        }
-    },
     "menu": {
         "title": "Menu",
         "staking": "Staking",
@@ -698,8 +722,9 @@
             "overview_tab": "Overview",
             "card_details_tab": "Card Details",
             "balance": "Balance",
-            "manual_funding_enabled": "Manual Funding enabled",
-            "auto_funding_enabled": "Auto Funding enabled",
+            "spendable_per_tx": "≈{{amount}} {{currency}} available",
+            "spendable_info_title": "Available per transaction",
+            "spendable_info_body": "The most a single purchase can draw: your card balance plus credits, and — with Auto Funding — up to {{limit}} from your linked account.",
             "withdraw": "Withdraw",
             "add_funds": "Add Funds",
             "get_usdc": "Get USDC",
@@ -712,7 +737,181 @@
             "transactions_empty": "You have no transactions yet.",
             "transaction_fallback": "Transaction",
             "coming_soon_title": "Coming soon",
-            "coming_soon_body": "This feature isn't available just yet."
+            "coming_soon_body": "This feature isn't available just yet.",
+            "reveal_card_details": "Reveal Card Details",
+            "hide_card_details": "Hide Card Details",
+            "funding_account": "Funding Account",
+            "no_funding_account": "No account connected",
+            "connect": "Connect",
+            "change": "Change",
+            "funding_type_label": "Funding Type",
+            "funding_type_sheet_title": "Select Funding Type",
+            "funding_type_sheet_description": "Choose how your card is funded. Auto Funding covers purchases up to {{limit}} per transaction.",
+            "funding_type_apply": "Apply",
+            "funding_type_updated_title": "Funding type updated",
+            "funding_type_updated_body": "Your card funding preference has been saved.",
+            "funding_type_auto_unavailable_hint": "Not available for this account — it can't sign an auto-funding authorization.",
+            "funding_type_auto_coming_soon_hint": "Auto Funding is coming soon.",
+            "authorize_delegation_title": "Authorize Auto Funding",
+            "authorize_delegation_body": "You're authorizing auto-funding of up to {{limit}} per transaction from {{account}}. Pera signs a standing authorization you can switch back to Manual anytime.",
+            "authorize_delegation_confirm": "Authorize",
+            "funding_delegation_unsupported_title": "Auto Funding unavailable",
+            "funding_delegation_unsupported_body": "This account can't sign an auto-funding authorization. Choose another account or switch to Manual Funding.",
+            "funding_redelegate_failed_title": "Auto Funding not activated",
+            "funding_redelegate_failed_body": "Your account was linked, but Auto Funding couldn't be activated. Reapply it from Funding Type.",
+            "funding_cancel_old_failed_title": "Previous authorization still active",
+            "funding_cancel_old_failed_body": "We couldn't remove the auto-funding authorization from your previous account. You can retry from Funding Type.",
+            "options": "Options",
+            "accounts_details": "Accounts Details",
+            "add_to_apple_wallet": "Add to Apple Wallet",
+            "add_to_google_pay": "Add to Google Pay",
+            "set_pin": "Set PIN",
+            "freeze_card": "Freeze Card",
+            "unfreeze_card": "Unfreeze Card",
+            "frozen_banner_title": "Card Frozen",
+            "frozen_banner_body": "Your card is frozen. Unfreeze it anytime to continue spending.",
+            "reactivate_card": "Reactivate Card",
+            "freeze_sheet_title": "Freeze Card",
+            "freeze_sheet_body": "Freeze your card if it's misplaced or you want to temporarily prevent new transactions. You can unfreeze it instantly whenever you're ready to use it again.",
+            "freeze_sheet_confirm": "Freeze Card",
+            "unfreeze_sheet_title": "Unfreeze Card",
+            "unfreeze_sheet_body": "Unfreezing your card lets it be used for new transactions again. You can freeze it again at any time.",
+            "unfreeze_sheet_confirm": "Unfreeze Card",
+            "report_lost_stolen": "Report Lost/Stolen Card",
+            "report_suspicious": "Report Suspicious Activity",
+            "report_lost_sheet_title": "Report Lost/Stolen Card",
+            "report_lost_sheet_body": "If you believe your card is lost or stolen, we'll freeze it immediately so it can't be used, then open an email to Baanx support so they can take it from there.",
+            "report_lost_sheet_confirm": "Freeze Card & Report",
+            "report_lost_email_subject": "Report Lost/Stolen Card",
+            "report_lost_email_body": "Hello Baanx Support,\n\nI would like to report my card (ending in {{panLast4}}) as lost or stolen. The card has been frozen from the app. Please block it and advise on the next steps.\n\nAdditional details:\n",
+            "report_suspicious_sheet_title": "Report Suspicious Activity",
+            "report_suspicious_sheet_body": "If you believe there to be suspicious activity on this card, please freeze the card immediately before the next steps.",
+            "report_suspicious_sheet_confirm": "Freeze Card",
+            "report_suspicious_frozen_toast_title": "Your card has been frozen",
+            "report_suspicious_before_title": "Before we continue",
+            "report_suspicious_before_body": "Please verify with family or other authorized users if they have used your card. If they have, you can unfreeze your card anytime to keep using it. If not, continue with the report.",
+            "report_suspicious_before_confirm": "Continue with Report",
+            "error_title": "Something went wrong",
+            "error_body": "Please try again."
+        },
+        "transactions": {
+            "navigation_title": "Transactions",
+            "kind_payment": "Payment",
+            "kind_refund": "Refund",
+            "kind_deposit": "Deposit",
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "days_ago": "{{days}} days ago",
+            "status_pending": "Pending",
+            "status_declined": "Declined",
+            "status_reverted": "Reverted",
+            "status_completed": "Completed",
+            "export_accessibility_label": "Export statement",
+            "error_title": "Couldn't load transactions",
+            "error_body": "Please try again.",
+            "retry": "Try again",
+            "detail_tab_transaction": "Transaction",
+            "detail_tab_merchant": "Merchant",
+            "detail_card_number": "Card number",
+            "detail_processed_on": "Processed on",
+            "detail_reference": "Reference #",
+            "detail_transaction_hash": "Transaction hash",
+            "detail_fees": "Fees",
+            "detail_merchant_category": "Category",
+            "detail_merchant_type": "Type",
+            "merchant_type_in_store": "In store",
+            "merchant_type_in_store_with_pin": "In store with PIN",
+            "merchant_type_online": "Online",
+            "merchant_type_atm": "ATM",
+            "mcc_category_subscriptions": "Subscriptions",
+            "mcc_category_food": "Food & Drink",
+            "mcc_category_travel": "Travel",
+            "mcc_category_entertainment": "Entertainment",
+            "mcc_category_health": "Health",
+            "mcc_category_atm": "ATM",
+            "mcc_category_utilities": "Utilities",
+            "mcc_category_misc": "Other",
+            "detail_report": "Report Transaction",
+            "detail_open_explorer_accessibility_label": "View transaction in explorer",
+            "detail_copy_hash_accessibility_label": "Copy transaction hash",
+            "detail_not_found_title": "Transaction not found",
+            "detail_not_found_body": "This transaction is no longer available. Please try again.",
+            "report_email_subject": "Report Card Transaction - {{transactionId}}",
+            "report_email_body": "Hello Baanx Support,\n\nI would like to report the following card transaction(s):\n\nTransaction ID(s): {{transactionId}}\nProcessed on: {{processedOn}}\nMerchant: {{merchantName}}\n\nDescription of the issue:\n",
+            "report_transactions_sheet_title": "Report Transactions",
+            "report_transactions_sheet_subtitle": "Select the suspicious transactions",
+            "report_transactions_recent_label": "Recent transactions",
+            "report_transactions_button": "Report Transactions",
+            "report_transactions_email_subject": "Report Suspicious Card Transactions",
+            "report_transactions_email_body": "Hello Baanx Support,\n\nI would like to report the following card transactions as suspicious:\n\nTransaction ID(s):\n{{transactionIds}}\n\nDescription of the issue:\n"
+        },
+        "add_funds": {
+            "navigation_title": "Add Funds",
+            "subtitle": "Add USDC or swap assets to USDC in your linked Pera account to add more funds.",
+            "fund_address": "Fund address",
+            "amount": "Amount",
+            "balance": "Balance: {{amount}}",
+            "deposit": "Deposit",
+            "select_asset": "Select asset",
+            "select_asset_search": "Search by name or ID",
+            "select_asset_empty_title": "No matching assets",
+            "select_asset_empty_body": "No assets matched your search term",
+            "swap_success_title": "Swap complete",
+            "swap_success_body": "Your assets were swapped to USDC.",
+            "swap_error_title": "Swap failed"
+        },
+        "withdraw": {
+            "navigation_title": "Withdraw",
+            "subtitle": "Withdraw USDC from your Pera Card back to your linked Pera account.",
+            "to_account": "To account",
+            "amount": "Amount",
+            "balance": "Balance: {{amount}}",
+            "withdraw": "Withdraw",
+            "confirm_title": "Confirm Withdrawal",
+            "confirm_body": "You are about to withdraw {{amount}} USDC from your Pera Card to the account below.",
+            "confirm_button": "Confirm",
+            "success_title": "Withdrawal initiated",
+            "success_body": "{{amount}} USDC is on its way to your account."
+        },
+        "confirm_swap": {
+            "navigation_title": "Confirm Swap",
+            "price": "Price",
+            "slippage": "Slippage Tolerance",
+            "price_impact": "Price Impact",
+            "minimum_received": "Minimum Received",
+            "exchange_fee": "Exchange Fee",
+            "pera_fee": "Pera Fee",
+            "confirm": "Confirm"
+        },
+        "account_details": {
+            "title": "Account Details",
+            "full_name": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "country": "Country",
+            "verification": "Verification",
+            "kyc_verified": "Verified",
+            "kyc_pending": "Pending",
+            "kyc_rejected": "Rejected",
+            "kyc_unverified": "Not started",
+            "value_unavailable": "—"
+        },
+        "wallet_instructions": {
+            "done": "Got it",
+            "apple_title": "Add to Apple Wallet",
+            "google_title": "Add to Google Pay",
+            "apple_step_1": "Open the Wallet app on your device",
+            "apple_step_2": "Tap the + button on the screen",
+            "apple_step_3": "Add your card details",
+            "apple_step_4": "Follow the verification instructions",
+            "apple_step_5": "Done — your card is in the Wallet app",
+            "google_step_1": "Open the Google Pay app on your device",
+            "google_step_2": "Tap your profile picture, then Pay with credit or debit cards",
+            "google_step_3": "Tap Add credit or debit cards",
+            "google_step_4": "Tap Enter details manually",
+            "google_step_5": "Add your card details",
+            "google_step_6": "Follow the verification instructions",
+            "google_step_7": "Done — once your card is verified, it's ready to use"
         },
         "account_item": {
             "title": "Pera Card Account",
@@ -766,7 +965,9 @@
             "country_error_body": "Please check your connection and try again.",
             "country_retry": "Try again",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't send your verification email. Please try again."
+            "error_body": "We couldn't send your verification email. Please try again.",
+            "already_registered_title": "Account already exists",
+            "already_registered_body": "An account with this email already exists. Please sign in to continue."
         },
         "verify_email": {
             "navigation_title": "Confirm your Email",
@@ -789,13 +990,15 @@
             "navigation_title": "Create a Password",
             "password_placeholder": "Enter your password",
             "confirm_placeholder": "Confirm your password",
-            "rule_length": "At least 8 characters",
+            "rule_length": "At least 15 characters",
             "rule_uppercase": "An uppercase letter",
             "rule_lowercase": "A lowercase letter",
             "rule_number": "A number",
             "rule_special": "A special character",
             "common_password_hint": "Avoid common passwords",
             "passwords_mismatch": "Passwords do not match",
+            "marketing_opt_in": "I'd like to receive marketing communications about updates and offers.",
+            "sms_opt_in": "I agree to receive SMS text messages.",
             "confirm_button": "Continue"
         },
         "verify_phone": {
@@ -857,12 +1060,13 @@
             "us_state_error_title": "Couldn't load states",
             "us_state_error_body": "Please check your connection and try again.",
             "us_state_retry": "Try again",
-            "marketing_opt_in": "Untick this box if you do not wish to receive additional communication on updates.",
             "card_terms": "I have read and understood the Card Issue <0>Terms & Conditions</0> and accept them.",
             "platform_terms": "I have read and understood Pera's <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't save your address. Please try again."
+            "error_body": "We couldn't save your address. Please try again.",
+            "already_registered_title": "Registration already complete",
+            "already_registered_body": "Your details are already on file. Please sign in to continue setting up your card."
         },
         "verification": {
             "title": "Begin spending\non-chain",
@@ -872,15 +1076,20 @@
             "logout_button": "Logout",
             "contact_us": "If you have any questions, please do not hesitate to <0>contact us</0>",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't start verification. Please try again."
+            "error_body": "We couldn't start verification. Please try again.",
+            "open_link_error_body": "We couldn't open the verification page. Please try again."
         },
         "setup_status": {
             "title": "Finish setup and start spending on-chain",
             "documents_title": "Submit Your Documents",
             "documents_pending_label": "Pending",
+            "documents_unverified_body": "Please verify your account to begin spending on-chain.",
+            "documents_verify_button": "Verify your Account",
             "documents_pending_body": "Your verification has been submitted. We'll email you once it's complete.",
             "documents_verified_body": "Your identity has been verified.",
             "documents_rejected_body": "We couldn't verify your identity. Please contact support for help.",
+            "documents_error_body": "We couldn't check your verification status. Please try again.",
+            "documents_retry": "Try again",
             "details_title": "Enter Your Details",
             "details_body": "Verify your details and enter your address to proceed.",
             "details_button": "Verify your Account",
@@ -897,6 +1106,8 @@
             "funding_type_manual_title": "Manual Funding",
             "funding_type_manual_description": "Top up your card yourself before spending",
             "funding_type_manual_info": "You move funds onto the card yourself, and purchases draw from that balance",
+            "funding_type_limit_info": "Auto Funding covers purchases up to {{limit}} per transaction; larger purchases draw from your card balance",
+            "funding_type_limit_hint": "Up to {{limit}} per transaction",
             "funding_type_button": "Create Pera Card",
             "create_card_success_title": "You're all set",
             "create_card_success_body": "Your Pera Card is on its way."
@@ -1130,6 +1341,8 @@
         },
         "import_account": {
             "title": "Enter your Recovery Passphrase",
+            "quantum_title": "Enter your Quantum Passphrase",
+            "quantum_info_note": "A 25-word passphrase from a regular Algorand account is not a Quantum account and cannot be imported here.",
             "importing": "Importing wallet...",
             "button": "Recover",
             "failed_title": "Import failed",
@@ -1163,7 +1376,12 @@
             "create_wallet": "Create a new wallet",
             "already_have_account": "Already have an account?",
             "import_account": "Import an account",
-            "terms_and_privacy": "By creating a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>"
+            "privacy_agreement": "By creating a wallet, you agree to Pera Wallet's <0>Privacy Policy</0>"
+        },
+        "terms_sheet": {
+            "title": "Terms and Conditions",
+            "updated_title": "Updated Terms and Conditions",
+            "agree": "I Agree"
         },
         "name_account": {
             "title": "Name your account",
@@ -1211,6 +1429,11 @@
             "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24 word mnemonic",
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
+            "quantum_account_option_title": "Add Quantum Account",
+            "quantum_account_option_description": "Falcon-1024 signatures, natively secured on Algorand. Your keys, now ready for the post-quantum era.",
+            "quantum_account_option_badge": "NEW",
+            "quantum_account_option_learn_more": "Learn more",
+            "quantum_creating_title": "Creating your Quantum account…",
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
             "create_multisig_option_title": "Add Shared Account",
             "create_multisig_option_description": "Create a new shared account with enhanced security that requires multiple signers",
@@ -1231,7 +1454,9 @@
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
             "asb_title": "Algorand Secure Backup",
-            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key"
+            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key",
+            "quantum_title": "Import Quantum account",
+            "quantum_description": "I want to import a Quantum account using its 25-word passphrase"
         },
         "asb_import": {
             "info": {
@@ -1566,6 +1791,12 @@
                 "body": "The account <0>{{source}}</0> has been reverted to its original state",
                 "cta": "Done"
             }
+        },
+        "quantum_downgrade_warning": {
+            "title": "Remove quantum-safe protection?",
+            "body": "Rekeying <0>{{source}}</0> to <1>{{target}}</1> will remove its quantum-safe protection. Transactions will then be authorized by a standard key that is not resistant to quantum attacks. This can be reversed by rekeying back to a quantum account.",
+            "confirm": "Continue",
+            "cancel": "Cancel"
         }
     },
     "receive_funds": {
@@ -1717,11 +1948,11 @@
         },
         "close_account": {
             "title": "Close Account",
-            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network and remove it from your wallet.",
+            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network.",
             "confirm": "Close Account & Send",
-            "warning": "This transaction will close your account and remove it from your wallet.",
+            "warning": "This transaction will close your account on the Algorand network.",
             "success_title": "Account Closed",
-            "success_subtitle": "Your account has been closed and removed from your wallet"
+            "success_subtitle": "Your account has been closed on the Algorand network."
         },
         "express_send": {
             "title": "Express Send",
@@ -1910,6 +2141,14 @@
     },
     "signing": {
         "view_details": "View Transaction Details",
+        "balance_impact": {
+            "receive_title": "You will receive",
+            "spend_title": "You will spend",
+            "analyzing": "Analyzing transaction…",
+            "unavailable": "Unable to preview balance impact — review the transaction details carefully before signing.",
+            "entire_balance": "Entire {{unit}} balance",
+            "closes_balance": "Your full remaining balance is sent"
+        },
         "arbitrary_data_view": {
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
@@ -2032,7 +2271,8 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "key_registration": "Key Registration",
-            "default": "Transaction"
+            "default": "Transaction",
+            "more_impacts": "Show {{count}} more"
         },
         "type": {
             "pay": "Payment Transaction",
@@ -2077,6 +2317,10 @@
         "fee_warning": {
             "title": "Non-Standard Fees",
             "body": "The fees for this transaction are higher than the standard network fee. This may be due to network congestion or additional fees required by the application."
+        },
+        "quantum_fee": {
+            "title": "Quantum Network Fee",
+            "body": "Quantum accounts use larger signatures, so their transactions require a higher network fee than standard accounts."
         },
         "unknown": {
             "title": "Unsupported Transaction Type",
@@ -2287,7 +2531,9 @@
             "error_title": "Swap Failed",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
-            "user_rejected": "Swap cancelled"
+            "user_rejected": "Swap cancelled",
+            "pending_cosign_title": "Swap request sent",
+            "pending_cosign_body": "Your swap needs another signature. It will complete once the other signer approves it from their inbox."
         },
         "signing": {
             "source_name": "Swap",
@@ -2494,6 +2740,8 @@
             "description": "Select a Ledger device to connect to.",
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
+            "location_services_disabled": "Turn on Location in your device settings to search for nearby Ledger devices.",
+            "open_location_settings": "Open Location Settings",
             "grant_permission": "Grant Permission",
             "open_settings": "Open Settings",
             "bluetooth": {

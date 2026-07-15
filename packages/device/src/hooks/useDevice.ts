@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useRef } from 'react'
-import { type Network } from '@perawallet/wallet-core-shared'
+import { isNotFoundError, type Network } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useCreateDeviceMutation } from './useCreateDeviceMutation'
@@ -20,12 +20,6 @@ import { useDeviceID } from './useDeviceID'
 import { usePushToken } from './usePushToken'
 import { useDeviceStore } from '../store'
 import { updateDevice as updateDeviceEndpoint } from './endpoints'
-
-const isNotFoundError = (error: unknown): boolean => {
-    const status = (error as { response?: { status?: number } })?.response
-        ?.status
-    return status === 404
-}
 
 export const useDevice = () => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)

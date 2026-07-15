@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,7 +15,6 @@ import { Decimal } from 'decimal.js'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
-    ALGO_ASSET_ID,
     ALGO_ASSET,
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
@@ -23,6 +22,7 @@ import {
     baseUnitsToDisplayUnits,
     microAlgosToAlgos,
 } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET_ID, ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
     LedgerAccountPreview,
@@ -62,7 +62,7 @@ export const useLedgerAccountPreview = (
         previewAssets.push({
             assetId: ALGO_ASSET_ID,
             name: ALGO_ASSET.name ?? 'Algo',
-            unitName: ALGO_ASSET.unitName ?? 'ALGO',
+            unitName: ALGO_ASSET.unitName ?? ALGO_ASSET_NAME,
             decimals: ALGO_ASSET.decimals,
             amount: algoBalance,
             fiatValue: usdToPreferred(algoBalance.times(algoUsdPrice)),

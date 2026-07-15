@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -76,7 +76,7 @@ export const useSwapConfirmationActions = ({
         trackEvent(SwapEvent.Confirm)
         inFlightRef.current = true
         try {
-            const outcome = await execute(quoteIdStr)
+            const outcome = await execute(quote)
             if (outcome.kind === 'success') {
                 trackEvent(SwapEvent.Completed, {
                     ...buildSwapStatusPayload(quote),
@@ -92,6 +92,12 @@ export const useSwapConfirmationActions = ({
             }
             if (outcome.kind === 'cancelled') {
                 resolve({ kind: 'cancelled' })
+                return
+            }
+            if (outcome.kind === 'pending-cosign') {
+                // Proposed to the backend; co-signer approval pending. Close
+                // immediately — the cosign resolver finishes submission later.
+                resolve({ kind: 'pending-cosign' })
                 return
             }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))

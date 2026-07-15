@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,13 +10,14 @@
  limitations under the License
  */
 
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import type { DexSwapAsset } from '../../models'
 import type { DexSwapAssetApiResponse } from './schema'
 
 export const transformDexSwapAsset = (
     data: DexSwapAssetApiResponse,
 ): DexSwapAsset => ({
-    assetId: data.asset_id ?? '0',
+    assetId: data.asset_id ?? ALGO_ASSET_ID,
     logo: data.logo ?? undefined,
     name: data.name,
     unitName: data.unit_name,

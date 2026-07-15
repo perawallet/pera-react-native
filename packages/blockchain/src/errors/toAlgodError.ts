@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { LogicError } from '@algorandfoundation/algokit-utils/logic-error'
+import { LogicError } from '@algorandfoundation/algokit-utils/types/logic-error'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { AlgodError } from './AlgodError'
 import { parseAlgodMessage } from './parseAlgodMessage'
@@ -29,6 +29,12 @@ export const toAlgodError = (err: unknown): AlgodError => {
     if (maybeError && isApiErrorLike(err)) return fromApiError(err, maybeError)
     if (maybeError && isFetchTypeError(maybeError)) {
         return new AlgodError('network_unavailable', {}, maybeError)
+    }
+    // Checked independently of `maybeError`: AbortSignal.timeout(...) throws a
+    // DOMException which, in some runtimes (e.g. jsdom), is not `instanceof
+    // Error` despite being structurally Error-shaped (name/message/stack).
+    if (isAbortError(err)) {
+        return new AlgodError('network_unavailable', {}, err)
     }
 
     if (maybeError) {
@@ -124,6 +130,19 @@ const isFetchTypeError = (err: Error): boolean => {
         m.includes('fetch failed') ||
         m.includes('failed to fetch')
     )
+}
+
+// Thrown by AbortSignal.timeout(...) / AbortController.abort() as a
+// DOMException (`name === 'TimeoutError'` / `'AbortError'`). Duck-typed on
+// `name` rather than gated behind `instanceof Error` because DOMException is
+// not always `instanceof Error` (e.g. jsdom), even though it is structurally
+// Error-shaped. These are transient transport failures and must classify as
+// the retryable network_unavailable code, not the terminal
+// unknown_node_error fallback.
+const isAbortError = (err: unknown): err is Error => {
+    if (typeof err !== 'object' || err === null) return false
+    const name = (err as { name?: unknown }).name
+    return name === 'AbortError' || name === 'TimeoutError'
 }
 
 const stringifyUnknown = (err: unknown): string => {

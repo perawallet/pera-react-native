@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -52,22 +52,9 @@ export const usePollingStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
             partialize: state => ({
                 lastRefreshedRound: state.lastRefreshedRound,
             }),
-            migrate: (persistedState: unknown, version: number) => {
-                const state = persistedState as Record<string, unknown>
-                if (version < 2) {
-                    const oldRound =
-                        state.lastRefreshedRound as Nullable<number>
-                    state.lastRefreshedRound = {
-                        mainnet: oldRound,
-                        testnet: null,
-                    }
-                }
-                return state as PollingState
-            },
         },
     ),
 )

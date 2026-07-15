@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,20 +12,22 @@
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { CardTransactionListItem } from './CardTransactionListItem'
-import { type CardTransactionSection } from './utils'
+import { CardTransactionListItem } from '../CardTransactionListItem'
+import { type CardTransactionSection } from '../../utils/cardTransactions'
 import { useStyles } from './styles'
 
 type PeraCardTransactionsSectionProps = {
     sections: CardTransactionSection[]
     isLoading: boolean
     onShowAll: () => void
+    onPressTransaction: (id: string) => void
 }
 
 export const PeraCardTransactionsSection = ({
     sections,
     isLoading,
     onShowAll,
+    onPressTransaction,
 }: PeraCardTransactionsSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -66,6 +68,7 @@ export const PeraCardTransactionsSection = ({
                             <CardTransactionListItem
                                 key={transaction.id}
                                 transaction={transaction}
+                                onPress={onPressTransaction}
                             />
                         ))}
                     </PWView>

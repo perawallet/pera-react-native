@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -36,6 +36,7 @@ import {
     type AccountDetailDeeplink,
     type InternalBrowserDeeplink,
     type SharedAccountImportDeeplink,
+    type SignRequestDeeplink,
     type HomeDeeplink,
 } from './types'
 import {
@@ -45,7 +46,11 @@ import {
     parseQueryParams,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    ALGO_ASSET_ID,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params
@@ -132,9 +137,9 @@ export function parsePerawalletAppUri(
     if (cleanPath === 'asset-transfer') {
         if (!params.receiverAddress) return null
 
-        const assetId = params.assetId || '0'
+        const assetId = params.assetId || ALGO_ASSET_ID
 
-        if (assetId === '0') {
+        if (isAlgoAssetId(assetId)) {
             return {
                 type: DeeplinkType.ALGO_TRANSFER,
                 sourceUrl: url,
@@ -307,6 +312,22 @@ export function parsePerawalletAppUri(
             sourceUrl: url,
             address: params.address,
         } as SharedAccountImportDeeplink
+    }
+
+    // Both the multisig (`joint-`) and react-native (`shared-`) account
+    // sign-request paths, plus the bare `sign-request` form, carry the same
+    // `signRequestId` and open the same pending-signatures sheet.
+    if (
+        cleanPath === 'sign-request' ||
+        cleanPath === 'joint-account-sign-request' ||
+        cleanPath === 'shared-account-sign-request'
+    ) {
+        if (!params.signRequestId) return null
+        return {
+            type: DeeplinkType.SIGN_REQUEST,
+            sourceUrl: url,
+            signRequestId: params.signRequestId,
+        } as SignRequestDeeplink
     }
 
     if (cleanPath === 'internal-browser') {

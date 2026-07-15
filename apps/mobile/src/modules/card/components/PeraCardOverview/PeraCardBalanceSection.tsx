@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,30 +11,33 @@
  */
 
 import { type Decimal } from 'decimal.js'
-import {
-    PWIcon,
-    PWImage,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
+import { PWImage, PWSkeleton, PWText, PWView } from '@components/core'
+import { CurrencyAmount } from '@components/CurrencyAmount'
+import { InfoButton } from '@components/InfoButton'
 import peraCardImage from '@assets/images/pera-card.png'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
+const BALANCE_SKELETON_WIDTH = 160
+const BALANCE_SKELETON_HEIGHT = 34
+
 type PeraCardBalanceSectionProps = {
+    /** On-card balance, plus the linked account's balance when auto-funding. */
     balance: Decimal
+    /** True while the balances are still being fetched. */
+    isLoading: boolean
     currency: string
-    isAutoFunding: boolean
-    onFundingPress: () => void
+    /** Max a single purchase can draw — shown under the balance. */
+    spendablePerTx: Decimal
 }
 
 export const PeraCardBalanceSection = ({
     balance,
+    isLoading,
     currency,
-    isAutoFunding,
-    onFundingPress,
+    spendablePerTx,
 }: PeraCardBalanceSectionProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -55,42 +58,63 @@ export const PeraCardBalanceSection = ({
                 </PWText>
             </PWView>
 
-            <CurrencyDisplay
-                value={balance}
-                currency={currency}
-                precision={2}
-                symbolPosition='end'
-                variant='h1'
-            />
-
-            <PWTouchableOpacity
-                style={styles.fundingRow}
-                onPress={onFundingPress}
-                hitSlop={8}
-                testID='pera_card_funding_row'
-            >
-                <PWView style={styles.fundingTextGroup}>
-                    <PWIcon
-                        name='buy-sell'
-                        size='sm'
-                        variant='secondary'
-                    />
-                    <PWText
-                        variant='footnoteMedium'
-                        weight={400}
-                        style={styles.fundingLabel}
-                    >
-                        {isAutoFunding
-                            ? t('peraCard.account.auto_funding_enabled')
-                            : t('peraCard.account.manual_funding_enabled')}
-                    </PWText>
-                </PWView>
-                <PWIcon
-                    name='chevron-right'
-                    size='sm'
-                    variant='secondary'
+            {isLoading ? (
+                <PWSkeleton
+                    width={BALANCE_SKELETON_WIDTH}
+                    height={BALANCE_SKELETON_HEIGHT}
                 />
-            </PWTouchableOpacity>
+            ) : (
+                <CurrencyAmount
+                    value={balance}
+                    currency={currency}
+                    precision='compact'
+                    symbolPosition='end'
+                    variant='h1'
+                />
+            )}
+
+            {!isLoading && (
+                <PWView style={styles.spendableRow}>
+                    <InfoButton
+                        title={t('peraCard.account.spendable_info_title')}
+                        trigger={
+                            <PWText
+                                variant='footnoteMedium'
+                                weight={400}
+                                style={styles.fundingLabel}
+                                testID='pera_card_spendable_per_tx'
+                            >
+                                {t('peraCard.account.spendable_per_tx', {
+                                    // formatNumber returns {sign,integer,fraction};
+                                    // formatCurrency joins them into a string.
+                                    // showSymbol=false — the template appends {{currency}}.
+                                    amount: formatCurrency(
+                                        spendablePerTx,
+                                        spendablePerTx.isInteger() ? 0 : 2,
+                                        currency,
+                                        undefined,
+                                        false,
+                                    ),
+                                    currency,
+                                })}
+                            </PWText>
+                        }
+                    >
+                        <PWText
+                            variant='body'
+                            weight={400}
+                        >
+                            {t('peraCard.account.spendable_info_body', {
+                                limit: formatCurrency(
+                                    AUTO_FUNDING_PER_TX_LIMIT_USD,
+                                    0,
+                                    'USD',
+                                ),
+                            })}
+                        </PWText>
+                    </InfoButton>
+                </PWView>
+            )}
         </PWView>
     )
 }

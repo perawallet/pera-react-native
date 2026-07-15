@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -42,6 +42,7 @@ vi.mock('../migrateLegacyAccount', () => ({
 vi.mock('../accountStoreOps', () => ({
     applyAllLegacyMetadata: vi.fn(),
     applyLegacyAccountOrder: vi.fn(),
+    markLegacyBackedUpAccounts: vi.fn(),
 }))
 
 import type {
@@ -56,6 +57,7 @@ import {
 import {
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    markLegacyBackedUpAccounts,
 } from '../accountStoreOps'
 import type { MigrationDeps } from '../types'
 
@@ -78,6 +80,8 @@ const buildDeps = (): MigrationDeps => ({
     createHdWalletAccount:
         vi.fn() as unknown as MigrationDeps['createHdWalletAccount'],
     createHDWalletKey: vi.fn() as unknown as MigrationDeps['createHDWalletKey'],
+    hasSeedWithEntropy:
+        vi.fn() as unknown as MigrationDeps['hasSeedWithEntropy'],
 })
 
 beforeEach(() => {
@@ -86,6 +90,7 @@ beforeEach(() => {
     vi.mocked(classifyLegacyAccountRoute).mockReset()
     vi.mocked(applyAllLegacyMetadata).mockReset()
     vi.mocked(applyLegacyAccountOrder).mockReset()
+    vi.mocked(markLegacyBackedUpAccounts).mockReset()
     loggerMock.error.mockReset()
     vi.mocked(classifyLegacyAccountRoute).mockReturnValue('algo25')
 })
@@ -138,6 +143,26 @@ describe('runMigrationLoop', () => {
 
         const batch = vi.mocked(applyAllLegacyMetadata).mock.calls[0][0]
         expect(batch).toEqual([{ created: { address: 'ADDR_NEW' }, legacy }])
+    })
+
+    it('forwards the migrated pairs and the injected marker to markLegacyBackedUpAccounts', async () => {
+        const legacy = buildAccount({ address: 'ADDR_NEW' })
+        const markAccountBackedUp = vi.fn()
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'ADDR_NEW',
+        } as never)
+
+        await runMigrationLoop({
+            ...buildDeps(),
+            markAccountBackedUp,
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(markLegacyBackedUpAccounts).toHaveBeenCalledWith(
+            [{ created: { address: 'ADDR_NEW' }, legacy }],
+            markAccountBackedUp,
+        )
     })
 
     it('passes hdWalletsById built from the input hd wallets to migrateLegacyAccount', async () => {
@@ -276,5 +301,45 @@ describe('runMigrationLoop', () => {
         })
 
         expect(applyLegacyAccountOrder).toHaveBeenCalledWith(accounts)
+    })
+
+    it('records undecodable accounts as failures without invoking migrateLegacyAccount', async () => {
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [],
+            hdWallets: [],
+            undecodableAccounts: [
+                {
+                    address: 'ADDR_UNDECODABLE',
+                    name: 'Corrupt',
+                    error: 'Invalid string. Length must be a multiple of 4',
+                },
+            ],
+        })
+
+        expect(result.failed).toEqual([
+            {
+                address: 'ADDR_UNDECODABLE',
+                name: 'Corrupt',
+                reason: '[undecodable] Invalid string. Length must be a multiple of 4',
+            },
+        ])
+        expect(migrateLegacyAccount).not.toHaveBeenCalled()
+    })
+
+    it('skips an undecodable account whose address is already in the wallet store', async () => {
+        accountsStoreMock.accounts = [{ address: 'ADDR_EXISTING' }]
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [],
+            hdWallets: [],
+            undecodableAccounts: [
+                { address: 'ADDR_EXISTING', name: 'Already', error: 'boom' },
+            ],
+        })
+
+        expect(result.failed).toEqual([])
+        expect(result.skipped).toBe(1)
     })
 })

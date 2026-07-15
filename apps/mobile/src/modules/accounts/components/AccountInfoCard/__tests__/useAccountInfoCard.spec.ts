@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -104,6 +104,13 @@ const multisigAccount: MultiSigAccount = {
         addresses: ['ADDR_1', 'ADDR_2', 'ADDR_3'],
         version: 1,
     },
+}
+
+const quantumAccount: WalletAccount = {
+    id: 'quantum-account',
+    type: 'quantum',
+    address: 'QUANTUM_ADDR',
+    keyPairId: 'key-1',
 }
 
 describe('useAccountInfoCard', () => {
@@ -219,6 +226,19 @@ describe('useAccountInfoCard', () => {
 
         expect(result.current.accountType.label).toBe(
             'account_info.type_multisig',
+        )
+    })
+
+    test('Quantum account: resolves the quantum account type label', () => {
+        const { result } = renderHook(() =>
+            useAccountInfoCard({
+                account: quantumAccount,
+                onClose: vi.fn(),
+            }),
+        )
+
+        expect(result.current.accountType.label).toBe(
+            'account_info.type_quantum',
         )
     })
 

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,23 +13,7 @@
 import { Decimal } from 'decimal.js'
 import { formatNumber } from '@perawallet/wallet-core-shared'
 
-import {
-    ALGO_ASSET_ID,
-    type MinimalAsset,
-    type PeraAsset,
-    PeraAssetType,
-} from './models'
-
-/**
- * Checks whether an asset id refers to the native ALGO asset.
- * Accepts both string and number ids since different data sources
- * (Pera API vs DEX responses) represent the id in different shapes.
- *
- * @param assetId - The asset id to check
- * @returns true if the asset id is ALGO
- */
-export const isAlgoAsset = (assetId: string | number): boolean =>
-    String(assetId) === ALGO_ASSET_ID
+import { type MinimalAsset, type PeraAsset, PeraAssetType } from './models'
 
 /**
  * Converts an amount from base units to display units for a given asset.

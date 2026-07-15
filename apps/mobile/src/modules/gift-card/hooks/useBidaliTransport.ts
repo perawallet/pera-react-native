@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -23,16 +23,14 @@ import {
     useNetwork,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    ALGO_ASSET,
-    ALGO_ASSET_ID,
-    getKnownAssetId,
-} from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET, getKnownAssetId } from '@perawallet/wallet-core-assets'
 import {
     useSigningRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import {
+    isAlgoAssetId,
+    ALGO_ASSET_ID,
     generateOrderedUniqueId,
     logger,
     type Optional,
@@ -159,8 +157,8 @@ export const useBidaliTransport = (
     const providerJS = useMemo(() => {
         const balance = balances.get(account?.address ?? '')
 
-        const algoBalance = balance?.assetBalances.find(
-            a => a.assetId === ALGO_ASSET_ID,
+        const algoBalance = balance?.assetBalances.find(a =>
+            isAlgoAssetId(a.assetId),
         )?.amount
         const usdcBalance = balance?.assetBalances.find(
             a => a.assetId === getKnownAssetId('USDC', network),
@@ -238,7 +236,7 @@ export const useBidaliTransport = (
             try {
                 const composer = algokit.newGroup()
 
-                if (currencyInfo.assetId === ALGO_ASSET_ID) {
+                if (isAlgoAssetId(currencyInfo.assetId)) {
                     composer.addPayment({
                         sender,
                         receiver: address,

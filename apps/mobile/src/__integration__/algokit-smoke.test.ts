@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -40,7 +40,9 @@ describe('algokit-utils + MSW interception', () => {
         )
 
         const client = getAlgorandClient('mainnet')
-        const info = await client.client.algod.accountInformation(TEST_ADDR)
+        const info = await client.client.algod
+            .accountInformation(TEST_ADDR)
+            .do()
         expect(Number(info.amount)).toBe(12_345_678)
     })
 
@@ -48,7 +50,7 @@ describe('algokit-utils + MSW interception', () => {
         server.use(mockAlgodTransactionParams({ response: { fee: 0 } }))
 
         const client = getAlgorandClient('mainnet')
-        const params = await client.client.algod.transactionParams()
+        const params = await client.client.algod.getTransactionParams().do()
         expect(Number(params.fee)).toBe(0)
     })
 })

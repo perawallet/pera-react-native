@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -27,6 +27,7 @@ vi.mock('react-native-mmkv', () => {
             getAllKeys() {
                 return Array.from(store.keys())
             },
+            trim: vi.fn(),
         }
     }
     return { createMMKV }
@@ -63,5 +64,13 @@ describe('RNKeyValueStorageService', () => {
 
         const result = kv.getJSON('non-existent-key')
         expect(result).toBeNull()
+    })
+
+    it('trim() compacts the underlying MMKV store', () => {
+        const kv = new RNKeyValueStorageService()
+
+        kv.trim()
+
+        expect(kv.mmkv.trim).toHaveBeenCalledTimes(1)
     })
 })

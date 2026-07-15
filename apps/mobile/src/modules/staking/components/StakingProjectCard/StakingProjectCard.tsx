@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,7 +19,9 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import type { StakingProject } from '../../models'
 import { StakingTypeBadge } from '../StakingTypeBadge'
 import { useStyles } from './styles'
@@ -36,7 +38,7 @@ export const StakingProjectCard = ({
     onPress,
 }: StakingProjectCardProps) => {
     const styles = useStyles({ isLast })
-    const { preferredCurrency, usdToPreferred } = useCurrency()
+    const { usdToPreferred } = useCurrency()
 
     const tvlInPreferredCurrency = useMemo(
         () => usdToPreferred(project.tvlInUsd),
@@ -87,10 +89,10 @@ export const StakingProjectCard = ({
                         />
                         <PWText style={styles.tvlLabel}>TVL</PWText>
                         <PWView style={styles.tvlValueContainer}>
-                            <CurrencyDisplay
-                                currency='ALGO'
+                            <AssetAmount
+                                asset={ALGO_ASSET}
                                 value={project.tvlInAlgo}
-                                precision={2}
+                                density='compact'
                                 truncateToUnits
                                 showSymbol
                                 style={styles.tvlAlgoValue}
@@ -99,10 +101,9 @@ export const StakingProjectCard = ({
                                 <PWText style={styles.tvlFiatValue}>
                                     {'('}
                                 </PWText>
-                                <CurrencyDisplay
-                                    currency={preferredCurrency}
+                                <PreferredAmount
                                     value={tvlInPreferredCurrency}
-                                    precision={2}
+                                    density='compact'
                                     truncateToUnits
                                     showSymbol
                                     style={styles.tvlFiatValue}

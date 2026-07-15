@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,6 +11,7 @@
  */
 
 import { useEffect } from 'react'
+import type { ViewStyle } from 'react-native'
 import {
     useAnimatedStyle,
     useSharedValue,
@@ -26,7 +27,7 @@ import {
 import { BANNER_REVEAL_EASING } from '@modules/banners/components/animations'
 
 export type UseAccountScreenAnimationResult = {
-    animatedCornerStyle: AnimatedStyle
+    animatedCornerStyle: AnimatedStyle<ViewStyle>
 }
 
 // Animates the content view's top-corner radius from 0 → borderRadius.lg in

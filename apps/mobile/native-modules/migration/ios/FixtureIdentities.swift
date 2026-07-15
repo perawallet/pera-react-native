@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -47,6 +47,16 @@ enum FixtureIdentities {
 
     static let ledgerNullIdAddress = FixtureCrypto.LEDGER_2_ADDRESS
     static let ledgerNullIdIndex = 3
+
+    // MARK: - Rekeyed to Ledger (auth account not held locally)
+
+    static let rekeyedToLedgerAddress =
+        "REKEYEDTOLEDGERACCOUNT" + String(repeating: "A", count: 36)
+    static let rekeyAuthLedgerAddress =
+        "REKEYAUTHLEDGERACCOUNT" + String(repeating: "A", count: 36)
+    static let rekeyAuthLedgerPeripheralId = "C7E2B3D4-2345-4E6F-9B0C-1234567890BC"
+    static let rekeyAuthLedgerName = "Ledger Nano S Plus"
+    static let rekeyAuthLedgerIndex = 1
 
     // MARK: - Joint (multisig)
 

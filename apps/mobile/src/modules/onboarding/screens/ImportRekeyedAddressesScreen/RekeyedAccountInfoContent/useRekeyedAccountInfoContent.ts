@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,9 +18,9 @@ import {
     type WalletAccount,
     type WatchAccount,
 } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
 import { Decimal } from 'decimal.js'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 
 type UseRekeyedAccountInfoContentParams = {
     account: WalletAccount
@@ -63,8 +63,8 @@ export function useRekeyedAccountInfoContent({
         }
 
         const sorted = [...balanceData.assetBalances].sort((a, b) => {
-            if (a.assetId === ALGO_ASSET_ID) return -1
-            if (b.assetId === ALGO_ASSET_ID) return 1
+            if (isAlgoAssetId(a.assetId)) return -1
+            if (isAlgoAssetId(b.assetId)) return 1
             return 0
         })
 

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
+import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
@@ -24,17 +26,24 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
-import { config } from '@perawallet/wallet-core-config'
+import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
 import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
 import { type AccountOption } from '@modules/onboarding/types'
 
+// Default loading-overlay title shown while an account is being created.
+// Individual create flows (e.g. Quantum keygen) can override it per call.
+const DEFAULT_CREATING_TITLE_KEY = 'onboarding.create_account.processing'
+
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const isMounted = useIsMounted()
-    const { buildHdWalletAccount, buildAlgo25WalletAccount } =
-        useCreateAccount()
+    const {
+        buildHdWalletAccount,
+        buildAlgo25WalletAccount,
+        buildQuantumWalletAccount,
+    } = useCreateAccount()
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showToast } = useToast()
@@ -42,18 +51,22 @@ export const useAddAccountScreen = () => {
     const { pushWebView } = useWebView()
     // TODO(card): TEMP — a completed Baanx onboarding persists `isAuthenticated`,
     // which hides this entry with no in-app way to clear it. Force it visible in
-    // dev + staging so the sandbox flow stays re-testable; production keeps the
-    // real gating. Swap this session proxy for a real hasCard check
-    // (useCardStatusQuery gated on isAuthenticated) once that's wired.
+    // debug + staging builds so the sandbox flow stays re-testable; the signed
+    // prod release keeps the real gating. Swap this session proxy for a real
+    // hasCard check (useCardStatusQuery gated on isAuthenticated) once wired.
     const { isAuthenticated } = useCardSession()
-    const hasCardSession =
-        __DEV__ || config.appEnvironment === 'staging' ? false : isAuthenticated
+    const hasCardSession = isDebug || isStaging ? false : isAuthenticated
+    const isPeraCardEnabled = useIsPeraCardEnabled()
+    const isQuantumAccountsEnabled = useIsQuantumAccountsEnabled()
 
     const {
         isOpen: isCreatingAccount,
         open: openCreatingAccount,
         close: closeCreatingAccount,
     } = useModalState()
+    const [creatingTitleKey, setCreatingTitleKey] = useState(
+        DEFAULT_CREATING_TITLE_KEY,
+    )
     const {
         isOpen: isMultisigIntroductionVisible,
         open: openMultisigIntroduction,
@@ -67,8 +80,14 @@ export const useAddAccountScreen = () => {
 
     // Shared create-account flow: open the creating-account state, create on the
     // next cycle, navigate to naming on success, toast on failure, always close.
+    // `titleKey` overrides the loading-overlay title for flows that need their
+    // own copy (e.g. the heavier Quantum keygen).
     const runCreateAccount = useCallback(
-        (create: () => Promise<Nullable<WalletAccount>>) => {
+        (
+            create: () => Promise<Nullable<WalletAccount>>,
+            titleKey: string = DEFAULT_CREATING_TITLE_KEY,
+        ) => {
+            setCreatingTitleKey(titleKey)
             openCreatingAccount()
             void deferToNextCycle(async () => {
                 try {
@@ -163,6 +182,27 @@ export const useAddAccountScreen = () => {
         runCreateAccount(() => buildAlgo25WalletAccount({}))
     }, [buildAlgo25WalletAccount, runCreateAccount])
 
+    const handleCreateQuantum = useCallback(() => {
+        // Quantum keygen is heavier than Ed25519, so surface a Quantum-specific
+        // progress title while it runs. Mirrors handleCreateAlgo25 otherwise:
+        // build in memory, then NameAccount persists after the user names it.
+        runCreateAccount(
+            () => buildQuantumWalletAccount(),
+            'onboarding.add_account.quantum_creating_title',
+        )
+    }, [buildQuantumWalletAccount, runCreateAccount])
+
+    const handleLearnMoreQuantum = useCallback(
+        () =>
+            // TODO(PQ): point at the dedicated Quantum accounts support page
+            // once it exists; accountTypeSupportUrl is the closest placeholder.
+            pushWebView({
+                url: config.accountTypeSupportUrl,
+                id: 'quantum-account-support',
+            }),
+        [pushWebView],
+    )
+
     const mainOptions: AccountOption[] = useMemo(
         () =>
             [
@@ -185,6 +225,26 @@ export const useAddAccountScreen = () => {
                     onPress: handleCreateUniversalWallet,
                     isDisabled: isCreatingAccount,
                 },
+                isQuantumAccountsEnabled && {
+                    testID: 'add_account_create_quantum_button',
+                    titleKey:
+                        'onboarding.add_account.quantum_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.quantum_account_option_description',
+                    leftIcon: 'quantum' as IconName,
+                    onPress: handleCreateQuantum,
+                    isDisabled: isCreatingAccount,
+                    badge: {
+                        labelKey:
+                            'onboarding.add_account.quantum_account_option_badge',
+                        variant: 'positive',
+                    },
+                    learnMore: {
+                        labelKey:
+                            'onboarding.add_account.quantum_account_option_learn_more',
+                        onPress: handleLearnMoreQuantum,
+                    },
+                },
                 {
                     testID: 'add_account_create_multisig_button',
                     titleKey:
@@ -194,14 +254,16 @@ export const useAddAccountScreen = () => {
                     leftIcon: 'people' as IconName,
                     onPress: openMultisigIntroduction,
                 },
-                !hasCardSession && {
-                    testID: 'add_account_pera_card_button',
-                    titleKey: 'onboarding.add_account.pera_card_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.pera_card_option_description',
-                    leftIcon: 'card' as IconName,
-                    onPress: handleAddPeraCard,
-                },
+                isPeraCardEnabled &&
+                    !hasCardSession && {
+                        testID: 'add_account_pera_card_button',
+                        titleKey:
+                            'onboarding.add_account.pera_card_option_title',
+                        descriptionKey:
+                            'onboarding.add_account.pera_card_option_description',
+                        leftIcon: 'card' as IconName,
+                        onPress: handleAddPeraCard,
+                    },
                 {
                     testID: 'add_account_import_button',
                     titleKey:
@@ -216,9 +278,13 @@ export const useAddAccountScreen = () => {
             hasHDWallet,
             handleAddAccount,
             handleCreateUniversalWallet,
+            isQuantumAccountsEnabled,
+            handleCreateQuantum,
+            handleLearnMoreQuantum,
             isCreatingAccount,
             openMultisigIntroduction,
             hasCardSession,
+            isPeraCardEnabled,
             handleAddPeraCard,
             handleOpenImportAccountOptions,
         ],
@@ -268,6 +334,7 @@ export const useAddAccountScreen = () => {
 
     return {
         isCreatingAccount,
+        creatingTitleKey,
         mainOptions,
         otherOptions,
         handleClose: navigation.goBack,

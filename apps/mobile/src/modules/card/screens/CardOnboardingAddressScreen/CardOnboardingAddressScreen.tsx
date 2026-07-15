@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,7 +14,6 @@ import { Controller } from 'react-hook-form'
 import { Trans } from 'react-i18next'
 import {
     PWButton,
-    PWCheckbox,
     PWIcon,
     PWInput,
     PWScreen,
@@ -22,6 +21,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { CardConsentCheckboxRow } from '@modules/card/components/CardConsentCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
 import { useCardOnboardingAddressScreen } from './useCardOnboardingAddressScreen'
@@ -38,12 +38,15 @@ export const CardOnboardingAddressScreen = () => {
         selectedCountry,
         isUsResident,
         selectedUsState,
-        allowMarketing,
         cardTermsAccepted,
         platformTermsAccepted,
+        showsConsentOptIns,
+        allowMarketing,
+        allowSms,
+        handleToggleMarketing,
+        handleToggleSms,
         handleSelectCountry,
         handleSelectUsState,
-        handleToggleMarketing,
         handleToggleCardTerms,
         handleTogglePlatformTerms,
         handleOpenCardTerms,
@@ -222,70 +225,64 @@ export const CardOnboardingAddressScreen = () => {
                 </PWView>
 
                 <PWView style={styles.checkboxes}>
-                    <PWView style={styles.checkboxRow}>
-                        <PWCheckbox
-                            checked={allowMarketing}
-                            onPress={handleToggleMarketing}
-                            testID='card-onboarding-address-marketing-checkbox'
-                        />
-                        <PWText
-                            variant='footnoteMedium'
-                            weight={400}
-                            style={styles.checkboxLabel}
-                        >
-                            {t('peraCard.address.marketing_opt_in')}
-                        </PWText>
-                    </PWView>
+                    {/* A resumed sign-in skipped the Set-Password screen, so the
+                        marketing/SMS consents were never asked this session —
+                        re-collect them here (same copy; SMS gates Continue). */}
+                    {showsConsentOptIns ? (
+                        <>
+                            <CardConsentCheckboxRow
+                                checked={allowSms}
+                                onPress={handleToggleSms}
+                                testID='card-onboarding-address-sms-checkbox'
+                            >
+                                {t('peraCard.create_password.sms_opt_in')}
+                            </CardConsentCheckboxRow>
 
-                    <PWView style={styles.checkboxRow}>
-                        <PWCheckbox
-                            checked={cardTermsAccepted}
-                            onPress={handleToggleCardTerms}
-                            testID='card-onboarding-address-card-terms-checkbox'
-                        />
-                        <PWText
-                            variant='footnoteMedium'
-                            weight={400}
-                            style={styles.checkboxLabel}
-                        >
-                            <Trans
-                                i18nKey='peraCard.address.card_terms'
-                                components={[
-                                    <PWText
-                                        key='link'
-                                        variant='linkPositive'
-                                        onPress={handleOpenCardTerms}
-                                        testID='card-onboarding-address-card-terms-link'
-                                    />,
-                                ]}
-                            />
-                        </PWText>
-                    </PWView>
+                            <CardConsentCheckboxRow
+                                checked={allowMarketing}
+                                onPress={handleToggleMarketing}
+                                testID='card-onboarding-address-marketing-checkbox'
+                            >
+                                {t('peraCard.create_password.marketing_opt_in')}
+                            </CardConsentCheckboxRow>
+                        </>
+                    ) : null}
 
-                    <PWView style={styles.checkboxRow}>
-                        <PWCheckbox
-                            checked={platformTermsAccepted}
-                            onPress={handleTogglePlatformTerms}
-                            testID='card-onboarding-address-platform-terms-checkbox'
+                    <CardConsentCheckboxRow
+                        checked={cardTermsAccepted}
+                        onPress={handleToggleCardTerms}
+                        testID='card-onboarding-address-card-terms-checkbox'
+                    >
+                        <Trans
+                            i18nKey='peraCard.address.card_terms'
+                            components={[
+                                <PWText
+                                    key='link'
+                                    variant='linkPositive'
+                                    onPress={handleOpenCardTerms}
+                                    testID='card-onboarding-address-card-terms-link'
+                                />,
+                            ]}
                         />
-                        <PWText
-                            variant='footnoteMedium'
-                            weight={400}
-                            style={styles.checkboxLabel}
-                        >
-                            <Trans
-                                i18nKey='peraCard.address.platform_terms'
-                                components={[
-                                    <PWText
-                                        key='link'
-                                        variant='linkPositive'
-                                        onPress={handleOpenPlatformTerms}
-                                        testID='card-onboarding-address-platform-terms-link'
-                                    />,
-                                ]}
-                            />
-                        </PWText>
-                    </PWView>
+                    </CardConsentCheckboxRow>
+
+                    <CardConsentCheckboxRow
+                        checked={platformTermsAccepted}
+                        onPress={handleTogglePlatformTerms}
+                        testID='card-onboarding-address-platform-terms-checkbox'
+                    >
+                        <Trans
+                            i18nKey='peraCard.address.platform_terms'
+                            components={[
+                                <PWText
+                                    key='link'
+                                    variant='linkPositive'
+                                    onPress={handleOpenPlatformTerms}
+                                    testID='card-onboarding-address-platform-terms-link'
+                                />,
+                            ]}
+                        />
+                    </CardConsentCheckboxRow>
                 </PWView>
 
                 <PWButton

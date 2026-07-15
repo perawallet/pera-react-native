@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,7 @@
 import { toByteArray, fromByteArray } from 'base64-js'
 import { Decimal } from './decimal-config'
 import { logger } from './logging'
+import { isAlgoAssetName } from './algo'
 
 export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)
@@ -203,7 +204,7 @@ export const formatCurrency = (
         minPrecision,
     )
     const currencySymbol =
-        !showSymbol || currency === 'ALGO'
+        !showSymbol || isAlgoAssetName(currency)
             ? undefined
             : (currencySymbols[currency] ?? currency)
 

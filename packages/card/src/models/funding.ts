@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
+
+/**
+ * Max USD Baanx auto-funds per card transaction; also sent as the delegation
+ * allowance. SWAP POINT: value and semantics TBC with Baanx (~300–400 USD).
+ * Today this cap is a plaintext POST field, not bound into the signed program —
+ * binding it is a required unblock, tracked in api/delegation/verify.ts.
+ */
+export const AUTO_FUNDING_PER_TX_LIMIT_USD = new Decimal(400)
 
 /**
  * How the card is topped up, chosen on the onboarding setup checklist's
@@ -72,14 +80,26 @@ export interface CardFundingProvider {
     ): Promise<FundingResult>
 }
 
+/**
+ * Thrown by the deposit pipeline when no funding provider is wired yet (the
+ * default {@link unavailableFundingProvider}). Screens catch this to fall back
+ * to the "coming soon" path instead of surfacing a generic error.
+ */
+export class CardFundingUnavailableError extends Error {
+    constructor() {
+        super('Card funding is not available yet')
+        this.name = 'CardFundingUnavailableError'
+    }
+}
+
 /** Null-object so callers can branch on availability without null checks. */
 export const unavailableFundingProvider: CardFundingProvider = {
     isAvailable: () => false,
     getQuote: async () => null,
     buildDelegation: async () => {
-        throw new Error('Card funding is not available yet')
+        throw new CardFundingUnavailableError()
     },
     submitFunding: async () => {
-        throw new Error('Card funding is not available yet')
+        throw new CardFundingUnavailableError()
     },
 }

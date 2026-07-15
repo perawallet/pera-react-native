@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -28,8 +28,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({}),
 }))
 
-const mockAddress =
-    'TESTADDRESS123456789012345678901234567890123456789012345678'
+// A real, round-trippable Algorand address: the mapper promotes the algod
+// string `address` to an algosdk `Address`, which rejects invalid input.
+const mockAddress = 'EV37KES2XMAYPUQ5YT5T62RUC5LHNKERPH5QCAJFQF3735U7SE6BU5UQWM'
 
 const mockResponse = {
     address: mockAddress,
@@ -67,8 +68,14 @@ describe('useOnChainAccountInformationQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(result.current.data).toEqual({
-            address: mockAddress,
+        expect(result.current.data?.address.toString()).toBe(mockAddress)
+        expect({
+            amount: result.current.data?.amount,
+            minBalance: result.current.data?.minBalance,
+            status: result.current.data?.status,
+            rewards: result.current.data?.rewards,
+            assets: result.current.data?.assets,
+        }).toEqual({
             amount: 2_000_000n,
             minBalance: 100_000n,
             status: 'Online',

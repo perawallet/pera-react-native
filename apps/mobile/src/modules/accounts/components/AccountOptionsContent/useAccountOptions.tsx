@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
     isMultisigAccount,
+    isQuantumAccount,
     isRekeyedAccount,
-    isWatchAccount,
     useAllAccounts,
     useCanSignWith,
     useFindAccountByAddress,
@@ -40,7 +40,6 @@ import {
     type SharedAccountDetails,
 } from '../SharedAccountDetailsContent'
 import { type IconName } from '@components/core'
-import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import {
     trackEvent,
     AccountDetailsEvent,
@@ -63,6 +62,8 @@ export type UseAccountOptionsParams = {
     onShowAddress: () => void
 }
 
+export type RemoveConfirmView = 'none' | 'backup-warning' | 'remove-confirm'
+
 export type UseAccountOptionsResult = {
     options: AccountOption[]
     isRekeyed: boolean
@@ -70,6 +71,10 @@ export type UseAccountOptionsResult = {
     authAccount: WalletAccount | undefined
     authAddress: string | undefined
     handleUndoRekey: () => void
+    removeConfirmView: RemoveConfirmView
+    handleConfirmBackupWarning: () => void
+    handleConfirmRemove: () => void
+    handleCancelRemove: () => void
 }
 
 export const useAccountOptions = ({
@@ -93,9 +98,13 @@ export const useAccountOptions = ({
     const canSign = useCanSignWith(account)
     const isRekeyed = isRekeyedAccount(account)
     const showPassphrase =
-        !isRekeyed && (isAlgo25Account(account) || isHDWalletAccount(account))
+        !isRekeyed &&
+        (isAlgo25Account(account) ||
+            isHDWalletAccount(account) ||
+            isQuantumAccount(account))
     const canUndoRekey = isRekeyed && canSign
     const isHdWallet = isHDWalletAccount(account)
+    const isQuantum = isQuantumAccount(account)
     const isSharedAccount = isMultisigAccount(account)
     const participantCount = isMultisigAccount(account)
         ? (account.multisigDetails?.addresses.length ?? 0)
@@ -269,51 +278,35 @@ export const useAccountOptions = ({
         }
     }, [accounts, account.address, removeAccount, navigation, showToast, t])
 
-    const handleOpenRemoveConfirm = useCallback(async () => {
+    const [removeConfirmView, setRemoveConfirmView] =
+        useState<RemoveConfirmView>('none')
+
+    const handleOpenRemoveConfirm = useCallback(() => {
         trackEvent(AccountOptionsEvent.Remove)
-        onClose()
+        // Render confirmation inline inside the already-open AccountOptions sheet
+        // instead of opening a second BottomSheetModal. gorhom's stackBehavior='push'
+        // causes the second modal's window to sit behind the first on iOS, making the
+        // confirm button non-hittable in XCUITest regardless of timing.
         if (hasSigningKeys(account)) {
-            const acknowledged = await requestBottomSheet<boolean>({
-                contents: (
-                    <ConfirmActionContent
-                        icon='trash'
-                        iconVariant='error'
-                        title={t('account_options.backup_warning_title')}
-                        message={t('account_options.backup_warning_message')}
-                        confirmLabel={t(
-                            'account_options.backup_warning_continue',
-                        )}
-                        cancelLabel={t('account_options.backup_warning_cancel')}
-                        confirmVariant='destructive'
-                        buttonPaddingStyle='dense'
-                    />
-                ),
-                options: { size: 'auto', enablePanDownToClose: true },
-            })
-            if (!acknowledged) return
+            setRemoveConfirmView('backup-warning')
+        } else {
+            setRemoveConfirmView('remove-confirm')
         }
-        const confirmed = await requestBottomSheet<boolean>({
-            contents: (
-                <ConfirmActionContent
-                    icon='trash'
-                    iconVariant='error'
-                    title={t('account_options.remove_title')}
-                    message={t(
-                        isWatchAccount(account)
-                            ? 'account_options.remove_watch_message'
-                            : 'account_options.remove_message',
-                    )}
-                    confirmLabel={t('account_options.remove_confirm')}
-                    cancelLabel={t('account_options.remove_cancel')}
-                    confirmVariant='destructive'
-                    buttonPaddingStyle='dense'
-                />
-            ),
-            options: { size: 'auto', enablePanDownToClose: true },
-        })
-        if (!confirmed) return
+    }, [account])
+
+    const handleConfirmBackupWarning = useCallback(() => {
+        setRemoveConfirmView('remove-confirm')
+    }, [])
+
+    const handleConfirmRemove = useCallback(() => {
+        setRemoveConfirmView('none')
+        onClose()
         performRemoveAccount()
-    }, [onClose, account, requestBottomSheet, performRemoveAccount, t])
+    }, [onClose, performRemoveAccount])
+
+    const handleCancelRemove = useCallback(() => {
+        setRemoveConfirmView('none')
+    }, [])
 
     const notificationsEnabled = isAccountEnabled(account.address)
 
@@ -353,7 +346,9 @@ export const useAccountOptions = ({
                 title: t(
                     isHdWallet
                         ? 'account_options.view_passphrase_hd'
-                        : 'account_options.view_passphrase_algo25',
+                        : isQuantum
+                          ? 'account_options.view_passphrase_quantum'
+                          : 'account_options.view_passphrase_algo25',
                 ),
                 onPress: handleViewPassphrase,
             })
@@ -433,6 +428,7 @@ export const useAccountOptions = ({
         handleShowAddress,
         handleViewPassphrase,
         isHdWallet,
+        isQuantum,
         handleRekeyToLedger,
         handleRekeyToStandard,
         handleRekeyToShared,
@@ -450,5 +446,9 @@ export const useAccountOptions = ({
         authAccount: authAccount ?? undefined,
         authAddress: account.rekeyAddress,
         handleUndoRekey,
+        removeConfirmView,
+        handleConfirmBackupWarning,
+        handleConfirmRemove,
+        handleCancelRemove,
     }
 }

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { type Network } from '@perawallet/wallet-core-shared'
+import { isNotFoundError, type Network } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useDeviceStore } from '../store'
 import { createDevice, updateDevice } from './endpoints'
@@ -20,12 +20,6 @@ import { createDevice, updateDevice } from './endpoints'
 type UseSwitchNetworkResult = {
     switchNetwork: (newNetwork: Network, addresses: string[]) => Promise<void>
     isSwitching: boolean
-}
-
-const isNotFoundError = (error: unknown): boolean => {
-    const status = (error as { response?: { status?: number } })?.response
-        ?.status
-    return status === 404
 }
 
 export const useSwitchNetwork = (): UseSwitchNetworkResult => {

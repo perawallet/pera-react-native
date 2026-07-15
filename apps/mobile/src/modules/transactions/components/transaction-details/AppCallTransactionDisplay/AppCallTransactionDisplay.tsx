@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -23,7 +23,8 @@ import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
 import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { InnerTransactionsPanel } from './InnerTransactionsPanel'
 import { AppCallDetailsPanel } from './AppCallDetailsPanel'
 import { ApplicationDisplay } from '@modules/projects/components/ApplicationDisplay'
@@ -89,10 +90,8 @@ export const AppCallTransactionDisplay = ({
                 </KeyValueRow>
 
                 <KeyValueRow title={t('transactions.common.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={6}
-                        minPrecision={2}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
                         ignorePrivacyMode

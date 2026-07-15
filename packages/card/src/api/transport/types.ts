@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,8 @@
 import type { Network } from '@perawallet/wallet-core-shared'
 
 /**
- * `direct` (default) → the package-local Baanx client (x-client-key + Bearer).
+ * `direct` (default) → the package-local Baanx client (always x-client-key; the
+ * per-user Bearer is added only when the request sets `authenticated: true`).
  * `proxy` → Pera's backend, which attaches the server-only x-secret-key and
  * forwards to Baanx. Use `proxy` only for calls that require the secret key
  * (e.g. OAuth token exchange / refresh).
@@ -36,6 +37,13 @@ export type CardTransportRequest<TVars = unknown> = {
     signal?: AbortSignal
     headers?: Record<string, string>
     responseType?: CardResponseType
+    /**
+     * Attach the per-user Bearer (from the keystore) to this `direct` call. Set
+     * ONLY on authenticated resources (card/user endpoints). Pre-auth calls —
+     * registration, login, settings, onboarding consent — must leave it unset,
+     * or a stale token from a prior session leaks in ("Missing User Data").
+     */
+    authenticated?: boolean
 }
 
 export type CardTransportResponse<TData> = {

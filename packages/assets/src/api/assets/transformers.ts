@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,9 +11,8 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Optional } from '@perawallet/wallet-core-shared'
 import {
-    ALGO_ASSET_ID,
     type PeraAssetType,
     type PeraAssetVerificationTier,
     type PeraAsset,
@@ -87,8 +86,8 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
             type: data.type as PeraAssetType,
             labels: data.labels ?? undefined,
             logo: data.logo,
-            isFavorited: data.is_favorited ?? false,
-            isPriceAlertEnabled: data.is_price_alert_enabled ?? false,
+            isFavorited: data.is_favorited,
+            isPriceAlertEnabled: data.is_price_alert_enabled,
             description: data.description ?? undefined,
             projectUrl: data.project_url ?? undefined,
             projectName: data.project_name ?? undefined,
@@ -133,7 +132,7 @@ export const transformPublicAssetResponse = (
                 asset.verification_tier as PeraAssetVerificationTier,
             isVerified:
                 asset.verification_tier === 'verified' ||
-                `${asset.asset_id}` === ALGO_ASSET_ID,
+                isAlgoAssetId(asset.asset_id),
             logo: asset.logo,
         },
         unitName: asset.unit_name ?? undefined,

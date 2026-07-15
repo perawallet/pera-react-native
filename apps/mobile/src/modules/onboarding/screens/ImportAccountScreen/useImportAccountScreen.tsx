@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -55,6 +55,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { readText } = useClipboard()
 
     const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
+
+    const isQuantum = accountType === 'quantum'
+    const titleKey = isQuantum
+        ? 'onboarding.import_account.quantum_title'
+        : 'onboarding.import_account.title'
+    const infoNoteKey = isQuantum
+        ? 'onboarding.import_account.quantum_info_note'
+        : null
 
     const onTooManyWords = useCallback(() => {
         errorToast(
@@ -235,6 +243,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             void handleWordChange(word, index),
         handleImportAccount,
         mnemonicLength,
+        titleKey,
+        infoNoteKey,
         t,
         handleOpenSupportOptions: () => void handleOpenSupportOptions(),
         isQRScannerVisible,

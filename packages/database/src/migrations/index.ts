@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,13 +13,11 @@
 import type { MigrationConfig } from '../migrator'
 
 import m0000 from './0000_initial.sql?raw'
-import m0001 from './0001_nfd_cache.sql?raw'
-import m0002 from './0002_asset_is_favorited.sql?raw'
+import m0001 from './0001_add_balance_impacts.sql?raw'
 
 const migrations: MigrationConfig = {
     '0000_initial': m0000,
-    '0001_nfd_cache': m0001,
-    '0002_asset_is_favorited': m0002,
+    '0001_add_balance_impacts': m0001,
 }
 
 export default migrations

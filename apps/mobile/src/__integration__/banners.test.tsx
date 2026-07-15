@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -73,7 +73,9 @@ describe('Flow: Banners (regular)', () => {
     afterEach(() => {
         server.resetHandlers()
         // Reset client-side dismissals so each test starts clean.
-        act(() => useBannersStore.getState().resetState())
+        act(() => {
+            useBannersStore.getState().resetState()
+        })
     })
     afterAll(() => server.close())
 
@@ -185,7 +187,9 @@ describe('Flow: Banners (regular)', () => {
             // Client-side dismissal — no server call required for
             // regular banners. Store action triggers re-derive of the
             // visible set.
-            act(() => useBannersStore.getState().dismissBanner('10'))
+            act(() => {
+                useBannersStore.getState().dismissBanner('10')
+            })
 
             await waitFor(() => {
                 expect(result.current.banners.map(b => b.id)).toEqual(['11'])
@@ -229,7 +233,9 @@ describe('Flow: Banners (regular)', () => {
             // bypasses the dismissal filter (so a "security" banner
             // can't be silenced by a prior dismissal of an id-aliased
             // earlier banner).
-            act(() => useBannersStore.getState().dismissBanner('21'))
+            act(() => {
+                useBannersStore.getState().dismissBanner('21')
+            })
 
             const { result } = renderHook(() => useVisibleBanners(), {
                 wrapper: buildWrapper(),

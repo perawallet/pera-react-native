@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,7 @@ const {
     buildMock,
     newGroupMock,
     submitWithFeeDelegationMock,
+    useMinimumFeeConfigMock,
 } = vi.hoisted(() => {
     const addAssetOptIn = vi.fn()
     const build = vi.fn()
@@ -36,6 +37,7 @@ const {
         buildMock: build,
         newGroupMock: vi.fn(() => ({ addAssetOptIn, build })),
         submitWithFeeDelegationMock: vi.fn(),
+        useMinimumFeeConfigMock: vi.fn(),
     }
 })
 
@@ -49,16 +51,16 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    ASSET_MBR: 100_000n,
     useAlgorandClient: () => ({
         client: {
             algod: {
-                accountInformation: accountInformationMock,
+                accountInformation: () => ({ do: accountInformationMock }),
             },
         },
         getSuggestedParams: getSuggestedParamsMock,
         newGroup: newGroupMock,
     }),
+    useMinimumFeeConfig: () => useMinimumFeeConfigMock(),
 }))
 
 vi.mock('@perawallet/wallet-core-fee-delegation', () => ({
@@ -98,6 +100,12 @@ beforeEach(() => {
     vi.clearAllMocks()
     getSuggestedParamsMock.mockResolvedValue({ minFee: 1000n })
     buildMock.mockResolvedValue({ transactions: [{ txn: { id: 'optin' } }] })
+    useMinimumFeeConfigMock.mockReturnValue({
+        minTxnFee: 1000n,
+        pqMultiplier: 3n,
+        assetMbr: 100_000n,
+        baseAccountMbr: 100_000n,
+    })
 })
 
 describe('onramp/useEnsureDestinationOptIn', () => {
@@ -184,6 +192,34 @@ describe('onramp/useEnsureDestinationOptIn', () => {
                 name: 'onramp-opt-in',
             }),
         })
+    })
+
+    test('sponsorship threshold follows the remote-config asset MBR', async () => {
+        // Non-default asset MBR (200000). Balance 250000 clears the old
+        // threshold (100000 + 100000 + 1000 = 201000 → self-funded) but not
+        // the new one (100000 + 200000 + 1000 = 301000 → sponsored/delegated).
+        useMinimumFeeConfigMock.mockReturnValue({
+            minTxnFee: 1000n,
+            pqMultiplier: 3n,
+            assetMbr: 200_000n,
+            baseAccountMbr: 100_000n,
+        })
+        accountInformationMock.mockResolvedValue({
+            amount: 250_000n,
+            minBalance: 100_000n,
+            assets: [],
+        })
+        submitWithFeeDelegationMock.mockResolvedValue(undefined)
+
+        const result = renderEnsure()
+
+        await result.current.ensureOptIn({
+            address: ADDRESS,
+            destinationAssetId: ASSET_ID,
+        })
+
+        expect(optInMock).not.toHaveBeenCalled()
+        expect(submitWithFeeDelegationMock).toHaveBeenCalledTimes(1)
     })
 
     test('asks for confirmation with isSponsored=false when self-funding', async () => {

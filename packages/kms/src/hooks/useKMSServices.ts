@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -31,17 +31,19 @@ import {
 import { type Nullable } from '@perawallet/wallet-core-shared'
 
 export const checkAccess = (key: Key, domain: string): void => {
+    // `aclOf` always returns a non-empty ACL (the wallet's own-origin default
+    // for seeds without an explicit one), so this is fail-closed: a domain not
+    // granted ReadPrivate is rejected rather than slipping through the old
+    // empty-ACL bypass.
     const acl = aclOf(key)
-    if (acl.length) {
-        const hasAccess = acl.some(
-            entry =>
-                entry.domains.includes(domain) &&
-                entry.permissions.includes(AccessControlPermission.ReadPrivate),
-        )
+    const hasAccess = acl.some(
+        entry =>
+            entry.domains.includes(domain) &&
+            entry.permissions.includes(AccessControlPermission.ReadPrivate),
+    )
 
-        if (!hasAccess) {
-            throw new KeyAccessError()
-        }
+    if (!hasAccess) {
+        throw new KeyAccessError()
     }
 }
 

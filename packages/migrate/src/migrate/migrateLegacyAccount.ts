@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { logger, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import { addKeylessAccountToStore } from './accountStoreOps'
 import {
@@ -39,7 +39,16 @@ export const migrateLegacyAccount = async (
     if (account.secretKey !== null && account.secretKey.length > 0)
         return migrateAlgo25Account(args)
 
-    throw new Error(buildUnroutableAccountError(account))
+    return migrateAccountWithoutSigningMaterial(account)
+}
+
+const migrateAccountWithoutSigningMaterial = (
+    account: LegacyAccount,
+): WalletAccount => {
+    logger.warn('Legacy account has no signing material; migrating as watch', {
+        detail: buildUnroutableAccountError(account),
+    })
+    return addKeylessAccountToStore(buildWatchAccount(account))
 }
 
 export const isKeylessLegacyAccount = (account: LegacyAccount): boolean =>

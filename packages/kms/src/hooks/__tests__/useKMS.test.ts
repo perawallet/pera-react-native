@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,8 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { InvalidKeyError, KeyNotFoundError } from '../../errors'
+import { InvalidKeyError, KeyAccessError, KeyNotFoundError } from '../../errors'
 import { SeedScheme } from '../../constants'
+import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
+import { FALCON_SIGNATURE_LENGTH } from '../../crypto/falcon-utils'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -38,6 +40,7 @@ const mockDeleteKey = vi.fn()
 const mockKeyStoreRemove = vi.fn()
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
+const mockCheckAccess = vi.fn()
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         deleteKey: (...args: any[]) => mockDeleteKey(...args),
@@ -53,7 +56,7 @@ vi.mock('../useKMSServices', () => ({
             const keyData = await mockKeyStoreExport(keyId)
             return handler(keyData)
         },
-        checkAccess: vi.fn(),
+        checkAccess: (...args: any[]) => mockCheckAccess(...args),
     }),
 }))
 
@@ -74,25 +77,41 @@ vi.mock('../useAlgo25', () => ({
     }),
 }))
 
-const mockEntropyToMnemonic = vi.fn()
-vi.mock('../../crypto/hdwallet-utils', () => ({
-    entropyToMnemonic: (...args: any[]) => mockEntropyToMnemonic(...args),
+const mockCreateQuantumKey = vi.fn()
+vi.mock('../useQuantum', () => ({
+    useQuantum: () => ({
+        createQuantumKey: (...args: any[]) => mockCreateQuantumKey(...args),
+    }),
 }))
 
-const mockMnemonicFromSeed = vi.fn()
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
-    mnemonicFromSeed: (...args: any[]) => mockMnemonicFromSeed(...args),
+const mockEntropyToIndices = vi.fn()
+vi.mock('../../crypto/hdwallet-utils', () => ({
+    entropyToIndices: (...args: any[]) => mockEntropyToIndices(...args),
+}))
+
+const mockAlgo25SeedToIndices = vi.fn()
+vi.mock('../../crypto/algo25-utils', () => ({
+    algo25SeedToIndices: (...args: any[]) => mockAlgo25SeedToIndices(...args),
+}))
+
+const mockWithSecret = vi.fn()
+vi.mock('../../storage/secrets', () => ({
+    withSecret: (...args: any[]) => mockWithSecret(...args),
 }))
 
 import { useKMS } from '../useKMS'
 
-const seedBip39Root = (id: string, entropy = '00ff'): Key => {
+// THROWAWAY TEST VECTOR — same as useQuantum.test.ts / algo25-integration; NEVER fund it.
+const TEST_MNEMONIC =
+    'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
+
+const seedBip39Root = (id: string): Key => {
     const key: Key = {
         id,
         type: 'seed',
         algorithm: 'raw',
         extractable: true,
-        metadata: { scheme: SeedScheme.Bip39, entropy, pera: {} },
+        metadata: { scheme: SeedScheme.Bip39, pera: {} },
     }
     mockKeystoreKeys.push(key)
     return key
@@ -110,6 +129,18 @@ const seedAlgo25Root = (id: string): Key => {
     return key
 }
 
+const seedQuantumRoot = (id: string): Key => {
+    const key: Key = {
+        id,
+        type: 'seed',
+        algorithm: 'raw',
+        extractable: true,
+        metadata: { scheme: SeedScheme.Quantum, pera: {} },
+    }
+    mockKeystoreKeys.push(key)
+    return key
+}
+
 const childOf = (childId: string, parentId: string, type = 'ed25519'): Key => {
     const key: Key = {
         id: childId,
@@ -117,6 +148,23 @@ const childOf = (childId: string, parentId: string, type = 'ed25519'): Key => {
         algorithm: 'EdDSA',
         extractable: false,
         metadata: { parentKeyId: parentId },
+    }
+    mockKeystoreKeys.push(key)
+    return key
+}
+
+// The entropy secret-key child, located by metadata (parentKeyId + entropyKey),
+// not its id — the id is opaque on purpose.
+const entropyChildOf = (
+    parentId: string,
+    childId = `${parentId}-entropy`,
+): Key => {
+    const key: Key = {
+        id: childId,
+        type: 'secret-key',
+        algorithm: 'raw',
+        extractable: true,
+        metadata: { parentKeyId: parentId, entropyKey: true },
     }
     mockKeystoreKeys.push(key)
     return key
@@ -275,13 +323,16 @@ describe('useKMS', () => {
         ).rejects.toThrow(InvalidKeyError)
     })
 
-    it('executeWithMnemonic for a bip39 seed exports + decodes via entropyToMnemonic', async () => {
-        seedBip39Root('hd-1', 'abcdef01')
+    it('executeWithMnemonic for a bip39 seed derives indices from the entropy secret-key', async () => {
+        seedBip39Root('hd-1')
         const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
-        mockEntropyToMnemonic.mockReturnValue('alpha bravo charlie')
-        mockKeyStoreExport.mockResolvedValueOnce({
-            metadata: { scheme: SeedScheme.Bip39, entropy: 'abcdef01' },
-        })
+        const entropy = entropyChildOf('hd-1')
+        mockEntropyToIndices.mockReturnValue(Uint16Array.from([1, 2, 3]))
+        // withSecret hands the entropy bytes to the handler; the seed's XHD
+        // root is never exported on the bip39 path.
+        mockWithSecret.mockImplementation(async (_id, handler) =>
+            handler(new Uint8Array([0xab, 0xcd, 0xef, 0x01])),
+        )
 
         const { result } = renderHook(() => useKMS())
         let received: Optional<string[]>
@@ -289,32 +340,83 @@ describe('useKMS', () => {
             received = await result.current.executeWithMnemonic(
                 child.id,
                 'backup',
-                words => [...words],
+                indices => Array.from(indices, mnemonicIndexToWord),
             )
         })
-        expect(mockKeyStoreExport).toHaveBeenCalledWith('hd-1')
-        expect(received).toEqual(['alpha', 'bravo', 'charlie'])
+        // The entropy child is resolved by metadata, then read by its id.
+        expect(mockWithSecret).toHaveBeenCalledWith(
+            entropy.id,
+            expect.any(Function),
+        )
+        expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        expect(received).toEqual(['ability', 'able', 'about'])
     })
 
-    it('executeWithMnemonic for an algo25 seed exports + decodes via mnemonicFromSeed', async () => {
+    it('executeWithMnemonic throws when the bip39 entropy secret is missing', async () => {
+        seedBip39Root('hd-1')
+        // No entropy child in the keystore → nothing to resolve.
+        const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await expect(
+                result.current.executeWithMnemonic(
+                    child.id,
+                    'backup',
+                    () => 'unused',
+                ),
+            ).rejects.toThrow('missing its entropy secret')
+        })
+        expect(mockWithSecret).not.toHaveBeenCalled()
+    })
+
+    it('executeWithMnemonic for an algo25 seed derives indices from the seed', async () => {
         seedAlgo25Root('algo-1')
         const child = childOf('algo-1-ed25519', 'algo-1', 'ed25519')
-        mockMnemonicFromSeed.mockReturnValue('one two three')
+        mockAlgo25SeedToIndices.mockReturnValue(Uint16Array.from([4, 5, 6]))
         mockKeyStoreExport.mockResolvedValueOnce({
             privateKey: new Uint8Array(32).fill(7),
         })
 
         const { result } = renderHook(() => useKMS())
-        let received: Optional<string[]>
+        let received: Optional<number[]>
         await act(async () => {
             received = await result.current.executeWithMnemonic(
                 child.id,
                 'backup',
-                words => [...words],
+                indices => Array.from(indices),
             )
         })
         expect(mockKeyStoreExport).toHaveBeenCalledWith('algo-1')
-        expect(received).toEqual(['one', 'two', 'three'])
+        expect(received).toEqual([4, 5, 6])
+    })
+
+    it('executeWithMnemonic zeroes the index buffer after the handler returns', async () => {
+        seedBip39Root('hd-1')
+        const child = childOf('hd-1-c0', 'hd-1', 'hd-derived-ed25519')
+        entropyChildOf('hd-1')
+        mockEntropyToIndices.mockReturnValue(Uint16Array.from([1, 2, 3]))
+        mockWithSecret.mockImplementation(async (_id, handler) =>
+            handler(new Uint8Array([0xab, 0xcd, 0xef, 0x01])),
+        )
+
+        const { result } = renderHook(() => useKMS())
+        let captured: Optional<Uint16Array>
+        await act(async () => {
+            await result.current.executeWithMnemonic(
+                child.id,
+                'backup',
+                indices => {
+                    captured = indices
+                    // [ability, able, about] → non-zero indices, so a wipe is
+                    // unambiguous.
+                    expect(Array.from(indices)).toEqual([1, 2, 3])
+                    return Array.from(indices, mnemonicIndexToWord)
+                },
+            )
+        })
+        // Scrubbed once the session ends, not left for GC.
+        expect(captured && Array.from(captured)).toEqual([0, 0, 0])
     })
 
     it('getKey returns null and triggers async keystore.remove when expiresAt is in the past', () => {
@@ -338,6 +440,8 @@ describe('useKMS', () => {
         seedBip39Root('hd-1')
         childOf('child-a', 'hd-1', 'hd-derived-ed25519')
         childOf('child-b', 'hd-1', 'hd-derived-ed25519')
+        // The entropy secret-key is a parentKeyId child too, so it cascades.
+        childOf('hd-1-bip39-entropy', 'hd-1', 'secret-key')
         seedBip39Root('hd-2')
         childOf('child-c', 'hd-2', 'hd-derived-ed25519')
 
@@ -346,12 +450,242 @@ describe('useKMS', () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
 
-        // child-a and child-b removed first, then the seed
+        // children removed first, then the seed
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('child-a')
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('child-b')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-bip39-entropy')
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
         // child-c (under hd-2) is left alone
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('child-c')
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2')
+    })
+
+    describe('quantum sign dispatch', () => {
+        const QUANTUM_SEED_BYTES = new Uint8Array(32).fill(7)
+
+        const arrangeQuantumPair = () => {
+            seedQuantumRoot('quantum-1')
+            const child = childOf(
+                'quantum-1-quantum',
+                'quantum-1',
+                'falcon1024',
+            )
+            mockKeyStoreExport.mockResolvedValue({
+                privateKey: new Uint8Array(QUANTUM_SEED_BYTES),
+            })
+            return child
+        }
+
+        it('signTransactionsWithKey routes quantum children to the mock signer, not keyStore.sign', async () => {
+            const child = arrangeQuantumPair()
+            const tx = new Uint8Array([1, 2, 3])
+
+            const { result } = renderHook(() => useKMS())
+            let sigs: Optional<Uint8Array[]>
+            await act(async () => {
+                sigs = await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [tx],
+                )
+            })
+
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
+            expect(sigs![0]).toHaveLength(FALCON_SIGNATURE_LENGTH)
+        })
+
+        it('quantum signatures are deterministic per payload and differ across payloads', async () => {
+            const child = arrangeQuantumPair()
+            const txA = new Uint8Array([1, 2, 3])
+            const txB = new Uint8Array([4, 5, 6])
+
+            const { result } = renderHook(() => useKMS())
+            let first: Optional<Uint8Array[]>
+            let second: Optional<Uint8Array[]>
+            await act(async () => {
+                first = await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [txA, txB],
+                )
+                second = await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [txA],
+                )
+            })
+
+            expect(Array.from(first![0])).toEqual(Array.from(second![0]))
+            expect(Array.from(first![0])).not.toEqual(Array.from(first![1]))
+        })
+
+        it('signDataWithKey routes quantum children to the mock signer', async () => {
+            const child = arrangeQuantumPair()
+
+            const { result } = renderHook(() => useKMS())
+            let sigs: Optional<Uint8Array[]>
+            await act(async () => {
+                sigs = await result.current.signDataWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [new Uint8Array([9])],
+                )
+            })
+
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
+            expect(sigs![0]).toHaveLength(FALCON_SIGNATURE_LENGTH)
+        })
+
+        it('rejects and never exports the seed when the ACL denies the domain', async () => {
+            const child = arrangeQuantumPair()
+            mockCheckAccess.mockImplementationOnce(() => {
+                throw new KeyAccessError()
+            })
+
+            const { result } = renderHook(() => useKMS())
+            await expect(
+                result.current.signTransactionsWithKey(
+                    child.id,
+                    'not-granted-domain',
+                    [new Uint8Array([1])],
+                ),
+            ).rejects.toThrow(KeyAccessError)
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
+        it('ed25519 children still route through keyStore.sign', async () => {
+            seedAlgo25Root('algo-1')
+            const child = childOf('algo-1-ed25519', 'algo-1', 'ed25519')
+            mockKeyStoreSign.mockResolvedValue(new Uint8Array(64))
+
+            const { result } = renderHook(() => useKMS())
+            await act(async () => {
+                await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [new Uint8Array([1])],
+                )
+            })
+
+            expect(mockKeyStoreSign).toHaveBeenCalledTimes(1)
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
+        it('executeWithMnemonic for a quantum seed derives indices from the seed bytes like algo25', async () => {
+            const child = arrangeQuantumPair()
+            mockAlgo25SeedToIndices.mockReturnValue(Uint16Array.from([7, 8, 9]))
+
+            const { result } = renderHook(() => useKMS())
+            let received: Optional<number[]>
+            await act(async () => {
+                received = await result.current.executeWithMnemonic(
+                    child.id,
+                    'backup-flow',
+                    indices => Array.from(indices),
+                )
+            })
+
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
+            expect(mockAlgo25SeedToIndices).toHaveBeenCalledTimes(1)
+            expect(received).toEqual([7, 8, 9])
+        })
+
+        // Roundtrip (device-portability NFR, PQ-012): a quantum account created
+        // from a known 25-word mnemonic must reconstruct the SAME 25 words when
+        // the backup flow calls executeWithMnemonic. Uses the REAL seed→indices
+        // derivation (not the top-of-file stub) to prove the end-to-end contract.
+        it('executeWithMnemonic reconstructs the same 25 words a quantum seed was created from', async () => {
+            const { seedFromMnemonic } = await import('algosdk')
+            const { algo25SeedToIndices: realAlgo25SeedToIndices } =
+                await vi.importActual<
+                    typeof import('../../crypto/algo25-utils')
+                >('../../crypto/algo25-utils')
+            mockAlgo25SeedToIndices.mockImplementation(realAlgo25SeedToIndices)
+
+            // The quantum seed's private-key bytes ARE seedFromMnemonic(phrase),
+            // exactly as useQuantum.createQuantumKey({ mnemonic }) persists them.
+            const seedBytes = seedFromMnemonic(TEST_MNEMONIC)
+            seedQuantumRoot('quantum-1')
+            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+            mockKeyStoreExport.mockResolvedValue({
+                privateKey: new Uint8Array(seedBytes),
+            })
+
+            const { result } = renderHook(() => useKMS())
+            let words: Optional<string>
+            await act(async () => {
+                words = await result.current.executeWithMnemonic(
+                    'quantum-1-quantum',
+                    'backup-flow',
+                    indices =>
+                        Array.from(indices, mnemonicIndexToWord).join(' '),
+                )
+            })
+
+            expect(words).toBe(TEST_MNEMONIC)
+            expect(TEST_MNEMONIC.split(' ')).toHaveLength(25)
+        })
+
+        it('exposes createQuantumKey from useQuantum', async () => {
+            const mockResult = { seedKey: { id: 'f-1', type: 'seed' } }
+            mockCreateQuantumKey.mockResolvedValue(mockResult)
+            const { result } = renderHook(() => useKMS())
+            let keyResult: any
+            await act(async () => {
+                keyResult = await result.current.createQuantumKey({ id: 'f-1' })
+            })
+            expect(mockCreateQuantumKey).toHaveBeenCalledWith({ id: 'f-1' })
+            expect(keyResult).toEqual(mockResult)
+        })
+    })
+
+    it('hasSeedWithEntropy returns true when the seed has an entropy secret-key child', () => {
+        seedBip39Root('hd-1')
+        entropyChildOf('hd-1')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('hd-1')).toBe(true)
+    })
+
+    it('hasSeedWithEntropy returns false when the seed has no entropy child', () => {
+        seedBip39Root('hd-1')
+        childOf('hd-1-acc0', 'hd-1', 'hd-derived-ed25519')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('hd-1')).toBe(false)
+    })
+
+    it('hasSeedWithEntropy returns false when the id is not in the keystore', () => {
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('missing')).toBe(false)
+    })
+
+    it('hasSeedWithEntropy returns false for a non-seed key even when an entropy child points to it', () => {
+        mockKeystoreKeys.push({
+            id: 'pin',
+            type: 'secret-key',
+            algorithm: 'raw',
+            extractable: true,
+        })
+        entropyChildOf('pin')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('pin')).toBe(false)
+    })
+
+    it('hasSeedWithEntropy scopes the entropy child to the given seed', () => {
+        seedBip39Root('hd-1')
+        seedBip39Root('hd-2')
+        entropyChildOf('hd-2')
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.hasSeedWithEntropy('hd-1')).toBe(false)
+        expect(result.current.hasSeedWithEntropy('hd-2')).toBe(true)
     })
 })

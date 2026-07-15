@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -53,10 +53,15 @@ export const useAppIntegrityStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            // `integrityToken` and `expiresAt` are intentionally NOT persisted:
+            // the token is a bearer-style attestation credential and the
+            // platform key-value storage is unencrypted (plaintext MMKV on RN).
+            // Keeping them in memory and re-attesting on boot (via
+            // useAppIntegrityBootstrap, which re-runs whenever no valid token is
+            // present) avoids writing the token to disk. `keyId`/`deviceId` are
+            // non-secret identifiers and are kept so iOS can reuse its App
+            // Attest key across launches.
             partialize: state => ({
-                integrityToken: state.integrityToken,
-                expiresAt: state.expiresAt,
                 keyId: state.keyId,
                 deviceId: state.deviceId,
                 status: state.status,

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -47,6 +47,8 @@ vi.mock('@react-navigation/native', () => ({
         goBack: mockGoBack,
         replace: mockReplace,
     }),
+    // Focus reset is exercised at the integration level; no-op here.
+    useFocusEffect: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -77,6 +79,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    ALGO_ASSET_NAME: 'ALGO',
     formatCurrency: vi.fn(
         (value: number, _precision: number, currency: string) =>
             `${value.toFixed(6)} ${currency}`,
@@ -193,6 +196,9 @@ describe('useARC59SendSummaryScreen', () => {
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
+        // Slider stays in its slid/loading state through to the processing
+        // screen — it is not reset on confirm.
+        expect(result.current.isProcessing).toBe(true)
     })
 
     it('does not navigate when warning is dismissed', async () => {
@@ -204,6 +210,8 @@ describe('useARC59SendSummaryScreen', () => {
         })
 
         expect(mockNavigate).not.toHaveBeenCalled()
+        // Dismissing the warning returns the slider to idle so the user can retry.
+        expect(result.current.isProcessing).toBe(false)
     })
 
     it('goes back on handleClose', () => {

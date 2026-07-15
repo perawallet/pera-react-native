@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -65,6 +65,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+const mockCommitSecret = vi.fn()
+vi.mock('../../storage/secrets', () => ({
+    commitSecret: (...args: any[]) => mockCommitSecret(...args),
+}))
+
 import { useHDWallet, type HDWalletKeyResult } from '../useHDWallet'
 import { SeedScheme } from '../../constants'
 
@@ -76,8 +81,15 @@ describe('useHDWallet', () => {
 
     describe('createHDWalletKey', () => {
         const rootBytes = new Uint8Array(96).fill(42)
+        // Snapshot the entropy at commit time: persistHDMasterKey zeroes the
+        // source buffer in its `finally`, so reading the captured reference
+        // after the call would see all zeros.
+        let committedEntropy:
+            | { id: string; bytes: number[]; metadata: unknown }
+            | undefined
 
         beforeEach(() => {
+            committedEntropy = undefined
             mockGenerateHDMasterKey.mockResolvedValue({
                 mnemonic: 'mnemonic words here',
                 seed: Buffer.from(new Uint8Array(64).fill(7)),
@@ -85,9 +97,17 @@ describe('useHDWallet', () => {
             })
             mockFromSeed.mockReturnValue(new Uint8Array(rootBytes))
             mockKeyStoreImport.mockResolvedValue('hd-1')
+            mockKeyStoreRemove.mockResolvedValue(undefined)
+            mockCommitSecret.mockImplementation(async (params: any) => {
+                committedEntropy = {
+                    id: params.id,
+                    bytes: Array.from(params.bytes as Uint8Array),
+                    metadata: params.metadata,
+                }
+            })
         })
 
-        test('returns the persisted seed Key with bip39 scheme + entropy hex', async () => {
+        test('returns the persisted seed Key with bip39 scheme and no entropy in metadata', async () => {
             const { result } = renderHook(() => useHDWallet())
 
             let keyResult: Optional<HDWalletKeyResult>
@@ -100,15 +120,12 @@ describe('useHDWallet', () => {
 
             expect(keyResult!.seedKey.id).toBe('hd-1')
             expect(keyResult!.seedKey.type).toBe('seed')
-            const meta = keyResult!.seedKey.metadata as {
-                scheme: string
-                entropy: string
-            }
+            const meta = keyResult!.seedKey.metadata as Record<string, unknown>
             expect(meta.scheme).toBe(SeedScheme.Bip39)
-            expect(meta.entropy).toBe('abcdef01')
+            expect('entropy' in meta).toBe(false)
         })
 
-        test('imports the seed entry as a single keystore key (no separate entropy entry)', async () => {
+        test('imports the seed without entropy and commits the entropy as a separate secret-key child', async () => {
             const { result } = renderHook(() => useHDWallet())
             await act(async () => {
                 await result.current.createHDWalletKey({
@@ -132,8 +149,36 @@ describe('useHDWallet', () => {
             expect(arg.privateKey).toBeInstanceOf(Uint8Array)
             expect(arg.privateKey.length).toBe(96)
             expect(arg.metadata.scheme).toBe(SeedScheme.Bip39)
-            expect(arg.metadata.entropy).toBe('abcdef01')
+            expect('entropy' in arg.metadata).toBe(false)
             expect(arg.metadata.pera.createdAt).toBeDefined()
+
+            // Entropy goes to a `secret-key` child tagged with metadata that
+            // ties it to the seed; the child's own id is opaque.
+            expect(mockCommitSecret).toHaveBeenCalledTimes(1)
+            expect(committedEntropy).toEqual({
+                id: expect.any(String),
+                bytes: [0xab, 0xcd, 0xef, 0x01],
+                metadata: { parentKeyId: 'hd-1', entropyKey: true },
+            })
+        })
+
+        test('removes the orphaned seed when committing the entropy child fails', async () => {
+            // A seed without its entropy child is unrecoverable, so a failed
+            // commit must not leave a partial write behind.
+            mockCommitSecret.mockRejectedValueOnce(new Error('commit boom'))
+            const { result } = renderHook(() => useHDWallet())
+
+            await expect(
+                act(async () => {
+                    await result.current.createHDWalletKey({
+                        id: 'hd-1',
+                        mnemonic: 'mnemonic words here',
+                    })
+                }),
+            ).rejects.toThrow('commit boom')
+
+            expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
+            expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
         })
     })
 

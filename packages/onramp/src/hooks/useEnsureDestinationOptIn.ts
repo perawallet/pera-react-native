@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,13 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { AlgoAmount } from '@algorandfoundation/algokit-utils'
+import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import {
-    ASSET_MBR,
     useAlgorandClient,
+    useMinimumFeeConfig,
 } from '@perawallet/wallet-core-blockchain'
 import { useFeeDelegation } from '@perawallet/wallet-core-fee-delegation'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import { ALGO_ASSET_NAME } from '@perawallet/wallet-core-shared'
 
 export type ConfirmOptInContext = {
     assetId: bigint
@@ -28,7 +29,7 @@ export type ConfirmOptInContext = {
 export type EnsureDestinationOptInParams = {
     address: string
     /** The destination asset: 'ALGO' means no opt-in needed; otherwise the ASA id. */
-    destinationAssetId: bigint | 'ALGO'
+    destinationAssetId: bigint | typeof ALGO_ASSET_NAME
     /**
      * Asks the user to confirm an opt-in before it is performed (the UI layer
      * shows the opt-in confirmation sheet). Resolve false to cancel — then
@@ -70,6 +71,7 @@ export const useEnsureDestinationOptIn =
         const algokit = useAlgorandClient()
         const { optIn } = useAssetOptInMutation()
         const { submitWithFeeDelegation } = useFeeDelegation()
+        const { assetMbr } = useMinimumFeeConfig()
 
         const ensureOptIn = useCallback(
             async ({
@@ -78,14 +80,15 @@ export const useEnsureDestinationOptIn =
                 confirmOptIn,
             }: EnsureDestinationOptInParams): Promise<boolean> => {
                 // 1. ALGO never requires an opt-in.
-                if (destinationAssetId === 'ALGO') {
+                if (destinationAssetId === ALGO_ASSET_NAME) {
                     return true
                 }
                 const assetId = destinationAssetId
 
                 // 2. Already opted in → nothing to do.
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(address)
+                const accountInfo = await algokit.client.algod
+                    .accountInformation(address)
+                    .do()
                 const isOptedIn = accountInfo.assets?.some(
                     a => a.assetId === assetId,
                 )
@@ -97,7 +100,9 @@ export const useEnsureDestinationOptIn =
                 // balance formula used by useAssetOptInMutation).
                 const suggestedParams = await algokit.getSuggestedParams()
                 const balanceNeeded =
-                    accountInfo.minBalance + ASSET_MBR + suggestedParams.minFee
+                    accountInfo.minBalance +
+                    assetMbr +
+                    BigInt(suggestedParams.minFee)
                 const isSponsored = accountInfo.amount < balanceNeeded
 
                 if (confirmOptIn) {
@@ -136,7 +141,7 @@ export const useEnsureDestinationOptIn =
                 })
                 return true
             },
-            [algokit, optIn, submitWithFeeDelegation],
+            [algokit, optIn, submitWithFeeDelegation, assetMbr],
         )
 
         return { ensureOptIn }

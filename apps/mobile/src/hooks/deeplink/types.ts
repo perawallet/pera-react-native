@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -35,6 +35,7 @@ export const DeeplinkType = {
     ACCOUNT_DETAIL: 'ACCOUNT_DETAIL',
     INTERNAL_BROWSER: 'INTERNAL_BROWSER',
     SHARED_ACCOUNT_IMPORT: 'SHARED_ACCOUNT_IMPORT',
+    SIGN_REQUEST: 'SIGN_REQUEST',
     PERA_WEB_IMPORT: 'PERA_WEB_IMPORT',
     LIQUID_AUTH: 'LIQUID_AUTH',
     HOME: 'HOME',
@@ -205,6 +206,11 @@ export interface SharedAccountImportDeeplink extends ParsedDeeplink {
     address: string
 }
 
+export interface SignRequestDeeplink extends ParsedDeeplink {
+    type: typeof DeeplinkType.SIGN_REQUEST
+    signRequestId: string
+}
+
 export interface PeraWebImportDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.PERA_WEB_IMPORT
     /** Server-side id of the encrypted backup row. */
@@ -255,6 +261,7 @@ export type AnyParsedDeeplink =
     | AccountDetailDeeplink
     | InternalBrowserDeeplink
     | SharedAccountImportDeeplink
+    | SignRequestDeeplink
     | PeraWebImportDeeplink
     | LiquidAuthDeeplink
     | HomeDeeplink

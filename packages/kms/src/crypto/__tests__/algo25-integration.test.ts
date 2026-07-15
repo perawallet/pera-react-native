@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,12 +12,13 @@
 
 import { describe, test, expect } from 'vitest'
 import nacl from 'tweetnacl'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { seedFromMnemonic, encodeAddress } from 'algosdk'
 
 /**
  * Integration test for Algo25 (standard Algorand 25-word mnemonic) key derivation.
  * Uses a known test vector — mnemonic -> seed -> Ed25519 keypair -> Algorand address.
+ *
+ * THROWAWAY TEST VECTOR — published in source; NEVER fund EXPECTED_ADDRESS.
  */
 
 const TEST_MNEMONIC =

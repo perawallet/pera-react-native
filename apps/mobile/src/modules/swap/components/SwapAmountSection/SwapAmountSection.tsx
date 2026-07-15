@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,14 +14,10 @@ import { Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
 import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
-import { isAlgoAsset } from '@perawallet/wallet-core-assets'
-import {
-    DEFAULT_PRECISION,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
@@ -55,7 +51,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const isAlgo = isAlgoAsset(assetId)
+    const isAlgo = isAlgoAssetId(assetId)
     const onAmountChange = variant === 'pay' ? props.onAmountChange : undefined
     const {
         asset,
@@ -80,13 +76,9 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     >
                         {t('swap.form.balance_label')}
                     </PWText>
-                    <CurrencyDisplay
+                    <AssetAmount
                         value={balance ?? new Decimal(0)}
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? 0}
-                        minPrecision={
-                            balance === null || balance.equals(0) ? 0 : 2
-                        }
+                        asset={asset}
                         symbolPosition={isAlgo ? 'start' : 'end'}
                         variant='body'
                         style={styles.balance}
@@ -137,14 +129,17 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     variant={variant}
                     onPress={onAssetPress}
                     fallbackLabel={t('swap.form.select_asset')}
+                    testID={
+                        isPay
+                            ? 'swap-pay-asset-selector'
+                            : 'swap-receive-asset-selector'
+                    }
                 />
             }
             fiat={
-                <PreferredCurrencyDisplay
+                <PreferredAmount
                     sourceAmount={amount ?? new Decimal(0)}
                     sourceAssetId={assetId}
-                    precision={DEFAULT_PRECISION}
-                    minPrecision={DEFAULT_PRECISION}
                     showSymbol
                     isLoading={isLoading}
                     style={styles.fiatValue}

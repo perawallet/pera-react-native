@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -43,15 +43,18 @@ export const useAccountsAssetsBalanceHistoryQuery = (
                 preferredCurrency,
                 network,
             ),
-        select: data => {
-            return data.results.map(item => ({
+        // `data` / `data.results` can be absent when the endpoint answers with
+        // an empty or 204 body (the fetch layer yields `undefined` for those).
+        // Guard so a not-ready response collapses to an empty chart instead of
+        // throwing and surfacing as a query error.
+        select: data =>
+            data?.results?.map(item => ({
                 datetime: new Date(item.datetime),
                 algoValue: new Decimal(item.algo_value ?? '0'),
                 preferredValue: usdToPreferred(
                     new Decimal(item.usd_value ?? '0'),
                 ),
                 round: item.round,
-            }))
-        },
+            })) ?? [],
     })
 }

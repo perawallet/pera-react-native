@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -326,7 +326,7 @@ describe('createHardwareStrategy', () => {
             const result = await strategy.sign(group, account)
 
             if (result.signedData.type === 'transactions') {
-                expect(result.signedData.signed[0].authAddress).toBeDefined()
+                expect(result.signedData.signed[0].sgnr).toBeDefined()
             }
         })
 
@@ -342,7 +342,7 @@ describe('createHardwareStrategy', () => {
             const result = await strategy.sign(group, account)
 
             if (result.signedData.type === 'transactions') {
-                expect(result.signedData.signed[0].authAddress).toBeUndefined()
+                expect(result.signedData.signed[0].sgnr).toBeUndefined()
             }
         })
 

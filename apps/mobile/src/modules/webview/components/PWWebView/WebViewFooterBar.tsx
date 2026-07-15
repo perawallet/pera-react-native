@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -25,6 +25,8 @@ export type WebViewFooterBarProps = {
     homeUrl?: string
     navigationState?: WebViewNativeEvent
     favorite?: WebViewFavorite
+    /** Bottom safe-area inset the footer must clear itself (0 when the host screen handles insets). */
+    bottomInset: number
 }
 
 export const WebViewFooterBar = ({
@@ -32,8 +34,9 @@ export const WebViewFooterBar = ({
     homeUrl,
     navigationState,
     favorite,
+    bottomInset,
 }: WebViewFooterBarProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ bottomInset })
     const {
         isHome,
         canGoBack,

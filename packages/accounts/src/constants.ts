@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,4 +17,9 @@ export const KEY_DOMAIN = 'pera.accounts'
 export const MNEMONIC_WORD_COUNT: Record<ImportAccountType, number> = {
     hdWallet: 24,
     algo25: 25,
+    // Quantum mnemonics collide with algo25 at 25 words. Key order matters:
+    // resolveImportAccountType scans this record in insertion order, so
+    // algo25 must stay ABOVE quantum for 25-word auto-detection to keep
+    // resolving to algo25 (quantum import is explicit-only — PQ-009).
+    quantum: 25,
 }

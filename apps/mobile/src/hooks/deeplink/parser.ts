@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -25,6 +25,7 @@ import { parseCoinbaseFormat } from './coinbase-parser'
 import {
     ALGO_SCHEME,
     ALGORAND_SCHEME,
+    ALGORAND_WC_SCHEME,
     FIDO_SCHEME,
     LIQUID_SCHEME,
     PERAWALLET_SCHEME,
@@ -189,7 +190,8 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
 
     if (
         normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)
+        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
+        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
     ) {
         return parseWalletConnectUri(url)
     }

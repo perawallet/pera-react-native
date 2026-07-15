@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -139,7 +139,7 @@ const extractSignatures = (signedData: SignedData): Nullable<string>[] => {
     }
     return signedData.signed.map(stx => {
         if (stx.sig) return encodeToBase64(stx.sig)
-        const msigSig = stx.msig?.subsigs.find(s => s.sig)?.sig
+        const msigSig = stx.msig?.subsig.find(s => s.s)?.s
         if (msigSig) return encodeToBase64(msigSig)
         return null
     })

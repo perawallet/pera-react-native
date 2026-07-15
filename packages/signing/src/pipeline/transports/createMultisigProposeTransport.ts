@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -143,9 +143,13 @@ export const createMultisigProposeTransport = (
             }
 
             const isExternal = isExternalCallbackSource(source.type)
-            const proposeType: MultisigProposeMode = isExternal
-                ? 'sync'
-                : 'async'
+            // `transportOptions.multisig.proposeMode` lets a local caller opt
+            // into the sync protocol (backend collects sigs but does NOT
+            // broadcast). Used by shared-account swaps: the proposer's device
+            // assembles + submits. Falls back to the source-derived default.
+            const proposeType: MultisigProposeMode =
+                source.transportOptions?.multisig?.proposeMode ??
+                (isExternal ? 'sync' : 'async')
 
             // Deferred propose: hardware-only proposer. `multisigSignerActor`
             // signaled by returning an empty `signers` array (see
@@ -235,6 +239,22 @@ export const createMultisigProposeTransport = (
                         source,
                         registeredAt: Date.now(),
                     })
+                }
+
+                // In-app async proposer (shared-account swap) handoff: hand
+                // back the backend id + the exact raw transactions sent, so the
+                // caller can register a handoff to finish the flow once
+                // threshold is met. Best-effort — a throw here must not fail a
+                // propose that already succeeded on the backend.
+                try {
+                    await source.callbacks?.onProposed?.({
+                        signRequestId: response.signRequestId,
+                        status: response.status,
+                        rawTransactionsBase64: response.rawTransactionsBase64,
+                    })
+                } catch {
+                    // Swallowed: the backend record exists; the resolver can
+                    // still finish from a persisted handoff if one was written.
                 }
 
                 return {

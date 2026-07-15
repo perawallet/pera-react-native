@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,11 @@ import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import { type PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import { useTermsAcceptance } from '@modules/onboarding/hooks/useTermsAcceptance'
+import {
+    TermsAcceptancePrompt,
+    TERMS_ACCEPTANCE_PROMPT_ID,
+} from '@modules/onboarding/components/TermsAndConditionsSheet'
 import { UserPreferences } from '@constants/user-preferences'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
@@ -39,12 +44,26 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const { getPreference, setPreference } = usePreferences()
     const { checkPinEnabled } = usePinCode()
     const hasAccounts = useHasAccounts()
+    const { needsAcceptance: needsTermsAcceptance } = useTermsAcceptance()
     const [hiddenPrompts, setHiddenPrompts] = useState<Set<string>>(new Set())
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
 
     const prompt = useMemo(() => {
         if (!hasAccounts) {
             return undefined
+        }
+
+        // Terms & Conditions take priority: legally they must be re-accepted
+        // whenever the required version changes. Unlike the other prompts this is
+        // version-based (not a one-time preference), so it's checked separately.
+        if (
+            needsTermsAcceptance &&
+            !hiddenPrompts.has(TERMS_ACCEPTANCE_PROMPT_ID)
+        ) {
+            return {
+                id: TERMS_ACCEPTANCE_PROMPT_ID,
+                component: TermsAcceptancePrompt,
+            } as Prompt
         }
 
         const prompt = Object.entries(PROMPT_SEQUENCE).find(p => {
@@ -59,7 +78,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             } as Prompt
         }
         return undefined
-    }, [getPreference, hiddenPrompts, hasAccounts])
+    }, [getPreference, hiddenPrompts, hasAccounts, needsTermsAcceptance])
 
     useEffect(() => {
         if (!prompt) {
@@ -106,7 +125,12 @@ export const usePromptContainer = (): UsePromptContainerResult => {
 
     const hidePrompt = () => {
         //we only want to show one prompt at a time so hide all prompts at this point
-        setHiddenPrompts(new Set(Object.keys(PROMPT_SEQUENCE)))
+        setHiddenPrompts(
+            new Set([
+                ...Object.keys(PROMPT_SEQUENCE),
+                TERMS_ACCEPTANCE_PROMPT_ID,
+            ]),
+        )
     }
 
     const dismissPrompt = (id: string) => {

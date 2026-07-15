@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,10 +13,7 @@
 import { useCallback } from 'react'
 
 import { type Decimal } from 'decimal.js'
-import {
-    ALGO_ASSET_ID,
-    fetchAndPersistAssets,
-} from '@perawallet/wallet-core-assets'
+import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -24,20 +21,24 @@ import {
     useArc59ClaimTransaction,
 } from '@perawallet/wallet-core-asa-inbox'
 import {
-    ASSET_MBR,
     displayUnitsToBaseUnits,
     useAlgorandClient,
+    useMinimumFeeConfig,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
+import {
+    resolveMinFeeForSender,
+    useSignAndSubmitGroup,
+} from '@perawallet/wallet-core-signing'
 import {
     addToAssetHolding,
     useAccountBalancesInvalidator,
+    useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
-import { logger } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type BaseSendParams = {
@@ -97,7 +98,20 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     const { buildSendViaInboxTxs } = useArc59SendTransaction()
     const { buildClaimAssetTxs, buildRejectAssetTxs } =
         useArc59ClaimTransaction()
+    const accounts = useAllAccounts()
+    const { minTxnFee, pqMultiplier, assetMbr } = useMinimumFeeConfig()
 
+    /**
+     * Express send has two distinct signers, each with its own PQ-aware
+     * rate: the funding/transfer legs are signed by the sender, the opt-in
+     * is signed by the receiver. `resolveMinFeeForSender` resolves the
+     * effective signer (auth account) per address — a rekeyed party pays
+     * according to its auth account's type — and owns the
+     * `max(suggestedMinFee, configMinTxnFee)` congestion guard. AlgoKit's
+     * auto-sizing is only overridden with `staticFee` when the resolved fee
+     * exceeds the network's suggested minimum, so a non-quantum party is
+     * built exactly as before.
+     */
     const buildExpressTxs = useCallback(
         async (params: {
             sender: string
@@ -109,13 +123,31 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
 
             // Look up receiver's current balance to determine funding needed
             const { amount: currentBalance, minBalance: currentMbr } =
-                await algokit.client.algod.accountInformation(receiver)
+                await algokit.client.algod.accountInformation(receiver).do()
 
-            // After opt-in the receiver's MBR increases by ASSET_MBR.
-            // The opt-in tx fee is also paid from the receiver's balance.
             const suggestedParams = await algokit.getSuggestedParams()
-            const mbrAfterOptIn = currentMbr + ASSET_MBR
-            const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+            const suggestedMinFee = BigInt(suggestedParams.minFee)
+            const senderFee = resolveMinFeeForSender({
+                senderAddress: sender,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
+            const receiverFee = resolveMinFeeForSender({
+                senderAddress: receiver,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
+
+            // After opt-in the receiver's MBR increases by assetMbr. The
+            // opt-in tx fee is paid from the receiver's balance at the
+            // receiver's own (PQ-aware) rate, so reserve exactly that
+            // instead of the flat network minimum.
+            const mbrAfterOptIn = currentMbr + assetMbr
+            const balanceNeeded = mbrAfterOptIn + receiverFee
             const fundingNeeded =
                 balanceNeeded > currentBalance
                     ? balanceNeeded - currentBalance
@@ -129,19 +161,46 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     sender,
                     receiver,
                     amount: fundingNeeded.microAlgo(),
+                    ...(senderFee > suggestedMinFee
+                        ? { staticFee: senderFee.microAlgo() }
+                        : {}),
                 })
             }
 
             composer
-                .addAssetOptIn({ sender: receiver, assetId })
-                .addAssetTransfer({ sender, receiver, amount, assetId })
+                .addAssetOptIn({
+                    sender: receiver,
+                    assetId,
+                    ...(receiverFee > suggestedMinFee
+                        ? { staticFee: receiverFee.microAlgo() }
+                        : {}),
+                })
+                .addAssetTransfer({
+                    sender,
+                    receiver,
+                    amount,
+                    assetId,
+                    ...(senderFee > suggestedMinFee
+                        ? { staticFee: senderFee.microAlgo() }
+                        : {}),
+                })
 
             const { transactions } = await composer.build()
             return transactions.map(t => t.txn)
         },
-        [algokit],
+        [algokit, accounts, minTxnFee, pqMultiplier, assetMbr],
     )
 
+    /**
+     * `resolveMinFeeForSender` resolves the effective signer (auth account)
+     * for `params.sender`, so a sender rekeyed to a quantum auth pays the PQ
+     * rate even though `params.sender` still identifies the rekeyed
+     * account. The `max(suggestedMinFee, configMinTxnFee)` congestion guard
+     * also lives there. AlgoKit's auto-sizing is only overridden with
+     * `staticFee` when the resolved fee exceeds the network's suggested
+     * minimum, so a non-quantum sender (incl. close-account sends) is built
+     * exactly as before.
+     */
     const buildNormalTxs = useCallback(
         async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
             if (
@@ -162,8 +221,22 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 ).toString(),
             )
 
+            const suggestedParams = await algokit.getSuggestedParams()
+            const suggestedMinFee = BigInt(suggestedParams.minFee)
+            const resolvedFee = resolveMinFeeForSender({
+                senderAddress: params.sender.address,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
+            const feeOverride =
+                resolvedFee > suggestedMinFee
+                    ? { staticFee: resolvedFee.microAlgo() }
+                    : {}
+
             const composer = algokit.newGroup()
-            if (params.asset.assetId === ALGO_ASSET_ID) {
+            if (isAlgoAssetId(params.asset.assetId)) {
                 composer.addPayment({
                     sender: params.sender.address,
                     receiver: params.receiver,
@@ -174,6 +247,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                         closeRemainderTo: params.receiver,
                     }),
                     note: params.note,
+                    ...feeOverride,
                 })
             } else {
                 composer.addAssetTransfer({
@@ -182,12 +256,13 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     amount: amountInBaseUnits,
                     assetId: BigInt(params.asset.assetId),
                     note: params.note,
+                    ...feeOverride,
                 })
             }
             const { transactions } = await composer.build()
             return transactions.map(t => t.txn)
         },
-        [algokit],
+        [algokit, accounts, minTxnFee, pqMultiplier],
     )
 
     const executeSend = useCallback(

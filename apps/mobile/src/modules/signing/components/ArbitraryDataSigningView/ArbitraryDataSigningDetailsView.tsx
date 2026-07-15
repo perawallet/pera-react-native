@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,7 +20,8 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 
 export type ArbitraryDataSigningDetailsViewProps = {
@@ -62,22 +63,20 @@ export const ArbitraryDataSigningDetailsView = ({
             </PWView>
             <PWView style={styles.section}>
                 <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={Decimal(0)}
                         showSymbol
-                        precision={2}
-                        minPrecision={2}
+                        density='compact'
                         ignorePrivacyMode
                     />
                 </KeyValueRow>
                 <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={Decimal(0)}
                         showSymbol
-                        precision={2}
-                        minPrecision={2}
+                        density='compact'
                         ignorePrivacyMode
                     />
                 </KeyValueRow>

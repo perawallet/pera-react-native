@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,6 +16,7 @@ import {
     ONE_HOUR,
     ONE_MINUTE,
     ONE_SECOND,
+    TEN_SECONDS,
     THIRTY_SECONDS,
 } from './constants'
 
@@ -43,6 +44,13 @@ export const configSchema = z.object({
     notificationRefreshTime: z.number().int(),
     remoteConfigRefreshTime: z.number().int(),
 
+    /** Bounded ceiling (ms) for algod/indexer GET/DELETE requests (reads). */
+    algodReadTimeout: z.number().int(),
+    /** Bounded ceiling (ms) for algod/indexer POST requests (e.g. broadcast). */
+    algodSubmitTimeout: z.number().int(),
+    /** Bounded ceiling (ms) for the signing machine's `transporting` state. */
+    signingTransportTimeout: z.number().int(),
+
     reactQueryDefaultGCTime: z.number().int(),
     reactQueryDefaultStaleTime: z.number().int(),
     reactQueryShortLivedGCTime: z.number().int(),
@@ -56,6 +64,8 @@ export const configSchema = z.object({
     onrampBaseUrl: z.url(),
     /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
     onrampSupportEmail: z.email(),
+    /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
+    cardSupportEmail: z.email(),
     supportBaseUrl: z.url(),
     termsOfServiceUrl: z.url(),
     privacyPolicyUrl: z.url(),
@@ -122,6 +132,14 @@ export const configSchema = z.object({
     appEnvironment: z
         .enum(['development', 'staging', 'production'])
         .default('development'),
+
+    /**
+     * Full git release tag baked at build time (e.g. "v7.0.0-alpha.9"), shown
+     * in-app so QA can see the exact prerelease they're testing. Sourced from
+     * BITRISE_GIT_TAG; empty for local/non-tag builds (the version display then
+     * falls back to the native store version).
+     */
+    releaseTag: z.string().default(''),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -138,9 +156,10 @@ const productionConfig = {
     testnetGenesisHash: 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
-    //Dev API Key only - not suitable for production use
-    backendAPIKey:
-        'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
+    // Injected at build time from the BACKEND_API_KEY env var via
+    // tools/generate-config.sh (bitrise secrets in CI, .env locally). Empty
+    // here so no key literal ships in the open-source source tree.
+    backendAPIKey: '',
     algodApiKey: '',
     indexerApiKey: '',
 
@@ -153,6 +172,7 @@ const productionConfig = {
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
     onrampSupportEmail: 'support@xoswap.com',
+    cardSupportEmail: 'support@baanx.com',
     supportBaseUrl: 'https://support.perawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
@@ -188,6 +208,9 @@ const productionConfig = {
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
+    algodReadTimeout: TEN_SECONDS,
+    algodSubmitTimeout: THIRTY_SECONDS,
+    signingTransportTimeout: THIRTY_SECONDS + 5 * ONE_SECOND,
     reactQueryDefaultGCTime: ONE_HOUR,
     reactQueryDefaultStaleTime: ONE_MINUTE,
     reactQueryShortLivedGCTime: 60 * ONE_DAY,
@@ -235,6 +258,7 @@ const productionConfig = {
 
     defaultNetwork: 'mainnet',
     appEnvironment: 'development',
+    releaseTag: '',
 }
 
 // A map of which environment variable (if any) to read config overrides from
@@ -248,12 +272,15 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetBackendUrl: 'MAINNET_BACKEND_URL',
     testnetBackendUrl: 'TESTNET_BACKEND_URL',
 
-    //Dev API Key only - not suitable for production use
     backendAPIKey: 'BACKEND_API_KEY',
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',
 
-    appStoreAppID: 'APP_STORE_APP_ID',
+    algodReadTimeout: 'ALGOD_READ_TIMEOUT',
+    algodSubmitTimeout: 'ALGOD_SUBMIT_TIMEOUT',
+    signingTransportTimeout: 'SIGNING_TRANSPORT_TIMEOUT',
+
+    appStoreAppID: 'APP_STORE_APPLE_ID',
     playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
@@ -262,6 +289,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     stakingBaseUrl: 'STAKING_BASE_URL',
     onrampBaseUrl: 'ONRAMP_BASE_URL',
     onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
+    cardSupportEmail: 'CARD_SUPPORT_EMAIL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
     termsOfServiceUrl: 'TERMS_OF_SERVICE_URL',
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',
@@ -302,6 +330,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',
+    releaseTag: 'BITRISE_GIT_TAG',
 }
 
 /**

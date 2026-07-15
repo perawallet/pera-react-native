@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -268,6 +268,9 @@ describe('env-loader', () => {
             testnetExplorerUrl: 'https://testnet-explorer.example.com',
             notificationRefreshTime: 30000,
             remoteConfigRefreshTime: 3600000,
+            algodReadTimeout: 10000,
+            algodSubmitTimeout: 30000,
+            signingTransportTimeout: 35000,
             reactQueryDefaultGCTime: 3600000,
             reactQueryDefaultStaleTime: 60000,
             reactQueryShortLivedGCTime: 86400000,
@@ -279,6 +282,7 @@ describe('env-loader', () => {
             stakingBaseUrl: 'https://staking.example.com',
             onrampBaseUrl: 'https://onramp.example.com',
             onrampSupportEmail: 'support@xoswap.example.com',
+            cardSupportEmail: 'support@baanx.example.com',
             supportBaseUrl: 'https://support.example.com',
             mainnetBidaliApiKey: 'test-mainnet-bidali-key',
             testnetBidaliApiKey: 'test-testnet-bidali-key',
@@ -333,6 +337,7 @@ describe('env-loader', () => {
             },
             defaultNetwork: 'mainnet',
             appEnvironment: 'development',
+            releaseTag: '',
         }
 
         test('returns base config when no environment variables are set', () => {

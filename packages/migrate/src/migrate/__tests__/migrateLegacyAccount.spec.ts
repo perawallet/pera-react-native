@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -75,6 +75,8 @@ const buildArgs = (account: LegacyAccount): MigrateAccountArgs =>
             vi.fn() as unknown as MigrateAccountArgs['createHdWalletAccount'],
         createHDWalletKey:
             vi.fn() as unknown as MigrateAccountArgs['createHDWalletKey'],
+        hasSeedWithEntropy:
+            vi.fn() as unknown as MigrateAccountArgs['hasSeedWithEntropy'],
     }) as MigrateAccountArgs
 
 beforeEach(() => {
@@ -160,21 +162,25 @@ describe('migrateLegacyAccount dispatch', () => {
         expect(result).toEqual({ kind: 'algo25-imported' })
     })
 
-    it('treats an empty secretKey as unroutable', async () => {
+    it('migrates an empty-secretKey account as a watch account instead of dropping it', async () => {
         const account = buildAccount({ secretKey: new Uint8Array(0) })
 
-        await expect(migrateLegacyAccount(buildArgs(account))).rejects.toThrow(
-            /Cannot migrate ADDR/,
-        )
+        await migrateLegacyAccount(buildArgs(account))
+
+        expect(buildWatchAccount).toHaveBeenCalledWith(account)
+        expect(addKeylessAccountToStore).toHaveBeenCalledWith({
+            kind: 'watch-built',
+        })
         expect(migrateAlgo25Account).not.toHaveBeenCalled()
     })
 
-    it('throws an unroutable error mentioning the address when no branch matches', async () => {
+    it('migrates a no-signing-material account as a watch account when no branch matches', async () => {
         const account = buildAccount({ address: 'ADDR_BAD' })
 
-        await expect(migrateLegacyAccount(buildArgs(account))).rejects.toThrow(
-            /Cannot migrate ADDR_BAD/,
-        )
+        const result = await migrateLegacyAccount(buildArgs(account))
+
+        expect(buildWatchAccount).toHaveBeenCalledWith(account)
+        expect(result).toEqual({ kind: 'watch-built' })
     })
 })
 

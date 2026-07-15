@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,6 @@
  */
 
 import { PWSwitch, PWText, PWView } from '@components/core'
-import { RemoteConfigKeys } from '@perawallet/wallet-core-remote-config'
 import { useStyles } from './styles'
 import { useFeatureFlagOverrides } from './useFeatureFlagOverrides'
 import { useLanguage } from '@hooks/useLanguage'
@@ -21,6 +20,7 @@ export const FeatureFlagOverrides = () => {
     const { t } = useLanguage()
     const {
         configOverrides,
+        booleanFlagKeys,
         expanded,
         toggleExpand,
         toggleOverride,
@@ -29,7 +29,7 @@ export const FeatureFlagOverrides = () => {
 
     return (
         <PWView style={styles.container}>
-            {Object.keys(RemoteConfigKeys).map(key => (
+            {booleanFlagKeys.map(key => (
                 <PWView
                     key={key}
                     style={styles.flagContainer}

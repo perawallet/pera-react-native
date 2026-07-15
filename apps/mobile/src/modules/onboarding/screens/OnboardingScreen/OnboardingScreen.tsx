@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -33,7 +33,6 @@ export const OnboardingScreen = () => {
     const styles = useStyles({ insets, screenHeight })
     const { t } = useLanguage()
     const {
-        handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
         handleImportAccount,
@@ -94,13 +93,8 @@ export const OnboardingScreen = () => {
                     <PWView style={styles.footerContainer}>
                         <PWText style={styles.termsAndPrivacyText}>
                             <Trans
-                                i18nKey='onboarding.main_screen.terms_and_privacy'
+                                i18nKey='onboarding.main_screen.privacy_agreement'
                                 components={[
-                                    <PWText
-                                        key='terms'
-                                        variant='link'
-                                        onPress={handleTermsPress}
-                                    />,
                                     <PWText
                                         key='privacy'
                                         variant='link'

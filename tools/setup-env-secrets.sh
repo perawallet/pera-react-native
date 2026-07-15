@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -ex
+# set -e without -x: the loop below expands secret values, and -x would print
+# them into the build log. Progress is logged by name via echo instead.
+set -e
 
 # Sets up environment-specific secrets for Bitrise builds.
 # Aliases prefixed secret vars (PRODUCTION_* or STAGING_*) to unprefixed names
@@ -12,7 +14,8 @@ set -ex
 #   MAINNET_BACKEND_URL, TESTNET_BACKEND_URL, BACKEND_API_KEY,
 #   IOS_GOOGLE_SERVICE_INFO_BASE64, DISCOVER_BASE_URL, STAKING_BASE_URL,
 #   ONRAMP_BASE_URL, IOS_PROVISIONING_PROFILE_NAME,
-#   IOS_AUTOFILL_PROVISIONING_PROFILE_NAME, TESTNET_BAANX_CLIENT_KEY
+#   IOS_AUTOFILL_PROVISIONING_PROFILE_NAME, FIREBASE_APP_ID_ANDROID,
+#   APP_STORE_APPLE_ID, TESTNET_BAANX_CLIENT_KEY
 
 echo "Setting up secrets for environment: $ENVIRONMENT"
 
@@ -35,6 +38,7 @@ SECRETS=(
   "IOS_PROVISIONING_PROFILE_NAME"
   "IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"
   "FIREBASE_APP_ID_ANDROID"
+  "APP_STORE_APPLE_ID"
   "TESTNET_BAANX_CLIENT_KEY"
 )
 

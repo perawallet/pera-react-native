@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -35,6 +35,19 @@ vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
     PinSecurityPrompt: () => null,
 }))
 
+const { mockUseTermsAcceptance } = vi.hoisted(() => ({
+    mockUseTermsAcceptance: vi.fn(),
+}))
+
+vi.mock('@modules/onboarding/hooks/useTermsAcceptance', () => ({
+    useTermsAcceptance: () => mockUseTermsAcceptance(),
+}))
+
+vi.mock('@modules/onboarding/components/TermsAndConditionsSheet', () => ({
+    TermsAcceptancePrompt: () => null,
+    TERMS_ACCEPTANCE_PROMPT_ID: 'terms_acceptance_prompt',
+}))
+
 describe('usePromptContainer', () => {
     const mockGetPreference = vi.fn()
     const mockSetPreference = vi.fn()
@@ -52,6 +65,8 @@ describe('usePromptContainer', () => {
         ;(usePinCode as Mock).mockReturnValue({
             checkPinEnabled: mockCheckPinEnabled,
         })
+        // Default: terms already accepted, so the T&C prompt is out of the way.
+        mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
     })
 
     afterEach(() => {
@@ -96,6 +111,34 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt?.id).toBe(
             UserPreferences._securityPinSetupPrompt,
         )
+    })
+
+    it('shows the terms prompt with priority when acceptance is needed', async () => {
+        // PIN prompt would also be eligible; terms must win.
+        mockGetPreference.mockReturnValue(false)
+        mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        await act(async () => {})
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt?.id).toBe('terms_acceptance_prompt')
+    })
+
+    it('does not show the terms prompt once terms are accepted', () => {
+        mockGetPreference.mockReturnValue(true)
+        mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt).toBeUndefined()
     })
 
     it('should not show prompt if already dismissed', () => {

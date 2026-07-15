@@ -1,0 +1,102 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+
+const { mockSendIntent, mockOpenSettings, mockCheck, platformState } =
+    vi.hoisted(() => ({
+        mockSendIntent: vi.fn(),
+        mockOpenSettings: vi.fn(),
+        mockCheck: vi.fn(),
+        platformState: { os: 'android' as 'android' | 'ios', version: 33 },
+    }))
+
+vi.mock('react-native', () => ({
+    Platform: {
+        get OS() {
+            return platformState.os
+        },
+        get Version() {
+            return platformState.version
+        },
+    },
+    Linking: { sendIntent: mockSendIntent, openSettings: mockOpenSettings },
+    AppState: { addEventListener: () => ({ remove: vi.fn() }) },
+    PermissionsAndroid: {
+        check: mockCheck,
+        request: vi.fn(),
+        requestMultiple: vi.fn(),
+        PERMISSIONS: {
+            BLUETOOTH_SCAN: 'android.permission.BLUETOOTH_SCAN',
+            BLUETOOTH_CONNECT: 'android.permission.BLUETOOTH_CONNECT',
+            ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
+        },
+        RESULTS: {
+            GRANTED: 'granted',
+            DENIED: 'denied',
+            NEVER_ASK_AGAIN: 'never_ask_again',
+        },
+    },
+}))
+
+import { useBlePermissions } from '../useBlePermissions'
+
+const LOCATION_INTENT = 'android.settings.LOCATION_SOURCE_SETTINGS'
+
+describe('useBlePermissions.openLocationSettings', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        platformState.os = 'android'
+        platformState.version = 33
+        mockCheck.mockResolvedValue(true)
+        mockSendIntent.mockResolvedValue(undefined)
+        mockOpenSettings.mockResolvedValue(undefined)
+    })
+
+    it('deep-links straight to the OS location screen on Android', async () => {
+        const { result } = renderHook(() => useBlePermissions())
+
+        await act(async () => {
+            await result.current.openLocationSettings()
+        })
+
+        expect(mockSendIntent).toHaveBeenCalledWith(LOCATION_INTENT)
+        expect(mockOpenSettings).not.toHaveBeenCalled()
+    })
+
+    it('falls back to app settings when the location intent is unavailable', async () => {
+        mockSendIntent.mockRejectedValue(new Error('no activity'))
+
+        const { result } = renderHook(() => useBlePermissions())
+
+        await act(async () => {
+            await result.current.openLocationSettings()
+        })
+
+        expect(mockSendIntent).toHaveBeenCalledWith(LOCATION_INTENT)
+        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens app settings without the Android intent on iOS', async () => {
+        platformState.os = 'ios'
+
+        const { result } = renderHook(() => useBlePermissions())
+
+        await act(async () => {
+            await result.current.openLocationSettings()
+        })
+
+        expect(mockSendIntent).not.toHaveBeenCalled()
+        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
+    })
+})

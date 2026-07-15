@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -39,6 +39,18 @@ export const cardQueryKeys = {
             'transactions',
             { network, ...(filters ?? {}) },
         ] as const,
+    internalWallets: (network: Network) =>
+        [MODULE_PREFIX, 'internal-wallets', { network }] as const,
+    externalWallets: (network: Network) =>
+        [MODULE_PREFIX, 'external-wallets', { network }] as const,
+}
+
+// Stable mutation keys so the same logical operation is recognised as a single
+// in-flight mutation across independent useMutation callers (e.g. the Card
+// Frozen banner and the Card Details options row both unfreezing).
+export const cardMutationKeys = {
+    freeze: [MODULE_PREFIX, 'freeze'] as const,
+    unfreeze: [MODULE_PREFIX, 'unfreeze'] as const,
 }
 
 export const isCardQuery = (queryKey: QueryKey): boolean =>

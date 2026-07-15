@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import { PWDivider, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
 import {
     microAlgosToAlgos,
     type PeraDisplayableTransaction,
@@ -27,7 +27,6 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
 
 export type PaymentTransactionDisplayProps = {
@@ -73,10 +72,8 @@ export const PaymentTransactionDisplay = ({
 
             <PWView style={styles.detailContainer}>
                 <KeyValueRow title={t('transactions.common.amount')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={Decimal(amount)}
                         showSymbol
                         style={amountStyle}
@@ -97,10 +94,8 @@ export const PaymentTransactionDisplay = ({
                 </KeyValueRow>
 
                 <KeyValueRow title={t('transactions.common.fee')}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={ALGO_ASSET}
                         value={Decimal(
                             microAlgosToAlgos(transaction.fee ?? 0n),
                         )}

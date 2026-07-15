@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,13 +12,13 @@
 
 import { Platform } from 'react-native'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { entropyToMnemonic, zeroBytes } from '@perawallet/wallet-core-kms'
 import {
-    bytesEqual,
-    bytesToHex,
-    hexToBytes,
-    logger,
-} from '@perawallet/wallet-core-shared'
+    entropyChildIdOf,
+    entropyToMnemonic,
+    withSecret,
+    zeroBytes,
+} from '@perawallet/wallet-core-kms'
+import { bytesEqual, bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { LegacyPasskey } from '@perawallet/wallet-extension-platform'
 import {
@@ -118,8 +118,8 @@ type MigrationContext = {
     hasAccount: (address: string) => boolean
     /** Walk address → account → derived key → the HD seed that owns it. */
     resolveSeedKeyId: (address: string) => string | undefined
-    /** Recover a seed's BIP39 mnemonic from its hex-encoded `metadata.entropy`. */
-    resolveMnemonic: (seedKeyId: string) => string | undefined
+    /** Recover a seed's BIP39 mnemonic from its entropy `secret-key` child (found by metadata). */
+    resolveMnemonic: (seedKeyId: string) => Promise<string | undefined>
     /** Derived main key per seed; PBKDF2 (210k) runs once and is reused. */
     getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
     /** Native passkey writer; the keystore master key is fetched once and reused. */
@@ -152,15 +152,17 @@ const createMigrationContext = (): MigrationContext => {
             )?.parentKeyId
             return typeof parentKeyId === 'string' ? parentKeyId : undefined
         },
-        resolveMnemonic: seedKeyId => {
-            const entropyHex = (
-                keyById.get(seedKeyId)?.metadata as
-                    | { entropy?: string }
-                    | undefined
-            )?.entropy
-            return entropyHex
-                ? entropyToMnemonic(hexToBytes(entropyHex))
-                : undefined
+        resolveMnemonic: async seedKeyId => {
+            const entropyId = entropyChildIdOf(
+                seedKeyId,
+                getKeystoreStore().state.keys,
+            )
+            if (!entropyId) return undefined
+            return (
+                (await withSecret(entropyId, entropy =>
+                    entropyToMnemonic(entropy),
+                )) ?? undefined
+            )
         },
         getMainKey: (seedKeyId, mnemonic) => {
             let pending = mainKeyBySeed.get(seedKeyId)
@@ -270,7 +272,7 @@ const migrateSinglePasskey = async (
         return 'skipped'
     }
 
-    const mnemonic = ctx.resolveMnemonic(seedKeyId)
+    const mnemonic = await ctx.resolveMnemonic(seedKeyId)
     if (!mnemonic) {
         logger.warn('[Migration] passkey skipped: seed has no entropy', {
             credentialId: inputs.credentialId,

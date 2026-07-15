@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -78,6 +78,25 @@ describe('useOnboardingDetailsQuery', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(fetchOnboardingDetails).not.toHaveBeenCalled()
         expect(result.current.data?.verificationState).toBeUndefined()
+    })
+
+    it('consults a function refetchInterval to schedule polling', async () => {
+        fetchOnboardingDetails.mockResolvedValue({
+            verificationState: VerificationState.Pending,
+        })
+        const refetchInterval = vi.fn(() => false as const)
+
+        const { result } = renderHook(
+            () =>
+                useOnboardingDetailsQuery({
+                    onboardingId: 'ob_1',
+                    refetchInterval,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(refetchInterval).toHaveBeenCalled()
     })
 
     it('does not fetch when disabled', async () => {

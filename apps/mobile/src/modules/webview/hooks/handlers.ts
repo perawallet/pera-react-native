@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -194,6 +194,15 @@ export const sendNotificationToWebview = (
  * side only mirrors the state for the star icon and asks the web app to toggle.
  */
 export const BROWSER_FAVORITE_ACTION = 'handleBrowserFavoriteButtonClick'
+
+/**
+ * Action carrying the wallet's device id back to the Discover web app. The web
+ * app requests it (via `peraMobileInterface.getDeviceId`) to load the user's
+ * favorites, which are server-side state keyed by device id — so favorites
+ * survive an in-place upgrade as long as the migrated device id is handed over.
+ * Mirrors Android's `PeraMobileWebInterface.getDeviceId` → `getSendDeviceId`.
+ */
+export const GET_DEVICE_ID_ACTION = 'getDeviceId'
 
 /**
  * Sends an `{ action, payload }` message to the webview's `message` listener.

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -30,18 +30,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             right: 0,
             justifyContent: 'center',
             alignItems: 'center',
-        },
-        offlineTextContainer: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.layerGray,
-            marginHorizontal: theme.spacing.lg,
-            zIndex: theme.zIndex.layer1,
-            borderRadius: theme.spacing.md,
-            paddingHorizontal: theme.spacing.md,
-        },
-        offlineText: {
-            color: theme.colors.textGray,
         },
         testnetText: {
             ...getTypography(theme, 'caption'),

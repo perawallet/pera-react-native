@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,10 +12,9 @@
 
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
@@ -57,11 +56,12 @@ export const AssetTransferSummaryHeader = ({
 
             <PWView style={styles.amountContainer}>
                 {amount.isZero() ? null : (
-                    <CurrencyDisplay
-                        currency={asset?.unitName ?? ''}
-                        precision={asset?.decimals ?? DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
+                    <AssetAmount
+                        asset={asset}
                         value={amount}
+                        // The signer authorizes an outgoing transfer, so the
+                        // amount leaves their account.
+                        sign='-'
                         showSymbol
                         variant='h1'
                         style={styles.amountValue}
@@ -69,11 +69,9 @@ export const AssetTransferSummaryHeader = ({
                     />
                 )}
                 {amount.isZero() ? null : (
-                    <PreferredCurrencyDisplay
+                    <PreferredAmount
                         sourceAmount={amount}
                         sourceAssetId={assetId}
-                        precision={DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
                         showSymbol
                         variant='h4'
                         style={styles.secondaryAmountValue}

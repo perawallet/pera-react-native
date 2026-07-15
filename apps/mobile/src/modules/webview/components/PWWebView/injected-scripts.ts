@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -70,6 +70,7 @@ window.peraMobileInterface = {
     openNativeURI: (params) => window.peraRPC.sendRNMessage('openNativeURI', params),
     notifyUser: (params) => window.peraRPC.sendRNMessage('notifyUser', params),
     getAddresses: () => window.peraRPC.sendRNMessage('getAddresses'),
+    getDeviceId: () => window.peraRPC.sendRNMessage('getDeviceId'),
     getSettings: () => window.peraRPC.sendRNMessage('getSettings'),
     getPublicSettings: () => window.peraRPC.sendRNMessage('getPublicSettings'),
     onBackPressed: () => window.peraRPC.sendRNMessage('onBackPressed'),

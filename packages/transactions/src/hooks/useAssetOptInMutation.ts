@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,8 +12,8 @@
 
 import { useCallback, useState } from 'react'
 import {
-    ASSET_MBR,
     useAlgorandClient,
+    useMinimumFeeConfig,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
@@ -52,6 +52,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
+    const { assetMbr } = useMinimumFeeConfig()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Nullable<Error>>(null)
 
@@ -62,8 +63,9 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
             setError(null)
 
             try {
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(sender)
+                const accountInfo = await algokit.client.algod
+                    .accountInformation(sender)
+                    .do()
                 const isOptedIn = accountInfo.assets?.some(
                     a => a.assetId === assetId,
                 )
@@ -73,7 +75,9 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
 
                 const suggestedParams = await algokit.getSuggestedParams()
                 const balanceNeeded =
-                    accountInfo.minBalance + ASSET_MBR + suggestedParams.minFee
+                    accountInfo.minBalance +
+                    assetMbr +
+                    BigInt(suggestedParams.minFee)
                 if (accountInfo.amount < balanceNeeded) {
                     throw new InsufficientBalanceForOptInError()
                 }
@@ -110,7 +114,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, submit, network, invalidateBalances],
+        [algokit, submit, network, invalidateBalances, assetMbr],
     )
 
     return {

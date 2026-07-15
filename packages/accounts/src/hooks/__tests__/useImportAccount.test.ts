@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,9 +12,14 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import algosdk from 'algosdk'
 import { useImportAccount } from '../useImportAccount'
 import { useAccountsStore } from '../../store'
-import { SeedScheme } from '@perawallet/wallet-core-kms'
+import {
+    SeedScheme,
+    deriveFalconAddressMock,
+    deriveFalconKeypairMock,
+} from '@perawallet/wallet-core-kms'
 import { DuplicateAccountError } from '../../errors'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
@@ -55,6 +60,8 @@ const kmsMock = vi.hoisted(() => ({
     getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
+    createQuantumKey: vi.fn(),
+    removeKeyAndChildren: vi.fn(),
     persistHDMasterKey: vi.fn(),
     generateDerivedKey: vi.fn(),
     withExportedKey: vi.fn(),
@@ -102,6 +109,8 @@ describe('useImportAccount', () => {
         kmsMock.getKeyOrThrow.mockReset()
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
+        kmsMock.createQuantumKey.mockReset()
+        kmsMock.removeKeyAndChildren.mockReset()
         kmsMock.generateDerivedKey.mockReset()
         kmsMock.withExportedKey.mockReset()
         mockKeyStoreExport.mockReset()
@@ -127,6 +136,18 @@ describe('useImportAccount', () => {
             },
             address: 'ALGO25_PUBLIC_KEY',
         })
+        kmsMock.createQuantumKey.mockResolvedValue({
+            seedKey: {
+                id: 'QSEED1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                metadata: { scheme: SeedScheme.Quantum },
+            },
+            address: 'QUANTUM_ADDRESS',
+            signKeyId: 'QSEED1-quantum',
+        })
+        kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
         kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
         mockKeyStoreExport.mockResolvedValue({
             publicKey: new Uint8Array(32).fill(2),
@@ -306,6 +327,145 @@ describe('useImportAccount', () => {
             ).rejects.toBeInstanceOf(DuplicateAccountError)
         })
 
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        // The duplicate attempt's keystore entries were swept (seed + child).
+        expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('WALLET1')
+    })
+
+    test('imports quantum account with explicit quantum type', async () => {
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useImportAccount())
+
+        let imported: any
+        await act(async () => {
+            imported = await result.current({
+                mnemonic: 'test mnemonic',
+                type: 'quantum',
+            })
+        })
+
+        expect(kmsMock.createQuantumKey).toHaveBeenCalledWith({
+            mnemonic: 'test mnemonic',
+        })
+        expect(imported.type).toBe('quantum')
+        expect(imported.address).toBe('QUANTUM_ADDRESS')
+        // keyPairId is the scheme-agnostic quantum signing child of the seed.
+        expect(imported.keyPairId).toBe('QSEED1-quantum')
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
+
+    test('rejects a duplicate quantum import and sweeps the freshly minted key', async () => {
+        uuidSpies.v7.mockImplementation(() => 'ACC1')
+
+        const { result } = renderHook(() => useImportAccount())
+
+        await act(async () => {
+            await result.current({ mnemonic: 'a', type: 'quantum' })
+            await expect(
+                result.current({ mnemonic: 'a', type: 'quantum' }),
+            ).rejects.toBeInstanceOf(DuplicateAccountError)
+        })
+
+        // The duplicate attempt's keystore entries were swept (seed + child).
+        expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('QSEED1')
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
+
+    test('same mnemonic imported as quantum vs algo25 yields different addresses and both coexist', async () => {
+        // Real derivations on both sides (algosdk ed25519 vs the KMS quantum
+        // derivation) prove the two account types cannot collide by address
+        // in the store — not just that the mocks were wired differently.
+        const generated = algosdk.generateAccount()
+        const mnemonic = algosdk.secretKeyToMnemonic(generated.sk)
+
+        kmsMock.createAlgo25Key.mockImplementation(
+            async ({ mnemonic: m }: { mnemonic: string }) => ({
+                seedKey: {
+                    id: 'A25SEED',
+                    type: 'seed',
+                    algorithm: 'raw',
+                    extractable: true,
+                    metadata: { scheme: SeedScheme.Algo25 },
+                },
+                address: algosdk.mnemonicToSecretKey(m).addr.toString(),
+            }),
+        )
+        kmsMock.createQuantumKey.mockImplementation(
+            async ({ mnemonic: m }: { mnemonic: string }) => {
+                const seed = algosdk.seedFromMnemonic(m)
+                const { publicKey } = deriveFalconKeypairMock(seed)
+                return {
+                    seedKey: {
+                        id: 'QSEED1',
+                        type: 'seed',
+                        algorithm: 'raw',
+                        extractable: true,
+                        metadata: { scheme: SeedScheme.Quantum },
+                    },
+                    address: deriveFalconAddressMock(publicKey),
+                    signKeyId: 'QSEED1-quantum',
+                }
+            },
+        )
+
+        let counter = 0
+        uuidSpies.v7.mockImplementation(() => `ACC${++counter}`)
+
+        const { result } = renderHook(() => useImportAccount())
+
+        let asAlgo25: any
+        let asQuantum: any
+        await act(async () => {
+            asAlgo25 = await result.current({ mnemonic, type: 'algo25' })
+            asQuantum = await result.current({ mnemonic, type: 'quantum' })
+        })
+
+        expect(asAlgo25.type).toBe('algo25')
+        expect(asQuantum.type).toBe('quantum')
+        expect(asQuantum.address).not.toBe(asAlgo25.address)
+        expect(useAccountsStore.getState().accounts).toHaveLength(2)
+    })
+
+    test('repeated quantum imports of the same mnemonic derive the same address', async () => {
+        // Device-portability NFR: the second import derives the identical
+        // address (real derivation), so it must hit the duplicate guard.
+        kmsMock.createQuantumKey.mockImplementation(
+            async ({ mnemonic: m }: { mnemonic: string }) => {
+                const seed = algosdk.seedFromMnemonic(m)
+                const { publicKey } = deriveFalconKeypairMock(seed)
+                return {
+                    seedKey: {
+                        id: 'QSEED1',
+                        type: 'seed',
+                        algorithm: 'raw',
+                        extractable: true,
+                        metadata: { scheme: SeedScheme.Quantum },
+                    },
+                    address: deriveFalconAddressMock(publicKey),
+                    signKeyId: 'QSEED1-quantum',
+                }
+            },
+        )
+        const generated = algosdk.generateAccount()
+        const mnemonic = algosdk.secretKeyToMnemonic(generated.sk)
+
+        uuidSpies.v7.mockImplementation(() => 'ACC1')
+
+        const { result } = renderHook(() => useImportAccount())
+
+        await act(async () => {
+            await result.current({ mnemonic, type: 'quantum' })
+            await expect(
+                result.current({ mnemonic, type: 'quantum' }),
+            ).rejects.toBeInstanceOf(DuplicateAccountError)
+        })
+        // Discriminate the quantum path: both imports must have gone through
+        // createQuantumKey (not fallen through to the algo25 branch), and the
+        // duplicate attempt swept the quantum seed's keystore entries.
+        expect(kmsMock.createQuantumKey).toHaveBeenCalledTimes(2)
+        expect(kmsMock.createAlgo25Key).not.toHaveBeenCalled()
+        expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('QSEED1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 })

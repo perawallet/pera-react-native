@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,6 +15,7 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { hasCardSession } from '@perawallet/wallet-core-card'
 import { useStyles } from './styles'
 import {
     AccountMenuContent,
@@ -116,7 +117,11 @@ export const AccountSelection = ({
                 return
             }
             case 'pera-card-open': {
-                navigation.navigate('PeraCard', { screen: 'PeraCardAccount' })
+                // The connected row shows off the persisted auth flag, which can
+                // outlive the real session — require a live token, else log in.
+                navigation.navigate('PeraCard', {
+                    screen: hasCardSession() ? 'PeraCardAccount' : 'CardSignIn',
+                })
                 return
             }
             case 'sort': {

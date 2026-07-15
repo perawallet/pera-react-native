@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,6 +11,7 @@
  */
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import type { modelsv2 } from 'algosdk'
 import {
     CHART_QUERY_TIMEOUT_MS,
     queryClient,
@@ -27,7 +28,8 @@ export type OnChainAccountInformationResponse = Awaited<
 export const fetchOnChainAccountInformation = (
     algokit: AlgorandClient,
     address: string,
-) => algokit.client.algod.accountInformation(address)
+): Promise<modelsv2.Account> =>
+    algokit.client.algod.accountInformation(address).do()
 
 export const getAccountsBalanceHistoryEndpointPath = () => `/v1/wallet/wealth/`
 

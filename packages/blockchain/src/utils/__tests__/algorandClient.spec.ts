@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,19 +13,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-    fromConfig: vi.fn(),
+    fromClients: vi.fn(),
     registerErrorTransformer: vi.fn(),
     getNetworkConfig: vi.fn(),
     getNetwork: vi.fn(),
     toAlgodError: vi.fn((e: unknown) => e),
+    Algodv2: vi.fn(),
+    Indexer: vi.fn(),
+    TimeoutHttpClient: vi.fn(),
 }))
 
 vi.mock('@algorandfoundation/algokit-utils', () => ({
-    AlgorandClient: { fromConfig: mocks.fromConfig },
+    AlgorandClient: { fromClients: mocks.fromClients },
+}))
+
+vi.mock('algosdk', () => ({
+    Algodv2: mocks.Algodv2,
+    Indexer: mocks.Indexer,
+}))
+
+vi.mock('../TimeoutHttpClient', () => ({
+    TimeoutHttpClient: mocks.TimeoutHttpClient,
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
-    config: { algodApiKey: 'ALGOD_KEY', indexerApiKey: 'INDEXER_KEY' },
+    config: {
+        algodApiKey: 'ALGOD_KEY',
+        indexerApiKey: 'INDEXER_KEY',
+        algodReadTimeout: 10_000,
+        algodSubmitTimeout: 30_000,
+    },
     getNetworkConfig: mocks.getNetworkConfig,
 }))
 
@@ -39,7 +56,7 @@ import { getAlgorandClient } from '../algorandClient'
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mocks.fromConfig.mockReturnValue({
+    mocks.fromClients.mockReturnValue({
         registerErrorTransformer: mocks.registerErrorTransformer,
     })
     mocks.getNetworkConfig.mockImplementation((network: string) => ({
@@ -47,22 +64,53 @@ beforeEach(() => {
         indexerUrl: `https://indexer.${network}`,
     }))
     mocks.getNetwork.mockReturnValue('mainnet')
+    mocks.Algodv2.mockImplementation(function Algodv2() {})
+    mocks.Indexer.mockImplementation(function Indexer() {})
+    mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
 })
 
 describe('getAlgorandClient', () => {
-    it('builds the client from the active store network when no override is given', () => {
+    it('builds algod and indexer via TimeoutHttpClient seeded with the configured timeouts', () => {
         getAlgorandClient()
 
         expect(mocks.getNetworkConfig).toHaveBeenCalledWith('mainnet')
-        expect(mocks.fromConfig).toHaveBeenCalledWith({
-            algodConfig: {
-                server: 'https://algod.mainnet',
-                token: 'ALGOD_KEY',
-            },
-            indexerConfig: {
-                server: 'https://indexer.mainnet',
-                token: 'INDEXER_KEY',
-            },
+
+        // algod transport: read + submit ceilings from config.
+        expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
+            { 'X-Algo-API-Token': 'ALGOD_KEY' },
+            'https://algod.mainnet',
+            undefined,
+            10_000,
+            30_000,
+        )
+        // indexer transport.
+        expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
+            { 'X-Indexer-API-Token': 'INDEXER_KEY' },
+            'https://indexer.mainnet',
+            undefined,
+            10_000,
+            30_000,
+        )
+    })
+
+    it('constructs Algodv2/Indexer with the timeout transport and their servers, then AlgorandClient.fromClients', () => {
+        getAlgorandClient()
+
+        const algodTransport = mocks.TimeoutHttpClient.mock.instances[0]
+        const indexerTransport = mocks.TimeoutHttpClient.mock.instances[1]
+
+        expect(mocks.Algodv2).toHaveBeenCalledWith(
+            algodTransport,
+            'https://algod.mainnet',
+        )
+        expect(mocks.Indexer).toHaveBeenCalledWith(
+            indexerTransport,
+            'https://indexer.mainnet',
+        )
+
+        expect(mocks.fromClients).toHaveBeenCalledWith({
+            algod: mocks.Algodv2.mock.instances[0],
+            indexer: mocks.Indexer.mock.instances[0],
         })
     })
 
@@ -70,12 +118,12 @@ describe('getAlgorandClient', () => {
         getAlgorandClient('testnet')
 
         expect(mocks.getNetworkConfig).toHaveBeenCalledWith('testnet')
-        expect(mocks.fromConfig).toHaveBeenCalledWith(
-            expect.objectContaining({
-                algodConfig: expect.objectContaining({
-                    server: 'https://algod.testnet',
-                }),
-            }),
+        expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
+            { 'X-Algo-API-Token': 'ALGOD_KEY' },
+            'https://algod.testnet',
+            undefined,
+            10_000,
+            30_000,
         )
     })
 
@@ -83,7 +131,7 @@ describe('getAlgorandClient', () => {
         const client = getAlgorandClient()
 
         expect(mocks.registerErrorTransformer).toHaveBeenCalledTimes(1)
-        expect(client).toBe(mocks.fromConfig.mock.results[0].value)
+        expect(client).toBe(mocks.fromClients.mock.results[0].value)
     })
 
     it('the registered transformer routes errors through toAlgodError', async () => {

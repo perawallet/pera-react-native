@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,6 +11,7 @@
  */
 
 import { PWScrollView } from '@components/core'
+import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardBalanceSection } from './PeraCardBalanceSection'
 import { PeraCardActionButtons } from './PeraCardActionButtons'
 import { PeraCardCreditsSection } from './PeraCardCreditsSection'
@@ -24,24 +25,28 @@ export const PeraCardOverview = () => {
         isAutoFunding,
         currency,
         balance,
+        spendablePerTx,
+        isBalanceLoading,
         credits,
         transactionSections,
         isLoadingTransactions,
-        onFundingPress,
         onWithdraw,
         onAddFunds,
         onGetUsdc,
         onShowAllTransactions,
+        onPressTransaction,
         onCreditPress,
     } = usePeraCardOverview()
 
     return (
         <PWScrollView contentContainerStyle={styles.content}>
+            <CardFrozenBanner />
+
             <PeraCardBalanceSection
                 balance={balance}
+                isLoading={isBalanceLoading}
                 currency={currency}
-                isAutoFunding={isAutoFunding}
-                onFundingPress={onFundingPress}
+                spendablePerTx={spendablePerTx}
             />
 
             <PeraCardActionButtons
@@ -63,6 +68,7 @@ export const PeraCardOverview = () => {
                 sections={transactionSections}
                 isLoading={isLoadingTransactions}
                 onShowAll={onShowAllTransactions}
+                onPressTransaction={onPressTransaction}
             />
         </PWScrollView>
     )

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -232,13 +232,13 @@ describe('createMultisigStrategy', () => {
                     signed: [
                         {
                             msig: {
-                                version: 1,
-                                threshold: 2,
-                                subsigs: [
-                                    { publicKey: new Uint8Array([0]) },
+                                v: 1,
+                                thr: 2,
+                                subsig: [
+                                    { pk: new Uint8Array([0]) },
                                     {
-                                        publicKey: new Uint8Array([1]),
-                                        sig: subsigSig,
+                                        pk: new Uint8Array([1]),
+                                        s: subsigSig,
                                     },
                                 ],
                             },

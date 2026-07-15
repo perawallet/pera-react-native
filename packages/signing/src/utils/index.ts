@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,13 +14,16 @@ export * from './arc60'
 export * from './arc60-wire'
 export * from './assertTransactionsMatchNetwork'
 export * from './balance-validation'
+export * from './balanceImpact'
 export * from './classification'
 export * from './classifyLedgerErrorKind'
 export * from './fees'
 export * from './isSignRequestMultisigUnsignable'
+export * from './lsig'
 export * from './mergeSigningResults'
 export * from './parseArc60ForDisplay'
 export * from './resolveSignerAddress'
+export * from './simulateImpact'
 export * from './siwa'
 export * from './validateTransactionGroupIntegrity'
 export * from './validateTransactionRoundTrip'

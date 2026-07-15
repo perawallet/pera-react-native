@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -94,7 +94,6 @@ export const buildModelViewerHtml = ({
   src="${safeUrl}"
   camera-controls
   auto-rotate
-  ar
   style="width:100%;height:100%;background-color:transparent"
 ></model-viewer>
 <script>

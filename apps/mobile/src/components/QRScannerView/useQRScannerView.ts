@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,20 +12,18 @@
 
 import { useDeepLink } from '@hooks/useDeepLink'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     useCameraDevice,
     useCameraPermission,
 } from 'react-native-vision-camera'
-import {
-    useBarcodeScannerOutput,
-    type TargetBarcodeFormat,
-} from 'react-native-vision-camera-barcode-scanner'
+import { type ScannedBarcode } from './QRCameraScanner'
 
-// Hoisted to a stable reference: useBarcodeScannerOutput memoizes the native
-// output on this array's identity, so an inline literal would recreate the
-// output every render.
-const BARCODE_FORMATS: TargetBarcodeFormat[] = ['qr-code', 'ean-13']
+// NOTE: this hook intentionally does NOT import
+// `react-native-vision-camera-barcode-scanner`. That package pulls in MLKit at
+// import time, which is excluded from the iOS simulator build. The scanner hook
+// lives in QRCameraScanner, lazily mounted only when a camera device exists.
+// We expose `onBarcodeScanned`/`onError` here and wire them up there.
 
 export type UseQRScannerViewProps = {
     isVisible: boolean
@@ -75,9 +73,11 @@ export const useQRScannerView = ({
         }
     }, [isVisible])
 
-    const scannerOutput = useBarcodeScannerOutput({
-        barcodeFormats: BARCODE_FORMATS,
-        onBarcodeScanned: barcodes => {
+    // Handlers passed down to QRCameraScanner, which wires them into the native
+    // barcode-scanner output. Memoised so the native output isn't recreated on
+    // every render.
+    const onBarcodeScanned = useCallback(
+        (barcodes: ScannedBarcode[]) => {
             try {
                 if (handlingRef.current) return
                 const url = barcodes.at(0)?.rawValue
@@ -124,16 +124,32 @@ export const useQRScannerView = ({
                             setScanningEnabled(true)
                         })
                     },
+                    () => {
+                        // WalletConnect handshake rejected (e.g. wrong
+                        // network). The provider already surfaced a toast on
+                        // this Modal's own notifier, so keep the scanner open
+                        // and re-arm it for another scan instead of closing.
+                        handlingRef.current = false
+                        setScanningEnabled(true)
+                    },
                 )
             } catch (error) {
                 handlingRef.current = false
                 logger.error('QRScannerView: QR scanner error:', { error })
             }
         },
-        onError: error => {
-            logger.error('QRScannerView: barcode scanner failed:', { error })
-        },
-    })
+        [
+            isValidDeepLink,
+            handleDeepLink,
+            skipDeepLinkHandler,
+            onSuccess,
+            onClose,
+        ],
+    )
+
+    const onError = useCallback((error: Error) => {
+        logger.error('QRScannerView: barcode scanner failed:', { error })
+    }, [])
 
     useEffect(() => {
         if (hasPermission) {
@@ -155,9 +171,10 @@ export const useQRScannerView = ({
 
     return {
         hasPermission,
-        scannerOutput,
         scanningEnabled,
         permissionDenied,
         device,
+        onBarcodeScanned,
+        onError,
     }
 }

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -33,9 +33,9 @@ export const ALGO25_TEST_MNEMONIC_WORDS = ALGO25_TEST_MNEMONIC.split(' ')
 export const ALGO25_TEST_ADDRESS =
     'T2A7FPKQ3YON2JT5A5CSN4JWNDMUGJY6WX4H6HEH2UPKWSPSPBG5O7X4UM'
 
-/** Distinct from {@link ALGO25_TEST_ADDRESS} / {@link HD_TEST_ADDRESS}; valid checksum multisig placeholder for integration tests. */
+/** Distinct from {@link ALGO25_TEST_ADDRESS} / {@link HD_TEST_ADDRESS}; valid non-zero multisig placeholder for integration tests. (algosdk v3 rejects the zero address as a rekeyTo target.) */
 export const MULTISIG_REKEY_INTEGRATION_ADDRESS =
-    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+    'QLWDYKFO2EHE43ZCZVKCWNEBQ5M5L5BPW5VSCRB3OML5YEBBLWFL3BRTEI'
 
 // Real BIP39 mnemonic words but in an order that fails BIP39 checksum
 // validation. Use to assert the import flow surfaces an error toast on
@@ -66,10 +66,10 @@ export const deriveTestHDAddress = async (
     account: number,
     keyIndex: number,
 ): Promise<string> => {
-    const [bip39, xhd, algokit] = await Promise.all([
+    const [bip39, xhd, algosdk] = await Promise.all([
         import('@scure/bip39'),
         import('@algorandfoundation/xhd-wallet-api'),
-        import('@algorandfoundation/algokit-utils'),
+        import('algosdk'),
     ])
     const seed = await bip39.mnemonicToSeed(HD_TEST_MNEMONIC_24)
     const rootKey = xhd.fromSeed(Buffer.from(seed))
@@ -81,5 +81,5 @@ export const deriveTestHDAddress = async (
         keyIndex,
         xhd.BIP32DerivationType.Peikert,
     )
-    return algokit.encodeAddress(publicKey)
+    return algosdk.encodeAddress(publicKey)
 }

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -55,6 +55,8 @@ const buildArgs = (
             vi.fn() as unknown as MigrateAccountArgs['createHdWalletAccount'],
         createHDWalletKey:
             vi.fn() as unknown as MigrateAccountArgs['createHDWalletKey'],
+        hasSeedWithEntropy:
+            vi.fn() as unknown as MigrateAccountArgs['hasSeedWithEntropy'],
         ...overrides,
     }) as MigrateAccountArgs
 
@@ -124,5 +126,33 @@ describe('migrateAlgo25Account', () => {
         await expect(migrateAlgo25Account(args)).rejects.toThrow(
             'Imported algo25 address ADDR_DIFFERENT did not match legacy address ADDR_LEGACY',
         )
+    })
+
+    it('wipes the decrypted secretKey after a successful import', async () => {
+        const secretKey = new Uint8Array(32).fill(9)
+        const args = buildArgs({
+            account: buildLegacyAccount({ secretKey }),
+        })
+
+        await migrateAlgo25Account(args)
+
+        expect(secretKey.every(b => b === 0)).toBe(true)
+    })
+
+    it('wipes the decrypted secretKey even when the import fails', async () => {
+        const secretKey = new Uint8Array(32).fill(9)
+        const args = buildArgs({
+            account: buildLegacyAccount({ secretKey }),
+            importAccount: vi.fn().mockResolvedValue({
+                id: 'mismatch',
+                type: AccountTypes.algo25,
+                address: 'ADDR_DIFFERENT',
+                keyPairId: 'kp',
+            }),
+        })
+
+        await expect(migrateAlgo25Account(args)).rejects.toThrow()
+
+        expect(secretKey.every(b => b === 0)).toBe(true)
     })
 })

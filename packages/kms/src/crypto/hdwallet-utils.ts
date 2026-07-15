@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,15 +10,26 @@
  limitations under the License
  */
 
-import { pbkdf2 } from 'crypto'
+import { pbkdf2, createHash } from 'crypto'
 import {
     generateMnemonic,
     mnemonicToEntropy,
     entropyToMnemonic as entropyToMnemonicLib,
 } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
+import {
+    BITS_PER_BYTE,
+    BITS_PER_MNEMONIC_WORD,
+    MNEMONIC_WORD_INDEX_MASK,
+} from './mnemonic-indices'
 
 const HD_MNEMONIC_STRENGTH = 256
+
+// BIP39 entropy is 128–256 bits in 32-bit steps, with one checksum bit appended
+// per 32 entropy bits.
+const MIN_ENTROPY_BITS = 128
+const MAX_ENTROPY_BITS = 256
+const ENTROPY_BITS_PER_CHECKSUM_BIT = 32
 
 // BIP39 §"From mnemonic to seed":
 // PBKDF2(NFKD(mnemonic), "mnemonic" + NFKD(passphrase), 2048, 64, SHA-512).
@@ -77,6 +88,52 @@ export const deriveLiquidAuthMainKey = (
 
 export const entropyToMnemonic = (entropy: Uint8Array): string => {
     return entropyToMnemonicLib(entropy, wordlist)
+}
+
+/**
+ * Converts BIP39 entropy directly to wordlist indices, with no intermediate
+ * mnemonic string. Mirrors `@scure/bip39`'s entropy→mnemonic encoding — the
+ * entropy bits followed by the top CS checksum bits of SHA-256(entropy), read
+ * in 11-bit groups — but stops at the indices instead of mapping to words, so
+ * the phrase never becomes a `string` on the heap. Byte-identical to
+ * `mnemonicWordsToIndices(entropyToMnemonic(entropy).split(' '))` (equivalence
+ * guard in `__tests__/hdwallet-utils.test.ts`).
+ */
+export const entropyToIndices = (entropy: Uint8Array): Uint16Array => {
+    const entropyBits = entropy.length * BITS_PER_BYTE
+    if (
+        entropyBits < MIN_ENTROPY_BITS ||
+        entropyBits > MAX_ENTROPY_BITS ||
+        entropyBits % ENTROPY_BITS_PER_CHECKSUM_BIT !== 0
+    ) {
+        throw new RangeError(
+            `Invalid BIP39 entropy length: ${entropy.length} bytes`,
+        )
+    }
+    const checksumBitCount = entropyBits / ENTROPY_BITS_PER_CHECKSUM_BIT // 4..8
+    const checksum =
+        createHash('sha256').update(entropy).digest()[0] >>
+        (BITS_PER_BYTE - checksumBitCount)
+
+    const indices = new Uint16Array(
+        (entropyBits + checksumBitCount) / BITS_PER_MNEMONIC_WORD,
+    )
+    let acc = 0
+    let bits = 0
+    let out = 0
+    for (let i = 0; i < entropy.length; i++) {
+        acc = (acc << BITS_PER_BYTE) | entropy[i]
+        bits += BITS_PER_BYTE
+        if (bits >= BITS_PER_MNEMONIC_WORD) {
+            bits -= BITS_PER_MNEMONIC_WORD
+            indices[out++] = (acc >>> bits) & MNEMONIC_WORD_INDEX_MASK
+        }
+    }
+    // Leftover entropy bits + checksum bits sum to exactly one word — one final
+    // group remains.
+    acc = (acc << checksumBitCount) | checksum
+    indices[out] = acc & MNEMONIC_WORD_INDEX_MASK
+    return indices
 }
 
 /**

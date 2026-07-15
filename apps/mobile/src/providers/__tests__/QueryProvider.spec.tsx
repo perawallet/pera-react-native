@@ -1,0 +1,106 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import React from 'react'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { QueryClientProvider, useMutation } from '@tanstack/react-query'
+import { logger } from '@perawallet/wallet-core-shared'
+import { queryClient } from '../QueryProvider'
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+)
+
+describe('queryClient mutation error policy', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks()
+        queryClient.getMutationCache().clear()
+    })
+
+    it('defaults mutations to state errors, not render-phase throws', () => {
+        expect(queryClient.getDefaultOptions().mutations?.throwOnError).toBe(
+            false,
+        )
+    })
+
+    it('surfaces a failed mutation as error state without crashing the tree', async () => {
+        vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderHook(
+            () =>
+                useMutation({
+                    mutationFn: () =>
+                        Promise.reject(new Error('backend exploded')),
+                }),
+            { wrapper },
+        )
+
+        act(() => {
+            result.current.mutate(undefined)
+        })
+
+        // Reaching these assertions at all is the regression: with the old
+        // global `throwOnError: true`, the rejection re-threw during render.
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error?.message).toBe('backend exploded')
+    })
+
+    it('logs non-transient mutation failures centrally with the mutation key', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderHook(
+            () =>
+                useMutation({
+                    mutationKey: ['test-mutation'],
+                    mutationFn: () => Promise.reject(new Error('boom')),
+                }),
+            { wrapper },
+        )
+
+        act(() => {
+            result.current.mutate(undefined)
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(errorSpy).toHaveBeenCalledWith(
+            'Mutation failed:',
+            expect.objectContaining({ mutationKey: ['test-mutation'] }),
+        )
+    })
+
+    it('skips central error logging for transient network failures', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        // ky's isHTTPError guard is deliberately shape-based (name match) to
+        // survive cross-realm errors, so a name-shaped fake is a faithful
+        // stand-in for a real 5xx HTTPError without app->ky imports.
+        const transientError = Object.assign(new Error('Service unavailable'), {
+            name: 'HTTPError',
+            response: { status: 503 },
+        })
+        const { result } = renderHook(
+            () =>
+                useMutation({
+                    mutationFn: () => Promise.reject(transientError),
+                }),
+            { wrapper },
+        )
+
+        act(() => {
+            result.current.mutate(undefined)
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(errorSpy).not.toHaveBeenCalled()
+    })
+})

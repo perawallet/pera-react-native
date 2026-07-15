@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -27,7 +27,10 @@ import {
     HardwareWalletError,
     SigningError,
 } from '../pipeline/errors'
-import { validateTransactionGroupIntegrity } from '../utils/validateTransactionGroupIntegrity'
+import {
+    validateCosignSubsetIntegrity,
+    validateTransactionGroupIntegrity,
+} from '../utils/validateTransactionGroupIntegrity'
 import { resolveSigningAccount } from './utils/resolveSigningAccount'
 import type {
     GroupSignerTypeMap,
@@ -204,6 +207,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     return {
         type: sourceType,
         transport: request.transport,
+        transportOptions: request.transportOptions,
         requestId: request.transportId ?? request.id,
         verifiedOrigin: request.verifiedOrigin,
         callbacks: {
@@ -216,6 +220,11 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
             // `{ kind: 'softReject', error }`.
             approveSignedBytes: isTransactionRequest(request)
                 ? request.approveSignedBytes
+                : undefined,
+            // Multisig propose handoff: lets the swap proposer capture the
+            // backend signRequestId once the request is created.
+            onProposed: isTransactionRequest(request)
+                ? request.onProposed
                 : undefined,
         },
     }
@@ -249,7 +258,19 @@ const buildSignableGroups = (
         // (WalletConnect) supply the original array via `groupContext`.
         // Internal sources where `txs` is already the full group leave
         // `groupContext` unset and we fall back to `txs`.
-        validateTransactionGroupIntegrity(request.groupContext ?? request.txs)
+        //
+        // Multisig co-sign is the exception: the co-signer's device only holds
+        // the signable subset of the proposed group (a swap's backend
+        // pre-signed pool/fee slots never reach them), so the full-group hash
+        // can't match. The dedicated cosign validator skips the recompute —
+        // contiguity is still enforced, and full-group integrity is verified on
+        // the submitter and by algod at submission.
+        const txsToValidate = request.groupContext ?? request.txs
+        if (request.sourceType === 'multisig-cosign') {
+            validateCosignSubsetIntegrity(txsToValidate)
+        } else {
+            validateTransactionGroupIntegrity(txsToValidate)
+        }
 
         const knownAddresses = new Set(allAccounts.map(a => a.address))
         const rawBytes = request.rawTransactionsBase64

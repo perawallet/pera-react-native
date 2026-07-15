@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
@@ -55,12 +55,10 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                     <PWText style={styles.label}>
                         {t('asset_details.markets.price')}
                     </PWText>
-                    <PreferredCurrencyDisplay
+                    <PreferredAmount
                         variant='h2'
                         sourceAmount={new Decimal(1)}
                         sourceAssetId={assetDetails.assetId}
-                        precision={6}
-                        minPrecision={2}
                     />
                 </PWView>
 

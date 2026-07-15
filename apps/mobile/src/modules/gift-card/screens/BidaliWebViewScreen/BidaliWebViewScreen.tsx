@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,13 +10,15 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
 import { PWWebView } from '@modules/webview/components/PWWebView'
 import { useBidaliWebViewScreen } from './useBidaliWebViewScreen'
 import { useStyles } from './styles'
 
 export const BidaliWebViewScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { url, bidaliProviderJS, onClose, handleMessage, webviewRef } =
         useBidaliWebViewScreen()
 
@@ -26,6 +28,7 @@ export const BidaliWebViewScreen = () => {
                 url={url}
                 enablePeraConnect={false}
                 showControls
+                showFooterBar={false}
                 onClose={onClose}
                 customJavaScript={bidaliProviderJS}
                 onCustomMessage={handleMessage}

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -84,7 +84,8 @@ import { useFeeDelegation } from '../useFeeDelegation'
 const ACCOUNT = 'TESTADDRESS'
 const ASSET_ID = 31566704n
 
-const toBase64 = (text: string) => Buffer.from(text, 'utf8').toString('base64')
+// Inputs are ASCII, so btoa is byte-exact and needs no Node Buffer global.
+const toBase64 = (text: string) => btoa(text)
 
 const validAttestation = () => ({
     integrityToken: 'valid-token',

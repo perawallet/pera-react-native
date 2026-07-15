@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,9 +12,14 @@
 
 import { fetchAssetPrices, fetchPublicAssetDetails } from '../api'
 import { upsertAssetPrices } from '../db'
-import { ALGO_ASSET_ID } from '../models'
+
 import { Decimal } from 'decimal.js'
-import { partition, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    ALGO_ASSET_ID,
+    partition,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 
 const PRICE_BATCH_SIZE = 25
 const PRICE_FETCH_CONCURRENCY = 5
@@ -25,7 +30,7 @@ export async function fetchAndPersistPrices(
 ): Promise<void> {
     if (assetIds.length === 0) return
 
-    const nonAlgoIds = assetIds.filter(id => id !== ALGO_ASSET_ID)
+    const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     const batches = partition(nonAlgoIds, PRICE_BATCH_SIZE)
 
     // ALGO uses a different endpoint, so it doesn't compete with the

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,8 +11,8 @@
  */
 
 import { type Decimal } from 'decimal.js'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import {
     type PWIconSize,
     type PWTouchableOpacityProps,
@@ -94,21 +94,19 @@ export const AccountAssetItemView = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
-            <CurrencyDisplay
-                currency={asset.unitName ?? ''}
+            <AssetAmount
+                asset={asset}
                 value={accountBalance.amount}
-                precision={asset.decimals}
-                minPrecision={2}
+                density='compact'
                 showSymbol
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
-            <PreferredCurrencyDisplay
+            <PreferredAmount
                 sourceAmount={accountBalance.amount}
                 sourceAssetId={accountBalance.assetId}
                 usdPrice={usdPrice}
-                precision={2}
-                minPrecision={2}
+                density='compact'
                 showSymbol
                 style={styles.secondaryAmount}
             />

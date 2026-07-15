@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,11 +15,24 @@ import { Decimal } from 'decimal.js'
 import { QueryClient } from '@tanstack/react-query'
 import { syncAndEnrichNewAccount } from '../account-syncer'
 
-const mockAccountInformation = vi.fn()
+// algosdk v9 builder: `accountInformation(addr).do()`. The data mock backs
+// `.do()` so the existing `mockResolvedValue`/`mockRejectedValue` setups keep
+// working; the factory spy records the address for the call-arg assertion.
+const mockAccountInformationDo = vi.fn()
+const mockAccountInformation = vi.fn(() => ({
+    exclude: vi.fn().mockReturnThis(),
+    do: () => mockAccountInformationDo(),
+}))
 const mockGetAlgorandClient = vi.fn(() => ({
     client: {
         algod: { accountInformation: mockAccountInformation },
-        indexer: { lookupAccountAssets: vi.fn() },
+        indexer: {
+            lookupAccountAssets: vi.fn(() => ({
+                limit: vi.fn().mockReturnThis(),
+                nextToken: vi.fn().mockReturnThis(),
+                do: vi.fn().mockResolvedValue({ assets: [] }),
+            })),
+        },
     },
 }))
 
@@ -31,7 +44,6 @@ const mockFetchAndPersistAssets = vi.fn(() => Promise.resolve())
 const mockFetchAndPersistPrices = vi.fn(() => Promise.resolve())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     fetchAndPersistAssets: (...args: unknown[]) =>
         mockFetchAndPersistAssets(...args),
     fetchAndPersistPrices: (...args: unknown[]) =>
@@ -66,7 +78,7 @@ describe('syncAndEnrichNewAccount', () => {
         mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockGetAccountBalance.mockResolvedValue(undefined)
-        mockAccountInformation.mockResolvedValue({
+        mockAccountInformationDo.mockResolvedValue({
             amount: 1_000_000n,
             minBalance: 100_000n,
             assets: [{ assetId: 100n, amount: 5n, isFrozen: false }],
@@ -108,7 +120,7 @@ describe('syncAndEnrichNewAccount', () => {
 
     it('swallows fetch errors (never throws to the caller)', async () => {
         const { queryClient, invalidateSpy } = makeQueryClient()
-        mockAccountInformation.mockRejectedValue(new Error('algod down'))
+        mockAccountInformationDo.mockRejectedValue(new Error('algod down'))
 
         await expect(
             syncAndEnrichNewAccount('ADDR1', 'mainnet', queryClient),

@@ -1,0 +1,52 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { makeStyles } from '@rneui/themed'
+import type { CardBadge } from './CardBadgeGlyph'
+
+type StyleProps = { size: 'sm' | 'lg'; badge: CardBadge }
+
+// The card art keeps a ~3:2 landscape ratio so it isn't letterboxed; the badge
+// is pinned to its lower-right corner.
+export const useStyles = makeStyles((theme, { size, badge }: StyleProps) => {
+    const cardWidth = size === 'lg' ? theme.spacing['4xl'] : theme.spacing.xxl
+    const cardHeight = size === 'lg' ? theme.spacing['3xl'] : theme.spacing.xl
+    const badgeSize = size === 'lg' ? theme.spacing.xl : theme.spacing.lg
+    // `unfreeze` intentionally shares the frozen orange; only its icon differs.
+    const badgeColor =
+        badge === 'suspicious'
+            ? theme.colors.negative
+            : theme.colors.warningText
+
+    return {
+        container: {
+            width: cardWidth,
+            height: cardHeight,
+            position: 'relative',
+        },
+        card: {
+            width: cardWidth,
+            height: cardHeight,
+        },
+        badge: {
+            position: 'absolute',
+            right: -theme.spacing.xxs,
+            bottom: -theme.spacing.xxs,
+            width: badgeSize,
+            height: badgeSize,
+            borderRadius: badgeSize / 2,
+            backgroundColor: badgeColor,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+    }
+})

@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
@@ -31,7 +32,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@algorandfoundation/algokit-client-generator": "7.0.0-beta.4",
+    "@algorandfoundation/algokit-client-generator": "6.0.1",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/node": "catalog:",

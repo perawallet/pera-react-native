@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,11 +11,15 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore'
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { encodeAddress } from 'algosdk'
 import nacl from 'tweetnacl'
-import type { AccessControl } from './models'
-import { SeedScheme } from './constants'
+import { AccessControlPermission, type AccessControl } from './models'
+import {
+    SeedScheme,
+    SIGNING_ACCESS_DOMAIN,
+    BACKUP_ACCESS_DOMAIN,
+} from './constants'
+import { KeyManagementError } from './errors'
 
 /**
  * Pera-domain extras (acl, timestamps) round-trip through a seed entry's
@@ -31,29 +35,27 @@ export type SeedPeraMetadata = {
 
 export type SeedMetadata = {
     scheme?: SeedScheme
-    /** Hex-encoded BIP39 entropy. Only present when scheme === 'bip39'. */
-    entropy?: string
     pera?: SeedPeraMetadata
     [key: string]: unknown
 }
 
 /**
  * Builds the metadata payload for `keyStore.import({ type: 'seed', ... })`.
- * Caller supplies the scheme and (for bip39) the entropy bytes; Pera-domain
- * extras are nested under `pera` so they don't collide with keystore-defined
- * fields.
+ * Caller supplies the scheme; Pera-domain extras are nested under `pera` so
+ * they don't collide with keystore-defined fields. A bip39 seed's entropy is
+ * never stored here — it lives in a separate `secret-key` child (see
+ * {@link entropyChildMetadata}) so it can't leak through the seed's exported
+ * metadata.
  */
 export const buildSeedMetadata = (params: {
     scheme: SeedScheme
-    entropy?: Uint8Array
     acl?: AccessControl[]
     createdAt?: Date
     expiresAt?: Date
 }): SeedMetadata => {
-    const { scheme, entropy, acl, createdAt, expiresAt } = params
+    const { scheme, acl, createdAt, expiresAt } = params
     return {
         scheme,
-        ...(entropy ? { entropy: bytesToHex(entropy) } : {}),
         pera: {
             acl,
             createdAt: (createdAt ?? new Date()).toISOString(),
@@ -61,6 +63,37 @@ export const buildSeedMetadata = (params: {
         },
     }
 }
+
+/**
+ * Metadata stamped on the `secret-key` child that holds a bip39 seed's BIP39
+ * entropy: `parentKeyId` ties it to the seed and `entropyKey` marks it as the
+ * entropy holder. Locating the child by this metadata (see
+ * {@link entropyChildIdOf}) avoids depending on a derived id format. The
+ * entropy is stored apart from the seed so it never rides along in the seed's
+ * reactive snapshot or its `keyStore.export()` metadata.
+ */
+export const entropyChildMetadata = (
+    seedKeyId: string,
+): { parentKeyId: string; entropyKey: true } => ({
+    parentKeyId: seedKeyId,
+    entropyKey: true,
+})
+
+/**
+ * Finds the keystore id of a seed's entropy `secret-key` child by its metadata
+ * ({@link entropyChildMetadata}), or `undefined` if it has none.
+ */
+export const entropyChildIdOf = (
+    seedKeyId: string,
+    keys: readonly Key[],
+): string | undefined =>
+    keys.find(k => {
+        const meta = (k.metadata ?? {}) as {
+            parentKeyId?: unknown
+            entropyKey?: unknown
+        }
+        return meta.parentKeyId === seedKeyId && meta.entropyKey === true
+    })?.id
 
 const seedMetadata = (key: Key): SeedMetadata =>
     (key.metadata ?? {}) as SeedMetadata
@@ -74,7 +107,11 @@ const seedMetadata = (key: Key): SeedMetadata =>
 export const seedSchemeOf = (key: Key): SeedScheme | null => {
     if (key.type !== 'seed' && key.type !== 'hd-seed') return null
     const scheme = seedMetadata(key).scheme
-    if (scheme === SeedScheme.Bip39 || scheme === SeedScheme.Algo25) {
+    if (
+        scheme === SeedScheme.Bip39 ||
+        scheme === SeedScheme.Algo25 ||
+        scheme === SeedScheme.Quantum
+    ) {
         return scheme
     }
     return null
@@ -96,8 +133,25 @@ export const algo25AddressOf = (key: Key): string => {
     return ''
 }
 
-export const aclOf = (key: Key): AccessControl[] =>
-    seedMetadata(key).pera?.acl ?? []
+// The wallet's own access origins, shared with the consumers that pass them to
+// `checkAccess` (signing's SIGNING_KEY_DOMAIN, the backup flow's DOMAIN) so the
+// fail-closed default and the call sites can't drift.
+const DEFAULT_SEED_ACL: AccessControl[] = [
+    {
+        domains: [SIGNING_ACCESS_DOMAIN, BACKUP_ACCESS_DOMAIN],
+        permissions: [AccessControlPermission.ReadPrivate],
+    },
+]
+
+export const aclOf = (key: Key): AccessControl[] => {
+    const stored = seedMetadata(key).pera?.acl
+    // Fail closed: a seed with no/empty ACL is treated as scoped to the
+    // wallet's own origins, not allow-all. `checkAccess` then denies any other
+    // domain instead of silently permitting it. Existing seeds (which all have
+    // empty ACLs) keep working because every real caller passes one of the
+    // default domains.
+    return stored && stored.length > 0 ? stored : DEFAULT_SEED_ACL
+}
 
 export const createdAtOf = (key: Key): Date => {
     const iso = seedMetadata(key).pera?.createdAt
@@ -110,6 +164,12 @@ export const expiresAtOf = (key: Key): Date | undefined => {
 }
 
 export const hexToBytes = (hex: string): Uint8Array => {
+    // Reject malformed input up front: an odd length or a non-hex character
+    // would otherwise decode silently (`parseInt` yields NaN → 0), producing
+    // wrong key/entropy bytes instead of a clear failure.
+    if (hex.length % 2 !== 0 || /[^0-9a-fA-F]/.test(hex)) {
+        throw new KeyManagementError('hexToBytes: input is not valid hex')
+    }
     const out = new Uint8Array(hex.length / 2)
     for (let i = 0; i < out.length; i++) {
         out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16)

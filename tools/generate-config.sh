@@ -70,12 +70,16 @@ append_config "BACKEND_API_KEY" "backendAPIKey" "string"
 append_config "ALGOD_API_KEY" "algodApiKey" "string"
 append_config "INDEXER_API_KEY" "indexerApiKey" "string"
 
-# App Store ID
-append_config "APP_STORE_APP_ID" "appStoreAppID" "string"
+# App Store ID (per-env: {PRODUCTION_,STAGING_}APP_STORE_APPLE_ID, aliased by setup-env-secrets.sh)
+append_config "APP_STORE_APPLE_ID" "appStoreAppID" "string"
 append_config "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" "playIntegrityCloudProjectNumber" "string"
 
 # Build channel (development | staging | production)
 append_config "APP_ENV" "appEnvironment" "string"
+
+# Full git release tag (e.g. v7.0.0-alpha.9) for the in-app QA version display.
+# Set by Bitrise on tag builds; absent locally/off-tag.
+append_config "BITRISE_GIT_TAG" "releaseTag" "string"
 
 # Explorer URLs
 append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"

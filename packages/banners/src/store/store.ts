@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -48,21 +48,6 @@ export const useBannersStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
-            // v1 persisted banner ids as numbers; ids are decimal strings now,
-            // so normalize old entries or previously dismissed banners would
-            // reappear after upgrade.
-            migrate: persisted => {
-                const state = persisted as {
-                    dismissedBannerIds?: Array<string | number>
-                }
-                return {
-                    ...state,
-                    dismissedBannerIds: (state.dismissedBannerIds ?? []).map(
-                        String,
-                    ),
-                }
-            },
             // autoOpenedBannerIds is intentionally NOT persisted — it's a
             // session-scoped flag so the carousel re-prompts each launch when
             // the server still flags a banner as 'select' or 'force'.

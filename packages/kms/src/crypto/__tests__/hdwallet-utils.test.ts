@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,7 +14,16 @@
 import { describe, test, expect } from 'vitest'
 import { mnemonicToEntropy, mnemonicToSeed } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
-import { deriveLiquidAuthMainKey, generateHDMasterKey } from '../hdwallet-utils'
+import {
+    deriveLiquidAuthMainKey,
+    entropyToIndices,
+    entropyToMnemonic,
+    generateHDMasterKey,
+} from '../hdwallet-utils'
+import {
+    mnemonicIndexToWord,
+    mnemonicWordsToIndices,
+} from '../mnemonic-indices'
 
 const TEST_MNEMONIC =
     'champion say kitchen sock defense example mesh body sample artwork warfare canvas item recall cheese total floor cycle such asthma okay immense lake street'
@@ -45,6 +54,41 @@ describe('generateHDMasterKey', () => {
         expect(a.mnemonic.split(' ').length).toBe(24)
         expect(b.mnemonic.split(' ').length).toBe(24)
         expect(a.mnemonic).not.toBe(b.mnemonic)
+    })
+})
+
+describe('entropyToIndices', () => {
+    const entropies: Record<string, Uint8Array> = {
+        '128-bit': Uint8Array.from({ length: 16 }, (_, i) => (i * 17) & 0xff),
+        '256-bit': Uint8Array.from(
+            { length: 32 },
+            (_, i) => (i * 7 + 3) & 0xff,
+        ),
+        'all-zero 256-bit': new Uint8Array(32),
+    }
+
+    test.each(Object.entries(entropies))(
+        'matches the @scure word path for %s entropy',
+        (_label, entropy) => {
+            const viaWords = mnemonicWordsToIndices(
+                entropyToMnemonic(entropy).split(' '),
+            )
+            expect(Array.from(entropyToIndices(entropy))).toEqual(
+                Array.from(viaWords!),
+            )
+        },
+    )
+
+    test('encodes the canonical all-zero 24-word vector', () => {
+        const indices = entropyToIndices(new Uint8Array(32))
+        const words = Array.from(indices, mnemonicIndexToWord)
+        expect(words.slice(0, 23)).toEqual(Array(23).fill('abandon'))
+        expect(words[23]).toBe('art')
+    })
+
+    test('rejects entropy that is not a valid BIP39 length', () => {
+        expect(() => entropyToIndices(new Uint8Array(31))).toThrow(RangeError)
+        expect(() => entropyToIndices(new Uint8Array(0))).toThrow(RangeError)
     })
 })
 

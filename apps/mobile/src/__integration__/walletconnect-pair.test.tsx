@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -477,6 +477,16 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
                 </>,
             )
 
+            // The provider consumes `connectionError` (shows a toast, then
+            // clears the store), so capture the surfaced error the moment it
+            // lands rather than reading it back off the store afterwards.
+            const surfaced: { error: Error | null } = { error: null }
+            const unsubscribe = useWalletConnectStore.subscribe(state => {
+                if (state.connectionError) {
+                    surfaced.error = state.connectionError
+                }
+            })
+
             await driveSessionRequest({
                 peerMeta: {
                     name: 'Wrong-chain dApp',
@@ -497,16 +507,17 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             expect(
                 useWalletConnectStore.getState().sessionRequests,
             ).toHaveLength(0)
-            // The error surface DID get an entry (consumed by
-            // WalletConnectErrorBottomSheet in production).
+            // The error surface DID get an entry (consumed in production by
+            // the provider, which shows it as a toast — routed to the QR
+            // scanner's own notifier when the scanner is open — then clears
+            // the store).
             await waitFor(() => {
-                expect(
-                    useWalletConnectStore.getState().connectionError,
-                ).toBeTruthy()
+                expect(surfaced.error).toBeTruthy()
             })
-            expect(useWalletConnectStore.getState().connectionError?.name).toBe(
+            expect(surfaced.error?.name).toBe(
                 'WalletConnectInvalidNetworkError',
             )
+            unsubscribe()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

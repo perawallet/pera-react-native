@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,13 +11,14 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import {
     useNetwork,
     Address,
     toBigInt,
     type AccountInformation,
 } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
 import { getAccountBalance, getAccountHoldings } from '../db'
 
 const getAccountInformationQueryKey = (address: string, network: string) => [
@@ -55,7 +56,7 @@ export const useAccountInformationQuery = (address: string) => {
                 // but AccountInformation.assets is ASAs-only — the algo balance
                 // is carried separately in `amount` above.
                 assets: holdings
-                    .filter(h => h.assetId !== ALGO_ASSET_ID)
+                    .filter(h => !isAlgoAssetId(h.assetId))
                     .map(h => ({
                         assetId: BigInt(h.assetId),
                         amount: toBigInt(h.amount),

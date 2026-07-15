@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -61,6 +61,7 @@ type NavigationApi = {
     canGoBack: () => boolean
     setParams: (params: Record<string, unknown>) => void
     isReady: () => boolean
+    isFocused: () => boolean
     addListener: (event: string, listener: () => void) => () => void
     dispatch: (action: unknown) => void
     reset: (state: unknown) => void
@@ -103,6 +104,7 @@ const noopApi: NavigationApi = {
     canGoBack: () => false,
     setParams: () => {},
     isReady: () => true,
+    isFocused: () => true,
     addListener: () => () => {},
     dispatch: () => {},
     reset: () => {},
@@ -211,6 +213,8 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
         canGoBack,
         setParams,
         isReady: () => true,
+        // The harness only renders the top route, so running code is focused.
+        isFocused: () => true,
         addListener: () => () => {},
         dispatch: () => {},
         reset,

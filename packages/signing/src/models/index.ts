@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -23,6 +23,7 @@ import type {
     Arc60StdSigData,
     RejectReason,
     SignableAnalysis,
+    SignRequestTransportOptions,
     SourceType,
     TransportResult,
 } from '../pipeline/types'
@@ -57,6 +58,13 @@ type BaseSignRequest = {
      * transport can target the right backend record.
      */
     signRequestId?: string
+    /**
+     * Optional transport-routing hints, namespaced by concern (e.g.
+     * `transportOptions.multisig.proposeMode`). Threaded through to
+     * {@link SourceMetadata.transportOptions} so transports can read them
+     * without the generic request type accumulating one-off flags.
+     */
+    transportOptions?: SignRequestTransportOptions
 }
 
 export type TransactionSignRequest = {
@@ -97,6 +105,17 @@ export type TransactionSignRequest = {
      * embedded verbatim — critical so per-participant signatures verify.
      */
     approveSignedBytes?: (bytes: Uint8Array[]) => Promise<void>
+    /**
+     * Multisig propose only: fired once the backend sign-request is created
+     * (see {@link SourceCallbacks.onProposed}). The shared-account swap flow
+     * uses it to register a handoff with the backend `signRequestId` so the
+     * swap completes once the co-signer signs.
+     */
+    onProposed?: (info: {
+        signRequestId: string
+        status: import('../pipeline/types').SignRequestStatus
+        rawTransactionsBase64: string[]
+    }) => Promise<void>
 } & BaseSignRequest
 
 export type PeraArbitraryDataMessage = {

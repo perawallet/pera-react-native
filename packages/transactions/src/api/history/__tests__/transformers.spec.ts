@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -60,6 +60,7 @@ describe('transformTransactionItem', () => {
             asset: null,
             applicationId: null,
             innerTransactionCount: null,
+            balanceImpacts: [],
         })
     })
 
@@ -207,6 +208,50 @@ describe('transformTransactionItem', () => {
         const result = transformTransactionItem(apiItem)
 
         expect(result.innerTransactionCount).toBe(3)
+    })
+
+    it('defaults balanceImpacts to an empty array when absent', () => {
+        const apiItem = makeApiItem({ balance_impacts: undefined })
+        const result = transformTransactionItem(apiItem)
+
+        expect(result.balanceImpacts).toEqual([])
+    })
+
+    it('maps balance_impacts to signed Decimal amounts', () => {
+        const apiItem = makeApiItem({
+            tx_type: 'appl',
+            application_id: '12345',
+            balance_impacts: [
+                {
+                    asset_id: '0',
+                    unit_name: 'ALGO',
+                    fraction_decimals: 6,
+                    amount: '-1500000',
+                },
+                {
+                    asset_id: '31566704',
+                    unit_name: 'USDC',
+                    fraction_decimals: 6,
+                    amount: '2000000',
+                },
+            ],
+        })
+        const result = transformTransactionItem(apiItem)
+
+        expect(result.balanceImpacts).toEqual([
+            {
+                assetId: '0',
+                unitName: 'ALGO',
+                fractionDecimals: 6,
+                amount: new Decimal('-1500000'),
+            },
+            {
+                assetId: '31566704',
+                unitName: 'USDC',
+                fractionDecimals: 6,
+                amount: new Decimal('2000000'),
+            },
+        ])
     })
 
     it('preserves groupId and closeTo when present', () => {

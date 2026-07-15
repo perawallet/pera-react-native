@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -33,7 +33,11 @@ export const EXPANDABLE_PANEL_ANIMATION_DURATION = 200
 export const BACKUP_REMINDER_BANNER_REVEAL_DELAY = 800
 export const BACKUP_REMINDER_BANNER_REVEAL_DURATION = 200
 export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250
-export const LONG_NOTIFICATION_DURATION = 5000
+
+// How long the "back online" confirmation stays before auto-dismissing.
+export const OFFLINE_RECONNECT_DISPLAY_MS = 3000
+// Duration of the offline banner's fade-in animation on mount.
+export const OFFLINE_BANNER_FADE_MS = 200
 
 export const SHORT_PROMPT_DISPLAY_DELAY = 300
 export const LONG_PROMPT_DISPLAY_DELAY = 3000

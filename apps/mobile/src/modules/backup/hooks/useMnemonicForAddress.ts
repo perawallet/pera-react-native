@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,23 +17,25 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     useKMS,
+    BACKUP_ACCESS_DOMAIN,
     type ExecuteWithMnemonicHandler,
 } from '@perawallet/wallet-core-kms'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
 export type UseMnemonicForAddressResult = {
     /**
-     * Runs `handler` with the mnemonic words for `address`. The raw bytes are
-     * zeroed inside the KMS session before this returns, so the full phrase
-     * never lives in React state — callers opt in to holding any derived
-     * values (e.g. sliced word pairs) by storing them explicitly.
+     * Runs `handler` with the mnemonic for `address` as a zeroable
+     * `Uint16Array` of wordlist indices. The index buffer (and the raw bytes it
+     * was built from) are zeroed inside the KMS session before this returns, so
+     * the phrase never lives in React state — callers opt in to holding any
+     * derived values (e.g. sliced word pairs) by storing them explicitly.
      */
     executeWithMnemonic: <T>(
         handler: ExecuteWithMnemonicHandler<T>,
     ) => Promise<T>
 }
 
-const DOMAIN = 'backup-flow'
+const DOMAIN = BACKUP_ACCESS_DOMAIN
 
 export const useMnemonicForAddress = (
     address: Optional<string>,
@@ -61,7 +63,8 @@ export const useMnemonicForAddress = (
 
             if (
                 currentAccount.type !== AccountTypes.hdWallet &&
-                currentAccount.type !== AccountTypes.algo25
+                currentAccount.type !== AccountTypes.algo25 &&
+                currentAccount.type !== AccountTypes.quantum
             ) {
                 throw new Error('Account type does not support backup')
             }

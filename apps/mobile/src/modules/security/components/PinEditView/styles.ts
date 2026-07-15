@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,10 +14,9 @@ import { makeStyles } from '@rneui/themed'
 import { type EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles(
-    (theme, { height, insets }: { height: number; insets: EdgeInsets }) => ({
+    (theme, { insets }: { insets: EdgeInsets }) => ({
         innerContainer: {
             flexGrow: 1,
-            minHeight: height,
             paddingBottom: insets.bottom,
             backgroundColor: theme.colors.background,
         },

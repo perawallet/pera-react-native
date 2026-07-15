@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,16 @@ import { renderHook } from '@testing-library/react'
 import { proposeSignRequestSchema } from '@perawallet/wallet-core-multisig'
 import { useMultisigTransportAdapters } from '../useMultisigTransportAdapters'
 import type { SigningResult } from '../../pipeline/types'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+
+// Fake signed-transaction node. The transport reads only `txn` (passed to the
+// mocked encoder via its `tag`) and `sig`; the cast bridges the partial literal
+// to algosdk's SignedTransaction class without needing a real instance.
+const fakeSigned = (tag: string, sig?: Uint8Array): PeraSignedTransaction =>
+    ({
+        txn: { tag },
+        ...(sig ? { sig } : {}),
+    }) as unknown as PeraSignedTransaction
 
 const mocks = vi.hoisted(() => ({
     proposeSignRequest: vi.fn(),
@@ -110,8 +120,8 @@ const buildTxnSigningResult = (): {
     signedData: {
         type: 'transactions',
         signed: [
-            { txn: { tag: 'TXN_1' } as any, sig: new Uint8Array([1]) },
-            { txn: { tag: 'TXN_2' } as any, sig: new Uint8Array([2]) },
+            fakeSigned('TXN_1', new Uint8Array([1])),
+            fakeSigned('TXN_2', new Uint8Array([2])),
         ],
     },
     signers: [
@@ -152,12 +162,7 @@ describe('useMultisigTransportAdapters', () => {
                 multisigAddress: 'MSIG',
                 signedData: {
                     type: 'transactions',
-                    signed: [
-                        {
-                            txn: { tag: 'TXN_1' } as any,
-                            sig: new Uint8Array([1]),
-                        },
-                    ],
+                    signed: [fakeSigned('TXN_1', new Uint8Array([1]))],
                 },
                 signers: [
                     { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
@@ -318,12 +323,7 @@ describe('useMultisigTransportAdapters', () => {
                 multisigAddress: 'MSIG',
                 signedData: {
                     type: 'transactions',
-                    signed: [
-                        {
-                            txn: { tag: 'TXN_1' } as any,
-                            sig: new Uint8Array([1]),
-                        },
-                    ],
+                    signed: [fakeSigned('TXN_1', new Uint8Array([1]))],
                 },
                 signers: [
                     { address: 'PARTICIPANT_A', signatures: ['c2lnQTA='] },
@@ -385,7 +385,7 @@ describe('useMultisigTransportAdapters', () => {
                 multisigAddress: 'MSIG',
                 signedData: {
                     type: 'transactions',
-                    signed: [{ txn: { tag: 'TXN_1' } as any }],
+                    signed: [fakeSigned('TXN_1')],
                 },
                 signers: [{ address: 'A' /* no signatures field */ }],
                 type: 'async',
