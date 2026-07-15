@@ -76,12 +76,21 @@ jobs:
 
       # Fail the build on any moderate+ vulnerability in runtime deps.
       # Dev-only advisories are reported but not blocking.
+      # npm retired the legacy audit endpoints (410 Gone) and pnpm 10 never
+      # got bulk-advisory support, so run just the audit through pnpm 11
+      # until the repo moves to pnpm 11 (pnpm/pnpm#11265).
       - name: pnpm audit (runtime)
-        run: pnpm audit --prod --audit-level=moderate
+        run: >
+          pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0
+          --pm-on-fail=ignore --config.manage-package-manager-versions=false
+          audit --prod --audit-level=moderate
 
       - name: pnpm audit (all, informational)
         if: always()
-        run: pnpm audit --audit-level=low || true
+        run: >
+          pnpm dlx --config.minimumReleaseAge=0 pnpm@11.13.0
+          --pm-on-fail=ignore --config.manage-package-manager-versions=false
+          audit --audit-level=low || true
 
   lint:
     name: Lint
