@@ -88,7 +88,26 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
                     decimals: 2,
                 },
             ],
+            [
+                '456',
+                {
+                    assetId: '456',
+                    name: 'Other Asset',
+                    unitName: 'OTHR',
+                    decimals: 6,
+                },
+            ],
+            [
+                '31566704',
+                {
+                    assetId: '31566704',
+                    name: 'USD Coin',
+                    unitName: 'USDC',
+                    decimals: 6,
+                },
+            ],
         ]),
+        isFetched: true,
     }),
 }))
 

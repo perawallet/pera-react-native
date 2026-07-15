@@ -22,9 +22,11 @@ import {
     useCreateQuotesMutation,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     isDecimalEqual,
+    isNotFoundError,
     uint64IdToNumber,
     useDebouncedValue,
     type Nullable,
@@ -51,6 +53,11 @@ type UseSwapQuotesResult = {
     allQuotes: SwapQuote[]
     quotedAmount: Nullable<Decimal>
     isQuoteFetching: boolean
+    /**
+     * True when the last quote attempt failed, the server reported the pair
+     * as unknown (404), or an asset of the pair doesn't exist on the active
+     * network (e.g. a pair seeded on mainnet after switching to testnet).
+     */
     isQuoteError: boolean
     /** Clears the quotes and resets the underlying mutation. */
     reset: () => void
@@ -77,7 +84,7 @@ export const useSwapQuotes = ({
     const {
         mutateAsync: createQuotes,
         isPending: isQuoteLoading,
-        isError: isQuoteError,
+        isError: isQuoteMutationError,
         reset: resetQuoteMutation,
     } = useCreateQuotesMutation()
     const createQuotesRef = useRef(createQuotes)
@@ -85,6 +92,26 @@ export const useSwapQuotes = ({
 
     const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
     const [quotedAmount, setQuotedAmount] = useState<Nullable<Decimal>>(null)
+
+    // Both assets must exist on the active network before quoting — a pair
+    // seeded on another network (e.g. mainnet USDC after switching to
+    // testnet) would just 404. fetchMissing resolves assets the user doesn't
+    // hold through the per-network API, so absence is authoritative. Empty
+    // ids while disabled so a caller that isn't quoting doesn't pay the
+    // lookup (useAssetsQuery has no enabled option of its own).
+    const pairAssets = useAssetsQuery(enabled ? [fromAssetId, toAssetId] : [], {
+        fetchMissing: true,
+    })
+    const isPairChecked = pairAssets.isFetched
+    const isPairOnNetwork =
+        pairAssets.data.has(fromAssetId) && pairAssets.data.has(toAssetId)
+    const isPairUnsupported = enabled && isPairChecked && !isPairOnNetwork
+
+    // Pair the server said it can't quote (404) — don't re-fire on every
+    // amount/dep change; only a pair/network change or reset() clears it.
+    // State (not a ref) so the error surfaces in render as isQuoteError.
+    const [notFoundPair, setNotFoundPair] = useState<Nullable<string>>(null)
+    const pairKey = `${network}:${fromAssetId}:${toAssetId}`
 
     const debouncedPayAmount = useDebouncedValue(
         payAmount,
@@ -95,10 +122,18 @@ export const useSwapQuotes = ({
     const reset = useCallback(() => {
         setAllQuotes([])
         setQuotedAmount(null)
+        setNotFoundPair(null)
         resetQuoteMutation()
     }, [resetQuoteMutation])
 
     useEffect(() => {
+        // Clear a stale tombstone and bail — the state change re-runs the
+        // effect, which then fetches once instead of racing a second fetch.
+        if (notFoundPair !== null && notFoundPair !== pairKey) {
+            setNotFoundPair(null)
+            return
+        }
+
         if (
             !enabled ||
             !swapperAddress ||
@@ -111,6 +146,17 @@ export const useSwapQuotes = ({
             setQuotedAmount(null)
             return
         }
+
+        if (!isPairChecked) return
+        if (!isPairOnNetwork) {
+            // A pair that left the network (e.g. a persisted mainnet asset
+            // after switching to testnet) must not leave the previous
+            // network's quotes actionable next to the error banner.
+            setAllQuotes([])
+            setQuotedAmount(null)
+            return
+        }
+        if (notFoundPair === pairKey) return
 
         const amountInBaseUnits = displayUnitsToBaseUnits(
             debouncedPayAmount,
@@ -141,8 +187,11 @@ export const useSwapQuotes = ({
                 setAllQuotes(result)
                 setQuotedAmount(debouncedPayAmount)
                 Keyboard.dismiss()
-            } catch {
+            } catch (error) {
                 if (cancelled) return
+                if (isNotFoundError(error)) {
+                    setNotFoundPair(pairKey)
+                }
                 setAllQuotes([])
                 setQuotedAmount(null)
             }
@@ -157,13 +206,19 @@ export const useSwapQuotes = ({
         enabled,
         swapperAddress,
         debouncedPayAmount,
+        pairKey,
         fromAssetId,
         toAssetId,
         payDecimals,
         slippage,
         deviceId,
+        isPairChecked,
+        isPairOnNetwork,
+        notFoundPair,
     ])
 
+    const isQuoteError =
+        isQuoteMutationError || isPairUnsupported || notFoundPair === pairKey
     const isDebouncing = !isDecimalEqual(payAmount, debouncedPayAmount)
     const hasUnresolvedQuote =
         payAmount !== null &&
