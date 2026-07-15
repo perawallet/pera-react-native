@@ -15,6 +15,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 const fetchAssetPricesMock = vi.hoisted(() => vi.fn())
 const fetchPublicAssetDetailsMock = vi.hoisted(() => vi.fn())
 const upsertAssetPricesMock = vi.hoisted(() => vi.fn())
+const getStaleOrMissingPriceAssetIdsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../api', () => ({
     fetchAssetPrices: fetchAssetPricesMock,
@@ -23,6 +24,7 @@ vi.mock('../../api', () => ({
 
 vi.mock('../../db', () => ({
     upsertAssetPrices: upsertAssetPricesMock,
+    getStaleOrMissingPriceAssetIds: getStaleOrMissingPriceAssetIdsMock,
 }))
 
 import { fetchAndPersistPrices } from '../price-syncer'
@@ -32,6 +34,8 @@ describe('fetchAndPersistPrices', () => {
         fetchAssetPricesMock.mockReset()
         fetchPublicAssetDetailsMock.mockReset()
         upsertAssetPricesMock.mockReset()
+        getStaleOrMissingPriceAssetIdsMock.mockReset()
+        getStaleOrMissingPriceAssetIdsMock.mockResolvedValue(['0'])
     })
 
     test('no-ops on empty input', async () => {
@@ -66,6 +70,18 @@ describe('fetchAndPersistPrices', () => {
         expect(algoCall?.[0].prices[0].usdPrice.toString()).toBe('0')
     })
 
+    test('skips the ALGO fetch when the ALGO price is fresh', async () => {
+        getStaleOrMissingPriceAssetIdsMock.mockResolvedValue([])
+        fetchAssetPricesMock.mockResolvedValue({
+            results: [{ asset_id: 123, usd_value: '2.0' }],
+        })
+
+        await fetchAndPersistPrices(['123', '0'], 'mainnet')
+
+        expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
+        expect(fetchAssetPricesMock).toHaveBeenCalledWith(['123'], 'mainnet')
+    })
+
     test('throws when every batch settles as rejected', async () => {
         fetchAssetPricesMock.mockRejectedValue(new Error('batch failed'))
         fetchPublicAssetDetailsMock.mockRejectedValue(
@@ -75,5 +91,14 @@ describe('fetchAndPersistPrices', () => {
         await expect(fetchAndPersistPrices(['123'], 'mainnet')).rejects.toThrow(
             'All price sync batches failed',
         )
+    })
+
+    test('still throws when ALGO was skipped fresh but every real batch failed', async () => {
+        getStaleOrMissingPriceAssetIdsMock.mockResolvedValue([])
+        fetchAssetPricesMock.mockRejectedValue(new Error('batch failed'))
+
+        await expect(
+            fetchAndPersistPrices(['123', '0'], 'mainnet'),
+        ).rejects.toThrow('All price sync batches failed')
     })
 })

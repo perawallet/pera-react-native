@@ -488,38 +488,71 @@ type GetStaleOrMissingAssetIdsParams = {
 }
 
 /**
- * Given a candidate set of asset IDs, returns those that are either not in
- * the DB at all or older than `ttlMs`. Used by the syncer to skip work
- * during steady-state polling.
- *
- * The freshness predicate is pushed into SQL so we only round-trip the
- * matching IDs, not every cached row.
+ * Shared freshness scan over any table carrying `assetId`/`network`/
+ * `updatedAt` columns. The predicate is pushed into SQL so we only
+ * round-trip the matching IDs, not every cached row.
  */
-export async function getStaleOrMissingAssetIds({
-    db = getDatabase(),
+async function getStaleOrMissingIdsFromTable({
+    db,
+    table,
     assetIds,
     network,
     ttlMs,
-}: GetStaleOrMissingAssetIdsParams): Promise<string[]> {
+}: Required<GetStaleOrMissingAssetIdsParams> & {
+    table: typeof AssetsNodeSchema | typeof AssetPricesSchema
+}): Promise<string[]> {
     if (assetIds.length === 0) return []
 
     const decimalIds = assetIds.map(id => new Decimal(id))
     const freshThreshold = Date.now() - ttlMs
 
     const freshRows = await db
-        .select({ assetId: AssetsNodeSchema.assetId })
-        .from(AssetsNodeSchema)
+        .select({ assetId: table.assetId })
+        .from(table)
         .where(
             and(
-                inArray(AssetsNodeSchema.assetId, decimalIds),
-                eq(AssetsNodeSchema.network, network),
-                gte(AssetsNodeSchema.updatedAt, freshThreshold),
+                inArray(table.assetId, decimalIds),
+                eq(table.network, network),
+                gte(table.updatedAt, freshThreshold),
             ),
         )
         .all()
 
     const freshSet = new Set(freshRows.map(r => r.assetId.toString()))
     return assetIds.filter(id => !freshSet.has(id))
+}
+
+/**
+ * Given a candidate set of asset IDs, returns those that are either not in
+ * the DB at all or older than `ttlMs`. Used by the syncer to skip work
+ * during steady-state polling.
+ */
+export async function getStaleOrMissingAssetIds({
+    db = getDatabase(),
+    ...params
+}: GetStaleOrMissingAssetIdsParams): Promise<string[]> {
+    return getStaleOrMissingIdsFromTable({
+        db,
+        table: AssetsNodeSchema,
+        ...params,
+    })
+}
+
+/**
+ * Price-row counterpart of `getStaleOrMissingAssetIds`: returns the asset IDs
+ * whose price row on `network` is absent or older than `ttlMs`. Lets the
+ * price syncer skip refetches when overlapping sync/enrichment paths run
+ * within the TTL window.
+ */
+export async function getStaleOrMissingPriceAssetIds({
+    db = getDatabase(),
+    ...params
+}: GetStaleOrMissingAssetIdsParams): Promise<string[]> {
+    return getStaleOrMissingIdsFromTable({
+        db,
+        table: AssetPricesSchema,
+        ...params,
+    })
 }
 
 type DeleteAssetsParams = {

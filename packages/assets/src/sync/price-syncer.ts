@@ -11,7 +11,7 @@
  */
 
 import { fetchAssetPrices, fetchPublicAssetDetails } from '../api'
-import { upsertAssetPrices } from '../db'
+import { upsertAssetPrices, getStaleOrMissingPriceAssetIds } from '../db'
 
 import { Decimal } from 'decimal.js'
 import {
@@ -23,6 +23,10 @@ import {
 
 const PRICE_BATCH_SIZE = 25
 const PRICE_FETCH_CONCURRENCY = 5
+// Below the sync service's 60 s price-resync cadence so the periodic pass
+// always refreshes, while the overlapping enrichment/post-submission callers
+// (which have no gate of their own) dedupe against it.
+const ALGO_PRICE_TTL_MS = 30_000
 
 export async function fetchAndPersistPrices(
     assetIds: string[],
@@ -35,8 +39,19 @@ export async function fetchAndPersistPrices(
 
     // ALGO uses a different endpoint, so it doesn't compete with the
     // throttled batches for the bulk-assets endpoint.
+    let algoSkippedFresh = false
     const algoResult = await Promise.allSettled([
         (async () => {
+            const staleAlgo = await getStaleOrMissingPriceAssetIds({
+                assetIds: [ALGO_ASSET_ID],
+                network,
+                ttlMs: ALGO_PRICE_TTL_MS,
+            })
+            if (staleAlgo.length === 0) {
+                algoSkippedFresh = true
+                return
+            }
+
             const algoDetails = await fetchPublicAssetDetails(
                 ALGO_ASSET_ID,
                 network,
@@ -71,7 +86,11 @@ export async function fetchAndPersistPrices(
         batchResults.push(...sliceResults)
     }
 
-    const results = [...algoResult, ...batchResults]
+    // A fresh-skip did no work, so it must not count as a success when
+    // deciding whether the whole pass failed.
+    const results = algoSkippedFresh
+        ? batchResults
+        : [...algoResult, ...batchResults]
 
     // Re-throw if all batches failed
     const allFailed = results.every(r => r.status === 'rejected')

@@ -54,6 +54,8 @@ const ASSET_RESYNC_INTERVAL_MS = 10 * 60 * 1000
 // re-price still walks all held ids (a follow-up will narrow this to assets
 // that already carry a price via a join-based staleness check), so keep the
 // cadence modest rather than per-tick.
+// Must stay above ALGO_PRICE_TTL_MS in packages/assets price-syncer, or the
+// TTL gate would classify every periodic pass as fresh and stop re-pricing.
 const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
 
 export class SyncService {
