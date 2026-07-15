@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, Linking, type AppStateStatus } from 'react-native'
+import { useIsFocused } from '@react-navigation/native'
 import {
     useCardStore,
     useOnboardingKycPoll,
@@ -49,6 +50,9 @@ export const useCardOnboardingVerificationScreen =
         const onboardingId = useCardStore(state => state.onboardingId)
         // Polling starts only once a Veriff session has been opened.
         const [hasStarted, setHasStarted] = useState(false)
+        // Pause the 4 s poll while another screen covers this one; the
+        // AppState listener below already refetches on refocus-from-Veriff.
+        const isFocused = useIsFocused()
 
         const startVerification = useStartVerificationMutation()
 
@@ -58,7 +62,7 @@ export const useCardOnboardingVerificationScreen =
             hasPollTimedOut,
             restartPolling,
             refetch,
-        } = useOnboardingKycPoll({ enabled: hasStarted })
+        } = useOnboardingKycPoll({ enabled: hasStarted && isFocused })
 
         const handleVerify = useCallback(() => {
             // Set by email/verify; if missing, re-verify rather than start a
