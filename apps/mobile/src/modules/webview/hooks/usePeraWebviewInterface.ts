@@ -519,6 +519,15 @@ export const usePeraWebviewInterface = (
                                 ),
                         })
                     } catch (e) {
+                        // Log every relayed rejection here at the transport
+                        // boundary (parity with the WalletConnect transport's
+                        // surfaceError) so real-world dApp failures — e.g.
+                        // algosdk v3's strict decode rejections (PERA-4503) —
+                        // are observable regardless of which resolve path threw.
+                        logger.warn('ARC-0001 sign request rejected', {
+                            code: (e as { code?: number }).code,
+                            message: (e as Error).message,
+                        })
                         // 4100 (Unauthorized) is the only ARC-0001 code that
                         // gets a dedicated JSON-RPC slot; everything else
                         // (4200/4201/4300) is structurally a bad request.

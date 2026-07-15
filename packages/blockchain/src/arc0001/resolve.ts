@@ -84,9 +84,16 @@ export const resolveArc0001SignTxnRequest = (
         try {
             return decodeTransactions([bytes])[0] as PeraTransaction
         } catch (e) {
+            // algosdk v3 validates on decode and rejects malformed input that
+            // algokit-utils v10 tolerated — notably a zero-address `rekeyTo`
+            // (canonical encoders omit an empty rekey). This strict rejection
+            // is deliberate: algosdk is the canonical source of truth for
+            // transaction validity (PERA-4503). Transports log the relayed
+            // rejection, so real-dApp impact stays observable.
+            const reason = e instanceof Error ? e.message : String(e)
             throw new Arc0001Error(
                 Arc0001ErrorCode.InvalidInput,
-                `transaction at index ${index} is not valid msgpack: ${e instanceof Error ? e.message : String(e)}`,
+                `could not decode transaction at index ${index}: ${reason}`,
                 { index, field: 'txn' },
             )
         }
