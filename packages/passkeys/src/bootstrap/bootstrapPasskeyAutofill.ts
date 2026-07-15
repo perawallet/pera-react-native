@@ -12,7 +12,7 @@
 
 import {
     fetchSecret,
-    getMasterKey,
+    readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import type { KeyData } from '@algorandfoundation/keystore'
@@ -30,21 +30,6 @@ export interface BootstrapPasskeyAutofillOptions {
         getPasskeyAction: string
         createPasskeyAction: string
     }
-    /**
-     * Optional native byte-channel writer for the keystore master key.
-     *
-     * When supplied and it resolves `true`, the master key is persisted to the
-     * shared autofill store as **raw bytes** — so a non-zeroable hex string is
-     * never materialized in the JS heap (the `service.setMasterKey` bridge
-     * takes a `string`, and JS strings can't be wiped). Resolving `false` (or
-     * throwing) falls back to the string bridge, so platforms/builds without
-     * the native writer keep working unchanged.
-     *
-     * Injected by the app layer (the native module lives in the app, not in
-     * this logic package) so this package stays free of any native/`expo`
-     * dependency.
-     */
-    writeMasterKeyBytes?: (masterKey: Uint8Array) => Promise<boolean>
 }
 
 const HD_ROOT_KEY_TYPES = new Set<string>([
@@ -74,7 +59,7 @@ let activeBootstrap: Promise<void> | null = null
  * Steps (idempotent):
  *  1. Fetch the master key (keychain-backed; no biometric prompt if already
  *     created during hydrateKeystore).
- *  2. Push the master key hex to the native side.
+ *  2. Push the master key bytes to the native side.
  *  3. Find the HD root key by reading the keystore's MMKV namespace directly
  *     (the same source the native module uses) and push its id — plus, on
  *     builds that support it, its derived bytes — to the native side.
@@ -103,29 +88,26 @@ export const bootstrapPasskeyAutofill = (
 const runBootstrap = async (
     options: BootstrapPasskeyAutofillOptions,
 ): Promise<void> => {
-    const { service, intentActions, writeMasterKeyBytes } = options
+    const { service, intentActions } = options
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await getMasterKey()
+        masterKey = await readMasterKey()
 
-        // Prefer the native byte-channel: it hands the raw master-key bytes to
-        // the shared autofill store without ever creating a non-zeroable hex
-        // string in the JS heap. Fall back to the string bridge when the writer
-        // is absent (Android / older builds) or reports it didn't write.
-        const wroteMasterKeyNatively = writeMasterKeyBytes
-            ? await writeMasterKeyBytes(masterKey).catch(err => {
-                  logger.error(err as Error, { step: 'writeMasterKeyBytes' })
-                  return false
-              })
-            : false
-
-        if (!wroteMasterKeyNatively) {
+        // Push the master key to the native side as raw bytes — the upstream
+        // bridge takes a `Uint8Array`, so a non-zeroable hex string is never
+        // materialized in the JS heap. Copy the (craftzdog) Buffer polyfill into
+        // a genuine Uint8Array so Expo's typed-array bridge marshals it to Swift
+        // Data / Kotlin ByteArray; wipe the copy after.
+        const masterKeyBytes = Uint8Array.from(masterKey)
+        try {
             await service
-                .setMasterKey(masterKey.toString('hex'))
+                .setMasterKey(masterKeyBytes)
                 .catch(err =>
                     logger.error(err as Error, { step: 'setMasterKey' }),
                 )
+        } finally {
+            masterKeyBytes.fill(0)
         }
 
         await configureHdRootKey(service, masterKey)

@@ -31,7 +31,7 @@ import type {
  * is absent rather than throwing `undefined is not a function`.
  */
 export interface PasskeyAutofillNativeAPI {
-    setMasterKey(secret: string): Promise<void>
+    setMasterKey(secret: Uint8Array): Promise<void>
     setHdRootKeyId(id: string): Promise<void>
     getHdRootKeyId?(): Promise<string | null>
     setDerivedMainKey?(hex: string): Promise<void>
@@ -82,8 +82,10 @@ export class PasskeyAutofillService {
         return (async () => fn.apply(this.native, args))()
     }
 
-    setMasterKey(hex: string): Promise<void> {
-        return this.invoke('setMasterKey', [normalizeHex(hex)], undefined)
+    setMasterKey(secret: Uint8Array): Promise<void> {
+        // Raw bytes cross the bridge (upstream `setMasterKey` takes a
+        // `Uint8Array`) so a non-zeroable hex string is never materialized.
+        return this.invoke('setMasterKey', [secret], undefined)
     }
 
     setHdRootKeyId(id: string): Promise<void> {

@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KeyData } from '@algorandfoundation/keystore'
 
 const mocks = vi.hoisted(() => ({
-    getMasterKey: vi.fn(),
+    readMasterKey: vi.fn(),
     fetchSecret: vi.fn(),
     getAllKeys: vi.fn(),
     warn: vi.fn(),
@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
-    getMasterKey: mocks.getMasterKey,
+    readMasterKey: mocks.readMasterKey,
     fetchSecret: mocks.fetchSecret,
     storage: { getAllKeys: mocks.getAllKeys },
 }))
@@ -63,11 +63,18 @@ describe('bootstrapPasskeyAutofill', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         __resetBootstrapForTests()
-        mocks.getMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
+        mocks.readMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
     })
 
     it('pushes the master key, HD root id, derived bytes, intent actions, then refreshes identities', async () => {
         const service = makeService()
+        // Snapshot the bytes at call time: the bootstrap zeroes the Uint8Array
+        // in its finally (after the native side has copied it), so the captured
+        // reference would otherwise read as zeros by assertion time.
+        let receivedMasterKey: Buffer | null = null
+        service.setMasterKey.mockImplementation(async (bytes: Uint8Array) => {
+            receivedMasterKey = Buffer.from(bytes)
+        })
         mocks.getAllKeys.mockReturnValue(['k1', 'hd'])
         wireSecrets({
             k1: { id: 'k1', type: 'algo25' } as KeyData,
@@ -83,7 +90,7 @@ describe('bootstrapPasskeyAutofill', () => {
             intentActions,
         })
 
-        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
+        expect(receivedMasterKey).toEqual(Buffer.from('aabbcc', 'hex'))
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
         expect(service.setDerivedMainKey).toHaveBeenCalledWith('010203')
         expect(service.configureIntentActions).toHaveBeenCalledWith(
@@ -93,92 +100,22 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
     })
 
-    it('writes the master key as raw bytes via the native writer and skips the string bridge when it succeeds', async () => {
-        const service = makeService()
-        // Snapshot the bytes at call time: the bootstrap zeroes the source
-        // Buffer in its finally (after the native side has copied it), so the
-        // captured reference would otherwise read as zeros by assertion time.
-        let receivedBytes: Buffer | null = null
-        const writeMasterKeyBytes = vi.fn(async (bytes: Uint8Array) => {
-            receivedBytes = Buffer.from(bytes)
-            return true
-        })
-        mocks.getAllKeys.mockReturnValue([])
-
-        await bootstrapPasskeyAutofill({
-            service: service as never,
-            intentActions,
-            writeMasterKeyBytes,
-        })
-
-        expect(receivedBytes).toEqual(Buffer.from('aabbcc', 'hex'))
-        // No non-zeroable hex string handed to the string bridge.
-        expect(service.setMasterKey).not.toHaveBeenCalled()
-    })
-
-    it('zeroes the master-key bytes after the native writer has consumed them', async () => {
+    it('zeroes the master-key bytes after handing them to the native side', async () => {
         const service = makeService()
         let sharedRef: Uint8Array | null = null
-        const writeMasterKeyBytes = vi.fn(async (bytes: Uint8Array) => {
+        service.setMasterKey.mockImplementation(async (bytes: Uint8Array) => {
             sharedRef = bytes
-            return true
         })
         mocks.getAllKeys.mockReturnValue([])
 
         await bootstrapPasskeyAutofill({
             service: service as never,
             intentActions,
-            writeMasterKeyBytes,
         })
 
-        // The source Buffer the writer received is wiped once bootstrap unwinds.
-        expect(sharedRef).toEqual(Buffer.from([0, 0, 0]))
-    })
-
-    it('falls back to the string bridge when the native writer reports it did not write', async () => {
-        const service = makeService()
-        const writeMasterKeyBytes = vi.fn().mockResolvedValue(false)
-        mocks.getAllKeys.mockReturnValue([])
-
-        await bootstrapPasskeyAutofill({
-            service: service as never,
-            intentActions,
-            writeMasterKeyBytes,
-        })
-
-        expect(writeMasterKeyBytes).toHaveBeenCalled()
-        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
-    })
-
-    it('falls back to the string bridge and logs when the native writer throws', async () => {
-        const service = makeService()
-        const writeMasterKeyBytes = vi
-            .fn()
-            .mockRejectedValue(new Error('native write failed'))
-        mocks.getAllKeys.mockReturnValue([])
-
-        await bootstrapPasskeyAutofill({
-            service: service as never,
-            intentActions,
-            writeMasterKeyBytes,
-        })
-
-        expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
-            step: 'writeMasterKeyBytes',
-        })
-        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
-    })
-
-    it('uses the string bridge when no native writer is injected', async () => {
-        const service = makeService()
-        mocks.getAllKeys.mockReturnValue([])
-
-        await bootstrapPasskeyAutofill({
-            service: service as never,
-            intentActions,
-        })
-
-        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
+        // The Uint8Array handed to the native bridge is wiped once bootstrap
+        // unwinds — no non-zeroable secret lingers.
+        expect(sharedRef).toEqual(new Uint8Array([0, 0, 0]))
     })
 
     it('skips refreshing identities when the credential provider is inactive', async () => {
@@ -361,7 +298,7 @@ describe('bootstrapPasskeyAutofill', () => {
 
     it('logs through the outer catch when fetching the master key throws', async () => {
         const service = makeService()
-        mocks.getMasterKey.mockRejectedValue(new Error('keychain locked'))
+        mocks.readMasterKey.mockRejectedValue(new Error('keychain locked'))
 
         await expect(
             bootstrapPasskeyAutofill({
@@ -394,7 +331,7 @@ describe('bootstrapPasskeyAutofill', () => {
         const service = makeService()
         mocks.getAllKeys.mockReturnValue([])
         let resolveMaster: (key: Buffer) => void = () => undefined
-        mocks.getMasterKey.mockReturnValue(
+        mocks.readMasterKey.mockReturnValue(
             new Promise<Buffer>(resolve => {
                 resolveMaster = resolve
             }),
@@ -411,17 +348,17 @@ describe('bootstrapPasskeyAutofill', () => {
 
         // Both callers share the same promise while the first run is pending.
         expect(second).toBe(first)
-        expect(mocks.getMasterKey).toHaveBeenCalledTimes(1)
+        expect(mocks.readMasterKey).toHaveBeenCalledTimes(1)
 
         resolveMaster(Buffer.from('aabbcc', 'hex'))
         await first
 
         // Lock released — a later call starts a fresh run.
-        mocks.getMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
+        mocks.readMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
         await bootstrapPasskeyAutofill({
             service: service as never,
             intentActions,
         })
-        expect(mocks.getMasterKey).toHaveBeenCalledTimes(2)
+        expect(mocks.readMasterKey).toHaveBeenCalledTimes(2)
     })
 })

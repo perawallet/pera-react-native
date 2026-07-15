@@ -26,7 +26,7 @@ vi.mock('react-native', () => ({ Platform: platformMock }))
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     encode: encodeMock,
     encryptData: encryptMock,
-    getMasterKey: masterKeyMock,
+    readMasterKey: masterKeyMock,
     storage: storageMock,
 }))
 

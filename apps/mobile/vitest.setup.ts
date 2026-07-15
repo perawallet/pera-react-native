@@ -998,17 +998,6 @@ vi.mock('@perawallet/wallet-extension-passkey-autofill', () => {
     }
 })
 
-// The in-repo passkey-autofill secrets module calls `requireOptionalNativeModule`
-// from `expo` at import time, which drags in the same jsdom-incompatible
-// `expo/src/winter/runtime` path as the extension above (App.tsx imports the
-// bootstrap that consumes this module). Stub it so rendering the app tree in
-// integration tests doesn't crash on the native import.
-vi.mock('./native-modules/passkey-autofill-secrets', () => ({
-    PeraPasskeyAutofillSecrets: {
-        setMasterKey: vi.fn().mockResolvedValue(true),
-    },
-}))
-
 // `expo-file-system` transitively imports `expo-modules-core`, which probes
 // `__DEV__` at module init and crashes under jsdom. Stub the `File` class
 // to the surface the ASB import screen actually uses (the static picker +
