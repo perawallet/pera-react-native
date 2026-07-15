@@ -165,6 +165,31 @@ cpSync(
     path.join(dist, 'sqlite3.wasm'),
 )
 
+// 2c. Content scripts. MAIN world (inject-main) and isolated world (relay) are
+// separate bundles so Chrome can load each into its declared world.
+for (const [entry, outfile] of [
+    ['src/content/inject-main.ts', 'content-inject-main.js'],
+    ['src/content/relay-isolated.ts', 'content-relay-isolated.js'],
+]) {
+    await build({
+        entryPoints: [path.join(root, entry)],
+        outfile: path.join(dist, outfile),
+        bundle: true,
+        format: 'iife', // content scripts are classic scripts, not ES modules
+        target: 'chrome120',
+        alias: {
+            // Narrow alias: content scripts run on every http/https page, so
+            // they get only the pure ARC-0027 wire (content-wire.ts), not the
+            // full barrel (chrome DB host, storage proxy, hydratePlatform,
+            // etc.) that the service-worker build below still aliases to.
+            '@perawallet/wallet-extension-platform-chrome': path.join(
+                root,
+                '../../extensions/platform-chrome/src/dapp/content-wire.ts',
+            ),
+        },
+    })
+}
+
 // 3. Surface HTMLs: one exported bundle, per-surface flag injected via an
 //    EXTERNAL script — MV3 CSP (script-src 'self') forbids inline scripts.
 const indexHtml = readFileSync(

@@ -34,10 +34,14 @@ const mocks = vi.hoisted(() => ({
     syncStop: vi.fn(),
     syncIsRunning: vi.fn(() => false),
     setOnConfirmedHandler: vi.fn(),
+    getCurrentApproval: vi
+        .fn<() => Promise<{ requestId: string; kind: string } | null>>()
+        .mockResolvedValue(null),
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     getSurface: (): Surface => mocks.surface,
+    getCurrentApproval: () => mocks.getCurrentApproval(),
 }))
 
 vi.mock('@modules/vault', () => ({
@@ -154,6 +158,7 @@ describe('useWebAppShell', () => {
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
         mocks.hydrateKeystore.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
+        mocks.getCurrentApproval.mockResolvedValue(null)
     })
 
     it('returns approval-placeholder when surface is approval, regardless of vault state', () => {
@@ -165,6 +170,41 @@ describe('useWebAppShell', () => {
         expect(result.current.shellState).toBe('approval-placeholder')
     })
 
+    it('routes popup surface to dapp-request when a pending enable is discovered', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = null
+        mocks.isUnlocked = null
+        mocks.getCurrentApproval.mockResolvedValue({
+            requestId: 'r1',
+            kind: 'enable',
+        })
+
+        const { result } = renderHook(() => useWebAppShell())
+
+        expect(result.current.shellState).toBe('resolving')
+
+        await waitFor(() =>
+            expect(result.current.shellState).toBe('dapp-request'),
+        )
+    })
+
+    it('falls through to the normal wallet flow when the popup has no pending enable', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+        mocks.showOnboarding = false
+        mocks.getCurrentApproval.mockResolvedValue(null)
+
+        const { result } = renderHook(() => useWebAppShell())
+
+        await waitFor(() =>
+            expect(mocks.getCurrentApproval).toHaveBeenCalledOnce(),
+        )
+
+        expect(result.current.shellState).not.toBe('dapp-request')
+        await waitFor(() => expect(result.current.shellState).toBe('main'))
+    })
+
     it('returns resolving when vault state is still null', () => {
         mocks.surface = 'popup'
         mocks.isInitialized = null
@@ -174,13 +214,17 @@ describe('useWebAppShell', () => {
         expect(result.current.shellState).toBe('resolving')
     })
 
-    it('returns create-password when vault is not initialized', () => {
+    it('returns create-password when vault is not initialized', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = false
         mocks.isUnlocked = false
 
         const { result } = renderHook(() => useWebAppShell())
-        expect(result.current.shellState).toBe('create-password')
+        // Popup surface waits on the pending-enable check (resolves to null
+        // here) before falling through to vault-state routing.
+        await waitFor(() =>
+            expect(result.current.shellState).toBe('create-password'),
+        )
     })
 
     it('returns onboarding when initialized+unlocked and showOnboarding is true, after bootstrap resolves', async () => {

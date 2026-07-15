@@ -32,6 +32,7 @@ import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/d
 import { type NavigatorScreenParams } from '@react-navigation/native'
 import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
+import { ConnectedSitesScreen } from '@modules/settings/screens/ConnectedSitesScreen'
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
@@ -208,8 +209,10 @@ export type SettingsStackParamsList = {
     NotificationsSettings: undefined
     WalletConnectSettings: undefined
     PasskeysSettings: undefined
+    ConnectedSites: undefined
     CurrencySettings: undefined
     ThemeSettings: undefined
+    NetworkSettings: undefined
     DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
 }
 
@@ -275,6 +278,15 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsPasskeyScreen}
             />
+            {routeCapabilities.dappConnections && (
+                <SettingsStack.Screen
+                    name='ConnectedSites'
+                    options={{
+                        title: 'screens.connected_sites',
+                    }}
+                    component={ConnectedSitesScreen}
+                />
+            )}
             <SettingsStack.Screen
                 name='CurrencySettings'
                 options={{
@@ -289,6 +301,15 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsThemeScreen}
             />
+            {routeCapabilities.networkSettings && (
+                <SettingsStack.Screen
+                    name='NetworkSettings'
+                    options={{
+                        title: 'screens.node_settings',
+                    }}
+                    component={SettingsDeveloperNodeSettingsScreen}
+                />
+            )}
             <SettingsStack.Screen
                 name='DeveloperSettings'
                 options={{

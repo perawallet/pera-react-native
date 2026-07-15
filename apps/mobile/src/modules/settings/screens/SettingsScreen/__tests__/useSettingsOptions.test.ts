@@ -49,6 +49,7 @@ const { mockCapabilities } = vi.hoisted(() => ({
         storeRating: true,
         developerSettings: true,
         vaultSecuritySettings: false,
+        dappConnections: false,
     },
 }))
 
@@ -79,6 +80,7 @@ describe('useSettingsOptions', () => {
             storeRating: true,
             developerSettings: true,
             vaultSecuritySettings: false,
+            dappConnections: false,
         })
     })
 
@@ -210,6 +212,30 @@ describe('useSettingsOptions', () => {
                 route: 'VaultSecuritySettings',
                 icon: 'shield-check',
                 title: 'settings.main.security_title',
+            })
+        })
+
+        it('omits the Connected Sites item when dappConnections is off (native)', () => {
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(
+                settingsOptions[0].items.some(
+                    item => item.route === 'ConnectedSites',
+                ),
+            ).toBe(false)
+        })
+
+        it('includes the Connected Sites item when dappConnections is on (web)', () => {
+            Object.assign(mockCapabilities, { dappConnections: true })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items).toContainEqual({
+                route: 'ConnectedSites',
+                icon: 'globe',
+                title: 'settings.main.connected_sites_title',
             })
         })
     })

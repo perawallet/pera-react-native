@@ -1,4 +1,22 @@
 {
+    "dapp": {
+        "enable": {
+            "title": "Connect to this site",
+            "description": "Select the accounts you want to share with this site.",
+            "connect_button": "Connect",
+            "cancel_button": "Cancel"
+        },
+        "sign": {
+            "error": {
+                "title": "Can't process this request",
+                "body": "This site sent a request Pera couldn't read. The request has been declined.",
+                "dismiss": "Close"
+            },
+            "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
+            "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
+            "unauthorized_signer": "This site isn't authorized to request a signature for that account."
+        }
+    },
     "account_menu": {
         "title": "Accounts",
         "sort": "Sort",
@@ -1836,6 +1854,7 @@
         "wallet_connect": "Wallet Connect",
         "wallet_connect_details": "Connection Details",
         "passkeys": "Passkeys",
+        "connected_sites": "Connected Sites",
         "currency": "Currency",
         "theme": "Theme",
         "developer_settings": "Developer Settings",
@@ -2017,9 +2036,11 @@
             "notifications_title": "Notifications",
             "wallet_connect_title": "WalletConnect Sessions",
             "passkeys_title": "Passkeys",
+            "connected_sites_title": "Connected Sites",
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
+            "network_title": "Network",
             "support_section": "Support",
             "rate_title": "Rate Pera Wallet",
             "terms_title": "Terms and Services",
@@ -2153,6 +2174,16 @@
             "hd_wallet_warning_body": "Passkeys are derived from a Universal Wallet's recovery passphrase. Create or recover a Universal Wallet on this device to use passkeys.",
             "hd_wallet_required_body": "You can't use passkeys until you have a Universal Wallet on this device. Create or recover one, then scan again.",
             "hd_wallet_required_dismiss": "Got it"
+        },
+        "connected_sites": {
+            "empty_title": "No connected sites",
+            "empty_body": "Sites you connect your wallet to will appear here.",
+            "accounts_count": "{{count}} accounts",
+            "accounts_count_one": "{{count}} account",
+            "revoke_title": "Disconnect site",
+            "revoke_body": "{{origin}} will no longer have access to your connected accounts. You can reconnect any time from the site.",
+            "revoke_confirm": "Disconnect",
+            "revoke_cancel": "Cancel"
         }
     },
     "signing": {

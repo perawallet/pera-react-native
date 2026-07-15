@@ -60,6 +60,7 @@ import {
     openExpandedTab,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { WebMainRoutes } from '@routes/WebMainRoutes'
+import { DappRequestRoutes } from '@modules/dapp'
 import { useWebAppShell } from './useWebAppShell'
 import { updateQueryHeaders } from './bootstrap/query-headers'
 
@@ -165,6 +166,9 @@ const ShellRouter = (): React.JSX.Element => {
         }
         case 'approval-placeholder': {
             return <ApprovalPlaceholder />
+        }
+        case 'dapp-request': {
+            return <DappRequestRoutes />
         }
         case 'create-password': {
             return (

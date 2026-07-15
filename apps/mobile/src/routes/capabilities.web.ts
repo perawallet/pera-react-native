@@ -29,4 +29,6 @@ export const routeCapabilities: RouteCapabilities = {
     storeRating: false,
     developerSettings: false,
     vaultSecuritySettings: true,
+    dappConnections: true,
+    networkSettings: true,
 }

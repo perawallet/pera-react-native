@@ -16,8 +16,15 @@ import { routeCapabilities as webCapabilities } from '../capabilities.web'
 
 describe('route capabilities', () => {
     it('native map keeps every current-behavior capability on', () => {
-        const { vaultSecuritySettings, ...rest } = routeCapabilities
+        // vaultSecuritySettings and dappConnections are new, web-only
+        // capabilities with no native equivalent (native has its own
+        // WalletConnect-based dapp connections, not the ARC-0027 injected
+        // provider) — both are deliberately off for native, not a
+        // current-behavior regression.
+        const { vaultSecuritySettings, dappConnections, ...rest } =
+            routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
+        expect(dappConnections).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
     })
 
@@ -30,6 +37,7 @@ describe('route capabilities', () => {
             peraCard: false,
             walletConnectSettings: false,
             vaultSecuritySettings: true,
+            dappConnections: true,
         })
     })
 

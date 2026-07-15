@@ -63,6 +63,17 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
+                        ...(routeCapabilities.dappConnections
+                            ? [
+                                  {
+                                      route: 'ConnectedSites' as keyof SettingsStackParamsList,
+                                      icon: 'globe',
+                                      title: t(
+                                          'settings.main.connected_sites_title',
+                                      ),
+                                  },
+                              ]
+                            : []),
                     ],
                 },
                 {
@@ -78,6 +89,15 @@ export const useSettingsOptions = () => {
                             icon: 'moon',
                             title: t('settings.main.theme_title'),
                         },
+                        ...(routeCapabilities.networkSettings
+                            ? [
+                                  {
+                                      route: 'NetworkSettings' as keyof SettingsStackParamsList,
+                                      icon: 'code',
+                                      title: t('settings.main.network_title'),
+                                  },
+                              ]
+                            : []),
                     ],
                 },
                 {

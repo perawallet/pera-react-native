@@ -29,4 +29,9 @@ export const routeCapabilities: RouteCapabilities = {
     storeRating: true,
     developerSettings: true,
     vaultSecuritySettings: false,
+    // Native's WalletConnect covers dapp connections; the ARC-0027 injected
+    // provider is browser-extension only.
+    dappConnections: false,
+    // Native uses Developer → Node Settings.
+    networkSettings: false,
 }

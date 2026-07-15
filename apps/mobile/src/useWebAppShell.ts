@@ -11,7 +11,10 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import {
+    getCurrentApproval,
+    getSurface,
+} from '@perawallet/wallet-extension-platform-chrome'
 import { armAutoLock } from '@perawallet/wallet-extension-keystore-chrome'
 import { useVaultLockState } from '@modules/vault'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
@@ -39,6 +42,7 @@ export type WebShellState =
     | 'onboarding'
     | 'main'
     | 'approval-placeholder'
+    | 'dapp-request'
     | 'error'
 
 type UseWebAppShellResult = { shellState: WebShellState }
@@ -50,6 +54,25 @@ export const useWebAppShell = (): UseWebAppShellResult => {
     const [isBootstrapped, setIsBootstrapped] = useState(false)
     const [hasBootstrapError, setHasBootstrapError] = useState(false)
     const bootstrapStarted = useRef(false)
+    // The toolbar popup (surface 'popup') can't receive a ?requestId query
+    // param — chrome.action.openPopup() has no way to pass one — so unlike
+    // the approval surface below, discovering a pending approval here (enable
+    // OR sign: both open in the toolbar popup) means an async round-trip over
+    // runtime messaging. null = still checking.
+    const [hasPendingApproval, setHasPendingApproval] = useState<
+        boolean | null
+    >(null)
+    const pendingApprovalCheckStarted = useRef(false)
+
+    useEffect(() => {
+        if (getSurface() !== 'popup' || pendingApprovalCheckStarted.current) {
+            return
+        }
+        pendingApprovalCheckStarted.current = true
+        void getCurrentApproval().then(approval => {
+            setHasPendingApproval(approval !== null)
+        })
+    }, [])
 
     useEffect(() => {
         if (!isUnlocked || bootstrapStarted.current) return
@@ -91,7 +114,27 @@ export const useWebAppShell = (): UseWebAppShellResult => {
     }, [isBootstrapped, isUnlocked, hasAccounts])
 
     if (getSurface() === 'approval') {
-        return { shellState: 'approval-placeholder' }
+        // The SW's approval bridge (Task 4) opens this popup at
+        // approval.html?requestId=…; a requestId in the query string means
+        // there's a real ARC-0027 enable request to render. Any other
+        // navigation into the approval surface (e.g. opened by hand) falls
+        // back to the placeholder. This check stays ahead of the
+        // resolving/create-password/error branches below — same as before
+        // 'dapp-request' existed — so the approval surface never blocks on
+        // full portfolio bootstrap to show either state.
+        const requestId = new URLSearchParams(window.location.search).get(
+            'requestId',
+        )
+        return {
+            shellState: requestId ? 'dapp-request' : 'approval-placeholder',
+        }
+    }
+    if (getSurface() === 'popup' && hasPendingApproval !== false) {
+        // Overlaps the vault/bootstrap resolution below: both start out
+        // 'resolving', so a popup with no pending approval isn't perceptibly
+        // delayed by this check before falling through to the normal flow.
+        if (hasPendingApproval === null) return { shellState: 'resolving' }
+        return { shellState: 'dapp-request' }
     }
     if (hasBootstrapError) return { shellState: 'error' }
     if (isInitialized === null || isUnlocked === null) {

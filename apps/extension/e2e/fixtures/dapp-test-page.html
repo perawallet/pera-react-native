@@ -1,0 +1,165 @@
+<!--
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+-->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>ARC-0027 test dapp</title>
+    </head>
+    <body>
+        <h1>ARC-0027 test dapp</h1>
+        <!-- Manual-acceptance affordances (Task 9 brief Step 6): a human can
+             load this page over https and click through the same requests an
+             automated test drives via window.sendArc. -->
+        <button
+            id="discover-button"
+            onclick="window.sendArc('discover')"
+        >
+            Discover
+        </button>
+        <button
+            id="enable-button"
+            onclick="window.sendArc('enable')"
+        >
+            Enable
+        </button>
+        <button
+            id="disable-button"
+            onclick="window.sendArc('disable')"
+        >
+            Disable
+        </button>
+        <pre
+            id="discover-result"
+            data-testid="discover-result"
+        ></pre>
+        <pre
+            id="enable-accounts"
+            data-testid="enable-accounts"
+        ></pre>
+        <pre
+            id="enable-error"
+            data-testid="enable-error"
+        ></pre>
+        <pre
+            id="sign-result"
+            data-testid="sign-result"
+        ></pre>
+        <pre
+            id="sign-error"
+            data-testid="sign-error"
+        ></pre>
+        <script>
+            // Correlates each in-flight request's ARC-0027 `id` to the method
+            // it was sent for, so the response handler below knows which DOM
+            // node to write into — the response envelope carries `requestId`
+            // + `reference`, not a bare method name.
+            var pendingByRequestId = {}
+
+            window.addEventListener('message', function (event) {
+                // Only trust same-window responses. The real MAIN-world
+                // content script (content-inject-main.js) posts responses
+                // back to window.origin (or '*' only for opaque/null
+                // origins) — never to an embedded iframe, and this page
+                // never embeds one, so this is just belt-and-suspenders
+                // against a page script forging a response.
+                if (event.source !== window) return
+                var data = event.data
+                if (!data || typeof data.reference !== 'string') return
+                if (data.reference.indexOf(':response') === -1) return
+                var method = pendingByRequestId[data.requestId]
+                if (!method) return
+                delete pendingByRequestId[data.requestId]
+
+                if (method === 'discover') {
+                    document.getElementById('discover-result').textContent =
+                        data.error
+                            ? 'ERROR: ' + JSON.stringify(data.error)
+                            : JSON.stringify(data.result)
+                    return
+                }
+                if (method === 'enable') {
+                    if (data.error) {
+                        document.getElementById('enable-error').textContent =
+                            JSON.stringify(data.error)
+                        document.getElementById(
+                            'enable-accounts',
+                        ).textContent = ''
+                    } else {
+                        document.getElementById(
+                            'enable-accounts',
+                        ).textContent = JSON.stringify(
+                            (data.result && data.result.accounts) || [],
+                        )
+                        document.getElementById('enable-error').textContent =
+                            ''
+                    }
+                    return
+                }
+                if (method === 'sign_transactions') {
+                    if (data.error) {
+                        document.getElementById('sign-error').textContent =
+                            JSON.stringify(data.error)
+                        document.getElementById('sign-result').textContent =
+                            ''
+                    } else {
+                        document.getElementById(
+                            'sign-result',
+                        ).textContent = JSON.stringify({
+                            stxns: (data.result && data.result.stxns) || [],
+                        })
+                        document.getElementById('sign-error').textContent = ''
+                    }
+                }
+            })
+
+            // Sends an ARC-0027 request envelope for `method` over
+            // window.postMessage — exactly the wire the MAIN-world content
+            // script listens for. Clears this method's own result/error node
+            // first so a repeated call can't be mistaken for a stale response
+            // from a previous call.
+            window.sendArc = function (method, params) {
+                var id = crypto.randomUUID()
+                pendingByRequestId[id] = method
+                if (method === 'discover') {
+                    document.getElementById('discover-result').textContent =
+                        ''
+                } else if (method === 'enable') {
+                    document.getElementById(
+                        'enable-accounts',
+                    ).textContent = ''
+                    document.getElementById('enable-error').textContent = ''
+                } else if (method === 'sign_transactions') {
+                    document.getElementById('sign-result').textContent = ''
+                    document.getElementById('sign-error').textContent = ''
+                }
+                window.postMessage(
+                    {
+                        id: id,
+                        reference: 'arc0027:' + method + ':request',
+                        params: params || {},
+                    },
+                    '*',
+                )
+                return id
+            }
+
+            // Task 6 sink: the test builds a REAL unsigned ARC-0001
+            // WalletTransaction group on the Node/Playwright side (algosdk)
+            // and hands it in here as plain JSON — this page never touches
+            // algosdk itself, matching the plain-HTML-fixture constraint.
+            window.signTxns = function (txns) {
+                return window.sendArc('sign_transactions', { txns: txns })
+            }
+        </script>
+    </body>
+</html>

@@ -70,3 +70,11 @@ export {
     type StorageProxyResponse,
     type StorageChangedBroadcast,
 } from './storage-proxy'
+export * from './dapp/arc0027-types'
+export * from './dapp/arc0027-errors'
+export * from './dapp/arc0027-codec'
+export * from './dapp/permissions'
+export * from './dapp/router-protocol'
+export * from './dapp/router'
+export * from './dapp/approval-bridge'
+export * from './dapp/approval-client'

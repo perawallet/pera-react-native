@@ -34,4 +34,10 @@ export type RouteCapabilities = {
     developerSettings: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean
+    /** ARC-0027 injected-provider dapp connections (browser-extension only;
+     * not the native app's WalletConnect, tracked separately by
+     * walletConnectSettings). */
+    dappConnections: boolean
+    /** Web-only top-level network (mainnet/testnet) switch; native has this under Developer settings. */
+    networkSettings: boolean
 }
