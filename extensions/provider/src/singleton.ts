@@ -19,7 +19,7 @@ import {
     clear as clearKeystoreStore,
     decode,
     decryptData,
-    getMasterKey,
+    readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import { PeraProvider } from './pera-provider'
@@ -145,7 +145,7 @@ export const hydrateKeystore = async (): Promise<void> => {
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await getMasterKey()
+        masterKey = await readMasterKey()
         const mk = masterKey
         const keys = ids
             .map(id => decodeKeyEntry(id, mk))
@@ -177,7 +177,7 @@ export const reconcileKeystore = async (): Promise<void> => {
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await getMasterKey()
+        masterKey = await readMasterKey()
         const mk = masterKey
         const keys = ids
             .map(id => decodeKeyEntry(id, mk))

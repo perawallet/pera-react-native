@@ -14,7 +14,7 @@ import { Platform } from 'react-native'
 import {
     encode,
     encryptData,
-    getMasterKey,
+    readMasterKey,
     storage,
 } from '@algorandfoundation/react-native-keystore'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
@@ -106,11 +106,11 @@ export type NativePasskeyWriter = ((
  * poisoned key.
  */
 export const createNativePasskeyWriter = (): NativePasskeyWriter => {
-    let masterKeyPromise: ReturnType<typeof getMasterKey> | undefined
+    let masterKeyPromise: ReturnType<typeof readMasterKey> | undefined
 
-    const resolveMasterKey = (): ReturnType<typeof getMasterKey> => {
+    const resolveMasterKey = (): ReturnType<typeof readMasterKey> => {
         if (!masterKeyPromise) {
-            masterKeyPromise = getMasterKey().catch(err => {
+            masterKeyPromise = readMasterKey().catch(err => {
                 masterKeyPromise = undefined
                 throw err
             })

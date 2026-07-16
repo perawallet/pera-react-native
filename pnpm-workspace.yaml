@@ -7,8 +7,8 @@ catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/keystore": 1.0.0-canary.17
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.12
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.21
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.13
+  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.22
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@babel/runtime": ^7.29.2
@@ -86,10 +86,15 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 patchedDependencies:
-  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.21": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.21.patch
+  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.22": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.22.patch
 
 overrides:
   "@algorandfoundation/keystore": 1.0.0-canary.17
+  # Force a single react-native-keystore across the tree. react-native-passkey-autofill
+  # transitively pins canary.12 (which still exports the old get-or-create getMasterKey);
+  # without this the app resolves two versions and the readMasterKey call is undefined
+  # at runtime. Its keystore dep is unused at runtime, so forcing it up is safe.
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.13
   "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4"
   "@expo/dom-webview": ~57.0.0
   # Security backport for GHSA-5375-pq7m-f5r2 + GHSA-99f4-grh7-6pcq (DoS).

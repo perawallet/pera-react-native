@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KeyData } from '@algorandfoundation/keystore'
 
 const mocks = vi.hoisted(() => ({
-    getMasterKey: vi.fn(),
+    readMasterKey: vi.fn(),
     fetchSecret: vi.fn(),
     getAllKeys: vi.fn(),
     warn: vi.fn(),
@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
-    getMasterKey: mocks.getMasterKey,
+    readMasterKey: mocks.readMasterKey,
     fetchSecret: mocks.fetchSecret,
     storage: { getAllKeys: mocks.getAllKeys },
 }))
@@ -45,6 +45,7 @@ const makeService = () => ({
     setMasterKey: vi.fn().mockResolvedValue(undefined),
     setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
     setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
+    supportsDerivedMainKey: true,
     configureIntentActions: vi.fn().mockResolvedValue(undefined),
     isProviderActive: vi.fn().mockResolvedValue(true),
     refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
@@ -62,11 +63,18 @@ describe('bootstrapPasskeyAutofill', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         __resetBootstrapForTests()
-        mocks.getMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
+        mocks.readMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
     })
 
     it('pushes the master key, HD root id, derived bytes, intent actions, then refreshes identities', async () => {
         const service = makeService()
+        // Snapshot the bytes at call time: the bootstrap zeroes the Uint8Array
+        // in its finally (after the native side has copied it), so the captured
+        // reference would otherwise read as zeros by assertion time.
+        let receivedMasterKey: Buffer | null = null
+        service.setMasterKey.mockImplementation(async (bytes: Uint8Array) => {
+            receivedMasterKey = Buffer.from(bytes)
+        })
         mocks.getAllKeys.mockReturnValue(['k1', 'hd'])
         wireSecrets({
             k1: { id: 'k1', type: 'algo25' } as KeyData,
@@ -82,7 +90,7 @@ describe('bootstrapPasskeyAutofill', () => {
             intentActions,
         })
 
-        expect(service.setMasterKey).toHaveBeenCalledWith('aabbcc')
+        expect(receivedMasterKey).toEqual(Buffer.from('aabbcc', 'hex'))
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
         expect(service.setDerivedMainKey).toHaveBeenCalledWith('010203')
         expect(service.configureIntentActions).toHaveBeenCalledWith(
@@ -90,6 +98,24 @@ describe('bootstrapPasskeyAutofill', () => {
             'CREATE_ACTION',
         )
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
+    })
+
+    it('zeroes the master-key bytes after handing them to the native side', async () => {
+        const service = makeService()
+        let sharedRef: Uint8Array | null = null
+        service.setMasterKey.mockImplementation(async (bytes: Uint8Array) => {
+            sharedRef = bytes
+        })
+        mocks.getAllKeys.mockReturnValue([])
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        // The Uint8Array handed to the native bridge is wiped once bootstrap
+        // unwinds — no non-zeroable secret lingers.
+        expect(sharedRef).toEqual(new Uint8Array([0, 0, 0]))
     })
 
     it('skips refreshing identities when the credential provider is inactive', async () => {
@@ -152,6 +178,28 @@ describe('bootstrapPasskeyAutofill', () => {
         })
     })
 
+    it('does not build or push a derived main key when the native side lacks setDerivedMainKey support', async () => {
+        const service = makeService()
+        service.supportsDerivedMainKey = false
+        mocks.getAllKeys.mockReturnValue(['hd'])
+        wireSecrets({
+            hd: {
+                id: 'root-id',
+                type: 'hd-root-key',
+                privateKey: new Uint8Array([1, 2, 3]),
+            } as unknown as KeyData,
+        })
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        // HD root id is still wired; the secret hex string is never materialized.
+        expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
+        expect(service.setDerivedMainKey).not.toHaveBeenCalled()
+    })
+
     it('does not push a derived main key when the HD root secret has no private bytes', async () => {
         const service = makeService()
         mocks.getAllKeys.mockReturnValue(['hd'])
@@ -211,6 +259,7 @@ describe('bootstrapPasskeyAutofill', () => {
             setDerivedMainKey: vi
                 .fn()
                 .mockRejectedValue(new Error('setDerivedMainKey')),
+            supportsDerivedMainKey: true,
             configureIntentActions: vi
                 .fn()
                 .mockRejectedValue(new Error('configureIntentActions')),
@@ -249,7 +298,7 @@ describe('bootstrapPasskeyAutofill', () => {
 
     it('logs through the outer catch when fetching the master key throws', async () => {
         const service = makeService()
-        mocks.getMasterKey.mockRejectedValue(new Error('keychain locked'))
+        mocks.readMasterKey.mockRejectedValue(new Error('keychain locked'))
 
         await expect(
             bootstrapPasskeyAutofill({
@@ -282,7 +331,7 @@ describe('bootstrapPasskeyAutofill', () => {
         const service = makeService()
         mocks.getAllKeys.mockReturnValue([])
         let resolveMaster: (key: Buffer) => void = () => undefined
-        mocks.getMasterKey.mockReturnValue(
+        mocks.readMasterKey.mockReturnValue(
             new Promise<Buffer>(resolve => {
                 resolveMaster = resolve
             }),
@@ -299,17 +348,17 @@ describe('bootstrapPasskeyAutofill', () => {
 
         // Both callers share the same promise while the first run is pending.
         expect(second).toBe(first)
-        expect(mocks.getMasterKey).toHaveBeenCalledTimes(1)
+        expect(mocks.readMasterKey).toHaveBeenCalledTimes(1)
 
         resolveMaster(Buffer.from('aabbcc', 'hex'))
         await first
 
         // Lock released — a later call starts a fresh run.
-        mocks.getMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
+        mocks.readMasterKey.mockResolvedValue(Buffer.from('aabbcc', 'hex'))
         await bootstrapPasskeyAutofill({
             service: service as never,
             intentActions,
         })
-        expect(mocks.getMasterKey).toHaveBeenCalledTimes(2)
+        expect(mocks.readMasterKey).toHaveBeenCalledTimes(2)
     })
 })

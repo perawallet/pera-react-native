@@ -16,7 +16,7 @@ const keystoreMocks = vi.hoisted(() => ({
     clear: vi.fn(),
     decode: vi.fn(),
     decryptData: vi.fn(),
-    getMasterKey: vi.fn(),
+    readMasterKey: vi.fn(),
     storageGetAllKeys: vi.fn(() => [] as string[]),
     storageGetString: vi.fn(),
     initializeKeyStore: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     clear: keystoreMocks.clear,
     decode: keystoreMocks.decode,
     decryptData: keystoreMocks.decryptData,
-    getMasterKey: keystoreMocks.getMasterKey,
+    readMasterKey: keystoreMocks.readMasterKey,
     storage: {
         getAllKeys: keystoreMocks.storageGetAllKeys,
         getString: keystoreMocks.storageGetString,
@@ -103,7 +103,7 @@ describe('provider singleton', () => {
         keystoreMocks.clear.mockReset()
         keystoreMocks.decode.mockReset()
         keystoreMocks.decryptData.mockReset()
-        keystoreMocks.getMasterKey.mockReset()
+        keystoreMocks.readMasterKey.mockReset()
         keystoreMocks.storageGetAllKeys.mockReset()
         keystoreMocks.storageGetString.mockReset()
         keystoreMocks.initializeKeyStore.mockReset()
@@ -163,7 +163,7 @@ describe('provider singleton', () => {
 
             await hydrateKeystore()
 
-            expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.readMasterKey).not.toHaveBeenCalled()
             expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
         })
 
@@ -176,7 +176,7 @@ describe('provider singleton', () => {
             await hydrateKeystore()
 
             expect(keystoreMocks.storageGetAllKeys).not.toHaveBeenCalled()
-            expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.readMasterKey).not.toHaveBeenCalled()
         })
 
         test('decrypts each MMKV entry, strips private material, and initializes the store', async () => {
@@ -188,7 +188,7 @@ describe('provider singleton', () => {
                 id === 'wallet-1' ? 'cipher-1' : 'cipher-2',
             )
             const masterKey = Buffer.from([1, 2, 3, 4, 5, 6, 7, 8])
-            keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.readMasterKey.mockResolvedValue(masterKey)
             keystoreMocks.decryptData.mockImplementation(
                 (_key: Buffer, payload: string) => `decrypted:${payload}`,
             )
@@ -236,7 +236,7 @@ describe('provider singleton', () => {
                 .mockImplementation(() => {})
             keystoreMocks.storageGetAllKeys.mockReturnValue(['good', 'bad'])
             keystoreMocks.storageGetString.mockReturnValue('cipher')
-            keystoreMocks.getMasterKey.mockResolvedValue(Buffer.from([0]))
+            keystoreMocks.readMasterKey.mockResolvedValue(Buffer.from([0]))
             keystoreMocks.decryptData.mockReturnValue('decrypted')
             keystoreMocks.decode.mockImplementationOnce(() => ({
                 id: 'good',
@@ -260,7 +260,7 @@ describe('provider singleton', () => {
             keystoreMocks.storageGetAllKeys.mockReturnValue(['k'])
             keystoreMocks.storageGetString.mockReturnValue('cipher')
             const masterKey = Buffer.from([42, 42, 42])
-            keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.readMasterKey.mockResolvedValue(masterKey)
             keystoreMocks.decryptData.mockImplementation(() => {
                 throw new Error('decrypt failed')
             })
@@ -289,7 +289,7 @@ describe('provider singleton', () => {
 
             await reconcileKeystore()
 
-            expect(keystoreMocks.getMasterKey).not.toHaveBeenCalled()
+            expect(keystoreMocks.readMasterKey).not.toHaveBeenCalled()
             expect(keystoreMocks.initializeKeyStore).not.toHaveBeenCalled()
         })
 
@@ -309,7 +309,7 @@ describe('provider singleton', () => {
                 (id: string) => `cipher-${id}`,
             )
             const masterKey = Buffer.from([1, 2, 3])
-            keystoreMocks.getMasterKey.mockResolvedValue(masterKey)
+            keystoreMocks.readMasterKey.mockResolvedValue(masterKey)
             keystoreMocks.decryptData.mockImplementation(
                 (_mk: unknown, cipher: string) => `decrypted-${cipher}`,
             )
