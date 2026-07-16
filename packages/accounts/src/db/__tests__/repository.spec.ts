@@ -970,6 +970,26 @@ describe('account repository', () => {
 
             expect(result.sort()).toEqual(['100', '200', '300'])
         })
+
+        it('returns ids in a stable ascending order', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '300', amount: 1n },
+                    { assetId: '100', amount: 1n },
+                    { assetId: '200', amount: 1n },
+                ],
+                network: 'mainnet',
+            })
+
+            const result = await getAllHeldAssetIdsForNetwork({
+                db,
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual(['100', '200', '300'])
+        })
     })
 
     describe('portfolio totals + holdings page', () => {
