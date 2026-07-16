@@ -143,9 +143,14 @@ export const PWWebView = (props: PWWebViewProps) => {
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
 
-    const userAgent = useMemo(() => {
-        return `${deviceInfo.getUserAgent()}`
-    }, [deviceInfo])
+    // Append the Pera identifier to the WebView's default browser UA rather
+    // than replacing it: a bare non-browser UA (no Mozilla token) makes some
+    // dApp CDNs/bot filters serve 404 (PERA-4566). The API User-Agent header
+    // (useAppBootstrap) is separate and unaffected.
+    const applicationNameForUserAgent = useMemo(
+        () => deviceInfo.getUserAgent(),
+        [deviceInfo],
+    )
 
     const onCloseRequested = useCallback(() => {
         if (!requestId) {
@@ -334,7 +339,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 pullToRefreshEnabled={true}
                 injectedJavaScript={jsToLoad}
                 setSupportMultipleWindows={false}
-                userAgent={userAgent}
+                applicationNameForUserAgent={applicationNameForUserAgent}
                 forceDarkOn={isDarkMode}
                 onLoadStart={verifyLoad}
                 onLoad={loadCompleted}
@@ -359,7 +364,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         navigationStateChange,
         onShouldStartLoadWithRequest,
         isDarkMode,
-        userAgent,
+        applicationNameForUserAgent,
         jsToLoad,
         rest,
         styles.container,
