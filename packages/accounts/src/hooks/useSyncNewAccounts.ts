@@ -26,8 +26,21 @@ import { syncAndEnrichNewAccount } from '../sync/account-syncer'
  *
  * Mount once near the app root. The accounts present at first render are
  * left to the sync service's initial full pass.
+ *
+ * `isEnabled` gates the sync. During legacy→RN migration it must stay false
+ * until the migrated device id is written: enriching an account before the
+ * device id lands fetches assets over the unscoped endpoint and caches
+ * `is_favorited: false` under the asset TTL, so migrated favorites never
+ * reappear (PERA-4564). While disabled the baseline is left unset so the
+ * first enabled run re-establishes it without syncing.
  */
-export const useSyncNewAccounts = (): void => {
+type UseSyncNewAccountsOptions = {
+    isEnabled?: boolean
+}
+
+export const useSyncNewAccounts = ({
+    isEnabled = true,
+}: UseSyncNewAccountsOptions = {}): void => {
     const queryClient = useQueryClient()
     const { network } = useNetwork()
     const accounts = useAccountsStore(state => state.accounts)
@@ -43,6 +56,8 @@ export const useSyncNewAccounts = (): void => {
     const knownAddresses = useRef<Nullable<Set<string>>>(null)
 
     useEffect(() => {
+        if (!isEnabled) return
+
         const addresses = addressesKey ? addressesKey.split('\n') : []
         const known = knownAddresses.current
 
@@ -61,5 +76,5 @@ export const useSyncNewAccounts = (): void => {
         added.forEach(address => {
             void syncAndEnrichNewAccount(address, network, queryClient)
         })
-    }, [addressesKey, network, queryClient])
+    }, [isEnabled, addressesKey, network, queryClient])
 }
