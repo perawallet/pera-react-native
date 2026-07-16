@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,11 +14,21 @@ import { useQuery } from '@tanstack/react-query'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getSuggestedParametersQueryKey } from './querykeys'
 
+// Suggested params carry a validity window, so a cached copy is only
+// trustworthy for a few seconds — never long enough to build from minutes
+// later (PERA-4579).
+const SUGGESTED_PARAMS_STALE_TIME_MS = 10_000
+
 export const useSuggestedParametersQuery = () => {
     const algokit = useAlgorandClient()
 
     return useQuery({
         queryKey: getSuggestedParametersQueryKey(),
         queryFn: async () => await algokit.getSuggestedParams(),
+        staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
+        // Run the fetch even while offline so consumers get a fast typed
+        // rejection instead of a silent pause — a paused query kept the
+        // whole Send input screen on a spinner (PERA-4579).
+        networkMode: 'always',
     })
 }

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -105,6 +105,65 @@ describe('useSyncNewAccounts', () => {
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledTimes(1)
         expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledWith(
             'ADDR2',
+            'mainnet',
+            expect.any(QueryClient),
+        )
+    })
+
+    it('does not sync while disabled', () => {
+        useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
+
+        renderHook(() => useSyncNewAccounts({ isEnabled: false }), {
+            wrapper: makeWrapper(),
+        })
+
+        act(() => {
+            useAccountsStore
+                .getState()
+                .setAccounts([makeAccount('ADDR1'), makeAccount('ADDR2')])
+        })
+
+        expect(mockSyncAndEnrichNewAccount).not.toHaveBeenCalled()
+    })
+
+    it('does not retroactively sync accounts added while disabled once enabled', () => {
+        useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
+
+        const { rerender } = renderHook(
+            ({ isEnabled }) => useSyncNewAccounts({ isEnabled }),
+            { wrapper: makeWrapper(), initialProps: { isEnabled: false } },
+        )
+
+        // Imported while disabled (e.g. accounts landing during migration).
+        act(() => {
+            useAccountsStore
+                .getState()
+                .setAccounts([makeAccount('ADDR1'), makeAccount('ADDR2')])
+        })
+
+        // Gate opens (migration finished, device id written): the accounts
+        // already present must NOT be enriched here — the sync service's
+        // device-id-scoped initial pass owns them.
+        act(() => {
+            rerender({ isEnabled: true })
+        })
+
+        expect(mockSyncAndEnrichNewAccount).not.toHaveBeenCalled()
+
+        // Genuinely new accounts after the gate opens still sync.
+        act(() => {
+            useAccountsStore
+                .getState()
+                .setAccounts([
+                    makeAccount('ADDR1'),
+                    makeAccount('ADDR2'),
+                    makeAccount('ADDR3'),
+                ])
+        })
+
+        expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledTimes(1)
+        expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledWith(
+            'ADDR3',
             'mainnet',
             expect.any(QueryClient),
         )

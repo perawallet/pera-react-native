@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,6 +18,10 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
         alignItems: 'center',
         justifyContent: 'flex-start',
+        // Rows sit between hairline ListItemDividers; without vertical
+        // padding consecutive inbox rows render flush against each other
+        // (regressed when the list's row gap moved to dividers).
+        paddingVertical: theme.spacing.lg,
     },
     // `align='top'` rows: pin the indicator/icon to the first line and stack
     // the title + body vertically.

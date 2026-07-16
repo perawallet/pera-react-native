@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,10 @@
  */
 
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountType,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type {
     PeraTransaction,
     PeraSignedTransaction,
@@ -443,6 +446,13 @@ export interface SignerInfo {
     address: string
     /** For multisig: base64 signatures per item */
     signatures?: Nullable<string>[]
+    /**
+     * Account type of the signer, when the signing strategy knows it. Lets the
+     * submission boundary detect quantum signers without parsing signature
+     * bytes. Populated by createLocalKeyStrategy (and, once it lands, the
+     * dedicated quantum strategy — PQ-006).
+     */
+    accountType?: AccountType
 }
 
 /**

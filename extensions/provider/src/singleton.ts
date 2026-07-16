@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,7 +19,7 @@ import {
     clear as clearKeystoreStore,
     decode,
     decryptData,
-    getMasterKey,
+    readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import { PeraProvider } from './pera-provider'
@@ -145,7 +145,7 @@ export const hydrateKeystore = async (): Promise<void> => {
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await getMasterKey()
+        masterKey = await readMasterKey()
         const mk = masterKey
         const keys = ids
             .map(id => decodeKeyEntry(id, mk))
@@ -177,7 +177,7 @@ export const reconcileKeystore = async (): Promise<void> => {
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await getMasterKey()
+        masterKey = await readMasterKey()
         const mk = masterKey
         const keys = ids
             .map(id => decodeKeyEntry(id, mk))

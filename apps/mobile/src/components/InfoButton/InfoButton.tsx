@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,12 @@ export type InfoButtonProps = {
      * cluster where the whole row should open the explainer sheet).
      */
     trigger?: ReactNode
+    /**
+     * Overrides the default `info-button` testID so callers rendering more
+     * than one info affordance on a screen (e.g. a quantum-fee explainer
+     * alongside a fee-warning icon) can target a specific one in tests.
+     */
+    testID?: string
 } & PropsWithChildren
 
 export const InfoButton = ({
@@ -33,6 +39,7 @@ export const InfoButton = ({
     size = 'sm',
     title,
     trigger,
+    testID = 'info-button',
     children,
 }: InfoButtonProps) => {
     const styles = useStyles()
@@ -42,7 +49,7 @@ export const InfoButton = ({
         <PWTouchableOpacity
             style={trigger ? styles.triggerContainer : styles.iconContainer}
             onPress={openInfo}
-            testID='info-button'
+            testID={testID}
         >
             {trigger}
             <PWIcon

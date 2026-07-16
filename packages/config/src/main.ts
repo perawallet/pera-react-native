@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,6 +16,7 @@ import {
     ONE_HOUR,
     ONE_MINUTE,
     ONE_SECOND,
+    TEN_SECONDS,
     THIRTY_SECONDS,
 } from './constants'
 
@@ -42,6 +43,13 @@ export const configSchema = z.object({
 
     notificationRefreshTime: z.number().int(),
     remoteConfigRefreshTime: z.number().int(),
+
+    /** Bounded ceiling (ms) for algod/indexer GET/DELETE requests (reads). */
+    algodReadTimeout: z.number().int(),
+    /** Bounded ceiling (ms) for algod/indexer POST requests (e.g. broadcast). */
+    algodSubmitTimeout: z.number().int(),
+    /** Bounded ceiling (ms) for the signing machine's `transporting` state. */
+    signingTransportTimeout: z.number().int(),
 
     reactQueryDefaultGCTime: z.number().int(),
     reactQueryDefaultStaleTime: z.number().int(),
@@ -200,6 +208,9 @@ const productionConfig = {
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
+    algodReadTimeout: TEN_SECONDS,
+    algodSubmitTimeout: THIRTY_SECONDS,
+    signingTransportTimeout: THIRTY_SECONDS + 5 * ONE_SECOND,
     reactQueryDefaultGCTime: ONE_HOUR,
     reactQueryDefaultStaleTime: ONE_MINUTE,
     reactQueryShortLivedGCTime: 60 * ONE_DAY,
@@ -264,6 +275,10 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     backendAPIKey: 'BACKEND_API_KEY',
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',
+
+    algodReadTimeout: 'ALGOD_READ_TIMEOUT',
+    algodSubmitTimeout: 'ALGOD_SUBMIT_TIMEOUT',
+    signingTransportTimeout: 'SIGNING_TRANSPORT_TIMEOUT',
 
     appStoreAppID: 'APP_STORE_APPLE_ID',
     playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,7 +18,9 @@ import {
     useSelectedAccount,
     useAccountAssetBalanceQuery,
     useOnChainAccountInformationQuery,
+    useSignerFor,
 } from '@perawallet/wallet-core-accounts'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
@@ -72,6 +74,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(),
     useOnChainAccountInformationQuery: vi.fn(),
+    useSignerFor: vi.fn(),
+    isQuantumAccount: (account: { type?: string } | null | undefined) =>
+        account?.type === 'quantum',
+}))
+
+vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
+    useIsQuantumAccountsEnabled: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -190,6 +199,8 @@ describe('useTransactionConfirmationScreen', () => {
             isPending: false,
         })
         ;(useSendFunds as Mock).mockReturnValue(mockSendFundsState)
+        ;(useSignerFor as Mock).mockReturnValue(null)
+        ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
     })
 
     describe('isReady state', () => {
@@ -731,6 +742,78 @@ describe('useTransactionConfirmationScreen', () => {
 
             expect(result.current.params).toBeUndefined()
             expect(result.current.paramsPending).toBe(true)
+        })
+
+        it('flags a quantum fee when the signer is a quantum account', () => {
+            ;(useSignerFor as Mock).mockReturnValue({
+                address: 'QUANTUM_ADDRESS',
+                type: 'quantum',
+            })
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: 3000n,
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.isQuantumFee).toBe(true)
+            expect(result.current.params).toEqual({ minFee: 3000n })
+        })
+
+        it('does not flag a quantum fee for a standard signer', () => {
+            ;(useSignerFor as Mock).mockReturnValue({
+                address: 'STANDARD_ADDRESS',
+                type: 'algo25',
+            })
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: 1000n,
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.isQuantumFee).toBe(false)
+            expect(result.current.params).toEqual({ minFee: 1000n })
+        })
+
+        it('flags a quantum fee when a standard sender is rekeyed to a quantum signer', () => {
+            ;(useSignerFor as Mock).mockReturnValue({
+                address: 'QUANTUM_AUTH_ADDRESS',
+                type: 'quantum',
+            })
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: 3000n,
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(useSignerFor).toHaveBeenCalledWith(mockAccount.address)
+            expect(result.current.isQuantumFee).toBe(true)
+        })
+
+        it('does not flag a quantum fee when the feature flag is disabled', () => {
+            ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(false)
+            ;(useSignerFor as Mock).mockReturnValue({
+                address: 'QUANTUM_ADDRESS',
+                type: 'quantum',
+            })
+            ;(useMinFeeForSender as Mock).mockReturnValue({
+                minFee: 3000n,
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.isQuantumFee).toBe(false)
         })
     })
 })

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,6 +29,14 @@ vi.mock('../../db', () => ({
     getStaleOrMissingAssetIds: getStaleOrMissingAssetIdsMock,
 }))
 
+const deviceIdGetMock = vi.hoisted(() => vi.fn(() => null as string | null))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useDeviceStore: {
+        getState: () => ({ deviceIDs: { get: deviceIdGetMock } }),
+    },
+}))
+
 import { fetchAndPersistAssets } from '../asset-syncer'
 
 describe('fetchAndPersistAssets', () => {
@@ -39,6 +47,34 @@ describe('fetchAndPersistAssets', () => {
         getStaleOrMissingAssetIdsMock.mockReset()
         getStaleOrMissingAssetIdsMock.mockImplementation(
             async ({ assetIds }: { assetIds: string[] }) => assetIds,
+        )
+        deviceIdGetMock.mockReset()
+        deviceIdGetMock.mockReturnValue(null)
+    })
+
+    test('device-scoped: passes the network device id to fetchAssets', async () => {
+        deviceIdGetMock.mockReturnValue('555')
+        fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 1 }] })
+
+        await fetchAndPersistAssets(['1', '2'], 'mainnet')
+
+        expect(fetchAssetsMock).toHaveBeenCalledWith(
+            ['1', '2'],
+            'mainnet',
+            '555',
+        )
+    })
+
+    test('no device id: fetches without device scoping', async () => {
+        deviceIdGetMock.mockReturnValue(null)
+        fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 1 }] })
+
+        await fetchAndPersistAssets(['1', '2'], 'mainnet')
+
+        expect(fetchAssetsMock).toHaveBeenCalledWith(
+            ['1', '2'],
+            'mainnet',
+            null,
         )
     })
 
@@ -86,6 +122,6 @@ describe('fetchAndPersistAssets', () => {
         await fetchAndPersistAssets(['1', '2'], 'mainnet')
 
         expect(fetchAssetsMock).toHaveBeenCalledTimes(1)
-        expect(fetchAssetsMock).toHaveBeenCalledWith(['2'], 'mainnet')
+        expect(fetchAssetsMock).toHaveBeenCalledWith(['2'], 'mainnet', null)
     })
 })

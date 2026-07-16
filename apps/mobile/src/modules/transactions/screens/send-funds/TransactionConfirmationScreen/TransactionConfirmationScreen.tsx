@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -25,6 +25,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
 import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
@@ -45,6 +46,7 @@ export const TransactionConfirmationScreen = () => {
         selectedAssetId,
         params,
         paramsPending,
+        isQuantumFee,
         currentBalance,
         currentBalancePending,
         note,
@@ -122,17 +124,20 @@ export const TransactionConfirmationScreen = () => {
                     </KeyValueRow>
                 )}
                 <KeyValueRow title={t('send_funds.confirmation.fee')}>
-                    <AssetAmount
-                        asset={ALGO_ASSET}
-                        showSymbol
-                        ignorePrivacyMode
-                        value={
-                            params?.minFee != null
-                                ? toWholeUnits(params.minFee, ALGO_ASSET)
-                                : null
-                        }
-                        isLoading={paramsPending}
-                    />
+                    <PWView style={styles.feeValueContainer}>
+                        <AssetAmount
+                            asset={ALGO_ASSET}
+                            showSymbol
+                            ignorePrivacyMode
+                            value={
+                                params?.minFee != null
+                                    ? toWholeUnits(params.minFee, ALGO_ASSET)
+                                    : null
+                            }
+                            isLoading={paramsPending}
+                        />
+                        {isQuantumFee && <QuantumFeeExplainer />}
+                    </PWView>
                 </KeyValueRow>
                 <PWDivider />
                 {currentBalance && (

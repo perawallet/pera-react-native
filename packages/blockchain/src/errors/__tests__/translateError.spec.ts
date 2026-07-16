@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,12 +12,43 @@
 
 import { describe, test, expect } from 'vitest'
 import { LogicError } from '@algorandfoundation/algokit-utils/types/logic-error'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { toAlgodError } from '../toAlgodError'
 import { AlgodError } from '../AlgodError'
 import { AlgodErrorCode } from '../algodErrorCodes'
 
 const ADDR = 'GBFKIKHL55YJRTB4PSWXWQJDPHG6IHOLESWSWPPPR6HQ2N7H76RBI5JIT4'
 const TXID = 'X4CQTNNARMMELORLYBJY27776Z2453LLREFIZKJYVE3B5FJSL7HA'
+
+// Mirrors what algosdk v3's URLTokenBaseHTTPError (+ HTTPClient.prepareResponseError)
+// actually throws: a plain Error carrying a numeric `status` and a `response`
+// with the decoded body text, and — crucially — NO `url`. The node's body
+// message is also appended to the error `message`, exactly as algosdk does.
+// Building the real shape is what guards against the PERA-4502 regression,
+// where the guard required a v10-only `url` and never matched.
+const makeAlgodHttpError = ({
+    status,
+    statusText = '',
+    bodyMessage,
+}: {
+    status: number
+    statusText?: string
+    bodyMessage?: string
+}): Error => {
+    const message =
+        `Network request error. Received status ${status} (${statusText})` +
+        (bodyMessage ? `: ${bodyMessage}` : '')
+    const text = bodyMessage ? JSON.stringify({ message: bodyMessage }) : ''
+    return Object.assign(new Error(message), {
+        name: 'URLTokenBaseHTTPError',
+        status,
+        response: {
+            status,
+            text,
+            body: new TextEncoder().encode(text),
+        },
+    })
+}
 
 describe('toAlgodError', () => {
     test('parses overspend from a thrown Error', () => {
@@ -72,20 +103,69 @@ describe('toAlgodError', () => {
         expect(e.originalError).toBe(logicErr)
     })
 
-    test('maps ApiError-shaped 5xx errors to network_unavailable', () => {
-        // algokit's ApiError is not publicly exported, so we duck-type it.
-        const apiLike = Object.assign(new Error('Bad gateway'), {
-            status: 502,
-            url: 'https://algod.example/v2/transactions',
-            body: { message: 'bad gateway' },
-        })
-        const e = toAlgodError(apiLike)
+    // Reachability guard for `fromApiError`: network_unavailable is only ever
+    // produced for a >=500/0 status via that branch (never by parseAlgodMessage
+    // or the fetch/abort guards). If the duck-type guard breaks again, a 5xx
+    // http error falls through to unknown_node_error and these fail.
+    test.each([502, 503, 0])(
+        'maps a status-%i algod http error (algosdk v3 shape, no url) to network_unavailable',
+        status => {
+            const err = makeAlgodHttpError({
+                status,
+                statusText: 'Bad Gateway',
+            })
+            const e = toAlgodError(err)
 
-        expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
-        expect(e.params).toMatchObject({
-            status: 502,
-            url: 'https://algod.example/v2/transactions',
+            expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
+            expect(e.params).toMatchObject({ status })
+            expect(e.metadata.retryable).toBe(true)
+            expect(e.originalError).toBe(err)
+        },
+    )
+
+    test('classifies a 400 overspend carried on an algosdk v3 http error through fromApiError', () => {
+        const bodyMessage =
+            `TransactionPool.Remember: transaction ${TXID}: ` +
+            `overspend (account ${ADDR}, data {AccountBaseData:{MicroAlgos:{Raw:199000}}}, tried to spend {201000})`
+        const err = makeAlgodHttpError({
+            status: 400,
+            statusText: 'Bad Request',
+            bodyMessage,
         })
+        const e = toAlgodError(err)
+
+        expect(e.code).toBe(AlgodErrorCode.OVERSPEND)
+        expect(e.params).toMatchObject({
+            address: ADDR,
+            balance: 199000n,
+            spent: 201000n,
+            missing: 2000n,
+        })
+        expect(e.originalError).toBe(err)
+    })
+
+    // A bare numeric `status` is not enough to be an algod http error: the Pera
+    // backend's PeraNetworkError also carries one, and classifying it as
+    // network_unavailable renders the offline copy for a backend outage while
+    // the device is online. The guard must require the algosdk `response` too.
+    test('does not classify a PeraNetworkError backend 5xx as an algod network error', () => {
+        const err = new PeraNetworkError('server', { status: 503 })
+        const e = toAlgodError(err)
+
+        expect(e.code).toBe(AlgodErrorCode.UNKNOWN_NODE_ERROR)
+        expect(e.originalError).toBe(err)
+    })
+
+    test('unwraps the JSON body message into unknown_node_error raw for unclassified 4xx', () => {
+        const err = makeAlgodHttpError({
+            status: 404,
+            statusText: 'Not Found',
+            bodyMessage: `account ${ADDR} not found`,
+        })
+        const e = toAlgodError(err)
+
+        expect(e.code).toBe(AlgodErrorCode.UNKNOWN_NODE_ERROR)
+        expect(e.params).toMatchObject({ raw: `account ${ADDR} not found` })
     })
 
     test('maps fetch-style TypeError to network_unavailable', () => {
@@ -102,12 +182,33 @@ describe('toAlgodError', () => {
         )
     })
 
+    test('maps a DOMException TimeoutError (AbortSignal.timeout) to retryable network_unavailable', () => {
+        const abort = new DOMException(
+            'The operation timed out.',
+            'TimeoutError',
+        )
+        const e = toAlgodError(abort)
+
+        expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
+        expect(e.metadata.retryable).toBe(true)
+        expect(e.originalError).toBe(abort)
+    })
+
+    test('maps a DOMException AbortError (manual abort) to retryable network_unavailable', () => {
+        const abort = new DOMException(
+            'The operation was aborted.',
+            'AbortError',
+        )
+        const e = toAlgodError(abort)
+
+        expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
+        expect(e.metadata.retryable).toBe(true)
+        expect(e.originalError).toBe(abort)
+    })
+
     test('retryable flag reflects the code (network_unavailable=true, overspend=false)', () => {
         const network = toAlgodError(
-            Object.assign(new Error('upstream timeout'), {
-                status: 504,
-                url: 'https://algod.example/v2/transactions',
-            }),
+            makeAlgodHttpError({ status: 504, statusText: 'Gateway Timeout' }),
         )
         expect(network.metadata.retryable).toBe(true)
 

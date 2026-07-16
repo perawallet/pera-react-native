@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -100,6 +100,19 @@ export type MockAlgodAccountInformationParams = {
     status?: number
 }
 
+/**
+ * MSW factory for algod `GET /v2/accounts/{address}`. Merges `response` over
+ * `DEFAULT_EMPTY_ACCOUNT`, so pass only the fields the test cares about
+ * (`amount`, `min-balance`, `auth-addr`).
+ *
+ * @example Quantum account with a balance (compose with quantumAccountFixtures):
+ * server.use(
+ *     mockAlgodAccountInformation({
+ *         address: QUANTUM_TEST_ADDRESS,
+ *         response: { amount: 5_000_000, 'min-balance': 100_000 },
+ *     }),
+ * )
+ */
 export const mockAlgodAccountInformation = ({
     address,
     response,

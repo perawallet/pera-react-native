@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -102,13 +102,15 @@ export const isTrustedWebviewOrigin = (
 export const generateBridgeToken = (): string => {
     const bytes = new Uint8Array(16)
     const webCrypto = (globalThis as { crypto?: Crypto }).crypto
-    if (webCrypto?.getRandomValues) {
-        webCrypto.getRandomValues(bytes)
-    } else {
-        for (let i = 0; i < bytes.length; i++) {
-            bytes[i] = Math.floor(Math.random() * 256)
-        }
+    if (!webCrypto?.getRandomValues) {
+        // Fail closed: a Math.random fallback would make the anti-forgery
+        // token predictable. quick-crypto's install() populates this at app
+        // entry (shim.js), so throwing here can only mean a broken runtime.
+        throw new Error(
+            'crypto.getRandomValues is unavailable — cannot create a bridge token',
+        )
     }
+    webCrypto.getRandomValues(bytes)
     return bytesToHex(bytes)
 }
 
@@ -194,6 +196,15 @@ export const sendNotificationToWebview = (
  * side only mirrors the state for the star icon and asks the web app to toggle.
  */
 export const BROWSER_FAVORITE_ACTION = 'handleBrowserFavoriteButtonClick'
+
+/**
+ * Action carrying the wallet's device id back to the Discover web app. The web
+ * app requests it (via `peraMobileInterface.getDeviceId`) to load the user's
+ * favorites, which are server-side state keyed by device id — so favorites
+ * survive an in-place upgrade as long as the migrated device id is handed over.
+ * Mirrors Android's `PeraMobileWebInterface.getDeviceId` → `getSendDeviceId`.
+ */
+export const GET_DEVICE_ID_ACTION = 'getDeviceId'
 
 /**
  * Sends an `{ action, payload }` message to the webview's `message` listener.

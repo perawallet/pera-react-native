@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -35,6 +35,9 @@ type BridgeWindow = typeof window & {
         sendJsonRPCMessage: (request: unknown) => void
         sendRNMessage: (action: string, params?: unknown) => void
     }
+    peraMobileInterface?: {
+        getDeviceId: () => void
+    }
 }
 
 const bridgeWindow = window as BridgeWindow
@@ -56,6 +59,15 @@ describe('peraMobileInterfaceJS token stamping', () => {
     afterEach(() => {
         delete bridgeWindow.ReactNativeWebView
         delete bridgeWindow.peraRPC
+        delete bridgeWindow.peraMobileInterface
+    })
+
+    it('exposes getDeviceId, which posts a getDeviceId request the Discover web app can call', () => {
+        bridgeWindow.peraMobileInterface?.getDeviceId()
+
+        const posted = lastPostedMessage(postMessage)
+        expect(posted).toMatchObject({ method: 'getDeviceId', token: TOKEN })
+        expect(hasValidBridgeToken(posted, TOKEN)).toBe(true)
     })
 
     it('stamps a single JSON-RPC request and passes validation', () => {

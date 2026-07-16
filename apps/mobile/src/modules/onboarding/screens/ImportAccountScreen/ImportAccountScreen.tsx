@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -47,6 +47,8 @@ export const ImportAccountScreen = () => {
         handleWordChange,
         handleImportAccount,
         mnemonicLength,
+        titleKey,
+        infoNoteKey,
         t,
         handleOpenSupportOptions,
         isQRScannerVisible,
@@ -89,7 +91,15 @@ export const ImportAccountScreen = () => {
                     </>
                 }
             >
-                <ScreenHeader title={t('onboarding.import_account.title')} />
+                <ScreenHeader title={t(titleKey)} />
+                {infoNoteKey !== null && (
+                    <PWText
+                        testID='import_account_quantum_note'
+                        style={styles.quantumNote}
+                    >
+                        {t(infoNoteKey)}
+                    </PWText>
+                )}
                 <PWView style={styles.wordContainer}>
                     {[0, 1].map(column => {
                         const columnOffset = wordsPerColumn * column

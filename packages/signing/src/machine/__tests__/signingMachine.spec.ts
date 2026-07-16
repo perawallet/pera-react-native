@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
+import { AppError } from '@perawallet/wallet-core-shared'
 import { signingMachine } from '../signingMachine'
 import type { SigningMachineInput } from '../context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -603,6 +604,94 @@ describe('signingMachine', () => {
         expect(state.context.completedSignerTypes).toEqual(
             expect.arrayContaining(['localKey', 'multisig']),
         )
+    })
+
+    describe('transporting timeout', () => {
+        // A transportActor that never resolves — models a hung submit that
+        // would otherwise pin the signing UI indefinitely. The machine-level
+        // `after: { SUBMIT_TIMEOUT }` must fire and route to `failed`.
+        const makeHangingTransportMachine = (submitTimeoutMs: number) =>
+            signingMachine.provide({
+                actors: {
+                    analyzerActor: fromPromise(
+                        async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                    ),
+                    localKeySignerActor: fromPromise(
+                        async (): Promise<SigningResult[]> => [
+                            mockSigningResult,
+                        ],
+                    ),
+                    multisigSignerActor: fromPromise(
+                        async (): Promise<SigningResult[]> => {
+                            throw new Error('multisig not implemented')
+                        },
+                    ),
+                    transportActor: fromPromise(
+                        () => new Promise<TransportResult>(() => {}),
+                    ),
+                },
+                delays: { SUBMIT_TIMEOUT: submitTimeoutMs },
+            })
+
+        it('times out a hung transport and routes to failed, RETRY re-enters transporting', async () => {
+            const actor = createActor(makeHangingTransportMachine(50), {
+                input: makeInput(),
+            })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+            await waitFor(actor, s => s.matches('transporting'))
+
+            const failed = await waitFor(actor, s => s.matches('failed'), {
+                timeout: 1000,
+            })
+            expect(failed.context.failedDuringState).toBe('transporting')
+
+            // canRetryTransporting must hold → RETRY returns to transporting.
+            actor.send({ type: 'RETRY' })
+            const retried = await waitFor(
+                actor,
+                s => s.matches('transporting'),
+                {
+                    timeout: 1000,
+                },
+            )
+            expect(retried.matches('transporting')).toBe(true)
+        })
+
+        it('sets a retryable network error when the transport times out', async () => {
+            const actor = createActor(makeHangingTransportMachine(50), {
+                input: makeInput(),
+            })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+
+            const failed = await waitFor(actor, s => s.matches('failed'), {
+                timeout: 1000,
+            })
+            const error = failed.context.error
+            expect(error).toBeInstanceOf(AppError)
+            expect((error as AppError).metadata.retryable).toBe(true)
+        })
+
+        it('does not fire the timeout when the transport completes quickly', async () => {
+            // Regression: the `after` timer must be cancelled on a normal
+            // transport resolution — a fast submit reaches `completed`.
+            const actor = createActor(mockedMachine, { input: makeInput() })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+
+            const state = await waitFor(actor, s => s.matches('completed'), {
+                timeout: 1000,
+            })
+            expect(state.context.error).toBeNull()
+            expect(state.context.transportResult).toEqual(mockTransportResult)
+        })
     })
 
     describe('hardware signer dispatch', () => {

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,6 +29,12 @@ export const toAlgodError = (err: unknown): AlgodError => {
     if (maybeError && isApiErrorLike(err)) return fromApiError(err, maybeError)
     if (maybeError && isFetchTypeError(maybeError)) {
         return new AlgodError('network_unavailable', {}, maybeError)
+    }
+    // Checked independently of `maybeError`: AbortSignal.timeout(...) throws a
+    // DOMException which, in some runtimes (e.g. jsdom), is not `instanceof
+    // Error` despite being structurally Error-shaped (name/message/stack).
+    if (isAbortError(err)) {
+        return new AlgodError('network_unavailable', {}, err)
     }
 
     if (maybeError) {
@@ -62,12 +68,18 @@ const fromLogicError = (err: LogicError): AlgodError<'logic_error'> =>
         err,
     )
 
-// algokit's ApiError is not publicly exported. Duck-type on the three fields
-// we care about so we don't couple to an internal import path.
+// HTTP errors from the algod client. algosdk v3's `HTTPClient` rebuilds every
+// transport error before rethrowing: it decodes the body into `response.text`
+// and copies `response.status` to a top-level numeric `status` — it has NO
+// `url`, which is why the previous guard (a v10 `ApiError` leftover requiring
+// `url`) silently killed the 5xx path after the algosdk v3 migration
+// (PERA-4502). Neither error type is publicly exported, so duck-type on
+// `status` + `response` together: `status` alone also matches unrelated Error
+// subclasses carrying an HTTP status (e.g. the Pera backend's
+// PeraNetworkError), which must NOT classify as algod network errors.
 interface ApiErrorLike {
     status: number
-    url: string
-    body?: unknown
+    response: { text?: string }
 }
 
 const isApiErrorLike = (err: unknown): err is ApiErrorLike & Error => {
@@ -75,43 +87,57 @@ const isApiErrorLike = (err: unknown): err is ApiErrorLike & Error => {
     const candidate = err as Partial<ApiErrorLike>
     return (
         typeof candidate.status === 'number' &&
-        typeof candidate.url === 'string'
+        typeof candidate.response === 'object' &&
+        candidate.response !== null
     )
 }
 
 const fromApiError = (err: ApiErrorLike, cause: Error): AlgodError => {
-    // 4xx responses often carry a node error in `body.message` — try to parse
-    // it before falling back to the transport-level code.
-    const bodyMessage = extractBodyMessage(err.body)
-    if (bodyMessage) {
-        const parsed = parseAlgodMessage(bodyMessage)
-        if (parsed) {
-            return new AlgodError(parsed.code, parsed.params as never, cause)
-        }
+    // A node's rejection text (4xx) lives in the response body and, for algosdk
+    // v3, is also appended to the error message. parseAlgodMessage substring-
+    // matches, so parse whichever the client populated before falling back to
+    // the transport-level code.
+    const bodyMessage = extractBodyMessage(err.response.text) ?? cause.message
+    const parsed = parseAlgodMessage(bodyMessage)
+    if (parsed) {
+        return new AlgodError(parsed.code, parsed.params as never, cause)
     }
 
     if (err.status >= 500 || err.status === 0) {
         return new AlgodError(
             'network_unavailable',
-            { status: err.status, url: err.url },
+            { status: err.status },
             cause,
         )
     }
 
-    return new AlgodError(
-        'unknown_node_error',
-        { raw: bodyMessage ?? `${err.status} ${err.url}` },
-        cause,
-    )
+    return new AlgodError('unknown_node_error', { raw: bodyMessage }, cause)
 }
 
+// algod bodies arrive as the raw decoded text, usually `{"message":"..."}` —
+// unwrap the inner message so `raw` params don't carry the JSON wrapper.
+// Empty bodies normalize to undefined so callers can `??` a fallback.
 const extractBodyMessage = (body: unknown): Optional<string> => {
-    if (typeof body === 'string') return body
-    if (body && typeof body === 'object' && 'message' in body) {
-        const m = (body as { message?: unknown }).message
-        if (typeof m === 'string') return m
+    if (typeof body === 'string') {
+        return messageFromObject(tryParseJson(body)) ?? (body || undefined)
+    }
+    return messageFromObject(body)
+}
+
+const messageFromObject = (value: unknown): Optional<string> => {
+    if (value && typeof value === 'object' && 'message' in value) {
+        const m = (value as { message?: unknown }).message
+        if (typeof m === 'string' && m) return m
     }
     return undefined
+}
+
+const tryParseJson = (text: string): unknown => {
+    try {
+        return JSON.parse(text)
+    } catch {
+        return undefined
+    }
 }
 
 // Catches React Native's `TypeError: Network request failed` and Node's
@@ -124,6 +150,19 @@ const isFetchTypeError = (err: Error): boolean => {
         m.includes('fetch failed') ||
         m.includes('failed to fetch')
     )
+}
+
+// Thrown by AbortSignal.timeout(...) / AbortController.abort() as a
+// DOMException (`name === 'TimeoutError'` / `'AbortError'`). Duck-typed on
+// `name` rather than gated behind `instanceof Error` because DOMException is
+// not always `instanceof Error` (e.g. jsdom), even though it is structurally
+// Error-shaped. These are transient transport failures and must classify as
+// the retryable network_unavailable code, not the terminal
+// unknown_node_error fallback.
+const isAbortError = (err: unknown): err is Error => {
+    if (typeof err !== 'object' || err === null) return false
+    const name = (err as { name?: unknown }).name
+    return name === 'AbortError' || name === 'TimeoutError'
 }
 
 const stringifyUnknown = (err: unknown): string => {

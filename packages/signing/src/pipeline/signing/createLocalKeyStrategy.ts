@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,6 +15,7 @@ import {
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
+    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64, toError } from '@perawallet/wallet-core-shared'
@@ -62,8 +63,8 @@ export type LocalKeyStrategyOptions = {
 }
 
 /**
- * Creates a signing strategy for accounts with local keys (Algo25, HDWallet).
- * These accounts have immediate access to private keys via KMS.
+ * Creates a signing strategy for accounts with local keys (Algo25, HDWallet,
+ * Quantum). These accounts have immediate access to private keys via KMS.
  */
 export const createLocalKeyStrategy = (
     options: LocalKeyStrategyOptions,
@@ -87,7 +88,11 @@ export const createLocalKeyStrategy = (
                 )
             }
 
-            if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
+            if (
+                !isAlgo25Account(account) &&
+                !isHDWalletAccount(account) &&
+                !isQuantumAccount(account)
+            ) {
                 throw new CannotSignError(
                     account.address,
                     `Unsupported account type: ${account.type}`,
@@ -118,6 +123,7 @@ export const createLocalKeyStrategy = (
                         // them to the backend if needed
                         const signerInfo: SignerInfo = {
                             address: account.address,
+                            accountType: account.type,
                             signatures: signed.map(stx =>
                                 stx.sig ? encodeToBase64(stx.sig) : null,
                             ),

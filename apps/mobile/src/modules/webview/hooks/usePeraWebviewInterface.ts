@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -48,6 +48,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     BROWSER_FAVORITE_ACTION,
+    GET_DEVICE_ID_ACTION,
     JsonRpcErrorCode,
     requireSecure,
     sendActionToWebview,
@@ -518,6 +519,15 @@ export const usePeraWebviewInterface = (
                                 ),
                         })
                     } catch (e) {
+                        // Log every relayed rejection here at the transport
+                        // boundary (parity with the WalletConnect transport's
+                        // surfaceError) so real-world dApp failures — e.g.
+                        // algosdk v3's strict decode rejections (PERA-4503) —
+                        // are observable regardless of which resolve path threw.
+                        logger.warn('ARC-0001 sign request rejected', {
+                            code: (e as { code?: number }).code,
+                            message: (e as Error).message,
+                        })
                         // 4100 (Unauthorized) is the only ARC-0001 code that
                         // gets a dedicated JSON-RPC slot; everything else
                         // (4200/4201/4300) is structurally a bad request.
@@ -726,6 +736,27 @@ export const usePeraWebviewInterface = (
         ],
     )
 
+    const getDeviceId = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'getDeviceId',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!deviceID) {
+                        return
+                    }
+                    sendActionToWebview(GET_DEVICE_ID_ACTION, deviceID, webview)
+                },
+            )
+        },
+        [securedConnection, sourceUrl, deviceID, webview],
+    )
+
     const getPublicSettings = useCallback(
         (message: WebviewMessage) => {
             const payload = {
@@ -846,6 +877,10 @@ export const usePeraWebviewInterface = (
                         getSettings(message)
                         break
                     }
+                    case 'getDeviceId': {
+                        getDeviceId(message)
+                        break
+                    }
                     case 'getPublicSettings': {
                         getPublicSettings(message)
                         break
@@ -896,6 +931,7 @@ export const usePeraWebviewInterface = (
             notifyUser,
             getAddresses,
             getSettings,
+            getDeviceId,
             getPublicSettings,
             onBackPressed,
             logAnalyticsEvent,

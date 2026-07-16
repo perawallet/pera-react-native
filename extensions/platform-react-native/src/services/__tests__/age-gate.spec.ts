@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { NativeModules, Platform } from 'react-native'
+import { Platform } from 'react-native'
 import { mapNativeAgeResult, RNAgeGateService } from '../age-gate'
+
+const nativeAgeGateMock = vi.hoisted(() => ({
+    current: null as Record<string, unknown> | null,
+}))
+
+vi.mock('expo', () => ({
+    requireOptionalNativeModule: (name: string) =>
+        name === 'PeraAgeGate' ? nativeAgeGateMock.current : null,
+}))
 
 describe('mapNativeAgeResult — iOS', () => {
     it('maps a shared range with lowerBound >= 18 to adult', () => {
@@ -82,7 +91,7 @@ describe('RNAgeGateService', () => {
     beforeEach(() => {
         vi.restoreAllMocks()
         Platform.OS = 'ios'
-        ;(NativeModules as Record<string, unknown>).PeraAgeGate = undefined
+        nativeAgeGateMock.current = null
     })
 
     it('returns unknown when the native module is absent', async () => {
@@ -99,7 +108,7 @@ describe('RNAgeGateService', () => {
     })
 
     it('normalizes a native iOS adult result', async () => {
-        ;(NativeModules as Record<string, unknown>).PeraAgeGate = {
+        nativeAgeGateMock.current = {
             requestAgeRange: vi
                 .fn()
                 .mockResolvedValue({ status: 'sharing', lowerBound: 18 }),
@@ -114,7 +123,7 @@ describe('RNAgeGateService', () => {
     })
 
     it('returns unknown when the native call throws', async () => {
-        ;(NativeModules as Record<string, unknown>).PeraAgeGate = {
+        nativeAgeGateMock.current = {
             requestAgeRange: vi.fn().mockRejectedValue(new Error('boom')),
             getDeviceCapability: vi.fn().mockResolvedValue('platform'),
         }
@@ -126,7 +135,7 @@ describe('RNAgeGateService', () => {
     })
 
     it('returns manual when getDeviceCapability throws', async () => {
-        ;(NativeModules as Record<string, unknown>).PeraAgeGate = {
+        nativeAgeGateMock.current = {
             requestAgeRange: vi
                 .fn()
                 .mockResolvedValue({ status: 'sharing', lowerBound: 18 }),

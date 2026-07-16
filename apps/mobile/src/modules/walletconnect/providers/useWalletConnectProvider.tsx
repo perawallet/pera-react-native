@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,7 +14,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     getConnectionErrorClientId,
     useWalletConnect,
-    useWalletConnectForegroundReconnect,
+    useWalletConnectReconnect,
     useWalletConnectSessionRequests,
     useWalletConnectStore,
     type WalletConnectSessionRequest,
@@ -29,9 +29,10 @@ import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
 
 export const useWalletConnectProvider = () => {
-    // Without this, a backgrounded session silently drops outgoing signed
-    // responses and incoming dApp requests until the app reconnects.
-    useWalletConnectForegroundReconnect()
+    // Revives dead bridge sockets on foreground return and on network
+    // regain — without it, sessions silently drop signed responses and
+    // incoming dApp requests until the app restarts.
+    useWalletConnectReconnect()
 
     const { sessionRequests, removeSessionRequest } =
         useWalletConnectSessionRequests()
@@ -64,11 +65,11 @@ export const useWalletConnectProvider = () => {
         }
     }
 
-    const { initWalletConnect } = useWalletConnect(network)
+    const { connectSessions } = useWalletConnect(network)
 
     useEffect(() => {
-        initWalletConnect()
-    }, [initWalletConnect, network])
+        connectSessions()
+    }, [connectSessions])
 
     const shouldShowConnection =
         !!nextRequest && !successRequest && !connectionError

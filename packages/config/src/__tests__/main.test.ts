@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,5 +26,19 @@ describe('config/main', () => {
     test('getConfig returns a valid config', () => {
         const result = getConfig()
         expect(configSchema.safeParse(result).success).toBe(true)
+    })
+
+    test('exposes bounded-timeout defaults in milliseconds', () => {
+        expect(config.algodReadTimeout).toBe(10_000)
+        expect(config.algodSubmitTimeout).toBe(30_000)
+        expect(config.signingTransportTimeout).toBe(35_000)
+    })
+
+    test('schema rejects a non-integer algodReadTimeout', () => {
+        const result = configSchema.safeParse({
+            ...config,
+            algodReadTimeout: 10.5,
+        })
+        expect(result.success).toBe(false)
     })
 })

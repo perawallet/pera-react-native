@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -31,10 +31,13 @@ const initialState = {
     contactVerificationId: null,
     onboardingId: null,
     consentSetId: null,
-    // Consent opt-ins default to OFF — the user ticks them on the Set-Password
-    // screen (explicit opt-in), and they're sent on the required email/verify call.
-    allowMarketing: false,
-    allowSms: false,
+    // Consent opt-ins start as "never asked" — the user ticks them on the
+    // Set-Password screen (explicit opt-in, committed on success), and they're
+    // sent on the required email/verify call. A resumed session that skipped
+    // that screen sees null here and the address step re-collects them instead
+    // of recording a silent "denied".
+    allowMarketing: null,
+    allowSms: null,
     connectedFundingSourceAddress: null,
     selectedFundingType: null,
     cardId: null,

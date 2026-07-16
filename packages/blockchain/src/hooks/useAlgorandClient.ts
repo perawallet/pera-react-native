@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,16 +12,14 @@
 
 import { useNetwork } from './useNetwork'
 import { useMemo } from 'react'
-import { config } from '@perawallet/wallet-core-config'
-import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import {
     type PeraEncodedTransactionSigner,
     type PeraTransactionGroup,
     type PeraTransactionSigner,
 } from '../models'
 import { encodeSignedTransactions } from '../utils/transact'
+import { createTimeoutBoundedAlgorandClient } from '../utils/createAlgorandClient'
 import { logger } from '@perawallet/wallet-core-shared'
-import { toAlgodError } from '../errors'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
     throw new Error(
@@ -33,20 +31,11 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { networkConfig, network } = useNetwork()
 
     return useMemo(() => {
-        const algodConfig = {
-            server: networkConfig.algodUrl,
-            token: config.algodApiKey,
-        }
-        const indexerConfig = {
-            server: networkConfig.indexerUrl,
-            token: config.indexerApiKey,
-        }
-        const client = AlgorandClient.fromConfig({ algodConfig, indexerConfig })
+        const client = createTimeoutBoundedAlgorandClient(networkConfig)
         // algokit-utils defaults this to 10 rounds (~30s) on non-localnet,
         // which expires before a hardware-wallet user can confirm on-device.
         // 1000 rounds (~50min) matches the standard Algorand SDK default.
         client.setDefaultValidityWindow(1000)
-        client.registerErrorTransformer(async error => toAlgodError(error))
         if (signer) {
             const encodingSigner: PeraEncodedTransactionSigner = async (
                 txnGroup: PeraTransactionGroup,

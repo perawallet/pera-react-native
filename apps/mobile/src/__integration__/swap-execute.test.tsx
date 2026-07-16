@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -38,11 +38,19 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClientProvider } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient } from '@test-utils/render'
+import {
+    mutationDefaults,
+    NoConnectionError,
+} from '@perawallet/wallet-core-shared'
 import {
     mockPrepareTransactions,
     mockUpdateSwapStatus,
@@ -65,9 +73,32 @@ const buildWrapper = () => {
     )
 }
 
+// Mirrors the app's real mutation policy (`mutationDefaults`, incl.
+// `networkMode: 'always'`) rather than the plain test client. This is required
+// to exercise OFF-004 fail-fast: under the default `networkMode: 'online'` an
+// offline mutation would PAUSE and auto-resume on reconnect — the exact
+// behavior this test proves is gone.
+const buildFailFastWrapper = () => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: { retry: false, gcTime: 0 },
+            mutations: { ...mutationDefaults, retry: false },
+        },
+    })
+    return ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+            {children}
+        </QueryClientProvider>
+    )
+}
+
 describe('Flow: Swap execute (prepare → submit → status)', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
-    afterEach(() => server.resetHandlers())
+    afterEach(() => {
+        server.resetHandlers()
+        // Never leak offline state into sibling tests/files.
+        onlineManager.setOnline(true)
+    })
     afterAll(() => server.close())
 
     it(
@@ -259,6 +290,71 @@ describe('Flow: Swap execute (prepare → submit → status)', () => {
             )
             expect(result.current.data?.status).toBe('failed')
             expect(result.current.data?.reason).toBe('user_cancelled')
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the prepare was attempted offline, when connectivity returns without a fresh user action, then the prepare transport is never called (no auto-resume)',
+        async () => {
+            // AC: offline-attempted mutations do not auto-fire on reconnect.
+            // Count real hits to the prepare endpoint. `assertOnline()` rejects
+            // before any transport, so an offline attempt must leave this at 0,
+            // and it must STAY 0 after reconnect since no code re-triggers it.
+            let prepareHits = 0
+            server.use(
+                http.post('*/v2/dex-swap/prepare-transactions/', () => {
+                    prepareHits += 1
+                    return HttpResponse.json(
+                        {
+                            transaction_groups: [
+                                {
+                                    purpose: 'swap' as const,
+                                    transaction_group_id: 'group-swap-1',
+                                    transactions: ['BASE64SWAP1'],
+                                    signed_transactions: [null],
+                                },
+                            ],
+                            swap_id: 12_345,
+                            swap_id_str: SWAP_ID,
+                            swap_version: 'v2',
+                        },
+                        { status: 200 },
+                    )
+                }),
+            )
+
+            onlineManager.setOnline(false)
+
+            const { result } = renderHook(
+                () => usePrepareTransactionsMutation(),
+                { wrapper: buildFailFastWrapper() },
+            )
+
+            // User kicks off prepare while offline: it fails fast (rejects)
+            // rather than pausing. The transport is never reached.
+            result.current.mutate({ quote: QUOTE_ID })
+
+            await waitFor(
+                () => {
+                    expect(result.current.isError).toBe(true)
+                },
+                { timeout: 5000 },
+            )
+            expect(result.current.error).toBeInstanceOf(NoConnectionError)
+            // Did NOT pause — a paused mutation is what auto-resumes on
+            // reconnect, which the policy forbids.
+            expect(result.current.isPaused).toBe(false)
+            expect(prepareHits).toBe(0)
+
+            // Simulate reconnect WITHOUT any new user action.
+            onlineManager.setOnline(true)
+
+            // Give any (forbidden) auto-resume a chance to fire, then confirm
+            // the transport was still never called.
+            await new Promise(resolve => setTimeout(resolve, 100))
+            expect(prepareHits).toBe(0)
+            expect(result.current.isError).toBe(true)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,7 @@ import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWText } from '@components/core/PWText'
 import { getTestProps } from '@utils/test-id-helper'
+import { getDisplayHost } from './getDisplayHost'
 
 export type WebViewTitleBarProps = {
     title: string
@@ -34,9 +35,7 @@ export const WebViewTitleBar = ({
     // The title bar uses none of the inset-dependent styles.
     const styles = useStyles({ bottomInset: 0 })
 
-    const domain = useMemo(() => {
-        return new URL(url).hostname
-    }, [url])
+    const domain = useMemo(() => getDisplayHost(url), [url])
 
     return (
         <PWView style={styles.titleBar}>

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,12 +11,16 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
     useAccountBalancesQuery,
     useAccountAssetBalanceQuery,
 } from '../useAccountBalancesQuery'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    onlineManager,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
@@ -111,12 +115,34 @@ const account: WalletAccount = {
     canSign: true,
 } as WalletAccount
 
+// Restore the global onlineManager singleton so an offline test can't leak
+// its state into subsequent tests.
+afterEach(() => {
+    onlineManager.setOnline(true)
+})
+
 describe('useAccountBalances', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetAccountBalance.mockReturnValue({ algoBalance: new Decimal(0) })
         mockGetAccountHoldingsPage.mockResolvedValue([])
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
+    })
+
+    it('serves account balances from SQLite while offline', async () => {
+        onlineManager.setOnline(false)
+        mockGetAccountHoldingsPage.mockResolvedValue([algoRow(1_000_000, 1)])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const accountData = result.current.accountBalances.get('ADDR1')
+        expect(accountData?.algoValue).toEqual(new Decimal(1))
+        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
     })
 
     it('returns empty data when no accounts provided', () => {

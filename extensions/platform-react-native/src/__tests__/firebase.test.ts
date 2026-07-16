@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -382,6 +382,45 @@ describe('RNFirebaseService', () => {
 
                 expect(result.token).toBeUndefined()
                 expect(result).toHaveProperty('unsubscribe')
+            })
+
+            it('times out the FCM token fetch and resolves with token undefined within budget', async () => {
+                vi.useFakeTimers()
+                try {
+                    mockNotifee.requestPermission.mockResolvedValue({
+                        authorizationStatus: 1, //AUTHORIZED
+                    })
+                    // getToken never settles — the known indefinite-hang surface.
+                    vi.mocked(messaging.getToken).mockReturnValue(
+                        new Promise<string>(() => {}),
+                    )
+
+                    const resultPromise = service.initializeNotifications()
+                    // Advance past the 5s FCM token fetch budget.
+                    await vi.advanceTimersByTimeAsync(5000)
+                    const result = await resultPromise
+
+                    expect(result.token).toBeUndefined()
+                    expect(typeof result.unsubscribe).toBe('function')
+                } finally {
+                    // Restore a settling implementation so the never-resolving
+                    // stub cannot leak into later tests.
+                    vi.mocked(messaging.getToken).mockResolvedValue(
+                        'mock-fcm-token',
+                    )
+                    vi.useRealTimers()
+                }
+            })
+
+            it('resolves without a token when notifee.requestPermission() rejects', async () => {
+                mockNotifee.requestPermission.mockRejectedValueOnce(
+                    new Error('permission request failed'),
+                )
+
+                const result = await service.initializeNotifications()
+
+                expect(result.token).toBeUndefined()
+                expect(typeof result.unsubscribe).toBe('function')
             })
 
             it('should register onMessage and onForegroundEvent handlers', async () => {

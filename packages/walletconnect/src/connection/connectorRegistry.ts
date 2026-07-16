@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -32,9 +32,13 @@ import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
  * Connector + tombstone state lives in
  * {@link useConnectorRegistryStore}. This file owns the side-effectful
  * lifecycle on top — readiness checking, recreation on dead sockets, and
- * the foreground reconnect sweep — plus two transients (in-flight
- * readiness promises and the handler binder) that don't belong in the
- * store.
+ * the reconnect sweep (run on foreground and on network regain) — plus
+ * two transients (in-flight readiness promises and the handler binder)
+ * that don't belong in the store.
+ *
+ * v1 constraint: the SDK has no ping/heartbeat, so a half-open socket is
+ * undetectable until a delivery fails — the sweeps above are the only
+ * recovery. Revisit when migrating to WalletConnect v2.
  */
 
 /** Re-binds dApp request handlers (`algo_signTxn`, …) onto a connector. */

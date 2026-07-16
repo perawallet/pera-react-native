@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const VerificationState = {
     Unverified: 'UNVERIFIED',
     Pending: 'PENDING',
@@ -18,6 +20,15 @@ export const VerificationState = {
 } as const
 export type VerificationState =
     (typeof VerificationState)[keyof typeof VerificationState]
+
+/**
+ * True once KYC is submitted — either under review (PENDING) or complete
+ * (VERIFIED). The single gate for proceeding past the verification step;
+ * UNVERIFIED, REJECTED, and unknown/unfetched (null) states are NOT submitted.
+ * Shared so the sign-in resume route and the setup checklist can't drift.
+ */
+export const isKycSubmitted = (state: Nullable<VerificationState>): boolean =>
+    state === VerificationState.Pending || state === VerificationState.Verified
 
 /** User profile from GET /v1/user. KYC gate keys off `verificationState`. */
 export type CardUser = {

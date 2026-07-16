@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -101,11 +101,14 @@ export const ModelViewerBottomSheet = ({
                         containerStyle={styles.webviewContainer}
                         scrollEnabled={false}
                         bounces={false}
-                        originWhitelist={['*']}
+                        // sanitizeModelUrl already hard-rejects non-https
+                        // model URLs and the viewer script is https, so the
+                        // bridge-less frame gets no http navigation or
+                        // mixed-content allowance either.
+                        originWhitelist={['https://*']}
                         javaScriptEnabled
                         allowsInlineMediaPlayback
                         androidLayerType='hardware'
-                        mixedContentMode='always'
                         onMessage={handleMessage}
                         testID='model-viewer-webview'
                     />

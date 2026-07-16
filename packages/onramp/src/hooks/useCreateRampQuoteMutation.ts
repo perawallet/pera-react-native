@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,9 +26,10 @@ export const useCreateRampQuoteMutation = (): UseMutationResult<
     return useMutation({
         mutationFn: (params: CreateRampQuoteParams) =>
             createRampQuote(params, network),
-        // The app defaults mutations to throwOnError:true (escalates to the
-        // root error boundary). Quote errors (e.g. SourceAmountIsTooLow) are
-        // expected and handled inline by the form, so opt out here.
+        // Quote errors (e.g. SourceAmountIsTooLow) are expected and handled
+        // inline by the form. Mirrors `mutationDefaults`
+        // (@perawallet/wallet-core-shared), which already sets throwOnError:
+        // false.
         throwOnError: false,
     })
 }

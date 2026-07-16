@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -19,6 +19,7 @@ import {
     toISODateString,
     getDateRangeParams,
     formatTimeRemaining,
+    isoDateToUnixSeconds,
 } from '../dates'
 
 describe('isValidISODate', () => {
@@ -140,5 +141,19 @@ describe('formatTimeRemaining', () => {
         expect(formatTimeRemaining(new Date('2026-05-09T10:00:00Z'), now)).toBe(
             '3d',
         )
+    })
+})
+
+describe('isoDateToUnixSeconds', () => {
+    it('converts a YYYY-MM-DD date to UTC start-of-day unix seconds', () => {
+        expect(isoDateToUnixSeconds('2024-01-02')).toBe(
+            Date.UTC(2024, 0, 2) / 1000,
+        )
+    })
+
+    it('returns NaN for undefined, empty, or unparseable input', () => {
+        expect(isoDateToUnixSeconds(undefined)).toBeNaN()
+        expect(isoDateToUnixSeconds('')).toBeNaN()
+        expect(isoDateToUnixSeconds('not-a-date')).toBeNaN()
     })
 })

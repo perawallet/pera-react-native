@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -39,9 +39,14 @@ export const useVerifyEmailMutation = (): UseVerifyEmailMutationResult => {
         // Store the onboarding id every later step requires. The step isn't
         // advanced here — this runs on the password screen (right after email
         // verification, before the phone steps); the phone/send and phone/verify
-        // that follow move the step forward.
-        onSuccess: ({ onboardingId }) => {
-            useCardStore.getState().setOnboardingId(onboardingId)
+        // that follow move the step forward. No id is issued when the email
+        // already has an account (`hasAccount`); guard on both so a
+        // contradictory { hasAccount, onboardingId } can't persist a stale id
+        // while the caller routes to sign-in.
+        onSuccess: ({ onboardingId, hasAccount }) => {
+            if (onboardingId && !hasAccount) {
+                useCardStore.getState().setOnboardingId(onboardingId)
+            }
         },
         throwOnError: false,
     })

@@ -39,7 +39,8 @@
     "app": {
         "initialization_failed": {
             "title": "App Launch Failed",
-            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain."
+            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain.",
+            "retry": "Try again"
         }
     },
     "asset_sort": {
@@ -297,6 +298,7 @@
         "show_address": "Show Address",
         "view_passphrase_hd": "View root wallet passphrase",
         "view_passphrase_algo25": "View wallet passphrase",
+        "view_passphrase_quantum": "View Quantum account passphrase",
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_to_ledger": "Rekey to Ledger Account",
@@ -438,6 +440,10 @@
             "title": "No camera device found or missing permissions.",
             "body": "Please double check in your system settings that you have enabled camera permissions for the app."
         },
+        "scanner_load_failed": {
+            "title": "Couldn't load the QR scanner",
+            "body": "Something went wrong while opening the camera. Please try again."
+        },
         "find_qr": {
             "title": "Find a QR Code to Scan"
         }
@@ -455,6 +461,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "back_online": "Back online",
         "yes": "Yes",
         "no": "No",
         "enter_stealth_mode": "Enter Stealth Mode",
@@ -599,10 +606,6 @@
                 "title": "Smart contract rejected the transaction",
                 "body": "The contract returned: {{msg}}"
             },
-            "network_unavailable": {
-                "title": "Network unavailable",
-                "body": "Can't reach the Algorand network right now. Check your connection and try again."
-            },
             "unknown_node_error": {
                 "title": "Transaction failed",
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
@@ -617,15 +620,32 @@
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
         "network": {
-            "generic": "Failed to connect to the network.",
-            "timeout": "Didn't receive a response from the network.",
-            "no_connection": "Failed to connect to the network."
+            "no_connection": {
+                "title": "You appear to be offline",
+                "body": "Your device isn't connected to the internet. Check your connection and try again."
+            },
+            "timeout": {
+                "title": "This is taking longer than expected",
+                "body": "We didn't get a response in time. Please try again."
+            }
         },
         "api": {
-            "generic": "An error occurred will fetching data.",
-            "not_found": "The requested resource could not be found.",
-            "unauthorized": "You are not authorized to access this resource.",
-            "server_error": "The server encountered an error while processing the request."
+            "generic": {
+                "title": "Request failed",
+                "body": "Something went wrong while fetching data. Please try again."
+            },
+            "not_found": {
+                "title": "Not found",
+                "body": "The requested resource could not be found."
+            },
+            "unauthorized": {
+                "title": "Not authorized",
+                "body": "You aren't authorized to access this resource."
+            },
+            "server_error": {
+                "title": "Server error",
+                "body": "The server ran into a problem processing your request. Please try again."
+            }
         },
         "validation": {
             "generic": "The data appears to be invalid.",
@@ -945,7 +965,9 @@
             "country_error_body": "Please check your connection and try again.",
             "country_retry": "Try again",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't send your verification email. Please try again."
+            "error_body": "We couldn't send your verification email. Please try again.",
+            "already_registered_title": "Account already exists",
+            "already_registered_body": "An account with this email already exists. Please sign in to continue."
         },
         "verify_email": {
             "navigation_title": "Confirm your Email",
@@ -1042,7 +1064,9 @@
             "platform_terms": "I have read and understood Pera's <0>Terms & Conditions</0> and accept them.",
             "confirm_button": "Continue",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't save your address. Please try again."
+            "error_body": "We couldn't save your address. Please try again.",
+            "already_registered_title": "Registration already complete",
+            "already_registered_body": "Your details are already on file. Please sign in to continue setting up your card."
         },
         "verification": {
             "title": "Begin spending\non-chain",
@@ -1052,15 +1076,20 @@
             "logout_button": "Logout",
             "contact_us": "If you have any questions, please do not hesitate to <0>contact us</0>",
             "error_title": "Something went wrong",
-            "error_body": "We couldn't start verification. Please try again."
+            "error_body": "We couldn't start verification. Please try again.",
+            "open_link_error_body": "We couldn't open the verification page. Please try again."
         },
         "setup_status": {
             "title": "Finish setup and start spending on-chain",
             "documents_title": "Submit Your Documents",
             "documents_pending_label": "Pending",
+            "documents_unverified_body": "Please verify your account to begin spending on-chain.",
+            "documents_verify_button": "Verify your Account",
             "documents_pending_body": "Your verification has been submitted. We'll email you once it's complete.",
             "documents_verified_body": "Your identity has been verified.",
             "documents_rejected_body": "We couldn't verify your identity. Please contact support for help.",
+            "documents_error_body": "We couldn't check your verification status. Please try again.",
+            "documents_retry": "Try again",
             "details_title": "Enter Your Details",
             "details_body": "Verify your details and enter your address to proceed.",
             "details_button": "Verify your Account",
@@ -1312,6 +1341,8 @@
         },
         "import_account": {
             "title": "Enter your Recovery Passphrase",
+            "quantum_title": "Enter your Quantum Passphrase",
+            "quantum_info_note": "A 25-word passphrase from a regular Algorand account is not a Quantum account and cannot be imported here.",
             "importing": "Importing wallet...",
             "button": "Recover",
             "failed_title": "Import failed",
@@ -1423,7 +1454,9 @@
             "pera_web_title": "Import from Pera Web",
             "pera_web_description": "I want to import Algorand accounts from Pera Web",
             "asb_title": "Algorand Secure Backup",
-            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key"
+            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key",
+            "quantum_title": "Import Quantum account",
+            "quantum_description": "I want to import a Quantum account using its 25-word passphrase"
         },
         "asb_import": {
             "info": {
@@ -1758,6 +1791,12 @@
                 "body": "The account <0>{{source}}</0> has been reverted to its original state",
                 "cta": "Done"
             }
+        },
+        "quantum_downgrade_warning": {
+            "title": "Remove quantum-safe protection?",
+            "body": "Rekeying <0>{{source}}</0> to <1>{{target}}</1> will remove its quantum-safe protection. Transactions will then be authorized by a standard key that is not resistant to quantum attacks. This can be reversed by rekeying back to a quantum account.",
+            "confirm": "Continue",
+            "cancel": "Cancel"
         }
     },
     "receive_funds": {
@@ -2278,6 +2317,10 @@
         "fee_warning": {
             "title": "Non-Standard Fees",
             "body": "The fees for this transaction are higher than the standard network fee. This may be due to network congestion or additional fees required by the application."
+        },
+        "quantum_fee": {
+            "title": "Quantum Network Fee",
+            "body": "Quantum accounts use larger signatures, so their transactions require a higher network fee than standard accounts."
         },
         "unknown": {
             "title": "Unsupported Transaction Type",

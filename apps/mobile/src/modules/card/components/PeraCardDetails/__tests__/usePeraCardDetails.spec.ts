@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
     isUnfreezing: false,
     setPinMutateAsync: vi.fn(),
     setPinPending: false,
+    requirePinVerification: vi.fn(),
     connectAsync: vi.fn(),
     pushWebView: vi.fn(),
     infoToast: vi.fn(),
@@ -111,6 +112,12 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({
+        requirePinVerification: mocks.requirePinVerification,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
     useAllAccounts: () => mocks.accounts,
@@ -154,6 +161,7 @@ describe('usePeraCardDetails', () => {
         mocks.selectedFundingType = null
         mocks.status = 'ACTIVE'
         mocks.setPinPending = false
+        mocks.requirePinVerification.mockResolvedValue(true)
         mocks.freezePending = false
         mocks.isUnfreezing = false
         mocks.accounts = []
@@ -502,6 +510,18 @@ describe('usePeraCardDetails', () => {
             url: 'https://hosted/pin',
             id: 'card-set-pin',
         })
+    })
+
+    it('does not start the set-PIN request when the PIN gate is not passed', async () => {
+        mocks.requirePinVerification.mockResolvedValue(false)
+
+        const { result } = renderHook(() => usePeraCardDetails())
+        await act(async () => {
+            await result.current.onSetPin()
+        })
+
+        expect(mocks.setPinMutateAsync).not.toHaveBeenCalled()
+        expect(mocks.pushWebView).not.toHaveBeenCalled()
     })
 
     it('does not start a second set-PIN request while one is pending', async () => {

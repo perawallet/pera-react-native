@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -38,6 +38,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { onlineManager } from '@tanstack/react-query'
 import type { SyncServiceDeps } from '../models'
 
 const POLL_INTERVAL = 3000
@@ -76,6 +77,10 @@ export class SyncService {
     // could otherwise start a second syncAll while a long fresh-import sync is
     // still running — stacking concurrent work on the DB.
     private syncInProgress = false
+    // Unsubscribe handle for the onlineManager connectivity subscription, set
+    // while running so an offline→online transition can trigger an immediate
+    // tick. Cleared on stop() so the subscription lifecycle tracks running.
+    private onlineUnsubscribe: Nullable<() => void> = null
 
     constructor(private readonly deps: SyncServiceDeps) {}
 
@@ -98,17 +103,42 @@ export class SyncService {
     start(): void {
         if (this.running) return
         this.running = true
+        // Subscribe once (per running session) so a reconnect wakes the loop
+        // immediately instead of waiting out the current interval. Unsubscribed
+        // in stop(), so this only fires while the service is meant to be polling.
+        this.onlineUnsubscribe ??= onlineManager.subscribe(isOnline => {
+            if (isOnline) this.handleReconnect()
+        })
         void this.tick()
     }
 
     stop(): void {
         this.running = false
+        if (this.onlineUnsubscribe !== null) {
+            this.onlineUnsubscribe()
+            this.onlineUnsubscribe = null
+        }
         if (this.timer !== null) {
             clearTimeout(this.timer)
             this.timer = null
         }
         this.invalidateTimers.forEach(t => clearTimeout(t))
         this.invalidateTimers.clear()
+    }
+
+    /**
+     * Run a sync tick immediately after an offline→online transition, rather
+     * than waiting out the scheduled interval. Respects the syncInProgress
+     * guard (a running tick's finally reschedules) and cancels any pending
+     * offline-scheduled timer so the reconnect tick isn't duplicated.
+     */
+    private handleReconnect(): void {
+        if (!this.running || this.syncInProgress) return
+        if (this.timer !== null) {
+            clearTimeout(this.timer)
+            this.timer = null
+        }
+        void this.tick()
     }
 
     restart(): void {
@@ -127,6 +157,16 @@ export class SyncService {
         // its tick, or an overlapping restart). Skip — the in-progress tick's
         // finally reschedules, so the loop is preserved without stacking.
         if (this.syncInProgress) return
+
+        // Connectivity gate: while offline, perform zero network work — no
+        // should-refresh POST, no syncAll. The loop stays cheaply scheduled so
+        // it resumes on its own, and the online-transition listener (subscribed
+        // in start) triggers an immediate tick on reconnect (Part A / Part D).
+        if (!onlineManager.isOnline()) {
+            this.scheduleNextTick()
+            return
+        }
+
         this.syncInProgress = true
 
         try {
@@ -145,11 +185,26 @@ export class SyncService {
             }
 
             if (networksToSync.length > 0) {
-                await this.syncAll(networksToSync, shouldRefreshRound)
+                const { hadTotalFailure } = await this.syncAll(
+                    networksToSync,
+                    shouldRefreshRound,
+                )
+                // A tick whose network calls all failed (but not via rate-limit,
+                // which throws) makes no progress — back off even though syncAll
+                // didn't throw. Any success, or a tick with no work to do, resets
+                // to the base interval.
+                this.currentInterval = hadTotalFailure
+                    ? calculateBackoff(
+                          this.currentInterval,
+                          BACKOFF_MULTIPLIER,
+                          MAX_BACKOFF_INTERVAL,
+                      )
+                    : POLL_INTERVAL
+            } else {
+                // No networks needed syncing (should-refresh reported no work,
+                // or there are no accounts) — a successful, cheap tick.
+                this.currentInterval = POLL_INTERVAL
             }
-
-            // Reset interval on success
-            this.currentInterval = POLL_INTERVAL
         } catch (error) {
             logger.warn('Sync tick failed', { error })
             // Back off on errors to avoid hammering a rate-limited API
@@ -203,10 +258,14 @@ export class SyncService {
                     round: result.round ?? null,
                 }
             }
-        } catch {
+        } catch (error) {
             if (neverSynced) {
                 return { networks: [activeNetwork], round: null }
             }
+            // Rethrow so the tick's catch engages backoff — swallowing here
+            // kept a persistently failing should-refresh retrying at the base
+            // 3 s interval forever.
+            throw error
         }
 
         return { networks: [], round: null }
@@ -254,15 +313,27 @@ export class SyncService {
     private async syncAll(
         networks: Network[],
         shouldRefreshRound: Nullable<number> = null,
-    ): Promise<void> {
+    ): Promise<{ hadTotalFailure: boolean }> {
         const accounts = useAccountsStore.getState().accounts
         let hasRateLimitError = false
+        // Track outcomes across every network phase so the caller can back off
+        // when a tick made no progress at all — even when syncAll doesn't throw
+        // (non-429 failures are absorbed by allSettled). hadTotalFailure means
+        // at least one call was attempted and every one of them failed.
+        let hadAnySuccess = false
+        let hadAnyFailure = false
+        const recordOutcomes = (results: PromiseSettledResult<unknown>[]) => {
+            if (results.some(r => r.status === 'fulfilled'))
+                hadAnySuccess = true
+            if (results.some(r => r.status === 'rejected')) hadAnyFailure = true
+        }
 
         for (const network of networks) {
             // 1. Sync all accounts in parallel (each failure isolated)
             const accountResults = await Promise.allSettled(
                 accounts.map(a => fetchAndPersistAccount(a.address, network)),
             )
+            recordOutcomes(accountResults)
             this.logFailures(
                 'account',
                 accountResults,
@@ -344,6 +415,7 @@ export class SyncService {
                 const assetResults = await Promise.allSettled(
                     tasks.map(t => t.run()),
                 )
+                recordOutcomes(assetResults)
                 this.logFailures(
                     'asset-metadata-or-prices',
                     assetResults,
@@ -385,6 +457,7 @@ export class SyncService {
                     fetchAndPersistTransactions(a.address, network),
                 ),
             )
+            recordOutcomes(txResults)
             this.logFailures(
                 'transactions',
                 txResults,
@@ -407,6 +480,8 @@ export class SyncService {
         if (hasRateLimitError) {
             throw new Error('Rate limited by API')
         }
+
+        return { hadTotalFailure: hadAnyFailure && !hadAnySuccess }
     }
 
     private logFailures(

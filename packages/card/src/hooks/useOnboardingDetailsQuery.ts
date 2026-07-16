@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,18 +10,31 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { fetchOnboardingDetails } from '../api/onboarding'
+import {
+    fetchOnboardingDetails,
+    type OnboardingDetails,
+} from '../api/onboarding'
 import { cardQueryKeys } from './querykeys'
+
+type OnboardingDetailsRefetchInterval = UseQueryOptions<
+    OnboardingDetails,
+    Error,
+    OnboardingDetails,
+    ReturnType<typeof cardQueryKeys.onboardingDetails>
+>['refetchInterval']
 
 export type UseOnboardingDetailsQueryOptions = {
     /** From email/verify; the query stays idle while it's null. */
     onboardingId: Nullable<string>
     enabled?: boolean
-    /** Poll interval in ms (or `false`) — used to watch the KYC state. */
-    refetchInterval?: number | false
+    /**
+     * Poll interval in ms, `false`, or a function of the live query (lets
+     * pollers stop from the freshest data) — used to watch the KYC state.
+     */
+    refetchInterval?: OnboardingDetailsRefetchInterval
 }
 
 /** Pre-auth onboarding status (GET /v1/auth/register) — polls the KYC state. */

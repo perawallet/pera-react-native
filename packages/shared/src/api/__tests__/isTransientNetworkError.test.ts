@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,6 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import { HTTPError, TimeoutError } from 'ky'
 import { isTransientNetworkError } from '../query-client'
+import { PeraNetworkError } from '../../errors/network'
 
 const makeHttpError = (status: number): HTTPError => {
     const response = new Response(null, { status })
@@ -46,5 +47,32 @@ describe('isTransientNetworkError', () => {
         expect(isTransientNetworkError(new Error('boom'))).toBe(false)
         expect(isTransientNetworkError('not an error')).toBe(false)
         expect(isTransientNetworkError(undefined)).toBe(false)
+    })
+})
+
+describe('isTransientNetworkError — PeraNetworkError delegation', () => {
+    it('is true for offline/timeout/server kinds', () => {
+        expect(isTransientNetworkError(new PeraNetworkError('offline'))).toBe(
+            true,
+        )
+        expect(isTransientNetworkError(new PeraNetworkError('timeout'))).toBe(
+            true,
+        )
+        expect(
+            isTransientNetworkError(
+                new PeraNetworkError('server', { status: 503 }),
+            ),
+        ).toBe(true)
+    })
+
+    it('is false for client/unknown kinds', () => {
+        expect(
+            isTransientNetworkError(
+                new PeraNetworkError('client', { status: 404 }),
+            ),
+        ).toBe(false)
+        expect(isTransientNetworkError(new PeraNetworkError('unknown'))).toBe(
+            false,
+        )
     })
 })

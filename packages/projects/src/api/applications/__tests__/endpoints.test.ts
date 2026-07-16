@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { HTTPError } from 'ky'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { fetchApplication } from '../endpoints'
 
 const mockQueryClient = vi.fn()
@@ -72,10 +72,10 @@ describe('fetchApplication', () => {
         })
     })
 
-    test('returns null on 404', async () => {
-        const response = new Response(null, { status: 404 })
-        const request = new Request('https://example.com')
-        mockQueryClient.mockRejectedValue(new HTTPError(response, request, {}))
+    test('returns null when the application is not found (typed 404)', async () => {
+        mockQueryClient.mockRejectedValueOnce(
+            new PeraNetworkError('client', { status: 404 }),
+        )
 
         const result = await fetchApplication({
             applicationId: '999',
@@ -99,15 +99,15 @@ describe('fetchApplication', () => {
     })
 
     test('rethrows non-404 errors', async () => {
-        const response = new Response(null, { status: 500 })
-        const request = new Request('https://example.com')
-        mockQueryClient.mockRejectedValue(new HTTPError(response, request, {}))
+        mockQueryClient.mockRejectedValue(
+            new PeraNetworkError('server', { status: 500 }),
+        )
 
         await expect(
             fetchApplication({
                 applicationId: '123',
                 network: 'mainnet',
             }),
-        ).rejects.toThrow(HTTPError)
+        ).rejects.toThrow(PeraNetworkError)
     })
 })

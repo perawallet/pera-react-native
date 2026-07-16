@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -69,6 +69,15 @@ const slugs = {
 
 function buildAppConfig(env) {
   const variant = getAppVariant(env);
+
+  // Legacy native AutoFill extension suffix. Production only: it's the sole
+  // variant whose app bundle id matches the native app's, so the only one that
+  // can inherit the provider selection (the extension id is app-id + suffix, so
+  // both parts must match). Other variants → undefined → plugin no-op.
+  // See plugins/withAutofillExtensionBundleId.js.
+  const legacyAutofillExtensionSuffix = {
+    production: '.autofill-extension',
+  }[variant];
 
   // Production ships the native App Store / Play Store app images; dev and
   // staging keep their current (dark) icon. Production sources are generated
@@ -416,6 +425,16 @@ function buildAppConfig(env) {
       // allowBackup:false.
       './plugins/withExcludeDataFromBackup.js',
 
+      // Rename the iOS AutoFill extension bundle id back to the legacy app's
+      // suffix so the enabled-provider selection survives the native -> RN
+      // upgrade. Registered BEFORE the autofill plugin on purpose: Expo runs
+      // withXcodeProject mods in reverse order, so this runs after that plugin
+      // creates the extension target.
+      [
+        './plugins/withAutofillExtensionBundleId',
+        { legacySuffix: legacyAutofillExtensionSuffix },
+      ],
+
       // Passkey autofill (FIDO2) — system credential provider extension
       [
         '@algorandfoundation/react-native-passkey-autofill',
@@ -434,8 +453,6 @@ function buildAppConfig(env) {
       // missing extension target dependency + duplicate Sources). MUST run after
       // the autofill plugin. Remove once the fixes land upstream.
       './plugins/withPasskeyAutofillFixes',
-
-      './plugins/withAgeGate',
 
       // Restore the production universal-link (applinks) domains that the
       // passkey-autofill plugin drops from associated-domains during prebuild.

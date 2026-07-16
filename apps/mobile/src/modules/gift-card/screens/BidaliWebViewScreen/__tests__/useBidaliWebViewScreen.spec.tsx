@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -106,6 +106,44 @@ describe('useBidaliWebViewScreen', () => {
             expect(result.current.url).toBe(
                 'https://commerce.bidali.com/dapp?key=test-key',
             )
+        })
+    })
+
+    describe('navigation guard', () => {
+        it('allows navigation within the Bidali origin', () => {
+            const { result } = renderHook(() => useBidaliWebViewScreen())
+
+            expect(
+                result.current.onShouldStartLoadWithRequest({
+                    url: 'https://commerce.bidali.com/checkout/123',
+                } as never),
+            ).toBe(true)
+        })
+
+        it('opens off-origin web navigations externally instead of in the webview', async () => {
+            const { Linking } = await import('react-native')
+            const { result } = renderHook(() => useBidaliWebViewScreen())
+
+            expect(
+                result.current.onShouldStartLoadWithRequest({
+                    url: 'https://evil.example/phish',
+                } as never),
+            ).toBe(false)
+            expect(Linking.openURL).toHaveBeenCalledWith(
+                'https://evil.example/phish',
+            )
+        })
+
+        it('blocks non-web schemes outright', async () => {
+            const { Linking } = await import('react-native')
+            const { result } = renderHook(() => useBidaliWebViewScreen())
+
+            expect(
+                result.current.onShouldStartLoadWithRequest({
+                    url: 'javascript:alert(1)',
+                } as never),
+            ).toBe(false)
+            expect(Linking.openURL).not.toHaveBeenCalled()
         })
     })
 

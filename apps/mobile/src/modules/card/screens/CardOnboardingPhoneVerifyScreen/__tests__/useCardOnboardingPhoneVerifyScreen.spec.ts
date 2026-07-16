@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -177,6 +177,25 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(mockErrorToast).toHaveBeenCalled()
         expect(mockSetCodeVerificationError).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it("surfaces Baanx's own message when a non-code failure carries one", async () => {
+        mockVerifyMutateAsync.mockRejectedValue({
+            response: { status: 500 },
+            data: { message: 'Verification service unavailable' },
+        })
+        const { result } = renderVerifyHook()
+
+        act(() => result.current.onChangeCode(VALID_CODE))
+        await act(async () => {
+            result.current.handleConfirm()
+        })
+
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'peraCard.verify_phone.verify_error_title',
+            'Verification service unavailable',
+        )
+        expect(mockSetCodeVerificationError).not.toHaveBeenCalled()
     })
 
     it('exposes the inline code error when a prior attempt was rejected', () => {

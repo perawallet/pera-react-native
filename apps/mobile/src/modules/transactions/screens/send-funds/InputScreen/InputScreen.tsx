@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -30,7 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
@@ -43,7 +43,6 @@ export const InputScreen = () => {
     const {
         asset,
         accountAssetBalance,
-        params,
         accountInformation,
         cryptoValue,
         setMax,
@@ -98,20 +97,30 @@ export const InputScreen = () => {
         }
     }, [canSelectAsset, navigation, onFinished])
 
-    useNavigationHeader({
-        left: (
+    // Memoize the header nodes so their identities stay stable across renders.
+    // useNavigationHeader lists them as effect deps and calls setOptions; passing
+    // fresh JSX every render re-fires the effect → setOptions → re-render loop
+    // ("Maximum update depth exceeded" on the async-loading ASA path).
+    const headerLeft = useMemo(
+        () => (
             <PWIcon
                 name={canSelectAsset ? 'chevron-left' : 'cross'}
                 onPress={handleBack}
             />
         ),
-        right: (
+        [canSelectAsset, handleBack],
+    )
+    const headerRight = useMemo(
+        () => (
             <PWIcon
                 name='info'
                 onPress={openInfo}
             />
         ),
-        title: (
+        [openInfo],
+    )
+    const headerTitle = useMemo(
+        () => (
             <PWView style={styles.headerTitleContainer}>
                 <PWText>
                     {t('send_funds.input_view.title', {
@@ -127,9 +136,22 @@ export const InputScreen = () => {
                 />
             </PWView>
         ),
+        [styles, t, asset?.name, selectedAccount],
+    )
+
+    useNavigationHeader({
+        left: headerLeft,
+        right: headerRight,
+        title: headerTitle,
     })
 
-    if (!asset || !accountAssetBalance || !params || !accountInformation) {
+    // `params` is deliberately NOT gated here: suggested params are a
+    // network-only fetch that pauses offline, and they're only needed to
+    // build the transaction (fetched fresh at build time in
+    // useTransactionSendFlow) — not to render the amount form. Gating on
+    // them kept the whole Send entry point on a spinner while offline
+    // (PERA-4579). The DB-backed gates below resolve offline.
+    if (!asset || !accountAssetBalance || !accountInformation) {
         return <LoadingView variant='circle' />
     }
 

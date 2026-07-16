@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -398,9 +398,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AddContact', {
-            address: 'addr1',
-            label: 'Label1',
+        expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+            screen: 'AddContact',
+            params: {
+                address: 'addr1',
+                label: 'Label1',
+            },
         })
     })
 
@@ -420,9 +423,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('EditContact', {
-            address: 'addr1',
-            label: 'Label1',
+        expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+            screen: 'EditContact',
+            params: {
+                address: 'addr1',
+                label: 'Label1',
+            },
         })
     })
 
@@ -443,10 +449,13 @@ describe('useDeepLink', () => {
         })
 
         expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
-            'AddContact',
+            'Contacts',
             {
-                address: 'addr1',
-                label: 'Label1',
+                screen: 'AddContact',
+                params: {
+                    address: 'addr1',
+                    label: 'Label1',
+                },
             },
         )
         expect(mockDispatch).toHaveBeenCalled()
@@ -950,7 +959,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+        // HOME should return to the Home tab's stack ROOT (AccountDetails), so
+        // it actually "goes home" even when the user is deep in the Home stack.
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
     })
 
     it('should handle ASSET_TRANSACTIONS deeplink', async () => {

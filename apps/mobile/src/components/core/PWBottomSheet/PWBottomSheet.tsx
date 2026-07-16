@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -211,7 +211,12 @@ export const PWBottomSheet = ({
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
             enablePanDownToClose={enablePanDownToClose}
-            enableContentPanningGesture={enableContentPanningGesture}
+            // Content panning only serves pan-down-to-close (snap points are
+            // never draggable here); on non-closable sheets it just competes
+            // with taps on Android and can swallow them (PERA-4437).
+            enableContentPanningGesture={
+                enableContentPanningGesture ?? enablePanDownToClose
+            }
             enableOverDrag={false}
         >
             <NotifierWrapper

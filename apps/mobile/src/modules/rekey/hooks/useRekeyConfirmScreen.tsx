@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,9 @@
 import { useCallback } from 'react'
 import {
     getAccountDisplayName,
+    isQuantumDowngrade,
     isRekeyedAccount,
+    useAllAccounts,
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -29,6 +31,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useHandleRekeyError } from './useHandleRekeyError'
 import { useRekeyProposeHandoff } from './useRekeyProposeHandoff'
 import { PreviousRekeyWarningSheet } from '../components/PreviousRekeyWarningSheet'
+import { QuantumDowngradeWarningSheet } from '../components/QuantumDowngradeWarningSheet'
 
 import type { Decimal } from 'decimal.js'
 
@@ -79,6 +82,7 @@ export const useRekeyConfirmScreen = ({
     const source = useFindAccountByAddress(sourceAddress)
     const target = useFindAccountByAddress(targetAddress)
     const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
+    const accounts = useAllAccounts()
 
     // A shared-account rekey is signed via the multisig propose flow, whose
     // signing Promise never resolves — hand off to the pending-signatures
@@ -167,10 +171,29 @@ export const useRekeyConfirmScreen = ({
             })
             if (!confirmed) return
         }
+
+        // Rekeying a quantum account to an Ed25519 authority strips its
+        // quantum-safe protection — warn before it happens. Not shown when the
+        // target's effective authority is also quantum, nor for Ed25519 sources.
+        if (source && target && isQuantumDowngrade(source, target, accounts)) {
+            const confirmed = await requestBottomSheet<boolean>({
+                contents: (
+                    <QuantumDowngradeWarningSheet
+                        sourceName={getAccountDisplayName(source)}
+                        targetName={getAccountDisplayName(target)}
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (!confirmed) return
+        }
+
         await submit()
     }, [
         hasPreviousRekey,
         source,
+        target,
+        accounts,
         currentAuth,
         requestBottomSheet,
         handleLearnMore,

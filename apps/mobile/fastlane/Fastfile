@@ -125,9 +125,14 @@ platform :ios do
     when "PeraAlgoWallet" then "com.algorandllc.algorand"
     else "com.algorandllc.perarn.staging"
     end
-    # AutoFill credential-provider extension (added by the passkey plugin).
-    # Same suffix for every variant; each has its own App ID + App Store profile.
-    extension_bundle_id = "#{bundle_id}.PasskeyAutofillCredentialProvider"
+    # AutoFill credential-provider extension. Production is renamed to the
+    # legacy native id (.autofill-extension) by withAutofillExtensionBundleId.js
+    # so iOS keeps the user's password-manager selection across the native→RN
+    # upgrade (PERA-3945); staging/dev keep the passkey plugin's default id.
+    # This suffix MUST match that plugin, and each id needs its own App Store
+    # profile (see IOS_AUTOFILL_PROVISIONING_PROFILE_NAME).
+    extension_suffix = options[:scheme] == "PeraAlgoWallet" ? ".autofill-extension" : ".PasskeyAutofillCredentialProvider"
+    extension_bundle_id = "#{bundle_id}#{extension_suffix}"
 
     app_profile = ENV["IOS_PROVISIONING_PROFILE_NAME"]
     extension_profile = ENV["IOS_AUTOFILL_PROVISIONING_PROFILE_NAME"]

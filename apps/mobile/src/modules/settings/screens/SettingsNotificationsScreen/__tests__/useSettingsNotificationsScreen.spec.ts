@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { onlineManager } from '@tanstack/react-query'
 import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
 import {
     useNotificationPreferences,
@@ -60,6 +61,8 @@ describe('useSettingsNotificationsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
+
+    afterEach(() => onlineManager.setOnline(true))
 
     it('returns correct initial state', () => {
         const { result } = renderHook(() => useSettingsNotificationsScreen())
@@ -147,6 +150,55 @@ describe('useSettingsNotificationsScreen', () => {
             expect.objectContaining({
                 type: 'error',
             }),
+        )
+    })
+
+    // OFF-004: when offline, the notification mutation must fail fast rather
+    // than pause/auto-resume. The optimistic toggle is applied, then the
+    // rejection rolls it back and surfaces an error toast.
+    it('applies then rolls back the optimistic toggle when offline', async () => {
+        onlineManager.setOnline(false)
+
+        const setAccountEnabled = vi.fn()
+        // Simulates the offline transport throw: with networkMode 'always' the
+        // mutationFn runs and rejects instead of the mutation being paused.
+        const mutateAsync = vi
+            .fn()
+            .mockRejectedValue(new TypeError('Network request failed'))
+        const showToast = vi.fn()
+        const mockAccount = { id: '1', address: 'ADDR1' }
+
+        vi.mocked(useNotificationPreferences).mockReturnValueOnce({
+            setAccountEnabled,
+            isAccountEnabled: vi.fn(),
+        } as any)
+        vi.mocked(useAccountNotificationEnabledMutation).mockReturnValueOnce({
+            mutateAsync,
+        } as any)
+        vi.mocked(useToast).mockReturnValueOnce({
+            showToast,
+        } as any)
+
+        const { result } = renderHook(() => useSettingsNotificationsScreen())
+
+        await act(async () => {
+            result.current.handleAccountNotificationToggle(
+                mockAccount as any,
+                true,
+            )
+        })
+
+        // Optimistic update applied with the new value before the request.
+        expect(setAccountEnabled).toHaveBeenNthCalledWith(1, 'ADDR1', true)
+        // The mutation actually ran (did not pause) while offline.
+        expect(mutateAsync).toHaveBeenCalledWith({
+            accountID: 'ADDR1',
+            status: true,
+        })
+        // Rollback restores the prior value after the rejection.
+        expect(setAccountEnabled).toHaveBeenNthCalledWith(2, 'ADDR1', false)
+        expect(showToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
         )
     })
 })

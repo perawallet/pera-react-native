@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,6 +26,7 @@ export const CardOnboardingStatusScreen = () => {
     const styles = useStyles()
     const {
         documentsState,
+        isKycSubmitted,
         isRegistrationComplete,
         isFundsConnected,
         connectedAccount,
@@ -38,6 +39,8 @@ export const CardOnboardingStatusScreen = () => {
         isCreatingCard,
         handleCreatePeraCard,
         handleEnterDetails,
+        handleVerifyIdentity,
+        handleRetryStatus,
         handleConnectAccount,
         handleLogout,
         handleOpenSupport,
@@ -60,10 +63,14 @@ export const CardOnboardingStatusScreen = () => {
                 <PWText variant='h1'>{t('peraCard.setup_status.title')}</PWText>
 
                 <PWView style={styles.checklist}>
-                    <DocumentsRow documentsState={documentsState} />
+                    <DocumentsRow
+                        documentsState={documentsState}
+                        onRetry={handleRetryStatus}
+                        onVerify={handleVerifyIdentity}
+                    />
                     <EnterDetailsRow
                         isRegistrationComplete={isRegistrationComplete}
-                        documentsState={documentsState}
+                        isKycSubmitted={isKycSubmitted}
                         onEnterDetails={handleEnterDetails}
                     />
                     <ConnectFundsRow

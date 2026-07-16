@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -33,6 +33,7 @@ export const RemoteConfigKeys = {
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
     enable_ssl_pinning_algod: 'enable_ssl_pinning_algod',
     terms_version: 'terms_version',
+    network_reachability_url: 'network_reachability_url',
 } as const
 
 export type RemoteConfigKey =
@@ -84,6 +85,11 @@ export const RemoteConfigDefaults: Record<
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '1',
+    // Endpoint used to actively probe internet reachability. MUST return HTTP
+    // 204 with an empty body (a captive portal answering 200 + HTML is thereby
+    // detected as unreachable). Overridable via Remote Config without a
+    // redeploy; defaults to Google's generate_204 interim.
+    network_reachability_url: 'https://clients3.google.com/generate_204',
 }
 
 export interface RemoteConfigService {

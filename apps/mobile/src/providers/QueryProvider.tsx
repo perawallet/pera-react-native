@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,9 +15,18 @@ import {
     PersistQueryClientProvider,
     type PersistQueryClientRootOptions,
 } from '@tanstack/react-query-persist-client'
-import { type OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
+import {
+    type OmitKeyof,
+    MutationCache,
+    QueryCache,
+    QueryClient,
+} from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
-import { isTransientNetworkError, logger } from '@perawallet/wallet-core-shared'
+import {
+    isTransientNetworkError,
+    logger,
+    mutationDefaults,
+} from '@perawallet/wallet-core-shared'
 import { isAccountQuery } from '@perawallet/wallet-core-accounts'
 import { isAssetQuery } from '@perawallet/wallet-core-assets'
 import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
@@ -36,17 +45,36 @@ const cache = new QueryCache({
     },
 })
 
+const mutationCache = new MutationCache({
+    onError: (error, _variables, _context, mutation) => {
+        // Same transient-skip rationale as the query cache above.
+        if (isTransientNetworkError(error)) {
+            return
+        }
+        logger.error('Mutation failed:', {
+            error,
+            mutationKey: mutation.options.mutationKey,
+        })
+    },
+})
+
 const queryClient = new QueryClient({
     queryCache: cache,
+    mutationCache,
     defaultOptions: {
         queries: {
             gcTime: config.reactQueryDefaultGCTime,
             staleTime: config.reactQueryDefaultStaleTime,
             retry: 0, //ky handles retries
         },
-        mutations: {
-            throwOnError: true,
-        },
+        // OFF-004: mutation policy (networkMode 'always' → fail fast offline,
+        // never pause/auto-resume; throwOnError false → surface as
+        // `mutation.error`, not render-phase throw). `mutationDefaults` in
+        // `@perawallet/wallet-core-shared` is the single source of truth so
+        // package-level tests exercise the identical config. Failures are logged
+        // centrally by `mutationCache.onError`; user-facing surfacing stays at
+        // the call site.
+        mutations: mutationDefaults,
     },
 })
 

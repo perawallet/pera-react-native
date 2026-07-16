@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,6 +11,7 @@
  */
 
 import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
+import { isPeraNetworkError } from '@perawallet/wallet-core-shared'
 
 const GENERIC_FALLBACK = 'Something went wrong. Please try again.'
 
@@ -116,13 +117,19 @@ const ATTESTATION_REQUIRED_MESSAGE =
  * extracted from the API response payload.
  */
 export function toOnrampUserMessage(error: unknown): string {
+    // The typed network error wraps the original ky error; the parsed Pera
+    // body (if any) lives on the original.
+    const raw = isPeraNetworkError(error)
+        ? (error.originalError ?? error)
+        : error
+
     // The fee-delegation flow throws before the request when no device
     // attestation token is available; surface it with onramp wording.
-    if (error instanceof FeeDelegationAttestationRequiredError) {
+    if (raw instanceof FeeDelegationAttestationRequiredError) {
         return ATTESTATION_REQUIRED_MESSAGE
     }
 
-    const exception = resolvePeraApiException(error)
+    const exception = resolvePeraApiException(raw)
     if (exception) {
         if (exception.type === 'SourceAmountIsTooLow') {
             return parseSourceAmountIsTooLow(exception)
@@ -130,7 +137,7 @@ export function toOnrampUserMessage(error: unknown): string {
         return exception.fallback_message || GENERIC_FALLBACK
     }
 
-    const bunError = resolveBunApiError(error)
+    const bunError = resolveBunApiError(raw)
     if (bunError) {
         // The server can also reject a token it considers invalid/expired.
         if (bunError.code?.startsWith('APP_INTEGRITY_TOKEN')) {

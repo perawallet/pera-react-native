@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -196,17 +196,16 @@ const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
         sender: senderAddress,
     }
 
-    // Add optional fields based on transaction type
-    if ('receiver' in tx && tx.receiver) {
-        summary.receiver = tx.receiver.toString()
-    }
-
-    if ('amount' in tx && tx.amount !== undefined && tx.amount !== null) {
-        summary.amount = tx.amount as bigint
-    }
-
-    if ('assetId' in tx && tx.assetId !== undefined && tx.assetId !== null) {
-        summary.assetId = tx.assetId as bigint
+    // Like the close fields in detectWarnings, receiver/amount/assetIndex
+    // live under the type-specific payload on an algosdk v3 Transaction,
+    // never at the top level (PERA-4506).
+    if (tx.payment) {
+        summary.receiver = tx.payment.receiver.toString()
+        summary.amount = tx.payment.amount
+    } else if (tx.assetTransfer) {
+        summary.receiver = tx.assetTransfer.receiver.toString()
+        summary.amount = tx.assetTransfer.amount
+        summary.assetId = tx.assetTransfer.assetIndex
     }
 
     if (tx.note) {
@@ -237,21 +236,30 @@ const detectWarnings = (
             continue
         }
 
-        // Check for close remainder (payment)
-        if ('closeRemainderTo' in tx && tx.closeRemainderTo) {
+        // Close fields live under the type-specific payload (algosdk v3 /
+        // algokit v10), never at the top level — only `rekeyTo` is a top-level
+        // header field. Reading them off `tx` directly silently never matches,
+        // which is how these danger warnings went dead (PERA-4506).
+
+        // Payment close: sweeps the account's entire remaining ALGO balance to
+        // the target and closes the account.
+        const paymentCloseTo = tx.payment?.closeRemainderTo
+        if (paymentCloseTo) {
             warnings.push({
                 type: 'close-account',
                 severity: 'danger',
-                message: `This transaction will close the account and send remaining balance to ${tx.closeRemainderTo.toString()}`,
+                message: `This transaction will close the account and send remaining balance to ${paymentCloseTo.toString()}`,
             })
         }
 
-        // Check for close to (asset transfer)
-        if ('closeTo' in tx && tx.closeTo) {
+        // Asset opt-out: sweeps the sender's entire remaining balance of the
+        // asset to the target.
+        const assetCloseTo = tx.assetTransfer?.closeRemainderTo
+        if (assetCloseTo) {
             warnings.push({
                 type: 'close-account',
                 severity: 'danger',
-                message: `This transaction will opt-out and send remaining asset balance to ${tx.closeTo.toString()}`,
+                message: `This transaction will opt-out and send remaining asset balance to ${assetCloseTo.toString()}`,
             })
         }
 

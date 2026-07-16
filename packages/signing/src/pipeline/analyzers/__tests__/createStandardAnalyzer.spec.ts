@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -11,7 +11,13 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import { Address, Transaction } from 'algosdk'
 import { GenesisHashMismatchError } from '../../errors'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+    makeTestAssetTransferTx,
+} from '../../../test-utils/transactions'
 
 const assertTransactionsMatchNetworkMock = vi.fn()
 vi.mock('../../../utils/assertTransactionsMatchNetwork', () => ({
@@ -50,35 +56,46 @@ const makeContext = (accounts: string[] = [ACCOUNT_A]): AnalysisContext =>
 
 const makeTx = (overrides: {
     sender: string
-    receiver?: string
-    amount?: bigint
-    assetId?: bigint
     fee?: bigint
     note?: Uint8Array
-    closeRemainderTo?: string
-    closeTo?: string
-    rekeyTo?: { publicKey: Uint8Array }
     type?: string
     group?: Uint8Array
 }): unknown => ({
     sender: { toString: () => overrides.sender },
-    ...(overrides.receiver
-        ? { receiver: { toString: () => overrides.receiver } }
-        : {}),
-    ...('amount' in overrides ? { amount: overrides.amount } : {}),
-    ...('assetId' in overrides ? { assetId: overrides.assetId } : {}),
     fee: overrides.fee,
     note: overrides.note,
-    ...(overrides.closeRemainderTo
-        ? { closeRemainderTo: { toString: () => overrides.closeRemainderTo } }
-        : {}),
-    ...(overrides.closeTo
-        ? { closeTo: { toString: () => overrides.closeTo } }
-        : {}),
-    ...(overrides.rekeyTo ? { rekeyTo: overrides.rekeyTo } : {}),
     ...(overrides.group ? { group: overrides.group } : {}),
     type: overrides.type,
 })
+
+// Type-specific fields (receiver, amount, closeRemainderTo, ...) live under
+// the payload on a real SDK Transaction, never at the top level — so warnings
+// and summaries must be exercised against genuine algosdk objects. Hand-built
+// literals with top-level fields are exactly what let PERA-4506 ship as dead
+// code.
+const REAL_SENDER = makeTestAddress(1)
+const REAL_EXTERNAL_SENDER = makeTestAddress(7)
+const CLOSE_TARGET = makeTestAddress(9)
+const REKEY_TARGET = makeTestAddress(5)
+
+const makeRealPaymentCloseTx = (sender: Address = REAL_SENDER): Transaction =>
+    makeTestPaymentTx(sender, {
+        receiver: CLOSE_TARGET,
+        closeRemainderTo: CLOSE_TARGET,
+    })
+
+const makeRealAssetCloseTx = (sender: Address = REAL_SENDER): Transaction =>
+    makeTestAssetTransferTx(sender, {
+        assetIndex: 42n,
+        receiver: CLOSE_TARGET,
+        closeRemainderTo: CLOSE_TARGET,
+    })
+
+const makeRealRekeyTx = (sender: Address = REAL_SENDER): Transaction =>
+    makeTestPaymentTx(sender, {
+        receiver: CLOSE_TARGET,
+        rekeyTo: REKEY_TARGET,
+    })
 
 const makeGroup = (transactions: unknown[]): SignableGroup =>
     ({
@@ -190,25 +207,53 @@ describe('createStandardAnalyzer', () => {
         expect(result.totalFees).toBe(100n)
     })
 
-    test('produces transaction summaries with receiver, amount, assetId, note', async () => {
+    test('summarizes a real payment with receiver, amount and note from the payload', async () => {
         const analyzer = createStandardAnalyzer()
         const group = makeGroup([
-            makeTx({
-                sender: ACCOUNT_A,
-                receiver: EXTERNAL_ADDR,
+            makeTestPaymentTx(REAL_SENDER, {
+                receiver: CLOSE_TARGET,
                 amount: 1000n,
-                assetId: 42n,
-                note: new TextEncoder().encode('hello'),
+                // Copy into this realm: jsdom's TextEncoder yields a foreign
+                // Uint8Array that algosdk's instanceof validation rejects.
+                note: new Uint8Array(new TextEncoder().encode('hello')),
             }),
         ])
-        const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+        const result = await analyzer.analyze(
+            group,
+            makeContext([REAL_SENDER.toString()]),
+        )
 
         expect(result.transactionSummaries).toHaveLength(1)
-        expect(result.transactionSummaries[0].sender).toBe(ACCOUNT_A)
-        expect(result.transactionSummaries[0].receiver).toBe(EXTERNAL_ADDR)
+        expect(result.transactionSummaries[0].sender).toBe(
+            REAL_SENDER.toString(),
+        )
+        expect(result.transactionSummaries[0].receiver).toBe(
+            CLOSE_TARGET.toString(),
+        )
         expect(result.transactionSummaries[0].amount).toBe(1000n)
-        expect(result.transactionSummaries[0].assetId).toBe(42n)
         expect(result.transactionSummaries[0].note).toBe('hello')
+    })
+
+    test('summarizes a real asset transfer with assetId from the payload', async () => {
+        const analyzer = createStandardAnalyzer()
+        const group = makeGroup([
+            makeTestAssetTransferTx(REAL_SENDER, {
+                assetIndex: 42n,
+                receiver: CLOSE_TARGET,
+                amount: 7n,
+            }),
+        ])
+        const result = await analyzer.analyze(
+            group,
+            makeContext([REAL_SENDER.toString()]),
+        )
+
+        expect(result.transactionSummaries).toHaveLength(1)
+        expect(result.transactionSummaries[0].receiver).toBe(
+            CLOSE_TARGET.toString(),
+        )
+        expect(result.transactionSummaries[0].amount).toBe(7n)
+        expect(result.transactionSummaries[0].assetId).toBe(42n)
     })
 
     test('skips note that is not valid UTF-8 without crashing', async () => {
@@ -238,59 +283,60 @@ describe('createStandardAnalyzer', () => {
         }
     })
 
-    test('detects close-account warning from closeRemainderTo', async () => {
+    test('detects a danger close-account warning from a real payment closeRemainderTo', async () => {
         const analyzer = createStandardAnalyzer()
-        const group = makeGroup([
-            makeTx({
-                sender: ACCOUNT_A,
-                closeRemainderTo: EXTERNAL_ADDR,
-            }),
-        ])
-        const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+        const group = makeGroup([makeRealPaymentCloseTx()])
+        const result = await analyzer.analyze(
+            group,
+            makeContext([REAL_SENDER.toString()]),
+        )
 
         expect(result.warnings).toHaveLength(1)
         expect(result.warnings[0].type).toBe('close-account')
         expect(result.warnings[0].severity).toBe('danger')
+        expect(result.warnings[0].message).toContain('close the account')
+        expect(result.warnings[0].message).toContain(CLOSE_TARGET.toString())
         expect(result.riskLevel).toBe('high')
     })
 
-    test('detects close-account warning from closeTo (asset)', async () => {
+    test('detects a danger opt-out warning from a real asset-transfer closeRemainderTo', async () => {
         const analyzer = createStandardAnalyzer()
-        const group = makeGroup([
-            makeTx({
-                sender: ACCOUNT_A,
-                closeTo: EXTERNAL_ADDR,
-            }),
-        ])
-        const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+        const group = makeGroup([makeRealAssetCloseTx()])
+        const result = await analyzer.analyze(
+            group,
+            makeContext([REAL_SENDER.toString()]),
+        )
 
         expect(result.warnings).toHaveLength(1)
         expect(result.warnings[0].type).toBe('close-account')
+        expect(result.warnings[0].severity).toBe('danger')
+        expect(result.warnings[0].message).toContain('remaining asset balance')
+        expect(result.warnings[0].message).toContain(CLOSE_TARGET.toString())
+        expect(result.riskLevel).toBe('high')
     })
 
-    test('detects rekey warning and encodes address from publicKey bytes', async () => {
+    test('detects a danger rekey warning from a real transaction rekeyTo', async () => {
         const analyzer = createStandardAnalyzer()
-        const group = makeGroup([
-            makeTx({
-                sender: ACCOUNT_A,
-                rekeyTo: { publicKey: new Uint8Array([1, 2, 3]) },
-            }),
-        ])
-        const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+        const group = makeGroup([makeRealRekeyTx()])
+        const result = await analyzer.analyze(
+            group,
+            makeContext([REAL_SENDER.toString()]),
+        )
 
         expect(result.warnings).toHaveLength(1)
         expect(result.warnings[0].type).toBe('rekey')
-        expect(result.warnings[0].message).toContain('ENCODED_1-2-3')
+        expect(result.warnings[0].severity).toBe('danger')
+        expect(result.warnings[0].message).toContain(
+            `ENCODED_${Array.from(REKEY_TARGET.publicKey).join('-')}`,
+        )
+        expect(result.riskLevel).toBe('high')
     })
 
-    test('skips warnings for tx not signed by us', async () => {
+    test('skips warnings for real close and rekey txs not signed by us', async () => {
         const analyzer = createStandardAnalyzer()
         const group = makeGroup([
-            makeTx({
-                sender: EXTERNAL_ADDR,
-                closeRemainderTo: ACCOUNT_A,
-                rekeyTo: { publicKey: new Uint8Array([1]) },
-            }),
+            makeRealPaymentCloseTx(REAL_EXTERNAL_SENDER),
+            makeRealRekeyTx(REAL_EXTERNAL_SENDER),
         ])
         const result = await analyzer.analyze(group, makeContext([ACCOUNT_A]))
 

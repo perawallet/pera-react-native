@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -95,5 +95,10 @@ export const useSingleAssetDetailsQuery = (
         },
         staleTime: Infinity,
         enabled: !!assetId.length,
+        // SQLite is the source of truth; run the queryFn even while offline instead
+        // of pausing it (TanStack's default networkMode: 'online'), which would strand
+        // consumers in `pending`. The network fallback uses Promise.allSettled and
+        // never rejects, so running it offline is safe (it simply yields empty data).
+        networkMode: 'always',
     })
 }

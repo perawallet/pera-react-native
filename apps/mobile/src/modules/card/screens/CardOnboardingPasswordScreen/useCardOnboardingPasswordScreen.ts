@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -20,6 +20,7 @@ import {
     useVerifyEmailMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
+import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -43,7 +44,11 @@ export type UseCardOnboardingPasswordScreenResult = {
 export const useCardOnboardingPasswordScreen =
     (): UseCardOnboardingPasswordScreenResult => {
         const { t } = useLanguage()
-        const { errorToast } = useToast()
+        const { errorToast, infoToast } = useToast()
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.create_account.error_title',
+            bodyKey: 'peraCard.create_account.error_body',
+        })
         const navigation = useAppNavigation()
         const email = useCardStore(state => state.email)
         const countryIso = useCardStore(state => state.countryIso)
@@ -116,21 +121,47 @@ export const useCardOnboardingPasswordScreen =
             // If an onboardingId already exists, email/verify already ran (the
             // user backed into this screen after moving on): the password is set
             // and the email code is spent, so skip the call and continue to the
-            // phone steps.
+            // phone steps. The consent boxes were still shown and answered on
+            // this screen, so commit them like the success path does — leaving
+            // marketing null here would make the address step re-ask.
             if (existingOnboardingId !== null) {
+                setAllowMarketing(allowMarketing ?? false)
                 navigation.navigate('CardOnboardingPhone')
                 return
             }
             try {
-                await verifyEmail.mutateAsync({
-                    email,
-                    password,
-                    verificationCode,
-                    contactVerificationId,
-                    countryOfResidence: countryIso,
-                    allowMarketing,
-                    allowSms,
-                })
+                const { onboardingId, hasAccount } =
+                    await verifyEmail.mutateAsync({
+                        email,
+                        password,
+                        verificationCode,
+                        contactVerificationId,
+                        countryOfResidence: countryIso,
+                        allowMarketing: allowMarketing ?? false,
+                        allowSms,
+                    })
+                // Baanx answers 200 with `hasAccount: true` (and no onboardingId)
+                // when the email is already registered — send the user to sign
+                // in rather than showing a generic failure.
+                if (hasAccount) {
+                    infoToast(
+                        t('peraCard.create_account.already_registered_title'),
+                        t('peraCard.create_account.already_registered_body'),
+                    )
+                    navigation.navigate('CardSignIn')
+                    return
+                }
+                // A 200 with neither an account flag nor a usable id is malformed
+                // — surface a clean error instead of advancing to the phone step
+                // with a null onboardingId (which dead-ends at phone/verify).
+                if (onboardingId === null) {
+                    await showError(null)
+                    return
+                }
+                // Commit the answered consents (an untouched marketing box is
+                // an explicit "declined", not "never asked") so the address
+                // step's consent call reuses them instead of re-collecting.
+                setAllowMarketing(allowMarketing ?? false)
                 // Email verified and password set: on to the phone steps.
                 navigation.navigate('CardOnboardingPhone')
             } catch (error) {
@@ -144,10 +175,7 @@ export const useCardOnboardingPasswordScreen =
                     navigation.navigate('CardOnboardingEmailVerify')
                     return
                 }
-                errorToast(
-                    t('peraCard.create_account.error_title'),
-                    t('peraCard.create_account.error_body'),
-                )
+                await showError(error, apiError)
             }
         })
 
@@ -164,10 +192,10 @@ export const useCardOnboardingPasswordScreen =
             password,
             // Baanx requires SMS consent to register, so it gates submission
             // (marketing stays optional) — mirrors the address step's T&C gating.
-            isValid: isFormValid && allowSms,
+            isValid: isFormValid && allowSms === true,
             isSubmitting: verifyEmail.isPending,
-            allowMarketing,
-            allowSms,
+            allowMarketing: allowMarketing ?? false,
+            allowSms: allowSms ?? false,
             handleToggleMarketing,
             handleToggleSms,
             handleConfirm,

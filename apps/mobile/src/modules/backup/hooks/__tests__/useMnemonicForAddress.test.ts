@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -78,6 +78,28 @@ describe('useMnemonicForAddress', () => {
 
         expect(mockExecuteWithMnemonic).toHaveBeenCalledWith(
             'wallet-2',
+            'backup-flow',
+            handler,
+        )
+    })
+
+    test('forwards keyPairId to KMS for a quantum account', async () => {
+        const account: WalletAccount = {
+            id: 'quantum-account',
+            type: AccountTypes.quantum,
+            address: 'Q_ADDR',
+            keyPairId: 'wallet-q',
+        }
+
+        const { result } = renderHook(() =>
+            useMnemonicForAddress('Q_ADDR', account),
+        )
+
+        const handler = vi.fn()
+        await result.current.executeWithMnemonic(handler)
+
+        expect(mockExecuteWithMnemonic).toHaveBeenCalledWith(
+            'wallet-q',
             'backup-flow',
             handler,
         )

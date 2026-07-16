@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
+import {
+    fetchAndPersistAccount,
+    ensureAccountFetched,
+    HOLDINGS_PAGE_LIMIT,
+} from '../account-syncer'
 
 // algosdk v9 exposes fluent builders: `algod.accountInformation(addr).do()`
 // and `indexer.lookupAccountAssets(addr).limit(n).nextToken(t).do()`. These
@@ -37,7 +41,10 @@ const mockAccountInformation = vi.fn((_address: string) => {
 
 const mockLookupAccountAssets = vi.fn((_address: string) => {
     const builder = {
-        limit: vi.fn(() => builder),
+        limit: vi.fn((value: number) => {
+            mockLookupAccountAssets.lastLimits.push(value)
+            return builder
+        }),
         nextToken: vi.fn((token: string) => {
             mockLookupAccountAssets.lastNextTokens.push(token)
             return builder
@@ -45,8 +52,12 @@ const mockLookupAccountAssets = vi.fn((_address: string) => {
         do: () => mockLookupAccountAssetsDo(),
     }
     return builder
-}) as ReturnType<typeof vi.fn> & { lastNextTokens: string[] }
+}) as ReturnType<typeof vi.fn> & {
+    lastNextTokens: string[]
+    lastLimits: number[]
+}
 mockLookupAccountAssets.lastNextTokens = []
+mockLookupAccountAssets.lastLimits = []
 
 const mockGetAlgorandClient = vi.fn(() => ({
     client: {
@@ -82,6 +93,7 @@ describe('fetchAndPersistAccount', () => {
         vi.clearAllMocks()
         mockAccountInformation.lastExclude = undefined
         mockLookupAccountAssets.lastNextTokens = []
+        mockLookupAccountAssets.lastLimits = []
         mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockGetAccountBalance.mockResolvedValue(undefined)
@@ -231,6 +243,13 @@ describe('fetchAndPersistAccount', () => {
         expect(mockAccountInformation.lastExclude).toBe('all')
         expect(mockLookupAccountAssets).toHaveBeenNthCalledWith(1, 'ADDR1')
         expect(mockLookupAccountAssets).toHaveBeenNthCalledWith(2, 'ADDR1')
+        // Every page (initial + paginated follow-up) must request
+        // HOLDINGS_PAGE_LIMIT — dropping `.limit()` silently falls back to the
+        // indexer default of 100, ~10x-ing request counts for large accounts.
+        expect(mockLookupAccountAssets.lastLimits).toEqual([
+            HOLDINGS_PAGE_LIMIT,
+            HOLDINGS_PAGE_LIMIT,
+        ])
         // First page sends no token; the second follows the page-1 token.
         expect(mockLookupAccountAssets.lastNextTokens).toEqual(['page2'])
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
@@ -363,6 +382,7 @@ describe('ensureAccountFetched', () => {
         vi.clearAllMocks()
         mockAccountInformation.lastExclude = undefined
         mockLookupAccountAssets.lastNextTokens = []
+        mockLookupAccountAssets.lastLimits = []
         mockUpsertAccountBalance.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockLookupAccountAssetsDo.mockResolvedValue({ assets: [] })

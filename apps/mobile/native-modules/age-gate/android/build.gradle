@@ -1,0 +1,24 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.algorand.perarn.peraagegate'
+version = '0.1.0'
+
+android {
+  namespace "com.algorand.perarn.peraagegate"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // NOTE: Pin the version against the dependency policy before shipping to prod.
+  // 0.0.3 is the earliest published version; check play:age-signals on Maven Central.
+  implementation 'com.google.android.play:age-signals:0.0.3'
+}

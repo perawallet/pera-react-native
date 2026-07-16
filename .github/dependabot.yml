@@ -11,6 +11,22 @@ updates:
       timezone: Europe/London
     open-pull-requests-limit: 10
     versioning-strategy: increase-if-necessary
+    # Mirror pnpm's minimumReleaseAge (7d) so Dependabot stops proposing versions
+    # our install gate would reject anyway. Keep this exclude list in sync with
+    # minimumReleaseAgeExclude in pnpm-workspace.yaml. Security updates bypass
+    # cooldown, so advisory fixes still come through immediately.
+    cooldown:
+      default-days: 7
+      include:
+        - "*"
+      exclude:
+        - "@algorandfoundation/keystore"
+        - "@algorandfoundation/react-native-keystore"
+        - "@algorandfoundation/react-native-passkey-autofill"
+        - "expo"
+        - "expo-*"
+        - "@expo/*"
+        - "babel-preset-expo"
     labels:
       - dependencies
     groups:
@@ -72,12 +88,14 @@ updates:
           - patch
     ignore:
       # Majors for framework-tier deps are migrations, not bumps — handled manually.
+      # react/react-dom are pinned to react-native 0.86.0's bundled renderer
+      # (19.2.3). RN does an exact React.version match at runtime, so even a patch
+      # bump (e.g. 19.2.7) red-screens with "Incompatible React versions". Ignore
+      # ALL update types — these move only when the RN/Expo SDK moves.
       - dependency-name: react
-        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
       - dependency-name: react-native
         update-types: [version-update:semver-major, version-update:semver-minor]
-      - dependency-name: react-dom
-        update-types: [version-update:semver-major]
       - dependency-name: expo
         update-types: [version-update:semver-major]
       - dependency-name: typescript
@@ -109,6 +127,16 @@ updates:
       # Stay on 27 until jsdom fixes the regression or React DOM changes.
       - dependency-name: jsdom
         update-types: [version-update:semver-major]
+      # Native modules pinned to Expo SDK 57's bundled versions. Expo builds and
+      # tests the SDK against exact versions; bumping any of these independently
+      # (even a patch) drifts from the SDK and risks native/ABI mismatches. They
+      # move only when the Expo SDK moves. reanimated/worklets are a lockstep pair;
+      # nitro-modules is also override-pinned to one ABI for all nitro consumers.
+      - dependency-name: react-native-reanimated
+      - dependency-name: react-native-worklets
+      - dependency-name: react-native-nitro-modules
+      - dependency-name: react-native-pager-view
+      - dependency-name: react-native-keyboard-controller
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.

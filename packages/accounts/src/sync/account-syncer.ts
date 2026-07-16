@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -36,7 +36,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 // Max holdings per indexer page, used by the large-account fallback path.
-const HOLDINGS_PAGE_LIMIT = 1000
+export const HOLDINGS_PAGE_LIMIT = 1000
 
 // algod rejects full account reads (exclude=none) with HTTP 400 once the
 // account's total resources (asset holdings + created assets + app local

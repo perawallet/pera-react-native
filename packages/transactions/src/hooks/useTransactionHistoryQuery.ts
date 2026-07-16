@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, onlineManager } from '@tanstack/react-query'
 import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
 import { transactionQueryKeys } from './querykeys'
@@ -73,6 +73,13 @@ export type UseTransactionHistoryQueryResult = {
     isFetchingNextPage: boolean
     /** Whether there was an error */
     isError: boolean
+    /**
+     * Whether the query is paused because the app is offline. Always `false`
+     * here (the query runs offline via networkMode: 'always'); exposed so
+     * consumers share the paused-aware render-state contract with pure-network
+     * queries. See `getQueryRenderState` in `@perawallet/wallet-core-shared`.
+     */
+    isPaused: boolean
     /** The error if one occurred */
     error: Nullable<Error>
     /** Whether there are more pages to fetch */
@@ -124,6 +131,8 @@ export const useTransactionHistoryQuery = (
                     accountAddress,
                     network,
                     assetId,
+                    afterTime,
+                    beforeTime,
                     limit: limit ?? 25,
                 })
 
@@ -138,6 +147,27 @@ export const useTransactionHistoryQuery = (
                                 : null,
                         previousUrl: null,
                         totalFetched: dbTransactions.length,
+                    },
+                    currentRound: 0,
+                }
+            }
+
+            // Subsequent pages live only on the network. Because networkMode is
+            // 'always' (so the first DB page loads offline), the queryFn also
+            // runs for load-more while offline — guard it here so an offline
+            // load-more resolves with a terminal page instead of throwing. That
+            // keeps the DB-backed first page rendered and the query out of
+            // `isError`; pagination resumes once connectivity returns.
+            // Note: onlineManager.isOnline is a method, not a property.
+            if (!onlineManager.isOnline()) {
+                return {
+                    transactions: [],
+                    pagination: {
+                        hasNextPage: false,
+                        hasPreviousPage: true,
+                        nextUrl: null,
+                        previousUrl: null,
+                        totalFetched: 0,
                     },
                     currentRound: 0,
                 }
@@ -178,6 +208,7 @@ export const useTransactionHistoryQuery = (
                 accountAddress,
                 network,
                 assetId,
+                afterTime,
                 beforeTime: beforeTimeForApi,
                 limit,
             })
@@ -238,6 +269,14 @@ export const useTransactionHistoryQuery = (
             return { type: 'api', url: lastPage.pagination.nextUrl }
         },
         staleTime: Infinity,
+        // The first page is read from SQLite (the source of truth), so the
+        // queryFn must run even while offline instead of pausing before the DB
+        // read (TanStack's default networkMode: 'online'), which would strand
+        // the history screen on skeletons. Later pages hit the network and are
+        // guarded inside the queryFn (see the offline check above the API
+        // branches) so an offline load-more resolves with a terminal page
+        // rather than rejecting.
+        networkMode: 'always',
         enabled: isEnabled && !!accountAddress,
     })
 
@@ -249,6 +288,7 @@ export const useTransactionHistoryQuery = (
         isLoading: query.isLoading,
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
+        isPaused: query.isPaused,
         error: query.error,
         hasNextPage: query.hasNextPage ?? false,
         fetchNextPage: () => void query.fetchNextPage(),

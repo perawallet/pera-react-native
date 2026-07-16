@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,8 +21,6 @@ export const swapQueryKeys = {
         network: Network,
     ) =>
         [MODULE_PREFIX, 'available-assets', { assetInId, q, network }] as const,
-    history: (address: string, statuses: Optional<string>, network: Network) =>
-        [MODULE_PREFIX, 'history', { address, statuses, network }] as const,
     historyInfinite: (
         address: string,
         statuses: Optional<string>,

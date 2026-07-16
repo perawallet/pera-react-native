@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -29,7 +29,7 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
             testNet: vi.fn(() => mockClient),
             mainNet: vi.fn(() => mockClient),
             fromEnvironment: vi.fn(() => mockClient),
-            fromConfig: vi.fn(() => mockClient),
+            fromClients: vi.fn(() => mockClient),
         },
     }
 })
@@ -62,7 +62,7 @@ describe('services/blockchain/hooks', () => {
         })
     })
 
-    test('returns fromConfig client for mainnet', () => {
+    test('returns fromClients client for mainnet', () => {
         ;(useNetwork as Mock).mockReturnValue({
             network: 'mainnet',
             networkConfig: {
@@ -72,11 +72,11 @@ describe('services/blockchain/hooks', () => {
         })
         const { result } = renderHook(() => useAlgorandClient())
 
-        expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
+        expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
         expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
     })
 
-    test('returns fromConfig client for testnet', () => {
+    test('returns fromClients client for testnet', () => {
         ;(useNetwork as Mock).mockReturnValue({
             network: 'testnet',
             networkConfig: {
@@ -86,7 +86,7 @@ describe('services/blockchain/hooks', () => {
         })
         const { result } = renderHook(() => useAlgorandClient())
 
-        expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
+        expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
         expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
     })
 
@@ -104,6 +104,12 @@ describe('services/blockchain/hooks', () => {
         expect(result.current.setDefaultValidityWindow).toHaveBeenCalledWith(
             1000,
         )
+    })
+
+    test('registers the algod error transformer on the built client', () => {
+        const { result } = renderHook(() => useAlgorandClient())
+
+        expect(result.current.registerErrorTransformer).toHaveBeenCalledTimes(1)
     })
 
     test('configures signer when provided', async () => {

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -80,7 +80,7 @@ export const storage = {
 // which decrypts MMKV entries with it. Our storage is plaintext, so the key
 // is meaningless; the encrypt/decrypt funcs just pass through.
 const TEST_MASTER_KEY = Buffer.alloc(32)
-export const getMasterKey = async (): Promise<Buffer> => TEST_MASTER_KEY
+export const readMasterKey = async (): Promise<Buffer> => TEST_MASTER_KEY
 export const encryptData = (_key: Buffer, data: string): string => data
 export const decryptData = (_key: Buffer, payload: string): string => payload
 export const encode = (key: KeyData): string =>

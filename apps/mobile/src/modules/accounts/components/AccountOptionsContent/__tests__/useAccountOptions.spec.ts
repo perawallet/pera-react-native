@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -129,6 +129,14 @@ describe('useAccountOptions', () => {
         type: AccountTypes.watch,
     }
 
+    const quantumAccount: WalletAccount = {
+        id: 'acc-q',
+        address: 'QUANTUMADDRESS',
+        type: AccountTypes.quantum,
+        keyPairId: 'key-q',
+        name: 'My Quantum Account',
+    }
+
     const rekeyedAccount: WalletAccount = {
         id: 'acc-3',
         address: 'REKEYEDADDRESS',
@@ -175,6 +183,7 @@ describe('useAccountOptions', () => {
         mockUseCanSignWith.mockImplementation(account => {
             switch (account?.address) {
                 case algo25Account.address:
+                case quantumAccount.address:
                 case rekeyedAccount.address:
                 case rekeyedWatchAccount.address:
                 case hardwareAccount.address:
@@ -209,6 +218,28 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+
+        it('offers view-passphrase for a quantum account (25-word recovery phrase)', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: quantumAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+            // Distinct label: a quantum account can share its 25 words with an
+            // algo25 twin (same mnemonic, different address). Reusing the algo25
+            // "View wallet passphrase" copy would read as a duplicate/bug, so
+            // quantum gets its own string.
+            expect(passphraseOption).toBeDefined()
+            expect(passphraseOption?.title).toBe(
+                'account_options.view_passphrase_quantum',
+            )
         })
 
         it('shows only applicable options for a watch account', () => {

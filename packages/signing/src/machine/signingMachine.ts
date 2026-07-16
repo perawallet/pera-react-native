@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -17,6 +17,8 @@ import {
     isRetryableError,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
+import { AlgodError } from '@perawallet/wallet-core-blockchain'
 import type {
     SigningMachineContext,
     SigningMachineEvent,
@@ -119,6 +121,14 @@ export const signingMachine = setup({
         hardwareSigningMachine,
         multisigSignerActor,
         transportActor,
+    },
+    // Machine-level ceiling for the `transporting` state so a hung transaction
+    // submit cannot pin the signing UI indefinitely. Sourced from config so the
+    // value stays tunable and never hardcoded; it is >= the transport request's
+    // own submit ceiling + margin, so the request-level abort normally fires
+    // first and this is the backstop.
+    delays: {
+        SUBMIT_TIMEOUT: config.signingTransportTimeout,
     },
     guards: {
         hasError: ({ context }) => context.error !== null,
@@ -249,6 +259,23 @@ export const signingMachine = setup({
         setTransportingError: assign({
             error: ({ event }) =>
                 toError((event as unknown as { error: unknown }).error),
+            failedDuringState: () => 'transporting' as const,
+        }),
+        // Fired by the `transporting` state's `after` timeout. Unlike
+        // `setTransportingError` there is no `event.error` on an `after`
+        // transition, so we synthesize a RETRYABLE transport error: a
+        // `network_unavailable` AlgodError (retryable in AlgodError's map).
+        // This makes `isRetryableError` / `canRetryTransporting` return true so
+        // the `failed`-state RETRY routes back to `transporting`.
+        setTransportTimeoutError: assign({
+            error: () =>
+                new AlgodError(
+                    'network_unavailable',
+                    {},
+                    new Error(
+                        `Transaction submit timed out after ${config.signingTransportTimeout}ms`,
+                    ),
+                ),
             failedDuringState: () => 'transporting' as const,
         }),
 
@@ -532,6 +559,16 @@ export const signingMachine = setup({
                 onError: {
                     target: 'failed',
                     actions: 'setTransportingError',
+                },
+            },
+            // Backstop timeout: if the transport neither resolves nor errors
+            // within the config ceiling, route to `failed` with a retryable
+            // error so the user can RETRY (canRetryTransporting) rather than
+            // stare at an indefinite spinner.
+            after: {
+                SUBMIT_TIMEOUT: {
+                    target: 'failed',
+                    actions: 'setTransportTimeoutError',
                 },
             },
         },

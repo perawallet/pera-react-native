@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -367,11 +367,14 @@ const cases: Case[] = [
     ...newPair(
         'Add Contact',
         `add-contact/?address=${ADDRESS}&label=${LABEL_ENC}`,
-        { kind: 'navigate', screen: 'AddContact' },
+        { kind: 'navigate', screen: 'Contacts' },
         () => {
-            expect(mockNavigate).toHaveBeenCalledWith('AddContact', {
-                address: ADDRESS,
-                label: LABEL,
+            expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+                screen: 'AddContact',
+                params: {
+                    address: ADDRESS,
+                    label: LABEL,
+                },
             })
         },
     ),
@@ -380,11 +383,14 @@ const cases: Case[] = [
     ...newPair(
         'Edit Contact',
         `edit-contact/?address=${ADDRESS}&label=${LABEL_ENC}`,
-        { kind: 'navigate', screen: 'EditContact' },
+        { kind: 'navigate', screen: 'Contacts' },
         () => {
-            expect(mockNavigate).toHaveBeenCalledWith('EditContact', {
-                address: ADDRESS,
-                label: LABEL,
+            expect(mockNavigate).toHaveBeenCalledWith('Contacts', {
+                screen: 'EditContact',
+                params: {
+                    address: ADDRESS,
+                    label: LABEL,
+                },
             })
         },
     ),
@@ -693,6 +699,7 @@ const cases: Case[] = [
         () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
+                params: { screen: 'AccountDetails' },
             })
         },
     ),
@@ -876,6 +883,7 @@ const cases: Case[] = [
         extra: () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
+                params: { screen: 'AccountDetails' },
             })
         },
     },

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -659,8 +659,8 @@ describe('useWalletConnect', () => {
         })
     })
 
-    describe('reconnectAllSessions', () => {
-        it('should reconnect consistent sessions', async () => {
+    describe('connectSessions', () => {
+        it('establishes a connector for every stored session without writing the store back', async () => {
             const connection1 = { clientId: 'client1' } as any
             const connection2 = { clientId: 'client2' } as any
             const connections = [connection1, connection2]
@@ -679,12 +679,35 @@ describe('useWalletConnect', () => {
             )
 
             await act(async () => {
-                result.current.reconnectAllSessions()
+                result.current.connectSessions()
             })
 
-            // 2 calls from initWalletConnect (on mount). Manual reconnectAllSessions reuses existing connectors so no new calls.
             expect(WalletConnect).toHaveBeenCalledTimes(2)
-            expect(mockSetConnections).toHaveBeenCalled()
+            expect(getConnector('client1')).toBeDefined()
+            expect(getConnector('client2')).toBeDefined()
+            expect(mockSetConnections).not.toHaveBeenCalled()
+        })
+
+        it('is idempotent — a session that already has a connector is left untouched', async () => {
+            const connection1 = { clientId: 'client1' } as any
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection1],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+
+            await act(async () => {
+                result.current.connectSessions()
+                result.current.connectSessions()
+            })
+
+            expect(WalletConnect).toHaveBeenCalledTimes(1)
         })
 
         it('skips a stored connection whose connector construction throws, logging instead of leaking an unhandled rejection', async () => {
@@ -724,7 +747,7 @@ describe('useWalletConnect', () => {
             )
 
             await act(async () => {
-                result.current.reconnectAllSessions()
+                result.current.connectSessions()
                 // let the fire-and-forget connect promises settle
                 await Promise.resolve()
                 await Promise.resolve()
@@ -753,9 +776,10 @@ describe('useWalletConnect', () => {
             )
 
             await act(async () => {
-                result.current.reconnectAllSessions()
+                result.current.connectSessions()
             })
 
+            expect(WalletConnect).not.toHaveBeenCalled()
             expect(mockSetConnections).not.toHaveBeenCalled()
         })
     })

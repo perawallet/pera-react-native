@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -177,17 +177,26 @@ export const useDeepLink = (): UseDeepLinkResult => {
         try {
             switch (parsedData.type) {
                 case DeeplinkType.ADD_CONTACT: {
-                    navigateToScreen(replaceCurrentScreen, 'AddContact', {
-                        address: parsedData.address,
-                        label: parsedData.label,
+                    // AddContact lives inside the nested Contacts stack, so it
+                    // must be targeted via its parent route — a bare
+                    // 'AddContact' on the root navigator is a silent no-op.
+                    navigateToScreen(replaceCurrentScreen, 'Contacts', {
+                        screen: 'AddContact',
+                        params: {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
                     })
                     break
                 }
 
                 case DeeplinkType.EDIT_CONTACT: {
-                    navigateToScreen(replaceCurrentScreen, 'EditContact', {
-                        address: parsedData.address,
-                        label: parsedData.label,
+                    navigateToScreen(replaceCurrentScreen, 'Contacts', {
+                        screen: 'EditContact',
+                        params: {
+                            address: parsedData.address,
+                            label: parsedData.label,
+                        },
                     })
                     break
                 }
@@ -571,8 +580,13 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
                 case DeeplinkType.HOME:
                 default: {
+                    // Reset the Home tab to its stack root (AccountDetails) so a
+                    // HOME deeplink actually returns home even when the user is
+                    // deep in the Home stack (e.g. viewing an asset). Navigating
+                    // to the root screen pops any screens pushed on top of it.
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Home',
+                        params: { screen: 'AccountDetails' },
                     })
                     break
                 }

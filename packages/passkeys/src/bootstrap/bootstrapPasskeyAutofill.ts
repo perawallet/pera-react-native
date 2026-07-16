@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,7 +12,7 @@
 
 import {
     fetchSecret,
-    getMasterKey,
+    readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import type { KeyData } from '@algorandfoundation/keystore'
@@ -59,7 +59,7 @@ let activeBootstrap: Promise<void> | null = null
  * Steps (idempotent):
  *  1. Fetch the master key (keychain-backed; no biometric prompt if already
  *     created during hydrateKeystore).
- *  2. Push the master key hex to the native side.
+ *  2. Push the master key bytes to the native side.
  *  3. Find the HD root key by reading the keystore's MMKV namespace directly
  *     (the same source the native module uses) and push its id — plus, on
  *     builds that support it, its derived bytes — to the native side.
@@ -92,10 +92,23 @@ const runBootstrap = async (
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await getMasterKey()
-        await service
-            .setMasterKey(masterKey.toString('hex'))
-            .catch(err => logger.error(err as Error, { step: 'setMasterKey' }))
+        masterKey = await readMasterKey()
+
+        // Push the master key to the native side as raw bytes — the upstream
+        // bridge takes a `Uint8Array`, so a non-zeroable hex string is never
+        // materialized in the JS heap. Copy the (craftzdog) Buffer polyfill into
+        // a genuine Uint8Array so Expo's typed-array bridge marshals it to Swift
+        // Data / Kotlin ByteArray; wipe the copy after.
+        const masterKeyBytes = Uint8Array.from(masterKey)
+        try {
+            await service
+                .setMasterKey(masterKeyBytes)
+                .catch(err =>
+                    logger.error(err as Error, { step: 'setMasterKey' }),
+                )
+        } finally {
+            masterKeyBytes.fill(0)
+        }
 
         await configureHdRootKey(service, masterKey)
 
@@ -200,11 +213,24 @@ const configureHdRootKey = async (
                 logger.error(err as Error, { step: 'setHdRootKeyId' }),
             )
 
-        if (hdRootSecret.privateKey) {
+        // Only build the derived private-key hex string when the native side
+        // actually implements setDerivedMainKey. On current iOS/Android builds
+        // it doesn't, so this skips materializing a non-zeroable secret string
+        // for a call that would no-op anyway. Lights up automatically on builds
+        // that add native support.
+        if (hdRootSecret.privateKey && service.supportsDerivedMainKey) {
+            const pk = hdRootSecret.privateKey
+            // Read the hex off a Buffer *view* over the secret's existing bytes
+            // rather than `Buffer.from(pk)`, which would allocate a second copy
+            // of the private key that nothing zeroes (the finally below only
+            // wipes the original). The view shares the original's backing
+            // store, so that single wipe covers it.
+            const derived =
+                pk instanceof Uint8Array
+                    ? Buffer.from(pk.buffer, pk.byteOffset, pk.byteLength)
+                    : Buffer.from(pk)
             await service
-                .setDerivedMainKey(
-                    Buffer.from(hdRootSecret.privateKey).toString('hex'),
-                )
+                .setDerivedMainKey(derived.toString('hex'))
                 .catch(err =>
                     logger.error(err as Error, { step: 'setDerivedMainKey' }),
                 )

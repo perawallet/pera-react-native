@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,8 +15,10 @@ import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { MainRoutes } from '@routes/index'
+import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
+import { OfflineBanner } from '@components/OfflineBanner'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -27,7 +29,8 @@ import {
     useSyncNewAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
+import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
+import { useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
@@ -49,11 +52,19 @@ export type RootComponentProps = {
     fcmToken: Nullable<string>
 }
 
+// These overlays render outside the main content's error boundary and host
+// signing/multisig/swap (money) flows, so an unhandled render-throw here
+// would unwind the whole app. Contain it: log the crash and render nothing
+// while the fallback schedules a boundary reset (see OverlayErrorFallback)
+// so the overlays come back instead of staying dead until app restart.
+const handleOverlayError = (error: string | Error) => {
+    logger.critical(error, { source: 'RootOverlaysErrorBoundary' })
+}
+
 const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const { isTestnet } = useNetwork()
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { hasInternet } = useNetworkStatus()
     const { showError } = useErrorToast()
     const { t } = useLanguage()
 
@@ -83,14 +94,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                     </PWView>
                 )}
 
-                {!hasInternet && (
-                    <PWView style={styles.offlineTextContainer}>
-                        <PWText style={styles.offlineText}>
-                            {t('common.offline_mode')}
-                        </PWText>
-                    </PWView>
-                )}
-
                 <GestureHandlerRootView>
                     <MainRoutes />
                     <WebViewOverlay />
@@ -98,6 +101,11 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
             </PWView>
         </ErrorBoundary>
     )
+}
+
+const DeviceRegistrar = ({ addresses }: { addresses: string[] }) => {
+    useDeviceRegistration(addresses)
+    return null
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
@@ -117,12 +125,15 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     )
     const hasAccounts = addresses.length > 0
 
-    useDeviceRegistration(addresses)
+    const { isChecking, needsMigration } = useNeedsMigration()
+    const migrationInProgress = isChecking || needsMigration
     useSyncMultisigAccountsOnNetworkSwitch()
     // Accounts added mid-session (import/create/watch/discovery) get an
     // immediate fetch + asset/price enrichment — the gated background poll
     // never picks up an account whose activity predates its checkpoint.
-    useSyncNewAccounts()
+    // Gated on migration like DeviceRegistrar below: syncing before the
+    // migrated device id lands caches favorites as false (PERA-4564).
+    useSyncNewAccounts({ isEnabled: !migrationInProgress })
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {
@@ -150,7 +161,10 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     }, [network])
 
     useEffect(() => {
-        if (!hasAccounts) {
+        // Hold the background poll until migration finishes: its initial
+        // full pass would otherwise fetch assets before the migrated device
+        // id is written and cache favorites as false (PERA-4564).
+        if (!hasAccounts || migrationInProgress) {
             runSyncAction('stop')
             return
         }
@@ -182,18 +196,33 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             runSyncAction('stop')
             subscription.remove()
         }
-    }, [appStatePlatform, hasAccounts, runSyncAction])
+    }, [appStatePlatform, hasAccounts, migrationInProgress, runSyncAction])
 
     return (
-        <BottomSheetModalProvider>
-            <AutoLockGuard>
-                <WalletConnectProvider>
-                    <RootContentContainer fcmToken={fcmToken} />
-                </WalletConnectProvider>
-                <SigningOverlays />
-                <MultisigOverlays />
-                <SwapOverlays />
-            </AutoLockGuard>
-        </BottomSheetModalProvider>
+        <>
+            <BottomSheetModalProvider>
+                {!migrationInProgress && (
+                    <DeviceRegistrar addresses={addresses} />
+                )}
+                <AutoLockGuard>
+                    <WalletConnectProvider>
+                        <RootContentContainer fcmToken={fcmToken} />
+                    </WalletConnectProvider>
+                    <ErrorBoundary
+                        onError={handleOverlayError}
+                        FallbackComponent={OverlayErrorFallback}
+                    >
+                        <SigningOverlays />
+                        <MultisigOverlays />
+                        <SwapOverlays />
+                    </ErrorBoundary>
+                </AutoLockGuard>
+            </BottomSheetModalProvider>
+            {/* Global offline indicator. Mounted as the LAST node in the root
+                tree so it paints above navigation, bottom-sheet modals, and the
+                AutoLockGuard PIN overlay (which itself uses zIndex.max). Order
+                here is load-bearing — keep <OfflineBanner /> last. */}
+            <OfflineBanner />
+        </>
     )
 }

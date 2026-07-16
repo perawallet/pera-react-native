@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -45,26 +45,18 @@ describe('PasskeyAutofillService', () => {
     beforeEach(() => setPlatform('ios'))
     afterEach(() => vi.clearAllMocks())
 
-    describe('hex normalization', () => {
-        it('strips a 0x/0X prefix and trims whitespace before handing the key to native', async () => {
+    describe('key material handling', () => {
+        it('hands the master key to native as raw bytes, unchanged', async () => {
             const native = makeNative()
             const service = new PasskeyAutofillService(native)
+            const secret = new Uint8Array([0xde, 0xad, 0xbe, 0xef])
 
-            await service.setMasterKey('  0xABCDEF  ')
+            await service.setMasterKey(secret)
 
-            expect(native.setMasterKey).toHaveBeenCalledWith('ABCDEF')
+            expect(native.setMasterKey).toHaveBeenCalledWith(secret)
         })
 
-        it('passes an un-prefixed hex string through unchanged', async () => {
-            const native = makeNative()
-            const service = new PasskeyAutofillService(native)
-
-            await service.setMasterKey('deadbeef')
-
-            expect(native.setMasterKey).toHaveBeenCalledWith('deadbeef')
-        })
-
-        it('normalizes the derived main key the same way', async () => {
+        it('normalizes the derived main key hex', async () => {
             const setDerivedMainKey = vi.fn().mockResolvedValue(undefined)
             const service = new PasskeyAutofillService(
                 makeNative({ setDerivedMainKey }),
@@ -99,6 +91,19 @@ describe('PasskeyAutofillService', () => {
             await expect(
                 service.setDerivedMainKey('abcd'),
             ).resolves.toBeUndefined()
+        })
+
+        it('reports supportsDerivedMainKey from the presence of the native method', () => {
+            // Default native double has no setDerivedMainKey → unsupported.
+            expect(
+                new PasskeyAutofillService(makeNative()).supportsDerivedMainKey,
+            ).toBe(false)
+
+            expect(
+                new PasskeyAutofillService(
+                    makeNative({ setDerivedMainKey: vi.fn() }),
+                ).supportsDerivedMainKey,
+            ).toBe(true)
         })
     })
 

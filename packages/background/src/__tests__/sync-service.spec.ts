@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -12,12 +12,26 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SyncService } from '../service/sync-service'
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, onlineManager } from '@tanstack/react-query'
+
+// Drain queued microtasks (the async tick body chains several awaits with no
+// intervening timers). Used with fake timers to fully resolve a tick before
+// asserting on scheduling. Fake timers do not fake promises/microtasks, so a
+// Promise.resolve() loop still advances them.
+const flushMicrotasks = async (turns = 50): Promise<void> => {
+    for (let i = 0; i < turns; i++) {
+        await Promise.resolve()
+    }
+}
 
 const mockAccounts = [
     { address: 'ADDR1', name: 'Account 1' },
     { address: 'ADDR2', name: 'Account 2' },
 ]
+
+// Mirrors the private constants in sync-service.ts.
+const POLL_INTERVAL = 3000
+const MAX_BACKOFF_INTERVAL = 30_000
 
 const mockSendShouldRefreshRequest = vi.fn()
 const mockSetLastRefreshedRound = vi.fn()
@@ -780,5 +794,227 @@ describe('SyncService', () => {
         vi.mocked(fetchAndPersistTransactions).mockImplementation(() =>
             Promise.resolve(),
         )
+    })
+
+    describe('connectivity awareness', () => {
+        // onlineManager is a process-wide singleton shared with the rest of the
+        // suite (which assumes online). Restore it after each test here.
+        afterEach(() => {
+            onlineManager.setOnline(true)
+        })
+
+        it('performs zero network calls while offline but stays scheduled', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            mockSendShouldRefreshRequest.mockResolvedValue({
+                refresh: true,
+                round: 1,
+            })
+
+            onlineManager.setOnline(false)
+
+            service.start()
+            await flushMicrotasks()
+            // Even after a full base interval elapses, nothing should fire.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+            expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+            // The loop is not dead — it remains cheaply scheduled.
+            expect(service.isRunning()).toBe(true)
+
+            service.stop()
+        })
+
+        it('runs a sync tick immediately on reconnect', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+
+            onlineManager.setOnline(false)
+            service.start()
+            await flushMicrotasks()
+
+            // Offline: no sync has run yet.
+            expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+
+            // Reconnect — a tick should fire immediately, without waiting for the
+            // next scheduled interval.
+            onlineManager.setOnline(true)
+            await flushMicrotasks()
+
+            expect(fetchAndPersistAccount).toHaveBeenCalled()
+
+            service.stop()
+        })
+    })
+
+    describe('failure-aware backoff', () => {
+        // Put every network call in a failing (non-429) state, so syncAll
+        // absorbs them via allSettled and returns WITHOUT throwing.
+        const makeEverythingFail = async (): Promise<void> => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            const { fetchAndPersistAssets, fetchAndPersistPrices } =
+                await import('@perawallet/wallet-core-assets')
+            const { fetchAndPersistTransactions } =
+                await import('@perawallet/wallet-core-transactions')
+            vi.mocked(fetchAndPersistAccount).mockRejectedValue(
+                new Error('network error'),
+            )
+            vi.mocked(fetchAndPersistAssets).mockRejectedValue(
+                new Error('network error'),
+            )
+            vi.mocked(fetchAndPersistPrices).mockRejectedValue(
+                new Error('network error'),
+            )
+            vi.mocked(fetchAndPersistTransactions).mockRejectedValue(
+                new Error('network error'),
+            )
+            // Keep subsequent ticks syncing so we can observe when they fire.
+            mockSendShouldRefreshRequest.mockResolvedValue({
+                refresh: true,
+                round: null,
+            })
+        }
+
+        it('doubles the interval when a tick makes no successful progress even though syncAll does not throw', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            await makeEverythingFail()
+
+            service.start()
+            await flushMicrotasks() // tick 1: every call fails → back off to 6000
+            const callsAfterTick1 = vi.mocked(fetchAndPersistAccount).mock.calls
+                .length
+            expect(callsAfterTick1).toBeGreaterThan(0)
+
+            // Base interval is 3000; if the loop backed off, the next tick will
+            // NOT fire until 6000ms — so at +3000 there is still no new tick.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(vi.mocked(fetchAndPersistAccount).mock.calls.length).toBe(
+                callsAfterTick1,
+            )
+
+            // At +6000 the doubled interval elapses and the next tick fires.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(
+                vi.mocked(fetchAndPersistAccount).mock.calls.length,
+            ).toBeGreaterThan(callsAfterTick1)
+
+            service.stop()
+        })
+
+        it('caps the backoff at MAX_BACKOFF_INTERVAL under sustained failure', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            await makeEverythingFail()
+
+            service.start()
+            await flushMicrotasks() // tick1 → 6000
+            await vi.advanceTimersByTimeAsync(6000)
+            await flushMicrotasks() // tick2 → 12000
+            await vi.advanceTimersByTimeAsync(12000)
+            await flushMicrotasks() // tick3 → 24000
+            await vi.advanceTimersByTimeAsync(24000)
+            await flushMicrotasks() // tick4 → 48000, capped to 30000
+
+            const callsAtCap = vi.mocked(fetchAndPersistAccount).mock.calls
+                .length
+
+            // The interval is capped at MAX (30000), not still doubling to
+            // 48000. Just under MAX, no new tick fires (this also fails loudly if
+            // the loop never backed off and is still ticking at the base 3000ms).
+            await vi.advanceTimersByTimeAsync(MAX_BACKOFF_INTERVAL - 1)
+            await flushMicrotasks()
+            expect(vi.mocked(fetchAndPersistAccount).mock.calls.length).toBe(
+                callsAtCap,
+            )
+
+            // And it does not exceed MAX: one more millisecond fires the tick.
+            await vi.advanceTimersByTimeAsync(1)
+            await flushMicrotasks()
+            expect(
+                vi.mocked(fetchAndPersistAccount).mock.calls.length,
+            ).toBeGreaterThan(callsAtCap)
+
+            service.stop()
+        })
+
+        it('backs off when shouldRefresh keeps failing after the first sync', async () => {
+            const { usePollingStore } =
+                await import('@perawallet/wallet-core-polling')
+            const originalGetState = usePollingStore.getState
+            usePollingStore.getState = (() => ({
+                lastRefreshedRound: { mainnet: 42, testnet: null },
+                setLastRefreshedRound: mockSetLastRefreshedRound,
+            })) as typeof usePollingStore.getState
+
+            mockSendShouldRefreshRequest.mockRejectedValue(
+                new Error('HTTP 500 Internal Server Error'),
+            )
+
+            service.start()
+            await flushMicrotasks() // tick 1: initial force-sync, no shouldRefresh
+            expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks() // tick 2: shouldRefresh fails → back off
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+
+            // Without backoff the next attempt would fire at +3000 already.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+
+            // The doubled interval elapses → next attempt fires.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(2)
+
+            service.stop()
+            usePollingStore.getState = originalGetState
+            mockSendShouldRefreshRequest.mockReset()
+        })
+
+        it('resets to the base interval after a successful tick following a backoff', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            const { fetchAndPersistAssets, fetchAndPersistPrices } =
+                await import('@perawallet/wallet-core-assets')
+            const { fetchAndPersistTransactions } =
+                await import('@perawallet/wallet-core-transactions')
+
+            await makeEverythingFail()
+            service.start()
+            await flushMicrotasks() // tick1: total failure → back off to 6000
+
+            // Recover: every call now succeeds again.
+            vi.mocked(fetchAndPersistAccount).mockResolvedValue({
+                changed: true,
+                holdingsChanged: false,
+            })
+            vi.mocked(fetchAndPersistAssets).mockResolvedValue()
+            vi.mocked(fetchAndPersistPrices).mockResolvedValue()
+            vi.mocked(fetchAndPersistTransactions).mockResolvedValue()
+
+            // tick2 fires at the backed-off +6000 and succeeds → interval resets.
+            await vi.advanceTimersByTimeAsync(6000)
+            await flushMicrotasks()
+            const callsAfterRecovery = vi.mocked(fetchAndPersistAccount).mock
+                .calls.length
+
+            // If the interval reset to base, tick3 fires again after just 3000ms
+            // (not another 6000+). This is the "success reset" guarantee.
+            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+            await flushMicrotasks()
+            expect(
+                vi.mocked(fetchAndPersistAccount).mock.calls.length,
+            ).toBeGreaterThan(callsAfterRecovery)
+
+            service.stop()
+        })
     })
 })

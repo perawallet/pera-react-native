@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -100,6 +100,10 @@ vi.mock('../../storage/secrets', () => ({
 }))
 
 import { useKMS } from '../useKMS'
+
+// THROWAWAY TEST VECTOR — same as useQuantum.test.ts / algo25-integration; NEVER fund it.
+const TEST_MNEMONIC =
+    'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 
 const seedBip39Root = (id: string): Key => {
     const key: Key = {
@@ -585,6 +589,42 @@ describe('useKMS', () => {
             expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
             expect(mockAlgo25SeedToIndices).toHaveBeenCalledTimes(1)
             expect(received).toEqual([7, 8, 9])
+        })
+
+        // Roundtrip (device-portability NFR, PQ-012): a quantum account created
+        // from a known 25-word mnemonic must reconstruct the SAME 25 words when
+        // the backup flow calls executeWithMnemonic. Uses the REAL seed→indices
+        // derivation (not the top-of-file stub) to prove the end-to-end contract.
+        it('executeWithMnemonic reconstructs the same 25 words a quantum seed was created from', async () => {
+            const { seedFromMnemonic } = await import('algosdk')
+            const { algo25SeedToIndices: realAlgo25SeedToIndices } =
+                await vi.importActual<
+                    typeof import('../../crypto/algo25-utils')
+                >('../../crypto/algo25-utils')
+            mockAlgo25SeedToIndices.mockImplementation(realAlgo25SeedToIndices)
+
+            // The quantum seed's private-key bytes ARE seedFromMnemonic(phrase),
+            // exactly as useQuantum.createQuantumKey({ mnemonic }) persists them.
+            const seedBytes = seedFromMnemonic(TEST_MNEMONIC)
+            seedQuantumRoot('quantum-1')
+            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+            mockKeyStoreExport.mockResolvedValue({
+                privateKey: new Uint8Array(seedBytes),
+            })
+
+            const { result } = renderHook(() => useKMS())
+            let words: Optional<string>
+            await act(async () => {
+                words = await result.current.executeWithMnemonic(
+                    'quantum-1-quantum',
+                    'backup-flow',
+                    indices =>
+                        Array.from(indices, mnemonicIndexToWord).join(' '),
+                )
+            })
+
+            expect(words).toBe(TEST_MNEMONIC)
+            expect(TEST_MNEMONIC.split(' ')).toHaveLength(25)
         })
 
         it('exposes createQuantumKey from useQuantum', async () => {

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -31,7 +31,7 @@ import type {
  * is absent rather than throwing `undefined is not a function`.
  */
 export interface PasskeyAutofillNativeAPI {
-    setMasterKey(secret: string): Promise<void>
+    setMasterKey(secret: Uint8Array): Promise<void>
     setHdRootKeyId(id: string): Promise<void>
     getHdRootKeyId?(): Promise<string | null>
     setDerivedMainKey?(hex: string): Promise<void>
@@ -82,8 +82,10 @@ export class PasskeyAutofillService {
         return (async () => fn.apply(this.native, args))()
     }
 
-    setMasterKey(hex: string): Promise<void> {
-        return this.invoke('setMasterKey', [normalizeHex(hex)], undefined)
+    setMasterKey(secret: Uint8Array): Promise<void> {
+        // Raw bytes cross the bridge (upstream `setMasterKey` takes a
+        // `Uint8Array`) so a non-zeroable hex string is never materialized.
+        return this.invoke('setMasterKey', [secret], undefined)
     }
 
     setHdRootKeyId(id: string): Promise<void> {
@@ -91,10 +93,22 @@ export class PasskeyAutofillService {
     }
 
     /**
+     * Whether the underlying native module actually implements
+     * `setDerivedMainKey`. Lets callers avoid even *building* the derived-key
+     * hex string (a secret) when nothing on the native side would consume it —
+     * the method is absent on current iOS/Android builds, so the string would
+     * otherwise be materialized only to be discarded by a no-op.
+     */
+    get supportsDerivedMainKey(): boolean {
+        return typeof this.native.setDerivedMainKey === 'function'
+    }
+
+    /**
      * Forward-compatible. Newer canary builds of the autofill module expose
      * `setDerivedMainKey` so the native side can derive credentials without
      * round-tripping through the keystore on every assertion. Older builds
-     * (and Android) derive on demand, so this no-ops when absent.
+     * (and Android) derive on demand, so this no-ops when absent — guard the
+     * call with {@link supportsDerivedMainKey} to skip stringifying the secret.
      */
     setDerivedMainKey(hex: string): Promise<void> {
         return this.invoke('setDerivedMainKey', [normalizeHex(hex)], undefined)
@@ -169,7 +183,15 @@ export class PasskeyAutofillService {
 }
 
 const normalizeHex = (input: string): string => {
-    const trimmed = input.trim()
+    const hasEdgeWhitespace =
+        input.length > 0 && (/^\s/.test(input) || /\s$/.test(input))
+    const hasPrefix = input.startsWith('0x') || input.startsWith('0X')
+    // Already-clean hex (the only form internally generated for secret
+    // material) is returned untouched. `.trim()`/`.slice()` each allocate a
+    // fresh, immutable copy of the secret that lingers in memory until GC, so
+    // we avoid them unless the input genuinely needs normalizing.
+    if (!hasEdgeWhitespace && !hasPrefix) return input
+    const trimmed = hasEdgeWhitespace ? input.trim() : input
     return trimmed.startsWith('0x') || trimmed.startsWith('0X')
         ? trimmed.slice(2)
         : trimmed

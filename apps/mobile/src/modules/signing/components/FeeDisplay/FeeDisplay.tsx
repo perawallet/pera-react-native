@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -14,8 +14,10 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { AssetAmount } from '@components/AssetAmount'
 import { useLanguage } from '@hooks/useLanguage'
+import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { useStyles } from './styles'
 import { useFeeWarning } from './useFeeWarning'
+import { useQuantumFeeExplainer } from './useQuantumFeeExplainer'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
@@ -33,6 +35,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
     const { showWarning, fee } = useFeeWarning()
+    const { isQuantumFee } = useQuantumFeeExplainer(transaction)
 
     const handleViewDetails = () => {
         if (!transaction) {
@@ -55,6 +58,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
                         ignorePrivacyMode
                         style={fee.greaterThan(0) ? styles.value : undefined}
                     />
+                    {isQuantumFee && <QuantumFeeExplainer />}
                     {showWarning && (
                         <InfoButton
                             variant='error'

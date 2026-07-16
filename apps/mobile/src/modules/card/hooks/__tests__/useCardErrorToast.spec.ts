@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -59,6 +59,45 @@ describe('useCardErrorToast', () => {
         expect(mocks.errorToast).toHaveBeenCalledWith(
             'peraCard.account.error_title',
             'peraCard.account.error_body',
+        )
+    })
+
+    it('uses the provided title/body keys for the fallback', async () => {
+        const { result } = renderHook(() =>
+            useCardErrorToast({
+                titleKey: 'peraCard.verification.error_title',
+                bodyKey: 'peraCard.verification.error_body',
+            }),
+        )
+
+        await act(async () => {
+            await result.current(new Error('boom'))
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.verification.error_title',
+            'peraCard.verification.error_body',
+        )
+    })
+
+    it('prefers the backend message over the provided body key', async () => {
+        const { result } = renderHook(() =>
+            useCardErrorToast({
+                titleKey: 'peraCard.verification.error_title',
+                bodyKey: 'peraCard.verification.error_body',
+            }),
+        )
+
+        await act(async () => {
+            await result.current({
+                response: { status: 400 },
+                data: { message: 'Registration is not in the expected phase' },
+            })
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'peraCard.verification.error_title',
+            'Registration is not in the expected phase',
         )
     })
 })
