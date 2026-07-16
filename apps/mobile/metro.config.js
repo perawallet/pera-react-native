@@ -183,6 +183,16 @@ const config = {
         nodeModulesPaths,
         assetExts: assetExts.filter((ext) => ext !== 'svg'),
         sourceExts: [...sourceExts, 'svg', 'sql'],
+        // Honor the `import` (and `require`) export conditions. Several
+        // @algorandfoundation packages (e.g. react-native-keystore) ship an
+        // `exports` map with only an `import` condition — no `default`/
+        // `react-native` fallback — so with package-exports enabled Metro's
+        // default iOS/Android conditions ([react-native, default]) match
+        // nothing and the module fails to resolve ("could not be found").
+        // Adding these conditions lets Metro resolve those entries. It's
+        // additive: packages that expose react-native/default still match those
+        // first (exports matching is keyed by the package's own condition order).
+        unstable_conditionNames: ['require', 'import'],
         resolveRequest: customResolveRequest,
     },
 };
