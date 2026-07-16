@@ -214,6 +214,7 @@ describe('useAccountOptions', () => {
                 'view-passphrase',
                 'rekey-to-ledger',
                 'rekey-to-standard',
+                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
@@ -276,6 +277,7 @@ describe('useAccountOptions', () => {
                 'show-address',
                 'rekey-to-ledger',
                 'rekey-to-standard',
+                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
@@ -297,6 +299,7 @@ describe('useAccountOptions', () => {
                 'show-address',
                 'rekey-to-ledger',
                 'rekey-to-standard',
+                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
@@ -319,6 +322,7 @@ describe('useAccountOptions', () => {
                 'show-address',
                 'rekey-to-shared',
                 'export-share-account',
+                'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
@@ -796,6 +800,30 @@ describe('useAccountOptions', () => {
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToShared', {
                 screen: 'RekeyToSharedIntro',
                 params: { sourceAddress: multisigAccount.address },
+            })
+        })
+
+        it('navigates to RescanRekeyed select for scan-rekeyed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const scanOption = result.current.options.find(
+                o => o.id === 'scan-rekeyed',
+            )
+
+            act(() => {
+                scanOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('RescanRekeyed', {
+                screen: 'RescanRekeyedSelect',
+                params: { sourceAddress: algo25Account.address },
             })
         })
 

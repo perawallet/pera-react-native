@@ -88,6 +88,12 @@ type StackController = {
 const StackContext = createContext<StackController | null>(null)
 const RouteContext = createContext<RouteState | null>(null)
 
+// Most recently rendered navigator's controller. Bottom-sheet content mounts
+// in a portal OUTSIDE the navigator (production routes those navigations via
+// `navigationRef`), so `useNavigation` there has no StackContext — fall back
+// to this so sheet-initiated flows can still drive the stack under test.
+let activeController: StackController | null = null
+
 let routeKeySeq = 0
 const newRouteKey = (): string => `route-${++routeKeySeq}`
 
@@ -228,16 +234,16 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
 }
 
 export const useNavigation = <_T = NavigationApi,>(): NavigationApi => {
-    const controller = useContext(StackContext)
-    if (!controller) return noopApi
+    const contextController = useContext(StackContext)
+    const controller = contextController ?? activeController
     return useMemo(
-        () => buildNavigationApi(controller),
+        () => (controller ? buildNavigationApi(controller) : noopApi),
         // The api is a fresh object each render because stack mutations
         // shouldn't be cached — but the stable identities of methods are
         // typically what tests assert on (e.g. `expect(navigate).toHaveBeenCalled`).
         // Returning a fresh object is consistent with react-navigation's behavior.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [controller, controller.stack],
+        [controller, controller?.stack],
     )
 }
 
@@ -400,6 +406,16 @@ export const createNativeStackNavigator = () => {
                 routeListeners: new Set(),
             }),
             [stack],
+        )
+
+        // Keep the portal fallback pointing at the live controller; clear it
+        // on unmount so a later render can't dispatch into a dead navigator.
+        activeController = controller
+        useEffect(
+            () => () => {
+                activeController = null
+            },
+            [],
         )
 
         const currentRoute = stack[stack.length - 1]

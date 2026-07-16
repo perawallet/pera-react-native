@@ -19,6 +19,7 @@
 // (`fetchRekeyedAddresses`) and the store persistence
 // (`addRekeyedWatchAccounts`).
 
+import { useEffect } from 'react'
 import {
     afterAll,
     afterEach,
@@ -32,6 +33,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { NestedNavigateRedirect } from '@test-utils/nestedNavigateRedirect'
 import {
     resetTestDatabase,
     setupTestDatabase,
@@ -44,6 +46,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { RescanRekeyedSelectScreen } from '@modules/rekey/screens/rescan-rekeyed/RescanRekeyedSelectScreen'
+import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -69,6 +73,44 @@ const renderRescan = () =>
     renderWithNavigation(RescanRekeyedSelectScreen, 'RescanRekeyedSelect', {
         initialParams: { sourceAddress: ALGO25_TEST_ADDRESS },
         additionalScreens: [{ name: 'TabBar', component: TabBarStub }],
+    })
+
+// Production opens the account-options sheet through `requestBottomSheet`
+// (mirrors AccountOptionsHost in account-management.test.tsx) — the content
+// reads `useBottomSheetResult` from the host's context, so an inline render
+// would throw.
+const AccountOptionsHost = () => {
+    const { request } = useBottomSheet()
+    useEffect(() => {
+        void request({
+            contents: (
+                <AccountOptionsContent
+                    account={SOURCE}
+                    onShowAddress={() => {}}
+                />
+            ),
+            options: { size: 'modal', enablePanDownToClose: true },
+        })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+    return null
+}
+
+// Drives the flow from the production entry point (account options sheet)
+// instead of mounting the rescan screen with initialParams — guards against
+// the flow regressing to dead wiring (PERA-4634).
+const renderFromAccountOptions = () =>
+    renderWithNavigation(AccountOptionsHost, 'AccountOptionsHost', {
+        additionalScreens: [
+            // The options hook navigates `RescanRekeyed > RescanRekeyedSelect`;
+            // the flat test navigator resolves the nested target via redirect.
+            { name: 'RescanRekeyed', component: NestedNavigateRedirect },
+            {
+                name: 'RescanRekeyedSelect',
+                component: RescanRekeyedSelectScreen,
+            },
+            { name: 'TabBar', component: TabBarStub },
+        ],
     })
 
 describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
@@ -138,6 +180,55 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
                 expect(account.type).toBe(AccountTypes.watch)
                 expect(account.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
             })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the account options sheet, when the user taps Scan for Rekeyed Accounts, then the rescan flow opens, scans, and imports the candidate',
+        async () => {
+            server.use(
+                mockIndexerSearchForAccounts({
+                    response: {
+                        accounts: [{ address: HD_TEST_ADDRESS }],
+                    },
+                }),
+            )
+
+            renderFromAccountOptions()
+
+            // i18n falls back to key strings under the integration setup.
+            const scanLabel = await screen.findByText(
+                'account_options.scan_rekeyed',
+            )
+            const scanRow = scanLabel.closest('button')
+            expect(scanRow).toBeTruthy()
+            fireEvent.click(scanRow!)
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('rescan-rekeyed-select-screen'),
+                ).toBeTruthy()
+            })
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(`rescan-rekeyed-row-${HD_TEST_ADDRESS}`),
+                ).toBeTruthy()
+            })
+
+            fireEvent.click(screen.getByTestId('rescan-rekeyed-add'))
+
+            await waitFor(() => {
+                const addresses = useAccountsStore
+                    .getState()
+                    .accounts.map(a => a.address)
+                expect(addresses).toContain(HD_TEST_ADDRESS)
+            })
+            const imported = useAccountsStore
+                .getState()
+                .accounts.find(a => a.address === HD_TEST_ADDRESS)
+            expect(imported?.type).toBe(AccountTypes.watch)
+            expect(imported?.rekeyAddress).toBe(ALGO25_TEST_ADDRESS)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

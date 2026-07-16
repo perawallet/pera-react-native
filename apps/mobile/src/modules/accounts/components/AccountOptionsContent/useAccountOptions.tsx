@@ -166,6 +166,15 @@ export const useAccountOptions = ({
         })
     }, [onClose, navigation, account.address])
 
+    const handleScanRekeyed = useCallback(() => {
+        trackEvent(AccountOptionsEvent.ScanRekeyed)
+        onClose()
+        navigation.navigate('RescanRekeyed', {
+            screen: 'RescanRekeyedSelect',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
+
     const handleExportShareAccount = useCallback(async () => {
         trackEvent(AccountDetailsEvent.JointAccountExport)
         onClose()
@@ -391,6 +400,18 @@ export const useAccountOptions = ({
             })
         }
 
+        // Post-import rekey discovery: find accounts whose on-chain auth-addr
+        // is this account's key. Signable types only — a watch account holds
+        // no key another account could be rekeyed to sign with.
+        if (canSign) {
+            items.push({
+                id: 'scan-rekeyed',
+                icon: 'magnifying-glass',
+                title: t('account_options.scan_rekeyed'),
+                onPress: handleScanRekeyed,
+            })
+        }
+
         items.push({
             id: 'rename-account',
             icon: 'edit-pen',
@@ -432,6 +453,7 @@ export const useAccountOptions = ({
         handleRekeyToLedger,
         handleRekeyToStandard,
         handleRekeyToShared,
+        handleScanRekeyed,
         handleExportShareAccount,
         handleOpenSharedAccountDetail,
         handleOpenRename,
