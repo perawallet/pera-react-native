@@ -17,7 +17,7 @@ export * from './errors'
 export * from './connection'
 export * from './hooks/useWalletConnectSessionRequests'
 export * from './hooks/useWalletConnect'
-export * from './hooks/useWalletConnectForegroundReconnect'
+export * from './hooks/useWalletConnectReconnect'
 export * from './constants'
 export { useWalletConnectStore } from './store'
 export {

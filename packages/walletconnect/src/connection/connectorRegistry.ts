@@ -32,9 +32,13 @@ import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
  * Connector + tombstone state lives in
  * {@link useConnectorRegistryStore}. This file owns the side-effectful
  * lifecycle on top — readiness checking, recreation on dead sockets, and
- * the foreground reconnect sweep — plus two transients (in-flight
- * readiness promises and the handler binder) that don't belong in the
- * store.
+ * the reconnect sweep (run on foreground and on network regain) — plus
+ * two transients (in-flight readiness promises and the handler binder)
+ * that don't belong in the store.
+ *
+ * v1 constraint: the SDK has no ping/heartbeat, so a half-open socket is
+ * undetectable until a delivery fails — the sweeps above are the only
+ * recovery. Revisit when migrating to WalletConnect v2.
  */
 
 /** Re-binds dApp request handlers (`algo_signTxn`, …) onto a connector. */
