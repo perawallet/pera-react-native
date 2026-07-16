@@ -11,13 +11,19 @@ set -e
 # Using a more robust way to find the root directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-OUTPUT_FILE="$ROOT_DIR/packages/config/src/generated-env.ts"
-ENV_FILE="$ROOT_DIR/.env"
+OUTPUT_FILE="${OUTPUT_FILE:-$ROOT_DIR/packages/config/src/generated-env.ts}"
+ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env}"
 
 # Load .env file if it exists
 if [ -f "$ENV_FILE" ]; then
   echo "Loading environment variables from $ENV_FILE"
   export $(grep -v '^#' "$ENV_FILE" | xargs)
+fi
+
+# Load an optional overlay file (e.g. .env.localnet) AFTER .env so it wins.
+if [ -n "${PERA_ENV_OVERLAY:-}" ] && [ -f "$PERA_ENV_OVERLAY" ]; then
+  echo "Loading overlay environment variables from $PERA_ENV_OVERLAY"
+  export $(grep -v '^#' "$PERA_ENV_OVERLAY" | xargs)
 fi
 
 echo "Generating configuration from environment variables..."
@@ -62,6 +68,8 @@ append_config "MAINNET_ALGOD_URL" "mainnetAlgodUrl" "string"
 append_config "TESTNET_ALGOD_URL" "testnetAlgodUrl" "string"
 append_config "MAINNET_INDEXER_URL" "mainnetIndexerUrl" "string"
 append_config "TESTNET_INDEXER_URL" "testnetIndexerUrl" "string"
+append_config "MAINNET_GENESIS_HASH" "mainnetGenesisHash" "string"
+append_config "TESTNET_GENESIS_HASH" "testnetGenesisHash" "string"
 
 # Backend URLs and API Keys
 append_config "MAINNET_BACKEND_URL" "mainnetBackendUrl" "string"

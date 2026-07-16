@@ -26,6 +26,13 @@
     "test:coverage": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && turbo run test -- --coverage",
     "test:integration": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && pnpm --recursive --if-present run test:integration",
     "generate:config": "bash tools/generate-config.sh",
+    "localnet": "bash tools/localnet.sh start",
+    "localnet:stop": "bash tools/localnet.sh stop",
+    "localnet:reset": "bash tools/localnet.sh reset",
+    "localnet:status": "bash tools/localnet.sh status",
+    "localnet:use": "bash tools/use-localnet.sh on",
+    "localnet:unset": "bash tools/use-localnet.sh off",
+    "localnet:fund": "tsx tools/localnet-fund.ts",
     "bump-version": "bash tools/bump-version.sh",
     "audit": "pnpm audit --prod --audit-level=high",
     "lint:bundle": "bash tools/check-prod-bundle.sh",
@@ -33,9 +40,11 @@
     "fallow": "fallow --skip health"
   },
   "devDependencies": {
+    "@algorandfoundation/algokit-utils": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@vitest/coverage-v8": "catalog:",
+    "algosdk": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
@@ -46,6 +55,7 @@
     "oxlint-tsgolint": "^0.24.0",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "tsx": "catalog:",
     "turbo": "^2.9.14",
     "util": "catalog:",
     "vitest": "catalog:"
