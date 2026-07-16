@@ -94,6 +94,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
         feeAlgos: new Decimal('0.001'),
         isPending: false,
     }),
+    useRekeyFeePreflight: () => ({ isUnderfunded: false }),
 }))
 
 const mockRequestBottomSheet = vi.fn()

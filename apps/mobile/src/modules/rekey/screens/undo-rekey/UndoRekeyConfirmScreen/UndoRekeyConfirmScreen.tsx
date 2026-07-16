@@ -33,6 +33,7 @@ export const UndoRekeyConfirmScreen = () => {
         feeAlgos,
         feePending,
         isSubmitting,
+        isUnderfunded,
         handleContinuePress,
     } = useUndoRekeyConfirmScreen()
 
@@ -84,12 +85,24 @@ export const UndoRekeyConfirmScreen = () => {
                         />
                     </PWView>
 
+                    {isUnderfunded && (
+                        <PWText
+                            variant='footnoteMedium'
+                            style={styles.underfundedNotice}
+                            testID='undo-rekey-underfunded-notice'
+                        >
+                            {t('rekey.confirm.insufficient_fee_balance', {
+                                fee: feeAlgos?.toString() ?? '',
+                            })}
+                        </PWText>
+                    )}
+
                     <PWButton
                         variant='primary'
                         title={t('rekey.undo.confirm.cta')}
                         onPress={handleContinuePress}
                         isLoading={isSubmitting}
-                        isDisabled={feePending}
+                        isDisabled={feePending || isUnderfunded}
                         style={styles.cta}
                         testID='undo-rekey-confirm-cta'
                     />

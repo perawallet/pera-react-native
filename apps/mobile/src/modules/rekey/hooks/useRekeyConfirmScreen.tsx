@@ -20,6 +20,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    useRekeyFeePreflight,
     useRekeyTransactionFeeQuery,
     useSubmitRekeyMutation,
 } from '@perawallet/wallet-core-transactions'
@@ -65,6 +66,7 @@ export type UseRekeyConfirmScreenResult = {
     feePending: boolean
     hasPreviousRekey: boolean
     isSubmitting: boolean
+    isUnderfunded: boolean
     handleConfirmPress: () => void
 }
 
@@ -105,6 +107,9 @@ export const useRekeyConfirmScreen = ({
         sourceAddress,
         targetAddress,
     )
+    // The source pays the rekey fee — block before any sign request is
+    // created (and before the Ledger device prompt for hardware auths).
+    const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
 
     const hasPreviousRekey = isRekeyedAccount(source)
 
@@ -118,6 +123,7 @@ export const useRekeyConfirmScreen = ({
             navigation.goBack()
             return
         }
+        if (isUnderfunded) return
 
         markSubmitted()
         try {
@@ -142,6 +148,7 @@ export const useRekeyConfirmScreen = ({
         handleRekeyError,
         source,
         target,
+        isUnderfunded,
         onSubmitSuccess,
         markSubmitted,
         hasHandedOff,
@@ -152,6 +159,10 @@ export const useRekeyConfirmScreen = ({
     }, [pushWebView, supportUrl])
 
     const handleConfirmPress = useCallback(async () => {
+        // Gate before the warning sheets too — confirming a warning must
+        // never lead into a rekey that cannot pay its fee.
+        if (isUnderfunded) return
+
         if (hasPreviousRekey) {
             const sourceName = source ? getAccountDisplayName(source) : ''
             const currentAuthName = currentAuth
@@ -195,6 +206,7 @@ export const useRekeyConfirmScreen = ({
         target,
         accounts,
         currentAuth,
+        isUnderfunded,
         requestBottomSheet,
         handleLearnMore,
         submit,
@@ -210,6 +222,7 @@ export const useRekeyConfirmScreen = ({
         feePending,
         hasPreviousRekey,
         isSubmitting,
+        isUnderfunded,
         handleConfirmPress: () => void handleConfirmPress(),
     }
 }

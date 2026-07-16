@@ -39,6 +39,7 @@ export const getConfirmScreenStyles = (
     | 'row'
     | 'rowLabel'
     | 'footer'
+    | 'underfundedNotice'
     | 'cta',
     ViewStyle | TextStyle
 > => ({
@@ -86,6 +87,9 @@ export const getConfirmScreenStyles = (
     },
     footer: {
         gap: theme.spacing.md,
+    },
+    underfundedNotice: {
+        color: theme.colors.negative,
     },
     cta: {
         paddingVertical: theme.spacing.lg,
