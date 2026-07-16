@@ -47,6 +47,17 @@ describe('useExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
+    it('navigates to ScanQR when the flow is scan', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('scan')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('ScanQR')
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
     it('does not navigate when there is no flow', () => {
         consumeInitialExpandedFlowMock.mockReturnValue(null)
         const navigate = vi.fn()

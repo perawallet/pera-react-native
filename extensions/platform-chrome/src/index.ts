@@ -34,6 +34,7 @@ export { getPlatformServices, hydratePlatform } from './resources'
 export { getSurface, type ExtensionSurface } from './surface'
 export {
     openExpandedTab,
+    closeCurrentTab,
     consumeInitialExpandedFlow,
     type ExpandedFlow,
 } from './navigation'

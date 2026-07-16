@@ -4,6 +4,11 @@ Design spec: `docs/superpowers/specs/2026-07-13-browser-extension-design.md`
 
 ## Build & load
 
+Requires a repo-root `.env` with `BACKEND_API_KEY=<staging key>` (the same
+variable Bitrise injects for mobile — see `tools/generate-config.sh`).
+Without it, Pera-backend calls (should-refresh, asset metadata, prices,
+history) 401 against staging; `bundle` still succeeds but prints a warning.
+
     pnpm --filter extension bundle
 
 Then open `chrome://extensions`, enable Developer mode, "Load unpacked",

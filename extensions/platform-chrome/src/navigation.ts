@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-export type ExpandedFlow = 'add-account' | 'backup-wallet'
+export type ExpandedFlow = 'add-account' | 'backup-wallet' | 'scan'
 
-const FLOWS: readonly string[] = ['add-account', 'backup-wallet']
+const FLOWS: readonly string[] = ['add-account', 'backup-wallet', 'scan']
 
 /**
  * Finds an already-open expanded tab, if any, so re-triggering a
@@ -51,6 +51,16 @@ export const openExpandedTab = async (flow?: ExpandedFlow): Promise<void> => {
     }
 
     await chrome.tabs.create({ url })
+}
+
+/**
+ * Closes the tab hosting the calling extension page. `window.close()`
+ * can't close a chrome.tabs.create'd tab, but tabs.getCurrent/remove can,
+ * and neither needs the `tabs` permission for the extension's own page.
+ */
+export const closeCurrentTab = async (): Promise<void> => {
+    const tab = await chrome.tabs.getCurrent()
+    if (tab?.id !== undefined) await chrome.tabs.remove(tab.id)
 }
 
 let consumed = false

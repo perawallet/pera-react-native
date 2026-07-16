@@ -1784,6 +1784,9 @@ importers:
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
+      ky:
+        specifier: 'catalog:'
+        version: 2.0.2
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -13407,7 +13410,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.9(@types/node@20.19.43)(@vitest/coverage-v8@4.1.9)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.14.6(@types/node@20.19.43)(typescript@5.9.3))(vite@8.1.0(@types/node@20.19.43)(esbuild@0.25.12)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
+      vitest: 4.1.9(@types/node@26.0.1)(@vitest/coverage-v8@4.1.9)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.14.6(@types/node@26.0.1)(typescript@5.9.3))(vite@8.1.0(@types/node@26.0.1)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
 
   '@vitest/expect@4.1.9':
     dependencies:

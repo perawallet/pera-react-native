@@ -38,6 +38,7 @@ export type RootStackParamList = {
     MigrationSplash: undefined
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
     TabBar: NavigatorScreenParams<TabBarStackParamList>
+    ScanQR: undefined
     AddAccount: NavigatorScreenParams<AddAccountStackParamList>
     Messages: NavigatorScreenParams<MessagesStackParamList>
     Settings: NavigatorScreenParams<SettingsStackParamsList>

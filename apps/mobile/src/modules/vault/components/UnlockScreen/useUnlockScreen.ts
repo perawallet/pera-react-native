@@ -15,6 +15,8 @@ import {
     InvalidPasswordError,
     PasskeyUnlockError,
     VaultCorruptedError,
+    VaultLockedOutError,
+    getLockoutRemainingSeconds,
     isPasskeyUnlockEnabled,
     isPasskeyUnlockSupported,
     unlockVault,
@@ -28,6 +30,7 @@ type UseUnlockScreenResult = {
     hasCorruptedVaultError: boolean
     hasPasskeyError: boolean
     canUsePasskey: boolean
+    lockoutSeconds: number
     setPassword: (value: string) => void
     handleUnlock: () => Promise<void>
     handlePasskeyUnlock: () => Promise<void>
@@ -40,6 +43,12 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
     const [hasCorruptedVaultError, setHasCorruptedVaultError] = useState(false)
     const [hasPasskeyError, setHasPasskeyError] = useState(false)
     const [canUsePasskey, setCanUsePasskey] = useState(false)
+    // Absolute end time (not exposed) drives the countdown below — mirrors
+    // useLockScreen.ts, which keys the single interval off lockoutEndTime
+    // rather than the tick count, so it isn't torn down and recreated
+    // every second.
+    const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null)
+    const [lockoutSeconds, setLockoutSeconds] = useState(0)
 
     useEffect(() => {
         let cancelled = false
@@ -58,8 +67,42 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         }
     }, [])
 
+    // Hydrate from the persisted lockout record so a popup re-open (or the
+    // initial mount) still honors a lockout started in a previous session.
+    useEffect(() => {
+        let cancelled = false
+        void getLockoutRemainingSeconds().then(seconds => {
+            if (!cancelled && seconds > 0) {
+                setLockoutEndTime(Date.now() + seconds * 1000)
+            }
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [])
+
+    // 1s countdown while locked out, mirroring useLockScreen.ts (mobile PIN
+    // lockout) lines 54-76.
+    useEffect(() => {
+        if (lockoutEndTime === null) {
+            setLockoutSeconds(0)
+            return
+        }
+        const updateRemaining = (): void => {
+            const remaining = Math.max(
+                0,
+                Math.ceil((lockoutEndTime - Date.now()) / 1000),
+            )
+            setLockoutSeconds(remaining)
+            if (remaining === 0) setLockoutEndTime(null)
+        }
+        updateRemaining()
+        const interval = setInterval(updateRemaining, 1000)
+        return () => clearInterval(interval)
+    }, [lockoutEndTime])
+
     const handleUnlock = useCallback(async (): Promise<void> => {
-        if (password.length === 0 || isSubmitting) return
+        if (password.length === 0 || isSubmitting || lockoutSeconds > 0) return
         setIsSubmitting(true)
         setHasError(false)
         setHasCorruptedVaultError(false)
@@ -68,22 +111,27 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
             await unlockVault(password)
             setPassword('')
         } catch (error) {
-            if (error instanceof VaultCorruptedError) {
+            if (error instanceof VaultLockedOutError) {
+                setLockoutEndTime(Date.now() + error.remainingSeconds * 1000)
+                setPassword('')
+            } else if (error instanceof VaultCorruptedError) {
                 setHasCorruptedVaultError(true)
                 setPassword('')
             } else if (error instanceof InvalidPasswordError) {
                 setHasError(true)
                 setPassword('')
+                const seconds = await getLockoutRemainingSeconds()
+                if (seconds > 0) setLockoutEndTime(Date.now() + seconds * 1000)
             } else {
                 throw error
             }
         } finally {
             setIsSubmitting(false)
         }
-    }, [password, isSubmitting])
+    }, [password, isSubmitting, lockoutSeconds])
 
     const handlePasskeyUnlock = useCallback(async (): Promise<void> => {
-        if (isSubmitting) return
+        if (isSubmitting || lockoutSeconds > 0) return
         setIsSubmitting(true)
         setHasError(false)
         setHasCorruptedVaultError(false)
@@ -91,7 +139,9 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         try {
             await unlockWithPasskey()
         } catch (error) {
-            if (error instanceof VaultCorruptedError) {
+            if (error instanceof VaultLockedOutError) {
+                setLockoutEndTime(Date.now() + error.remainingSeconds * 1000)
+            } else if (error instanceof VaultCorruptedError) {
                 setHasCorruptedVaultError(true)
             } else if (
                 error instanceof DOMException &&
@@ -106,7 +156,7 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         } finally {
             setIsSubmitting(false)
         }
-    }, [isSubmitting])
+    }, [isSubmitting, lockoutSeconds])
 
     return {
         password,
@@ -115,6 +165,7 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
         hasCorruptedVaultError,
         hasPasskeyError,
         canUsePasskey,
+        lockoutSeconds,
         setPassword,
         handleUnlock,
         handlePasskeyUnlock,

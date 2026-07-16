@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { consumeInitialExpandedFlow } from '@perawallet/wallet-extension-platform-chrome'
 
-export type ExpandedFlowScreen = 'AddAccount' | 'BackupWallet'
+export type ExpandedFlowScreen = 'AddAccount' | 'BackupWallet' | 'ScanQR'
 
 /**
  * Parses the one-shot `?flow=` deep-link param the popup passed to
@@ -29,5 +29,7 @@ export const useExpandedFlowNavigation = (
             navigate('AddAccount')
         } else if (flow === 'backup-wallet') {
             navigate('BackupWallet')
+        } else if (flow === 'scan') {
+            navigate('ScanQR')
         }
     }, [navigate])

@@ -12,10 +12,8 @@
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
-import {
-    createNativeStackNavigator,
-    type NativeStackHeaderProps,
-} from '@react-navigation/native-stack'
+import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { screenListeners } from '@routes/listeners'
 import { routeCapabilities } from '@routes/capabilities'
 import { VaultSecuritySettingsScreen } from './vault-security'
@@ -62,7 +60,7 @@ export type DeveloperSettingsStackParamsList = {
 }
 
 const DeveloperSettingsStack =
-    createNativeStackNavigator<DeveloperSettingsStackParamsList>()
+    createAppStackNavigator<DeveloperSettingsStackParamsList>()
 
 const DeveloperSettingsStackNavigator = () => {
     return (
@@ -168,7 +166,7 @@ export type WalletConnectSettingsStackParamsList = {
 }
 
 const WalletConnectSettingsStack =
-    createNativeStackNavigator<WalletConnectSettingsStackParamsList>()
+    createAppStackNavigator<WalletConnectSettingsStackParamsList>()
 
 const WalletConnectSettingsStackNavigator = () => {
     return (
@@ -216,7 +214,7 @@ export type SettingsStackParamsList = {
     DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
 }
 
-const SettingsStack = createNativeStackNavigator()
+const SettingsStack = createAppStackNavigator()
 
 export const SettingsStackNavigator = () => {
     return (

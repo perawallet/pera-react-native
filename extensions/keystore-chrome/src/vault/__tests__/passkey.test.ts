@@ -11,7 +11,7 @@
  */
 
 import { base64 } from '@scure/base'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import {
     isPasskeyUnlockSupported,
@@ -20,10 +20,15 @@ import {
     unlockWithPasskey,
     disablePasskeyUnlock,
 } from '../passkey'
-import { PasskeyUnlockError, VaultCorruptedError } from '../../errors'
+import {
+    PasskeyUnlockError,
+    VaultCorruptedError,
+    VaultLockedOutError,
+} from '../../errors'
 import { getSessionMasterKey } from '../session'
 import { createVault, unlockVault, lockVault } from '../vault'
 import { InvalidPasswordError } from '../../errors'
+import { getLockoutRemainingSeconds, recordFailedAttempt } from '../lockout'
 
 // 32 deterministic bytes used as the fake PRF output.
 const FAKE_PRF_BYTES = new Uint8Array(32).fill(0xab)
@@ -205,6 +210,57 @@ describe('passkey vault', () => {
                 writable: true,
             })
         })
+
+        describe('capability API (getClientCapabilities)', () => {
+            // WebAuthn L3 namespaces extension capabilities under
+            // 'extension:prf' (Chromium 133+, verified empirically in
+            // Chromium 149). Installs a PublicKeyCredential stub whose
+            // getClientCapabilities resolves the given map.
+            const withCapabilities = (caps: Record<string, boolean>): void => {
+                Object.defineProperty(globalThis, 'PublicKeyCredential', {
+                    value: class {
+                        static getClientCapabilities = vi
+                            .fn()
+                            .mockResolvedValue(caps)
+                    },
+                    configurable: true,
+                    writable: true,
+                })
+            }
+
+            afterEach(() => {
+                Object.defineProperty(globalThis, 'PublicKeyCredential', {
+                    value: class {},
+                    configurable: true,
+                    writable: true,
+                })
+            })
+
+            it('returns true when extension:prf is true', async () => {
+                withCapabilities({ 'extension:prf': true })
+                expect(await isPasskeyUnlockSupported()).toBe(true)
+            })
+
+            it('returns false when extension:prf is false', async () => {
+                withCapabilities({ 'extension:prf': false })
+                expect(await isPasskeyUnlockSupported()).toBe(false)
+            })
+
+            it('treats an absent extension:prf key as unknown and stays optimistic', async () => {
+                withCapabilities({})
+                expect(await isPasskeyUnlockSupported()).toBe(true)
+            })
+
+            it('falls back to the legacy prf key when extension:prf is absent', async () => {
+                withCapabilities({ prf: false })
+                expect(await isPasskeyUnlockSupported()).toBe(false)
+            })
+
+            it('falls back to the legacy prf key returning true when extension:prf is absent', async () => {
+                withCapabilities({ prf: true })
+                expect(await isPasskeyUnlockSupported()).toBe(true)
+            })
+        })
     })
 
     describe('isPasskeyUnlockEnabled', () => {
@@ -317,6 +373,41 @@ describe('passkey vault', () => {
             await lockVault()
             await unlockWithPasskey()
             expect(await getSessionMasterKey()).not.toBeNull()
+        })
+
+        it('throws VaultLockedOutError without invoking WebAuthn when locked out', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            const { getMock } = installCredentialsMock()
+            for (let i = 0; i < 5; i++) await recordFailedAttempt()
+
+            await expect(unlockWithPasskey()).rejects.toBeInstanceOf(
+                VaultLockedOutError,
+            )
+            expect(getMock).not.toHaveBeenCalled()
+            expect(await getSessionMasterKey()).toBeNull()
+        })
+
+        it('clears the failed-attempt counter on successful passkey unlock', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            // Not enough failures to trigger a lockout, but the counter is nonzero.
+            await recordFailedAttempt()
+            await recordFailedAttempt()
+
+            await unlockWithPasskey()
+
+            expect(await getLockoutRemainingSeconds()).toBe(0)
+            // Confirm the counter itself was reset, not just that no lockout
+            // is currently active — five MORE failures would otherwise still
+            // trigger a lockout with 2 stale failures baked in.
+            await lockVault()
+            for (let i = 0; i < 4; i++) await recordFailedAttempt()
+            expect(await getLockoutRemainingSeconds()).toBe(0)
         })
 
         it('propagates NotAllowedError (user cancel) without suppressing', async () => {

@@ -11,8 +11,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Text } from 'react-native'
-import { render, screen, fireEvent } from '@test-utils/render'
+import { Animated, Text } from 'react-native'
+import { act, render, screen, fireEvent } from '@test-utils/render'
 // Import the exact web filename — vitest has no Metro platform resolution,
 // so a bare '../PWBottomSheet' specifier would load the gorhom-based native
 // module instead (as the native PWBottomSheet.spec.tsx does the mirror of
@@ -49,7 +49,7 @@ describe('PWBottomSheet.web', () => {
         expect(screen.getByText('Sheet Content')).toBeTruthy()
     })
 
-    it('renders nothing when not visible', () => {
+    it('renders nothing when initially mounted with isVisible=false', () => {
         render(
             <PWBottomSheet isVisible={false}>
                 <Text>Sheet Content</Text>
@@ -73,7 +73,7 @@ describe('PWBottomSheet.web', () => {
         expect(onDismiss).not.toHaveBeenCalled()
     })
 
-    it('fires onDismiss when isVisible flips to false (web has no close animation)', () => {
+    it('fires onDismiss after the exit animation completes when isVisible flips to false', () => {
         const onDismiss = vi.fn()
         const { rerender } = render(
             <PWBottomSheet
@@ -94,8 +94,58 @@ describe('PWBottomSheet.web', () => {
             </PWBottomSheet>,
         )
 
+        // The global RN mock (vitest.setup.ts) resolves Animated.start()
+        // synchronously, so the exit animation "completes" within rerender.
         expect(onDismiss).toHaveBeenCalledTimes(1)
         expect(screen.queryByText('Sheet Content')).toBeNull()
+    })
+
+    it('stays mounted while animating out, and unmounts only once the exit animation resolves', () => {
+        const onDismiss = vi.fn()
+        // Override the auto-resolving global Animated mock so the exit
+        // animation's completion is under this test's control instead of
+        // resolving synchronously inside rerender.
+        let latestCallback: Animated.EndCallback | undefined
+        const parallelSpy = vi.spyOn(Animated, 'parallel').mockImplementation(
+            (): Animated.CompositeAnimation => ({
+                start: callback => {
+                    latestCallback = callback
+                },
+                stop: vi.fn(),
+                reset: vi.fn(),
+            }),
+        )
+
+        const { rerender } = render(
+            <PWBottomSheet
+                isVisible={true}
+                onDismiss={onDismiss}
+            >
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        rerender(
+            <PWBottomSheet
+                isVisible={false}
+                onDismiss={onDismiss}
+            >
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        // Exit animation hasn't resolved yet: still mounted, no onDismiss.
+        expect(screen.queryByText('Sheet Content')).toBeTruthy()
+        expect(onDismiss).not.toHaveBeenCalled()
+
+        act(() => {
+            latestCallback?.({ finished: true })
+        })
+
+        expect(onDismiss).toHaveBeenCalledTimes(1)
+        expect(screen.queryByText('Sheet Content')).toBeNull()
+
+        parallelSpy.mockRestore()
     })
 
     it('calls onDismiss on backdrop press when dismissable', () => {

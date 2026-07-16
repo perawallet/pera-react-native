@@ -91,6 +91,7 @@ export const NotificationSettingsList = ({
     const {
         isSystemNotificationEnabled,
         isSystemNotificationLoading,
+        isPushSupported,
         accounts,
         disabledAccounts,
         handleSystemNotificationToggle,
@@ -125,23 +126,29 @@ export const NotificationSettingsList = ({
             )}
             ListHeaderComponent={
                 <PWView style={styles.header}>
-                    <PWView style={styles.headerRow}>
-                        <PWView style={styles.headerLabelContainer}>
-                            <PWText
-                                variant='body'
-                                truncate
-                            >
-                                {t('settings.notifications.push_notifications')}
-                            </PWText>
+                    {isPushSupported && (
+                        <PWView style={styles.headerRow}>
+                            <PWView style={styles.headerLabelContainer}>
+                                <PWText
+                                    variant='body'
+                                    truncate
+                                >
+                                    {t(
+                                        'settings.notifications.push_notifications',
+                                    )}
+                                </PWText>
+                            </PWView>
+                            <PWView style={styles.switchContainer}>
+                                <PWSwitch
+                                    value={isSystemNotificationEnabled}
+                                    onValueChange={
+                                        handleSystemNotificationToggle
+                                    }
+                                    disabled={isSystemNotificationLoading}
+                                />
+                            </PWView>
                         </PWView>
-                        <PWView style={styles.switchContainer}>
-                            <PWSwitch
-                                value={isSystemNotificationEnabled}
-                                onValueChange={handleSystemNotificationToggle}
-                                disabled={isSystemNotificationLoading}
-                            />
-                        </PWView>
-                    </PWView>
+                    )}
                     <PWView style={styles.headerRow}>
                         <PWView style={styles.headerLabelContainer}>
                             <PWText

@@ -75,6 +75,7 @@ export const buildTestPlatform = (
     }
 
     const defaultPushNotification: PushNotificationService = {
+        isSupported: () => true,
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },

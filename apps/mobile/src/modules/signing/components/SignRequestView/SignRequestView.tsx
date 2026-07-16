@@ -181,7 +181,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
                             isDarkMode ? 'dark' : 'light',
                         )}
                     >
-                        <SigningRoutes request={request} />
+                        <SigningRoutes />
                     </NavigationContainer>
                 </NavigationIndependentTree>
                 {isMultisigCosign && (

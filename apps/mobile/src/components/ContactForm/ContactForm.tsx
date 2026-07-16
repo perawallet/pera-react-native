@@ -197,16 +197,14 @@ export const ContactForm = <T extends FieldValues>({
                 )}
                 {children}
             </PWView>
-            {scannerVisible && (
-                <QRScannerView
-                    isVisible={scannerVisible}
-                    onSuccess={handleScan}
-                    onClose={handleCloseScanner}
-                    animationType='slide'
-                    title={t('address_entry.scan_qr')}
-                    skipDeepLinkHandler
-                />
-            )}
+            <QRScannerView
+                isVisible={scannerVisible}
+                onSuccess={handleScan}
+                onClose={handleCloseScanner}
+                animationType='slide'
+                title={t('address_entry.scan_qr')}
+                skipDeepLinkHandler
+            />
         </>
     )
 }

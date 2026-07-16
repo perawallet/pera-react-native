@@ -47,6 +47,7 @@ export default defineConfig({
                 'zustand',
                 'zustand/middleware',
                 'decimal.js',
+                'ky',
                 '@tanstack/react-query',
                 '@algorandfoundation/algokit-utils',
                 '@perawallet/wallet-core-accounts',

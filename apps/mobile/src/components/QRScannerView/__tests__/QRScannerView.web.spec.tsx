@@ -18,6 +18,67 @@ import { act, fireEvent, render, screen } from '@test-utils/render'
 // does).
 import { QRScannerView, type QRScannerViewProps } from '../QRScannerView.web'
 
+// vitest.setup.ts globally stubs the whole '@components/core' barrel
+// (PWBottomSheet included) with a trivial testID='PWBottomSheet' div and no
+// backdrop — fine for other specs, but this one exists to prove real sheet
+// chrome (backdrop press, testID passthrough). Swap in the real web
+// PWBottomSheet; the rest stay as simple DOM stand-ins mirroring the setup
+// file's stubs.
+vi.mock('@components/core', async () => {
+    const { default: React } = await import('react')
+    const { PWBottomSheet } =
+        await import('../../core/PWBottomSheet/PWBottomSheet.web')
+
+    return {
+        PWBottomSheet,
+        PWButton: ({
+            title,
+            onPress,
+            testID,
+        }: {
+            title?: string
+            onPress?: () => void
+            testID?: string
+        }) =>
+            React.createElement(
+                'button',
+                { onClick: onPress, 'data-testid': testID ?? 'PWButton' },
+                title,
+            ),
+        PWInput: ({
+            onChangeText,
+            placeholder,
+            testID,
+        }: {
+            onChangeText?: (value: string) => void
+            placeholder?: string
+            testID?: string
+        }) =>
+            React.createElement('input', {
+                placeholder,
+                'data-testid': testID ?? 'PWInput',
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
+                    onChangeText?.(e.target.value),
+            }),
+        PWText: ({ children }: { children?: React.ReactNode }) =>
+            React.createElement('span', { 'data-testid': 'PWText' }, children),
+        PWTouchableIcon: ({
+            name,
+            onPress,
+        }: {
+            name?: string
+            onPress?: () => void
+        }) =>
+            React.createElement('div', {
+                onClick: onPress,
+                role: 'button',
+                'data-testid': `touchable-icon-${name}`,
+            }),
+        PWView: ({ children }: { children?: React.ReactNode }) =>
+            React.createElement('div', { 'data-testid': 'PWView' }, children),
+    }
+})
+
 const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn(() => true)
 
@@ -106,13 +167,13 @@ describe('QRScannerView (web)', () => {
             expect(getUserMedia).not.toHaveBeenCalled()
         })
 
-        it('shows a "Scan with camera" button that opens the expanded tab', () => {
+        it('shows a "Scan with camera" button that opens the expanded tab on the scan flow', () => {
             renderScanner()
             expect(screen.getByTestId('qr-scan-with-camera')).toBeTruthy()
 
             fireEvent.click(screen.getByTestId('qr-scan-with-camera'))
 
-            expect(mockOpenExpandedTab).toHaveBeenCalledTimes(1)
+            expect(mockOpenExpandedTab).toHaveBeenCalledWith('scan')
         })
 
         it('keeps paste fully functional', () => {
@@ -125,6 +186,18 @@ describe('QRScannerView (web)', () => {
                 PASTED_VALUE,
                 expect.any(Function),
             )
+        })
+
+        // Field scans (skipDeepLinkHandler: true) can't round-trip a value
+        // scanned in the tab back into the closed popup's input, so the
+        // hand-off button is dropped in favor of paste-only.
+        it('hides the "Scan with camera" button for a field scan (skipDeepLinkHandler)', () => {
+            renderScanner({ skipDeepLinkHandler: true })
+
+            expect(screen.queryByTestId('qr-scan-with-camera')).toBeNull()
+            expect(
+                screen.getByText('qr_scanner.camera_unavailable'),
+            ).toBeTruthy()
         })
     })
 
@@ -143,6 +216,57 @@ describe('QRScannerView (web)', () => {
             renderScanner()
             await flushAsync()
             expect(screen.queryByTestId('qr-scan-with-camera')).toBeNull()
+        })
+    })
+
+    describe('sheet chrome', () => {
+        it('renders nothing when isVisible is false', () => {
+            renderScanner({ isVisible: false })
+
+            expect(screen.queryByTestId('qr-paste-input')).toBeNull()
+        })
+
+        it('renders content inside the bottom sheet', () => {
+            renderScanner()
+
+            expect(screen.getByTestId('qr-scanner-sheet')).toBeTruthy()
+            expect(screen.getByTestId('qr-paste-input')).toBeTruthy()
+        })
+
+        it('calls onClose when the backdrop is pressed', () => {
+            const onClose = vi.fn()
+            renderScanner({ onClose })
+
+            fireEvent.click(screen.getByTestId('pw-bottom-sheet-backdrop'))
+
+            expect(onClose).toHaveBeenCalledTimes(1)
+        })
+
+        // Regression: PWBottomSheet's onDismiss fires ~250ms after isVisible
+        // flips false (once its exit animation completes) — every real call
+        // site reacts to onClose by flipping isVisible false, so wiring
+        // onClose as both onBackdropPress AND onDismiss double-fired it.
+        // QRScannerView must only pass onBackdropPress.
+        it('does not double-fire onClose when the parent flips isVisible false after a backdrop press', () => {
+            const onClose = vi.fn()
+            const { rerender } = renderScanner({ onClose })
+
+            fireEvent.click(screen.getByTestId('pw-bottom-sheet-backdrop'))
+            expect(onClose).toHaveBeenCalledTimes(1)
+
+            rerender(
+                <QRScannerView
+                    isVisible={false}
+                    animationType='none'
+                    onClose={onClose}
+                    onSuccess={vi.fn()}
+                />,
+            )
+
+            // The global RN mock (vitest.setup.ts) resolves Animated.start()
+            // synchronously, so the exit animation "completes" within
+            // rerender — exactly where the old double-fire happened.
+            expect(onClose).toHaveBeenCalledTimes(1)
         })
     })
 

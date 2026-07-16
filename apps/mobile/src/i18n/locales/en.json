@@ -3231,7 +3231,8 @@
             "use_passkey": "Use Passkey",
             "error_invalid_password": "Incorrect password. Please try again.",
             "corrupted_error": "Your vault data is corrupted and cannot be unlocked. You may need to reset the extension and restore from your backup.",
-            "passkey_error": "Passkey unlock failed. Use your password instead."
+            "passkey_error": "Passkey unlock failed. Use your password instead.",
+            "lockout_countdown": "Too many attempts. Try again in {{time}}"
         },
         "security": {
             "autolock_title": "Auto-lock after",
@@ -3243,7 +3244,6 @@
             "passkey_password_placeholder": "Wallet password",
             "passkey_error": "Could not enable passkey unlock. Check your password and try again.",
             "passkey_enable_error": "Couldn't enable passkey unlock. Please try again.",
-            "passkey_unsupported": "Passkey unlock isn't available in this browser. It requires a browser with a platform authenticator, like Touch ID or Windows Hello.",
             "change_password_title": "Change password",
             "change_password_current_placeholder": "Current password",
             "change_password_new_placeholder": "New password",

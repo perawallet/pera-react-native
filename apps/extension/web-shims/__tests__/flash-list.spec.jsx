@@ -22,6 +22,12 @@ const flatListProps = vi.hoisted(() => ({ current: undefined }))
 vi.mock('react-native', async () => {
     const actual = await vi.importActual('react-native')
     const ReactActual = await vi.importActual('react')
+
+    function View({ style, children }) {
+        return ReactActual.createElement('div', { style }, children)
+    }
+    View.displayName = 'View'
+
     return {
         ...actual,
         FlatList: ReactActual.forwardRef((props, ref) => {
@@ -31,6 +37,7 @@ vi.mock('react-native', async () => {
                 'data-testid': 'flat-list',
             })
         }),
+        View,
     }
 })
 
@@ -79,5 +86,56 @@ describe('@shopify/flash-list web shim', () => {
         expect(flatListProps.current.drawDistance).toBeUndefined()
         expect(flatListProps.current.masonry).toBeUndefined()
         expect(flatListProps.current.onLoad).toBeUndefined()
+    })
+
+    it('wraps grid cells in fractional-width containers when numColumns > 1', () => {
+        const originalRenderItem = vi.fn(() => 'cell content')
+        render(
+            <FlashList
+                data={[{ id: '1' }, { id: '2' }]}
+                renderItem={originalRenderItem}
+                numColumns={2}
+            />,
+        )
+
+        const wrappedRenderItem = flatListProps.current.renderItem
+        expect(wrappedRenderItem).toBeDefined()
+        expect(wrappedRenderItem).not.toBe(originalRenderItem)
+
+        // Call the wrapped renderItem and check the result
+        const info = { item: { id: '1' }, index: 0 }
+        const result = wrappedRenderItem(info)
+
+        // Result should be a View element with width: '50%'
+        expect(result.type.name || result.type.displayName).toBe('View')
+        expect(result.props.style.width).toBe('50%')
+        expect(result.props.children).toBeDefined()
+    })
+
+    it('does not wrap renderItem when numColumns is not set or numColumns === 1', () => {
+        const originalRenderItem = vi.fn(() => 'cell content')
+        render(
+            <FlashList
+                data={[{ id: '1' }]}
+                renderItem={originalRenderItem}
+            />,
+        )
+
+        const wrappedRenderItem = flatListProps.current.renderItem
+        expect(wrappedRenderItem).toBe(originalRenderItem)
+    })
+
+    it('does not wrap renderItem when numColumns === 1', () => {
+        const originalRenderItem = vi.fn(() => 'cell content')
+        render(
+            <FlashList
+                data={[{ id: '1' }]}
+                renderItem={originalRenderItem}
+                numColumns={1}
+            />,
+        )
+
+        const wrappedRenderItem = flatListProps.current.renderItem
+        expect(wrappedRenderItem).toBe(originalRenderItem)
     })
 })

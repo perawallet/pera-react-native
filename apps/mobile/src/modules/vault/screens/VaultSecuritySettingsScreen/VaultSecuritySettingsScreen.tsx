@@ -12,9 +12,11 @@
 
 import {
     PWButton,
+    PWDropdown,
+    PWIcon,
     PWInput,
-    PWRadioButton,
     PWScreen,
+    PWSkeleton,
     PWText,
     PWView,
 } from '@components/core'
@@ -81,17 +83,38 @@ export const VaultSecuritySettingsScreen = () => {
                 >
                     {t('vault.security.autolock_title')}
                 </PWText>
-                {autoLockOptions.map(minutes => (
-                    <PWRadioButton
-                        key={minutes}
-                        title={t('vault.security.autolock_minutes', {
-                            minutes,
-                        })}
-                        onPress={() => void selectMinutes(minutes)}
-                        isSelected={autoLockMinutes === minutes}
-                        testID={`vault-security-autolock-${minutes}`}
+                {autoLockMinutes === null ? (
+                    <PWSkeleton
+                        height={44}
+                        style={styles.autolockTrigger}
                     />
-                ))}
+                ) : (
+                    <PWDropdown
+                        items={autoLockOptions.map(minutes => ({
+                            label: t('vault.security.autolock_minutes', {
+                                minutes,
+                            }),
+                            onPress: () => void selectMinutes(minutes),
+                            isSelected: autoLockMinutes === minutes,
+                        }))}
+                    >
+                        <PWView
+                            testID='vault-security-autolock-trigger'
+                            style={styles.autolockTrigger}
+                        >
+                            <PWText variant='body'>
+                                {t('vault.security.autolock_minutes', {
+                                    minutes: autoLockMinutes,
+                                })}
+                            </PWText>
+                            <PWIcon
+                                name='chevron-down'
+                                size='md'
+                                variant='secondary'
+                            />
+                        </PWView>
+                    </PWDropdown>
+                )}
                 <PWButton
                     testID='vault-security-lock-now'
                     variant='destructive'
@@ -187,15 +210,6 @@ export const VaultSecuritySettingsScreen = () => {
                         >
                             {t('vault.security.passkey_title')}
                         </PWText>
-                        {passkeyState === 'unsupported' && (
-                            <PWText
-                                testID='vault-security-passkey-unsupported'
-                                variant='body'
-                                style={styles.subtitleText}
-                            >
-                                {t('vault.security.passkey_unsupported')}
-                            </PWText>
-                        )}
                         {passkeyState === 'disabled' && (
                             <PWInput
                                 testID='vault-security-passkey-password'
@@ -240,7 +254,6 @@ export const VaultSecuritySettingsScreen = () => {
                                     : 'vault.security.passkey_enable',
                             )}
                             isDisabled={
-                                passkeyState === 'unsupported' ||
                                 (passkeyState === 'disabled' &&
                                     passkeyPassword.length === 0) ||
                                 isEnablingPasskey

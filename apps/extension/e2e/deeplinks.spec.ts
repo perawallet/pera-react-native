@@ -103,3 +103,16 @@ test('add-account deep-link lands on the real add-account screen', async () => {
     ).toBeVisible({ timeout: 20_000 })
     await addAccountPage.close()
 })
+
+// User-feedback round 2 #3: ?flow=scan lands on the dedicated full-page
+// scanner route — not the old scanner-sheet-over-the-menu.
+test('expanded.html?flow=scan lands on the full-page scanner', async () => {
+    const page = await context.newPage()
+    await page.goto(`chrome-extension://${extensionId}/expanded.html?flow=scan`)
+    await expect(page.getByTestId('scan_qr_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    // Paste fallback renders regardless of camera availability in headless.
+    await expect(page.getByTestId('qr-paste-input')).toBeVisible()
+    await page.close()
+})

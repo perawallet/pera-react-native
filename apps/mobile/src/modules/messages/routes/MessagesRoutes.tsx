@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import {
-    createNativeStackNavigator,
-    type NativeStackHeaderProps,
-} from '@react-navigation/native-stack'
+import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
@@ -27,7 +25,7 @@ import { type MessagesStackParamList } from './types'
 import { MessagesScreen } from '../screens/MessagesScreen'
 import { MultisigInvitationNameScreen } from '../screens/MultisigInvitationNameScreen'
 
-const MessagesStack = createNativeStackNavigator<MessagesStackParamList>()
+const MessagesStack = createAppStackNavigator<MessagesStackParamList>()
 
 export const MessagesStackNavigator = () => {
     return (

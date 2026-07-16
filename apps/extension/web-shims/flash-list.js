@@ -41,8 +41,11 @@
 // real FlashList behavior those call sites were written against). A caller
 // that passes its own `onScrollToIndexFailed` still wins — this is only a
 // default.
+//
+// Grid cells with numColumns > 1 are wrapped in fractional-width Views,
+// matching FlashList's native `boundedSize / maxColumns` parity (width not flex: 1).
 import React, { forwardRef } from 'react'
-import { FlatList } from 'react-native'
+import { FlatList, View } from 'react-native'
 
 const noopOnScrollToIndexFailed = () => {}
 
@@ -57,9 +60,24 @@ export const FlashList = forwardRef((props, ref) => {
         ...flatListProps
     } = props
 
+    const numColumns = flatListProps.numColumns
+    const renderItem = flatListProps.renderItem
+
+    const wrappedRenderItem = React.useMemo(() => {
+        return numColumns > 1 && renderItem
+            ? info =>
+                  React.createElement(
+                      View,
+                      { style: { width: `${100 / numColumns}%` } },
+                      renderItem(info),
+                  )
+            : renderItem
+    }, [numColumns, renderItem])
+
     return React.createElement(FlatList, {
         onScrollToIndexFailed: noopOnScrollToIndexFailed,
         ...flatListProps,
+        renderItem: wrappedRenderItem,
         ref,
     })
 })

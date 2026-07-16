@@ -21,6 +21,15 @@ export const useStyles = makeStyles(theme => {
         sectionTitle: {
             marginTop: theme.spacing.md,
         },
+        autolockTrigger: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.sm,
+            padding: theme.spacing.md,
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: theme.borderRadius.sm,
+        },
         lockButton: {
             marginTop: theme.spacing.lg,
         },
@@ -34,9 +43,6 @@ export const useStyles = makeStyles(theme => {
         },
         successText: {
             color: theme.colors.positive,
-        },
-        subtitleText: {
-            color: theme.colors.textGray,
         },
     }
 })

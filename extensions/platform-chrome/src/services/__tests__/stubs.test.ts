@@ -58,4 +58,8 @@ describe('capability stubs', () => {
         expect(result.token).toBeUndefined()
         expect(() => result.unsubscribe()).not.toThrow()
     })
+
+    it('reports push notifications as unsupported', () => {
+        expect(new ChromePushNotificationService().isSupported()).toBe(false)
+    })
 })

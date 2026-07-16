@@ -42,6 +42,16 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 
+// AddressSearchInput renders AddressEntryField, which now always mounts
+// QRScannerView (isVisible toggles it, it's never conditionally rendered) —
+// vitest resolves the bare specifier to the native module, whose hooks
+// reach into providers (accounts, network, etc.) this spec's partial mocks
+// don't cover. This spec only cares about search/filter behavior.
+vi.mock('@components/QRScannerView', () => ({
+    QRScannerView: () => null,
+    scannerNotifier: { current: null },
+}))
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()

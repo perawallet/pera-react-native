@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
+import { Platform, useWindowDimensions } from 'react-native'
 import { type IconName, PWIcon } from '@components/core'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@rneui/themed'
@@ -20,6 +20,7 @@ import { TabLabel } from '@components/TabLabel'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
 import { tabScreens } from './tab-screens'
+import { getWebTabTransition } from './tab-transitions'
 import type { TabBarStackParamList } from './tab-types'
 
 export type { TabBarStackParamList } from './tab-types'
@@ -29,11 +30,13 @@ const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
 export const TabBarStackNavigator = () => {
     const insets = useSafeAreaInsets()
     const { theme } = useTheme()
+    const { width } = useWindowDimensions()
 
     return (
         <TabBarStack.Navigator
             initialRouteName='Home'
             screenOptions={({ route }) => ({
+                ...(Platform.OS === 'web' ? getWebTabTransition(width) : null),
                 headerShown: false,
                 tabBarStyle: {
                     backgroundColor: theme.colors.background,

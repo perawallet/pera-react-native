@@ -27,7 +27,9 @@ import {
 } from '@perawallet/wallet-extension-keystore-chrome'
 import { logger } from '@perawallet/wallet-core-shared'
 
-type PasskeyState = 'unsupported' | 'disabled' | 'enabled' | null
+// null covers both "not yet checked" and "unsupported" — either way the
+// passkey section doesn't render.
+type PasskeyState = 'disabled' | 'enabled' | null
 
 const MIN_NEW_PASSWORD_LENGTH = 8
 
@@ -89,7 +91,7 @@ export const useVaultSecuritySettingsScreen =
             const check = async (): Promise<void> => {
                 const supported = await isPasskeyUnlockSupported()
                 if (!supported) {
-                    if (!cancelled) setPasskeyState('unsupported')
+                    // Leave passkeyState null — the section stays hidden.
                     return
                 }
                 const enabled = await isPasskeyUnlockEnabled()

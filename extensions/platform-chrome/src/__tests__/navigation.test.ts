@@ -12,7 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../test-utils/chrome'
-import { openExpandedTab } from '../navigation'
+import { closeCurrentTab, openExpandedTab } from '../navigation'
 
 describe('openExpandedTab', () => {
     let fake: ChromeFake
@@ -33,6 +33,13 @@ describe('openExpandedTab', () => {
         await openExpandedTab('backup-wallet')
         expect(fake.createdTabs[0].url).toBe(
             'chrome-extension://test-extension-id/expanded.html?flow=backup-wallet',
+        )
+    })
+
+    it('opens expanded.html with the scan flow', async () => {
+        await openExpandedTab('scan')
+        expect(fake.createdTabs[0].url).toBe(
+            'chrome-extension://test-extension-id/expanded.html?flow=scan',
         )
     })
 
@@ -94,6 +101,33 @@ describe('openExpandedTab', () => {
     })
 })
 
+describe('closeCurrentTab', () => {
+    let fake: ChromeFake
+
+    beforeEach(() => {
+        fake = createChromeFake()
+        globalThis.chrome = fake.chrome
+    })
+
+    it('removes the tab hosting the calling extension page', async () => {
+        fake.setCurrentTab({
+            id: 5,
+            url: 'chrome-extension://test-extension-id/expanded.html?flow=scan',
+            windowId: 1,
+        })
+
+        await closeCurrentTab()
+
+        expect(fake.removedTabIds).toEqual([5])
+    })
+
+    it('does nothing when there is no current tab', async () => {
+        await closeCurrentTab()
+
+        expect(fake.removedTabIds).toEqual([])
+    })
+})
+
 describe('consumeInitialExpandedFlow', () => {
     // `consumed` is one-shot module state by design (that's the feature
     // under test) — reset the module between tests so each test gets its
@@ -117,6 +151,14 @@ describe('consumeInitialExpandedFlow', () => {
         const { consumeInitialExpandedFlow } = await import('../navigation')
         expect(consumeInitialExpandedFlow()).toBe('add-account')
         expect(consumeInitialExpandedFlow()).toBeNull()
+    })
+
+    it('returns the scan flow', async () => {
+        ;(
+            globalThis as { __PERA_TEST_SEARCH__?: string }
+        ).__PERA_TEST_SEARCH__ = '?flow=scan'
+        const { consumeInitialExpandedFlow } = await import('../navigation')
+        expect(consumeInitialExpandedFlow()).toBe('scan')
     })
 
     it('rejects unknown flows', async () => {

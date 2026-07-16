@@ -69,6 +69,11 @@ export class ChromeCrashReportingService implements CrashReportingService {
 }
 
 export class ChromePushNotificationService implements PushNotificationService {
+    // Chrome ≥116 supports MV3 web push, but the backend only accepts FCM
+    // tokens today — flip this once that lands.
+    isSupported(): boolean {
+        return false
+    }
     async initializeNotifications(): Promise<PushNotificationInitResult> {
         return { token: undefined, unsubscribe: noop }
     }

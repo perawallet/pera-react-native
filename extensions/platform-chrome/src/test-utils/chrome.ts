@@ -39,6 +39,12 @@ export type ChromeFake = {
         changes: { url?: string; active?: boolean }
     }>
     windowUpdates: Array<{ windowId: number; changes: { focused?: boolean } }>
+    // Models "this extension page is running in tab X" for
+    // chrome.tabs.getCurrent(); tests call this to seed (or clear, via
+    // undefined) the tab getCurrent resolves to.
+    setCurrentTab: (tab: FakeTab | undefined) => void
+    // ids removed via chrome.tabs.remove.
+    removedTabIds: number[]
 }
 
 const TEST_EXTENSION_ID = 'test-extension-id'
@@ -61,6 +67,8 @@ export const createChromeFake = (): ChromeFake => {
     const openTabs: FakeTab[] = []
     const tabUpdates: ChromeFake['tabUpdates'] = []
     const windowUpdates: ChromeFake['windowUpdates'] = []
+    const removedTabIds: ChromeFake['removedTabIds'] = []
+    let currentTab: FakeTab | undefined
     let nextTabId = 1
 
     const emit = (changes: StorageChanges, areaName = 'local'): void => {
@@ -183,6 +191,12 @@ export const createChromeFake = (): ChromeFake => {
                 if (tab && changes.url !== undefined) tab.url = changes.url
                 return tab
             },
+            getCurrent: async (): Promise<FakeTab | undefined> => currentTab,
+            remove: async (tabId: number): Promise<void> => {
+                removedTabIds.push(tabId)
+                const index = openTabs.findIndex(t => t.id === tabId)
+                if (index !== -1) openTabs.splice(index, 1)
+            },
         },
         windows: {
             update: async (
@@ -208,5 +222,9 @@ export const createChromeFake = (): ChromeFake => {
         openTabs,
         tabUpdates,
         windowUpdates,
+        setCurrentTab: (tab: FakeTab | undefined) => {
+            currentTab = tab
+        },
+        removedTabIds,
     }
 }

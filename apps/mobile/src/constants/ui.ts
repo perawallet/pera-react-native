@@ -22,10 +22,10 @@ export const BOTTOM_TAB_LABEL_FONT_SIZE = 11
 export const BOTTOM_TAB_LABEL_LINE_HEIGHT = 14
 
 const SCREEN_ANIMATION_TYPE = 'default'
-const SCREEN_ANIMATION_DURATION = 150
+export const SCREEN_ANIMATION_DURATION_MS = 150
 export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
     animation: SCREEN_ANIMATION_TYPE,
-    animationDuration: SCREEN_ANIMATION_DURATION,
+    animationDuration: SCREEN_ANIMATION_DURATION_MS,
     statusBarAnimation: 'slide',
 }
 

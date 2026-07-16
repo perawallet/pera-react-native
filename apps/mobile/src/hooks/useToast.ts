@@ -33,6 +33,9 @@ type StyleProps = { topInset: number }
 
 const useStyles = makeStyles((theme, { topInset }: StyleProps) => {
     return {
+        notifierContainer: {
+            zIndex: theme.zIndex.toast,
+        },
         baseStyle: {
             zIndex: theme.zIndex.max,
             // Push the toast below the status bar / notch — `topInset` covers
@@ -112,6 +115,7 @@ export const useToast = () => {
                 notifier.showNotification({
                     title: message.title,
                     description: message.body,
+                    containerStyle: styles.notifierContainer,
                     componentProps: {
                         containerStyle: [styles.baseStyle, containerStyle],
                         titleStyle: textStyle,

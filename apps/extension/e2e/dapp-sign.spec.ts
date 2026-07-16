@@ -339,6 +339,11 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     await expect(
         approvalPage.getByTestId('signing-confirm-slide_thumb'),
     ).toBeVisible({ timeout: 20_000 })
+    // User-feedback round 2 #4: the footer must be pinned inside the fixed
+    // 600px surface, not pushed below the overflow:hidden fold.
+    await expect(
+        approvalPage.getByTestId('signing-confirm-slide'),
+    ).toBeInViewport()
 
     // The physical slide-to-confirm gesture → signed bytes is a MANUAL
     // acceptance step: Playwright's synthetic pointer can't complete

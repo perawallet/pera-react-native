@@ -45,6 +45,13 @@ export class VaultCorruptedError extends Error {
     }
 }
 
+export class VaultLockedOutError extends Error {
+    constructor(readonly remainingSeconds: number) {
+        super('Vault unlock is temporarily locked out')
+        this.name = 'VaultLockedOutError'
+    }
+}
+
 // Ported from @algorandfoundation/react-native-keystore@1.0.0-canary.12 errors.ts
 
 /**

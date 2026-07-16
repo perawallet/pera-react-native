@@ -22,6 +22,8 @@ export type PushNotificationInitResult = {
 export type NotificationOpenListener = (deeplinkUrl: string) => void
 
 export interface PushNotificationService {
+    /** Static platform fact: can this platform deliver push at all? */
+    isSupported(): boolean
     initializeNotifications(): Promise<PushNotificationInitResult>
     /**
      * Registers a listener for push-notification taps that carry a deeplink

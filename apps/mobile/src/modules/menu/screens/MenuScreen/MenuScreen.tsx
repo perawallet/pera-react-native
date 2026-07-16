@@ -24,7 +24,6 @@ import { PanelButton } from '@components/PanelButton'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
-import { useModalState } from '@hooks/useModalState'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
@@ -34,11 +33,12 @@ import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { trackEvent, MenuEvent, FundEvent } from '@analytics'
 import { routeCapabilities } from '@routes/capabilities'
+import { useMenuScreen } from './useMenuScreen'
 
 export const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const scanner = useModalState()
+    const { isScannerVisible, openScanner, closeScanner } = useMenuScreen()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const { pushWebView } = useWebView()
@@ -112,10 +112,7 @@ export const MenuScreen = () => {
                 <PWView style={styles.iconBarActions}>
                     {routeCapabilities.qrScanner && (
                         <PWTouchableOpacity
-                            onPress={() => {
-                                trackEvent(MenuEvent.QrScan)
-                                scanner.open()
-                            }}
+                            onPress={openScanner}
                             testID='menu_button'
                         >
                             <PWIcon
@@ -181,9 +178,9 @@ export const MenuScreen = () => {
             </PWView>
             {routeCapabilities.qrScanner && (
                 <QRScannerView
-                    isVisible={scanner.isOpen}
-                    onSuccess={scanner.close}
-                    onClose={scanner.close}
+                    isVisible={isScannerVisible}
+                    onSuccess={closeScanner}
+                    onClose={closeScanner}
                     animationType='slide'
                 />
             )}

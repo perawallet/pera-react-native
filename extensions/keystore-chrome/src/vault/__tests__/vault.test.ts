@@ -29,6 +29,7 @@ import {
     InvalidPasswordError,
     VaultCorruptedError,
     VaultExistsError,
+    VaultLockedOutError,
     VaultNotInitializedError,
 } from '../../errors'
 
@@ -175,5 +176,19 @@ describe('vault', () => {
         await expect(unlockVault('correct horse')).rejects.toBeInstanceOf(
             VaultCorruptedError,
         )
+    })
+
+    it('locks out after 5 wrong passwords, rejecting even the correct one', async () => {
+        await createVault('the-password')
+        await lockVault()
+        for (let i = 0; i < 5; i++) {
+            await expect(unlockVault('wrong-password')).rejects.toBeInstanceOf(
+                InvalidPasswordError,
+            )
+        }
+        await expect(unlockVault('the-password')).rejects.toBeInstanceOf(
+            VaultLockedOutError,
+        )
+        expect(await isUnlocked()).toBe(false)
     })
 })

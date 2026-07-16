@@ -32,8 +32,9 @@ const mobileDir = path.resolve(root, '../mobile')
 const dist = path.join(root, 'dist')
 
 const SURFACES = ['popup', 'expanded', 'approval', 'offscreen']
+// Popup density: 0.9 zoom reflows the 360px viewport against a 375px design baseline
 const POPUP_CSS =
-    '<style>html,body{width:360px;height:600px;margin:0;overflow:hidden}#root{width:100%;height:100%}</style>'
+    '<style>html,body{width:360px;height:600px;margin:0;overflow:hidden}html{zoom:0.9}#root{width:100%;height:100%}</style>'
 // Web-only, all surfaces: react-native-web renders <Text> as selectable HTML
 // (native RN text isn't selectable), so a click-drag over any label selects
 // text instead of feeling like a native drag/scroll gesture. `user-select:
@@ -71,9 +72,42 @@ input, textarea, [contenteditable], [contenteditable="true"] { -webkit-user-sele
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.5); border-radius: 4px; }
 *::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.7); }
+/* RN UIs never rely on browser scroll anchoring (native scroll views have none); left on, it fights collapsing/expanding content and can cause scroll-position feedback loops. */
+* { overflow-anchor: none; }
 </style>`
 
 rmSync(dist, { recursive: true, force: true })
+
+// 0. Bake backend credentials into packages/config before anything reads
+// them. Metro (step 1 below) resolves @perawallet/wallet-core-* packages
+// straight from `src/` (see apps/mobile/metro.config.js), so generated-env.ts
+// just needs to exist on disk. The service-worker/content-script esbuild
+// bundles (step 2+) have no such source alias — they resolve
+// @perawallet/wallet-core-config through node_modules -> package.json "main"
+// -> dist/, so that package must be rebuilt here too or it ships whatever
+// was baked in the last time someone happened to run its build.
+const monorepoRoot = path.resolve(root, '../..')
+execSync('bash tools/generate-config.sh', {
+    cwd: monorepoRoot,
+    stdio: 'inherit',
+})
+execSync('pnpm --filter ./packages/config build', {
+    cwd: monorepoRoot,
+    stdio: 'inherit',
+})
+const generatedEnv = readFileSync(
+    path.join(monorepoRoot, 'packages/config/src/generated-env.ts'),
+    'utf8',
+)
+// generate-config.sh only emits a key's line when the source env var is
+// non-empty (see its append_config helper), so a missing/blank
+// BACKEND_API_KEY leaves this line out entirely rather than writing "".
+if (!/backendAPIKey:\s*"[^"]+"/.test(generatedEnv)) {
+    console.warn(
+        '\n⚠ BACKEND_API_KEY is empty — Pera backend calls will 401. ' +
+            'Add it to the repo-root .env (see apps/extension/README.md).\n',
+    )
+}
 
 // 1. Export the react-native-web UI bundle straight into dist/
 execSync(`pnpm exec expo export --platform web --output-dir "${dist}"`, {

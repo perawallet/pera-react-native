@@ -11,9 +11,14 @@
  */
 
 import { base64 } from '@scure/base'
-import { PasskeyUnlockError, VaultCorruptedError } from '../errors'
+import {
+    PasskeyUnlockError,
+    VaultCorruptedError,
+    VaultLockedOutError,
+} from '../errors'
 import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
+import { clearFailedAttempts, getLockoutRemainingSeconds } from './lockout'
 import { putSessionMasterKey } from './session'
 import { unwrapMasterKeyWithPassword } from './vault'
 
@@ -147,11 +152,19 @@ export const isPasskeyUnlockSupported = async (): Promise<boolean> => {
             const caps = await (
                 PublicKeyCredential as {
                     getClientCapabilities: () => Promise<
-                        Record<string, boolean>
+                        Record<string, boolean | undefined>
                     >
                 }
             ).getClientCapabilities()
-            return caps?.prf === true
+            // WebAuthn L3 namespaces extension capabilities under
+            // 'extension:prf' (verified empirically: Chromium 149 reports
+            // { "extension:prf": true, ... }). Fall back to the unprefixed
+            // legacy key for older/other implementations. An absent key
+            // means the client didn't report either way — stay optimistic
+            // rather than hide the feature, since enablePasskeyUnlock
+            // already fails safely at runtime if PRF isn't actually there.
+            const prf = caps?.['extension:prf'] ?? caps?.prf
+            return prf !== false
         } catch {
             // Capability API present but threw — treat as unsupported.
             return false
@@ -298,6 +311,12 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
  * `unlockVault`).
  */
 export const unlockWithPasskey = async (): Promise<void> => {
+    // Biometric/passkey auth must NOT bypass the password lockout — mirrors
+    // useLockScreen.ts, which skips the biometric prompt entirely while
+    // locked out.
+    const remainingSeconds = await getLockoutRemainingSeconds()
+    if (remainingSeconds > 0) throw new VaultLockedOutError(remainingSeconds)
+
     const blob = await readPrfBlob()
 
     let prfEvalSaltBytes: Uint8Array
@@ -364,6 +383,7 @@ export const unlockWithPasskey = async (): Promise<void> => {
         try {
             await putSessionMasterKey(masterKey)
             await armAutoLock()
+            await clearFailedAttempts()
         } finally {
             masterKey.fill(0)
         }

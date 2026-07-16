@@ -145,14 +145,14 @@ describe('useVaultSecuritySettingsScreen', () => {
     })
 
     describe('passkeyState', () => {
-        it('resolves to unsupported when isPasskeyUnlockSupported is false', async () => {
+        it('resolves to null (section hidden) when isPasskeyUnlockSupported is false', async () => {
             mocks.isPasskeyUnlockSupported.mockResolvedValue(false)
             const { result } = renderHook(() =>
                 useVaultSecuritySettingsScreen(),
             )
             expect(result.current.passkeyState).toBeNull()
             await act(async () => {})
-            expect(result.current.passkeyState).toBe('unsupported')
+            expect(result.current.passkeyState).toBeNull()
             expect(mocks.isPasskeyUnlockEnabled).not.toHaveBeenCalled()
         })
 

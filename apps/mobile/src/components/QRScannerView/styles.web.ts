@@ -13,13 +13,12 @@
 // Bundler resolves `./styles` to this file for the web build (mirrors
 // QRScannerView.web.tsx overriding QRScannerView.tsx). The native styles.ts
 // lays out a full-screen camera + overlay + safe-area insets that don't
-// apply here: the web view is a simple in-page panel (video preview + paste
-// form), not a native Modal.
+// apply here: the web view renders inside a PWBottomSheet (size='auto'),
+// which hugs this content's height rather than filling the screen.
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
         backgroundColor: theme.colors.background,
         padding: theme.spacing.xl,
     },

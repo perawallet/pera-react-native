@@ -27,6 +27,11 @@ export const useStyles = makeStyles(
             bottom: 0,
             backgroundColor: theme.colors.backdropModalBg,
         },
+        // Pressable fills the Animated.View backdrop wrapper (opacity lives
+        // on the wrapper so the press target isn't animated itself).
+        backdropPressable: {
+            flex: 1,
+        },
         sheet: {
             position: 'absolute' as const,
             left: 0,

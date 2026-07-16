@@ -20,6 +20,7 @@ import {
 } from 'react'
 import {
     type LayoutChangeEvent,
+    Platform,
     type TextInput,
     type TextInputProps,
 } from 'react-native'
@@ -164,20 +165,25 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             onBlur?.(event)
         }
 
-        // The eye toggle is only shown while focused (matching the rest of the
-        // app's password fields) and overrides any consumer-supplied rightIcon.
-        const resolvedRightIcon =
-            showVisibilityToggle && isFocused ? (
-                <PWTouchableIcon
-                    name='eye'
-                    variant='secondary'
-                    size='md'
-                    onPress={() => setIsRevealed(prev => !prev)}
-                    testID={testID ? `${testID}-visibility-toggle` : undefined}
-                />
-            ) : (
-                rightIcon
-            )
+        // Overrides any consumer-supplied rightIcon. Native keeps the toggle
+        // focus-gated (matching the rest of the app's password fields); web
+        // keeps it always mounted, since mousedown on the icon blurs the
+        // input first, which would unmount a focus-conditional toggle before
+        // its press lands.
+        const showToggle =
+            showVisibilityToggle && (Platform.OS === 'web' || isFocused)
+        const resolvedRightIcon = showToggle ? (
+            <PWTouchableIcon
+                name='eye'
+                variant='secondary'
+                size='md'
+                dismissKeyboardOnPress={false}
+                onPress={() => setIsRevealed(prev => !prev)}
+                testID={testID ? `${testID}-visibility-toggle` : undefined}
+            />
+        ) : (
+            rightIcon
+        )
 
         // Withhold the error until the first blur when opted in.
         const resolvedErrorMessage =

@@ -77,15 +77,18 @@ const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
 // non-deterministic.
 // RoundButton (components/RoundButton/RoundButton.tsx) renders its title
 // PWText as a SIBLING of the PWTouchableOpacity, not a child — the tap
-// target is the icon circle above the label, not the label text itself.
+// target is the icon circle above the label. Click that touchable element
+// directly (first child of the shared container) rather than guessing a
+// pixel offset above the label: the JS page-stack on web lays the card out
+// with a slightly different vertical offset than native-stack, so a fixed
+// coordinate heuristic misses the icon.
 const clickRoundButtonByLabel = async (
     targetPage: Page,
     label: string,
 ): Promise<void> => {
     const text = targetPage.getByText(label, { exact: true })
-    const box = await text.boundingBox()
-    if (!box) throw new Error(`round button label "${label}" has no box`)
-    await targetPage.mouse.click(box.x + box.width / 2, box.y - 45)
+    await expect(text).toBeVisible({ timeout: 20_000 })
+    await text.locator('xpath=../*[1]').first().click()
 }
 
 const openMoreSheet = async (targetPage: Page): Promise<void> => {
@@ -617,16 +620,68 @@ test('settings opens from the menu tab', async () => {
     })
     await page.getByTestId('menu_settings_button').click()
     await expect(page.getByTestId('settings_screen')).toBeVisible()
+
+    // User-feedback round 2 #2: PWScreen's flex chain needs minHeight:0 on
+    // web for the scroll body to get a bounded height inside the popup's
+    // overflow:hidden viewport — without it the screen didn't scroll at all.
+    const removeAll = page.getByTestId('settings_remove_all_accounts_button')
+    await removeAll.scrollIntoViewIfNeeded()
+    await expect(removeAll).toBeInViewport()
 })
 
-// User-feedback #8: the vault security screen must surface BOTH a way to
-// change the master password and the passkey setup section — previously the
-// passkey section was hidden entirely when isPasskeyUnlockSupported()
-// resolved false, making it undiscoverable even as an explanation. Both
-// sections must render (change-password unconditionally; passkey either
-// enabled/disabled/unsupported, all of which render the section, just
-// disabled with an explanatory subtitle for 'unsupported') before the
-// lock-now action tears down the unlocked shell for the rest of this test.
+// User-feedback round 3 #1: the expanded-tab scroll check is a false
+// positive (full-height tab, nothing overflows). The popup's fixed 600px
+// viewport is where scrolling actually broke: web CardContent's
+// content-hugging page box grew stacked screens to content height until
+// createAppStackNavigator.web bounded cards with cardStyle flex:1.
+test('settings scrolls to the remove-all button in the 600px popup', async () => {
+    const popupPage = await context.newPage()
+    const popupPageErrors = trackPageErrors(popupPage)
+    await popupPage.setViewportSize({ width: 360, height: 600 })
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html`)
+    await expect(popupPage.getByTestId('account_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await dismissPinPromptIfPresent(popupPage)
+
+    await popupPage.getByTestId('tab_menu_button').click()
+    await expect(popupPage.getByTestId('menu_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await popupPage.getByTestId('menu_settings_button').click()
+    await expect(popupPage.getByTestId('settings_screen')).toBeVisible()
+
+    const removeAll = popupPage.getByTestId(
+        'settings_remove_all_accounts_button',
+    )
+    await removeAll.scrollIntoViewIfNeeded()
+    await expect(removeAll).toBeInViewport()
+    expect(popupPageErrors, 'page threw an uncaught error').toEqual([])
+    await popupPage.close()
+})
+
+// User-feedback #8 (reversed): this test originally asserted the passkey
+// section stayed visible-but-disabled when unsupported, so it was
+// discoverable even as dead UI. That reasoning no longer holds: the root
+// cause was isPasskeyUnlockSupported() checking the wrong capability key
+// (`prf` instead of WebAuthn L3's `extension:prf`), which made it resolve
+// false on every real Chromium — the "helpful" disabled state was actually
+// masking a bug, not describing a real limitation. The product call, now
+// that detection is fixed, is to hide the section entirely rather than show
+// permanently-broken UI in the rare case it's genuinely unsupported.
+//
+// Verified by direct `PublicKeyCredential.getClientCapabilities()`
+// evaluation against this same extension page: real (including headless/CI)
+// Chromium reports `"extension:prf": true` even with
+// `"userVerifyingPlatformAuthenticator": false` (no real platform
+// authenticator here) — `extension:prf` is a client-software capability
+// flag, not proof a real authenticator is attached. So the test below hits
+// the SUPPORTED path exactly as a real user would. The two tests together
+// cover the render conditional (`passkeyState !== null`) on both sides: this
+// one exercises supported (no stubbing — the real capability resolution),
+// the next one below forces unsupported via an `addInitScript` stub of
+// `getClientCapabilities` installed before the page's own scripts run, since
+// that's the only way to reliably reach that branch against real Chromium.
 test('vault security settings surface change-password and passkey sections', async () => {
     // Settings item testIDs are generated from each item's title:
     // `settings_item_${title.toLowerCase().replace(/\s+/g, '_')}`
@@ -653,27 +708,89 @@ test('vault security settings surface change-password and passkey sections', asy
         page.getByTestId('vault-security-change-password-submit'),
     ).toBeVisible()
 
-    // Passkey section: reachable regardless of WebAuthn PRF support. The
-    // toggle button always renders (disabled when unsupported); a headless
-    // Chromium with no platform authenticator resolves isPasskeyUnlockSupported()
-    // false, so the explanatory subtitle renders alongside the disabled toggle
-    // — asserting on both proves the section is surfaced, not hidden, either way.
+    // Passkey section: supported here (see comment above), so it renders
+    // with the disabled-state password field and a toggle that starts
+    // disabled because no password has been entered yet.
     await expect(
         page.getByText('Passkey unlock', { exact: true }),
     ).toBeVisible()
+    await expect(
+        page.getByTestId('vault-security-passkey-password'),
+    ).toBeVisible()
     const passkeyToggle = page.getByTestId('vault-security-passkey-toggle')
     await expect(passkeyToggle).toBeVisible()
-    const passkeyUnsupported = page.getByTestId(
-        'vault-security-passkey-unsupported',
-    )
-    if (await passkeyUnsupported.isVisible().catch(() => false)) {
-        // PWButton (RN Pressable on web) marks disabled via aria-disabled,
-        // not the native `disabled` attribute — toBeDisabled() checks the
-        // latter and doesn't apply here.
-        await expect(passkeyToggle).toHaveAttribute('aria-disabled', 'true')
-    }
+    // PWButton (RN Pressable on web) marks disabled via aria-disabled, not
+    // the native `disabled` attribute — toBeDisabled() checks the latter and
+    // doesn't apply here.
+    await expect(passkeyToggle).toHaveAttribute('aria-disabled', 'true')
 
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
+})
+
+// Forces the unsupported branch of isPasskeyUnlockSupported() by stubbing
+// getClientCapabilities before the page's own scripts run (addInitScript
+// runs prior to any script on the document, including the extension
+// bundle's mount-time capability check). Runs on its own page/tab so it
+// doesn't disturb the shared `page` used by the rest of this suite; the
+// vault is already onboarded in this context from beforeAll, so this page
+// opens straight into the unlocked shell.
+test('vault security settings hide the passkey section when unsupported', async () => {
+    const unsupportedPage = await context.newPage()
+    const unsupportedPageErrors = trackPageErrors(unsupportedPage)
+    await unsupportedPage.addInitScript(() => {
+        class StubPublicKeyCredential {
+            static getClientCapabilities(): Promise<Record<string, boolean>> {
+                return Promise.resolve({ 'extension:prf': false })
+            }
+        }
+        Object.defineProperty(window, 'PublicKeyCredential', {
+            value: StubPublicKeyCredential,
+            configurable: true,
+            writable: true,
+        })
+    })
+    await unsupportedPage.goto(
+        `chrome-extension://${extensionId}/expanded.html`,
+    )
+    await expect(unsupportedPage.getByTestId('account_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await dismissPinPromptIfPresent(unsupportedPage)
+
+    await unsupportedPage.getByTestId('tab_menu_button').click()
+    await expect(unsupportedPage.getByTestId('menu_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await unsupportedPage.getByTestId('menu_settings_button').click()
+    await expect(unsupportedPage.getByTestId('settings_screen')).toBeVisible()
+    await unsupportedPage.getByTestId('settings_item_security').click()
+    await expect(
+        unsupportedPage.getByTestId('vault-security-screen'),
+    ).toBeVisible({ timeout: 20_000 })
+
+    // Change-password still renders unconditionally...
+    await expect(
+        unsupportedPage.getByTestId('vault-security-change-password-section'),
+    ).toBeVisible()
+    await expect(
+        unsupportedPage.getByTestId('vault-security-change-password-submit'),
+    ).toBeVisible()
+
+    // ...while the passkey section is entirely absent — this is the
+    // `passkeyState !== null` render guard actually being exercised, not
+    // just asserted-by-omission.
+    await expect(
+        unsupportedPage.getByText('Passkey unlock', { exact: true }),
+    ).not.toBeVisible()
+    await expect(
+        unsupportedPage.getByTestId('vault-security-passkey-toggle'),
+    ).not.toBeVisible()
+    await expect(
+        unsupportedPage.getByTestId('vault-security-passkey-password'),
+    ).not.toBeVisible()
+
+    expect(unsupportedPageErrors, 'page threw an uncaught error').toEqual([])
+    await unsupportedPage.close()
 })
 
 test('lock-now from vault security locks the wallet', async () => {

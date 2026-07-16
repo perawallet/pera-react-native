@@ -29,12 +29,11 @@
 //
 // Two NavigationContainers never mount simultaneously (onboarding vs main are
 // exclusive shell states), so sharing `navigationRef` across both is safe.
-import React from 'react'
+import React, { useMemo } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
-import {
-    createNativeStackNavigator,
-    type NativeStackHeaderProps,
-} from '@react-navigation/native-stack'
+import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { useDeviceRegistration } from '@perawallet/wallet-core-device'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from './listeners'
@@ -45,6 +44,7 @@ import { SearchStackNavigator } from '@modules/search/routes'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { AddAccountStackNavigator } from '@modules/onboarding/routes'
 import { BackupStackNavigator } from '@modules/backup'
+import { ScanQRScreen } from '@modules/menu/screens/ScanQRScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -53,11 +53,12 @@ import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupT
 import { fullScreenLayout } from '@layouts/index'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { navigationRef } from './navigationRef'
+import { createAppStackNavigator } from './createAppStackNavigator'
 import { createExpandedRedirect } from './createExpandedRedirect'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation'
 import { type RootStackParamList } from './types'
 
-const RootStack = createNativeStackNavigator<RootStackParamList>()
+const RootStack = createAppStackNavigator<RootStackParamList>()
 
 // Blur-fragile flows deep-link out of the popup (design spec): the popup
 // mounts a redirect stand-in that immediately opens the expanded tab instead
@@ -77,11 +78,17 @@ const BackupComponent = isPopup
 
 export const WebMainRoutes = (): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
+    const accounts = useAllAccounts()
+    const addresses = useMemo(
+        () => accounts?.map(account => account.address) ?? [],
+        [accounts],
+    )
+    useDeviceRegistration(addresses)
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
 
-    const handleReady = useExpandedFlowNavigation(screen =>
-        navigationRef.navigate(screen),
-    )
+    const handleReady = useExpandedFlowNavigation(screen => {
+        navigationRef.navigate(screen)
+    })
 
     return (
         <NavigationContainer
@@ -100,6 +107,10 @@ export const WebMainRoutes = (): React.JSX.Element => {
                 <RootStack.Screen
                     name='TabBar'
                     component={TabBarStackNavigator}
+                />
+                <RootStack.Screen
+                    name='ScanQR'
+                    component={ScanQRScreen}
                 />
                 <RootStack.Screen
                     name='Settings'

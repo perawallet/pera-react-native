@@ -29,7 +29,8 @@
     "@perawallet/wallet-core-transactions": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
-    "decimal.js": "catalog:"
+    "decimal.js": "catalog:",
+    "ky": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",

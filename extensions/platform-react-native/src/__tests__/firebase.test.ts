@@ -327,6 +327,10 @@ describe('RNFirebaseService', () => {
     })
 
     describe('Notifications', () => {
+        it('reports push notifications as supported', () => {
+            expect(service.isSupported()).toBe(true)
+        })
+
         describe('initializeNotifications', () => {
             it('should initialize notifications successfully', async () => {
                 mockNotifee.requestPermission.mockResolvedValue({

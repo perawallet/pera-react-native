@@ -15,6 +15,7 @@ import {
     InvalidPasswordError,
     VaultCorruptedError,
     VaultExistsError,
+    VaultLockedOutError,
     VaultNotInitializedError,
 } from '../errors'
 import {
@@ -23,6 +24,11 @@ import {
     VAULT_STORAGE_KEY,
 } from '../storage-keys'
 import { armAutoLock, disarmAutoLock } from './autolock'
+import {
+    clearFailedAttempts,
+    getLockoutRemainingSeconds,
+    recordFailedAttempt,
+} from './lockout'
 import {
     clearSessionMasterKey,
     hasSessionMasterKey,
@@ -207,10 +213,20 @@ export const createVault = async (password: string): Promise<void> => {
 }
 
 export const unlockVault = async (password: string): Promise<void> => {
-    const masterKey = await unwrapMasterKey(password)
+    const remainingSeconds = await getLockoutRemainingSeconds()
+    if (remainingSeconds > 0) throw new VaultLockedOutError(remainingSeconds)
+
+    let masterKey: Uint8Array
+    try {
+        masterKey = await unwrapMasterKey(password)
+    } catch (error) {
+        if (error instanceof InvalidPasswordError) await recordFailedAttempt()
+        throw error
+    }
     try {
         await putSessionMasterKey(masterKey)
         await armAutoLock()
+        await clearFailedAttempts()
     } finally {
         masterKey.fill(0)
     }

@@ -26,3 +26,5 @@ export const SESSION_MASTER_KEY = 'vault:master-key'
 export const KEYSTORE_PREFIX = 'keystore:'
 /** chrome.storage.local — persisted auto-lock preference (minutes). */
 export const AUTO_LOCK_MINUTES_KEY = 'vault:auto-lock-minutes'
+/** chrome.storage.local — unlock lockout bookkeeping (failed attempts, lockout end time). */
+export const LOCKOUT_STORAGE_KEY = 'vault:lockout'
