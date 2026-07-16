@@ -35,11 +35,13 @@ const DEFAULT_HOSTS = [
     'testnet.api.perawallet.app',
     'mainnet.staging.api.perawallet.app',
     'testnet.staging.api.perawallet.app',
-    // Algorand node/indexer — Nodely (enable_ssl_pinning_algod)
-    'mainnet-api.algonode.cloud',
-    'testnet-api.algonode.cloud',
-    'mainnet-idx.algonode.cloud',
-    'testnet-idx.algonode.cloud',
+    // Algorand node/indexer (enable_ssl_pinning_algod) — the Nodely-backed
+    // hosts that CI-built apps are configured with (MAINNET/TESTNET_ALGOD_URL,
+    // MAINNET/TESTNET_INDEXER_URL env vars).
+    'node-mainnet.chain.perawallet.app',
+    'node-testnet.chain.perawallet.app',
+    'indexer-mainnet.chain.perawallet.app',
+    'indexer-testnet.chain.perawallet.app',
 ]
 
 const PINS_FILE = join(

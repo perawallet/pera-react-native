@@ -27,9 +27,9 @@ import type { PinningConfig } from './buildPinningConfig'
 
 /** Domains eligible for pinning per group — never pin outside these. */
 const BACKEND_PIN_DOMAINS = ['perawallet.app'] as const
-// Node/indexer hosts: the public default provider domain, plus Pera-owned
-// hostnames — production builds inject those via env config (the concrete
-// URLs are deliberately not committed here).
+// Node/indexer hosts: the public default provider domain (dev builds), plus
+// Pera-owned hostnames — CI builds inject those via env config (see
+// tools/check-pinned-chains.mjs for the concrete hosts).
 const NODE_PIN_DOMAINS = ['algonode.cloud', 'perawallet.app'] as const
 
 export type SslPinningDependencies = {

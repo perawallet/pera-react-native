@@ -133,9 +133,9 @@ describe('initializeSslPinningService', () => {
         const deps = makeDeps({
             isBackendPinningEnabled: false,
             isNodePinningEnabled: true,
-            // Production builds inject Pera-owned hostnames for algod/indexer
-            // via env config (real values live in CI env, not in this repo);
-            // the node group must pin any perawallet.app host it is given.
+            // CI builds inject Pera-owned hostnames for algod/indexer via env
+            // config; the node group must pin any perawallet.app host it is
+            // given.
             nodeUrls: ['https://some-node.perawallet.app'],
         })
 
