@@ -14,6 +14,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { type OnboardingStackParamList } from '../../routes/types'
 import {
+    useAccountsStore,
     useAllAccounts,
     useSetAccounts,
     type WalletAccount,
@@ -91,11 +92,15 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
 
         setIsImporting(true)
         void deferToNextCycle(() => {
-            setAccounts([...allAccounts, ...accountsToAdd])
+            // Read the store fresh: this is a replace-array write, and a
+            // concurrent store write since render (background sync, another
+            // flow) must not be dropped with the stale snapshot.
+            const currentAccounts = useAccountsStore.getState().accounts
+            setAccounts([...currentAccounts, ...accountsToAdd])
             exitAccountFlow()
             setIsImporting(false)
         })
-    }, [accounts, selectedAddresses, allAccounts, exitAccountFlow, setAccounts])
+    }, [accounts, selectedAddresses, exitAccountFlow, setAccounts])
 
     const handleSkip = useCallback(() => {
         exitAccountFlow()

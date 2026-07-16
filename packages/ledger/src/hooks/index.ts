@@ -15,7 +15,3 @@ export {
     useLedgerConnection,
     type UseLedgerConnectionResult,
 } from './useLedgerConnection'
-export {
-    useLedgerPairing,
-    type UseLedgerPairingResult,
-} from './useLedgerPairing'

@@ -43,10 +43,15 @@ vi.mock('@react-navigation/native', () => ({
     useRoute: vi.fn(),
 }))
 
+const mockStoreAccounts: { current: unknown[] } = { current: [] }
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
     useSetAccounts: vi.fn(),
     useSelectedAccountAddress: vi.fn(),
+    useAccountsStore: {
+        getState: () => ({ accounts: mockStoreAccounts.current }),
+    },
     AccountTypes: {
         algo25: 'algo25',
     },
@@ -72,6 +77,7 @@ describe('useImportRekeyedAddressesScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
+        mockStoreAccounts.current = []
 
         vi.mocked(useRoute).mockReturnValue({
             params: { accounts: MOCK_ACCOUNTS },
@@ -158,6 +164,35 @@ describe('useImportRekeyedAddressesScreen', () => {
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
         expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
         expect(mockExitAccountFlow).toHaveBeenCalled()
+    })
+
+    it('reads the store fresh inside the deferred write so a concurrent add is not dropped', () => {
+        const concurrent = {
+            id: 'c',
+            address: 'CONCURRENT',
+            type: AccountTypes.algo25,
+            keyPairId: 'pkc',
+        }
+        // Lands after render (useAllAccounts snapshot) but before the
+        // deferred commit — e.g. background sync or another import flow.
+        mockStoreAccounts.current = [concurrent]
+
+        const { result } = renderHook(() => useImportRekeyedAddressesScreen())
+
+        act(() => {
+            result.current.toggleSelection('ACC1')
+        })
+        act(() => {
+            result.current.handleContinue()
+        })
+        act(() => {
+            vi.runAllTimers()
+        })
+
+        expect(mockSetAccounts).toHaveBeenCalledWith([
+            concurrent,
+            MOCK_ACCOUNTS[0],
+        ])
     })
 
     it('handleContinue exits flow without importing if no accounts selected', () => {

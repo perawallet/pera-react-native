@@ -24,7 +24,6 @@ import {
     useAllAccounts,
     isHDWalletAccount,
     AccountTypes,
-    DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -175,8 +174,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         setSelectedAccountAddress(account.address)
 
                         const rekeyedAccounts = await discoverRekeyedAccounts({
-                            walletKeyId,
-                            derivationType,
                             accountAddresses: [account.address],
                         })
 
@@ -213,11 +210,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 // an empty result must still move the flow on to NameAccount —
                 // otherwise the "Searching your accounts" step hangs forever.
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
-                    {
-                        walletKeyId,
-                        derivationType: DerivationTypes.Peikert,
-                        accountAddresses: [account.address],
-                    },
+                    { accountAddresses: [account.address] },
                 )
 
                 if (!discoveredRekeyedAccounts) return

@@ -304,13 +304,10 @@ export class RNLedgerService implements HardwareWalletService {
                     throw new LedgerPermissionDeniedError()
                 }
 
-                // The pairing/bonding pre-check happens in the business
-                // logic layer (`useLedgerPairing` + `useLedgerPairingStore`
-                // in `@perawallet/wallet-core-ledger`). iOS doesn't expose
-                // bond state to apps, so the check is implemented as a
-                // "have we successfully paired with this deviceId before?"
-                // heuristic instead of calling Android's
-                // BluetoothAdapter.bondedDevices directly.
+                // No pairing/bonding pre-check happens anywhere: iOS
+                // doesn't expose bond state to apps, and Android's
+                // BluetoothAdapter.bondedDevices is not consulted. Opening
+                // the transport triggers the OS pairing prompt on demand.
                 try {
                     const bleTransport = await TransportBLE.open(deviceId)
                     const algorandApp = new AlgorandApp(bleTransport)

@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@test-utils/render'
 import {
     AccountTypes,
+    useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -260,5 +261,38 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         act(() => beforeRemoveCallback?.())
 
         expect(mockCancelImport).toHaveBeenCalled()
+    })
+})
+
+describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockAllAccounts.current = []
+        mockRouteParams.current = { accounts: sampleDiscovered }
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        useAccountsStore.getState().setAccounts([])
+    })
+
+    test('reads the store fresh inside the deferred write so a concurrent add is not dropped', async () => {
+        const concurrent = {
+            id: 'c',
+            address: 'CONCURRENT',
+            type: AccountTypes.algo25,
+            keyPairId: 'kp-c',
+        } as WalletAccount
+        // Lands after render (useAllAccounts snapshot) but before the
+        // deferred commit — e.g. background sync or another import flow.
+        useAccountsStore.getState().setAccounts([concurrent])
+
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockSetAccounts).toHaveBeenCalledWith([
+            concurrent,
+            sampleDiscovered[0],
+        ])
     })
 })

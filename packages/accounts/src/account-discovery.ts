@@ -26,7 +26,6 @@ import {
     AccountTypes,
     type HDWalletAccount,
     type WalletAccount,
-    type WatchAccount,
 } from './models/accounts'
 import {
     generateOrderedUniqueId,
@@ -56,7 +55,6 @@ type DiscoverAccountsParams = {
     walletKeyId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
-    accountAddresses?: string[]
 }
 
 /**
@@ -296,6 +294,13 @@ async function checkRekeyed(
         pages += 1
     } while (next && pages < MAX_REKEYED_SCAN_PAGES)
 
+    if (next) {
+        logger.warn('Rekeyed-account scan stopped at the page cap', {
+            address,
+            pages,
+        })
+    }
+
     return accounts
 }
 
@@ -318,142 +323,41 @@ export async function fetchRekeyedAddresses(
     return accounts.map(a => a.address)
 }
 
-type ScanRekeyedKeysParams = {
-    accountIdx: number
-    keyIndexGapLimit: number
-    getPublicKey: GetPublicKey
-    derivationType: BIP32DerivationType
-    algorandClient: AlgorandClient
+type DiscoverRekeyedAccountsParams = {
+    /**
+     * Auth addresses to scan: every on-chain account whose auth-addr is one
+     * of these is returned as a watch-account candidate labeled with it.
+     */
+    accountAddresses: string[]
 }
 
-// Performance note: this issues one indexer `searchForAccounts` call per
-// derived key (and `checkRekeyed` itself may paginate). For large imports
-// that is an N+1 against the indexer — acceptable for the gap-limited scan
-// here, but batch/cache if the scan window ever grows.
-async function scanRekeyedKeys({
-    accountIdx,
-    keyIndexGapLimit,
-    getPublicKey,
-    derivationType,
-    algorandClient,
-}: ScanRekeyedKeysParams): Promise<WalletAccount[]> {
-    const foundAccounts: WalletAccount[] = []
-    let keyGap = 0
-    let keyIdx = 0
-
-    while (keyGap < keyIndexGapLimit) {
-        const batchSize = keyIndexGapLimit
-        const tasks = []
-
-        for (let i = 0; i < batchSize; i++) {
-            const currentKeyIdx = keyIdx + i
-            tasks.push(async () => {
-                const addressBytes = await getPublicKey({
-                    account: accountIdx,
-                    keyIndex: currentKeyIdx,
-                    derivationType,
-                })
-                const address = encodeAlgorandAddress(addressBytes)
-                const rekeyedAccounts = await checkRekeyed(
-                    algorandClient,
-                    address,
-                )
-
-                return rekeyedAccounts.map(
-                    (account: { address: string }): WatchAccount => ({
-                        id: generateOrderedUniqueId(),
-                        address: account.address,
-                        type: AccountTypes.watch,
-                        rekeyAddress: address,
-                    }),
-                )
-            })
-        }
-
-        const results = await Promise.all(tasks.map(t => t()))
-
-        for (const accounts of results) {
-            if (accounts.length > 0) {
-                foundAccounts.push(...accounts)
-                keyGap = 0
-            } else {
-                keyGap++
-            }
-
-            if (keyGap >= keyIndexGapLimit) break
-        }
-
-        if (keyGap >= keyIndexGapLimit) break
-        keyIdx += batchSize
-    }
-
-    return foundAccounts
-}
-
+/**
+ * Finds on-chain accounts rekeyed to any of `accountAddresses` via the
+ * indexer's auth-addr query.
+ *
+ * Address-driven only. A derived-key gap scan used to live here as a
+ * fallback when no addresses were passed, but its gap semantics were wrong
+ * (the gap advanced on keys with no REKEYS found, not on inactive keys) and
+ * every caller passes explicit addresses — removed rather than fixed.
+ */
 export async function discoverRekeyedAccounts({
-    getPublicKey,
-    derivationType,
-    accountGapLimit = ACCOUNT_GAP_LIMIT,
-    keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
     accountAddresses,
-}: DiscoverAccountsParams): Promise<WalletAccount[]> {
+}: DiscoverRekeyedAccountsParams): Promise<WalletAccount[]> {
     const algorandClient = getAlgorandClient()
 
-    if (accountAddresses && accountAddresses.length > 0) {
-        const tasks = accountAddresses.map(async address => {
-            const rekeyedAccounts = await checkRekeyed(algorandClient, address)
+    const tasks = accountAddresses.map(async address => {
+        const rekeyedAccounts = await checkRekeyed(algorandClient, address)
 
-            return rekeyedAccounts.map(
-                (account: { address: string }): WalletAccount => ({
-                    id: generateOrderedUniqueId(),
-                    address: account.address,
-                    type: AccountTypes.watch,
-                    rekeyAddress: address,
-                }),
-            )
-        })
+        return rekeyedAccounts.map(
+            (account: { address: string }): WalletAccount => ({
+                id: generateOrderedUniqueId(),
+                address: account.address,
+                type: AccountTypes.watch,
+                rekeyAddress: address,
+            }),
+        )
+    })
 
-        const results = await Promise.all(tasks)
-        return results.flat()
-    }
-
-    const foundAccounts: WalletAccount[] = []
-
-    let accountGap = 0
-    let accountIndex = 0
-
-    while (accountGap < accountGapLimit) {
-        const batchSize = accountGapLimit
-        const tasks = []
-
-        for (let i = 0; i < batchSize; i++) {
-            tasks.push(
-                scanRekeyedKeys({
-                    accountIdx: accountIndex + i,
-                    keyIndexGapLimit,
-                    getPublicKey,
-                    derivationType,
-                    algorandClient,
-                }),
-            )
-        }
-
-        const results = await Promise.all(tasks)
-
-        for (const accounts of results) {
-            if (accounts.length > 0) {
-                foundAccounts.push(...accounts)
-                accountGap = 0
-            } else {
-                accountGap++
-            }
-
-            if (accountGap >= accountGapLimit) break
-        }
-
-        if (accountGap >= accountGapLimit) break
-        accountIndex += batchSize
-    }
-
-    return foundAccounts
+    const results = await Promise.all(tasks)
+    return results.flat()
 }

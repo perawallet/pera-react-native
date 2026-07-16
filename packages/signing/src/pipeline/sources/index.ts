@@ -16,8 +16,6 @@ export {
     createFetchSource,
 } from './factories'
 
-export { createPaymentSource } from './createPaymentSource'
-export { createExpressSendSource } from './createExpressSendSource'
 export { createMinFeeResolver, resolveMinFeeForSender } from './minFeeResolver'
 export type {
     MinFeeResolverDependencies,
@@ -33,21 +31,3 @@ export type {
     WalletConnectDataRequest,
     WalletConnectRequest,
 } from './createWalletConnectSource'
-
-export {
-    createArc59SendSource,
-    createArc59ClaimSource,
-    createArc59RejectSource,
-} from './createArc59Sources'
-export type {
-    Arc59SendSourceParams,
-    Arc59ClaimSourceParams,
-    Arc59RejectSourceParams,
-    Arc59SourceDependencies,
-} from './createArc59Sources'
-
-export type {
-    PaymentSourceParams,
-    ExpressSendSourceParams,
-    SourceDependencies,
-} from './types'

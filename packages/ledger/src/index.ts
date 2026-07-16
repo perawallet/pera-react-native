@@ -62,4 +62,3 @@ export {
 
 export * from './discovery'
 export * from './hooks'
-export * from './store'

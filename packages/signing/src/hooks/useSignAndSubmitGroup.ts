@@ -96,11 +96,18 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             )
                             resolve({ txIds })
                         } catch (err) {
-                            reject(
+                            const error =
                                 err instanceof Error
                                     ? err
-                                    : new Error(String(err)),
-                            )
+                                    : new Error(String(err))
+                            reject(error)
+                            // Rethrow so the callback transport rejects too —
+                            // otherwise the machine reaches `completed` and
+                            // publishes success events for a failed
+                            // submission. (The transport's error callback
+                            // re-rejects the already-settled promise, which
+                            // is a no-op.)
+                            throw error
                         }
                     },
                     reject: async () => {
