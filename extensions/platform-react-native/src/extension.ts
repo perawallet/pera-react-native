@@ -17,6 +17,10 @@ import type {
 import { logger, withTimeout } from '@perawallet/wallet-core-shared'
 
 import { platformServices } from './resources'
+// Imported directly (not via the ./services barrel) so this module's graph
+// stays free of the expo-backed services — extension.test.ts stubs
+// ./resources and must not transitively load expo.
+import { initializeSslPinningService } from './services/ssl-pinning/ssl-pinning.service'
 
 export type ReactNativePlatformExtension = PlatformExtension
 
@@ -49,6 +53,15 @@ export const WithReactNativePlatformExtension = (
             remoteConfigInit,
             analyticsInit,
         ])
+
+        // After remote config so the SSL-pinning flag decisions see the
+        // freshest activated value. Never throws — pinning is best-effort
+        // hardening and must not break startup.
+        await initializeSslPinningService({
+            remoteConfig: platformServices.remoteConfig,
+            analytics: platformServices.analytics,
+            crashReporting: platformServices.crashReporting,
+        })
 
         // Push-notification init can hang (FCM/APNs registration) or reject
         // offline. Bound it and degrade to a no-token result so cold-start

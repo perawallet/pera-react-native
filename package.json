@@ -29,6 +29,7 @@
     "bump-version": "bash tools/bump-version.sh",
     "audit": "pnpm audit --prod --audit-level=high",
     "lint:bundle": "bash tools/check-prod-bundle.sh",
+    "check:ssl-pins": "node tools/check-pinned-chains.mjs",
     "fallow": "fallow --skip health"
   },
   "devDependencies": {

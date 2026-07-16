@@ -38,6 +38,13 @@ vi.mock('../resources', () => ({
     },
 }))
 
+// Stub SSL pinning: the stubbed platform services above lack the methods it
+// reads (getBooleanValue etc.), and this suite only exercises the
+// push-notification resilience wrapper.
+vi.mock('../services/ssl-pinning/ssl-pinning.service', () => ({
+    initializeSslPinningService: vi.fn().mockResolvedValue(undefined),
+}))
+
 // Keep the real withTimeout (initialize depends on it) but silence the
 // expected degradation warn.
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {

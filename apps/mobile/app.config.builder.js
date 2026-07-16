@@ -309,6 +309,11 @@ function buildAppConfig(env) {
           ios: {
             deploymentTarget: '16.4',
             flipper: false,
+            // The dev-build network inspector swizzles NSURLSession and
+            // bypasses TrustKit, silently disabling SSL pinning
+            // (react-native-ssl-public-key-pinning requirement). Debug-only
+            // tooling — release builds never include it.
+            networkInspector: false,
           },
           android: {
             minSdkVersion: 29,

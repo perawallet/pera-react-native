@@ -26,6 +26,7 @@
     "react": "catalog:",
     "react-native": "catalog:",
     "react-native-mmkv": "catalog:",
+    "react-native-ssl-public-key-pinning": "catalog:",
     "@react-native-firebase/analytics": "catalog:",
     "@react-native-firebase/crashlytics": "catalog:",
     "@react-native-firebase/messaging": "catalog:",
