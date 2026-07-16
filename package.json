@@ -32,9 +32,11 @@
     "fallow": "fallow --skip health"
   },
   "devDependencies": {
+    "@algorandfoundation/algokit-utils": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@vitest/coverage-v8": "catalog:",
+    "algosdk": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
@@ -45,6 +47,7 @@
     "oxlint-tsgolint": "^0.24.0",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "tsx": "catalog:",
     "turbo": "^2.9.14",
     "util": "catalog:",
     "vitest": "catalog:"

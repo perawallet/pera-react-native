@@ -228,6 +228,9 @@ importers:
 
   .:
     devDependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 9.2.0(algosdk@3.6.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -237,6 +240,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.6.0
       eslint:
         specifier: 'catalog:'
         version: 9.39.4
@@ -267,6 +273,9 @@ importers:
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
+      tsx:
+        specifier: 'catalog:'
+        version: 4.22.4
       turbo:
         specifier: ^2.9.14
         version: 2.9.16
