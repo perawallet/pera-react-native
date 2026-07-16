@@ -30,7 +30,7 @@ export const useProjectByUrlQuery = (
     const { network } = useNetwork()
 
     return useQuery({
-        queryKey: projectQueryKeys.byUrl(url ?? ''),
+        queryKey: projectQueryKeys.byUrl(url ?? '', network),
         queryFn: async ({ signal }) => {
             const projects = await fetchProjectByUrl({
                 sourceUrl: url!,

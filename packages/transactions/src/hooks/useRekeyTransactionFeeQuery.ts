@@ -17,6 +17,7 @@ import {
     useAlgorandClient,
     useMinimumFeeConfig,
     useNetwork,
+    useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
 import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing'
 
@@ -51,26 +52,40 @@ export const useRekeyTransactionFeeQuery = (
     const { network } = useNetwork()
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
+    // Shared cached query instead of a private getSuggestedParams() fetch —
+    // the send flow has usually populated it already.
+    const { data: suggestedParams, isError: isParamsError } =
+        useSuggestedParametersQuery()
+    // Fall back to the config floor when the shared query errors (offline /
+    // algod down — it fails fast, networkMode 'always'): staying disabled
+    // would leave this query pending forever and the confirm CTA dead.
+    // resolveMinFeeForSender already guards with max(suggested, config).
+    const suggestedMinFee =
+        suggestedParams !== undefined
+            ? BigInt(suggestedParams.minFee)
+            : isParamsError
+              ? minTxnFee
+              : null
 
     const query = useQuery({
         // Network is part of the key — feePerByte differs between mainnet
         // and testnet, so a cached fee from one must not satisfy the other.
+        // suggestedMinFee too: the queryFn reads it from the closure, so a
+        // refreshed value must produce a new cache entry.
         queryKey: [
             'rekey-transaction-fee',
             network,
             sourceAddress,
             rekeyToAddress,
+            String(suggestedMinFee),
         ],
         queryFn: async () => {
-            const [txn, suggestedParams] = await Promise.all([
-                algokit.createTransaction.payment({
-                    sender: sourceAddress,
-                    receiver: sourceAddress,
-                    amount: 0n.microAlgo(),
-                    rekeyTo: rekeyToAddress,
-                }),
-                algokit.getSuggestedParams(),
-            ])
+            const txn = await algokit.createTransaction.payment({
+                sender: sourceAddress,
+                receiver: sourceAddress,
+                amount: 0n.microAlgo(),
+                rekeyTo: rekeyToAddress,
+            })
             // AlgoKit populates `fee` when it builds the transaction; fall
             // back to the network minimum only to satisfy the optional type.
             const builtFee = txn.fee ?? minTxnFee
@@ -84,7 +99,7 @@ export const useRekeyTransactionFeeQuery = (
             const resolvedMinFee = resolveMinFeeForSender({
                 senderAddress: sourceAddress,
                 accounts,
-                suggestedMinFee: BigInt(suggestedParams.minFee),
+                suggestedMinFee: suggestedMinFee!,
                 configMinTxnFee: minTxnFee,
                 pqMultiplier,
             })
@@ -92,7 +107,8 @@ export const useRekeyTransactionFeeQuery = (
                 resolvedMinFee > builtFee ? resolvedMinFee : builtFee,
             )
         },
-        enabled: !!sourceAddress && !!rekeyToAddress,
+        enabled:
+            !!sourceAddress && !!rekeyToAddress && suggestedMinFee !== null,
     })
 
     return {

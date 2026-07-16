@@ -33,7 +33,7 @@ export const useApplicationQuery = (
     const { network } = useNetwork()
 
     return useQuery({
-        queryKey: projectQueryKeys.application(applicationId),
+        queryKey: projectQueryKeys.application(applicationId, network),
         queryFn: async ({ signal }) =>
             fetchApplication({
                 applicationId,

@@ -373,6 +373,31 @@ describe('queryClient', () => {
         expect(options).not.toHaveProperty('timeout')
     })
 
+    it('creates every client with an explicit capped retry config', async () => {
+        vi.resetModules()
+        mockKy.create.mockClear()
+
+        await import('../query-client')
+
+        // 2 networks × (pera + algod + indexer)
+        expect(mockKy.create).toHaveBeenCalledTimes(6)
+        for (const [clientConfig] of mockKy.create.mock.calls) {
+            expect(clientConfig.retry).toMatchObject({ limit: 1 })
+        }
+    })
+
+    it('does not re-append the request logger when extending clients', async () => {
+        const { updateBackendHeaders } = await import('../query-client')
+
+        updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
+
+        const extendConfig = mockKy.extend.mock.calls.at(-1)?.[0]
+        const hookNames = extendConfig.hooks.beforeRequest.map(
+            (hook: { name: string }) => hook.name,
+        )
+        expect(hookNames).not.toContain('logRequest')
+    })
+
     it('should call updateBackendHeaders to extend clients', async () => {
         const { updateBackendHeaders, queryClient } =
             await import('../query-client')
