@@ -129,6 +129,23 @@ describe('initializeSslPinningService', () => {
         })
     })
 
+    test('pins node hosts served from perawallet.app subdomains (production Nodely fronts)', async () => {
+        const deps = makeDeps({
+            isBackendPinningEnabled: false,
+            isNodePinningEnabled: true,
+            // Production builds inject Pera-owned hostnames for algod/indexer
+            // via env config (real values live in CI env, not in this repo);
+            // the node group must pin any perawallet.app host it is given.
+            nodeUrls: ['https://some-node.perawallet.app'],
+        })
+
+        await initializeSslPinningService(deps)
+
+        expect(mockInitializeSslPinning).toHaveBeenCalledWith({
+            'some-node.perawallet.app': pinEntry(),
+        })
+    })
+
     test('pins both groups in a single initialization when both flags are on', async () => {
         const deps = makeDeps({
             isNodePinningEnabled: true,
@@ -145,13 +162,12 @@ describe('initializeSslPinningService', () => {
         })
     })
 
-    test('each group only pins hosts from its own domain allowlist', async () => {
+    test('the backend group never pins third-party node domains', async () => {
         const deps = makeDeps({
-            isNodePinningEnabled: true,
-            // Cross-contaminated URL lists: neither group may pin the other's
-            // domain, so nothing pinnable remains.
+            isNodePinningEnabled: false,
+            // A node host leaking into the backend URL list must not be
+            // pinned by the backend group.
             backendUrls: ['https://mainnet-api.algonode.cloud'],
-            nodeUrls: ['https://mainnet.api.perawallet.app'],
         })
 
         await initializeSslPinningService(deps)
