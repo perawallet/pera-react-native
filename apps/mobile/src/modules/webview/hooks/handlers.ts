@@ -102,13 +102,15 @@ export const isTrustedWebviewOrigin = (
 export const generateBridgeToken = (): string => {
     const bytes = new Uint8Array(16)
     const webCrypto = (globalThis as { crypto?: Crypto }).crypto
-    if (webCrypto?.getRandomValues) {
-        webCrypto.getRandomValues(bytes)
-    } else {
-        for (let i = 0; i < bytes.length; i++) {
-            bytes[i] = Math.floor(Math.random() * 256)
-        }
+    if (!webCrypto?.getRandomValues) {
+        // Fail closed: a Math.random fallback would make the anti-forgery
+        // token predictable. quick-crypto's install() populates this at app
+        // entry (shim.js), so throwing here can only mean a broken runtime.
+        throw new Error(
+            'crypto.getRandomValues is unavailable — cannot create a bridge token',
+        )
     }
+    webCrypto.getRandomValues(bytes)
     return bytesToHex(bytes)
 }
 

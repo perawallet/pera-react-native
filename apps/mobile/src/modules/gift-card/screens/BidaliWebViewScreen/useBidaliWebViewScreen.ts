@@ -10,13 +10,18 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
+import { Linking } from 'react-native'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
+// Imported from the handlers file directly (not the module barrel) so this
+// hook doesn't drag the whole webview stack into its dependency graph.
+import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
 import { useBidaliTransport } from '../../hooks/useBidaliTransport'
 import type WebView from 'react-native-webview'
+import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -25,6 +30,7 @@ type UseBidaliWebViewScreenResult = {
     bidaliProviderJS: string
     onClose: () => void
     handleMessage: (data: unknown) => void
+    onShouldStartLoadWithRequest: (request: ShouldStartLoadRequest) => boolean
     webviewRef: React.RefObject<Nullable<WebView>>
 }
 
@@ -48,11 +54,28 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
         return `${networkConfig.bidaliBaseUrl}?key=${networkConfig.bidaliApiKey}`
     }, [network])
 
+    // The provider global (API key + user balances) is re-injected into the
+    // main frame on every navigation, so no foreign origin may ever load in
+    // this webview. Bidali hands external links out via the openUrl RPC — a
+    // stray off-origin web navigation gets the same treatment (system
+    // browser); everything else is dropped.
+    const onShouldStartLoadWithRequest = useCallback(
+        (request: ShouldStartLoadRequest): boolean => {
+            if (isTrustedWebviewOrigin(request.url, [url])) return true
+            if (/^https?:/i.test(request.url)) {
+                void Linking.openURL(request.url)
+            }
+            return false
+        },
+        [url],
+    )
+
     return {
         url,
         bidaliProviderJS: providerJS,
         onClose,
         handleMessage,
+        onShouldStartLoadWithRequest,
         webviewRef,
     }
 }

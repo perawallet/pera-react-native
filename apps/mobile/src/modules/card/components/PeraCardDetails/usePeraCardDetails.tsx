@@ -27,6 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
+import { useRequirePinVerification } from '@modules/security'
 import {
     useAuthorizeCardDelegation,
     useCardErrorToast,
@@ -117,6 +118,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const { errorToast, infoToast } = useToast()
     const { pushWebView } = useWebView()
     const { request } = useBottomSheet()
+    const { requirePinVerification } = useRequirePinVerification()
 
     const panLast4 = useCardStore(state => state.lastKnownPanLast4)
     const fundingAddress = useCardStore(
@@ -285,13 +287,16 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const submitSetPin = useCallback(async () => {
         // Guard re-entry so a slow token request can't stack a second WebView.
         if (setPin.isPending) return
+        // A live Baanx session alone must not authorize a PIN change — require
+        // local re-auth first, mirroring useAuthorizeCardDelegation.
+        if (!(await requirePinVerification())) return
         try {
             const session = await setPin.mutateAsync()
             pushWebView({ url: session.hostedPageUrl, id: 'card-set-pin' })
         } catch (error) {
             await showError(error)
         }
-    }, [setPin, pushWebView, showError])
+    }, [setPin, requirePinVerification, pushWebView, showError])
     const onSetPin = useCallback(() => {
         void submitSetPin()
     }, [submitSetPin])

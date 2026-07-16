@@ -19,8 +19,14 @@ import { useStyles } from './styles'
 export const BidaliWebViewScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
-    const { url, bidaliProviderJS, onClose, handleMessage, webviewRef } =
-        useBidaliWebViewScreen()
+    const {
+        url,
+        bidaliProviderJS,
+        onClose,
+        handleMessage,
+        onShouldStartLoadWithRequest,
+        webviewRef,
+    } = useBidaliWebViewScreen()
 
     return (
         <PWView style={styles.container}>
@@ -31,6 +37,7 @@ export const BidaliWebViewScreen = () => {
                 showFooterBar={false}
                 onClose={onClose}
                 customJavaScript={bidaliProviderJS}
+                onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
                 onCustomMessage={handleMessage}
                 webviewRef={webviewRef}
                 inBottomSheet

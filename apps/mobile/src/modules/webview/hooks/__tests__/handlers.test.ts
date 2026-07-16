@@ -321,6 +321,17 @@ describe('generateBridgeToken', () => {
     it('returns a different token on each call', () => {
         expect(generateBridgeToken()).not.toBe(generateBridgeToken())
     })
+
+    it('throws instead of degrading when crypto.getRandomValues is unavailable', () => {
+        vi.stubGlobal('crypto', undefined)
+        try {
+            expect(() => generateBridgeToken()).toThrow(
+                'crypto.getRandomValues',
+            )
+        } finally {
+            vi.unstubAllGlobals()
+        }
+    })
 })
 
 describe('hasValidBridgeToken', () => {
