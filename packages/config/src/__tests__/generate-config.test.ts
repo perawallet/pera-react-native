@@ -1,0 +1,50 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
+
+const SCRIPT = join(__dirname, '../../../../tools/generate-config.sh')
+
+describe('tools/generate-config.sh', () => {
+    let dir: string
+
+    beforeEach(() => {
+        dir = mkdtempSync(join(tmpdir(), 'gen-config-'))
+    })
+    afterEach(() => {
+        rmSync(dir, { recursive: true, force: true })
+    })
+
+    const run = (env: Record<string, string>): string => {
+        const out = join(dir, 'generated-env.ts')
+        execFileSync('bash', [SCRIPT], {
+            env: { ...process.env, OUTPUT_FILE: out, ...env },
+        })
+        return readFileSync(out, 'utf8')
+    }
+
+    test('emits testnet genesis hash from TESTNET_GENESIS_HASH', () => {
+        const output = run({ TESTNET_GENESIS_HASH: 'LOCALNETHASH=' })
+        expect(output).toContain('testnetGenesisHash: "LOCALNETHASH="')
+    })
+
+    test('overlay file overrides base .env values', () => {
+        const overlay = join(dir, '.env.overlay')
+        writeFileSync(overlay, 'TESTNET_ALGOD_URL=http://localhost:4001\n')
+        const output = run({ PERA_ENV_OVERLAY: overlay })
+        expect(output).toContain('testnetAlgodUrl: "http://localhost:4001"')
+    })
+})
