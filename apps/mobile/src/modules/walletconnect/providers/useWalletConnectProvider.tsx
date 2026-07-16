@@ -14,8 +14,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     getConnectionErrorClientId,
     useWalletConnect,
-    useWalletConnectForegroundReconnect,
-    useWalletConnectNetworkReconnect,
+    useWalletConnectReconnect,
     useWalletConnectSessionRequests,
     useWalletConnectStore,
     type WalletConnectSessionRequest,
@@ -30,12 +29,10 @@ import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
 
 export const useWalletConnectProvider = () => {
-    // Without this, a backgrounded session silently drops outgoing signed
-    // responses and incoming dApp requests until the app reconnects.
-    useWalletConnectForegroundReconnect()
-    // And without this, a network drop-and-regain while the app stays
-    // foregrounded leaves session sockets dead until the next bg→fg trip.
-    useWalletConnectNetworkReconnect()
+    // Revives dead bridge sockets on foreground return and on network
+    // regain — without it, sessions silently drop signed responses and
+    // incoming dApp requests until the app restarts.
+    useWalletConnectReconnect()
 
     const { sessionRequests, removeSessionRequest } =
         useWalletConnectSessionRequests()
