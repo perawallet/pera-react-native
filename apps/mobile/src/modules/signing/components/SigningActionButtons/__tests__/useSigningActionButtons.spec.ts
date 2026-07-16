@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
+    getRekeyedUnsignableReason,
     isSignRequestMultisigUnsignable,
     useSigningPipeline,
     useSigningRequest,
@@ -43,7 +44,18 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
     useSigningRequest: vi.fn(),
     isSignRequestMultisigUnsignable: vi.fn(() => false),
+    getRekeyedUnsignableReason: vi.fn(() => null),
 }))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+
+// The global setup stubs toAlgodError to always return unknown_node_error;
+// the classification cases below need the real parser.
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal =>
+    importOriginal<typeof import('@perawallet/wallet-core-blockchain')>(),
+)
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
@@ -94,6 +106,10 @@ describe('useSigningActionButtons', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        // clearAllMocks keeps implementations — pin the gates back to their
+        // permissive defaults so cases from one describe can't leak.
+        ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(false)
+        ;(getRekeyedUnsignableReason as Mock).mockReturnValue(null)
         mockGetPreference.mockReturnValue(undefined)
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
@@ -303,6 +319,59 @@ describe('useSigningActionButtons', () => {
             expect(showError).toHaveBeenCalledOnce()
         })
 
+        it('classifies a recognized algod rejection into a typed AlgodError', () => {
+            setupPipelineCapturingHandler({
+                signerType: 'localKey',
+                transport: { kind: 'algod' },
+                kind: { type: 'transactions' },
+            })
+
+            renderHook(() => useSigningActionButtons())
+
+            const AUTH =
+                'PNVR2DIQNNCRVQFVVIVOZH4LWDOYRERK7VIQEWTUYAJRTLNLZY2M2SUENM'
+            const ACTUAL =
+                'GBFKIKHL55YJRTB4PSWXWQJDPHG6IHOLESWSWPPPR6HQ2N7H76RBI5JIT4'
+            act(() => {
+                capturedHandler?.({
+                    type: 'signing_failed',
+                    error: new Error(
+                        `Transport failed: transaction X: should have been authorized by ${AUTH} but was actually authorized by ${ACTUAL}`,
+                    ),
+                } as SigningPipelineEvent)
+            })
+
+            expect(showError).toHaveBeenCalledWith(
+                expect.objectContaining({ code: 'not_authorized' }),
+                expect.any(String),
+                expect.anything(),
+            )
+        })
+
+        it('passes an unrecognized error through unchanged', () => {
+            setupPipelineCapturingHandler({
+                signerType: 'localKey',
+                transport: { kind: 'algod' },
+                kind: { type: 'transactions' },
+            })
+
+            renderHook(() => useSigningActionButtons())
+
+            const error = new Error('boom')
+            act(() => {
+                capturedHandler?.({
+                    type: 'signing_failed',
+                    error,
+                } as SigningPipelineEvent)
+            })
+
+            expect(showError).toHaveBeenCalledWith(
+                error,
+                expect.any(String),
+                expect.anything(),
+            )
+        })
+
         it('skips showError when transport is not algod (existing behavior preserved)', () => {
             setupPipelineCapturingHandler({
                 signerType: 'localKey',
@@ -439,7 +508,10 @@ describe('useSigningActionButtons', () => {
 
             const { result } = renderHook(() => useSigningActionButtons())
 
-            expect(result.current.isMultisigUnsignable).toBe(true)
+            expect(result.current.cannotSignNotice).toEqual({
+                title: 'signing.cannot_sign.title',
+                body: 'signing.cannot_sign.body',
+            })
 
             act(() => {
                 result.current.handleSignAndSend()
@@ -456,10 +528,10 @@ describe('useSigningActionButtons', () => {
 
             const { result } = renderHook(() => useSigningActionButtons())
 
-            expect(result.current.isMultisigUnsignable).toBe(false)
+            expect(result.current.cannotSignNotice).toBeUndefined()
         })
 
-        it('reports false when there is no current request', () => {
+        it('reports no notice when there is no current request', () => {
             ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(true)
             ;(useSigningRequest as Mock).mockReturnValue({
                 currentRequest: undefined,
@@ -467,7 +539,67 @@ describe('useSigningActionButtons', () => {
 
             const { result } = renderHook(() => useSigningActionButtons())
 
-            expect(result.current.isMultisigUnsignable).toBe(false)
+            expect(result.current.cannotSignNotice).toBeUndefined()
+        })
+    })
+
+    describe('rekeyed-unsignable senders', () => {
+        const request = { id: 'r1' }
+
+        beforeEach(() => {
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: request,
+            })
+        })
+
+        it('blocks a sender rekeyed to an address outside the wallet', () => {
+            ;(getRekeyedUnsignableReason as Mock).mockReturnValue({
+                kind: 'authMissing',
+                senderAddress: 'SND',
+                authAddress: 'AUTH',
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.cannotSignNotice).toEqual({
+                title: 'signing.cannot_sign.title',
+                body: 'signing.cannot_sign.rekeyed_auth_missing_body',
+            })
+
+            act(() => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockNext).not.toHaveBeenCalled()
+        })
+
+        it('blocks a sender rekeyed to a watch-only account', () => {
+            ;(getRekeyedUnsignableReason as Mock).mockReturnValue({
+                kind: 'authIsWatch',
+                senderAddress: 'SND',
+                authAddress: 'AUTH',
+            })
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.cannotSignNotice).toEqual({
+                title: 'signing.cannot_sign.title',
+                body: 'signing.cannot_sign.rekeyed_auth_watch_body',
+            })
+
+            act(() => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockNext).not.toHaveBeenCalled()
+        })
+
+        it('shows no notice for a signable sender', () => {
+            ;(getRekeyedUnsignableReason as Mock).mockReturnValue(null)
+
+            const { result } = renderHook(() => useSigningActionButtons())
+
+            expect(result.current.cannotSignNotice).toBeUndefined()
         })
     })
 })

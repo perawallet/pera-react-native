@@ -97,6 +97,25 @@ const matchDuplicateTxn: Matcher = message => {
     }
 }
 
+// "should have been authorized by ADDR but was actually authorized by ADDR"
+// — the node's rejection when the signing key is not the sender's current
+// auth address (e.g. an external rekey the wallet hasn't synced yet).
+const NOT_AUTHORIZED_RE = new RegExp(
+    `should have been authorized by (${ADDRESS}) but was actually authorized by (${ADDRESS})`,
+)
+
+const matchNotAuthorized: Matcher = message => {
+    const m = NOT_AUTHORIZED_RE.exec(message)
+    if (!m) return null
+    return {
+        code: AlgodErrorCode.NOT_AUTHORIZED,
+        params: {
+            expectedAuthAddress: m[1],
+            actualAuthAddress: m[2],
+        },
+    }
+}
+
 // "txn dead: round N outside of A-B" — B is lastValid, N is current round
 const EXPIRED_TXN_RE = /txn dead:\s*round (\d+) outside of (\d+)-(\d+)/
 
@@ -121,6 +140,7 @@ const MATCHERS: readonly Matcher[] = [
     matchMissingOptIn,
     matchDuplicateTxn,
     matchExpiredTxn,
+    matchNotAuthorized,
 ]
 
 /**
