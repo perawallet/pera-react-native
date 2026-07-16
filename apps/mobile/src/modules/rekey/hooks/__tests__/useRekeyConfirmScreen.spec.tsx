@@ -214,3 +214,27 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 })
+
+describe('useRekeyConfirmScreen - double-tap guard', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockSubmitAsync.mockReset()
+        mockRequestBottomSheet.mockReset()
+        mockEd25519Source.rekeyAddress = undefined
+    })
+
+    it('a second tap while a submission is in flight is a no-op', async () => {
+        currentSource = mockEd25519Source
+        currentTarget = mockEd25519Target
+        mockSubmitAsync.mockReturnValue(new Promise(() => {}))
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+            result.current.handleConfirmPress()
+        })
+
+        expect(mockSubmitAsync).toHaveBeenCalledTimes(1)
+    })
+})

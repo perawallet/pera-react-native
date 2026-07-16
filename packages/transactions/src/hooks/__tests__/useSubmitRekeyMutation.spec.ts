@@ -352,7 +352,9 @@ describe('useSubmitRekeyMutation', () => {
         // resolveMinFeeForSender (1000n base * 3n multiplier = 3000n) exceeds
         // the network's suggested minFee (1000n) and must be forced in.
         mockResolveMinFeeForSender.mockReturnValue(3000n)
-        mockPayment.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockPayment
+            .mockResolvedValueOnce({ id: 'draft', fee: 1000n })
+            .mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
                 void request.approve?.([{ id: 'signed' }])
@@ -372,7 +374,10 @@ describe('useSubmitRekeyMutation', () => {
             })
         })
 
-        expect(mockPayment.mock.calls[0][0]).toMatchObject({
+        // Sized from a fee-less draft first, then rebuilt with the override.
+        expect(mockPayment).toHaveBeenCalledTimes(2)
+        expect(mockPayment.mock.calls[0][0]).not.toHaveProperty('staticFee')
+        expect(mockPayment.mock.calls[1][0]).toMatchObject({
             staticFee: 3000n,
         })
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
@@ -382,6 +387,36 @@ describe('useSubmitRekeyMutation', () => {
             configMinTxnFee: 1000n,
             pqMultiplier: 3n,
         })
+    })
+
+    it('never forces a staticFee below the auto-sized built fee (congestion pricing)', async () => {
+        // Per-byte congestion pricing: AlgoKit auto-sizes the built fee
+        // above the PQ-resolved minimum — the override must not undercut
+        // it, and display (max(resolved, built)) must match what is paid.
+        mockResolveMinFeeForSender.mockReturnValue(1500n)
+        mockPayment.mockResolvedValueOnce({ id: 'draft', fee: 2000n })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.([{ id: 'signed' }])
+            },
+        )
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
+
+        const { result } = renderHook(
+            () => useSubmitRekeyMutation({ signingMetadata: SIGNING_METADATA }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            await result.current.submitAsync({
+                sourceAddress: 'SRC',
+                rekeyToAddress: 'TGT',
+            })
+        })
+
+        // The auto-sized draft already pays enough — no rebuild, no override.
+        expect(mockPayment).toHaveBeenCalledTimes(1)
+        expect(mockPayment.mock.calls[0][0]).not.toHaveProperty('staticFee')
     })
 
     it('regression: builds without a staticFee key for an algo25 sender', async () => {
