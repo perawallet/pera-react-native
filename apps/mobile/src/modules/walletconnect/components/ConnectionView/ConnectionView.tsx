@@ -45,7 +45,6 @@ export type ConnectionViewProps = {
     onError: (error?: Error) => void
 }
 
-//TODO implement project validation using our backend to show a "verified" badge somewhere
 export const ConnectionView = ({
     request,
     onSuccess,

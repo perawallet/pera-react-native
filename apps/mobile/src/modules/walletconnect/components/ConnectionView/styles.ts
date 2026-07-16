@@ -47,8 +47,14 @@ export const useStyles = makeStyles(
             titleContainer: {
                 alignItems: 'center',
             },
+            nameRow: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: theme.spacing.xs,
+            },
             title: {
                 textAlign: 'center',
+                flexShrink: 1,
             },
             networksContainer: {
                 alignItems: 'center',
