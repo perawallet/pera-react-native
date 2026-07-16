@@ -20,6 +20,7 @@ import type {
 import {
     LEDGER_SCAN_TIMEOUT_MS,
     LedgerProviderNotFoundError,
+    LedgerScanTimeoutError,
     classifyLedgerError,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
@@ -74,6 +75,11 @@ export const useLedgerConnection = (
     }, [])
 
     const startScan = useCallback(() => {
+        // Re-entrant: tear down any active scan (subscriptions + timer)
+        // before starting a fresh one — otherwise Retry leaks the previous
+        // subscriptions and inherits a timer that kills the new scan early.
+        stopScan()
+
         setDevices([])
         setError(null)
         setConnectionStatus('scanning')
@@ -98,6 +104,17 @@ export const useLedgerConnection = (
         )
 
         scanTimeoutRef.current = setTimeout(() => {
+            // An empty scan hitting the budget is a failure the user must be
+            // able to see and retry — never a silent stop that leaves the
+            // screen faking "searching". A populated list is a successful
+            // scan; stopping it quietly is correct.
+            if (seen.size === 0) {
+                setError(
+                    new LedgerScanTimeoutError(
+                        `no device found within ${LEDGER_SCAN_TIMEOUT_MS}ms`,
+                    ),
+                )
+            }
             stopScan()
         }, LEDGER_SCAN_TIMEOUT_MS)
     }, [stopScan, providers])

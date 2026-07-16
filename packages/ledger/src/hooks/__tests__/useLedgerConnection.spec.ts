@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
+import { LedgerScanTimeoutError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import { useLedgerConnection } from '../useLedgerConnection'
 import type {
     HardwareWalletTransport,
@@ -90,7 +91,9 @@ describe('useLedgerConnection', () => {
         expect(result.current.isScanning).toBe(false)
     })
 
-    test('scan timeout stops the scan automatically', () => {
+    test('scan timeout with no device found stops the scan and surfaces a timeout error', () => {
+        // The silent variant of this state left the screen faking "searching"
+        // forever — the timeout must surface as a readable, retryable error.
         vi.useFakeTimers()
         try {
             const { provider, stop } = makeProvider()
@@ -103,6 +106,83 @@ describe('useLedgerConnection', () => {
 
             expect(stop).toHaveBeenCalled()
             expect(result.current.isScanning).toBe(false)
+            expect(result.current.error).toBeInstanceOf(LedgerScanTimeoutError)
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    test('scan timeout after a device was found stops the scan without an error', () => {
+        // A populated device list is a successful scan — timing out the
+        // subscription must not swap the list for an error state.
+        vi.useFakeTimers()
+        try {
+            const { provider, scan, stop } = makeProvider()
+            const { result } = renderHook(() => useLedgerConnection([provider]))
+
+            act(() => result.current.startScan())
+            const [onDevice] = scan.mock.calls[0] as [
+                (d: HardwareWalletDevice) => void,
+                (err: Error) => void,
+            ]
+            act(() => {
+                onDevice({
+                    id: 'd1',
+                    name: 'Nano X',
+                    transportType: 'ble',
+                } as HardwareWalletDevice)
+            })
+            act(() => {
+                vi.advanceTimersByTime(30_000)
+            })
+
+            expect(stop).toHaveBeenCalled()
+            expect(result.current.error).toBeNull()
+            expect(result.current.devices.map(d => d.id)).toEqual(['d1'])
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    test('startScan while a scan is active tears down the previous scan first', () => {
+        // Re-entrancy: without stop-before-start, the first scan's
+        // subscriptions leak and its still-armed timeout kills the new scan
+        // early.
+        vi.useFakeTimers()
+        try {
+            const stops = [vi.fn(), vi.fn()]
+            let call = 0
+            const scan = vi.fn(() => stops[call++])
+            const provider = {
+                manufacturer: 'ledger' as const,
+                transportType: 'ble' as const,
+                scan,
+                connect: vi.fn(),
+            } as unknown as HardwareWalletTransportProvider
+            const { result } = renderHook(() => useLedgerConnection([provider]))
+
+            act(() => result.current.startScan())
+            act(() => {
+                vi.advanceTimersByTime(15_000)
+            })
+            act(() => result.current.startScan())
+
+            // The first scan's subscription was released...
+            expect(stops[0]).toHaveBeenCalled()
+            expect(stops[1]).not.toHaveBeenCalled()
+            expect(result.current.isScanning).toBe(true)
+
+            // ...and its timer no longer points at the new scan: only the
+            // full fresh budget stops scan #2.
+            act(() => {
+                vi.advanceTimersByTime(16_000)
+            })
+            expect(result.current.isScanning).toBe(true)
+            act(() => {
+                vi.advanceTimersByTime(15_000)
+            })
+            expect(result.current.isScanning).toBe(false)
+            expect(stops[1]).toHaveBeenCalled()
         } finally {
             vi.useRealTimers()
         }

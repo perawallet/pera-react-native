@@ -16,11 +16,28 @@ import {
     useLedgerConnection as useLedgerConnectionCore,
     type UseLedgerConnectionResult,
 } from '@perawallet/wallet-core-ledger'
-import type { HardwareWalletTransportProvider } from '@perawallet/wallet-core-hardware-wallet'
+import type {
+    HardwareWalletTransportProvider,
+    LedgerTransportType,
+} from '@perawallet/wallet-core-hardware-wallet'
+
+type UseLedgerConnectionOptions = {
+    /**
+     * Restrict scanning to these transports. Lets the scan screen keep USB
+     * HID discovery alive when the Bluetooth permission is denied (USB needs
+     * no BLE permission). Omit to scan every supported transport.
+     */
+    transportTypes?: LedgerTransportType[]
+}
 
 type UseLedgerConnectionWrapperResult = UseLedgerConnectionResult & {
     /** True once each provider's `isSupported()` has resolved. */
     isReady: boolean
+    /**
+     * Transports supported on this platform (unfiltered by `transportTypes`),
+     * so callers can decide e.g. whether a USB-only fallback scan exists.
+     */
+    supportedTransportTypes: LedgerTransportType[]
 }
 
 /**
@@ -36,7 +53,9 @@ type UseLedgerConnectionWrapperResult = UseLedgerConnectionResult & {
  * silently stripping those methods and leaving consumers with plain
  * `{ manufacturer, transportType }` shells that throw at call time.
  */
-export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
+export const useLedgerConnection = (
+    options?: UseLedgerConnectionOptions,
+): UseLedgerConnectionWrapperResult => {
     const allLedgerProviders = useMemo<HardwareWalletTransportProvider[]>(
         () =>
             getProvider().hardwareWalletRegistry.getProvidersByManufacturer(
@@ -80,7 +99,22 @@ export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
         }
     }, [allLedgerProviders])
 
-    const core = useLedgerConnectionCore(supportedProviders)
+    // Keyed on the joined string so an inline `{ transportTypes: ['usb'] }`
+    // literal doesn't bust the memo (and with it the core hook's startScan
+    // identity) on every render.
+    const transportKey = options?.transportTypes?.join(',')
+    const scanProviders = useMemo(() => {
+        if (transportKey === undefined) return supportedProviders
+        const allowed = new Set(transportKey.split(','))
+        return supportedProviders.filter(p => allowed.has(p.transportType))
+    }, [supportedProviders, transportKey])
+
+    const supportedTransportTypes = useMemo(
+        () => [...new Set(supportedProviders.map(p => p.transportType))],
+        [supportedProviders],
+    )
+
+    const core = useLedgerConnectionCore(scanProviders)
 
     // Stable no-op so consumers that put `startScan` in an effect dep array
     // don't re-run their effects on every render of this hook.
@@ -94,5 +128,6 @@ export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
         // → 'disconnected' → 'scanning' as the query resolves.
         startScan: isReady ? core.startScan : noopStartScan,
         isReady,
+        supportedTransportTypes,
     }
 }
