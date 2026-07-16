@@ -97,6 +97,99 @@ describe('useDeviceRegistration', () => {
         })
     })
 
+    test('does not re-register when a new array carries the same addresses', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1', 'acct-2'] } },
+        )
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({ addresses: ['acct-1', 'acct-2'] })
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not re-register when the same addresses arrive reordered', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1', 'acct-2'] } },
+        )
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({ addresses: ['acct-2', 'acct-1'] })
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+    })
+
+    test('re-registers when the address set changes', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1'] } },
+        )
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({ addresses: ['acct-1', 'acct-2'] })
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith([
+            'acct-1',
+            'acct-2',
+        ])
+    })
+
+    test('registers with an empty list when no accounts exist', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        renderHook(() => useDeviceRegistration([]))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledWith([])
+        })
+    })
+
+    test('swallows push-token cleanup failures on network switch', async () => {
+        mockClearDevicePushToken.mockRejectedValueOnce(new Error('boom'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(() => useDeviceRegistration(['acct-1']))
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        rerender()
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
     test('swallows registration failures (best-effort)', async () => {
         mockRegisterDevice.mockRejectedValueOnce(new Error('boom'))
 
