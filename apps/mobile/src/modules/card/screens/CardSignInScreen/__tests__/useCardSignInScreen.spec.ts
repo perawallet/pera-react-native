@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockMutateAsync = vi.fn()
 const mockSetOnboardingStep = vi.fn()
+const mockSendOtpMutateAsync = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-card')
@@ -37,6 +38,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 contactVerificationId: 'mock-contact-id',
                 setOnboardingStep: mockSetOnboardingStep,
             }),
+        }),
+        useSendLoginOtpMutation: () => ({
+            mutate: vi.fn(),
+            mutateAsync: mockSendOtpMutateAsync,
+            isPending: false,
+            isError: false,
+            isSuccess: false,
+            error: null,
+            data: null,
+            reset: vi.fn(),
         }),
     }
 })
@@ -215,5 +226,17 @@ describe('useCardSignInScreen', () => {
             )
             expect(mockNavigate).not.toHaveBeenCalled()
         })
+    })
+
+    it('does not request a resend before a login has required OTP', async () => {
+        // The OTP endpoint is keyed on the login's userId; without one (no
+        // isOtpRequired login yet) resend must be a no-op, not a bad request.
+        const { result } = renderHook(() => useCardSignInScreen())
+
+        await act(async () => {
+            result.current.handleResendOtp()
+        })
+
+        expect(mockSendOtpMutateAsync).not.toHaveBeenCalled()
     })
 })

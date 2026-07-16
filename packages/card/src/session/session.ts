@@ -43,7 +43,13 @@ const commitTokenSecret = async (id: string, token: string): Promise<void> => {
 /**
  * Persists tokens to the encrypted keystore and flips the auth flag. The tokens
  * are never cached in app memory — they are read back from the keystore on
- * demand (see baanx-client). Direct-login sessions pass an empty refreshToken.
+ * demand (see baanx-client). Both login and registration finalize complete the
+ * OAuth exchange, so sessions normally carry a refresh token; an empty
+ * refreshToken occurs only via the exchange-failure fallback
+ * (acquireCardSessionTokens) and yields a session that logs out on its first
+ * 401. An empty refreshToken also REMOVES any prior refresh secret — a stale
+ * one from an earlier session must never be exchanged against this session's
+ * access token.
  */
 export const setCardSession = async (
     tokens: CardSessionTokens,
@@ -51,6 +57,8 @@ export const setCardSession = async (
     await commitTokenSecret(ACCESS_TOKEN_SECRET_ID, tokens.accessToken)
     if (tokens.refreshToken) {
         await commitTokenSecret(REFRESH_TOKEN_SECRET_ID, tokens.refreshToken)
+    } else {
+        await removeSecret(REFRESH_TOKEN_SECRET_ID)
     }
     useCardSessionStore.getState().setAuthenticated(true)
 }
@@ -73,8 +81,9 @@ export const clearCardSession = async (): Promise<void> => {
  * Refresh handler invoked by the transport on a 401. Reads the refresh token
  * from the keystore and exchanges it (decoded only inside the `withSecret`
  * handler). Returns whether a usable session is now in place; on any failure
- * (including no refresh token — e.g. a direct-login session) it clears the
- * session so the UI routes the user back to login.
+ * (including no refresh token — e.g. a registration-finalize session that
+ * predates the OAuth exchange) it clears the session so the UI routes the
+ * user back to login.
  */
 export const refreshSession = async (): Promise<boolean> => {
     try {

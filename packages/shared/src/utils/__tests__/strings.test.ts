@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { encodeToBase64, decodeFromBase64 } from '../strings'
+import { encodeToBase64, decodeFromBase64, toUrlSafeBase64 } from '../strings'
 import { hexToBytes, bytesToHex, utf8ByteLength } from '../strings'
 import {
     decodeLongString,
@@ -45,6 +45,32 @@ describe('utils/strings - base64 encoding', () => {
         const encoded = encodeToBase64(original)
         const decoded = decodeFromBase64(encoded)
         expect(Array.from(decoded)).toEqual(Array.from(original))
+    })
+})
+
+describe('utils/strings - toUrlSafeBase64', () => {
+    test('maps +/ to -_ and strips padding', () => {
+        expect(toUrlSafeBase64('ab+/cd==')).toBe('ab-_cd')
+    })
+
+    test('leaves an already url-safe string unchanged', () => {
+        expect(toUrlSafeBase64('abcd')).toBe('abcd')
+    })
+
+    test('strips only trailing padding, preserving inner =', () => {
+        expect(toUrlSafeBase64('a=b=')).toBe('a=b')
+    })
+
+    test('handles empty and all-padding inputs', () => {
+        expect(toUrlSafeBase64('')).toBe('')
+        expect(toUrlSafeBase64('==')).toBe('')
+    })
+
+    test('produces valid base64url from encoded bytes', () => {
+        // 0xfb 0xff → '+/8=' in standard base64; url-safe form is '-_8'.
+        expect(toUrlSafeBase64(encodeToBase64(new Uint8Array([251, 255])))).toBe(
+            '-_8',
+        )
     })
 })
 

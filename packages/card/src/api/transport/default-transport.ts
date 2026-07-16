@@ -11,6 +11,8 @@
  */
 
 import { isHTTPError } from 'ky'
+import { getValidIntegrityToken } from '@perawallet/wallet-core-app-integrity'
+import { config } from '@perawallet/wallet-core-config'
 import { queryClient } from '@perawallet/wallet-core-shared'
 import type {
     CardTransport,
@@ -36,6 +38,25 @@ export const setRefreshHandler = (handler: RefreshHandler | null): void => {
 const isUnauthorized = (error: unknown): boolean =>
     isHTTPError(error) && error.response?.status === 401
 
+/**
+ * The Pera-backend `/api/v3/baanx/*` routes sit behind the app-integrity
+ * guard, so every proxy call carries the device attestation token when a
+ * non-expired one is available. On non-production builds (simulators can't
+ * attest) the backend's env-gated staging/dev bypass header is sent as a
+ * fallback — production backends ignore it, and production builds never send
+ * it.
+ */
+const integrityHeaders = (): Record<string, string> => {
+    const integrityToken = getValidIntegrityToken()
+    if (integrityToken) {
+        return { 'x-app-integrity-token': integrityToken }
+    }
+    if (config.appEnvironment !== 'production') {
+        return { 'x-bypass-integrity': 'DEVELOPMENT_AND_STAGING_ONLY' }
+    }
+    return {}
+}
+
 const proxyRequest = <TData, TVars>(
     req: CardTransportRequest<TVars>,
 ): Promise<CardTransportResponse<TData>> =>
@@ -47,7 +68,7 @@ const proxyRequest = <TData, TVars>(
         params: req.params,
         data: req.data,
         signal: req.signal,
-        headers: req.headers,
+        headers: { ...integrityHeaders(), ...req.headers },
         responseType: req.responseType,
     })
 
@@ -74,12 +95,16 @@ export const defaultTransport: CardTransport = {
         try {
             return await dispatch<TData, TVars>(req)
         } catch (error) {
-            // Only direct calls carry the user Bearer. On a 401, refresh once
-            // and retry; if refresh can't produce a token, surface the error.
-            // Proxy (secret-key) and escrow (static-token) routes never carry a
-            // refreshable Bearer, so they skip the retry.
+            // Only `authenticated` calls carry the keystore Bearer, so only
+            // they can benefit from a refresh: on a 401, refresh once and
+            // retry; if refresh can't produce a token, surface the error.
+            // Pre-auth calls (login, OTP) and the refresh exchange itself run
+            // without the Bearer — intercepting those would be useless at
+            // best and, for the refresh call, infinitely recursive. The proxy
+            // (secret-key) and escrow (static-token) routes never carry a
+            // refreshable Bearer either, so they never set the flag.
             if (
-                (req.route ?? 'direct') === 'direct' &&
+                req.authenticated === true &&
                 isUnauthorized(error) &&
                 refreshHandler
             ) {
