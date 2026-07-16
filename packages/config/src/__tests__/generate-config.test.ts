@@ -30,8 +30,15 @@ describe('tools/generate-config.sh', () => {
 
     const run = (env: Record<string, string>): string => {
         const out = join(dir, 'generated-env.ts')
+        const emptyEnvFile = join(dir, '.env.base')
+        writeFileSync(emptyEnvFile, '')
         execFileSync('bash', [SCRIPT], {
-            env: { ...process.env, OUTPUT_FILE: out, ...env },
+            env: {
+                ...process.env,
+                OUTPUT_FILE: out,
+                ENV_FILE: emptyEnvFile,
+                ...env,
+            },
         })
         return readFileSync(out, 'utf8')
     }
