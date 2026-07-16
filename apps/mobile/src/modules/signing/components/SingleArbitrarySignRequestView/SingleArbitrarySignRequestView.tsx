@@ -10,10 +10,15 @@
  limitations under the License
  */
 
+import React, { useMemo } from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
-import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
+import {
+    decodeArbitraryDataForDisplay,
+    type PeraArbitraryDataMessage,
+} from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { SignedDataWarning } from '../SignedDataWarning'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -32,8 +37,13 @@ export const SingleArbitrarySignRequestView = ({
 
     // The bytes actually signed are `MX || decode(data)`. Show the decoded
     // payload prominently — `request.message` is untrusted dApp text that is
-    // never signed and must not be mistaken for the signed content.
-    const signedContent = Buffer.from(request.data, 'base64').toString('utf-8')
+    // never signed and must not be mistaken for the signed content. Binary
+    // payloads render as a hex dump rather than lossy UTF-8. Memoized:
+    // `data` is unbounded dApp input.
+    const signedContent = useMemo(
+        () => decodeArbitraryDataForDisplay(request.data),
+        [request.data],
+    )
 
     const handleDetailsPress = () => {
         onDetailsPress(request)
@@ -54,8 +64,13 @@ export const SingleArbitrarySignRequestView = ({
                         {t('signing.arbitrary_data_view.data_label')}
                     </PWText>
                     <PWView style={styles.dataBox}>
-                        <PWText variant='mono'>{signedContent}</PWText>
+                        <PWText variant='mono'>
+                            {signedContent.kind === 'text'
+                                ? signedContent.text
+                                : signedContent.hex}
+                        </PWText>
                     </PWView>
+                    {signedContent.kind === 'hex' && <SignedDataWarning />}
                 </PWView>
 
                 {!!request.message && (

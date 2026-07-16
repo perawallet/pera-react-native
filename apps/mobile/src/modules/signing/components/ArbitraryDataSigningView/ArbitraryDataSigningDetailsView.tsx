@@ -10,13 +10,16 @@
  limitations under the License
  */
 
+import React, { useMemo } from 'react'
 import { PWText, PWView } from '@components/core'
 import {
+    decodeArbitraryDataForDisplay,
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyValueRow } from '@components/KeyValueRow'
+import { SignedDataWarning } from '../SignedDataWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
@@ -39,6 +42,14 @@ export const ArbitraryDataSigningDetailsView = ({
         account => account.address === dataMessage.signer,
     )
     const styles = useStyles()
+
+    // Binary payloads render as a hex dump rather than lossy UTF-8, so the
+    // user reviews the actual signed bytes. Memoized: `data` is unbounded
+    // dApp input.
+    const signedContent = useMemo(
+        () => decodeArbitraryDataForDisplay(dataMessage.data),
+        [dataMessage.data],
+    )
 
     return (
         <PWView>
@@ -102,12 +113,20 @@ export const ArbitraryDataSigningDetailsView = ({
                     title={t('signing.arbitrary_data_details.data')}
                     verticalAlignment='top'
                 >
-                    <PWText style={styles.data}>
-                        {Buffer.from(dataMessage.data, 'base64').toString(
-                            'utf-8',
-                        )}
-                    </PWText>
+                    {signedContent.kind === 'text' ? (
+                        <PWText style={styles.data}>
+                            {signedContent.text}
+                        </PWText>
+                    ) : (
+                        <PWText
+                            variant='mono'
+                            style={styles.data}
+                        >
+                            {signedContent.hex}
+                        </PWText>
+                    )}
                 </KeyValueRow>
+                {signedContent.kind === 'hex' && <SignedDataWarning />}
             </PWView>
         </PWView>
     )

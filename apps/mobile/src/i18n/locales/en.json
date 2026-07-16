@@ -2155,7 +2155,9 @@
             "show_details": "Show Details",
             "on_behalf_of": "Signing On Behalf Of",
             "data_label": "Data to be signed",
-            "untrusted_message_label": "Display message (not part of what you sign)"
+            "untrusted_message_label": "Display message (not part of what you sign)",
+            "binary_warning_title": "Data is not readable text",
+            "binary_warning_body": "The data to sign isn't readable text, so its raw bytes are shown in hexadecimal. Only approve if you trust this application."
         },
         "arbitrary_data_details": {
             "unnamed": "Someone",

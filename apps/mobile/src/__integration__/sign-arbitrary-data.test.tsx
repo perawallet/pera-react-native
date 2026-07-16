@@ -102,6 +102,46 @@ describe('Flow: arbitrary-data (algo_signData) signing review', () => {
     )
 
     it(
+        'renders a binary payload as a hex dump with the unreadable-data warning',
+        async () => {
+            // 0x88 0x81 0xA1 0xFF is not valid UTF-8, so showing it as text
+            // would collapse it to replacement characters.
+            const { request, reject } = buildArbitraryDataSignRequest({
+                messages: [{ data: 'iIGh/w==' }],
+            })
+
+            const view = renderSignReview(request)
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('arbitrary-data-confirm-slide'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+
+            expect(screen.getByText('8881a1ff')).toBeTruthy()
+            // The harness renders i18n keys verbatim, so assert on the key.
+            expect(
+                screen.getByText(
+                    'signing.arbitrary_data_view.binary_warning_title',
+                ),
+            ).toBeTruthy()
+
+            // Settle the request so the pipeline is clean for the next test.
+            view.reject()
+            await waitFor(
+                () => {
+                    expect(reject).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'rejects an arbitrary-data request when the user cancels',
         async () => {
             const { request, approve, reject } = buildArbitraryDataSignRequest({
