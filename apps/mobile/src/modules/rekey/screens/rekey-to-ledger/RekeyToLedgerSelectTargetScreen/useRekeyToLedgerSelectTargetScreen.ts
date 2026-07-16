@@ -15,6 +15,7 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     isEligibleLedgerRekeyTarget,
     useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -39,13 +40,17 @@ export const useRekeyToLedgerSelectTargetScreen =
             >()
         const sourceAddress = route.params.sourceAddress
         const accounts = useAllAccounts()
+        const source = useFindAccountByAddress(sourceAddress)
 
         const targets = useMemo(
             () =>
                 accounts.filter(account =>
-                    isEligibleLedgerRekeyTarget(account, sourceAddress),
+                    isEligibleLedgerRekeyTarget(
+                        account,
+                        source ?? { address: sourceAddress },
+                    ),
                 ),
-            [accounts, sourceAddress],
+            [accounts, source, sourceAddress],
         )
 
         const handleSelect = useCallback(

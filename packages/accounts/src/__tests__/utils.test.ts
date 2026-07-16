@@ -809,18 +809,36 @@ describe('services/accounts/utils - quantum accounts', () => {
 })
 
 describe('services/accounts/utils - isEligibleRekeyTarget', () => {
+    const src = { address: 'SRC' }
+
     test('rejects target equal to source', () => {
-        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'A')).toBe(false)
+        expect(
+            isEligibleRekeyTarget(
+                algo25({ address: 'A' }),
+                { address: 'A' },
+                true,
+            ),
+        ).toBe(false)
+    })
+
+    test("rejects target equal to source's current auth", () => {
+        expect(
+            isEligibleRekeyTarget(
+                algo25({ address: 'B' }),
+                { address: 'SRC', rekeyAddress: 'B' },
+                true,
+            ),
+        ).toBe(false)
     })
 
     test('rejects multisig / hardware / watch targets', () => {
-        expect(isEligibleRekeyTarget(multisig({ address: 'M' }), 'SRC')).toBe(
+        expect(
+            isEligibleRekeyTarget(multisig({ address: 'M' }), src, true),
+        ).toBe(false)
+        expect(isEligibleRekeyTarget(ledger({ address: 'L' }), src, true)).toBe(
             false,
         )
-        expect(isEligibleRekeyTarget(ledger({ address: 'L' }), 'SRC')).toBe(
-            false,
-        )
-        expect(isEligibleRekeyTarget(watch({ address: 'W' }), 'SRC')).toBe(
+        expect(isEligibleRekeyTarget(watch({ address: 'W' }), src, true)).toBe(
             false,
         )
     })
@@ -829,36 +847,62 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
         const noKey = algo25({ address: 'A' })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(noKey as any).keyPairId = undefined
-        expect(isEligibleRekeyTarget(noKey, 'SRC')).toBe(false)
+        expect(isEligibleRekeyTarget(noKey, src, true)).toBe(false)
     })
 
     test('rejects target already rekeyed away', () => {
         expect(
             isEligibleRekeyTarget(
                 algo25({ address: 'A', rekeyAddress: 'B' }),
-                'SRC',
+                src,
+                true,
             ),
         ).toBe(false)
     })
 
     test('accepts valid algo25 / hdWallet target', () => {
-        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), 'SRC')).toBe(
+        expect(isEligibleRekeyTarget(algo25({ address: 'A' }), src, true)).toBe(
             true,
         )
-        expect(isEligibleRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(true)
+        expect(isEligibleRekeyTarget(hd({ address: 'H' }), src, true)).toBe(
+            true,
+        )
     })
 
-    test('accepts a quantum target (rekey-in migration path)', () => {
-        expect(isEligibleRekeyTarget(quantum({ address: 'F' }), 'SRC')).toBe(
-            true,
-        )
+    test('accepts a rekeyed source rekeying to a different fresh target', () => {
+        expect(
+            isEligibleRekeyTarget(
+                algo25({ address: 'A' }),
+                { address: 'SRC', rekeyAddress: 'B' },
+                true,
+            ),
+        ).toBe(true)
+    })
+
+    test('accepts a quantum target when quantum targets are enabled (rekey-in migration path)', () => {
+        expect(
+            isEligibleRekeyTarget(quantum({ address: 'F' }), src, true),
+        ).toBe(true)
+    })
+
+    test('rejects a quantum target when quantum targets are disabled', () => {
+        expect(
+            isEligibleRekeyTarget(quantum({ address: 'F' }), src, false),
+        ).toBe(false)
+    })
+
+    test('the quantum gate does not affect non-quantum targets', () => {
+        expect(
+            isEligibleRekeyTarget(algo25({ address: 'A' }), src, false),
+        ).toBe(true)
     })
 
     test('rejects a quantum target already rekeyed away', () => {
         expect(
             isEligibleRekeyTarget(
                 quantum({ address: 'F', rekeyAddress: 'X' }),
-                'SRC',
+                src,
+                true,
             ),
         ).toBe(false)
     })
@@ -944,42 +988,57 @@ describe('services/accounts/utils - isQuantumDowngrade', () => {
 })
 
 describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
+    const src = { address: 'SRC' }
+
     test('rejects non-hardware targets', () => {
-        expect(
-            isEligibleLedgerRekeyTarget(algo25({ address: 'A' }), 'SRC'),
-        ).toBe(false)
-        expect(isEligibleLedgerRekeyTarget(hd({ address: 'H' }), 'SRC')).toBe(
+        expect(isEligibleLedgerRekeyTarget(algo25({ address: 'A' }), src)).toBe(
+            false,
+        )
+        expect(isEligibleLedgerRekeyTarget(hd({ address: 'H' }), src)).toBe(
             false,
         )
     })
 
     test('rejects target equal to source / already rekeyed', () => {
-        expect(isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), 'L')).toBe(
-            false,
-        )
+        expect(
+            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), {
+                address: 'L',
+            }),
+        ).toBe(false)
         expect(
             isEligibleLedgerRekeyTarget(
                 ledger({ address: 'L', rekeyAddress: 'X' }),
-                'SRC',
+                src,
             ),
         ).toBe(false)
     })
 
-    test('accepts a clean hardware target', () => {
+    test("rejects target equal to source's current auth", () => {
         expect(
-            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), 'SRC'),
-        ).toBe(true)
+            isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), {
+                address: 'SRC',
+                rekeyAddress: 'L',
+            }),
+        ).toBe(false)
+    })
+
+    test('accepts a clean hardware target', () => {
+        expect(isEligibleLedgerRekeyTarget(ledger({ address: 'L' }), src)).toBe(
+            true,
+        )
     })
 })
 
 describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
+    const src = { address: 'SRC' }
+
     test('rejects non-multisig targets', () => {
         const all: WalletAccount[] = []
         expect(
-            isEligibleSharedRekeyTarget(algo25({ address: 'A' }), 'SRC', all),
+            isEligibleSharedRekeyTarget(algo25({ address: 'A' }), src, all),
         ).toBe(false)
         expect(
-            isEligibleSharedRekeyTarget(ledger({ address: 'L' }), 'SRC', all),
+            isEligibleSharedRekeyTarget(ledger({ address: 'L' }), src, all),
         ).toBe(false)
     })
 
@@ -993,7 +1052,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
             },
         })
         const all: WalletAccount[] = [algo25({ id: 'x', address: 'OTHER' })]
-        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(false)
     })
 
     test('rejects multisig when the only held participant cannot sign', () => {
@@ -1007,7 +1066,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
             },
         })
         const all: WalletAccount[] = [watch({ id: 'p1', address: 'P1' })]
-        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(false)
     })
 
     test('accepts multisig when the wallet holds one signable participant, even below threshold', () => {
@@ -1022,7 +1081,26 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
             },
         })
         const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
-        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(true)
+        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(true)
+    })
+
+    test("rejects multisig equal to source's current auth", () => {
+        const ms = multisig({
+            address: 'M',
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['P1', 'P2', 'P3'],
+                version: 1,
+            },
+        })
+        const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
+        expect(
+            isEligibleSharedRekeyTarget(
+                ms,
+                { address: 'SRC', rekeyAddress: 'M' },
+                all,
+            ),
+        ).toBe(false)
     })
 
     test('rejects multisig already rekeyed away', () => {
@@ -1036,7 +1114,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
             },
         })
         const all: WalletAccount[] = [algo25({ id: 'p1', address: 'P1' })]
-        expect(isEligibleSharedRekeyTarget(ms, 'SRC', all)).toBe(false)
+        expect(isEligibleSharedRekeyTarget(ms, src, all)).toBe(false)
     })
 })
 

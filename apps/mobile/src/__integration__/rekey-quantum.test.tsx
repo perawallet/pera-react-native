@@ -84,6 +84,11 @@ const enableQuantumFlag = async (): Promise<void> => {
     useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG_KEY, true)
 }
 
+const disableQuantumFlag = async (): Promise<void> => {
+    await useRemoteConfigStore.persist.rehydrate()
+    useRemoteConfigStore.getState().setConfigOverride(QUANTUM_FLAG_KEY, false)
+}
+
 // The production rekey screens navigate via `navigate('RekeyToStandard', {
 // screen, params })`. The flat test navigator can't resolve nested routes, so
 // register each screen as a sibling plus a `RekeyToStandard` redirect shim
@@ -260,6 +265,37 @@ describe('rekey quantum account (PQ-015)', () => {
                     ),
                 ).toBeTruthy()
             })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the quantum flag is off, when the user opens rekey-to-standard select-target, then the quantum account is not listed as a target',
+        async () => {
+            await disableQuantumFlag()
+            const { source, quantumTarget } = await seedRekeyInAccounts()
+
+            renderWithNavigation(
+                RekeyToStandardSelectTargetScreen,
+                'RekeyToStandardSelectTarget',
+                {
+                    initialParams: { sourceAddress: source.address },
+                    additionalScreens: REKEY_SCREENS,
+                },
+            )
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(
+                        'rekey-to-standard-select-target-screen',
+                    ),
+                ).toBeTruthy()
+            })
+            expect(
+                screen.queryByTestId(
+                    `rekey-target-row-${quantumTarget.address}`,
+                ),
+            ).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
