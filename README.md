@@ -83,6 +83,26 @@ To manually build all packages:
 pnpm build:packages
 ```
 
+## Local development against LocalNet
+
+Run a local Algorand node and point the app at it instead of live networks.
+
+Prerequisites: Docker (running) and the AlgoKit CLI
+(`brew install algorandfoundation/tap/algokit`).
+
+```sh
+pnpm localnet             # start the LocalNet (algod :4001, indexer :8980, kmd :4002)
+pnpm localnet:use         # point the app's testnet slot at LocalNet
+pnpm localnet:fund --new 100   # create + fund a throwaway account (prints mnemonic)
+pnpm ios                  # or: pnpm android — app now talks to LocalNet as "testnet"
+pnpm localnet:unset       # restore live endpoints
+pnpm localnet:stop        # stop the LocalNet
+```
+
+LocalNet reuses the **testnet** slot; **mainnet stays on live infrastructure**.
+`localnet:use` fetches the node's genesis hash live, so re-run it after any
+`pnpm localnet:reset`.
+
 ## Workspace layout
 
 ```
