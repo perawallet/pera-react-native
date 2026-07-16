@@ -44,6 +44,8 @@ vi.mock('@algorandfoundation/ledger-algorand-js', () => ({
 import { RNLedgerUsbService } from '../RNLedgerUsbService'
 import {
     LedgerSigningError,
+    LedgerUsbMultipleDevicesError,
+    LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
@@ -146,8 +148,8 @@ describe('RNLedgerUsbService', () => {
     test('connect rejects when no Ledger is connected over USB', async () => {
         const provider = new RNLedgerUsbService().createTransportProvider()
 
-        await expect(provider.connect('any-id')).rejects.toThrow(
-            /No Ledger connected over USB/,
+        await expect(provider.connect('any-id')).rejects.toBeInstanceOf(
+            LedgerUsbNoDeviceError,
         )
         expect(transportOpenMock).not.toHaveBeenCalled()
     })
@@ -162,7 +164,7 @@ describe('RNLedgerUsbService', () => {
             new RNLedgerUsbService()
                 .createTransportProvider()
                 .connect(String(NANO_X_DESCRIPTOR.productId)),
-        ).rejects.toThrow(/Multiple Ledger devices/)
+        ).rejects.toBeInstanceOf(LedgerUsbMultipleDevicesError)
         expect(transportOpenMock).not.toHaveBeenCalled()
     })
 

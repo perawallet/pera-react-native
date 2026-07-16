@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     classifyLedgerError,
+    LedgerDeviceLockedError,
     LedgerUserRejectedError,
     LedgerAppNotOpenError,
     LedgerDisconnectedError,
@@ -45,6 +46,21 @@ describe('classifyLedgerError', () => {
     it('classifies 0x6985 (legacy) as LedgerUserRejectedError', () => {
         const result = classifyLedgerError(createErrorWithStatus(0x6985))
         expect(result).toBeInstanceOf(LedgerUserRejectedError)
+    })
+
+    it('classifies 0x5515 as LedgerDeviceLockedError', () => {
+        const result = classifyLedgerError(createErrorWithStatus(0x5515))
+        expect(result).toBeInstanceOf(LedgerDeviceLockedError)
+    })
+
+    it('classifies a LockedDeviceError-named remap as LedgerDeviceLockedError', () => {
+        // @ledgerhq/errors delivers the locked state as a typed error in
+        // some firmware/lib combinations instead of a bare status word.
+        const error = new Error('Ledger device: Locked device (0x5515)')
+        error.name = 'LockedDeviceError'
+        expect(classifyLedgerError(error)).toBeInstanceOf(
+            LedgerDeviceLockedError,
+        )
     })
 
     it('classifies 0x6e00 as LedgerAppNotOpenError', () => {

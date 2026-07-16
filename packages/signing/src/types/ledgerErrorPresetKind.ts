@@ -32,6 +32,12 @@ export type LedgerErrorPresetKind =
     | 'network_error'
     | 'unsupported_device'
     | 'app_outdated'
+    | 'device_locked'
+    | 'usb_no_device'
+    | 'usb_multiple_devices'
+    | 'no_accounts_found'
+    | 'location_services_disabled'
+    | 'provider_unavailable'
 
 /**
  * Subset of error kinds where the user-facing remediation lives in the
