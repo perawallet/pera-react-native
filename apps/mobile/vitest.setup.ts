@@ -2371,6 +2371,30 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         toError: vi.fn((e: unknown) =>
             e instanceof Error ? e : new Error(String(e)),
         ),
+        // Mirrors the real semantics (packages/shared/src/utils/async.ts):
+        // reject with rejectWith(operation, ms) after `ms`, clear the timer
+        // when the promise settles. Ledger timeout tests drive this with
+        // fake timers, so it must be a genuine implementation.
+        withTimeout: <T>(
+            promise: Promise<T>,
+            ms: number,
+            operation: string,
+            rejectWith?: (operation: string, ms: number) => Error,
+        ): Promise<T> => {
+            let timerId: ReturnType<typeof setTimeout> | undefined
+            return new Promise<T>((resolve, reject) => {
+                timerId = setTimeout(() => {
+                    reject(
+                        rejectWith
+                            ? rejectWith(operation, ms)
+                            : new Error(`${operation} timed out after ${ms}ms`),
+                    )
+                }, ms)
+                promise.then(resolve, reject)
+            }).finally(() => {
+                if (timerId !== undefined) clearTimeout(timerId)
+            })
+        },
         // Mirrors the real semantics (packages/shared/src/api/query-client.ts):
         // timeouts, network errors, and 5xx HTTPErrors are transient. ky's own
         // guards match on error name, so name checks are faithful here.

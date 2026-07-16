@@ -24,6 +24,8 @@ import {
     type LedgerAccount,
     LedgerProviderNotFoundError,
     classifyLedgerError,
+    withLedgerConfirmationTimeout,
+    withLedgerConnectionTimeout,
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -253,7 +255,21 @@ export const useLedgerSelectAccountsScreen =
                             `No Ledger provider registered for transport "${transportType}"`,
                         )
                     }
-                    transportRef.current = await provider.connect(deviceId)
+                    const connectPromise = provider.connect(deviceId)
+                    try {
+                        transportRef.current =
+                            await withLedgerConnectionTimeout(
+                                connectPromise,
+                                'Connect to Ledger',
+                            )
+                    } catch (connectError) {
+                        // Release a transport that arrives after the timeout
+                        // so the BLE link isn't held by a handle nobody owns.
+                        connectPromise
+                            .then(t => t.disconnect().catch(() => {}))
+                            .catch(() => {})
+                        throw connectError
+                    }
                 }
 
                 const nextIndex =
@@ -266,15 +282,23 @@ export const useLedgerSelectAccountsScreen =
                 // on the Ledger before it's added to the import list, so a
                 // wrong-device/wrong-address derivation can't be imported
                 // silently.
-                const next = await transportRef.current.getAddress(
-                    nextIndex,
-                    true,
+                // display=true is an on-device confirmation — bound it by
+                // the confirmation ceiling so a silent BLE drop can't wedge
+                // the button in its loading state forever.
+                const next = await withLedgerConfirmationTimeout(
+                    transportRef.current.getAddress(nextIndex, true),
+                    'Confirm Ledger address',
                 )
 
                 if (!isMounted()) return
 
                 setAccounts(prev => [...prev, next])
             } catch (err) {
+                // The lib caches one transport per device, so a handle that
+                // just failed is likely wedged (dead link or busy exchange).
+                // Release it and reconnect fresh on the next tap.
+                transportRef.current?.disconnect().catch(() => {})
+                transportRef.current = null
                 if (!isMounted()) return
                 const error = classifyLedgerError(err)
                 const preset = getLedgerErrorPreset(error, t)

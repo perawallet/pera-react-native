@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { LEDGER_CONNECTION_TIMEOUT_MS } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import { connectAndDiscoverAccounts } from '../connectAndDiscover'
 import type {
     LedgerTransport,
@@ -27,7 +28,7 @@ const createMockAccount = (index: number): LedgerAccount => ({
 const createMockTransport = (accountCount: number): LedgerTransport => ({
     getAddress: vi.fn(async (index: number) => createMockAccount(index)),
     signTransaction: vi.fn(),
-    disconnect: vi.fn(),
+    disconnect: vi.fn(async () => {}),
 })
 
 const createMockProvider = (
@@ -85,5 +86,77 @@ describe('connectAndDiscoverAccounts', () => {
                 deviceId: 'test-device-id',
             }),
         ).rejects.toThrow('Connection failed')
+    })
+
+    it('disconnects the transport when discovery throws after a successful connect', async () => {
+        const transport = createMockTransport(0)
+        ;(transport.getAddress as ReturnType<typeof vi.fn>).mockRejectedValue(
+            new Error('app closed on device'),
+        )
+        const provider = createMockProvider(transport)
+
+        await expect(
+            connectAndDiscoverAccounts({
+                provider,
+                deviceId: 'test-device-id',
+            }),
+        ).rejects.toThrow('app closed on device')
+
+        // The caller never receives the transport on this path, so its
+        // cleanup can't run — the connect owner must release the BLE link.
+        expect(transport.disconnect).toHaveBeenCalled()
+    })
+
+    describe('connect timeout', () => {
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('rejects with a typed timeout error when connect never settles', async () => {
+            vi.useFakeTimers()
+            const provider: LedgerTransportProvider = {
+                manufacturer: 'ledger',
+                scan: vi.fn(() => () => {}),
+                connect: vi.fn(() => new Promise<never>(() => {})),
+                isSupported: vi.fn(async () => true),
+            }
+
+            const promise = connectAndDiscoverAccounts({
+                provider,
+                deviceId: 'test-device-id',
+            })
+            const assertion = expect(promise).rejects.toThrow(/timed out/)
+            await vi.advanceTimersByTimeAsync(LEDGER_CONNECTION_TIMEOUT_MS + 1)
+            await assertion
+        })
+
+        it('disconnects a transport that arrives after the timeout', async () => {
+            vi.useFakeTimers()
+            const transport = createMockTransport(0)
+            let resolveConnect: (t: LedgerTransport) => void = () => {}
+            const provider: LedgerTransportProvider = {
+                manufacturer: 'ledger',
+                scan: vi.fn(() => () => {}),
+                connect: vi.fn(
+                    () =>
+                        new Promise<LedgerTransport>(resolve => {
+                            resolveConnect = resolve
+                        }),
+                ),
+                isSupported: vi.fn(async () => true),
+            }
+
+            const promise = connectAndDiscoverAccounts({
+                provider,
+                deviceId: 'test-device-id',
+            })
+            const assertion = expect(promise).rejects.toThrow(/timed out/)
+            await vi.advanceTimersByTimeAsync(LEDGER_CONNECTION_TIMEOUT_MS + 1)
+            await assertion
+
+            resolveConnect(transport)
+            await vi.advanceTimersByTimeAsync(0)
+            expect(transport.disconnect).toHaveBeenCalled()
+        })
     })
 })

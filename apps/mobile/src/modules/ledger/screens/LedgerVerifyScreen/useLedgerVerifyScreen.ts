@@ -27,6 +27,8 @@ import type {
 } from '@perawallet/wallet-core-hardware-wallet'
 import {
     verifyLedgerAddress,
+    withLedgerConfirmationTimeout,
+    withLedgerConnectionTimeout,
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
@@ -121,13 +123,32 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 )
             }
 
-            transport = await provider.connect(deviceId)
+            const connectPromise = provider.connect(deviceId)
+            try {
+                transport = await withLedgerConnectionTimeout(
+                    connectPromise,
+                    'Connect to Ledger',
+                )
+            } catch (connectError) {
+                // A transport arriving after the timeout would hold the BLE
+                // link (the finally below only sees a null transport).
+                connectPromise
+                    .then(t => t.disconnect().catch(() => {}))
+                    .catch(() => {})
+                throw connectError
+            }
             setVerificationState('verifying')
 
             for (let i = 0; i < verifyTargets.length; i++) {
-                await verifyLedgerAddress(
-                    transport,
-                    verifyTargets[i].accountIndex,
+                // A silent BLE drop mid-verify otherwise leaves the screen
+                // in `verifying` forever — the confirmation ceiling turns it
+                // into a retryable error.
+                await withLedgerConfirmationTimeout(
+                    verifyLedgerAddress(
+                        transport,
+                        verifyTargets[i].accountIndex,
+                    ),
+                    'Verify Ledger address',
                 )
                 setVerifiedIndices(prev => {
                     const next = new Set(prev)
