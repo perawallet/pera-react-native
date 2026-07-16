@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import React, { type PropsWithChildren } from 'react'
+import React, { useEffect, type PropsWithChildren } from 'react'
+import { AppState } from 'react-native'
 import {
     PersistQueryClientProvider,
     type PersistQueryClientRootOptions,
@@ -20,6 +21,7 @@ import {
     MutationCache,
     QueryCache,
     QueryClient,
+    focusManager,
 } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -31,6 +33,7 @@ import { isAccountQuery } from '@perawallet/wallet-core-accounts'
 import { isAssetQuery } from '@perawallet/wallet-core-assets'
 import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
 import { isCardQuery } from '@perawallet/wallet-core-card'
+import { isActiveAppState } from '@utils/app-state'
 
 const cache = new QueryCache({
     onError: error => {
@@ -66,6 +69,11 @@ const queryClient = new QueryClient({
             gcTime: config.reactQueryDefaultGCTime,
             staleTime: config.reactQueryDefaultStaleTime,
             retry: 0, //ky handles retries
+            // Focus is wired below solely to pause interval polls in the
+            // background. Without this pin, wiring focus would also switch on
+            // the library default refetchOnWindowFocus for every mounted stale
+            // query, bursting requests on each foreground. Opt in per-query.
+            refetchOnWindowFocus: false,
         },
         // OFF-004: mutation policy (networkMode 'always' → fail fast offline,
         // never pause/auto-resume; throwOnError false → surface as
@@ -85,6 +93,17 @@ export type QueryProviderProps = OmitKeyof<
     PropsWithChildren
 
 export function QueryProvider({ persister, children }: QueryProviderProps) {
+    // Drive React Query's focusManager from AppState: on React Native the
+    // manager has no default signal, so interval polls keep firing while the
+    // app is backgrounded (refetchIntervalInBackground defaults to false, but
+    // it only takes effect once focus is wired).
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', state => {
+            focusManager.setFocused(isActiveAppState(state))
+        })
+        return () => subscription.remove()
+    }, [])
+
     return (
         <PersistQueryClientProvider
             client={queryClient}

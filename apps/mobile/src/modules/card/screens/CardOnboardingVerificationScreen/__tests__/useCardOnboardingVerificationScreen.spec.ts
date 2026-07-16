@@ -23,6 +23,12 @@ let mockVerificationState: string | null = null
 let mockIsStateUnknown = false
 let mockHasPollTimedOut = false
 let mockPollOptions: { enabled?: boolean } | undefined
+let mockIsFocused = true
+
+vi.mock('@react-navigation/native', async importOriginal => ({
+    ...(await importOriginal<typeof import('@react-navigation/native')>()),
+    useIsFocused: () => mockIsFocused,
+}))
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -109,6 +115,7 @@ beforeEach(() => {
     mockIsStateUnknown = false
     mockHasPollTimedOut = false
     mockPollOptions = undefined
+    mockIsFocused = true
     mockStartMutateAsync.mockResolvedValue({ sessionUrl: SESSION_URL })
     vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     vi.spyOn(Linking, 'canOpenURL').mockResolvedValue(true)
@@ -192,6 +199,24 @@ describe('useCardOnboardingVerificationScreen', () => {
         // The handoff disables our poll so it doesn't keep refetching behind
         // the status screen (which polls from here on).
         expect(mockPollOptions?.enabled).toBe(false)
+    })
+
+    it('pauses the KYC poll while the screen is unfocused', async () => {
+        const { result, rerender } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+        await startVerification(result)
+        expect(mockPollOptions?.enabled).toBe(true)
+
+        mockIsFocused = false
+        act(() => rerender())
+
+        expect(mockPollOptions?.enabled).toBe(false)
+
+        mockIsFocused = true
+        act(() => rerender())
+
+        expect(mockPollOptions?.enabled).toBe(true)
     })
 
     it('hands off to the setup status on an unmodelled server state', async () => {

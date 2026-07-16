@@ -17,6 +17,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
+import { isActiveAppState } from '@utils/app-state'
 import { openCredentialProviderSettings } from './openCredentialProviderSettings'
 import {
     usePasskeyAutofillStatus,
@@ -77,13 +78,14 @@ export const useSettingsPasskeysScreen =
 
         // Re-check provider + biometric status when the app returns to the
         // foreground — covers the user enabling Pera as the credential provider
-        // in system settings and coming back. (focusManager isn't wired to
-        // AppState, so React Query won't refetch on its own.)
+        // in system settings and coming back. Explicit rather than relying on
+        // focus-driven refetching: the biometric check isn't a query, and this
+        // must fire even for fresh cache entries.
         const refreshStatus = status.refresh
         const refreshBiometric = biometric.refresh
         useEffect(() => {
             const sub = AppState.addEventListener('change', state => {
-                if (state === 'active') {
+                if (isActiveAppState(state)) {
                     refreshStatus()
                     refreshBiometric()
                 }

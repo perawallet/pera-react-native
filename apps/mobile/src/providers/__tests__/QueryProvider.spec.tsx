@@ -10,12 +10,18 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import React from 'react'
-import { act, renderHook, waitFor } from '@testing-library/react'
-import { QueryClientProvider, useMutation } from '@tanstack/react-query'
+import { AppState } from 'react-native'
+import { act, render, renderHook, waitFor } from '@testing-library/react'
+import {
+    QueryClientProvider,
+    focusManager,
+    useMutation,
+} from '@tanstack/react-query'
 import { logger } from '@perawallet/wallet-core-shared'
-import { queryClient } from '../QueryProvider'
+import type { Persister } from '@tanstack/react-query-persist-client'
+import { QueryProvider, queryClient } from '../QueryProvider'
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -102,5 +108,52 @@ describe('queryClient mutation error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).not.toHaveBeenCalled()
+    })
+})
+
+describe('queryClient focus policy', () => {
+    it('keeps refetch-on-focus off so focus wiring only pauses background polls', () => {
+        expect(
+            queryClient.getDefaultOptions().queries?.refetchOnWindowFocus,
+        ).toBe(false)
+    })
+})
+
+describe('focusManager wiring', () => {
+    const noopPersister: Persister = {
+        persistClient: vi.fn(),
+        restoreClient: vi.fn(async () => undefined),
+        removeClient: vi.fn(),
+    }
+
+    afterEach(() => {
+        focusManager.setFocused(undefined)
+        vi.restoreAllMocks()
+    })
+
+    it('follows AppState transitions and unsubscribes on unmount', () => {
+        let listener: ((state: string) => void) | undefined
+        const remove = vi.fn()
+        vi.spyOn(AppState, 'addEventListener').mockImplementation(
+            (_event, handler) => {
+                listener = handler as (state: string) => void
+                return { remove } as ReturnType<
+                    typeof AppState.addEventListener
+                >
+            },
+        )
+
+        const { unmount } = render(
+            <QueryProvider persister={noopPersister}>{null}</QueryProvider>,
+        )
+
+        act(() => listener?.('background'))
+        expect(focusManager.isFocused()).toBe(false)
+
+        act(() => listener?.('active'))
+        expect(focusManager.isFocused()).toBe(true)
+
+        unmount()
+        expect(remove).toHaveBeenCalled()
     })
 })
