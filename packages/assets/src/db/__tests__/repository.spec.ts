@@ -26,6 +26,7 @@ import {
     getAssetPricesByIds,
     updateAssetPeraMetadata,
     getStaleOrMissingAssetIds,
+    getStaleOrMissingPriceAssetIds,
     deleteAssets,
     deleteAssetPrices,
 } from '../repository'
@@ -536,6 +537,88 @@ describe('asset repository', () => {
             })
 
             const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'testnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual(['1'])
+        })
+    })
+
+    describe('getStaleOrMissingPriceAssetIds', () => {
+        it('returns empty for empty input', async () => {
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: [],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+            expect(result).toEqual([])
+        })
+
+        it('includes IDs without a price row', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['1', '2'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual(['2'])
+        })
+
+        it('excludes IDs whose price row is younger than ttlMs', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('includes IDs whose price row is older than ttlMs', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
+                network: 'mainnet',
+            })
+
+            // Negative ttl makes any row "older than" it — see the
+            // getStaleOrMissingAssetIds twin above.
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: -1,
+            })
+
+            expect(result).toEqual(['1'])
+        })
+
+        it('ignores price rows belonging to a different network', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
                 db,
                 assetIds: ['1'],
                 network: 'testnet',

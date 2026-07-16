@@ -894,6 +894,10 @@ export async function getAllHeldAssetIdsForNetwork({
         })
         .from(AccountAssetHoldingsSchema)
         .where(eq(AccountAssetHoldingsSchema.network, network))
+        // Stable order matters: the price syncer slices this list into fixed
+        // batches, so an unspecified DISTINCT order re-shuffles batch
+        // membership between sync ticks.
+        .orderBy(AccountAssetHoldingsSchema.assetId)
         .all()
 
     return rows.map(r => r.assetId.toString())

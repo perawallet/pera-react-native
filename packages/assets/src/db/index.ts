@@ -23,6 +23,7 @@ export {
     upsertAssetPrices,
     getAssetPricesByIds,
     getStaleOrMissingAssetIds,
+    getStaleOrMissingPriceAssetIds,
     deleteAssets,
     deleteAssetPrices,
     type AssetPriceRow,

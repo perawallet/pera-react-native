@@ -54,6 +54,8 @@ const ASSET_RESYNC_INTERVAL_MS = 10 * 60 * 1000
 // re-price still walks all held ids (a follow-up will narrow this to assets
 // that already carry a price via a join-based staleness check), so keep the
 // cadence modest rather than per-tick.
+// Must stay above PRICE_CACHE_TTL_MS in packages/assets price-syncer, or the
+// TTL gate would classify every periodic pass as fresh and stop re-pricing.
 const PRICE_RESYNC_INTERVAL_MS = 60 * 1000
 
 export class SyncService {
@@ -185,21 +187,20 @@ export class SyncService {
             }
 
             if (networksToSync.length > 0) {
-                const { hadTotalFailure } = await this.syncAll(
-                    networksToSync,
-                    shouldRefreshRound,
-                )
-                // A tick whose network calls all failed (but not via rate-limit,
-                // which throws) makes no progress — back off even though syncAll
-                // didn't throw. Any success, or a tick with no work to do, resets
-                // to the base interval.
-                this.currentInterval = hadTotalFailure
-                    ? calculateBackoff(
-                          this.currentInterval,
-                          BACKOFF_MULTIPLIER,
-                          MAX_BACKOFF_INTERVAL,
-                      )
-                    : POLL_INTERVAL
+                const { hadTotalFailure, hadAccountFailure } =
+                    await this.syncAll(networksToSync, shouldRefreshRound)
+                // Back off when the tick made no progress at all, or when an
+                // account fetch failed — the frozen checkpoint means the next
+                // tick re-syncs the whole network, so pace those retries.
+                // A clean tick, or one with no work to do, resets to base.
+                this.currentInterval =
+                    hadTotalFailure || hadAccountFailure
+                        ? calculateBackoff(
+                              this.currentInterval,
+                              BACKOFF_MULTIPLIER,
+                              MAX_BACKOFF_INTERVAL,
+                          )
+                        : POLL_INTERVAL
             } else {
                 // No networks needed syncing (should-refresh reported no work,
                 // or there are no accounts) — a successful, cheap tick.
@@ -274,9 +275,12 @@ export class SyncService {
     /**
      * Move the should-refresh checkpoint forward after an account pass.
      *
-     * Only advances when every account fetch succeeded — a failed fetch means
-     * that account's new state was not persisted, so the checkpoint must stay
-     * put and the next tick retries. Advances to the minimum round the
+     * Only advances when every account fetch succeeded: the checkpoint is
+     * per-network, so advancing past a failed account's unfetched rounds
+     * would leave it stale until its next on-chain activity. The retry storm
+     * this used to cause is bounded elsewhere — a partial failure now feeds
+     * the tick backoff (see syncAll/tick) instead of freezing at the base
+     * poll cadence. On a clean pass, advances to the minimum round the
      * fetches observed (state at round X covers all activity ≤ X), falling
      * back to the backend-reported round only when no fetch reported one.
      * If the observed round still trails the backend's, the next tick's
@@ -291,7 +295,6 @@ export class SyncService {
         fallbackRound: Nullable<number>,
     ): void {
         if (accountResults.length === 0) return
-        if (accountResults.some(r => r.status === 'rejected')) return
 
         const observedRounds = accountResults
             .map(r =>
@@ -300,6 +303,12 @@ export class SyncService {
                     : null,
             )
             .filter((round): round is number => round !== null)
+
+        // A rejected fetch freezes the checkpoint: its account's state was
+        // not persisted, so moving forward would skip that account's rounds.
+        // The bounded retry lives in the tick backoff, not here.
+        const anyRejected = accountResults.some(r => r.status === 'rejected')
+        if (anyRejected) return
 
         const round =
             observedRounds.length > 0
@@ -313,9 +322,13 @@ export class SyncService {
     private async syncAll(
         networks: Network[],
         shouldRefreshRound: Nullable<number> = null,
-    ): Promise<{ hadTotalFailure: boolean }> {
+    ): Promise<{ hadTotalFailure: boolean; hadAccountFailure: boolean }> {
         const accounts = useAccountsStore.getState().accounts
         let hasRateLimitError = false
+        // Account-fetch rejections freeze the network checkpoint (see
+        // advanceLastRefreshedRound), so the caller must back off — retrying
+        // at the base cadence would re-sync the whole network every tick.
+        let hadAccountFailure = false
         // Track outcomes across every network phase so the caller can back off
         // when a tick made no progress at all — even when syncAll doesn't throw
         // (non-429 failures are absorbed by allSettled). hadTotalFailure means
@@ -334,6 +347,9 @@ export class SyncService {
                 accounts.map(a => fetchAndPersistAccount(a.address, network)),
             )
             recordOutcomes(accountResults)
+            if (accountResults.some(r => r.status === 'rejected')) {
+                hadAccountFailure = true
+            }
             this.logFailures(
                 'account',
                 accountResults,
@@ -391,9 +407,8 @@ export class SyncService {
                     PRICE_RESYNC_INTERVAL_MS
 
             if (syncAssets || syncPrices) {
-                // Prices are always fetched from mainnet (inside
-                // fetchAndPersistPrices) but stored under the active network so
-                // DB JOINs line up.
+                // Prices are fetched from and stored under the active network
+                // (fetchAndPersistPrices passes it through) so DB JOINs line up.
                 const assetIds = await getAllHeldAssetIdsForNetwork({ network })
                 const tasks: Array<{
                     kind: 'assets' | 'prices'
@@ -481,7 +496,10 @@ export class SyncService {
             throw new Error('Rate limited by API')
         }
 
-        return { hadTotalFailure: hadAnyFailure && !hadAnySuccess }
+        return {
+            hadTotalFailure: hadAnyFailure && !hadAnySuccess,
+            hadAccountFailure,
+        }
     }
 
     private logFailures(
