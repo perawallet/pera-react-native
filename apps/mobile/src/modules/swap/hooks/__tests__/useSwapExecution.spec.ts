@@ -517,6 +517,29 @@ describe('useSwapExecution', () => {
         expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
     })
 
+    it('classifies an on-device Ledger reject arriving via the error callback as a cancellation', async () => {
+        // Defense-in-depth: even if a device reject leaks through the
+        // request's `error` callback instead of `reject`, it must never
+        // post a phantom blockchain_error to the swap backend.
+        const deviceReject = new Error(
+            'Operation was rejected on the Ledger device',
+        )
+        deviceReject.name = 'LedgerUserRejectedError'
+        autoError(deviceReject)
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-device-reject'),
+            )
+        })
+
+        expect(outcome).toEqual({ kind: 'cancelled' })
+        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+    })
+
     it('reports failure to backend when the pipeline errors', async () => {
         autoError(new Error('Pipeline boom'))
 

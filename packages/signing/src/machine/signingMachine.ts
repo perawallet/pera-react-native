@@ -40,6 +40,7 @@ import { transportActor } from './actors/transports/transportActor'
 import { hardwareSigningMachine } from './children/hardwareSigningMachine'
 import type { HardwareSigningOutput } from './children/hardwareSigningMachine.context'
 import { resolveInitialContext, makeFailedContext } from './actions'
+import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
 
 /**
@@ -71,29 +72,6 @@ const getAnalyzedGroupsForSignerType = (
         .filter(
             g => types.get(g.signerAddress) === signerType,
         ) as AnalyzedSignableGroup[]
-}
-
-/**
- * Resolves the human-readable device name for the first group's signer
- * account so the hardware child can display it in the overlay immediately.
- * Reads `hardwareDetails` directly rather than relying on the account-type
- * guard so this stays a leaf utility (no @perawallet/wallet-core-accounts
- * dependency).
- */
-const resolveHardwareDeviceName = (
-    context: SigningMachineContext,
-    groups: AnalyzedSignableGroup[],
-): string | null => {
-    const firstGroup = groups[0]
-    if (!firstGroup) return null
-    const account = context.allAccounts.find(
-        a => a.address === firstGroup.signerAddress,
-    )
-    if (!account) return null
-    return (
-        (account as { hardwareDetails?: { deviceName?: string } })
-            .hardwareDetails?.deviceName ?? null
-    )
 }
 
 /**
@@ -440,8 +418,8 @@ export const signingMachine = setup({
                                     0,
                                 ),
                                 deviceName: resolveHardwareDeviceName(
-                                    context,
                                     groups,
+                                    context.allAccounts,
                                 ),
                                 // First group determines the operation kind
                                 // (cosign requests don't mix arc60 + tx). The

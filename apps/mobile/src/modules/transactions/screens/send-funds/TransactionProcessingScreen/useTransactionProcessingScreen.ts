@@ -16,7 +16,9 @@ import { BackHandler } from 'react-native'
 import {
     AccountTypes,
     isHardwareWalletAccount,
+    resolveAuthAccount,
     useAccountBalancesInvalidator,
+    useAllAccounts,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -68,6 +70,7 @@ export const useTransactionProcessingScreen =
             return assets.get(selectedAssetId)
         }, [selectedAssetId, assets])
         const selectedAccount = useSelectedAccount()
+        const allAccounts = useAllAccounts()
         const { showError } = useErrorToast()
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
@@ -157,10 +160,23 @@ export const useTransactionProcessingScreen =
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
 
-        const isHardwareSender = selectedAccount?.type === AccountTypes.hardware
+        // The device prompt comes from the account that actually signs — the
+        // AUTH account for rekeyed senders (rekeyed-to-Ledger, undo-rekey) —
+        // so the processing copy must match the machine-driven Ledger
+        // overlay. A broken rekey chain falls back to the sender itself.
+        const signingAccount = useMemo(() => {
+            if (!selectedAccount) return undefined
+            try {
+                return resolveAuthAccount(selectedAccount, allAccounts)
+            } catch {
+                return selectedAccount
+            }
+        }, [selectedAccount, allAccounts])
+
+        const isHardwareSender = signingAccount?.type === AccountTypes.hardware
         const hardwareDeviceName =
-            selectedAccount && isHardwareWalletAccount(selectedAccount)
-                ? (selectedAccount.hardwareDetails.deviceName ?? null)
+            signingAccount && isHardwareWalletAccount(signingAccount)
+                ? (signingAccount.hardwareDetails.deviceName ?? null)
                 : null
 
         return { isHardwareSender, hardwareDeviceName }
