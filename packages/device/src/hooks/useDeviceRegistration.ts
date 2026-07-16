@@ -22,12 +22,18 @@ import { useDevice } from './useDevice'
 /**
  * Drives best-effort device registration off network and account changes.
  * Mirrors Android's `DeviceRegistrationUseCase`; failures are logged, never
- * thrown. `addresses` must be a stable reference when unchanged (memoize at
- * the call site) so the effect doesn't refire every render.
+ * thrown.
  */
 export const useDeviceRegistration = (addresses: string[]): void => {
     const { network } = useNetwork()
     const { registerDevice, clearDevicePushToken } = useDevice()
+
+    // Callers typically derive `addresses` from the accounts store array,
+    // which gets a new reference on every store write (incl. background sync
+    // ticks). Key the effect on the sorted, joined address set so it only
+    // refires when membership actually changes — one store write or a
+    // reorder must not mean one device PUT.
+    const addressesKey = [...addresses].sort().join('\n')
 
     // Stop the server pushing to the network we just left.
     useOnNetworkSwitch(previousNetwork => {
@@ -42,11 +48,12 @@ export const useDeviceRegistration = (addresses: string[]): void => {
     // (Re)register on mount, when the account set changes, and on the new
     // network after a switch.
     useEffect(() => {
-        registerDevice(addresses).catch(error => {
+        const stableAddresses = addressesKey ? addressesKey.split('\n') : []
+        registerDevice(stableAddresses).catch(error => {
             logger.warn('Device registration failed', {
                 source: 'useDeviceRegistration',
                 error,
             })
         })
-    }, [addresses, network, registerDevice])
+    }, [addressesKey, network, registerDevice])
 }
