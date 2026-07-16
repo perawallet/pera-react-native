@@ -12,6 +12,7 @@
 
 import { useCallback, useRef } from 'react'
 import { ActivityIndicator } from 'react-native'
+import { useIsFocused } from '@react-navigation/native'
 import PagerView from 'react-native-pager-view'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -66,6 +67,9 @@ export const OnrampScreen = () => {
 
     const pagerRef = useRef<PagerView>(null)
     const hasPendingHistory = useHasPendingRampOrders()
+    // The screen stays mounted in the navigator after navigating away, so tab
+    // state alone would keep the history poll alive off-screen.
+    const isFocused = useIsFocused()
 
     // Header tap drives the pager; the pager's onPageSelected then syncs the
     // active tab back (so swiping updates the header too).
@@ -171,7 +175,9 @@ export const OnrampScreen = () => {
                     key='history'
                     style={styles.page}
                 >
-                    <OnrampHistoryContent isActive={activeTab === 'history'} />
+                    <OnrampHistoryContent
+                        isActive={activeTab === 'history' && isFocused}
+                    />
                 </PWView>
             </PagerView>
         </PWView>

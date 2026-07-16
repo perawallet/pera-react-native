@@ -10,27 +10,36 @@
  limitations under the License
  */
 
+import { useIsFocused } from '@react-navigation/native'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
-import { useRampHistoryInfiniteQuery } from '@perawallet/wallet-core-onramp'
+import {
+    hasPendingRampOrder,
+    useRampHistoryInfiniteQuery,
+} from '@perawallet/wallet-core-onramp'
 
 /**
- * Whether the selected account has any pending onramp orders — drives the
- * "needs attention" dot on the History tab so a pending order is visible while
- * the user is on the Fund tab. Backed by a pending-filtered history query that
- * polls, so it clears on its own once orders settle.
+ * Drives the "needs attention" dot on the History tab. Observes the same
+ * unfiltered history query the list renders (one cache entry, one poll) and
+ * only polls while the onramp screen is focused.
+ *
+ * Only inspects the loaded pages: history is newest-first and in-flight
+ * orders are recent, so page one covers them. A pending order buried past
+ * the loaded pages won't light the dot — if product ever needs "any pending
+ * anywhere", this needs a dedicated pending-only signal again.
  */
 export const useHasPendingRampOrders = (): boolean => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network) ?? ''
     const { selectedAccountAddress } = useSelectedAccountAddress()
+    const isFocused = useIsFocused()
 
     const { items } = useRampHistoryInfiniteQuery({
         deviceId,
         accountAddress: selectedAccountAddress ?? '',
-        status: 'pending',
+        isActive: isFocused,
     })
 
-    return items.length > 0
+    return hasPendingRampOrder(items)
 }
