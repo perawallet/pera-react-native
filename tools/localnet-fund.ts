@@ -39,6 +39,10 @@ async function main(): Promise<void> {
             )
             process.exit(1)
         }
+        if (!algosdk.isValidAddress(receiver)) {
+            console.error(`ERROR: invalid Algorand address "${receiver}".`)
+            process.exit(1)
+        }
     }
 
     const amountAlgos = Number(positional[amountIndex] ?? DEFAULT_ALGOS)
