@@ -12,5 +12,4 @@
 
 export { useBlePermissions } from './useBlePermissions'
 export { useBluetoothState } from './useBluetoothState'
-export { useLedgerAccounts } from '@perawallet/wallet-core-ledger'
 export { useLedgerConnection } from './useLedgerConnectionProvider'

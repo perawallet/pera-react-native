@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-export { useLedgerAccounts } from './useLedgerAccounts'
 export {
     useLedgerConnection,
     type UseLedgerConnectionResult,
