@@ -94,4 +94,39 @@ describe('isSignRequestMultisigUnsignable', () => {
 
         expect(isSignRequestMultisigUnsignable(txRequest(), [])).toBe(false)
     })
+
+    it('flags a request whose unsignable multisig sender sits in a later transaction', () => {
+        // A mixed group must not bypass the up-front block just because its
+        // first transaction has a signable sender.
+        vi.mocked(isMultisigUnsignable).mockImplementation(
+            account =>
+                (account as { address: string }).address === 'MSIG_LATER',
+        )
+        const request = txRequest({
+            txs: [{ sender: SIGNER }, { sender: 'MSIG_LATER' }],
+        })
+        const allAccounts = [
+            { address: SIGNER },
+            { address: 'MSIG_LATER' },
+        ] as unknown as WalletAccount[]
+
+        expect(isSignRequestMultisigUnsignable(request, allAccounts)).toBe(true)
+    })
+
+    it('resolves per-transaction signer overrides when collecting signers', () => {
+        vi.mocked(isMultisigUnsignable).mockImplementation(
+            account =>
+                (account as { address: string }).address === 'MSIG_OVERRIDE',
+        )
+        const request = txRequest({
+            txs: [{ sender: SIGNER }, { sender: SIGNER }],
+            signerOverrides: new Map([[1, 'MSIG_OVERRIDE']]),
+        })
+        const allAccounts = [
+            { address: SIGNER },
+            { address: 'MSIG_OVERRIDE' },
+        ] as unknown as WalletAccount[]
+
+        expect(isSignRequestMultisigUnsignable(request, allAccounts)).toBe(true)
+    })
 })

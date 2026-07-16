@@ -109,10 +109,15 @@ export const createSigningStrategySelector = (
         account: WalletAccount,
         allAccounts: WalletAccount[],
     ): SigningStrategy => {
-        if (isMultisigAccount(account)) return multisigStrategy
-        return selectStrategyForAccount(
-            resolveAuthAccount(account, allAccounts),
-        )
+        // The AUTH account (single rekey hop; self for non-rekeyed accounts)
+        // decides the strategy: a sender rekeyed on-chain to a multisig
+        // routes to the multisig strategy exactly like a multisig sender —
+        // the auth's template authorizes the transaction. The multisig
+        // strategy re-resolves the hop itself, so passing the original
+        // account to `sign` stays correct.
+        const authAccount = resolveAuthAccount(account, allAccounts)
+        if (isMultisigAccount(authAccount)) return multisigStrategy
+        return selectStrategyForAccount(authAccount)
     }
 
     return selectStrategy

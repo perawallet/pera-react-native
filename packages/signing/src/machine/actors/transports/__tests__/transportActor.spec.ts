@@ -226,4 +226,88 @@ describe('transportActor', () => {
             expect.objectContaining({ multisigAddress: J2_ADDRESS }),
         )
     })
+
+    it('routes a local-key sender rekeyed to a multisig auth to the propose transport keyed on the auth', async () => {
+        // Sender is a standard account whose on-chain auth is a Pera-held
+        // multisig (external rekey / watch-import). The auth's template
+        // authorizes the transaction, so the transport must be the multisig
+        // propose keyed on the auth address — not a direct algod submit
+        // keyed on the sender's own (standard) type.
+        const MSIG_AUTH_ADDRESS =
+            'PZIKED6CFGYIWFYTD4H4XJBAGGNAVTQ7G67DLQWERF6BVZAB3WH27LBHUI'
+        const rekeyedSender = {
+            ...mockAlgo25Account,
+            rekeyAddress: MSIG_AUTH_ADDRESS,
+        } as unknown as WalletAccount
+        const msigAuth = {
+            type: 'multisig',
+            address: MSIG_AUTH_ADDRESS,
+            multisigDetails: {
+                threshold: 2,
+                addresses: ['p1', 'p2'],
+                version: 1,
+            },
+        } as unknown as WalletAccount
+
+        const proposeMock = vi
+            .fn()
+            .mockResolvedValue({ signRequestId: 'sr-2', status: 'pending' })
+
+        const input = makeInput(
+            { type: 'local' },
+            {
+                allAccounts: [rekeyedSender, msigAuth],
+                createTransport: createTransportSelector({
+                    algokit: mockAlgokit,
+                    encodeSignedTransactions: mockEncodeSignedTransactions,
+                    network: 'testnet',
+                    proposeSignRequest: proposeMock,
+                    getMsigMetadata: () => undefined,
+                    getDeviceId: () => 'device-1',
+                }),
+            },
+        )
+        const actor = createActor(transportActor, { input })
+        actor.start()
+        await toPromise(actor)
+
+        expect(proposeMock).toHaveBeenCalledWith(
+            expect.objectContaining({ multisigAddress: MSIG_AUTH_ADDRESS }),
+        )
+        expect(
+            mockAlgokit.client.algod.sendRawTransaction,
+        ).not.toHaveBeenCalled()
+    })
+
+    it('keys the cosign transport on the participant itself even when the participant is rekeyed', async () => {
+        // Multisig-cosign participants sign with their own key — the rekey
+        // hop must not be followed for transport keying either.
+        mockAddSignatures.mockResolvedValue({ status: 'pending' })
+        const rekeyedParticipant = {
+            ...mockAlgo25Account,
+            rekeyAddress: 'SOMEOTHERAUTH',
+        } as unknown as WalletAccount
+        const source: SourceMetadata = {
+            type: 'multisig-cosign',
+            signRequestId: 'sign-req-2',
+        }
+        const input = makeInput(source, {
+            allAccounts: [rekeyedParticipant],
+            createTransport: createTransportSelector({
+                algokit: mockAlgokit,
+                encodeSignedTransactions: mockEncodeSignedTransactions,
+                addSignatures: mockAddSignatures,
+                network: 'testnet',
+            }),
+        })
+        const actor = createActor(transportActor, { input })
+        actor.start()
+        const result = await toPromise(actor)
+
+        expect(result.type).toBe('signatures-added')
+        expect(mockAddSignatures).toHaveBeenCalledWith({
+            signRequestId: 'sign-req-2',
+            signers: mockSigningResult.signers,
+        })
+    })
 })

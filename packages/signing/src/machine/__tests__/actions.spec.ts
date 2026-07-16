@@ -164,8 +164,6 @@ describe('buildGroupSignerTypeMap', () => {
         })
 
         it('classifies a multisig sender rekeyed to another multisig as multisig', () => {
-            // A shared account can only be rekeyed to another shared account,
-            // so the multisig signer check covers the rekeyed-multisig case.
             const sender = multisig(PARTICIPANT, ['P1', 'P2'])
             sender.rekeyAddress = AUTH
             const auth = multisig(AUTH, ['P1', 'P2'])
@@ -174,6 +172,43 @@ describe('buildGroupSignerTypeMap', () => {
             const map = buildGroupSignerTypeMap([group], [sender, auth])
 
             expect(map.get(PARTICIPANT)).toBe('multisig')
+        })
+
+        it('classifies a local-key sender rekeyed to a multisig auth as multisig (auth-account rule)', () => {
+            // Reachable via external rekey or watch-import of an account
+            // rekeyed on-chain to a Pera-held multisig — the auth's template
+            // authorizes the transaction, so it routes to the propose path.
+            const sender = algo25(PARTICIPANT, AUTH)
+            const auth = multisig(AUTH, ['P1', 'P2'])
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('multisig')
+        })
+
+        it('classifies a watch sender rekeyed to a multisig auth as multisig', () => {
+            const sender = watch(PARTICIPANT, AUTH)
+            const auth = multisig(AUTH, ['P1', 'P2'])
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('multisig')
+        })
+
+        it('classifies a multisig sender externally rekeyed to a local-key auth as localKey (auth-account rule)', () => {
+            // msig → standard is unreachable through the in-app rekey UI but
+            // can exist on-chain — the auth key signs, so route to it instead
+            // of failing with NoLocalParticipantsError.
+            const sender = multisig(PARTICIPANT, ['P1', 'P2'])
+            sender.rekeyAddress = AUTH
+            const auth = algo25(AUTH)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('localKey')
         })
     })
 

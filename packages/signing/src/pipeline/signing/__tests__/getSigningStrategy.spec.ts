@@ -77,8 +77,17 @@ beforeEach(() => {
 describe('createSigningStrategySelector', () => {
     test('returns multisig strategy for multisig accounts', () => {
         mocks.isMultisigAccount.mockImplementation(a => a.type === 'multisig')
+        mocks.resolveAuthAccount.mockImplementation(a => a)
         const select = makeSelector()
         const strategy = select(multisigAccount, [multisigAccount])
+        expect(strategy.canSign(multisigAccount)).toBe(true)
+    })
+
+    test('returns multisig strategy when the auth account is multisig (rekeyed-to-msig sender)', () => {
+        mocks.isMultisigAccount.mockImplementation(a => a.type === 'multisig')
+        mocks.resolveAuthAccount.mockReturnValue(multisigAccount)
+        const select = makeSelector()
+        const strategy = select(algo25Account, [algo25Account, multisigAccount])
         expect(strategy.canSign(multisigAccount)).toBe(true)
     })
 

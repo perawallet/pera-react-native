@@ -11,11 +11,7 @@
  */
 
 import { fromPromise } from 'xstate'
-import {
-    isMultisigAccount,
-    resolveAuthAccount,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     SigningResult,
     SourceMetadata,
@@ -23,6 +19,7 @@ import type {
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
 import { mergeSigningResults } from '../../../utils/mergeSigningResults'
+import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
 
 export type TransportActorInput = {
     signingResults: SigningResult[]
@@ -60,21 +57,25 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             )
         }
 
-        // The "multisig address" a transport is keyed on is the address whose
-        // multisig template authorizes the transaction. For a shared account
-        // that is itself rekeyed to another shared account, that is the auth
-        // account (a single rekey hop), not the sender — otherwise the propose
-        // would assemble the msig from the sender's own template and algod
-        // rejects it ("should have been authorized by <auth> but was actually
-        // authorized by <sender>"). Non-rekeyed accounts resolve to themselves,
-        // so this is a no-op for them.
-        const multisigAddress = isMultisigAccount(signerAccount)
-            ? resolveAuthAccount(signerAccount, allAccounts).address
-            : signerAddress
+        // Transport routing and multisig-template keying must follow the SAME
+        // account the signing dispatcher routed on: the account whose key (or
+        // multisig template) authorizes the signature. resolveSigningAccount
+        // applies the rules — rekey hop for transactions (so a sender rekeyed
+        // to a multisig routes to the propose transport keyed on the AUTH's
+        // template, not the sender's own type; algod would otherwise reject
+        // with "should have been authorized by <auth>"), no hop for cosign
+        // participants and off-chain data. Non-rekeyed accounts self-resolve.
+        const dataType = signingResults[0]?.signedData.type ?? 'transactions'
+        const authAccount = resolveSigningAccount(
+            signerAccount,
+            source,
+            dataType,
+            allAccounts,
+        )
 
-        const transport = createTransport(source, signerAccount)
+        const transport = createTransport(source, authAccount)
         const merged = mergeSigningResults(signingResults)
 
-        return transport.send(merged, source, multisigAddress)
+        return transport.send(merged, source, authAccount.address)
     },
 )

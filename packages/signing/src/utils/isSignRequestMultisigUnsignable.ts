@@ -15,13 +15,14 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isTransactionRequest, type SignRequest } from '../models'
-import { resolveSignerAddress } from './resolveSignerAddress'
 
 /**
- * True iff `request` is a transaction sign request whose signer is a multisig
- * account the wallet holds no signable participant of — so the signing UI can
- * block it up-front with a clear message instead of letting the pipeline fail
- * late with a generic toast.
+ * True iff `request` is a transaction sign request in which ANY transaction's
+ * signer is a multisig account the wallet holds no signable participant of —
+ * so the signing UI can block it up-front with a clear message instead of
+ * letting the pipeline fail late with a generic toast. Every transaction's
+ * resolved signer (including per-index `signerOverrides`) is inspected, so a
+ * mixed group whose unsignable sender sits in a later slot cannot slip past.
  *
  * Such a request can arrive via e.g. a transaction deeplink, or a WalletConnect
  * session connected while the account was still signable. `multisig-cosign`
@@ -33,11 +34,20 @@ export const isSignRequestMultisigUnsignable = (
 ): boolean => {
     if (request.sourceType === 'multisig-cosign') return false
     if (!isTransactionRequest(request)) return false
-    const signerAddress = resolveSignerAddress(request)
-    if (!signerAddress) return false
-    const signerAccount = accounts.find(
-        account => account.address === signerAddress,
-    )
-    if (!signerAccount) return false
-    return isMultisigUnsignable(signerAccount, accounts)
+
+    const signerAddresses = new Set<string>()
+    request.txs.forEach((tx, index) => {
+        const address =
+            request.signerOverrides?.get(index) ?? tx.sender?.toString?.()
+        if (address) signerAddresses.add(address)
+    })
+
+    for (const signerAddress of signerAddresses) {
+        const signerAccount = accounts.find(
+            account => account.address === signerAddress,
+        )
+        if (!signerAccount) continue
+        if (isMultisigUnsignable(signerAccount, accounts)) return true
+    }
+    return false
 }

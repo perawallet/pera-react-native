@@ -51,18 +51,24 @@ import {
 // =============================================================================
 
 /**
- * Determines the signing strategy type based on the signer and auth accounts.
- * - multisig: the original signer account is a multisig account (a shared
- *   account can only ever be rekeyed to another shared account, so the
- *   multisig signer covers the rekeyed-multisig case too)
- * - hardware: the auth account (after rekey resolution) is a hardware wallet
+ * Determines the signing strategy type from the AUTH account — the account
+ * whose key (or multisig template) actually authorizes the signature after
+ * {@link resolveSigningAccount} applied the rekey/cosign rules:
+ * - multisig: the auth account is a multisig (covers a multisig sender that
+ *   self-resolves, a multisig rekeyed to another multisig, and any sender
+ *   rekeyed on-chain to a Pera-held multisig)
+ * - hardware: the auth account is a hardware wallet
  * - localKey: the auth account has local signing keys (Algo25 / HDWallet)
+ *
+ * Routing on the auth account also carries the externally-rekeyed-multisig
+ * edge (a multisig whose on-chain auth is a standard/Ledger account we hold):
+ * the auth key signs, instead of failing with NoLocalParticipantsError.
  */
 const determineSignerType = (
     signerAccount: WalletAccount,
     authAccount: WalletAccount,
 ): ResolvedSignerType => {
-    if (isMultisigAccount(signerAccount)) {
+    if (isMultisigAccount(authAccount)) {
         return 'multisig'
     }
     if (isHardwareWalletAccount(authAccount)) {
