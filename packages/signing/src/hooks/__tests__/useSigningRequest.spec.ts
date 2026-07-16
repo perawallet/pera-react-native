@@ -11,8 +11,10 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { createElement, type ReactNode } from 'react'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningRequest } from '../useSigningRequest'
+import { SigningRequestScopeProvider } from '../SigningRequestScope'
 import { __resetSigningActorRegistryForTests } from '../useSigningActorLifecycle'
 import { useSigningStore } from '../../store'
 import { approvalGate } from '../../pipeline/approvalGate'
@@ -342,6 +344,52 @@ describe('useSigningRequest', () => {
             })
 
             expect(result.current.currentRequest?.id).toBe('tx-1')
+        })
+    })
+
+    describe('request scope', () => {
+        const scopeWrapper =
+            (requestId: string) =>
+            ({ children }: { children: ReactNode }) =>
+                createElement(
+                    SigningRequestScopeProvider,
+                    { requestId },
+                    children,
+                )
+
+        test('currentRequest binds to the scoped request id, not the queue head', () => {
+            // The review sheet is opened for a specific request; everything
+            // rendered inside it must bind to THAT request even when another
+            // request sits at the queue head (e.g. a headless hardware send
+            // parked in signing while a dApp request arrives behind it).
+            const actor1 = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor1 as any)
+
+            const { result } = renderHook(() => useSigningRequest(), {
+                wrapper: scopeWrapper('tx-2'),
+            })
+
+            act(() => {
+                result.current.addSignRequest(makeTxRequest({ id: 'tx-1' }))
+                result.current.addSignRequest(makeTxRequest({ id: 'tx-2' }))
+            })
+
+            expect(result.current.currentRequest?.id).toBe('tx-2')
+        })
+
+        test('currentRequest is undefined when the scoped request left the queue', () => {
+            const actor1 = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor1 as any)
+
+            const { result } = renderHook(() => useSigningRequest(), {
+                wrapper: scopeWrapper('tx-gone'),
+            })
+
+            act(() => {
+                result.current.addSignRequest(makeTxRequest({ id: 'tx-1' }))
+            })
+
+            expect(result.current.currentRequest).toBeUndefined()
         })
     })
 

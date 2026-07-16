@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import type { AnyActorRef } from 'xstate'
 import { useSigningStore } from '../store'
+import { useScopedSignRequestId } from './SigningRequestScope'
 import { useSigningActorLifecycle } from './useSigningActorLifecycle'
 import { approvalGate } from '../pipeline/approvalGate'
 import type { SignRequest } from '../models'
@@ -50,6 +51,7 @@ type UseSigningRequestResult = {
 // =============================================================================
 
 export const useSigningRequest = (): UseSigningRequestResult => {
+    const scopedRequestId = useScopedSignRequestId()
     const pendingSignRequests = useSigningStore(
         state => state.pendingSignRequests,
     )
@@ -180,7 +182,13 @@ export const useSigningRequest = (): UseSigningRequestResult => {
         [getActorRef],
     )
 
-    const currentRequest = pendingSignRequests?.at(0)
+    // Inside a SigningRequestScopeProvider (the review sheet), bind to the
+    // request the sheet was opened for; otherwise keep queue-head semantics
+    // for headless flows. A scoped request that already left the queue
+    // resolves to undefined, which reads as "nothing to act on".
+    const currentRequest = scopedRequestId
+        ? pendingSignRequests.find(r => r.id === scopedRequestId)
+        : pendingSignRequests?.at(0)
     const currentActorRef = currentRequest
         ? (getActorRef(currentRequest.id) ?? null)
         : null

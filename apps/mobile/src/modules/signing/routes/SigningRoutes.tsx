@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    type SignRequest,
-    useSigningPipeline,
-} from '@perawallet/wallet-core-signing'
+import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import {
     createStackNavigator,
     type StackHeaderProps,
@@ -33,10 +30,6 @@ import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecuri
 import { NavigationHeader } from '@components/NavigationHeader'
 import { useStyles } from './styles'
 import { bottomSheetLayout } from '@layouts/index'
-
-type SigningRoutesProps = {
-    request: SignRequest
-}
 
 const Stack = createStackNavigator<SigningStackParamList>()
 
@@ -62,7 +55,10 @@ const useInitialRouteConfig = (): InitialRouteConfig | null => {
     }
 }
 
-export const SigningRoutes = ({ request: _request }: SigningRoutesProps) => {
+// Bound to the sheet's request via the SigningRequestScopeProvider that
+// SignRequestContent mounts above this tree — useSigningPipeline (and every
+// signing hook in the screens below) resolves that request, not the queue head.
+export const SigningRoutes = () => {
     const initialRouteConfig = useInitialRouteConfig()
     const styles = useStyles()
     if (!initialRouteConfig) return null

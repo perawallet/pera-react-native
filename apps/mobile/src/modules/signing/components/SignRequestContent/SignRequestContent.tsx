@@ -11,7 +11,10 @@
  */
 
 import React from 'react'
-import { type SignRequest } from '@perawallet/wallet-core-signing'
+import {
+    SigningRequestScopeProvider,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
 import { SignRequestView } from '@modules/signing/components/SignRequestView'
 
 export type SignRequestContentProps = {
@@ -23,7 +26,14 @@ export type SignRequestContentProps = {
  * driven by `useSignRequestDriver` in `SigningOverlays`, which watches the
  * signing queue and calls `requestBottomSheet` whenever a new request
  * whose `sourceType` is in `INTERACTIVE_SOURCES` appears.
+ *
+ * The scope provider binds every signing hook rendered inside the sheet
+ * (`useSigningPipeline`, action buttons, the signing screens) to THIS
+ * request — never to whatever currently sits at the queue head, which can
+ * be a different request while a headless hardware sign is in flight.
  */
 export const SignRequestContent = ({ request }: SignRequestContentProps) => (
-    <SignRequestView request={request} />
+    <SigningRequestScopeProvider requestId={request.id}>
+        <SignRequestView request={request} />
+    </SigningRequestScopeProvider>
 )
