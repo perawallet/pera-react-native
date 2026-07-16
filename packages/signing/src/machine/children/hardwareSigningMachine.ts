@@ -11,7 +11,10 @@
  */
 
 import { setup, assign } from 'xstate'
-import { config } from '@perawallet/wallet-core-config'
+import {
+    LEDGER_CONFIRMATION_TIMEOUT_MS,
+    LEDGER_CONNECTION_TIMEOUT_MS,
+} from '@perawallet/wallet-core-ledger'
 import type {
     HardwareSigningContext,
     HardwareSigningEvent,
@@ -19,6 +22,14 @@ import type {
     HardwareSigningOutput,
 } from './hardwareSigningMachine.context'
 import { hardwareSignActor } from './hardwareSignActor'
+
+/**
+ * Margin added on top of the strategy's own `withTimeout` ceilings so the
+ * machine-side timers are pure backstops: the strategy's timeout always fires
+ * first and surfaces as `STRATEGY_ERROR` with a precise error; the machine
+ * timer only catches a step that hangs without ever settling its promise.
+ */
+const BACKSTOP_MARGIN_MS = 15_000
 
 export const hardwareSigningMachine = setup({
     types: {
@@ -30,16 +41,22 @@ export const hardwareSigningMachine = setup({
     actors: {
         hardwareSignActor,
     },
-    // Per-step inactivity ceiling for the long-lived `active` substates
-    // (searching / awaiting_approval / signing). Each substate arms its own
-    // fresh `HARDWARE_TIMEOUT` on entry, and every activity event (PROGRESS /
-    // GROUP_SIGNED / a repeated AWAITING_APPROVAL) re-enters the substate to
-    // re-arm it — so a hung hardware step still routes to `error`, but normal
-    // human-paced multi-tx approval never trips it. Reuses the parent
-    // machine's transport ceiling from config so the value stays tunable and
-    // never hardcoded.
+    // Per-substate backstop budgets, derived from the same Ledger ceilings the
+    // strategy's `withTimeout` calls use (never hardcoded ms):
+    // - `searching` covers connect + address-verify — two sequential awaits
+    //   each bounded by LEDGER_CONNECTION_TIMEOUT_MS — so its budget must
+    //   exceed twice that ceiling or a slow-but-legal cold-start connect times
+    //   the step out.
+    // - `awaiting_approval`/`signing` are bounded by the on-device
+    //   confirmation ceiling (LEDGER_CONFIRMATION_TIMEOUT_MS, 5 min): a single
+    //   slow approval fires NO activity events, so the budget must sit above
+    //   the strategy's own bound, which already fails the step via
+    //   STRATEGY_ERROR. Activity events (PROGRESS / GROUP_SIGNED / a repeated
+    //   AWAITING_APPROVAL) re-enter the substate and re-arm its timer.
     delays: {
-        HARDWARE_TIMEOUT: config.signingTransportTimeout,
+        SEARCHING_TIMEOUT:
+            2 * LEDGER_CONNECTION_TIMEOUT_MS + BACKSTOP_MARGIN_MS,
+        APPROVAL_TIMEOUT: LEDGER_CONFIRMATION_TIMEOUT_MS + BACKSTOP_MARGIN_MS,
     },
     actions: {
         appendResult: assign({
@@ -67,11 +84,16 @@ export const hardwareSigningMachine = setup({
                     >
                 ).error,
         }),
+        // RETRY re-invokes `hardwareSignActor` with ALL groups, so results
+        // collected before the failure would re-fire and duplicate — clear
+        // them along with the error. The user re-approves every group, but
+        // the output can never contain a group twice.
         clearError: assign({
             error: () => null,
             currentTx: () => 0,
+            results: () => [],
         }),
-        // Fired by a substate's `after` (per-step) timeout. There is no
+        // Fired by a substate's `after` backstop timeout. There is no
         // `event.error` on an `after` transition, so we synthesize a
         // retryable-shaped hardware error with kind `'timeout'`. Routing this
         // into the existing `error` state means RETRY (→ active) and
@@ -79,9 +101,7 @@ export const hardwareSigningMachine = setup({
         setTimeoutError: assign({
             error: () => ({
                 kind: 'timeout' as const,
-                cause: new Error(
-                    `Hardware signing timed out after ${config.signingTransportTimeout}ms`,
-                ),
+                cause: new Error('Hardware signing step timed out'),
             }),
         }),
     },
@@ -111,15 +131,18 @@ export const hardwareSigningMachine = setup({
             },
             initial: 'searching',
             states: {
-                // Each substate arms its OWN `HARDWARE_TIMEOUT` on entry.
-                // Because the timer lives on the substate and NOT on
-                // `active`, moving between steps re-arms it without
-                // re-invoking `hardwareSignActor` (the invoke is on `active`).
-                // Activity events (PROGRESS / GROUP_SIGNED / a repeated
+                // Each substate arms its OWN backstop timer on entry. Because
+                // the timer lives on the substate and NOT on `active`, moving
+                // between steps re-arms it without re-invoking
+                // `hardwareSignActor` (the invoke is on `active`). Activity
+                // events (PROGRESS / GROUP_SIGNED / a repeated
                 // AWAITING_APPROVAL while already awaiting) are external
                 // self-transitions: they exit and re-enter the substate, which
-                // cancels and re-schedules its `after`. Only a full ceiling of
-                // genuine inactivity within a single step reaches `error`.
+                // cancels and re-schedules its `after`. The budgets sit above
+                // the strategy's own `withTimeout` ceilings, so a legitimate
+                // slow step (cold-start connect, a user reading a multi-screen
+                // approval) is never raced by the machine — only a step whose
+                // promise hangs without settling reaches `error` this way.
                 searching: {
                     on: {
                         AWAITING_APPROVAL: 'awaiting_approval',
@@ -136,7 +159,7 @@ export const hardwareSigningMachine = setup({
                         },
                     },
                     after: {
-                        HARDWARE_TIMEOUT: {
+                        SEARCHING_TIMEOUT: {
                             target: '#hardwareSigningMachine.error',
                             actions: 'setTimeoutError',
                         },
@@ -165,7 +188,7 @@ export const hardwareSigningMachine = setup({
                         },
                     },
                     after: {
-                        HARDWARE_TIMEOUT: {
+                        APPROVAL_TIMEOUT: {
                             target: '#hardwareSigningMachine.error',
                             actions: 'setTimeoutError',
                         },
@@ -186,7 +209,7 @@ export const hardwareSigningMachine = setup({
                         },
                     },
                     after: {
-                        HARDWARE_TIMEOUT: {
+                        APPROVAL_TIMEOUT: {
                             target: '#hardwareSigningMachine.error',
                             actions: 'setTimeoutError',
                         },

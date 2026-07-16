@@ -50,7 +50,6 @@ export type HardwareSigningContext = HardwareSigningInput & {
 }
 
 export type HardwareSigningEvent =
-    | { type: 'CONNECTING' }
     | { type: 'AWAITING_APPROVAL' }
     | { type: 'SIGNING_STARTED' }
     | { type: 'PROGRESS'; current: number; total: number }

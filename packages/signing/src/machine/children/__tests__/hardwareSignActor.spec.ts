@@ -151,7 +151,7 @@ beforeEach(() => {
 })
 
 describe('hardwareSignActor', () => {
-    it('happy path: connecting → awaiting-approval → signing-start → GROUP_SIGNED → ALL_DONE', async () => {
+    it('happy path: awaiting-approval → signing-start → GROUP_SIGNED → ALL_DONE', async () => {
         mocks.sign.mockImplementation(
             async (
                 _group: AnalyzedSignableGroup,
@@ -168,16 +168,12 @@ describe('hardwareSignActor', () => {
         const { events, stop } = await runActor(makeInput())
         stop()
         const types = events.map(e => e.type)
-        expect(types).toContain('CONNECTING')
         expect(types).toContain('AWAITING_APPROVAL')
         expect(types).toContain('SIGNING_STARTED')
         expect(types).toContain('GROUP_SIGNED')
         expect(types).toContain('ALL_DONE')
-        // CONNECTING must precede AWAITING_APPROVAL, AWAITING_APPROVAL must
-        // precede SIGNING_STARTED, and GROUP_SIGNED must precede ALL_DONE.
-        expect(types.indexOf('CONNECTING')).toBeLessThan(
-            types.indexOf('AWAITING_APPROVAL'),
-        )
+        // AWAITING_APPROVAL must precede SIGNING_STARTED, and GROUP_SIGNED
+        // must precede ALL_DONE.
         expect(types.indexOf('AWAITING_APPROVAL')).toBeLessThan(
             types.indexOf('SIGNING_STARTED'),
         )
@@ -186,12 +182,12 @@ describe('hardwareSignActor', () => {
         )
     })
 
-    it('onPhaseChange with an unrecognized phase is ignored (no sendBack)', async () => {
+    it('onPhaseChange with a non-approval phase is ignored (no sendBack)', async () => {
         mocks.sign.mockImplementation(
             async (_g, _a, callbacks: SigningCallbacks) => {
-                // 'signing' is a SigningPhase value but the actor only
-                // translates 'connecting' and 'awaiting-approval'; the rest
-                // should fall through silently.
+                // The actor only translates 'awaiting-approval'; every other
+                // SigningPhase value should fall through silently.
+                callbacks.onPhaseChange?.('connecting')
                 callbacks.onPhaseChange?.('signing')
                 return makeResult()
             },
@@ -199,8 +195,6 @@ describe('hardwareSignActor', () => {
 
         const { events, stop } = await runActor(makeInput())
         stop()
-        // Neither CONNECTING nor AWAITING_APPROVAL must have been emitted.
-        expect(events.some(e => e.type === 'CONNECTING')).toBe(false)
         expect(events.some(e => e.type === 'AWAITING_APPROVAL')).toBe(false)
         // But the strategy still completed successfully — ALL_DONE arrives.
         expect(events.some(e => e.type === 'ALL_DONE')).toBe(true)
@@ -292,6 +286,45 @@ describe('hardwareSignActor', () => {
             { type: 'NON_LEDGER_ERROR' }
         >
         expect(payload.error.cause).toBe(plainError)
+    })
+
+    it('offsets per-group progress so multi-group progress is monotonic', async () => {
+        // The strategy reports progress per group (1..n each group); the
+        // overlay total spans all groups. Without an offset, 2 groups × 2 txs
+        // renders 1/4, 2/4, 1/4, 2/4 — progress going backwards.
+        const twoTxGroup = (): AnalyzedSignableGroup => {
+            const group = makeGroup()
+            group.data = {
+                ...group.data,
+                transactions: [
+                    { sender: { toString: () => HARDWARE_ADDRESS } } as never,
+                    { sender: { toString: () => HARDWARE_ADDRESS } } as never,
+                ],
+                indicesToSign: [0, 1],
+            } as never
+            return group
+        }
+        mocks.sign.mockImplementation(
+            async (_g, _a, callbacks: SigningCallbacks) => {
+                callbacks.onProgress?.(1, 2)
+                callbacks.onProgress?.(2, 2)
+                return makeResult()
+            },
+        )
+
+        const { events, stop } = await runActor(
+            makeInput({ groups: [twoTxGroup(), twoTxGroup()], totalTxs: 4 }),
+        )
+        stop()
+
+        const currents = events
+            .filter(e => e.type === 'PROGRESS')
+            .map(
+                e =>
+                    (e as Extract<HardwareSigningEvent, { type: 'PROGRESS' }>)
+                        .current,
+            )
+        expect(currents).toEqual([1, 2, 3, 4])
     })
 
     it('iterates multiple groups, firing GROUP_SIGNED per success then ALL_DONE', async () => {
