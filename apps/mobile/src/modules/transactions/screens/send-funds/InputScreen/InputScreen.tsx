@@ -166,6 +166,7 @@ export const InputScreen = () => {
                     style={styles.nextButton}
                     onPress={() => void handleNext()}
                     isDisabled={!cryptoValue}
+                    testID='send_input_next_button'
                 />
             }
         >
@@ -212,12 +213,14 @@ export const InputScreen = () => {
                             variant='secondary'
                             style={styles.secondaryButton}
                             onPress={openNote}
+                            testID='send_input_note_button'
                         />
                         <PWButton
                             title={t('send_funds.input.max')}
                             variant='secondary'
                             style={styles.secondaryButton}
                             onPress={setMax}
+                            testID='send_input_max_button'
                         />
                     </PWView>
 
