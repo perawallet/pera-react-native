@@ -50,12 +50,18 @@ export const hardwareSignActor = fromCallback<
     })
 
     let cancelled = false
+    // Aborting on stop reaches the BLE layer: the strategy stops sending
+    // APDUs and disconnects the transport, which dismisses the on-device
+    // prompt. The `cancelled` flag stays as defense-in-depth against late
+    // microtasks that settle before the abort propagates.
+    const abortController = new AbortController()
     // The strategy reports progress per group (1..n within each group) while
     // the overlay total spans ALL groups — offset by the transactions of the
     // groups already signed so multi-group progress is monotonic.
     let progressOffset = 0
 
     const callbacks = {
+        signal: abortController.signal,
         onPhaseChange: (phase: SigningPhase) => {
             if (cancelled) return
             if (phase === 'awaiting-approval') {
@@ -142,5 +148,6 @@ export const hardwareSignActor = fromCallback<
 
     return () => {
         cancelled = true
+        abortController.abort()
     }
 })

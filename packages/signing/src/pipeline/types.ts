@@ -437,6 +437,16 @@ export interface SigningCallbacks {
 
     /** Called on error */
     onError?: (error: Error) => void
+
+    /**
+     * Aborts the signing session. Hardware strategies check it before every
+     * device exchange and disconnect the transport when it fires, so an
+     * app-side cancel/timeout reaches the BLE layer (dismissing the on-device
+     * prompt and evicting the library's cached transport) instead of leaving
+     * a detached exchange walking the user through discarded approvals.
+     * Strategies without long-lived device sessions may ignore it.
+     */
+    signal?: AbortSignal
 }
 
 /**
