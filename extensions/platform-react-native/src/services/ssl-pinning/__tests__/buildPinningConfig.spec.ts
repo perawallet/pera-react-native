@@ -14,12 +14,17 @@ import { describe, expect, test } from 'vitest'
 import { buildPinningConfig } from '../buildPinningConfig'
 import { PINNED_ROOT_SPKI_HASHES, SSL_PINNING_EXPIRATION_DATE } from '../pins'
 
+const PERA_DOMAINS = ['perawallet.app']
+
 describe('buildPinningConfig', () => {
-    test('builds a pin entry per perawallet.app host with the root hashes and expiration', () => {
-        const result = buildPinningConfig([
-            'https://mainnet.staging.api.perawallet.app',
-            'https://testnet.staging.api.perawallet.app',
-        ])
+    test('builds a pin entry per allowed host with the root hashes and expiration', () => {
+        const result = buildPinningConfig(
+            [
+                'https://mainnet.staging.api.perawallet.app',
+                'https://testnet.staging.api.perawallet.app',
+            ],
+            PERA_DOMAINS,
+        )
 
         expect(result).toEqual({
             'mainnet.staging.api.perawallet.app': {
@@ -35,32 +40,57 @@ describe('buildPinningConfig', () => {
         })
     })
 
-    test('excludes hosts outside perawallet.app so dev overrides stay unpinned', () => {
-        const result = buildPinningConfig([
-            'https://mainnet.api.perawallet.app',
-            'http://localhost:8000',
-            'https://mainnet-api.algonode.cloud',
-            // Suffix must match on a label boundary, not a substring.
-            'https://evil-perawallet.app',
-            'https://perawallet.app.attacker.example',
-        ])
+    test('excludes hosts outside the allowed domains so dev overrides stay unpinned', () => {
+        const result = buildPinningConfig(
+            [
+                'https://mainnet.api.perawallet.app',
+                'http://localhost:8000',
+                'https://mainnet-api.algonode.cloud',
+                // Suffix must match on a label boundary, not a substring.
+                'https://evil-perawallet.app',
+                'https://perawallet.app.attacker.example',
+            ],
+            PERA_DOMAINS,
+        )
 
         expect(result ? Object.keys(result) : []).toEqual([
             'mainnet.api.perawallet.app',
         ])
     })
 
-    test('pins the apex perawallet.app domain itself', () => {
-        const result = buildPinningConfig(['https://perawallet.app'])
+    test('supports multiple allowed domains for the node endpoints', () => {
+        const result = buildPinningConfig(
+            [
+                'https://mainnet-api.algonode.cloud',
+                'https://mainnet-idx.algonode.cloud',
+                'https://mainnet.api.perawallet.app',
+            ],
+            ['algonode.cloud'],
+        )
+
+        expect(result ? Object.keys(result) : []).toEqual([
+            'mainnet-api.algonode.cloud',
+            'mainnet-idx.algonode.cloud',
+        ])
+    })
+
+    test('pins an apex domain itself', () => {
+        const result = buildPinningConfig(
+            ['https://perawallet.app'],
+            PERA_DOMAINS,
+        )
 
         expect(result ? Object.keys(result) : []).toEqual(['perawallet.app'])
     })
 
     test('dedupes hosts that appear in multiple URLs', () => {
-        const result = buildPinningConfig([
-            'https://mainnet.api.perawallet.app/api/v1/',
-            'https://mainnet.api.perawallet.app/other/path',
-        ])
+        const result = buildPinningConfig(
+            [
+                'https://mainnet.api.perawallet.app/api/v1/',
+                'https://mainnet.api.perawallet.app/other/path',
+            ],
+            PERA_DOMAINS,
+        )
 
         expect(result ? Object.keys(result) : []).toEqual([
             'mainnet.api.perawallet.app',
@@ -68,15 +98,17 @@ describe('buildPinningConfig', () => {
     })
 
     test('returns null when no pinnable host remains', () => {
-        expect(buildPinningConfig(['http://localhost:8000'])).toBeNull()
-        expect(buildPinningConfig([])).toBeNull()
+        expect(
+            buildPinningConfig(['http://localhost:8000'], PERA_DOMAINS),
+        ).toBeNull()
+        expect(buildPinningConfig([], PERA_DOMAINS)).toBeNull()
     })
 
     test('skips malformed URLs without throwing', () => {
-        const result = buildPinningConfig([
-            'not a url',
-            'https://mainnet.api.perawallet.app',
-        ])
+        const result = buildPinningConfig(
+            ['not a url', 'https://mainnet.api.perawallet.app'],
+            PERA_DOMAINS,
+        )
 
         expect(result ? Object.keys(result) : []).toEqual([
             'mainnet.api.perawallet.app',

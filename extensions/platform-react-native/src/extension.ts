@@ -45,7 +45,7 @@ export const WithReactNativePlatformExtension = (
             analyticsInit,
         ])
 
-        // After remote config so the enable_ssl_pinning decision sees the
+        // After remote config so the SSL-pinning flag decisions see the
         // freshest activated value. Never throws — pinning is best-effort
         // hardening and must not break startup.
         await initializeSslPinningService({

@@ -23,6 +23,11 @@ import type {
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 import { buildPinningConfig } from './buildPinningConfig'
+import type { PinningConfig } from './buildPinningConfig'
+
+/** Domains eligible for pinning per group — never pin outside these. */
+const BACKEND_PIN_DOMAINS = ['perawallet.app'] as const
+const NODE_PIN_DOMAINS = ['algonode.cloud'] as const
 
 export type SslPinningDependencies = {
     remoteConfig: Pick<RemoteConfigService, 'getBooleanValue'>
@@ -30,18 +35,24 @@ export type SslPinningDependencies = {
     crashReporting: Pick<CrashReportingService, 'recordNonFatalError'>
     /** Overridable for tests; defaults to the build's configured backend URLs. */
     backendUrls?: readonly string[]
+    /** Overridable for tests; defaults to the build's algod/indexer URLs. */
+    nodeUrls?: readonly string[]
 }
 
 /**
- * Enables SSL public-key pinning for the Pera backend hosts, gated on the
- * `enable_ssl_pinning` remote-config flag.
+ * Enables SSL public-key pinning for two independently flagged host groups:
+ * the Pera backend (`enable_ssl_pinning_pera_api`) and the Algorand node/indexer
+ * providers (`enable_ssl_pinning_algod`). Separate flags = separate kill
+ * switches: a CA surprise on one group can be disabled without dropping
+ * protection on the other. Both groups share the same pin set — every host is
+ * served through Cloudflare, whose partner-CA roots are what we pin.
  *
- * Call AFTER remote config has initialized: the flag decision must see the
- * freshest activated value, and because `getBooleanValue` only trusts
+ * Call AFTER remote config has initialized: the flag decisions must see the
+ * freshest activated values, and because `getBooleanValue` only trusts
  * genuinely fetched values, pinning stays off until Firebase has delivered an
  * explicit `true` at least once. Firebase's own hosts are never pinned, so
- * flipping the flag off in the console remains reachable even when the pin
- * set itself is broken — that is the remote kill switch.
+ * flipping a flag off in the console remains reachable even when the pin set
+ * itself is broken.
  *
  * Requests issued before this runs are unpinned (fail-open at cold start);
  * pinning is hardening, so setup errors are swallowed and reported rather
@@ -55,19 +66,43 @@ export const initializeSslPinningService = async (
         analytics,
         crashReporting,
         backendUrls = [config.mainnetBackendUrl, config.testnetBackendUrl],
+        nodeUrls = [
+            config.mainnetAlgodUrl,
+            config.testnetAlgodUrl,
+            config.mainnetIndexerUrl,
+            config.testnetIndexerUrl,
+        ],
     } = dependencies
 
     try {
-        const isEnabled = remoteConfig.getBooleanValue(
-            RemoteConfigKeys.enable_ssl_pinning,
-            false,
-        )
-        if (!isEnabled || !isSslPinningAvailable()) {
-            return
+        const groups = [
+            {
+                flag: RemoteConfigKeys.enable_ssl_pinning_pera_api,
+                urls: backendUrls,
+                domains: BACKEND_PIN_DOMAINS,
+            },
+            {
+                flag: RemoteConfigKeys.enable_ssl_pinning_algod,
+                urls: nodeUrls,
+                domains: NODE_PIN_DOMAINS,
+            },
+        ]
+
+        const pinningConfig: PinningConfig = {}
+        for (const group of groups) {
+            if (!remoteConfig.getBooleanValue(group.flag, false)) {
+                continue
+            }
+            Object.assign(
+                pinningConfig,
+                buildPinningConfig(group.urls, group.domains),
+            )
         }
 
-        const pinningConfig = buildPinningConfig(backendUrls)
-        if (!pinningConfig) {
+        if (
+            Object.keys(pinningConfig).length === 0 ||
+            !isSslPinningAvailable()
+        ) {
             return
         }
 

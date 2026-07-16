@@ -30,10 +30,16 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const DEFAULT_HOSTS = [
+    // Pera backend (enable_ssl_pinning_pera_api)
     'mainnet.api.perawallet.app',
     'testnet.api.perawallet.app',
     'mainnet.staging.api.perawallet.app',
     'testnet.staging.api.perawallet.app',
+    // Algorand node/indexer — Nodely (enable_ssl_pinning_algod)
+    'mainnet-api.algonode.cloud',
+    'testnet-api.algonode.cloud',
+    'mainnet-idx.algonode.cloud',
+    'testnet-idx.algonode.cloud',
 ]
 
 const PINS_FILE = join(
@@ -133,7 +139,7 @@ const main = async () => {
             '\nPin set and served chains have diverged. Update pins.ts (and keep',
         )
         console.error(
-            'the enable_ssl_pinning remote-config flag OFF until this passes).',
+            'the ssl-pinning remote-config flags OFF until this passes).',
         )
         process.exit(1)
     }

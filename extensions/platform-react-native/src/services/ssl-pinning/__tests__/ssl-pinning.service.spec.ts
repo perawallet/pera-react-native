@@ -31,20 +31,38 @@ vi.mock('react-native-ssl-public-key-pinning', () => ({
     addSslPinningErrorListener: mockAddSslPinningErrorListener,
 }))
 
+const pinEntry = () => ({
+    includeSubdomains: false,
+    publicKeyHashes: [...PINNED_ROOT_SPKI_HASHES],
+    expirationDate: SSL_PINNING_EXPIRATION_DATE,
+})
+
 const makeDeps = (
     overrides: {
-        isPinningEnabled?: boolean
+        isBackendPinningEnabled?: boolean
+        isNodePinningEnabled?: boolean
         backendUrls?: readonly string[]
+        nodeUrls?: readonly string[]
     } = {},
 ) => {
-    const { isPinningEnabled = true, backendUrls } = overrides
+    const {
+        isBackendPinningEnabled = true,
+        isNodePinningEnabled = false,
+        backendUrls = ['https://mainnet.api.perawallet.app'],
+        nodeUrls = [],
+    } = overrides
     return {
         remoteConfig: {
-            getBooleanValue: vi.fn().mockReturnValue(isPinningEnabled),
+            getBooleanValue: vi.fn((key: string) =>
+                key === 'enable_ssl_pinning_algod'
+                    ? isNodePinningEnabled
+                    : isBackendPinningEnabled,
+            ),
         },
         analytics: { logEvent: vi.fn() },
         crashReporting: { recordNonFatalError: vi.fn() },
-        backendUrls: backendUrls ?? ['https://mainnet.api.perawallet.app'],
+        backendUrls,
+        nodeUrls,
     }
 }
 
@@ -55,41 +73,90 @@ describe('initializeSslPinningService', () => {
         mockInitializeSslPinning.mockResolvedValue(undefined)
     })
 
-    test('does not enable pinning while the remote flag is off', async () => {
-        const deps = makeDeps({ isPinningEnabled: false })
+    test('does not enable pinning while both remote flags are off', async () => {
+        const deps = makeDeps({
+            isBackendPinningEnabled: false,
+            isNodePinningEnabled: false,
+        })
 
         await initializeSslPinningService(deps)
 
         expect(deps.remoteConfig.getBooleanValue).toHaveBeenCalledWith(
-            'enable_ssl_pinning',
+            'enable_ssl_pinning_pera_api',
+            false,
+        )
+        expect(deps.remoteConfig.getBooleanValue).toHaveBeenCalledWith(
+            'enable_ssl_pinning_algod',
             false,
         )
         expect(mockInitializeSslPinning).not.toHaveBeenCalled()
         expect(mockAddSslPinningErrorListener).not.toHaveBeenCalled()
     })
 
-    test('enables pinning for the configured backend hosts when the flag is on', async () => {
+    test('pins only the backend hosts when only the backend flag is on', async () => {
         const deps = makeDeps({
             backendUrls: [
                 'https://mainnet.api.perawallet.app',
                 'https://testnet.api.perawallet.app',
+            ],
+            nodeUrls: ['https://mainnet-api.algonode.cloud'],
+        })
+
+        await initializeSslPinningService(deps)
+
+        expect(mockInitializeSslPinning).toHaveBeenCalledWith({
+            'mainnet.api.perawallet.app': pinEntry(),
+            'testnet.api.perawallet.app': pinEntry(),
+        })
+    })
+
+    test('pins only the node hosts when only the nodes flag is on', async () => {
+        const deps = makeDeps({
+            isBackendPinningEnabled: false,
+            isNodePinningEnabled: true,
+            backendUrls: ['https://mainnet.api.perawallet.app'],
+            nodeUrls: [
+                'https://mainnet-api.algonode.cloud',
+                'https://mainnet-idx.algonode.cloud',
             ],
         })
 
         await initializeSslPinningService(deps)
 
         expect(mockInitializeSslPinning).toHaveBeenCalledWith({
-            'mainnet.api.perawallet.app': {
-                includeSubdomains: false,
-                publicKeyHashes: [...PINNED_ROOT_SPKI_HASHES],
-                expirationDate: SSL_PINNING_EXPIRATION_DATE,
-            },
-            'testnet.api.perawallet.app': {
-                includeSubdomains: false,
-                publicKeyHashes: [...PINNED_ROOT_SPKI_HASHES],
-                expirationDate: SSL_PINNING_EXPIRATION_DATE,
-            },
+            'mainnet-api.algonode.cloud': pinEntry(),
+            'mainnet-idx.algonode.cloud': pinEntry(),
         })
+    })
+
+    test('pins both groups in a single initialization when both flags are on', async () => {
+        const deps = makeDeps({
+            isNodePinningEnabled: true,
+            backendUrls: ['https://mainnet.api.perawallet.app'],
+            nodeUrls: ['https://mainnet-api.algonode.cloud'],
+        })
+
+        await initializeSslPinningService(deps)
+
+        expect(mockInitializeSslPinning).toHaveBeenCalledTimes(1)
+        expect(mockInitializeSslPinning).toHaveBeenCalledWith({
+            'mainnet.api.perawallet.app': pinEntry(),
+            'mainnet-api.algonode.cloud': pinEntry(),
+        })
+    })
+
+    test('each group only pins hosts from its own domain allowlist', async () => {
+        const deps = makeDeps({
+            isNodePinningEnabled: true,
+            // Cross-contaminated URL lists: neither group may pin the other's
+            // domain, so nothing pinnable remains.
+            backendUrls: ['https://mainnet-api.algonode.cloud'],
+            nodeUrls: ['https://mainnet.api.perawallet.app'],
+        })
+
+        await initializeSslPinningService(deps)
+
+        expect(mockInitializeSslPinning).not.toHaveBeenCalled()
     })
 
     test('skips initialization when the native module is unavailable', async () => {

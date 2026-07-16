@@ -12,8 +12,6 @@
 
 import { PINNED_ROOT_SPKI_HASHES, SSL_PINNING_EXPIRATION_DATE } from './pins'
 
-const PINNABLE_DOMAIN = 'perawallet.app'
-
 /** Per-domain options shape expected by react-native-ssl-public-key-pinning. */
 export type DomainPinningOptions = {
     includeSubdomains: boolean
@@ -24,20 +22,21 @@ export type DomainPinningOptions = {
 export type PinningConfig = Record<string, DomainPinningOptions>
 
 /**
- * Derives the SSL-pinning configuration from the backend URLs the build is
- * actually configured with.
+ * Derives the SSL-pinning configuration from the backend/node URLs the build
+ * is actually configured with.
  *
  * Exact hostnames are pinned (never wildcards — OkHttp and TrustKit disagree
- * on multi-label wildcard semantics), and only hosts under perawallet.app
- * qualify: env-overridden dev URLs (localhost, custom nodes) and third-party
- * services must never be pinned. The suffix match is label-anchored so
- * lookalikes such as evil-perawallet.app do not qualify.
+ * on multi-label wildcard semantics), and only hosts under one of the
+ * `allowedDomains` qualify: env-overridden dev URLs (localhost, custom nodes)
+ * and third-party services must never be pinned. The suffix match is
+ * label-anchored so lookalikes such as evil-perawallet.app do not qualify.
  *
  * Returns null when nothing is pinnable, so callers skip initialization
  * entirely.
  */
 export const buildPinningConfig = (
     urls: readonly string[],
+    allowedDomains: readonly string[],
 ): PinningConfig | null => {
     const config: PinningConfig = {}
 
@@ -48,8 +47,9 @@ export const buildPinningConfig = (
         } catch {
             continue
         }
-        const isPinnable =
-            host === PINNABLE_DOMAIN || host.endsWith(`.${PINNABLE_DOMAIN}`)
+        const isPinnable = allowedDomains.some(
+            domain => host === domain || host.endsWith(`.${domain}`),
+        )
         if (!isPinnable) {
             continue
         }
