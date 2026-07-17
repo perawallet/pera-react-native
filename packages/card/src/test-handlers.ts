@@ -73,6 +73,15 @@ export type {
 } from './api/delegation/msw-handlers'
 
 export {
+    mockCreateEscrowCard,
+    mockPostDelegatorLsig,
+} from './api/escrow/msw-handlers'
+export type {
+    MockCreateEscrowCardParams,
+    MockPostDelegatorLsigParams,
+} from './api/escrow/msw-handlers'
+
+export {
     mockSendEmailVerification,
     mockVerifyEmail,
     mockSendPhoneVerification,

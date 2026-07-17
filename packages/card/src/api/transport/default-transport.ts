@@ -18,6 +18,7 @@ import type {
     CardTransportResponse,
 } from './types'
 import { baanxDirectRequest } from './baanx-client'
+import { escrowRequest } from './escrow-client'
 
 /**
  * Refreshes the session and returns whether a usable token is now available.
@@ -52,10 +53,19 @@ const proxyRequest = <TData, TVars>(
 
 const dispatch = <TData, TVars>(
     req: CardTransportRequest<TVars>,
-): Promise<CardTransportResponse<TData>> =>
-    req.route === 'proxy'
-        ? proxyRequest<TData, TVars>(req)
-        : baanxDirectRequest<TData, TVars>(req)
+): Promise<CardTransportResponse<TData>> => {
+    switch (req.route) {
+        case 'proxy': {
+            return proxyRequest<TData, TVars>(req)
+        }
+        case 'escrow': {
+            return escrowRequest<TData, TVars>(req)
+        }
+        default: {
+            return baanxDirectRequest<TData, TVars>(req)
+        }
+    }
+}
 
 export const defaultTransport: CardTransport = {
     request: async <TData, TVars = unknown>(
@@ -66,8 +76,10 @@ export const defaultTransport: CardTransport = {
         } catch (error) {
             // Only direct calls carry the user Bearer. On a 401, refresh once
             // and retry; if refresh can't produce a token, surface the error.
+            // Proxy (secret-key) and escrow (static-token) routes never carry a
+            // refreshable Bearer, so they skip the retry.
             if (
-                req.route !== 'proxy' &&
+                (req.route ?? 'direct') === 'direct' &&
                 isUnauthorized(error) &&
                 refreshHandler
             ) {

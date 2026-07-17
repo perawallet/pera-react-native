@@ -34,6 +34,10 @@ import {
     buildMockDelegationToken,
     buildMockExternalWallets,
 } from './mockDelegation'
+import {
+    applyMockDelegatorLsig,
+    buildMockEscrowCardCreation,
+} from './mockEscrow'
 
 const TRANSACTIONS_PATH = '/v1/card/transactions'
 const INTERNAL_WALLETS_PATH = '/v1/wallet/internal'
@@ -42,15 +46,18 @@ const DELEGATION_TOKEN_PATH = '/v1/delegation/token'
 const DELEGATION_CONFIG_PATH = '/v1/delegation/chain/config'
 const DELEGATION_POST_APPROVAL_PATH = '/v1/delegation/algorand/post-approval'
 const EXTERNAL_WALLETS_PATH = '/v1/wallet/external'
+const ESCROW_APPROVALS_PATH = '/api/approvals'
+const ESCROW_DELEGATOR_LSIG_PATH = '/api/internal/delegator-lsig'
 
 /**
  * Swaps in a transport that serves mock transactions for
  * `GET /v1/card/transactions` (page 0; later pages are empty so the infinite
  * query terminates), a mock USDC internal wallet for the custodial-only
- * wallet routes (list + withdraw, with a stateful balance), and the assumed
+ * wallet routes (list + withdraw, with a stateful balance), the assumed
  * Algorand delegation routes (stateful allowance per address, single-use
- * tokens), delegating every other request to the real transport. Returns a
- * disposer that restores the default transport.
+ * tokens), and the AB escrow card routes (card creation + delegator LSig),
+ * delegating every other request to the real transport. Returns a disposer
+ * that restores the default transport.
  */
 export const installCardDevMocks = (): (() => void) => {
     const baseTransport = getCardTransport()
@@ -99,6 +106,21 @@ export const installCardDevMocks = (): (() => void) => {
             }
             if (req.method === 'GET' && req.path === EXTERNAL_WALLETS_PATH) {
                 const data = buildMockExternalWallets() as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (req.method === 'POST' && req.path === ESCROW_APPROVALS_PATH) {
+                const data = buildMockEscrowCardCreation(
+                    req.data as { address: string },
+                ) as TData
+                return Promise.resolve({ data, status: 200, statusText: 'OK' })
+            }
+            if (
+                req.method === 'POST' &&
+                req.path === ESCROW_DELEGATOR_LSIG_PATH
+            ) {
+                const data = applyMockDelegatorLsig(
+                    req.data as { delegatorAddress: string },
+                ) as TData
                 return Promise.resolve({ data, status: 200, statusText: 'OK' })
             }
             return baseTransport.request<TData, TVars>(req)

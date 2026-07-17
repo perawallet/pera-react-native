@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",

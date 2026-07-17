@@ -23,16 +23,43 @@ import {
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
-// The real program signer needs a provisioned KMS keystore; stub just the
-// crypto so the Auto path (delegate → persist) stays real down to the wire.
+// The escrow config is empty in the test env — mock a FULLY configured build:
+// a non-empty base URL (any host; the MSW globs match any origin) so requests
+// reach MSW instead of throwing CardEscrowNotConfiguredError, plus the chain
+// app ids (a configured base URL with missing ids now throws by design, which
+// would degrade every Auto run to Manual).
+vi.mock('@perawallet/wallet-core-config', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-config')
+    >('@perawallet/wallet-core-config')
+    return {
+        ...actual,
+        getNetworkConfig: (
+            network: Parameters<typeof actual.getNetworkConfig>[0],
+        ) => ({
+            ...actual.getNetworkConfig(network),
+            cardEscrowBaseUrl: 'https://escrow.test',
+            cardEscrowAuthToken: 'TEST_ESCROW_TOKEN',
+            cardW3CardAppId: '111',
+            cardKillswitchAppId: '222',
+        }),
+    }
+})
+
+// The real signers need a provisioned KMS keystore; stub just the crypto so the
+// create + delegation flow stays real down to the wire. `signProgram` returns
+// junk bytes, so also stub `encodeDelegatedLsigAccount` (it would otherwise
+// reject the unverifiable signature).
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
-    useProgramSigner: () => ({
-        signProgram: vi.fn(),
-        signDelegatedLsig: vi.fn(async () => ({
-            signedProgram: new Uint8Array([1, 2, 3]),
-        })),
+    useArbitraryDataSigner: () => ({
+        signArbitraryData: vi.fn(async () => [new Uint8Array([7, 7, 7])]),
     }),
+    useProgramSigner: () => ({
+        signProgram: vi.fn(async () => new Uint8Array([8, 8, 8])),
+        signDelegatedLsig: vi.fn(),
+    }),
+    encodeDelegatedLsigAccount: () => new Uint8Array([9, 9, 9]),
 }))
 
 // __DEV__ is false in the test env, so the kill-switch would default off (and
@@ -44,7 +71,7 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
 }))
 
 // The consent + PIN gate is unit-tested in useAuthorizeCardDelegation.spec;
-// pass through here so this test stays focused on the delegation wire.
+// pass through here so this test stays focused on the creation wire.
 vi.mock('@modules/card/hooks', async () => {
     const { passThroughAuthorizeDelegation } =
         await import('@test-utils/cardDelegation')
@@ -55,6 +82,15 @@ vi.mock('@modules/card/hooks', async () => {
         }),
     }
 })
+
+// Manual funding gates only on PIN; skip the PIN sheet here (unit-tested in
+// useRequirePinVerification.spec).
+vi.mock('@modules/security', async () => ({
+    ...(await vi.importActual<object>('@modules/security')),
+    useRequirePinVerification: () => ({
+        requirePinVerification: vi.fn(async () => true),
+    }),
+}))
 
 import {
     AccountTypes,
@@ -67,10 +103,10 @@ import {
     useCardStore,
 } from '@perawallet/wallet-core-card'
 import {
-    mockGetDelegationProgram,
-    mockGetDelegationToken,
-    mockPostAlgorandDelegationApproval,
+    mockCreateEscrowCard,
+    mockPostDelegatorLsig,
 } from '@perawallet/wallet-core-card/test-handlers'
+import { mockAlgodTealCompile } from '@perawallet/wallet-core-blockchain/test-handlers'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -114,10 +150,14 @@ describe('Flow: Card onboarding — select funding type', () => {
         // is the active (final) one.
         store.setOnboardingStep(OnboardingStep.Completed)
         store.setConnectedFundingSourceAddress(FUNDING_ADDRESS)
+        useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
         mockOnboardingDetails('VERIFIED')
         autoFunding.enabled = true
     })
-    afterEach(() => server.resetHandlers())
+    afterEach(() => {
+        server.resetHandlers()
+        useAccountsStore.getState().setAccounts([])
+    })
     afterAll(() => server.close())
 
     it('Given funds are connected, then both funding-type options and the Create button show', async () => {
@@ -136,7 +176,17 @@ describe('Flow: Card onboarding — select funding type', () => {
         ).toBeTruthy()
     })
 
-    it('Given Manual is picked, when Create Pera Card is pressed, then the choice is persisted', async () => {
+    it('Given Manual is picked, when Create Pera Card is pressed, then the card is created and Manual persists', async () => {
+        let approvalBody: Record<string, unknown> | null = null
+        server.use(
+            mockCreateEscrowCard({
+                cardAddress: 'ESCROWCARD1',
+                onRequest: body => {
+                    approvalBody = body
+                },
+            }),
+        )
+
         renderStatus()
 
         fireEvent.click(
@@ -148,22 +198,36 @@ describe('Flow: Card onboarding — select funding type', () => {
             screen.getByTestId('card-onboarding-status-create-card'),
         )
 
+        await waitFor(() => expect(approvalBody).not.toBeNull())
+        expect(approvalBody).toEqual(
+            expect.objectContaining({
+                address: FUNDING_ADDRESS,
+                blockchain: 'algorand',
+                amount: '0',
+            }),
+        )
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Manual,
             ),
         )
+        expect(useCardStore.getState().escrowCardAddress).toBe('ESCROWCARD1')
     })
 
-    it('Given Auto is selected, when Create Pera Card is pressed, then the delegation posts before persisting', async () => {
-        useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
-        let postBody: Record<string, unknown> | null = null
+    it('Given Auto is selected, when Create Pera Card is pressed, then creation and the LSig both post', async () => {
+        let approvalBody: Record<string, unknown> | null = null
+        let lsigBody: Record<string, unknown> | null = null
         server.use(
-            mockGetDelegationProgram(),
-            mockGetDelegationToken(),
-            mockPostAlgorandDelegationApproval({
+            mockAlgodTealCompile(),
+            mockCreateEscrowCard({
+                cardAddress: 'ESCROWCARD1',
                 onRequest: body => {
-                    postBody = body
+                    approvalBody = body
+                },
+            }),
+            mockPostDelegatorLsig({
+                onRequest: body => {
+                    lsigBody = body
                 },
             }),
         )
@@ -175,12 +239,14 @@ describe('Flow: Card onboarding — select funding type', () => {
             await screen.findByTestId('card-onboarding-status-create-card'),
         )
 
-        await waitFor(() => expect(postBody).not.toBeNull())
-        expect(postBody).toEqual(
+        await waitFor(() => expect(approvalBody).not.toBeNull())
+        await waitFor(() => expect(lsigBody).not.toBeNull())
+        expect(lsigBody).toEqual(
             expect.objectContaining({
-                address: FUNDING_ADDRESS,
-                network: 'algorand',
-                amount: '400',
+                delegatorAddress: FUNDING_ADDRESS,
+                cardAddress: 'ESCROWCARD1',
+                token: 'usdc',
+                blockchain: 'algorand',
             }),
         )
         await waitFor(() =>
@@ -190,12 +256,10 @@ describe('Flow: Card onboarding — select funding type', () => {
         )
     })
 
-    it('Given the delegation fails, when Create Pera Card is pressed, then nothing is persisted', async () => {
-        useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
+    it('Given card creation fails, when Create Pera Card is pressed, then nothing is persisted', async () => {
         server.use(
-            mockGetDelegationProgram(),
-            mockGetDelegationToken(),
-            mockPostAlgorandDelegationApproval({ status: 400 }),
+            mockAlgodTealCompile(),
+            mockCreateEscrowCard({ status: 500 }),
         )
 
         renderStatus()
@@ -211,11 +275,38 @@ describe('Flow: Card onboarding — select funding type', () => {
             ).toBeTruthy(),
         )
         expect(useCardStore.getState().selectedFundingType).toBeNull()
+        expect(useCardStore.getState().escrowCardAddress).toBeNull()
+    })
+
+    it('Given the LSig leg fails after creation, then the card persists and Auto degrades to Manual', async () => {
+        server.use(
+            mockAlgodTealCompile(),
+            mockCreateEscrowCard({ cardAddress: 'ESCROWCARD1' }),
+            mockPostDelegatorLsig({ status: 500 }),
+        )
+
+        renderStatus()
+
+        fireEvent.click(
+            await screen.findByTestId('card-onboarding-status-create-card'),
+        )
+
+        // Card is created (persisted) but Auto downgraded to Manual.
+        await waitFor(() =>
+            expect(useCardStore.getState().escrowCardAddress).toBe(
+                'ESCROWCARD1',
+            ),
+        )
+        await waitFor(() =>
+            expect(useCardStore.getState().selectedFundingType).toBe(
+                FundingType.Manual,
+            ),
+        )
     })
 
     it('Given the kill-switch is off, then Auto shows the coming-soon hint and Create persists Manual', async () => {
         autoFunding.enabled = false
-        useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
+        server.use(mockCreateEscrowCard({ cardAddress: 'ESCROWCARD1' }))
 
         renderStatus()
 
@@ -228,7 +319,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         )
 
         // The Auto default migrated to Manual, so Create takes the
-        // no-delegation path and persists Manual.
+        // Manual (create-only) path and persists Manual.
         fireEvent.click(
             screen.getByTestId('card-onboarding-status-create-card'),
         )

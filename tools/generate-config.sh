@@ -123,6 +123,22 @@ append_config "TESTNET_BAANX_BASE_URL" "testnetBaanxBaseUrl" "string"
 append_config "MAINNET_BAANX_CLIENT_KEY" "mainnetBaanxClientKey" "string"
 append_config "TESTNET_BAANX_CLIENT_KEY" "testnetBaanxClientKey" "string"
 
+# AppliedBlockchain (AB) escrow card service — card creation + delegated-LSig
+# `/lsig` endpoint, AB-hosted on testnet until Baanx wraps them. The auth token
+# is an AB-issued static secret sent as a RAW Authorization header; inject via
+# the bitrise secret / .env. App ids and the USDC asset id feed the AutoDraw
+# LogicSig TEAL template.
+append_config "MAINNET_CARD_ESCROW_BASE_URL" "mainnetCardEscrowBaseUrl" "string"
+append_config "TESTNET_CARD_ESCROW_BASE_URL" "testnetCardEscrowBaseUrl" "string"
+append_config "MAINNET_CARD_ESCROW_AUTH_TOKEN" "mainnetCardEscrowAuthToken" "string"
+append_config "TESTNET_CARD_ESCROW_AUTH_TOKEN" "testnetCardEscrowAuthToken" "string"
+append_config "MAINNET_CARD_W3CARD_APP_ID" "mainnetCardW3CardAppId" "string"
+append_config "TESTNET_CARD_W3CARD_APP_ID" "testnetCardW3CardAppId" "string"
+append_config "MAINNET_CARD_KILLSWITCH_APP_ID" "mainnetCardKillswitchAppId" "string"
+append_config "TESTNET_CARD_KILLSWITCH_APP_ID" "testnetCardKillswitchAppId" "string"
+append_config "MAINNET_CARD_USDC_ASSET_ID" "mainnetCardUsdcAssetId" "string"
+append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
+
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then
   DEFAULT_NETWORK="$PERA_DEFAULT_NETWORK"
