@@ -50,6 +50,7 @@ const rehydrateDeviceSlice = (
 const initialState = {
     deviceIDs: new Map<Network, Nullable<string>>(),
     pushToken: null as Nullable<string>,
+    pendingRegistrationNetworks: [] as Network[],
 }
 
 export const useDeviceStore: UseBoundStore<
@@ -66,6 +67,15 @@ export const useDeviceStore: UseBoundStore<
                 deviceIDs.set(network, id)
                 set({ deviceIDs })
             },
+            setRegistrationPending: (network: Network, isPending: boolean) => {
+                const current = get().pendingRegistrationNetworks
+                if (isPending === current.includes(network)) return
+                set({
+                    pendingRegistrationNetworks: isPending
+                        ? [...current, network]
+                        : current.filter(pending => pending !== network),
+                })
+            },
             resetState: () =>
                 set({
                     ...initialState,
@@ -76,6 +86,10 @@ export const useDeviceStore: UseBoundStore<
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
+            // pendingRegistrationNetworks is deliberately not persisted: the
+            // mount effect re-registers on every cold start anyway, and a
+            // rehydrated pending flag would arm the retry subscriptions before
+            // that first attempt resolves.
             partialize: state => ({
                 deviceIDs: Object.fromEntries(state.deviceIDs),
                 pushToken: state.pushToken,
