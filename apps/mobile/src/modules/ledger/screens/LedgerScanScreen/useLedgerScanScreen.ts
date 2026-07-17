@@ -18,8 +18,12 @@ import { useToast } from '@hooks/useToast'
 import type {
     HardwareWalletAdapterState,
     HardwareWalletDevice,
+    LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
-import { LedgerLocationServicesDisabledError } from '@perawallet/wallet-core-ledger'
+import {
+    LedgerLocationServicesDisabledError,
+    LedgerScanTimeoutError,
+} from '@perawallet/wallet-core-ledger'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import {
@@ -56,13 +60,24 @@ type UseLedgerScanScreenResult = {
     isCheckingPermissions: boolean
     hasPermissions: boolean
     isPermissionDenied: boolean
-    isPermissionBlocked: boolean
+    /**
+     * True when re-requesting the permission can't help and the CTA should
+     * hand off to OS Settings instead: Android NEVER_ASK_AGAIN, or iOS
+     * Bluetooth denial (which has no runtime prompt at all).
+     */
+    shouldOpenSettings: boolean
     /**
      * True when the scan failed because the OS location toggle is off (Android
      * ≤ 11 needs it on for BLE discovery). Lets the screen render an
      * actionable "turn on Location" state instead of a generic retry.
      */
     isLocationServicesDisabled: boolean
+    /**
+     * True when the scan hit its budget with no device found. The screen
+     * renders a distinct timed-out state with a working "Scan Again" instead
+     * of a perpetual searching animation.
+     */
+    isScanTimeout: boolean
     handleDevicePress: (device: HardwareWalletDevice) => void
     handleRetry: () => void
     handleRequestPermissions: () => void
@@ -71,11 +86,12 @@ type UseLedgerScanScreenResult = {
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
+const USB_ONLY_TRANSPORTS: LedgerTransportType[] = ['usb']
+
 export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { errorToast } = useToast()
-    const { devices, startScan, stopScan, error } = useLedgerConnection()
     const {
         hasPermissions,
         isChecking: isCheckingPermissions,
@@ -86,14 +102,32 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     } = useBlePermissions()
     const { adapterState, isBluetoothReady, requestEnable } =
         useBluetoothState()
+
+    // iOS has no runtime BLE permission request (useBlePermissions reports
+    // granted) — a denial surfaces as the adapter's `unauthorized` state and
+    // only OS Settings can change it.
+    const isIosBluetoothDenied =
+        Platform.OS === 'ios' && adapterState === 'unauthorized'
+    const canScanBle = hasPermissions && !isIosBluetoothDenied
+
+    // USB HID needs no Bluetooth permission, so a denied BLE permission must
+    // not block it: fall back to a USB-only scan when the platform supports
+    // one.
+    const { devices, startScan, stopScan, error, supportedTransportTypes } =
+        useLedgerConnection(
+            canScanBle ? undefined : { transportTypes: USB_ONLY_TRANSPORTS },
+        )
+    const isUsbFallbackScan =
+        !canScanBle && supportedTransportTypes.includes('usb')
+
     const [hasRequestedPermissions, setHasRequestedPermissions] =
         useState(false)
     const lastWarnedStateRef =
         useRef<Nullable<HardwareWalletAdapterState>>(null)
 
-    // Gate the scan on Bluetooth permission. On Android, request once when
-    // missing; on grant the effect re-runs and starts scanning. On denial,
-    // surface an actionable state via `isPermissionDenied` instead of
+    // Start scanning whenever a usable transport exists: BLE when permitted,
+    // USB-only otherwise. On full denial with no USB fallback, the screen
+    // surfaces an actionable state via `isPermissionDenied` instead of
     // silently rendering an empty device list.
     //
     // `isBluetoothReady` is a dependency so that toggling Bluetooth back on
@@ -101,15 +135,26 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // `stopScan` cleanup (the scan-timeout may have already torn it down).
     useEffect(() => {
         if (isCheckingPermissions) return
+        if (!canScanBle && !isUsbFallbackScan) return
 
-        if (hasPermissions) {
-            startScan()
-            return () => {
-                stopScan()
-            }
+        startScan()
+        return () => {
+            stopScan()
         }
+    }, [
+        isCheckingPermissions,
+        canScanBle,
+        isUsbFallbackScan,
+        startScan,
+        stopScan,
+        isBluetoothReady,
+    ])
 
-        if (hasRequestedPermissions) return
+    // Request the Android BLE permission once when missing — independent of
+    // the scan effect, so a USB fallback scan doesn't swallow the request.
+    useEffect(() => {
+        if (isCheckingPermissions || hasPermissions || hasRequestedPermissions)
+            return
         setHasRequestedPermissions(true)
         void requestPermissions()
     }, [
@@ -117,9 +162,6 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         hasPermissions,
         hasRequestedPermissions,
         requestPermissions,
-        startScan,
-        stopScan,
-        isBluetoothReady,
     ])
 
     // Proactively warn when the Bluetooth adapter is unusable. Unlike the
@@ -181,13 +223,19 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
     const handleRequestPermissions = useCallback(() => {
         // After the OS marks the permission as NEVER_ASK_AGAIN the system
-        // dialog won't reopen — hand the user off to Settings instead.
-        if (isPermissionBlocked) {
+        // dialog won't reopen — hand the user off to Settings instead. iOS
+        // Bluetooth denial can only ever be changed from Settings.
+        if (isPermissionBlocked || isIosBluetoothDenied) {
             void openSettings()
             return
         }
         void requestPermissions()
-    }, [isPermissionBlocked, openSettings, requestPermissions])
+    }, [
+        isPermissionBlocked,
+        isIosBluetoothDenied,
+        openSettings,
+        requestPermissions,
+    ])
 
     const handleOpenLocationSettings = useCallback(() => {
         void openLocationSettings()
@@ -197,8 +245,14 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         navigation.navigate('LedgerTroubleshooting')
     }, [navigation])
 
-    const isPermissionDenied =
-        !isCheckingPermissions && !hasPermissions && hasRequestedPermissions
+    // The blocking denied state only renders when no scan can run at all —
+    // a USB fallback scan keeps the device list usable while BLE is denied.
+    const isBleDenied =
+        (!isCheckingPermissions &&
+            !hasPermissions &&
+            hasRequestedPermissions) ||
+        isIosBluetoothDenied
+    const isPermissionDenied = isBleDenied && !isUsbFallbackScan
 
     // Location services are only a BLE-scan prerequisite on Android (≤ 11).
     // Prompting an iOS user to turn on Location would be wrong advice, so keep
@@ -208,14 +262,17 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         Platform.OS === 'android' &&
         error instanceof LedgerLocationServicesDisabledError
 
+    const isScanTimeout = error instanceof LedgerScanTimeoutError
+
     return {
         devices,
         error,
         isCheckingPermissions,
         hasPermissions,
         isPermissionDenied,
-        isPermissionBlocked,
+        shouldOpenSettings: isPermissionBlocked || isIosBluetoothDenied,
         isLocationServicesDisabled,
+        isScanTimeout,
         handleDevicePress,
         handleRetry,
         handleRequestPermissions,
