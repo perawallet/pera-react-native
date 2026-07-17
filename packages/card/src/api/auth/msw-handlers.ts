@@ -164,10 +164,7 @@ export const mockOauthChain = ({
             )
         }),
         http.post('*/v1/auth/oauth/authorize', () =>
-            HttpResponse.json(
-                { code, state: capturedState },
-                { status: 200 },
-            ),
+            HttpResponse.json({ code, state: capturedState }, { status: 200 }),
         ),
         http.post('*/baanx/oauth/token', () =>
             HttpResponse.json(tokenResponse, { status: 200 }),

@@ -68,9 +68,9 @@ describe('utils/strings - toUrlSafeBase64', () => {
 
     test('produces valid base64url from encoded bytes', () => {
         // 0xfb 0xff → '+/8=' in standard base64; url-safe form is '-_8'.
-        expect(toUrlSafeBase64(encodeToBase64(new Uint8Array([251, 255])))).toBe(
-            '-_8',
-        )
+        expect(
+            toUrlSafeBase64(encodeToBase64(new Uint8Array([251, 255]))),
+        ).toBe('-_8')
     })
 })
 
