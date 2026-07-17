@@ -18,7 +18,9 @@ export const DEFAULT_MAX_ACCOUNT_SCAN_GAP = 2
 
 /**
  * With an on-chain probe, stop after this many consecutive indices with no
- * on-chain presence. Matches HD discovery's account gap limit so a Ledger
+ * on-chain presence. Chosen to match HD discovery's current account gap
+ * limit (`ACCOUNT_GAP_LIMIT` in `packages/accounts/src/account-discovery.ts`
+ * — a private constant, so the two are NOT mechanically linked) so a Ledger
  * migrator's funded accounts are found as deep as an HD import would look.
  */
 export const DEFAULT_ONCHAIN_ACCOUNT_SCAN_GAP = 5

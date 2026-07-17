@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDerivedAccount,
     HardwareWalletTransport,
@@ -106,10 +107,16 @@ export const discoverAccounts = async (
             let exists: boolean | null = null
             try {
                 exists = await probe(account.address)
-            } catch {
+            } catch (error) {
                 // Probe unavailable (offline, indexer down): degrade to the
                 // capped no-probe behavior for the rest of the scan instead
                 // of failing discovery — accounts already found are kept.
+                // Logged so a broken probe in the field is diagnosable rather
+                // than looking like a permanently shallow scan.
+                logger.warn(
+                    'On-chain probe failed; falling back to the capped scan',
+                    { index, error },
+                )
                 probe = null
             }
 

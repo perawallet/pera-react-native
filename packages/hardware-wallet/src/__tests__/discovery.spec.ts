@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { warnMock } = vi.hoisted(() => ({ warnMock: vi.fn() }))
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: { warn: warnMock },
+}))
+
 import { discoverAccounts } from '../discovery'
 import {
     DEFAULT_MAX_ACCOUNT_SCAN_GAP,
@@ -34,6 +40,10 @@ const makeMockTransport = (): HardwareWalletTransport => ({
 })
 
 describe('discoverAccounts', () => {
+    beforeEach(() => {
+        warnMock.mockClear()
+    })
+
     describe('with isAccountOnChain', () => {
         it('returns funded accounts and stops after maxGap consecutive empty', async () => {
             const transport = makeMockTransport()
@@ -95,7 +105,8 @@ describe('discoverAccounts', () => {
 
         it('falls back to the capped scan when the probe is down from the start', async () => {
             // Offline / indexer-down import must keep working exactly like
-            // the no-probe scan instead of failing discovery.
+            // the no-probe scan instead of failing discovery — but the
+            // degradation must be diagnosable, never silent.
             const transport = makeMockTransport()
 
             const accounts = await discoverAccounts({
@@ -106,6 +117,7 @@ describe('discoverAccounts', () => {
             })
 
             expect(accounts.map(a => a.accountIndex)).toEqual([0, 1, 2])
+            expect(warnMock).toHaveBeenCalledTimes(1)
         })
 
         it('keeps found accounts and completes capped when the probe dies mid-scan', async () => {
