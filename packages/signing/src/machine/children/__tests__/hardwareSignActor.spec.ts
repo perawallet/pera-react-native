@@ -380,6 +380,25 @@ describe('hardwareSignActor', () => {
         expect(nonLedgerErrors.length).toBeGreaterThan(0)
     })
 
+    it('stopping the actor aborts the in-flight strategy signal', async () => {
+        // The abort must reach the strategy (which disconnects the transport)
+        // — the `cancelled` flag alone leaves the BLE exchange running
+        // detached, walking the user through approvals that get discarded.
+        let capturedSignal: AbortSignal | undefined
+        mocks.sign.mockImplementation((_g, _a, callbacks: SigningCallbacks) => {
+            capturedSignal = callbacks.signal
+            return new Promise<SigningResult>(() => {})
+        })
+
+        const { stop } = await runActor(makeInput())
+        expect(capturedSignal).toBeDefined()
+        expect(capturedSignal!.aborted).toBe(false)
+
+        stop()
+
+        expect(capturedSignal!.aborted).toBe(true)
+    })
+
     it('cleanup suppresses late phase/progress/error callbacks fired after stop', async () => {
         // Stash the callbacks so we can fire them AFTER the actor stops to
         // exercise every `if (cancelled) return` early-return branch.

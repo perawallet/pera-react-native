@@ -121,6 +121,22 @@ export class SigningError extends PipelineError {
 }
 
 /**
+ * A hardware-signing session was aborted app-side (cancel, timeout, machine
+ * stop) while a device exchange was pending or queued. Only ever thrown
+ * after the driving actor has been stopped, so it never surfaces to the
+ * user — its role is to unwind the strategy's per-transaction loop so no
+ * further APDUs reach the device.
+ */
+export class HardwareSigningAbortedError extends PipelineError {
+    constructor() {
+        super('Hardware signing aborted', undefined, {
+            severity: ErrorSeverity.LOW,
+            retryable: false,
+        })
+    }
+}
+
+/**
  * Transport failed to deliver signed data
  */
 export class TransportError extends PipelineError {
