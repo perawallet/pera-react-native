@@ -10,14 +10,18 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+
+let mockOS = 'android'
 
 // Default the RN Platform mock to android so the implicit-platform branch
 // of `getAppStatePlatform` (when called without an override) lands on a
 // known value. Individual tests pass an explicit platform argument to
 // `isForegroundTransition`, so this only affects the no-arg path.
 vi.mock('react-native', () => ({
-    Platform: { OS: 'android' },
+    get Platform() {
+        return { OS: mockOS }
+    },
 }))
 
 import { getAppStatePlatform, isForegroundTransition } from '../app-state'
@@ -65,5 +69,32 @@ describe('isForegroundTransition', () => {
 describe('getAppStatePlatform', () => {
     it('returns android when Platform.OS is android', () => {
         expect(getAppStatePlatform()).toBe('android')
+    })
+})
+
+describe('web platform', () => {
+    beforeEach(() => {
+        mockOS = 'web'
+    })
+
+    afterEach(() => {
+        mockOS = 'android'
+    })
+
+    it('reports web when Platform.OS is web', () => {
+        expect(getAppStatePlatform()).toBe('web')
+    })
+
+    it('detects background→active as a foreground transition on web', () => {
+        expect(isForegroundTransition('background', 'active', 'web')).toBe(true)
+    })
+
+    it('ignores every other transition on web (react-native-web emits only active/background)', () => {
+        expect(isForegroundTransition('active', 'background', 'web')).toBe(
+            false,
+        )
+        expect(isForegroundTransition('inactive', 'active', 'web')).toBe(false)
+        expect(isForegroundTransition(null, 'active', 'web')).toBe(false)
+        expect(isForegroundTransition('active', 'active', 'web')).toBe(false)
     })
 })

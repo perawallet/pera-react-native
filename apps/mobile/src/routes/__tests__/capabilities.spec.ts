@@ -33,7 +33,7 @@ describe('route capabilities', () => {
         expect(Object.values(rest).every(Boolean)).toBe(true)
     })
 
-    it('web map: M6 discover on, webview-dependent leftovers/WC/card features still off (spec)', () => {
+    it('web map: M6 discover on, webview-dependent leftovers/card features still off (spec)', () => {
         expect(webCapabilities).toMatchObject({
             // M5 (2026-07-16 feature-completion spec): native RN screen graphs.
             swapTab: true,
@@ -42,12 +42,13 @@ describe('route capabilities', () => {
             developerSettings: true,
             // M6 (2026-07-16 feature-completion spec): iframe webview layer.
             discoverTab: true,
-            // Still off: webview-dependent leftovers (M8), WalletConnect (M7),
-            // Pera Card (M10), and permanently-off items.
+            // M7 (2026-07-17 shipped): WalletConnect v1 pairing + sessions on web.
+            walletConnectSettings: true,
+            // Still off: webview-dependent leftovers (M8), Pera Card (M10),
+            // and permanently-off items.
             inAppWebView: false, // M8 revisit
             peraCard: false,
             giftCards: false,
-            walletConnectSettings: false,
             pushNotificationSettings: false,
             storeRating: false,
             vaultSecuritySettings: true,

@@ -261,14 +261,16 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsNotificationsScreen}
             />
-            <SettingsStack.Screen
-                name='WalletConnectSettings'
-                options={{
-                    title: 'screens.wallet_connect',
-                    headerShown: false,
-                }}
-                component={WalletConnectSettingsStackNavigator}
-            />
+            {routeCapabilities.walletConnectSettings && (
+                <SettingsStack.Screen
+                    name='WalletConnectSettings'
+                    options={{
+                        title: 'screens.wallet_connect',
+                        headerShown: false,
+                    }}
+                    component={WalletConnectSettingsStackNavigator}
+                />
+            )}
             <SettingsStack.Screen
                 name='PasskeysSettings'
                 options={{

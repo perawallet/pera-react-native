@@ -107,7 +107,9 @@ export const QRScannerContent = ({
                     false,
                     'qr',
                     () => {
-                        // Dispatcher already toasted the failure — keep the
+                        // Dispatcher toasted the failure where a toast
+                        // applies (capability-gated CARDS/SELL drop silently —
+                        // toast follow-up tracked) — keep the
                         // scanner open for a retry rather than closing
                         // (closing, which on a scan-only tab now closes the
                         // whole tab, would eat the toast).

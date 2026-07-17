@@ -32,8 +32,10 @@
 import React, { useMemo } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import ErrorBoundary from 'react-native-error-boundary'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from './listeners'
@@ -54,6 +56,9 @@ import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { OverlayErrorFallback } from '@components/RootComponent/OverlayErrorFallback'
 import { navigationRef } from './navigationRef'
 import { createAppStackNavigator } from './createAppStackNavigator'
 import { createExpandedRedirect } from './createExpandedRedirect'
@@ -81,6 +86,16 @@ const BackupComponent = isPopup
 // Staking is age-gated at the navigator exactly as native routes/index.tsx.
 const GatedStakingScreen = withAgeGate(StakingScreen)
 
+// Mirrors native RootComponent's overlay error boundary: SigningOverlays hosts
+// money flows (sign-review sheet), so an unhandled render-throw here must not
+// unwind the whole popup. react-native-error-boundary is a plain class
+// component (no native deps) and OverlayErrorFallback only touches
+// `useEffect`, so both are web-safe as-is — reused verbatim rather than
+// duplicated.
+const handleOverlayError = (error: string | Error) => {
+    logger.critical(error, { source: 'WebMainRoutesOverlaysErrorBoundary' })
+}
+
 export const WebMainRoutes = (): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
     const accounts = useAllAccounts()
@@ -101,84 +116,134 @@ export const WebMainRoutes = (): React.JSX.Element => {
             theme={navTheme}
             onReady={handleReady}
         >
+            {/* BottomSheetManager sits OUTSIDE WalletConnectProvider, mirroring
+                native's BottomSheetModalProvider, which sits above both the WC
+                provider and the overlays error boundary (RootComponent.tsx):
+                the sheet host must survive a WC-boundary trip, since
+                SigningOverlays (below) depends on it. JSX order still puts it
+                first so it registers before the provider's effects can call
+                request(). */}
             <BottomSheetManager />
-            <RootStack.Navigator
-                screenOptions={{
-                    headerShown: false,
-                    ...SCREEN_ANIMATION_CONFIG,
-                }}
-                screenListeners={screenListeners}
+            {/* Mirrors native RootComponent's AutoLockGuard > WalletConnectProvider
+                nesting: this tree only renders with the vault unlocked. WC
+                sockets are scoped to the unlocked main shell (mounted here, not
+                AppShell) — the accepted M7 posture: sockets live only while a
+                UI context is open. The provider wraps ONLY the nav tree, same
+                as native wraps only RootContentContainer — its
+                WalletConnectErrorBoundary's fallback REPLACES children on an
+                uncaught non-WalletConnectError, so anything that must survive
+                a nav-tree crash (the sheet host, SigningOverlays below) has to
+                live outside it. */}
+            <WalletConnectProvider>
+                <RootStack.Navigator
+                    screenOptions={{
+                        headerShown: false,
+                        ...SCREEN_ANIMATION_CONFIG,
+                    }}
+                    screenListeners={screenListeners}
+                >
+                    <RootStack.Screen
+                        name='TabBar'
+                        component={TabBarStackNavigator}
+                    />
+                    <RootStack.Screen
+                        name='ScanQR'
+                        component={ScanQRScreen}
+                    />
+                    <RootStack.Screen
+                        name='Settings'
+                        component={SettingsStackNavigator}
+                    />
+                    <RootStack.Screen
+                        name='Contacts'
+                        component={ContactsStackNavigator}
+                    />
+                    <RootStack.Screen
+                        name='Search'
+                        component={SearchStackNavigator}
+                    />
+                    <RootStack.Screen
+                        name='Messages'
+                        component={MessagesStackNavigator}
+                    />
+                    <RootStack.Screen
+                        name='Staking'
+                        options={{
+                            headerShown: true,
+                            title: 'staking.title',
+                            header: (props: NativeStackHeaderProps) => (
+                                <NavigationHeader {...props} />
+                            ),
+                        }}
+                        layout={fullScreenLayout}
+                        component={GatedStakingScreen}
+                    />
+                    <RootStack.Screen
+                        name='AddAccount'
+                        component={AddAccountComponent}
+                    />
+                    <RootStack.Screen
+                        name='BackupWallet'
+                        component={BackupComponent}
+                        options={{ headerShown: false }}
+                    />
+                    <RootStack.Screen
+                        name='GroupTransactionList'
+                        layout={fullScreenLayout}
+                        component={GroupTransactionListScreen}
+                        options={{
+                            headerShown: true,
+                            header: (props: NativeStackHeaderProps) => (
+                                <NavigationHeader {...props} />
+                            ),
+                            title: 'transactions.group.group_number',
+                        }}
+                    />
+                    <RootStack.Screen
+                        name='TransactionDetails'
+                        layout={fullScreenLayout}
+                        component={TransactionDetailsScreen}
+                        options={{
+                            headerShown: true,
+                            header: (props: NativeStackHeaderProps) => (
+                                <NavigationHeader {...props} />
+                            ),
+                            title: 'signing.transactions.details',
+                        }}
+                    />
+                </RootStack.Navigator>
+            </WalletConnectProvider>
+            {/* Sibling of WalletConnectProvider (not nested inside it),
+                mirroring native RootComponent's arrangement: there,
+                `<ErrorBoundary><SigningOverlays/>...</ErrorBoundary>` is a
+                sibling of `<WalletConnectProvider><RootContentContainer/></WalletConnectProvider>`,
+                both under AutoLockGuard — never inside the WC provider. The
+                provider exposes no context, so nothing needs to be inside it,
+                and nesting SigningOverlays there would let an unrelated
+                nav-tree crash (caught by WalletConnectErrorBoundary, whose
+                fallback replaces children) tear down an in-progress WC sign
+                review along with it.
+                SigningOverlays itself is needed because WalletConnectProvider
+                (mounted above since M7 task 2) delivers interactive sign
+                requests into the shared signing queue regardless of platform,
+                and nothing else on web watches that queue to open the review
+                sheet — without this, a WC-delivered sign request enqueues and
+                never renders on web.
+                MultisigOverlays is NOT mounted: multisig is native-only on
+                this shell (see the omissions note atop this file).
+                SwapOverlays is NOT mounted: its only job is
+                useSwapCosignResolver, which is scoped to shared-account
+                (multisig) swap completion (@perawallet/wallet-core-swaps
+                useSwapCosignResolver.ts) — i.e. the same native-only
+                multisig feature. Regular single-key swap signing on web is
+                headless (not an INTERACTIVE_SOURCES sourceType) and doesn't
+                route through either overlay. */}
+            <ErrorBoundary
+                onError={handleOverlayError}
+                FallbackComponent={OverlayErrorFallback}
             >
-                <RootStack.Screen
-                    name='TabBar'
-                    component={TabBarStackNavigator}
-                />
-                <RootStack.Screen
-                    name='ScanQR'
-                    component={ScanQRScreen}
-                />
-                <RootStack.Screen
-                    name='Settings'
-                    component={SettingsStackNavigator}
-                />
-                <RootStack.Screen
-                    name='Contacts'
-                    component={ContactsStackNavigator}
-                />
-                <RootStack.Screen
-                    name='Search'
-                    component={SearchStackNavigator}
-                />
-                <RootStack.Screen
-                    name='Messages'
-                    component={MessagesStackNavigator}
-                />
-                <RootStack.Screen
-                    name='Staking'
-                    options={{
-                        headerShown: true,
-                        title: 'staking.title',
-                        header: (props: NativeStackHeaderProps) => (
-                            <NavigationHeader {...props} />
-                        ),
-                    }}
-                    layout={fullScreenLayout}
-                    component={GatedStakingScreen}
-                />
-                <RootStack.Screen
-                    name='AddAccount'
-                    component={AddAccountComponent}
-                />
-                <RootStack.Screen
-                    name='BackupWallet'
-                    component={BackupComponent}
-                    options={{ headerShown: false }}
-                />
-                <RootStack.Screen
-                    name='GroupTransactionList'
-                    layout={fullScreenLayout}
-                    component={GroupTransactionListScreen}
-                    options={{
-                        headerShown: true,
-                        header: (props: NativeStackHeaderProps) => (
-                            <NavigationHeader {...props} />
-                        ),
-                        title: 'transactions.group.group_number',
-                    }}
-                />
-                <RootStack.Screen
-                    name='TransactionDetails'
-                    layout={fullScreenLayout}
-                    component={TransactionDetailsScreen}
-                    options={{
-                        headerShown: true,
-                        header: (props: NativeStackHeaderProps) => (
-                            <NavigationHeader {...props} />
-                        ),
-                        title: 'signing.transactions.details',
-                    }}
-                />
-            </RootStack.Navigator>
+                <SigningOverlays />
+            </ErrorBoundary>
         </NavigationContainer>
     )
 }

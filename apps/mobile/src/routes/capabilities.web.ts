@@ -24,7 +24,7 @@ export const routeCapabilities: RouteCapabilities = {
     inAppWebView: false, // revisit after M6 lands — decision deferred to M8 planning
     qrScanner: true, // Task 15 (stretch): BarcodeDetector camera scan + paste fallback
     pushNotificationSettings: false, // permanently off: no push on web
-    walletConnectSettings: false, // M7
+    walletConnectSettings: true, // M7: WC v1 pairing + sessions on web
     passkeysAutofillSettings: false, // M9: WebAuthn-interception credential provider
     storeRating: false, // permanently off: no store review flow
     developerSettings: true, // M5: internal builds need network/debug toggles

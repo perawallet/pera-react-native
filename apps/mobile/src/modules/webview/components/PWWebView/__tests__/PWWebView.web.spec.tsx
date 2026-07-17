@@ -137,17 +137,20 @@ describe('PWWebView.web', () => {
         expect(handleMessage).not.toHaveBeenCalled()
     })
 
-    it('intercepts walletConnect into the not-supported toast (M7 stub)', () => {
+    // M7: the toast stub is gone — walletConnect ops fall through to the
+    // shared registry (openWalletConnect), which drives real pairing.
+    it('routes walletConnect ops into the native handler registry, not a toast', () => {
         renderDiscover()
-        hostParams.current!.onMessage({
+        const message = {
             id: '3',
             jsonrpc: '2.0',
             method: 'walletConnect',
             params: { uri: 'wc:x@2' },
             token: mountedToken(),
-        })
-        expect(showToast).toHaveBeenCalled()
-        expect(handleMessage).not.toHaveBeenCalled()
+        }
+        hostParams.current!.onMessage(message)
+        expect(handleMessage).toHaveBeenCalledWith(message)
+        expect(showToast).not.toHaveBeenCalled()
     })
 
     it('routes to onCustomMessage before any gating when provided', () => {

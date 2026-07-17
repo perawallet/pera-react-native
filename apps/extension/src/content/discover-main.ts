@@ -113,18 +113,137 @@ if (token) {
         getAuthorizedAddresses: rpcCall('getAddresses'),
     }
 
-    // WC-URI interception (spec: window.open hook only for M6; the
-    // MutationObserver half of native peraConnectJS — modal scraping/dedup —
-    // is deferred to M7 pairing work).
-    const originalOpen = window.open.bind(window)
-    window.open = (...args: Parameters<typeof window.open>) => {
-        const target =
-            typeof args[0] === 'string' ? args[0] : args[0]?.toString()
-        if (target?.startsWith('wc:')) {
-            sendRNMessage('walletConnect', { uri: target })
-            return null
+    // WC-URI hook, ported from native peraConnectJS (injected-scripts.ts) —
+    // constants, isWcUri/sendUri semantics, and the modal-scraping fallback
+    // chain are copied exactly so a dapp using @perawallet/connect pairs the
+    // same way in the Discover iframe as it does in the native webview.
+    const WC_SCHEME = 'wc'
+    const PERAWALLET_WC_SCHEME = 'perawallet-wc'
+    // Cap forwarded URI length (real WC URIs are well under this; longer
+    // inputs are either malformed or a hostile page trying to overload the
+    // RPC bridge).
+    const MAX_URI_LENGTH = 4096
+    // Drop the same URI if it's already been sent within this window.
+    const DEDUP_WINDOW_MS = 2000
+    let lastUri = ''
+    let lastUriAt = 0
+
+    const isWcUri = (value: unknown): value is string =>
+        typeof value === 'string' &&
+        value.length > 0 &&
+        value.length <= MAX_URI_LENGTH &&
+        (value.startsWith(`${WC_SCHEME}:`) ||
+            value.startsWith(`${PERAWALLET_WC_SCHEME}:`))
+
+    const sendUri = (uri: unknown): boolean => {
+        if (!isWcUri(uri)) return false
+        const now = Date.now()
+        if (uri === lastUri && now - lastUriAt < DEDUP_WINDOW_MS) return true
+        lastUri = uri
+        lastUriAt = now
+        try {
+            sendRNMessage('walletConnect', { uri })
+        } catch {
+            // Mirrors native's swallow-and-continue: a bridge failure here
+            // must not break the dapp's own window.open call site.
         }
-        return originalOpen(...args)
+        return true
+    }
+
+    const extractUriFromConnectModal = (
+        wrapper: Element | null,
+    ): string | null => {
+        if (!wrapper) return null
+        // Current (@perawallet/connect >=1.3): the wc URI is set as the
+        // 'uri' attribute on the <pera-wallet-connect-modal> custom element
+        // itself (with '&algorand=true' appended).
+        const modal = wrapper.querySelector('pera-wallet-connect-modal')
+        if (modal) {
+            const attr = modal.getAttribute('uri')
+            if (isWcUri(attr)) return attr
+            // Legacy: a launch button nested inside touch-screen-mode shadow DOM.
+            try {
+                const touch = modal.shadowRoot?.querySelector(
+                    'pera-wallet-modal-touch-screen-mode',
+                )
+                const btn = touch?.shadowRoot?.querySelector(
+                    '#pera-wallet-connect-modal-touch-screen-mode-launch-pera-wallet-button',
+                )
+                const href = btn?.getAttribute('href')
+                if (isWcUri(href)) return href
+            } catch {
+                // DOM probing across shadow roots — tolerate absence/shape drift.
+            }
+        }
+        // Legacy: class-based fallback (pre-shadow-DOM versions).
+        const legacy = wrapper.getElementsByClassName(
+            'pera-wallet-connect-modal-touch-screen-mode__launch-pera-wallet-button',
+        )[0]
+        const legacyHref = legacy?.getAttribute('href')
+        if (isWcUri(legacyHref)) return legacyHref
+        return null
+    }
+
+    const processModals = (): void => {
+        // Redirect modal: its launch link has no wc URI (it just opens
+        // 'perawallet-wc://?browser=...'), and the SDK fires that
+        // window.open on insert anyway. Suppress it; the window.open hook
+        // below catches the URI-bearing deep link from the connect path.
+        const redirect = document.getElementById(
+            'pera-wallet-redirect-modal-wrapper',
+        )
+        if (redirect) redirect.remove()
+
+        const connect = document.getElementById(
+            'pera-wallet-connect-modal-wrapper',
+        )
+        if (connect) {
+            const uri = extractUriFromConnectModal(connect)
+            if (sendUri(uri)) {
+                connect.remove()
+            }
+        }
+    }
+
+    // Hook window.open: when @perawallet/connect detects it's running
+    // inside a webview it skips the modal entirely and calls window.open
+    // with the wc/perawallet-wc URI directly — the primary path inside
+    // Pera's webview.
+    try {
+        const originalOpen = window.open.bind(window)
+        window.open = (...args: Parameters<typeof window.open>) => {
+            const target = args[0]
+            if (isWcUri(target) && sendUri(target)) {
+                return null
+            }
+            return originalOpen(...args)
+        }
+    } catch {
+        // window.open is non-configurable in some hosts — fall back to no hook.
+    }
+
+    const attachObserver = (): void => {
+        try {
+            const observer = new MutationObserver(processModals)
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+            })
+        } catch {
+            // document.body absent/inaccessible — nothing to observe.
+        }
+        // Also run once in case the modal was inserted before the observer attached.
+        processModals()
+    }
+
+    // document.body may not exist yet at document_start; mirror native's
+    // "run once after attaching" by deferring to DOMContentLoaded when so.
+    if (document.body) {
+        attachObserver()
+    } else {
+        window.addEventListener('DOMContentLoaded', attachObserver, {
+            once: true,
+        })
     }
 }
 

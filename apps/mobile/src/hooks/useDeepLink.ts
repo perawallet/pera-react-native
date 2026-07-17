@@ -38,6 +38,7 @@ import {
 } from '@perawallet/wallet-core-security'
 import { useLanguage } from './useLanguage'
 import { useIsPeraCardEnabled } from './useIsPeraCardEnabled'
+import { routeCapabilities } from '@routes/capabilities'
 import { navigateToScreen } from './deeplink/navigateToScreen'
 import {
     buildAccountDeeplink,
@@ -412,7 +413,13 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // deeplink to it is a no-op while the feature is hidden.
                     // The `path` carries no destination yet (parity with the
                     // unused Staking path), so we land on the card intro.
-                    if (!isPeraCardEnabled) return
+                    // `onError` (not a bare return): the QR scanner locks
+                    // until one of its callbacks fires — dropping the link
+                    // silently would freeze it. Same below for SELL.
+                    if (!isPeraCardEnabled || !routeCapabilities.peraCard) {
+                        onError?.()
+                        return
+                    }
                     navigateToScreen(replaceCurrentScreen, 'PeraCard', {
                         screen: 'PeraCardIntro',
                     })
@@ -456,6 +463,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // navToBidaliNavigation). Open the same Bidali sheet
                     // the Menu's "Buy Gift Card" panel button opens so we
                     // inherit the bidaliProvider JS bridge wiring.
+                    // Same capability gate as that Menu button: the Bidali
+                    // webview has no host on web (giftCards lands M8).
+                    if (!routeCapabilities.giftCards) {
+                        onError?.()
+                        return
+                    }
                     if (parsedData.address) {
                         setSelectedAccountAddress(parsedData.address)
                     }

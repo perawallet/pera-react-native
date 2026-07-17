@@ -45,6 +45,15 @@ beforeEach(() => {
     delete window.peraMobileInterface
     delete window.peraRPC
     window.history.replaceState(null, '', `/?peraBridgeToken=${TOKEN}`)
+    // Swap in a fresh <body>: each loadScript() attaches a new
+    // MutationObserver to document.body and nothing ever disconnects the
+    // previous test's observer. Without this, a stale observer (registered
+    // earlier, so its callback runs first) still reacts to this test's DOM
+    // mutations and can win the race to consume/remove a modal before the
+    // current test's own observer and message channel see it. Detaching the
+    // old body node stops old observers from seeing further mutations.
+    const freshBody = document.createElement('body')
+    document.documentElement.replaceChild(freshBody, document.body)
 })
 
 describe('discover-main content script', () => {
@@ -127,6 +136,108 @@ describe('discover-main content script', () => {
         expect(received[0]?.method).toBe('walletConnect')
         expect(received[0]?.params).toEqual({
             uri: 'wc:abc123@2?relay-protocol=irn',
+        })
+    })
+
+    // Parity with native peraConnectJS (injected-scripts.ts): MAX_URI_LENGTH
+    // cap, DEDUP_WINDOW_MS dedup, perawallet-wc: scheme, and modal scraping.
+    describe('WC-URI hook parity', () => {
+        const listenForMessages = (
+            captured: ReturnType<typeof captureHandshake>,
+        ): Array<{ method: string; params: unknown }> => {
+            const received: Array<{ method: string; params: unknown }> = []
+            window.addEventListener(
+                captured.handshake!.requestEventName,
+                event => received.push((event as CustomEvent).detail as never),
+            )
+            return received
+        }
+
+        it('dedups an identical wc: URI within the dedup window', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received = listenForMessages(captured)
+
+            const uri = 'wc:abc@1?bridge=https%3A%2F%2Fb.example&key=k'
+            window.open(uri)
+            window.open(uri)
+
+            const wcMessages = received.filter(
+                m => m.method === 'walletConnect',
+            )
+            expect(wcMessages).toHaveLength(1)
+            expect(wcMessages[0]?.params).toEqual({ uri })
+        })
+
+        it('drops oversized URIs', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received = listenForMessages(captured)
+
+            // MAX_URI_LENGTH is 4096 (copied from injected-scripts.ts).
+            const oversized = `wc:${'a'.repeat(4096)}`
+            window.open(oversized)
+
+            expect(
+                received.filter(m => m.method === 'walletConnect'),
+            ).toHaveLength(0)
+        })
+
+        it('accepts perawallet-wc: scheme', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received = listenForMessages(captured)
+
+            const uri = 'perawallet-wc:def@2?relay-protocol=irn&key=k2'
+            window.open(uri)
+
+            const wcMessages = received.filter(
+                m => m.method === 'walletConnect',
+            )
+            expect(wcMessages).toHaveLength(1)
+            expect(wcMessages[0]?.params).toEqual({ uri })
+        })
+
+        it('scrapes the connect modal and suppresses the redirect modal', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received = listenForMessages(captured)
+
+            const redirect = document.createElement('div')
+            redirect.id = 'pera-wallet-redirect-modal-wrapper'
+            document.body.appendChild(redirect)
+
+            await Promise.resolve()
+
+            expect(
+                document.getElementById('pera-wallet-redirect-modal-wrapper'),
+            ).toBeNull()
+            expect(
+                received.filter(m => m.method === 'walletConnect'),
+            ).toHaveLength(0)
+
+            const connect = document.createElement('div')
+            connect.id = 'pera-wallet-connect-modal-wrapper'
+            const modal = document.createElement('pera-wallet-connect-modal')
+            modal.setAttribute(
+                'uri',
+                'wc:ghi@3?relay-protocol=irn&algorand=true',
+            )
+            connect.appendChild(modal)
+            document.body.appendChild(connect)
+
+            await Promise.resolve()
+
+            const wcMessages = received.filter(
+                m => m.method === 'walletConnect',
+            )
+            expect(wcMessages).toHaveLength(1)
+            expect(wcMessages[0]?.params).toEqual({
+                uri: 'wc:ghi@3?relay-protocol=irn&algorand=true',
+            })
+            expect(
+                document.getElementById('pera-wallet-connect-modal-wrapper'),
+            ).toBeNull()
         })
     })
 })

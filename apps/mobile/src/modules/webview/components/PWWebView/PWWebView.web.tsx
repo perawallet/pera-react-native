@@ -18,10 +18,12 @@
 // inside the iframe and relay over a chrome.runtime Port that
 // createDiscoverBridgeHost accepts only for this mount's token + the
 // Discover origin. The native usePeraWebviewInterface registry handles every
-// op unchanged (its senders resolve to handlers.web.ts on web); only two ops
-// are intercepted here: pushWebView (dapps open in real tabs — the injected
-// ARC-0027 provider supplies connect/sign, no nested viewer) and
-// walletConnect (toast until M7 pairing).
+// op unchanged (its senders resolve to handlers.web.ts on web); only one op
+// is intercepted here: pushWebView (dapps open in real tabs — the injected
+// ARC-0027 provider supplies connect/sign, no nested viewer). walletConnect
+// falls through to the registry's openWalletConnect (M7): it validates
+// { uri }, parses it, and calls connect() — the mounted WalletConnectProvider
+// then surfaces ConnectionView for the real pairing flow.
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -29,8 +31,6 @@ import {
     createDiscoverBridgeHost,
     openExternalTab,
 } from '@perawallet/wallet-extension-platform-chrome'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import { PWView } from '@components/core/PWView'
 import { usePeraWebviewInterface } from '../../hooks/usePeraWebviewInterface'
 import { useNotifyWebViewOnContextChange } from '../../hooks/useNotifyWebViewOnContextChange'
@@ -84,8 +84,6 @@ export const PWWebView = ({
     containerStyle,
 }: PWWebViewProps) => {
     const styles = useStyles({ bottomInset: 0 })
-    const { showToast } = useToast()
-    const { t } = useLanguage()
 
     // Regenerated when the bridge host reports its port died mid-life
     // (extension reload, host disposal) so every future call wouldn't
@@ -153,7 +151,7 @@ export const PWWebView = ({
     )
 
     // Mirror native handleEvent's dispatch order (PWWebView.tsx:173-215),
-    // with the two web op intercepts between token validation and dispatch.
+    // with the pushWebView web op intercept between token validation and dispatch.
     const handleBridgeMessage = (data: unknown): void => {
         if (onCustomMessage) {
             onCustomMessage(data)
@@ -191,14 +189,6 @@ export const PWWebView = ({
                         }
                     },
                 )
-                continue
-            }
-            if (method === 'walletConnect') {
-                showToast({
-                    title: '',
-                    body: t('common.webview.walletconnect_not_supported'),
-                    type: 'info',
-                })
                 continue
             }
             mobileInterface.handleMessage(
