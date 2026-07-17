@@ -16,6 +16,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     AccountTypes,
+    type BaseWalletAccount,
     type HardwareWalletAccount,
     type HDWalletAccount,
     type Algo25Account,
@@ -331,24 +332,41 @@ export const rekeyTransitionFor = (
 }
 
 /**
+ * Source-account fields consulted for rekey-target eligibility: the source's
+ * own address (rekeying to self is a no-op) and its current auth address
+ * (re-rekeying to the existing auth is an equally pointless fee-burning
+ * no-op). A full {@link WalletAccount} satisfies this shape.
+ */
+type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
+
+/**
  * True when `target` may be chosen as the new auth address for a "rekey to
- * standard account" flow originating from `sourceAddress`. Mirrors Android
+ * standard account" flow originating from `source`. Mirrors Android
  * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`:
  * the target must be a standard signing account (algo25 / HD wallet) or a
  * quantum account (the rekey-in migration path to post-quantum keys),
- * not the source itself, hold its own signing keys, and not already be
- * rekeyed away.
+ * not the source itself, not the source's current auth, hold its own
+ * signing keys, and not already be rekeyed away.
+ *
+ * Quantum targets are additionally gated on `isQuantumTargetEnabled` (the
+ * quantum-accounts feature flag): until quantum signing ships (PQ-006),
+ * rekeying to a quantum account is a one-way door — undo/re-rekey would
+ * resolve a quantum auth that no signer supports yet.
  */
 export const isEligibleRekeyTarget = (
     target: WalletAccount,
-    sourceAddress: string,
+    source: RekeySourceFields,
+    isQuantumTargetEnabled: boolean,
 ): boolean => {
-    if (target.address === sourceAddress) return false
+    if (target.address === source.address) return false
+    if (target.address === source.rekeyAddress) return false
     if (
         target.type !== AccountTypes.algo25 &&
         target.type !== AccountTypes.hdWallet &&
         target.type !== AccountTypes.quantum
     )
+        return false
+    if (target.type === AccountTypes.quantum && !isQuantumTargetEnabled)
         return false
     if (!hasSigningKeys(target)) return false
     if (isRekeyedAccount(target)) return false
@@ -397,15 +415,16 @@ export const isQuantumDowngrade = (
 
 /**
  * True when `target` may be chosen as the new auth address for a "rekey to
- * Ledger account" flow originating from `sourceAddress`. The target must be
- * a hardware wallet account already imported in the wallet, not the source
- * itself, and not already rekeyed away.
+ * Ledger account" flow originating from `source`. The target must be a
+ * hardware wallet account already imported in the wallet, not the source
+ * itself, not the source's current auth, and not already rekeyed away.
  */
 export const isEligibleLedgerRekeyTarget = (
     target: WalletAccount,
-    sourceAddress: string,
+    source: RekeySourceFields,
 ): boolean => {
-    if (target.address === sourceAddress) return false
+    if (target.address === source.address) return false
+    if (target.address === source.rekeyAddress) return false
     if (target.type !== AccountTypes.hardware) return false
     if (isRekeyedAccount(target)) return false
     return true
@@ -413,9 +432,9 @@ export const isEligibleLedgerRekeyTarget = (
 
 /**
  * True when `target` may be chosen as the new auth address for a "rekey to
- * shared (multisig) account" flow originating from `sourceAddress`. The
- * target must be a multisig account in the wallet, not the source itself,
- * and not already rekeyed away.
+ * shared (multisig) account" flow originating from `source`. The target
+ * must be a multisig account in the wallet, not the source itself, not the
+ * source's current auth, and not already rekeyed away.
  *
  * Additionally requires the wallet to hold at least one participant that can
  * sign. Multisig signing is propose-based: a single local participant can
@@ -431,10 +450,11 @@ export const isEligibleLedgerRekeyTarget = (
  */
 export const isEligibleSharedRekeyTarget = (
     target: WalletAccount,
-    sourceAddress: string,
+    source: RekeySourceFields,
     allAccounts: WalletAccount[],
 ): boolean => {
-    if (target.address === sourceAddress) return false
+    if (target.address === source.address) return false
+    if (target.address === source.rekeyAddress) return false
     if (!isMultisigAccount(target)) return false
     if (isRekeyedAccount(target)) return false
     return canSignViaMultisig(target, allAccounts)

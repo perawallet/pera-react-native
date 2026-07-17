@@ -15,9 +15,11 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     isEligibleRekeyTarget,
     useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 
 import type { RekeyToStandardStackParamList } from '../../../routes/rekey-to-standard/types'
 
@@ -39,13 +41,19 @@ export const useRekeyToStandardSelectTargetScreen =
             >()
         const sourceAddress = route.params.sourceAddress
         const accounts = useAllAccounts()
+        const source = useFindAccountByAddress(sourceAddress)
+        const isQuantumTargetEnabled = useIsQuantumAccountsEnabled()
 
         const targets = useMemo(
             () =>
                 accounts.filter(account =>
-                    isEligibleRekeyTarget(account, sourceAddress),
+                    isEligibleRekeyTarget(
+                        account,
+                        source ?? { address: sourceAddress },
+                        isQuantumTargetEnabled,
+                    ),
                 ),
-            [accounts, sourceAddress],
+            [accounts, source, sourceAddress, isQuantumTargetEnabled],
         )
 
         const handleSelect = useCallback(

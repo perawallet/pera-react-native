@@ -214,3 +214,47 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 })
+
+describe('useRekeyConfirmScreen - no-op rekey guard', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockSubmitAsync.mockReset()
+        mockRequestBottomSheet.mockReset()
+        mockEd25519Source.rekeyAddress = undefined
+    })
+
+    it("does not submit when the target is already the source's current auth", async () => {
+        currentSource = { ...mockEd25519Source, rekeyAddress: 'TGT' }
+        currentTarget = mockEd25519Target
+        // Drive past the previous-rekey warning so only the guard can block.
+        mockRequestBottomSheet.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        expect(mockSubmitAsync).not.toHaveBeenCalled()
+    })
+
+    it('submits when a previously rekeyed source targets a different account', async () => {
+        currentSource = { ...mockEd25519Source, rekeyAddress: 'OTHER' }
+        currentTarget = mockEd25519Target
+        mockRequestBottomSheet.mockResolvedValue(true)
+        mockSubmitAsync.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        await waitFor(() => {
+            expect(mockSubmitAsync).toHaveBeenCalledWith({
+                sourceAddress: 'SRC',
+                rekeyToAddress: 'TGT',
+            })
+        })
+    })
+})

@@ -15,6 +15,7 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     isEligibleSharedRekeyTarget,
     useAllAccounts,
+    useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -39,17 +40,18 @@ export const useRekeyToSharedSelectTargetScreen =
             >()
         const sourceAddress = route.params.sourceAddress
         const accounts = useAllAccounts()
+        const source = useFindAccountByAddress(sourceAddress)
 
         const targets = useMemo(
             () =>
                 accounts.filter(account =>
                     isEligibleSharedRekeyTarget(
                         account,
-                        sourceAddress,
+                        source ?? { address: sourceAddress },
                         accounts,
                     ),
                 ),
-            [accounts, sourceAddress],
+            [accounts, source, sourceAddress],
         )
 
         const handleSelect = useCallback(

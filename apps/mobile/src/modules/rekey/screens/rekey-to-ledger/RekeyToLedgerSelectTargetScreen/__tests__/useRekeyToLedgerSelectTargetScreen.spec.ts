@@ -33,10 +33,18 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
+const mockIsEligibleLedgerRekeyTarget = vi.fn(
+    (account: WalletAccount, _source: WalletAccount) =>
+        account.address !== 'SRC',
+)
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [sourceAccount, targetA, targetB],
-    isEligibleLedgerRekeyTarget: (account: WalletAccount) =>
-        account.address !== 'SRC',
+    useFindAccountByAddress: (address: string) =>
+        address === 'SRC' ? sourceAccount : undefined,
+    isEligibleLedgerRekeyTarget: (
+        account: WalletAccount,
+        source: WalletAccount,
+    ) => mockIsEligibleLedgerRekeyTarget(account, source),
 }))
 
 describe('useRekeyToLedgerSelectTargetScreen', () => {
@@ -50,6 +58,15 @@ describe('useRekeyToLedgerSelectTargetScreen', () => {
         )
 
         expect(result.current.targets).toEqual([targetA, targetB])
+    })
+
+    it('passes the resolved source account to isEligibleLedgerRekeyTarget', () => {
+        renderHook(() => useRekeyToLedgerSelectTargetScreen())
+
+        expect(mockIsEligibleLedgerRekeyTarget).toHaveBeenCalledWith(
+            targetA,
+            sourceAccount,
+        )
     })
 
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {
