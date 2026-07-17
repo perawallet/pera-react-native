@@ -10,6 +10,19 @@
  limitations under the License
  */
 
-export type { PQSignatureProvider } from './types'
-export { createWasmFalconProvider } from './wasmFalconProvider'
-export { getPQProvider } from './getPQProvider'
+import type { PQSignatureProvider } from './types'
+import { createWasmFalconProvider } from './wasmFalconProvider'
+
+let cached: PQSignatureProvider | undefined
+
+/**
+ * Returns the active PQ signature provider. The React Native native provider
+ * is wired in a later ticket (PQ-020); until then, and in node/test
+ * environments, the WASM provider is used.
+ */
+export const getPQProvider = (): PQSignatureProvider => {
+    if (!cached) {
+        cached = createWasmFalconProvider()
+    }
+    return cached
+}

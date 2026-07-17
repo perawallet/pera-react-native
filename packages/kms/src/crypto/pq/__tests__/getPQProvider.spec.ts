@@ -1,3 +1,4 @@
+// @vitest-environment node
 /*
  Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -10,6 +11,17 @@
  limitations under the License
  */
 
-export type { PQSignatureProvider } from './types'
-export { createWasmFalconProvider } from './wasmFalconProvider'
-export { getPQProvider } from './getPQProvider'
+import { describe, expect, test } from 'vitest'
+import { getPQProvider } from '../getPQProvider'
+
+describe('getPQProvider', () => {
+    test('returns a falcon1024 provider', () => {
+        const p = getPQProvider()
+        expect(p.scheme).toBe('falcon1024')
+        expect(p.publicKeyLength).toBe(1793)
+    })
+
+    test('returns the same memoized instance on repeat calls', () => {
+        expect(getPQProvider()).toBe(getPQProvider())
+    })
+})
