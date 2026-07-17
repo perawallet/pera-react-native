@@ -17,13 +17,13 @@ import {
     useRoute,
 } from '@react-navigation/native'
 import {
+    useAccountsStore,
     useAllAccounts,
     useSetAccounts,
     useSelectedAccountAddress,
     type HDWalletAccount,
     useAccountDiscovery,
     useHDImportSession,
-    DerivationTypes,
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
@@ -142,14 +142,18 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         )
                     if (accountToMark) markBackupComplete(accountToMark)
                 } else if (accountsToAdd.length > 0) {
-                    setAccounts([...allAccounts, ...accountsToAdd])
+                    // Read the store fresh: this is a replace-array write,
+                    // and a concurrent store write since render must not be
+                    // dropped with the stale snapshot.
+                    const currentAccounts = useAccountsStore.getState().accounts
+                    setAccounts([...currentAccounts, ...accountsToAdd])
                     setSelectedAccountAddress(accountsToAdd[0].address)
                 }
 
-                // Discovery operates against the bip39 seed id (rekey scan
-                // uses it to label results). The discovered candidate
-                // accounts in `accounts` carry derived child ids on
-                // `keyPairId`; resolve the parent for the discovery API.
+                // The bip39 seed id scopes the same-seed sibling scan set
+                // below. The discovered candidate accounts in `accounts`
+                // carry derived child ids on `keyPairId`; resolve the parent
+                // to match.
                 const walletKeyId =
                     importWalletKeyId ?? seedIdOf(accounts[0].keyPairId)
                 if (!walletKeyId) {
@@ -171,11 +175,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     ]),
                 ]
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
-                    {
-                        walletKeyId,
-                        derivationType: DerivationTypes.Peikert,
-                        accountAddresses: scanAddresses,
-                    },
+                    { accountAddresses: scanAddresses },
                 )
 
                 if (!discoveredRekeyedAccounts) {

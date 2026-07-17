@@ -23,8 +23,9 @@ import TransportHID from '@ledgerhq/react-native-hid'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
-    LedgerConnectionError,
     LedgerSigningError,
+    LedgerUsbMultipleDevicesError,
+    LedgerUsbNoDeviceError,
     buildLedgerAccountPath,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
@@ -226,15 +227,11 @@ export class RNLedgerUsbService implements HardwareWalletService {
             ): Promise<HardwareWalletTransport> {
                 const descriptors = await TransportHID.list()
                 if (descriptors.length === 0) {
-                    throw new LedgerConnectionError(
-                        'No Ledger connected over USB.',
-                    )
+                    throw new LedgerUsbNoDeviceError()
                 }
 
                 if (descriptors.length > 1) {
-                    throw new LedgerConnectionError(
-                        'Multiple Ledger devices are connected over USB. The USB layer cannot target a specific device, so connect only one at a time: disconnect the others and try again.',
-                    )
+                    throw new LedgerUsbMultipleDevicesError()
                 }
 
                 try {

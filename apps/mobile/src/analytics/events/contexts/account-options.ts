@@ -17,6 +17,7 @@
 export enum AccountOptionsEvent {
     RekeyToLedger = 'accountscr_rekey_ledger_tap', // Started rekey to a Ledger account
     RekeyToStandard = 'accountscr_rekey_standard_tap', // Started rekey to a standard account
+    ScanRekeyed = 'accountscr_scan_rekeyed_tap', // Started the rekeyed-accounts rescan
     Rename = 'accountscr_rename_tap', // Opened the rename-account flow
     Remove = 'accountscr_remove_tap', // Started removing the account
     ViewPassphrase = 'accountscr_view_passphrase_tap', // Opened view-passphrase

@@ -89,6 +89,37 @@ describe('useSignAndSubmitGroup', () => {
         expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
     })
 
+    it('rethrows a submit failure from approve so the transport fails the machine', async () => {
+        // Without the rethrow, the callback transport resolves and the
+        // machine reaches `completed` — publishing success events for a
+        // failed submission.
+        mockSubmitAndAutoRefresh.mockRejectedValueOnce(new Error('overspend'))
+        let captured: Optional<TransactionSignRequest>
+        mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
+            captured = r
+        })
+
+        const { result } = renderHook(() => useSignAndSubmitGroup())
+
+        const promise = act(async () =>
+            result.current.submit({
+                unsignedTxs: [fakeTxn],
+                source: { name: 'opt-in', description: 'test' },
+            }),
+        )
+        // Consume the expected rejection so a failing first assertion can't
+        // leave an unhandled rejection that poisons the rest of the file.
+        // (act() returns a thenable without .catch.)
+        void promise.then(undefined, () => {})
+
+        const signed = [
+            { txn: fakeTxn, sig: new Uint8Array([1]) },
+        ] as PeraSignedTransaction[]
+
+        await expect(captured?.approve?.(signed)).rejects.toThrow('overspend')
+        await expect(promise).rejects.toThrow('overspend')
+    })
+
     it('rejects with UserRejectedSigningError when reject() fires', async () => {
         let captured: Optional<TransactionSignRequest>
         mockAddSignRequest.mockImplementation((r: TransactionSignRequest) => {
@@ -151,9 +182,11 @@ describe('useSignAndSubmitGroup', () => {
             }),
         )
 
-        await captured?.approve?.([
-            { txn: fakeTxn, sig: new Uint8Array([1]) },
-        ] as PeraSignedTransaction[])
+        await expect(
+            captured?.approve?.([
+                { txn: fakeTxn, sig: new Uint8Array([1]) },
+            ] as PeraSignedTransaction[]),
+        ).rejects.toBeInstanceOf(Error)
 
         await expect(promise).rejects.toBeInstanceOf(Error)
         await expect(promise).rejects.toMatchObject({

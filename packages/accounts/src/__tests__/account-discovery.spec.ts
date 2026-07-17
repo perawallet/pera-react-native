@@ -19,6 +19,7 @@ import {
 } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 0 },
@@ -197,8 +198,6 @@ describe('discoverAccounts', () => {
 })
 
 describe('discoverRekeyedAccounts', () => {
-    const derivationType = BIP32DerivationType.Peikert
-
     // algosdk v9: `indexer.searchAccounts().authAddr(a).nextToken(t).do()`.
     // The factory returns a builder that records the chained `authAddr`/
     // `nextToken` args (so the per-auth-addr and pagination assertions keep
@@ -250,27 +249,7 @@ describe('discoverRekeyedAccounts', () => {
         vi.restoreAllMocks()
     })
 
-    it('should find rekeyed accounts', async () => {
-        const searchAccounts = makeSearchAccounts(async params =>
-            params.authAddr === 'ADDRESS_0_0'
-                ? { accounts: [{ address: 'REKEYED_ACC_1' }] }
-                : { accounts: [] },
-        )
-        installIndexer(searchAccounts)
-
-        const accounts = await discoverRekeyedAccounts({
-            getPublicKey: createMockGetPublicKey(),
-            derivationType,
-            walletKeyId: 'test-wallet',
-            keyIndexGapLimit: 1,
-            accountGapLimit: 1,
-        })
-
-        expect(accounts[0].address).toBe('REKEYED_ACC_1')
-        expect(accounts[0].rekeyAddress).toBe('ADDRESS_0_0')
-    })
-
-    it('should use provided accountAddresses instead of HD derivation', async () => {
+    it('scans every provided address and labels results with it', async () => {
         const searchAccounts = makeSearchAccounts(async params =>
             params.authAddr === 'EXPLICIT_ADDRESS'
                 ? { accounts: [{ address: 'REKEYED_FROM_EXPLICIT' }] }
@@ -278,20 +257,17 @@ describe('discoverRekeyedAccounts', () => {
         )
         installIndexer(searchAccounts)
 
-        // When accountAddresses is provided, getPublicKey is unused. Pass a
-        // throwing stub to verify it is never invoked.
         const accounts = await discoverRekeyedAccounts({
-            getPublicKey: (() => {
-                throw new Error('getPublicKey should not be called')
-            }) as GetPublicKey,
-            derivationType,
-            walletKeyId: 'test-wallet',
             accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
         })
 
         expect(accounts).toHaveLength(1)
         expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
         expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
+        expect(searchAccounts.calls.map(c => c.authAddr)).toEqual([
+            'EXPLICIT_ADDRESS',
+            'OTHER_ADDRESS',
+        ])
     })
 
     it('follows the indexer pagination token across pages', async () => {
@@ -312,6 +288,29 @@ describe('discoverRekeyedAccounts', () => {
         expect(addresses).toEqual(['REKEYED_PAGE_1', 'REKEYED_PAGE_2'])
         expect(searchAccounts.calls).toHaveLength(2)
         expect(searchAccounts.calls[1]).toMatchObject({ next: 'token-1' })
+    })
+
+    it('logs a warning when the scan stops at the page cap', async () => {
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        let page = 0
+        // Never-ending pagination: every page returns a next token.
+        const searchAccounts = makeSearchAccounts(async () => {
+            page += 1
+            return {
+                accounts: [{ address: `REKEYED_PAGE_${page}` }],
+                nextToken: `token-${page}`,
+            }
+        })
+        installIndexer(searchAccounts)
+
+        const addresses = await fetchRekeyedAddresses('AUTH_ADDRESS', 'mainnet')
+
+        // MAX_REKEYED_SCAN_PAGES = 20
+        expect(addresses).toHaveLength(20)
+        expect(warnSpy).toHaveBeenCalledWith(
+            expect.stringContaining('page cap'),
+            expect.objectContaining({ address: 'AUTH_ADDRESS', pages: 20 }),
+        )
     })
 
     it('propagates indexer errors instead of returning an empty result', async () => {

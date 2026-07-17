@@ -55,33 +55,9 @@ export const useAccountDiscovery = () => {
     )
 
     const discoverRekeyedAccounts = useCallback(
-        async (params: {
-            walletKeyId: string
-            derivationType: BIP32DerivationType
-            accountGapLimit?: number
-            keyIndexGapLimit?: number
-            accountAddresses?: string[]
-        }) => {
-            // Address-only path doesn't need to derive anything.
-            if (params.accountAddresses && params.accountAddresses.length > 0) {
-                return baseDiscoverRekeyedAccounts({
-                    ...params,
-                    getPublicKey: (() => {
-                        throw new Error(
-                            'getPublicKey unused for address-only rekey scan',
-                        )
-                    }) as GetPublicKey,
-                })
-            }
-
-            const getPublicKey: GetPublicKey = inner =>
-                sessionGetPublicKey(params.walletKeyId, inner)
-            return baseDiscoverRekeyedAccounts({
-                ...params,
-                getPublicKey,
-            })
-        },
-        [sessionGetPublicKey],
+        async (params: { accountAddresses: string[] }) =>
+            baseDiscoverRekeyedAccounts(params),
+        [],
     )
 
     return {

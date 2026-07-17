@@ -91,78 +91,21 @@ describe('useAccountDiscovery', () => {
     })
 
     describe('discoverRekeyedAccounts', () => {
-        it('passes a non-functional getPublicKey when account addresses are provided', async () => {
+        it('forwards the address list without touching key derivation', async () => {
             const { result } = renderHook(() => useAccountDiscovery())
 
+            let discovered: unknown
             await act(async () => {
-                await result.current.discoverRekeyedAccounts({
-                    walletKeyId: 'WALLET1',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    derivationType: 9 as any,
+                discovered = await result.current.discoverRekeyedAccounts({
                     accountAddresses: ['A', 'B'],
                 })
             })
 
             expect(kmsMock.getDerivedPublicKey).not.toHaveBeenCalled()
-            const baseCall = mockBaseDiscoverRekeyedAccounts.mock.calls[0]?.[0]
-            expect(baseCall).toMatchObject({
-                walletKeyId: 'WALLET1',
+            expect(mockBaseDiscoverRekeyedAccounts).toHaveBeenCalledWith({
                 accountAddresses: ['A', 'B'],
             })
-            expect(typeof baseCall.getPublicKey).toBe('function')
-            expect(() => baseCall.getPublicKey()).toThrow(
-                'getPublicKey unused for address-only rekey scan',
-            )
-        })
-
-        it('uses kms.getDerivedPublicKey when no addresses are provided', async () => {
-            const { result } = renderHook(() => useAccountDiscovery())
-
-            await act(async () => {
-                await result.current.discoverRekeyedAccounts({
-                    walletKeyId: 'WALLET1',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    derivationType: 9 as any,
-                })
-            })
-
-            const baseCall = mockBaseDiscoverRekeyedAccounts.mock.calls[0]?.[0]
-            expect(baseCall).toMatchObject({ walletKeyId: 'WALLET1' })
-            expect(typeof baseCall.getPublicKey).toBe('function')
-
-            await baseCall.getPublicKey({
-                account: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            })
-            expect(kmsMock.getDerivedPublicKey).toHaveBeenCalledWith(
-                'WALLET1',
-                0,
-                0,
-                9,
-            )
-        })
-
-        it('uses kms.getDerivedPublicKey when addresses array is empty', async () => {
-            const { result } = renderHook(() => useAccountDiscovery())
-
-            await act(async () => {
-                await result.current.discoverRekeyedAccounts({
-                    walletKeyId: 'WALLET1',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    derivationType: 9 as any,
-                    accountAddresses: [],
-                })
-            })
-
-            const baseCall = mockBaseDiscoverRekeyedAccounts.mock.calls[0]?.[0]
-            expect(typeof baseCall.getPublicKey).toBe('function')
-            await baseCall.getPublicKey({
-                account: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            })
-            expect(kmsMock.getDerivedPublicKey).toHaveBeenCalled()
+            expect(discovered).toEqual(['rekeyed'])
         })
     })
 })

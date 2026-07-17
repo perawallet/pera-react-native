@@ -26,22 +26,20 @@ export const SigningActionButtons = () => {
         isLoading,
         currentRequest,
         isMultisigCosign,
-        isMultisigUnsignable,
+        cannotSignNotice,
         cosignSignerAddress,
     } = useSigningActionButtons()
 
     return (
         <PWView style={styles.container}>
-            {isMultisigUnsignable ? (
+            {cannotSignNotice ? (
                 <PWView
                     style={styles.cannotSignNotice}
                     testID='signing-cannot-sign'
                 >
-                    <PWText variant='h4'>
-                        {t('signing.cannot_sign.title')}
-                    </PWText>
+                    <PWText variant='h4'>{cannotSignNotice.title}</PWText>
                     <PWText style={styles.cannotSignBody}>
-                        {t('signing.cannot_sign.body')}
+                        {cannotSignNotice.body}
                     </PWText>
                 </PWView>
             ) : (

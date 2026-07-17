@@ -17,6 +17,7 @@ import {
     useSigningRequest,
     type SigningLifecycleEvent,
 } from '@perawallet/wallet-core-signing'
+import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningRoutes } from '@modules/signing/routes'
@@ -110,10 +111,24 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
             return null
         }
 
+        // Backstop for a rekeyed-to-external sender that slipped past the
+        // up-front gate (useSigningActionButtons) and failed at machine init
+        // — explain the rekey state instead of the generic failure copy.
+        const rekeyTargetError =
+            failedEvent.error instanceof RekeyTargetNotFoundError
+                ? failedEvent.error
+                : null
         const body =
             config.debugEnabled && failedEvent.error.message
                 ? failedEvent.error.message
-                : t('signing.signing_failed.body')
+                : rekeyTargetError
+                  ? t('signing.cannot_sign.rekeyed_auth_missing_body', {
+                        authAddress: String(
+                            rekeyTargetError.metadata.params?.rekeyAddress ??
+                                '',
+                        ),
+                    })
+                  : t('signing.signing_failed.body')
         const handleDismiss = () => {
             removeSignRequest(request)
         }

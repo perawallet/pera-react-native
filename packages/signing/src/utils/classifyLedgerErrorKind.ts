@@ -16,9 +16,13 @@ import {
     LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
+    LedgerDeviceLockedError,
     LedgerDisconnectedError,
+    LedgerLocationServicesDisabledError,
     LedgerNetworkError,
+    LedgerNoAccountsFoundError,
     LedgerPermissionDeniedError,
+    LedgerProviderNotFoundError,
     LedgerPublicKeyReadError,
     LedgerScanTimeoutError,
     LedgerSigningError,
@@ -26,6 +30,8 @@ import {
     LedgerTimeoutError,
     LedgerTransmissionError,
     LedgerUnsupportedDeviceError,
+    LedgerUsbMultipleDevicesError,
+    LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
 } from '@perawallet/wallet-core-ledger'
 import type { LedgerErrorPresetKind } from '../types/ledgerErrorPresetKind'
@@ -51,6 +57,12 @@ const LEDGER_ERROR_CLASSES = [
     LedgerUnsupportedDeviceError,
     LedgerDisconnectedError,
     LedgerTimeoutError,
+    LedgerDeviceLockedError,
+    LedgerUsbNoDeviceError,
+    LedgerUsbMultipleDevicesError,
+    LedgerNoAccountsFoundError,
+    LedgerLocationServicesDisabledError,
+    LedgerProviderNotFoundError,
     LedgerConnectionError,
 ] as const
 
@@ -95,6 +107,15 @@ export const classifyLedgerErrorKind = (
         return 'unsupported_device'
     if (error instanceof LedgerDisconnectedError) return 'connection_lost'
     if (error instanceof LedgerTimeoutError) return 'timeout'
+    if (error instanceof LedgerDeviceLockedError) return 'device_locked'
+    if (error instanceof LedgerUsbNoDeviceError) return 'usb_no_device'
+    if (error instanceof LedgerUsbMultipleDevicesError)
+        return 'usb_multiple_devices'
+    if (error instanceof LedgerNoAccountsFoundError) return 'no_accounts_found'
+    if (error instanceof LedgerLocationServicesDisabledError)
+        return 'location_services_disabled'
+    if (error instanceof LedgerProviderNotFoundError)
+        return 'provider_unavailable'
     if (error instanceof LedgerConnectionError) return 'connection_failed'
     return 'connection_failed'
 }

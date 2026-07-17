@@ -305,6 +305,7 @@
         "rekey_to_standard": "Rekey to Standard Account",
         "rekey_to_shared": "Rekey to Shared Account",
         "export_share_account": "Export/Share Account",
+        "scan_rekeyed": "Scan for Rekeyed Accounts",
         "rename_account": "Rename Account",
         "mute_notifications": "Mute Notifications",
         "unmute_notifications": "Unmute Notifications",
@@ -601,6 +602,10 @@
             "expired_txn": {
                 "title": "Transaction expired",
                 "body": "The transaction's validity window has passed. Please try submitting again."
+            },
+            "not_authorized": {
+                "title": "Signing authority changed",
+                "body": "The network rejected the signature because this account’s signing authority has changed — it may have been rekeyed recently. Wait a moment for the wallet to sync and try again."
             },
             "logic_error": {
                 "title": "Smart contract rejected the transaction",
@@ -2209,7 +2214,9 @@
         },
         "cannot_sign": {
             "title": "You can't sign this account",
-            "body": "This is a shared account and none of its signer accounts are in your wallet. Add a signer account to sign transactions for it."
+            "body": "This is a shared account and none of its signer accounts are in your wallet. Add a signer account to sign transactions for it.",
+            "rekeyed_auth_missing_body": "This account is rekeyed to {{authAddress}}, which is not in this wallet, so it can’t sign transactions. Import the auth account to sign for it.",
+            "rekeyed_auth_watch_body": "This account is rekeyed to a watch-only account, which holds no signing key. Import the auth account’s key to sign for it."
         },
         "transaction_request_faq": {
             "title": "Transaction Request FAQ",
@@ -2843,7 +2850,19 @@
             "address_mismatch_title": "Address Mismatch",
             "retry": "Try again",
             "troubleshoot": "Troubleshoot",
-            "troubleshooting_link": "Having Ledger connection issues?"
+            "troubleshooting_link": "Having Ledger connection issues?",
+            "device_locked_title": "Ledger Locked",
+            "device_locked": "Your Ledger device is locked. Unlock it with your PIN and try again.",
+            "usb_no_device_title": "No Ledger Found",
+            "usb_no_device": "No Ledger device is connected over USB. Plug it in, unlock it, and try again.",
+            "usb_multiple_devices_title": "Multiple Ledgers Connected",
+            "usb_multiple_devices": "More than one Ledger is connected over USB. Disconnect the others and try again — USB can only target a single device.",
+            "no_accounts_found_title": "No Accounts Found",
+            "no_accounts_found": "No accounts were found on this Ledger device.",
+            "location_services_disabled_title": "Location Services Off",
+            "location_services_disabled": "Location services must be enabled to search for nearby Ledger devices. Turn them on and try again.",
+            "provider_unavailable_title": "Connection Unavailable",
+            "provider_unavailable": "The hardware wallet connection service is unavailable. Restart Pera and try again."
         },
         "troubleshooting": {
             "title": "Having Ledger connection issues?",

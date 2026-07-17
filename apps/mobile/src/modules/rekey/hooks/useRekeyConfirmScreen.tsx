@@ -123,6 +123,16 @@ export const useRekeyConfirmScreen = ({
             return
         }
 
+        if (target.address === source.rekeyAddress) {
+            // Unreachable via the select-target screens (eligibility excludes
+            // the current auth), but guard against a stale route param
+            // producing a fee-burning no-op rekey.
+            handleRekeyError(
+                new Error('Rekey target is already the current auth address'),
+            )
+            return
+        }
+
         markSubmitted()
         try {
             await submitAsync({

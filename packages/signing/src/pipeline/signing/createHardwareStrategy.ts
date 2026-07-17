@@ -95,6 +95,9 @@ const validateAndExtract = (
     if (group.data.type === 'arbitrary-data') {
         throw new SigningError(
             'Hardware wallet signing of arbitrary data is not supported',
+            undefined,
+            // Retrying can never succeed — suppress the Retry affordance.
+            { retryable: false },
         )
     }
 

@@ -120,6 +120,33 @@ describe('parseAlgodMessage', () => {
         })
     })
 
+    describe('not_authorized', () => {
+        const AUTH_ADDR =
+            'PNVR2DIQNNCRVQFVVIVOZH4LWDOYRERK7VIQEWTUYAJRTLNLZY2M2SUENM'
+
+        test('parses the wrong-auth-key rejection (stale rekey)', () => {
+            const message =
+                `TransactionPool.Remember: transaction ${TXID}: ` +
+                `should have been authorized by ${AUTH_ADDR} ` +
+                `but was actually authorized by ${ADDR}`
+            expect(parseAlgodMessage(message)).toEqual({
+                code: 'not_authorized',
+                params: {
+                    expectedAuthAddress: AUTH_ADDR,
+                    actualAuthAddress: ADDR,
+                },
+            })
+        })
+
+        test('parses the rejection when wrapped by a transport-layer prefix', () => {
+            const message =
+                `Transport failed: transaction ${TXID}: ` +
+                `should have been authorized by ${AUTH_ADDR} ` +
+                `but was actually authorized by ${ADDR}`
+            expect(parseAlgodMessage(message)?.code).toBe('not_authorized')
+        })
+    })
+
     describe('unknown', () => {
         test('returns null for a message that matches nothing', () => {
             expect(
