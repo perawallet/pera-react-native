@@ -16,6 +16,7 @@ import type {
     LedgerTransportProvider,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import { discoverLedgerAccounts } from './discoverAccounts'
+import { withLedgerConnectionTimeout } from './ledgerTimeouts'
 
 export type ConnectAndDiscoverOptions = {
     /** The transport provider to use for connecting */
@@ -40,19 +41,39 @@ export type ConnectAndDiscoverResult = {
  * Connects to a Ledger device and discovers all Algorand accounts on it.
  *
  * This is the core orchestration function that combines connection and discovery
- * into a single operation. The caller is responsible for managing the transport
- * lifecycle (disconnecting when done).
+ * into a single operation. The caller owns the transport lifecycle only on
+ * SUCCESS (disconnecting when done); on any failure before the handoff this
+ * function releases the BLE link itself — the caller never saw the transport,
+ * so its cleanup cannot run.
  */
 export const connectAndDiscoverAccounts = async (
     options: ConnectAndDiscoverOptions,
 ): Promise<ConnectAndDiscoverResult> => {
-    const transport = await options.provider.connect(options.deviceId)
+    const connectPromise = options.provider.connect(options.deviceId)
+    let transport: LedgerTransport
+    try {
+        transport = await withLedgerConnectionTimeout(
+            connectPromise,
+            'Connect to Ledger',
+        )
+    } catch (error) {
+        // A transport resolving after the timeout would hold the BLE link
+        // forever (battery drain, blocks Ledger Live) — release it late.
+        connectPromise
+            .then(t => t.disconnect().catch(() => undefined))
+            .catch(() => undefined)
+        throw error
+    }
 
-    const accounts = await discoverLedgerAccounts({
-        transport,
-        onProgress: options.onProgress,
-        isAccountOnChain: options.isAccountOnChain,
-    })
-
-    return { transport, accounts }
+    try {
+        const accounts = await discoverLedgerAccounts({
+            transport,
+            onProgress: options.onProgress,
+            isAccountOnChain: options.isAccountOnChain,
+        })
+        return { transport, accounts }
+    } catch (error) {
+        await transport.disconnect().catch(() => undefined)
+        throw error
+    }
 }
