@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { parseCoinbaseFormat } from '../coinbase-parser'
 import { DeeplinkType } from '../types'
 

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { resolvePrecision, type PrecisionVariant } from '../precision'

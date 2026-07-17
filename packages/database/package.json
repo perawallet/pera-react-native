@@ -19,6 +19,7 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "bash ../../tools/rebuild-native.sh && vitest run",
+    "test:unit": "bash ../../tools/rebuild-native.sh && vitest run",
     "db:generate": "drizzle-kit generate --name initial",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },

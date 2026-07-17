@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect } from 'vitest'
 import type { SignRequestStatus } from '@perawallet/wallet-core-multisig'
 import { getStatusBannerVariant } from '../getStatusBannerVariant'

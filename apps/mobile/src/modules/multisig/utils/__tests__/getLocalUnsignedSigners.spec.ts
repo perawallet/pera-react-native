@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect, vi } from 'vitest'
 
 vi.mock(import('@perawallet/wallet-core-accounts'), async importOriginal => {
