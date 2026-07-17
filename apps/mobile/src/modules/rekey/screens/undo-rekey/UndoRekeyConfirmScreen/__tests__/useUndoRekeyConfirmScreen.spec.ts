@@ -149,6 +149,21 @@ describe('useUndoRekeyConfirmScreen', () => {
         expect(mockSubmitAsync).not.toHaveBeenCalled()
     })
 
+    it('a second tap while the flow is in flight is a no-op (no second sheet, one submission)', async () => {
+        mockRequestBottomSheet.mockResolvedValue(true)
+        mockSubmitAsync.mockReturnValue(new Promise(() => {}))
+
+        const { result } = renderHook(() => useUndoRekeyConfirmScreen())
+
+        await act(async () => {
+            void result.current.handleContinuePress()
+            void result.current.handleContinuePress()
+        })
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(mockSubmitAsync).toHaveBeenCalledTimes(1)
+    })
+
     it('submits with source.address as rekey-to address and navigates on success when confirmed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(true)
         mockSubmitAsync.mockResolvedValueOnce(undefined)

@@ -20,6 +20,7 @@ import {
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
 import { resolveMinFeeForSender } from '@perawallet/wallet-core-signing'
+import { effectiveRekeyFee } from './effectiveRekeyFee'
 
 import type { Decimal } from 'decimal.js'
 
@@ -104,7 +105,7 @@ export const useRekeyTransactionFeeQuery = (
                 pqMultiplier,
             })
             return microAlgosToAlgos(
-                resolvedMinFee > builtFee ? resolvedMinFee : builtFee,
+                effectiveRekeyFee(resolvedMinFee, builtFee),
             )
         },
         enabled:

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import {
     getAccountDisplayName,
     isQuantumDowngrade,
@@ -108,6 +108,10 @@ export const useRekeyConfirmScreen = ({
 
     const hasPreviousRekey = isRekeyedAccount(source)
 
+    // Synchronous in-flight guard: `isSubmitting` only propagates on the
+    // next render, so a same-frame double tap would submit twice without it.
+    const inFlightRef = useRef(false)
+
     const submit = useCallback(async () => {
         if (!source || !target) {
             // The CTA is disabled in this state, but guard anyway — a
@@ -161,7 +165,7 @@ export const useRekeyConfirmScreen = ({
         pushWebView({ url: supportUrl })
     }, [pushWebView, supportUrl])
 
-    const handleConfirmPress = useCallback(async () => {
+    const runConfirmFlow = useCallback(async () => {
         if (hasPreviousRekey) {
             const sourceName = source ? getAccountDisplayName(source) : ''
             const currentAuthName = currentAuth
@@ -211,6 +215,16 @@ export const useRekeyConfirmScreen = ({
         warningI18nPrefix,
         warningTestID,
     ])
+
+    const handleConfirmPress = useCallback(async () => {
+        if (inFlightRef.current) return
+        inFlightRef.current = true
+        try {
+            await runConfirmFlow()
+        } finally {
+            inFlightRef.current = false
+        }
+    }, [runConfirmFlow])
 
     return {
         source: source ?? null,
