@@ -74,6 +74,9 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
                 address: account.address,
                 fundingType,
                 // SIWA proof: sign "MX" || message (arbitrary-data semantics).
+                // TODO(card): temporary — switch to the wallet's standard ARC-60
+                // signer once AB adopt the standard schema (also unblocks Ledger,
+                // which can't do MX arbitrary-data signing). See api/escrow/siwa.ts.
                 signSiwaMessage: async message =>
                     (
                         await signArbitraryData(

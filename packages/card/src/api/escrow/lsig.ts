@@ -25,6 +25,7 @@ import {
     TMPL_KILLSWITCH_APP,
     TMPL_MAIN_APP,
 } from './autodraw-teal'
+import { verifyAutoDrawTealTemplate } from './verify-teal'
 
 export type EscrowChainConfig = {
     /** Settlement asset id (USDC) as a decimal string. */
@@ -105,6 +106,10 @@ export const compileAutoDrawProgram = async ({
 }: {
     network: Network
 }): Promise<Uint8Array> => {
+    // Refuse to compile anything but the pinned, integrity-checked template —
+    // the only program this delegation path is ever allowed to produce.
+    verifyAutoDrawTealTemplate()
+
     const { genesisHash } = getNetworkConfig(network)
     const teal = renderAutoDrawTeal({
         ...resolveEscrowChainConfig(network),

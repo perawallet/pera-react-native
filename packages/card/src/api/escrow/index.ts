@@ -35,3 +35,10 @@ export {
     escrowCardCreationResponseSchema,
     delegatorLsigResponseSchema,
 } from './schema'
+export {
+    verifyAutoDrawTealTemplate,
+    isAutoDrawTealSignatureValid,
+    AutoDrawTealUnverifiedError,
+    AUTODRAW_TEAL_PUBLIC_KEY,
+    AUTODRAW_TEAL_SIGNATURE,
+} from './verify-teal'

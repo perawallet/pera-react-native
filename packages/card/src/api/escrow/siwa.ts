@@ -21,12 +21,23 @@ import {
 // creation. The bytes MUST stay byte-for-byte identical to AppliedBlockchain's
 // server-side `verifyArc60Auth`, or the signature will not validate.
 //
-// NOTE: this INTENTIONALLY differs from the wallet's own ARC-60 signer in
-// `packages/signing/src/utils/arc60.ts`:
-//   - the signing payload appends the RAW authenticatorData (not sha256 of it);
-//   - the signature is `"MX" || payload` (algosdk.signBytes semantics), which
-//     `useArbitraryDataSigner` produces — the wallet's arc60 path omits the MX
-//     prefix. Do not consolidate the two.
+// The wallet DOES support ARC-60 data signing (`useLocalKeyArc60Signer` +
+// the hardware path, dispatched via the signing machine), but we cannot route
+// AB card creation through it: AB's verifier is not standard ARC-60, differing
+// on three independent axes, any one of which breaks it —
+//   1. authenticatorData is appended RAW (the standard signer re-hashes it:
+//      `sha256(data) || sha256(authData)`);
+//   2. the signature is `"MX" || message` (algosdk.signBytes), which our
+//      `useArbitraryDataSigner` reproduces — the standard ARC-60 path omits MX;
+//   3. the payload carries `genesis_hash` (no `chain_id`) and isn't canonical,
+//      so the standard `parseSiwa` would REJECT it before signing.
+// So we reuse the existing MX arbitrary-data signer with this AB-shaped payload
+// builder — do NOT consolidate with `packages/signing/src/utils/arc60.ts`.
+//
+// TODO(card): temporary. Once AB update their verifier to the STANDARD ARC-60
+// schema, drop this builder and route through `useLocalKeyArc60Signer` / the
+// hardware path — which is also on-device signable, so Ledger funding sources
+// would work (see useEscrowCardCreation + isSigningCapableFundingSource).
 
 /** Statement shown in the SIWA payload; matches AB's demo default. */
 const SIWA_STATEMENT = 'Prove address ownership'

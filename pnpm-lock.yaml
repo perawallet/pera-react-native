@@ -1884,6 +1884,9 @@ importers:
       react-dom:
         specifier: 19.2.3
         version: 19.2.3(react@19.2.3)
+      tweetnacl:
+        specifier: 'catalog:'
+        version: 1.0.3
       zod:
         specifier: 'catalog:'
         version: 4.4.3
