@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
+import {
+    microAlgosToAlgos,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
-
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 export const TransactionFeeRow = ({
     transaction,
