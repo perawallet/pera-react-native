@@ -74,7 +74,6 @@ export const useCardFundingSourcePicker =
                     options: {
                         size: 'full',
                         enablePanDownToClose: false,
-                        enableContentPanningGesture: false,
                         autoCreateContainer: false,
                     },
                 })
@@ -93,7 +92,6 @@ export const useCardFundingSourcePicker =
                             options: {
                                 size: 'modal',
                                 enablePanDownToClose: false,
-                                enableContentPanningGesture: false,
                                 autoCreateContainer: false,
                             },
                         })
