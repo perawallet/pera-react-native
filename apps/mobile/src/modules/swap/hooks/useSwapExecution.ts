@@ -48,9 +48,9 @@ import {
     buildGroupPlans,
     scatterSigned,
     serializeGroupPlans,
-    SwapUserRejectedError,
 } from './swapGroupPlan'
 import {
+    isUserRejectionError,
     requestSwapSignatures,
     requestSwapProposal,
     reportSwapFailure,
@@ -248,7 +248,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     setStatus('pending-cosign')
                     return { kind: 'pending-cosign' }
                 } catch (e) {
-                    const isRejection = e instanceof SwapUserRejectedError
+                    const isRejection = isUserRejectionError(e)
                     const message = isRejection
                         ? t('swap.execution.user_rejected')
                         : e instanceof Error
@@ -284,7 +284,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                           )
                         : []
             } catch (e) {
-                const isRejection = e instanceof SwapUserRejectedError
+                const isRejection = isUserRejectionError(e)
                 const message = isRejection
                     ? t('swap.execution.user_rejected')
                     : e instanceof Error

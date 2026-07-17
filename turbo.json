@@ -50,6 +50,22 @@
         "vitest.setup.ts"
       ]
     },
+    "test:unit": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "coverage/**"
+      ],
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "vitest.config.ts",
+        "vitest.setup.ts"
+      ]
+    },
     "test:watch": {
       "cache": false,
       "persistent": true

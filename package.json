@@ -23,6 +23,7 @@
     "lint:copyright:check": "node tools/copyright-header.mjs --check",
     "format": "oxfmt \"**/*.{ts,tsx,md}\"",
     "test": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && turbo run test",
+    "test:unit": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && turbo run test:unit",
     "test:coverage": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && turbo run test -- --coverage",
     "test:integration": "bash tools/rebuild-native.sh && bash tools/generate-config.sh && pnpm --recursive --if-present run test:integration",
     "generate:config": "bash tools/generate-config.sh",

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { parseDeeplink } from '../parser'
 import { parseWalletConnectUri } from '../walletconnect-parser'
 import { DeeplinkType } from '../types'

@@ -925,4 +925,136 @@ describe('createHardwareStrategy', () => {
             ).rejects.toThrow(/arbitrary/i)
         })
     })
+
+    describe('abort', () => {
+        it('sends no further transactions to the device after abort', async () => {
+            const controller = new AbortController()
+            // The first exchange aborts the session mid-flight (models
+            // app-side Cancel while the device is prompting); the second
+            // transaction must never be sent to the device.
+            vi.mocked(mockTransport.signTransaction).mockImplementation(
+                async () => {
+                    controller.abort()
+                    return MOCK_SIGNATURE
+                },
+            )
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+            })
+            const group = makeGroup(
+                [mockTransaction(), mockTransaction()],
+                [0, 1],
+            )
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount(), {
+                    signal: controller.signal,
+                }),
+            ).rejects.toThrow(/abort/i)
+
+            expect(mockTransport.signTransaction).toHaveBeenCalledTimes(1)
+            expect(mockTransport.disconnect).toHaveBeenCalled()
+        })
+
+        it('abort during a hanging exchange disconnects the transport and unwinds', async () => {
+            const controller = new AbortController()
+            // A never-resolving exchange that settles when disconnect is
+            // called — models BleTransport racing `exchangeBusyPromise`
+            // against disconnect.
+            let rejectExchange: (error: Error) => void = () => {}
+            vi.mocked(mockTransport.signTransaction).mockImplementation(
+                () =>
+                    new Promise((_, reject) => {
+                        rejectExchange = reject
+                    }),
+            )
+            vi.mocked(mockTransport.disconnect).mockImplementation(async () => {
+                rejectExchange(new Error('DisconnectedDeviceDuringOperation'))
+            })
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+
+            const signPromise = strategy.sign(group, makeLedgerAccount(), {
+                signal: controller.signal,
+            })
+            // The abort-driven disconnect must settle the exchange — the
+            // rejection carries the disconnect error, not the (test-shrunk)
+            // confirmation timeout that would eventually fire without abort.
+            const rejection = expect(signPromise).rejects.toThrow(
+                'DisconnectedDeviceDuringOperation',
+            )
+            // Let connect + verify complete and the exchange start hanging.
+            await new Promise(resolve => setTimeout(resolve, 0))
+            expect(mockTransport.signTransaction).toHaveBeenCalledTimes(1)
+
+            controller.abort()
+            await rejection
+
+            expect(mockTransport.disconnect).toHaveBeenCalled()
+            expect(mockTransport.signTransaction).toHaveBeenCalledTimes(1)
+        })
+
+        it('a pre-aborted signal never touches the device', async () => {
+            const controller = new AbortController()
+            controller.abort()
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: mockRegistry,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount(), {
+                    signal: controller.signal,
+                }),
+            ).rejects.toThrow(/abort/i)
+
+            expect(mockProvider.connect).not.toHaveBeenCalled()
+            expect(mockTransport.signTransaction).not.toHaveBeenCalled()
+        })
+
+        it('arc60: abort during a hanging signData disconnects the transport', async () => {
+            const controller = new AbortController()
+            let rejectExchange: (error: Error) => void = () => {}
+            const transport = makeArc60Transport({
+                signData: vi.fn(
+                    () =>
+                        new Promise((_, reject) => {
+                            rejectExchange = reject
+                        }),
+                ),
+                disconnect: vi.fn(async () => {
+                    rejectExchange(
+                        new Error('DisconnectedDeviceDuringOperation'),
+                    )
+                }),
+            })
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(
+                    makeMockProvider(transport),
+                ),
+                encodeTransaction,
+            })
+
+            const signPromise = strategy.sign(
+                makeArc60Group(),
+                makeLedgerAccount(),
+                { signal: controller.signal },
+            )
+            const rejection = expect(signPromise).rejects.toThrow(
+                'DisconnectedDeviceDuringOperation',
+            )
+            await new Promise(resolve => setTimeout(resolve, 0))
+            expect(transport.signData).toHaveBeenCalledTimes(1)
+
+            controller.abort()
+            await rejection
+
+            expect(transport.disconnect).toHaveBeenCalled()
+        })
+    })
 })

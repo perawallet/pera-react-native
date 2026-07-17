@@ -22,7 +22,8 @@
   "files": ["tsconfig", "vitest", "guardrails"],
   "scripts": {
     "guardrails": "tsx guardrails/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "typescript": "catalog:",

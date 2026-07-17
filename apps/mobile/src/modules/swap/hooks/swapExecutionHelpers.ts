@@ -25,6 +25,30 @@ import {
 import { SwapUserRejectedError } from './swapGroupPlan'
 
 /**
+ * Cancel-shaped signing outcomes beyond the swap flow's own wrapper: the
+ * pipeline's headless-cancel error and an on-device Ledger reject. Matched
+ * by error name (both classes pin `name` with a string literal, so the
+ * match survives minification) instead of `instanceof` so this stays free
+ * of value imports from the signing/ledger packages — the primary cancel
+ * path is the request's `reject` callback, which already yields
+ * SwapUserRejectedError; this is defense-in-depth for a cancel leaking
+ * through the `error` callback.
+ */
+const USER_REJECTION_ERROR_NAMES = new Set([
+    'UserRejectedSigningError',
+    'LedgerUserRejectedError',
+])
+
+/**
+ * True for every cancel-shaped signing outcome. Keeps `reportSwapFailure`
+ * unreachable for user cancellations, so the swap backend never records
+ * `failed/blockchain_error` for a reject the user performed on-device.
+ */
+export const isUserRejectionError = (error: unknown): boolean =>
+    error instanceof SwapUserRejectedError ||
+    (error instanceof Error && USER_REJECTION_ERROR_NAMES.has(error.name))
+
+/**
  * Hand a batch of unsigned transactions to the signing pipeline and wait for
  * the user-signed bytes to come back via the callback transport.
  *

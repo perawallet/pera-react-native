@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {
     screenListeners,

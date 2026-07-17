@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, test, expect } from 'vitest'
 import { buildModelViewerHtml, sanitizeModelUrl } from '../modelViewerHtml'
 
