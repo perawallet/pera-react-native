@@ -308,7 +308,9 @@ async function doFetchAndPersistAccount(
         authAddress,
     })
 
-    useAccountsStore.getState().updateAccountRekeyAddress(address, authAddress)
+    useAccountsStore
+        .getState()
+        .updateAccountRekeyAddress(address, authAddress, network)
 
     // Persist ALGO as a regular holding (in base units / microalgos, matching
     // ASA amounts and ALGO's 6 decimals) so the home-screen reads can sort,

@@ -20,7 +20,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         >()
     return {
         ...original,
-        useNetworkStore: { getState: () => ({ network: 'testnet' }) },
+        useNetworkStore: {
+            getState: () => ({ network: 'testnet' }),
+            subscribe: () => () => {},
+        },
     }
 })
 

@@ -27,13 +27,45 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+// Stateful network-store fake: the accounts store mirrors each account's
+// active-network rekey address and re-derives it when the network changes.
+const fakeNetwork = vi.hoisted(() => {
+    const listeners: Array<(state: unknown, prev: unknown) => void> = []
+    const holder = {
+        current: 'mainnet',
+        listeners,
+        switchTo(network: string) {
+            const prev = holder.current
+            holder.current = network
+            for (const cb of [...listeners]) {
+                cb({ network }, { network: prev })
+            }
+        },
+    }
+    return holder
+})
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetworkStore: {
+        getState: () => ({ network: fakeNetwork.current }),
+        subscribe: (cb: (state: unknown, prev: unknown) => void) => {
+            fakeNetwork.listeners.push(cb)
+            return () => {}
+        },
+    },
+}))
+
 describe('services/accounts/store', () => {
     let useAccountsStore: typeof import('../store').useAccountsStore
 
     beforeEach(async () => {
         vi.resetModules()
+        fakeNetwork.current = 'mainnet'
+        fakeNetwork.listeners.length = 0
         const module = await import('../store')
         useAccountsStore = module.useAccountsStore
+        // Installs the network-switch subscription against the fake above.
+        await import('../network-rekey-sync')
     })
 
     test('defaults to empty list and setAccounts updates state', () => {
@@ -281,7 +313,7 @@ describe('services/accounts/store', () => {
     })
 
     describe('updateAccountRekeyAddress', () => {
-        test('sets rekeyAddress on the matching account', () => {
+        test('sets the mirror and the per-network entry for the active network', () => {
             useAccountsStore.getState().setAccounts([
                 {
                     type: 'watch',
@@ -294,30 +326,58 @@ describe('services/accounts/store', () => {
                 } as unknown as WalletAccount,
             ])
 
-            useAccountsStore.getState().updateAccountRekeyAddress('A', 'B')
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', 'B', 'mainnet')
 
             const accounts = useAccountsStore.getState().accounts
             const a = accounts.find(x => x.address === 'A')!
             expect(a.rekeyAddress).toBe('B')
+            expect(a.rekeyAddressByNetwork).toEqual({ mainnet: 'B' })
             expect(
                 accounts.find(x => x.address === 'B')?.rekeyAddress,
             ).toBeUndefined()
         })
 
-        test('clears rekeyAddress when passed null', () => {
+        test('records an inactive-network sync without touching the mirror', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                } as unknown as WalletAccount,
+            ])
+            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
+
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', 'B', 'testnet')
+
+            const a = useAccountsStore.getState().accounts[0]
+            expect(a.rekeyAddress).toBeUndefined()
+            expect(a.rekeyAddressByNetwork).toEqual({ testnet: 'B' })
+        })
+
+        test('clears the mirror and the network entry when passed null', () => {
             useAccountsStore.getState().setAccounts([
                 {
                     type: 'algo25',
                     address: 'A',
                     keyPairId: 'k',
                     rekeyAddress: 'B',
+                    rekeyAddressByNetwork: { mainnet: 'B' },
                 } as unknown as WalletAccount,
             ])
 
-            useAccountsStore.getState().updateAccountRekeyAddress('A', null)
-            expect(
-                useAccountsStore.getState().accounts[0].rekeyAddress,
-            ).toBeUndefined()
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', null, 'mainnet')
+
+            const a = useAccountsStore.getState().accounts[0]
+            expect(a.rekeyAddress).toBeUndefined()
+            // The (empty) map stays: it records "per-network state is known",
+            // which gates the legacy-scalar fallback on network switches.
+            expect(a.rekeyAddressByNetwork).toEqual({})
         })
 
         test('is a no-op when the address is not in the store', () => {
@@ -329,22 +389,164 @@ describe('services/accounts/store', () => {
                 } as unknown as WalletAccount,
             ])
             const before = useAccountsStore.getState().accounts
-            useAccountsStore.getState().updateAccountRekeyAddress('Z', 'Y')
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('Z', 'Y', 'mainnet')
             expect(useAccountsStore.getState().accounts).toBe(before)
         })
 
-        test('does not write when rekeyAddress is unchanged', () => {
+        test('does not write when the value is unchanged for that network', () => {
             useAccountsStore.getState().setAccounts([
                 {
                     type: 'algo25',
                     address: 'A',
                     keyPairId: 'k',
                     rekeyAddress: 'B',
+                    rekeyAddressByNetwork: { mainnet: 'B' },
                 } as unknown as WalletAccount,
             ])
             const before = useAccountsStore.getState().accounts
-            useAccountsStore.getState().updateAccountRekeyAddress('A', 'B')
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', 'B', 'mainnet')
             expect(useAccountsStore.getState().accounts).toBe(before)
+        })
+    })
+
+    describe('per-network rekey state on network switch', () => {
+        test('mirrors flip in both directions when the network changes (mainnet-rekeyed, testnet-clean)', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                } as unknown as WalletAccount,
+            ])
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', null, 'testnet')
+
+            act(() => {
+                fakeNetwork.switchTo('testnet')
+            })
+            expect(
+                useAccountsStore.getState().accounts[0].rekeyAddress,
+            ).toBeUndefined()
+
+            act(() => {
+                fakeNetwork.switchTo('mainnet')
+            })
+            expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
+                'AUTH',
+            )
+        })
+
+        test('an account with per-network state but no entry for the new network reads as not rekeyed', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                } as unknown as WalletAccount,
+            ])
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', 'AUTH', 'mainnet')
+
+            act(() => {
+                fakeNetwork.switchTo('testnet')
+            })
+
+            expect(
+                useAccountsStore.getState().accounts[0].rekeyAddress,
+            ).toBeUndefined()
+        })
+
+        test('a legacy account with no per-network state keeps its mirror across switches', () => {
+            // Pre-upgrade persisted account: scalar only. Until a sync tick
+            // writes the map, the mirror must not be cleared by a switch —
+            // single-network usage keeps today's behavior exactly.
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                    rekeyAddress: 'AUTH',
+                } as unknown as WalletAccount,
+            ])
+
+            act(() => {
+                fakeNetwork.switchTo('testnet')
+            })
+
+            expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
+                'AUTH',
+            )
+        })
+
+        test('rekeyed/signable derivation follows the network switch', async () => {
+            const { isRekeyedAccount, canSignWith } =
+                await import('../../utils')
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                } as unknown as WalletAccount,
+            ])
+            useAccountsStore.getState().applyNetworkRekeyState('mainnet')
+            // Rekeyed on mainnet to an external (not-in-wallet) auth.
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', 'EXTERNAL', 'mainnet')
+            useAccountsStore
+                .getState()
+                .updateAccountRekeyAddress('A', null, 'testnet')
+
+            const onMainnet = useAccountsStore.getState().accounts[0]
+            expect(isRekeyedAccount(onMainnet)).toBe(true)
+            expect(canSignWith(onMainnet, [onMainnet])).toBe(false)
+
+            act(() => {
+                fakeNetwork.switchTo('testnet')
+            })
+
+            const onTestnet = useAccountsStore.getState().accounts[0]
+            expect(isRekeyedAccount(onTestnet)).toBe(false)
+            expect(canSignWith(onTestnet, [onTestnet])).toBe(true)
+        })
+
+        test('applyNetworkRekeyState leaves state referentially unchanged when nothing differs', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                } as unknown as WalletAccount,
+            ])
+            const before = useAccountsStore.getState().accounts
+
+            useAccountsStore.getState().applyNetworkRekeyState('testnet')
+
+            expect(useAccountsStore.getState().accounts).toBe(before)
+        })
+    })
+
+    describe('addRekeyedWatchAccounts', () => {
+        test('stamps new watch accounts with the scanned network entry and mirror', () => {
+            useAccountsStore.getState().setAccounts([])
+
+            const added = useAccountsStore
+                .getState()
+                .addRekeyedWatchAccounts('SRC', ['R1'], 'mainnet')
+
+            expect(added).toBe(1)
+            const r1 = useAccountsStore.getState().accounts[0]
+            expect(r1.rekeyAddress).toBe('SRC')
+            expect(r1.rekeyAddressByNetwork).toEqual({ mainnet: 'SRC' })
         })
     })
 })

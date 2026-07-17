@@ -23,6 +23,7 @@ import {
 import {
     logger,
     registerStore,
+    type Network,
     type WithPersist,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
@@ -35,6 +36,10 @@ const initialState = {
     selectedAccountAddress: null as Nullable<string>,
     sortMode: 'manual' as AccountSortMode,
     manualAccountOrder: [] as string[],
+    // Session-only (not persisted): null until the first network switch is
+    // applied; while null, rekey writes treat their own network as active —
+    // syncs only ever run on the active network, so this matches reality.
+    activeRekeyNetwork: null as Nullable<Network>,
 }
 
 export const useAccountsStore: UseBoundStore<
@@ -105,6 +110,7 @@ export const useAccountsStore: UseBoundStore<
             updateAccountRekeyAddress: (
                 address: string,
                 rekeyAddress: string | null,
+                network: Network,
             ) => {
                 const accounts = get().accounts
                 const idx = accounts.findIndex(a => a.address === address)
@@ -112,27 +118,75 @@ export const useAccountsStore: UseBoundStore<
 
                 const current = accounts[idx]
                 const nextValue = rekeyAddress ?? undefined
-                if (current.rekeyAddress === nextValue) return
+                const activeNetwork = get().activeRekeyNetwork
+                const isActiveNetwork =
+                    activeNetwork === null || activeNetwork === network
+                const mapUnchanged =
+                    current.rekeyAddressByNetwork !== undefined &&
+                    current.rekeyAddressByNetwork[network] === nextValue
+                const mirrorUnchanged =
+                    !isActiveNetwork || current.rekeyAddress === nextValue
+                if (mapUnchanged && mirrorUnchanged) return
+
+                const nextMap = { ...current.rekeyAddressByNetwork }
+                if (nextValue === undefined) {
+                    // Key removed but the map kept: an (even empty) map
+                    // records "per-network state is known", which gates the
+                    // legacy-scalar fallback in applyNetworkRekeyState.
+                    delete nextMap[network]
+                } else {
+                    nextMap[network] = nextValue
+                }
 
                 const next = [...accounts]
-                next[idx] = { ...current, rekeyAddress: nextValue }
+                next[idx] = {
+                    ...current,
+                    rekeyAddressByNetwork: nextMap,
+                    ...(isActiveNetwork ? { rekeyAddress: nextValue } : {}),
+                }
                 set({ accounts: next })
+            },
+            applyNetworkRekeyState: (network: Network) => {
+                const accounts = get().accounts
+                let changed = false
+                const next = accounts.map(account => {
+                    // Legacy account (persisted before per-network state):
+                    // keep the mirror until a sync tick writes the map.
+                    if (account.rekeyAddressByNetwork === undefined) {
+                        return account
+                    }
+                    const target = account.rekeyAddressByNetwork[network]
+                    if (account.rekeyAddress === target) return account
+                    changed = true
+                    return { ...account, rekeyAddress: target }
+                })
+                set({
+                    activeRekeyNetwork: network,
+                    ...(changed ? { accounts: next } : {}),
+                })
             },
             addRekeyedWatchAccounts: (
                 sourceAddress: string,
                 addresses: string[],
+                network: Network,
             ) => {
                 if (addresses.length === 0) return 0
 
                 const current = get().accounts
                 const currentAddresses = new Set(current.map(a => a.address))
+                const activeNetwork = get().activeRekeyNetwork
+                const isActiveNetwork =
+                    activeNetwork === null || activeNetwork === network
                 const watchAccounts: WatchAccount[] = addresses
                     .filter(addr => !currentAddresses.has(addr))
                     .map(address => ({
                         id: generateOrderedUniqueId(),
                         address,
                         type: AccountTypes.watch,
-                        rekeyAddress: sourceAddress,
+                        ...(isActiveNetwork
+                            ? { rekeyAddress: sourceAddress }
+                            : {}),
+                        rekeyAddressByNetwork: { [network]: sourceAddress },
                     }))
 
                 if (watchAccounts.length === 0) return 0

@@ -33,6 +33,11 @@ vi.mock('algosdk', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    // The accounts barrel installs a network-switch subscription at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
     isValidAlgorandAddress: mocks.isValidAlgorandAddress,
 }))
 

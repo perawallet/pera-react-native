@@ -20,7 +20,10 @@ import type {
 } from '../../types'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: { getState: () => ({ network: 'testnet' }) },
+    useNetworkStore: {
+        getState: () => ({ network: 'testnet' }),
+        subscribe: () => () => {},
+    },
     encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1])),
 }))
 

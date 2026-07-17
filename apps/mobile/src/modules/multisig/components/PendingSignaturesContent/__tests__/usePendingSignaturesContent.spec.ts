@@ -45,7 +45,10 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
-    useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
     useTransactionEncoder: () => ({ decodeTransaction: vi.fn(() => ({})) }),
 }))
 

@@ -38,6 +38,11 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    // The accounts barrel subscribes to the network store at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 

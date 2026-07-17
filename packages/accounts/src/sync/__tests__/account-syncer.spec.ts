@@ -16,6 +16,10 @@ import type { Network } from '@perawallet/wallet-core-shared'
 // algosdk v9 builders: `accountInformation(addr).do()` and
 // `lookupAccountAssets(addr).limit(n).do()`.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
     getAlgorandClient: vi.fn(() => ({
         client: {
             algod: {
@@ -79,9 +83,12 @@ describe('fetchAndPersistAccount', () => {
     it('mirrors the chain authAddr into the Zustand account', async () => {
         await fetchAndPersistAccount('A', 'mainnet' as Network)
 
-        expect(
-            useAccountsStore.getState().accounts.find(a => a.address === 'A')
-                ?.rekeyAddress,
-        ).toBe('S')
+        const account = useAccountsStore
+            .getState()
+            .accounts.find(a => a.address === 'A')
+        expect(account?.rekeyAddress).toBe('S')
+        // The sync's network is threaded into the per-network state, not
+        // just the active-network mirror.
+        expect(account?.rekeyAddressByNetwork).toEqual({ mainnet: 'S' })
     })
 })
