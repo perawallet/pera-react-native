@@ -2531,6 +2531,8 @@
             "max": "MAX"
         },
         "quote": {
+            "refreshed_title": "Quote refreshed",
+            "refreshed_body": "That quote had expired, so we fetched a fresh rate. Review it and confirm again.",
             "rate": "Rate",
             "price_impact": "Price Impact",
             "slippage_tolerance": "Slippage Tolerance",
