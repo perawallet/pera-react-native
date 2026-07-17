@@ -22,20 +22,21 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
+// Real rekeyed candidates are watch accounts WITHOUT keyPairId, pointing at
+// the discovered auth address (account-discovery.ts) — LRK-022 fixture
+// realism, so shape drift in the discovery output fails loudly here.
 const MOCK_ACCOUNTS = [
     {
         id: '1',
         address: 'ACC1',
-        type: AccountTypes.algo25,
+        type: AccountTypes.watch,
         rekeyAddress: 'REKEY',
-        keyPairId: 'pk',
     },
     {
         id: '2',
         address: 'ACC2',
-        type: AccountTypes.algo25,
+        type: AccountTypes.watch,
         rekeyAddress: 'REKEY',
-        keyPairId: 'pk2',
     },
 ]
 
@@ -54,6 +55,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
     AccountTypes: {
         algo25: 'algo25',
+        watch: 'watch',
     },
 }))
 
@@ -162,6 +164,17 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
+        // Pin the persisted shape: watch + rekeyAddress, never a signer type.
+        const persisted = mockSetAccounts.mock.calls[0][0] as Array<{
+            type: string
+            rekeyAddress?: string
+            keyPairId?: string
+        }>
+        for (const account of persisted) {
+            expect(account.type).toBe(AccountTypes.watch)
+            expect(account.rekeyAddress).toBe('REKEY')
+            expect(account.keyPairId).toBeUndefined()
+        }
         expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
         expect(mockExitAccountFlow).toHaveBeenCalled()
     })
