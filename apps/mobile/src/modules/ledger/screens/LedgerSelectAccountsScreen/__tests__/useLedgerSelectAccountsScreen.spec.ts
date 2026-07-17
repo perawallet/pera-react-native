@@ -304,6 +304,31 @@ describe('useLedgerSelectAccountsScreen', () => {
         expect(result.current.isFetchingMore).toBe(false)
     })
 
+    it('releases the dead transport on failure so the next tap reconnects and succeeds', async () => {
+        mockDisconnectTransport.mockResolvedValue(undefined)
+        // Device slept / BLE dropped after the first connect.
+        mockGetAddress
+            .mockRejectedValueOnce(new Error('device disconnected'))
+            .mockResolvedValueOnce(buildAccount(2, 'CCC333'))
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        await act(async () => {
+            await result.current.handleFindAnother()
+        })
+        expect(mockErrorToast).toHaveBeenCalledTimes(1)
+        // The wedged handle is dropped, not kept for the next tap.
+        expect(mockDisconnectTransport).toHaveBeenCalled()
+
+        await act(async () => {
+            await result.current.handleFindAnother()
+        })
+        expect(mockConnect).toHaveBeenCalledTimes(2)
+        const derived = derivedAccounts(result.current)
+        expect(derived).toHaveLength(3)
+        expect(derived[2].address).toBe('CCC333')
+    })
+
     it('does not surface a toast or setState if the screen unmounts during a fetch', async () => {
         let rejectFetch: (reason: Error) => void = () => {}
         mockGetAddress.mockImplementationOnce(

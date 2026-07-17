@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Share from 'react-native-share'
 import { shareText } from '../shareText'

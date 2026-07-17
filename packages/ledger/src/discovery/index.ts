@@ -18,3 +18,8 @@ export type {
     ConnectAndDiscoverResult,
 } from './connectAndDiscover'
 export { verifyLedgerAddress } from './verifyAddress'
+export {
+    ledgerTimeoutReason,
+    withLedgerConfirmationTimeout,
+    withLedgerConnectionTimeout,
+} from './ledgerTimeouts'

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect, vi } from 'vitest'
 
 let mockIdCounter = 0

@@ -41,7 +41,12 @@ import type {
     SigningCallbacks,
     SignerInfo,
 } from '../types'
-import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
+import {
+    CannotSignError,
+    HardwareSigningAbortedError,
+    HardwareWalletError,
+    SigningError,
+} from '../errors'
 import {
     LedgerAppOutdatedError,
     LedgerConnectionError,
@@ -69,6 +74,10 @@ const ledgerTimeoutReason =
  * Injected from the hook layer (useTransactionEncoder).
  */
 export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
+
+const throwIfAborted = (signal: Optional<AbortSignal>): void => {
+    if (signal?.aborted) throw new HardwareSigningAbortedError()
+}
 
 export type HardwareStrategyOptions = {
     hardwareWalletRegistry?: HardwareWalletRegistry
@@ -191,6 +200,11 @@ const signTransactions = async (
     const signed: PeraSignedTransaction[] = []
 
     for (let index = 0; index < transactions.length; index++) {
+        // No APDU leaves the app after an abort — without this check the
+        // detached loop would keep prompting the device for every remaining
+        // transaction while the app already shows an error sheet.
+        throwIfAborted(callbacks?.signal)
+
         const txn = transactions[index]
 
         if (!indicesToSign.includes(index)) {
@@ -246,6 +260,7 @@ const signTransactions = async (
 const toClassifiedError = (error: unknown): Error => {
     if (
         error instanceof CannotSignError ||
+        error instanceof HardwareSigningAbortedError ||
         error instanceof HardwareWalletError ||
         isLedgerError(error)
     ) {
@@ -295,8 +310,18 @@ const signTransactionsOnHardwareWallet = async (
 
     const { deviceId, accountIndex } = hwAccount.hardwareDetails
     let transport: Optional<HardwareWalletTransport>
+    const signal = callbacks?.signal
+    // Disconnecting settles the in-flight APDU exchange (the BLE library
+    // races it against disconnect), which dismisses the on-device prompt and
+    // evicts the cached transport so an immediate retry gets a fresh
+    // connection instead of a TransportRaceCondition.
+    const abortDisconnect = () => {
+        transport?.disconnect().catch(() => undefined)
+    }
+    signal?.addEventListener('abort', abortDisconnect)
 
     try {
+        throwIfAborted(signal)
         transport = await connectAndVerify(
             transportProvider,
             deviceId,
@@ -304,6 +329,7 @@ const signTransactionsOnHardwareWallet = async (
             hwAccount.address,
             callbacks,
         )
+        throwIfAborted(signal)
 
         return await signTransactions(
             transport,
@@ -317,6 +343,7 @@ const signTransactionsOnHardwareWallet = async (
         callbacks?.onError?.(classified)
         throw classified
     } finally {
+        signal?.removeEventListener('abort', abortDisconnect)
         try {
             await transport?.disconnect()
         } catch {
@@ -348,8 +375,17 @@ const signArc60OnHardwareWallet = async (
 
     const { deviceId, accountIndex } = hwAccount.hardwareDetails
     let transport: Optional<HardwareWalletTransport>
+    const signal = callbacks?.signal
+    // Same abort → disconnect wiring as the transaction path: settle the
+    // in-flight exchange so the device prompt is dismissed and the cached
+    // transport is evicted for a clean retry.
+    const abortDisconnect = () => {
+        transport?.disconnect().catch(() => undefined)
+    }
+    signal?.addEventListener('abort', abortDisconnect)
 
     try {
+        throwIfAborted(signal)
         transport = await connectAndVerify(
             transportProvider,
             deviceId,
@@ -357,6 +393,7 @@ const signArc60OnHardwareWallet = async (
             hwAccount.address,
             callbacks,
         )
+        throwIfAborted(signal)
 
         // Early version gate — the device-side error is the fallback.
         const version = await withTimeout(
@@ -399,6 +436,7 @@ const signArc60OnHardwareWallet = async (
         callbacks?.onError?.(classified)
         throw classified
     } finally {
+        signal?.removeEventListener('abort', abortDisconnect)
         try {
             await transport?.disconnect()
         } catch {

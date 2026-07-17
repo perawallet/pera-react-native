@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import {
     AccountTypes,
@@ -62,11 +62,22 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
         },
     }),
 }))
-vi.mock('@perawallet/wallet-core-ledger', () => ({
-    verifyLedgerAddress: mockVerify,
-    LedgerProviderNotFoundError: class extends Error {},
-    classifyLedgerError: (e: unknown) => e as Error,
-}))
+vi.mock('@perawallet/wallet-core-ledger', async () => {
+    // Real timeout semantics (via the shared util) so the hung-call cases
+    // below exercise genuine expiry under fake timers; ceilings inlined.
+    const { withTimeout } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    return {
+        verifyLedgerAddress: mockVerify,
+        LedgerProviderNotFoundError: class extends Error {},
+        classifyLedgerError: (e: unknown) => e as Error,
+        withLedgerConnectionTimeout: <T>(p: Promise<T>, op: string) =>
+            withTimeout(p, 20_000, op),
+        withLedgerConfirmationTimeout: <T>(p: Promise<T>, op: string) =>
+            withTimeout(p, 300_000, op),
+    }
+})
 
 const routeParams = vi.hoisted(() => ({
     current: {} as Record<string, unknown>,
@@ -183,5 +194,55 @@ describe('useLedgerVerifyScreen', () => {
         expect(
             accounts.find(a => a.address === '!!invalidauth'),
         ).toBeUndefined()
+    })
+
+    describe('hung device calls', () => {
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('surfaces a timeout error instead of verifying forever when the confirmation hangs', async () => {
+            vi.useFakeTimers()
+            routeParams.current = {
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'ble',
+                selectedAccounts: [
+                    { kind: 'derived', account: derived('LEDGER0', 0) },
+                ],
+            }
+            // Silent BLE drop mid-verify: the confirmation APDU never settles.
+            mockVerify.mockReturnValue(new Promise(() => {}))
+
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(300_001)
+            })
+
+            expect(result.current.errorPreset).toBeTruthy()
+            expect(result.current.areAllVerified).toBe(false)
+        })
+
+        it('surfaces a timeout error when the connect never settles', async () => {
+            vi.useFakeTimers()
+            routeParams.current = {
+                deviceId: 'dev',
+                deviceName: 'Nano',
+                transportType: 'ble',
+                selectedAccounts: [
+                    { kind: 'derived', account: derived('LEDGER0', 0) },
+                ],
+            }
+            mockConnect.mockReturnValue(new Promise(() => {}))
+
+            const { result } = renderHook(() => useLedgerVerifyScreen())
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(20_001)
+            })
+
+            expect(result.current.errorPreset).toBeTruthy()
+        })
     })
 })

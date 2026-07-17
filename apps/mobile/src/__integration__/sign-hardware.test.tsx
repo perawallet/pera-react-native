@@ -37,11 +37,13 @@ import {
     buildPaymentTransaction,
     buildTransactionSignRequest,
     renderSignReview,
+    fireEvent,
     screen,
     waitFor,
     REVIEW_RECEIVER_ADDRESS,
     REVIEW_SIGNER_ADDRESS,
 } from '@test-utils/signing-review'
+import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import {
     AccountTypes,
     useAccountsStore,
@@ -55,13 +57,19 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 // getAddress echoes the same address so connection verification passes.
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
-type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void }
+type Deferred<T> = {
+    promise: Promise<T>
+    resolve: (value: T) => void
+    reject: (error: Error) => void
+}
 const createDeferred = <T,>(): Deferred<T> => {
     let resolveFn!: (value: T) => void
-    const promise = new Promise<T>(res => {
+    let rejectFn!: (error: Error) => void
+    const promise = new Promise<T>((res, rej) => {
         resolveFn = res
+        rejectFn = rej
     })
-    return { promise, resolve: resolveFn }
+    return { promise, resolve: resolveFn, reject: rejectFn }
 }
 
 let pendingSignature: Deferred<Uint8Array> | null = null
@@ -173,6 +181,69 @@ describe('Flow: hardware (Ledger) signing review', () => {
                 },
                 { timeout: 10_000 },
             )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'resolves an on-device reject as a user cancel after Cancel on the error sheet',
+        async () => {
+            // Pressing reject on the device parks the machine in the
+            // user_rejected error state (Retry still offered); Cancel from
+            // that sheet must fire the request's reject callback — the same
+            // canonical rejection a tapped Decline produces — never the
+            // error callback that drives failure UX and backend metrics.
+            const { request, approve, reject, error } =
+                buildTransactionSignRequest({
+                    sourceType: 'webview',
+                    txs: [
+                        buildPaymentTransaction({
+                            sender: LEDGER_ADDRESS,
+                            receiver: REVIEW_SIGNER_ADDRESS,
+                        }),
+                    ],
+                })
+
+            const { confirm } = renderSignReview(request)
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('signing-confirm-slide'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+
+            confirm()
+
+            await waitFor(
+                () => {
+                    expect(pendingSignature).not.toBeNull()
+                },
+                { timeout: 10_000 },
+            )
+            pendingSignature!.reject(new LedgerUserRejectedError())
+
+            // The error sheet offers Retry (confirm) and Cancel.
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByText('ledger.signing.cancel'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            fireEvent.click(screen.getByText('ledger.signing.cancel'))
+
+            await waitFor(
+                () => {
+                    expect(reject).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(error).not.toHaveBeenCalled()
+            expect(approve).not.toHaveBeenCalled()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

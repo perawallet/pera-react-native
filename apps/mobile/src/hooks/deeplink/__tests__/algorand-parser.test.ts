@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { parseAlgorandUri } from '../algorand-parser'
 import { DeeplinkType } from '../types'
 import { vi } from 'vitest'
