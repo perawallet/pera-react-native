@@ -14,11 +14,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { InvalidKeyError, KeyAccessError, KeyNotFoundError } from '../../errors'
+import {
+    InvalidKeyError,
+    KeyAccessError,
+    KeyManagementError,
+    KeyNotFoundError,
+} from '../../errors'
 import { SeedScheme } from '../../constants'
 import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
 import { FALCON_SIGNATURE_LENGTH } from '../../crypto/falcon-utils'
 import { getPQProvider } from '../../crypto/pq'
+import { FALCON_CHILD_KEY_TYPE } from '../../models'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -669,6 +675,55 @@ describe('useKMS', () => {
             })
             expect(mockCreateQuantumKey).toHaveBeenCalledWith({ id: 'f-1' })
             expect(keyResult).toEqual(mockResult)
+        })
+
+        describe('getQuantumPublicKey', () => {
+            it('returns the committed Falcon public key, matching the real seed derivation', async () => {
+                const { seedFromMnemonic } = await import('algosdk')
+                const seed = seedFromMnemonic(TEST_MNEMONIC)
+                const { publicKey } =
+                    getPQProvider().generateKeypairFromSeed(seed)
+
+                seedQuantumRoot('quantum-1')
+                mockKeystoreKeys.push({
+                    id: 'quantum-1-quantum',
+                    type: FALCON_CHILD_KEY_TYPE,
+                    algorithm: 'raw',
+                    extractable: false,
+                    publicKey,
+                    metadata: { parentKeyId: 'quantum-1' },
+                })
+
+                const { result } = renderHook(() => useKMS())
+                const pub =
+                    result.current.getQuantumPublicKey('quantum-1-quantum')
+
+                expect(pub).toBeInstanceOf(Uint8Array)
+                expect(Array.from(pub)).toEqual(Array.from(publicKey))
+            })
+
+            it('throws KeyManagementError when the keyPairId is unknown', () => {
+                const { result } = renderHook(() => useKMS())
+                expect(() =>
+                    result.current.getQuantumPublicKey('missing-id'),
+                ).toThrow(KeyManagementError)
+            })
+
+            it('throws KeyManagementError when the key exists but has no public key', () => {
+                seedQuantumRoot('quantum-2')
+                mockKeystoreKeys.push({
+                    id: 'quantum-2-quantum',
+                    type: FALCON_CHILD_KEY_TYPE,
+                    algorithm: 'raw',
+                    extractable: false,
+                    metadata: { parentKeyId: 'quantum-2' },
+                })
+
+                const { result } = renderHook(() => useKMS())
+                expect(() =>
+                    result.current.getQuantumPublicKey('quantum-2-quantum'),
+                ).toThrow(KeyManagementError)
+            })
         })
     })
 

@@ -181,6 +181,27 @@ export const useKMS = () => {
             }
         })
 
+    /**
+     * Returns the Falcon public-key bytes committed on the quantum signing
+     * child at `keyPairId` (the id `createQuantumKey` returns as
+     * `signKeyId`, and what `account.keyPairId` is set to for quantum
+     * accounts). Reads from the live reactive store rather than
+     * `keyStore.export`: the child is minted `extractable: false`, and
+     * `commitQuantumChildKey` stores the public key as plain (non-secret)
+     * metadata on the entry itself.
+     */
+    const getQuantumPublicKey = (keyPairId: string): Uint8Array => {
+        const child = getKeystoreStore().state.keys.find(
+            k => k.id === keyPairId,
+        )
+        if (!child?.publicKey) {
+            throw new KeyManagementError(
+                `No quantum public key for keyPairId ${keyPairId}`,
+            )
+        }
+        return new Uint8Array(child.publicKey)
+    }
+
     const hasSeedWithEntropy = useCallback((seedKeyId: string): boolean => {
         const keys = getKeystoreStore().state.keys
         const seed = keys.find(k => k.id === seedKeyId)
@@ -314,6 +335,7 @@ export const useKMS = () => {
         persistHDMasterKey,
         generateDerivedKey,
         getDerivedPublicKey,
+        getQuantumPublicKey,
         withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,
