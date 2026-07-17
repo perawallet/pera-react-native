@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { createActor, fromCallback, waitFor } from 'xstate'
 import { LEDGER_CONFIRMATION_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
 import { hardwareSigningMachine } from '../hardwareSigningMachine'
+import {
+    appStateTracker,
+    recordAppStateChange,
+    HARDWARE_BACKGROUND_GRACE_MS,
+} from '../appStateTracker'
 import type { HardwareSigningInput } from '../hardwareSigningMachine.context'
 
 const makeInput = (
@@ -301,6 +306,40 @@ describe('hardwareSigningMachine', () => {
             }
         })
 
+        it('swallows a backstop timeout that expired while the app was backgrounded, and re-arms on resume', () => {
+            // iOS suspends JS timers in the background; on resume an
+            // already-expired backstop fires immediately. Its wall-clock
+            // elapsed includes suspended time — not evidence of a hung
+            // step — so it must be swallowed, and REARM_TIMERS restores
+            // the backstop for the resumed session.
+            vi.useFakeTimers()
+            try {
+                const actor = createActor(makeHangingMachine(50), {
+                    input: makeInput(),
+                })
+                actor.start()
+
+                appStateTracker.backgroundedAt = Date.now()
+                vi.advanceTimersByTime(60)
+                expect(actor.getSnapshot().matches('active')).toBe(true)
+
+                // Resume within grace: the tracker clears and timers re-arm.
+                appStateTracker.backgroundedAt = null
+                actor.send({ type: 'REARM_TIMERS' })
+                vi.advanceTimersByTime(40)
+                expect(actor.getSnapshot().matches('active')).toBe(true)
+
+                // A genuine post-resume hang still trips the backstop.
+                vi.advanceTimersByTime(20)
+                const snap = actor.getSnapshot()
+                expect(snap.matches('error')).toBe(true)
+                expect(snap.context.error?.kind).toBe('timeout')
+            } finally {
+                appStateTracker.backgroundedAt = null
+                vi.useRealTimers()
+            }
+        })
+
         it('does not restart the invoked actor when progress events re-arm the timer', () => {
             // CRITICAL constraint: re-arming the per-step timer must NOT
             // re-invoke hardwareSignActor (that would tear down the in-flight
@@ -474,6 +513,107 @@ describe('hardwareSigningMachine', () => {
                 kind: 'connection_failed',
                 cause: expect.any(Error),
             },
+        })
+    })
+
+    describe('backgrounding policy', () => {
+        afterEach(() => {
+            appStateTracker.backgroundedAt = null
+        })
+
+        it('INTERRUPTED_BY_BACKGROUND aborts the exchange and lands in a retryable interrupted error', async () => {
+            let stopped = false
+            const stubActor = fromCallback(() => {
+                return () => {
+                    stopped = true
+                }
+            })
+            const machine = hardwareSigningMachine.provide({
+                actors: { hardwareSignActor: stubActor as never },
+            })
+            const actor = createActor(machine, { input: makeInput() })
+            actor.start()
+
+            actor.send({ type: 'INTERRUPTED_BY_BACKGROUND' })
+
+            const snap = actor.getSnapshot()
+            expect(snap.matches('error')).toBe(true)
+            expect(snap.context.error?.kind).toBe('interrupted')
+            // Leaving `active` stops the invoked actor, whose cleanup aborts
+            // the BLE exchange — no ghost session survives the interrupt.
+            expect(stopped).toBe(true)
+
+            // RETRY starts a fresh exchange like any other retryable error.
+            actor.send({ type: 'RETRY' })
+            const retried = actor.getSnapshot()
+            expect(retried.matches('active')).toBe(true)
+            expect(retried.context.error).toBeNull()
+        })
+
+        it('ignores a late device event arriving after the interrupt', async () => {
+            const fakeResult = {
+                signedData: { type: 'transactions', signed: [] },
+                signers: [],
+            } as never
+            const machine = hardwareSigningMachine.provide({
+                actors: {
+                    hardwareSignActor: fromCallback(() => () => {}) as never,
+                },
+            })
+            const actor = createActor(machine, { input: makeInput() })
+            actor.start()
+
+            actor.send({ type: 'INTERRUPTED_BY_BACKGROUND' })
+            // The on-device approval landed while the app was backgrounded;
+            // its GROUP_SIGNED arrives after the abort — it must neither
+            // transition the machine nor append a result.
+            actor.send({ type: 'GROUP_SIGNED', result: fakeResult })
+
+            const snap = actor.getSnapshot()
+            expect(snap.matches('error')).toBe(true)
+            expect(snap.context.results).toEqual([])
+        })
+    })
+
+    describe('recordAppStateChange policy', () => {
+        afterEach(() => {
+            appStateTracker.backgroundedAt = null
+        })
+
+        it('interrupts when the app was backgrounded past the grace window', () => {
+            expect(recordAppStateChange('background', 1_000)).toBe('none')
+            expect(appStateTracker.backgroundedAt).toBe(1_000)
+
+            expect(
+                recordAppStateChange(
+                    'active',
+                    1_000 + HARDWARE_BACKGROUND_GRACE_MS + 1,
+                ),
+            ).toBe('interrupt')
+            expect(appStateTracker.backgroundedAt).toBeNull()
+        })
+
+        it('re-arms timers when the app resumes within the grace window', () => {
+            recordAppStateChange('background', 1_000)
+            expect(
+                recordAppStateChange(
+                    'active',
+                    1_000 + HARDWARE_BACKGROUND_GRACE_MS - 1,
+                ),
+            ).toBe('rearm')
+            expect(appStateTracker.backgroundedAt).toBeNull()
+        })
+
+        it("ignores iOS 'inactive' flickers (app switcher, permission dialogs)", () => {
+            expect(recordAppStateChange('inactive', 1_000)).toBe('none')
+            expect(appStateTracker.backgroundedAt).toBeNull()
+            expect(recordAppStateChange('active', 2_000)).toBe('none')
+        })
+
+        it('keeps the earliest backgroundedAt across repeated background events', () => {
+            recordAppStateChange('background', 1_000)
+            recordAppStateChange('background', 5_000)
+            expect(appStateTracker.backgroundedAt).toBe(1_000)
         })
     })
 })

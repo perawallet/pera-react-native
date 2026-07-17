@@ -2854,6 +2854,8 @@
             "app_outdated": "Your Ledger's Algorand app is too old to sign this request. Open Ledger Live and update the Algorand app, then try again.",
             "timeout": "Your Ledger device did not respond in time. Please try again.",
             "timeout_title": "Request timed out",
+            "interrupted_title": "Signing was interrupted",
+            "interrupted": "The app went to the background during signing, so the session was stopped for safety. Retry to reconnect to your Ledger and sign again.",
             "address_mismatch": "The address on your Ledger device does not match the expected address. Please verify you selected the correct account.",
             "address_mismatch_title": "Address Mismatch",
             "retry": "Try again",
