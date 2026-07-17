@@ -23,6 +23,7 @@ const { submitAutoDrawDelegation, isKillswitchConfigured } = vi.hoisted(() => ({
 }))
 const mockBuildEnable = vi.fn()
 const mockBuildKill = vi.fn()
+const mockIsAutoDrawEnabled = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
     submitAutoDrawDelegation,
@@ -30,6 +31,7 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
     useKillswitchAutoDraw: () => ({
         buildEnable: mockBuildEnable,
         buildKill: mockBuildKill,
+        isAutoDrawEnabled: mockIsAutoDrawEnabled,
     }),
 }))
 
@@ -47,7 +49,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => ({
     useNetwork: () => ({ network: 'testnet' }),
 }))
 
-import { AlgodError } from '@perawallet/wallet-core-blockchain'
 import { useAutoDrawSwitch } from '../useAutoDrawSwitch'
 
 const localAccount: WalletAccount = {
@@ -71,6 +72,9 @@ beforeEach(() => {
     mockBuildEnable.mockResolvedValue([{ txn: 'enable' }])
     mockBuildKill.mockResolvedValue([{ txn: 'kill' }])
     mockSubmit.mockResolvedValue({ txIds: ['TX1'] })
+    // Default chain state: not enabled (enable proceeds, kill would no-op —
+    // individual tests flip this to exercise the pre-check branches).
+    mockIsAutoDrawEnabled.mockResolvedValue(false)
 })
 
 describe('useAutoDrawSwitch', () => {
@@ -117,23 +121,23 @@ describe('useAutoDrawSwitch', () => {
         expect(mockSubmit).not.toHaveBeenCalled()
     })
 
-    it('enableAutoDraw treats ALREADY_ENABLED as success', async () => {
-        mockSubmit.mockRejectedValue(
-            new AlgodError('logic_error', {
-                msg: 'assert failed ALREADY_ENABLED',
-            }),
-        )
+    it('enableAutoDraw skips the on-chain enable when already enabled (idempotent retry)', async () => {
+        mockIsAutoDrawEnabled.mockResolvedValue(true)
         const { result } = renderHook(() => useAutoDrawSwitch())
 
         await expect(
             result.current.enableAutoDraw(localAccount, 'CARD'),
         ).resolves.toBeUndefined()
+
+        // The LSig is still (re-)registered — AB upserts it — but the enable
+        // would revert ALREADY_ENABLED, so it must not be built or submitted.
+        expect(submitAutoDrawDelegation).toHaveBeenCalledTimes(1)
+        expect(mockBuildEnable).not.toHaveBeenCalled()
+        expect(mockSubmit).not.toHaveBeenCalled()
     })
 
-    it('enableAutoDraw rethrows other on-chain failures', async () => {
-        mockSubmit.mockRejectedValue(
-            new AlgodError('logic_error', { msg: 'NOT_CARD_OWNER' }),
-        )
+    it('enableAutoDraw rethrows on-chain failures', async () => {
+        mockSubmit.mockRejectedValue(new Error('NOT_CARD_OWNER'))
         const { result } = renderHook(() => useAutoDrawSwitch())
 
         await expect(
@@ -141,24 +145,41 @@ describe('useAutoDrawSwitch', () => {
         ).rejects.toThrow()
     })
 
-    it('disableAutoDraw submits kill(), tolerating ALREADY_DISABLED', async () => {
+    it('enableAutoDraw fails closed when the state read fails', async () => {
+        mockIsAutoDrawEnabled.mockRejectedValue(new Error('network down'))
+        const { result } = renderHook(() => useAutoDrawSwitch())
+
+        await expect(
+            result.current.enableAutoDraw(localAccount, 'CARD'),
+        ).rejects.toThrow('network down')
+        expect(mockSubmit).not.toHaveBeenCalled()
+    })
+
+    it('disableAutoDraw submits kill() when auto-draw is enabled on-chain', async () => {
+        mockIsAutoDrawEnabled.mockResolvedValue(true)
         const { result } = renderHook(() => useAutoDrawSwitch())
 
         await result.current.disableAutoDraw(localAccount)
+
         expect(mockBuildKill).toHaveBeenCalledWith({ sender: 'FUNDINGADDR' })
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({ unsignedTxs: [{ txn: 'kill' }] }),
         )
+    })
 
-        vi.clearAllMocks()
-        isKillswitchConfigured.mockReturnValue(true)
-        mockBuildKill.mockResolvedValue([{ txn: 'kill' }])
-        mockSubmit.mockRejectedValue(
-            new AlgodError('logic_error', { msg: 'ALREADY_DISABLED' }),
-        )
+    it('disableAutoDraw no-ops when there is no on-chain enable to kill', async () => {
+        // Covers the retry case AND a persisted-Auto whose enable never ran
+        // (onboarding Auto only registers the LSig) — switching to Manual must
+        // succeed instead of dead-ending on an ALREADY_DISABLED revert.
+        mockIsAutoDrawEnabled.mockResolvedValue(false)
+        const { result } = renderHook(() => useAutoDrawSwitch())
+
         await expect(
             result.current.disableAutoDraw(localAccount),
         ).resolves.toBeUndefined()
+
+        expect(mockBuildKill).not.toHaveBeenCalled()
+        expect(mockSubmit).not.toHaveBeenCalled()
     })
 
     it('disableAutoDraw skips on-chain when the Killswitch is unconfigured', async () => {

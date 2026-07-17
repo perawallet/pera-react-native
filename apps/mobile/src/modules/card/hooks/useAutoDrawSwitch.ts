@@ -23,19 +23,9 @@ import {
     useProgramSigner,
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
-import { useNetwork, isAlgodError } from '@perawallet/wallet-core-blockchain'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
 import { canAutoFund } from './useCardFundingSourcePicker'
-
-// The Killswitch contract asserts these when the caller's accounts box is
-// already in the target state — a no-op for our purposes, so we swallow them
-// (an enable/kill retry after a partial success must succeed idempotently).
-const ALREADY_ENABLED = 'ALREADY_ENABLED'
-const ALREADY_DISABLED = 'ALREADY_DISABLED'
-
-const isLogicRevert = (error: unknown, marker: string): boolean =>
-    isAlgodError(error, 'logic_error') &&
-    String(error.params.msg ?? '').includes(marker)
 
 export type UseAutoDrawSwitchResult = {
     /**
@@ -64,7 +54,8 @@ export type UseAutoDrawSwitchResult = {
 export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
     const { network } = useNetwork()
     const { signProgram } = useProgramSigner()
-    const { buildEnable, buildKill } = useKillswitchAutoDraw()
+    const { buildEnable, buildKill, isAutoDrawEnabled } =
+        useKillswitchAutoDraw()
     const { submit } = useSignAndSubmitGroup()
     const [isPending, setIsPending] = useState(false)
 
@@ -99,27 +90,31 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                     )
                     return
                 }
-                try {
-                    const txns = await buildEnable({
-                        sender: account.address,
-                        cardAddress,
-                    })
-                    await submit({
-                        unsignedTxs: txns,
-                        source: {
-                            name: 'card-autodraw-enable',
-                            description: 'Enable auto funding',
-                        },
-                    })
-                } catch (error) {
-                    if (isLogicRevert(error, ALREADY_ENABLED)) return
-                    throw error
+                // Pre-check instead of tolerating ALREADY_ENABLED: the revert
+                // fires during the resource-population simulate as an opaque
+                // plain Error, so it can't be reliably detected after the
+                // fact. Already enabled == the retry/recovery case — done.
+                // (A concurrent enable between check and submit still reverts;
+                // that surfaces as a retryable error and the retry no-ops.)
+                if (await isAutoDrawEnabled({ sender: account.address })) {
+                    return
                 }
+                const txns = await buildEnable({
+                    sender: account.address,
+                    cardAddress,
+                })
+                await submit({
+                    unsignedTxs: txns,
+                    source: {
+                        name: 'card-autodraw-enable',
+                        description: 'Enable auto funding',
+                    },
+                })
             } finally {
                 setIsPending(false)
             }
         },
-        [network, signProgram, buildEnable, submit],
+        [network, signProgram, isAutoDrawEnabled, buildEnable, submit],
     )
 
     const disableAutoDraw = useCallback(
@@ -132,6 +127,15 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
             }
             setIsPending(true)
             try {
+                // Pre-check instead of tolerating ALREADY_DISABLED (same
+                // simulate-revert opacity as enable). No box == nothing to
+                // kill: covers the retry case AND a persisted-Auto state whose
+                // on-chain enable never happened (e.g. Auto chosen during
+                // onboarding, which only registers the LSig) — switching to
+                // Manual must succeed there, not dead-end on a revert.
+                if (!(await isAutoDrawEnabled({ sender: account.address }))) {
+                    return
+                }
                 const txns = await buildKill({ sender: account.address })
                 await submit({
                     unsignedTxs: txns,
@@ -140,14 +144,11 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                         description: 'Turn off auto funding',
                     },
                 })
-            } catch (error) {
-                if (isLogicRevert(error, ALREADY_DISABLED)) return
-                throw error
             } finally {
                 setIsPending(false)
             }
         },
-        [network, buildKill, submit],
+        [network, isAutoDrawEnabled, buildKill, submit],
     )
 
     return { enableAutoDraw, disableAutoDraw, canSwitchToAuto, isPending }

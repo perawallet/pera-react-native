@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { decodeAddress } from 'algosdk'
 import {
     useAlgorandClient,
     useNetwork,
@@ -40,6 +41,15 @@ export const isKillswitchConfigured = (network: Network): boolean => {
     return cardKillswitchAppId !== '' && cardKillswitchAppId !== '0'
 }
 
+// A missing box is algod's HTTP 404 ("box not found"). Both the wallet's
+// TimeoutHttpClient and algosdk's own client implement BaseHTTPClientError
+// (`.response.status`); tolerate a bare `.status` too for robustness.
+const isNotFoundError = (error: unknown): boolean => {
+    if (typeof error !== 'object' || error == null) return false
+    const err = error as { status?: number; response?: { status?: number } }
+    return err.response?.status === 404 || err.status === 404
+}
+
 export type UseKillswitchAutoDrawResult = {
     /**
      * Builds the unsigned group to ENABLE auto-draw: fund the Killswitch app
@@ -56,6 +66,18 @@ export type UseKillswitchAutoDrawResult = {
      * the caller's accounts box (releasing its MBR). No funding, no inner txns.
      */
     buildKill: (params: { sender: string }) => Promise<PeraTransaction[]>
+    /**
+     * Reads the sender's on-chain auto-draw state. The Killswitch keeps one
+     * `accounts` box per enabled account, keyed by the raw 32-byte address
+     * (no prefix), so a present box == enabled. Callers MUST pre-check this
+     * instead of submitting and parsing reverts: `enable`/`kill` assert
+     * ALREADY_ENABLED/ALREADY_DISABLED, and on our raw-composer path those
+     * surface from the resource-population simulate as opaque plain-`Error`
+     * "assert failed pc=NNN" messages (the ARC-56 error mapping never runs).
+     * The AB demo uses the same avoidance strategy. Network errors (non-404)
+     * are rethrown — an unknown state must not be read as "disabled".
+     */
+    isAutoDrawEnabled: (params: { sender: string }) => Promise<boolean>
 }
 
 export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
@@ -129,5 +151,24 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
         [algokit, getAppClient],
     )
 
-    return { buildEnable, buildKill }
+    const isAutoDrawEnabled = useCallback(
+        async ({ sender }: { sender: string }): Promise<boolean> => {
+            const { cardKillswitchAppId } = getNetworkConfig(network)
+            try {
+                await algokit.client.algod
+                    .getApplicationBoxByName(
+                        BigInt(cardKillswitchAppId),
+                        decodeAddress(sender).publicKey,
+                    )
+                    .do()
+                return true
+            } catch (error) {
+                if (isNotFoundError(error)) return false
+                throw error
+            }
+        },
+        [algokit, network],
+    )
+
+    return { buildEnable, buildKill, isAutoDrawEnabled }
 }

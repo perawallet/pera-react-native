@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { generateAccount } from 'algosdk'
 
 const { useAlgorandClient, useNetwork } = vi.hoisted(() => ({
     useAlgorandClient: vi.fn(),
@@ -41,6 +42,7 @@ const KILL_CALL = { method: 'kill' }
 let addPayment: Mock
 let addAppCallMethodCall: Mock
 let paramsCall: Mock
+let boxDo: Mock
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -54,6 +56,10 @@ beforeEach(() => {
             method === 'enable' ? ENABLE_CALL : KILL_CALL,
         )
     addAppCallMethodCall = vi.fn()
+    boxDo = vi.fn(async () => ({
+        name: new Uint8Array(),
+        value: new Uint8Array(),
+    }))
 
     const composer = {
         addPayment,
@@ -66,7 +72,9 @@ beforeEach(() => {
         newGroup: () => composer,
         getSuggestedParams: vi.fn(async () => ({ minFee: 1000n })),
         client: {
-            algod: {},
+            algod: {
+                getApplicationBoxByName: vi.fn(() => ({ do: boxDo })),
+            },
             getAppClientById: vi.fn(() => ({
                 appAddress: APP_ADDRESS,
                 params: { call: paramsCall },
@@ -121,5 +129,37 @@ describe('useKillswitchAutoDraw', () => {
         expect(paramsCall).toHaveBeenCalledWith({ method: 'kill', args: [] })
         expect(addAppCallMethodCall).toHaveBeenCalledWith(KILL_CALL)
         expect(txns).toEqual([{ id: 'txn-1' }])
+    })
+
+    describe('isAutoDrawEnabled', () => {
+        // decodeAddress needs a real address; the box name is its raw pubkey.
+        const SENDER = generateAccount().addr.toString()
+
+        it('is true when the sender has an accounts box', async () => {
+            const { result } = renderHook(() => useKillswitchAutoDraw())
+            await expect(
+                result.current.isAutoDrawEnabled({ sender: SENDER }),
+            ).resolves.toBe(true)
+        })
+
+        it('is false on the box-not-found 404', async () => {
+            boxDo.mockRejectedValue(
+                Object.assign(new Error('box not found'), {
+                    response: { status: 404 },
+                }),
+            )
+            const { result } = renderHook(() => useKillswitchAutoDraw())
+            await expect(
+                result.current.isAutoDrawEnabled({ sender: SENDER }),
+            ).resolves.toBe(false)
+        })
+
+        it('rethrows non-404 errors instead of reading them as disabled', async () => {
+            boxDo.mockRejectedValue(new Error('network down'))
+            const { result } = renderHook(() => useKillswitchAutoDraw())
+            await expect(
+                result.current.isAutoDrawEnabled({ sender: SENDER }),
+            ).rejects.toThrow('network down')
+        })
     })
 })
