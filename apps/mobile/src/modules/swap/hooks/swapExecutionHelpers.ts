@@ -27,11 +27,12 @@ import { SwapUserRejectedError } from './swapGroupPlan'
 /**
  * Cancel-shaped signing outcomes beyond the swap flow's own wrapper: the
  * pipeline's headless-cancel error and an on-device Ledger reject. Matched
- * by error name (both classes set it from a stable source) instead of
- * `instanceof` so this stays free of value imports from the signing/ledger
- * packages — the primary cancel path is the request's `reject` callback,
- * which already yields SwapUserRejectedError; this is defense-in-depth for
- * a cancel leaking through the `error` callback.
+ * by error name (both classes pin `name` with a string literal, so the
+ * match survives minification) instead of `instanceof` so this stays free
+ * of value imports from the signing/ledger packages — the primary cancel
+ * path is the request's `reject` callback, which already yields
+ * SwapUserRejectedError; this is defense-in-depth for a cancel leaking
+ * through the `error` callback.
  */
 const USER_REJECTION_ERROR_NAMES = new Set([
     'UserRejectedSigningError',

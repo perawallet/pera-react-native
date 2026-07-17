@@ -66,6 +66,11 @@ export class LedgerUserRejectedError extends AppError {
             },
             originalError,
         )
+        // Pinned as a literal (AppError derives `name` from
+        // `constructor.name`, which a minifier can mangle): the swap flow's
+        // user-rejection classification matches this error by name to avoid
+        // a value import of this package.
+        this.name = 'LedgerUserRejectedError'
     }
 }
 
