@@ -12,8 +12,16 @@
 
 import { describe, it, expect } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    PeraSignedTransaction,
+    QuantumSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import type { SignableGroup } from '../../pipeline/types'
-import { buildGroupSignerTypeMap } from '../actions'
+import { SigningError } from '../../pipeline/errors'
+import {
+    assertNoQuantumSignedTransactions,
+    buildGroupSignerTypeMap,
+} from '../actions'
 
 const PARTICIPANT = 'PARTICIPANT'
 const AUTH = 'AUTH'
@@ -273,5 +281,41 @@ describe('buildGroupSignerTypeMap', () => {
                 /signer account not found/,
             )
         })
+    })
+})
+
+describe('assertNoQuantumSignedTransactions', () => {
+    const plainSigned = (id: string): PeraSignedTransaction =>
+        ({ txn: { sender: id } }) as unknown as PeraSignedTransaction
+
+    const quantumCarrier = (): QuantumSignedTransaction => ({
+        txn: { sender: 'Q' } as never,
+        pqSignedBytes: new Uint8Array([1, 2, 3]),
+    })
+
+    it('returns the same plain signed transactions unchanged when no quantum carrier is present', () => {
+        // The callback-approve path (WalletConnect / webview / deeplink /
+        // local-callback) hands these straight to an external peer, so the
+        // guard must pass them through untouched.
+        const signed = [plainSigned('A'), plainSigned('B')]
+
+        const result = assertNoQuantumSignedTransactions(signed)
+
+        expect(result).toBe(signed)
+        expect(result).toEqual(signed)
+    })
+
+    it('throws a SigningError when a quantum signed-transaction carrier is present', () => {
+        // No peer can consume a Falcon pqsig byte carrier via callback
+        // delivery yet — fail loudly instead of silently mis-encoding it as
+        // a plain signed transaction.
+        const signed = [plainSigned('A'), quantumCarrier()]
+
+        expect(() => assertNoQuantumSignedTransactions(signed)).toThrow(
+            SigningError,
+        )
+        expect(() => assertNoQuantumSignedTransactions(signed)).toThrow(
+            /quantum/i,
+        )
     })
 })

@@ -11,14 +11,12 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    hasSigningKeys,
-    isAlgo25Account,
-    isHDWalletAccount,
-    isQuantumAccount,
-} from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
-import { encodeToBase64, toError } from '@perawallet/wallet-core-shared'
+import { isQuantumAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    PeraTransaction,
+    QuantumSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import { toError } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
@@ -27,47 +25,56 @@ import type {
     SignerInfo,
 } from '../types'
 import { CannotSignError, SigningError } from '../errors'
-import { signArbitraryDataCase, signArc60Case } from './standardDataSigning'
-
-// Re-exported for backward compatibility with the many call sites that
-// import these from `./createLocalKeyStrategy` — the types now live in
-// `./standardDataSigning`, shared with `createQuantumStrategy`.
-export type {
-    LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
-} from './standardDataSigning'
-import type {
-    LocalArbitrarySigningFunction,
-    LocalArc60SigningFunction,
+import {
+    signArbitraryDataCase,
+    signArc60Case,
+    type LocalArbitrarySigningFunction,
+    type LocalArc60SigningFunction,
 } from './standardDataSigning'
 
 /**
- * Signing function type that matches useLocalKeyTransactionSigner's signTransactions.
+ * Signs a transaction group with a quantum (Falcon-1024) account's key,
+ * matching the shape of the KMS-backed hook that will implement it (PQ-006's
+ * follow-up task). Returns the pqsig byte carrier — see
+ * `QuantumSignedTransaction` — rather than a plain algosdk `SignedTransaction`,
+ * because the Falcon-signed bytes come pre-encoded from Seam B
+ * (`pq/quantumAdapter.ts`) and must not be re-decoded/re-encoded outside it.
  */
-export type LocalSigningFunction = (
-    txnGroup: PeraSignedTransaction['txn'][],
+export type QuantumSigningFunction = (
+    txnGroup: PeraTransaction[],
     indexesToSign: number[],
     account: WalletAccount,
-) => Promise<PeraSignedTransaction[]>
+) => Promise<QuantumSignedTransaction[]>
 
-export type LocalKeyStrategyOptions = {
-    signTransactions: LocalSigningFunction
+export type QuantumStrategyOptions = {
+    signQuantumTransactions: QuantumSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signArc60: LocalArc60SigningFunction
 }
 
 /**
- * Creates a signing strategy for accounts with local keys (Algo25, HDWallet,
- * Quantum). These accounts have immediate access to private keys via KMS.
+ * Creates a dedicated signing strategy for quantum (post-quantum, Falcon)
+ * accounts. Unlike `createLocalKeyStrategy` — which currently still
+ * accepts quantum accounts as part of its broader local-key guard — this
+ * strategy produces the carrier-typed `QuantumSignedTransaction` result for
+ * the `transactions` modality instead of a plain algosdk `SignedTransaction`,
+ * so downstream code (encoding, submission) can distinguish a pqsig byte
+ * carrier from a normal signed transaction via `isQuantumSignedTransaction`.
+ *
+ * Arbitrary-data and ARC-60 signing are identical in shape to the local-key
+ * path (same injected function types), so both are delegated to the shared
+ * helpers in `./standardDataSigning`.
+ *
+ * Not yet wired into the strategy selector — see PQ-006 follow-up task.
  */
-export const createLocalKeyStrategy = (
-    options: LocalKeyStrategyOptions,
+export const createQuantumStrategy = (
+    options: QuantumStrategyOptions,
 ): SigningStrategy => {
-    const { signTransactions, signArbitraryData, signArc60 } = options
+    const { signQuantumTransactions, signArbitraryData, signArc60 } = options
 
     return {
         canSign: (account: WalletAccount): boolean => {
-            return hasSigningKeys(account)
+            return isQuantumAccount(account)
         },
 
         sign: async (
@@ -75,18 +82,7 @@ export const createLocalKeyStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            if (!hasSigningKeys(account)) {
-                throw new CannotSignError(
-                    account.address,
-                    'Account does not have local signing keys',
-                )
-            }
-
-            if (
-                !isAlgo25Account(account) &&
-                !isHDWalletAccount(account) &&
-                !isQuantumAccount(account)
-            ) {
+            if (!isQuantumAccount(account)) {
                 throw new CannotSignError(
                     account.address,
                     `Unsupported account type: ${account.type}`,
@@ -100,7 +96,7 @@ export const createLocalKeyStrategy = (
                         callbacks?.onSigningStart?.()
                         callbacks?.onProgress?.(0, transactions.length)
 
-                        const signed = await signTransactions(
+                        const signed = await signQuantumTransactions(
                             transactions,
                             indicesToSign,
                             account,
@@ -112,15 +108,17 @@ export const createLocalKeyStrategy = (
                         )
                         callbacks?.onSigningComplete?.()
 
-                        // Surface per-transaction base64 signatures on the
-                        // signer so the transport can post
-                        // them to the backend if needed
+                        // The pqsig carrier holds pre-encoded, node-ready
+                        // bytes (`pqSignedBytes`) rather than an isolated
+                        // per-txn signature, so there is nothing to surface
+                        // on `signers[].signatures` yet (unlike the local-key
+                        // strategy's `sig`-based signatures, used by
+                        // multisig cosign — quantum accounts are not
+                        // multisig participants).
                         const signerInfo: SignerInfo = {
                             address: account.address,
                             accountType: account.type,
-                            signatures: signed.map(stx =>
-                                stx.sig ? encodeToBase64(stx.sig) : null,
-                            ),
+                            signatures: signed.map(() => null),
                         }
                         return {
                             signedData: { type: 'transactions', signed },

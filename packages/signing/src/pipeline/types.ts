@@ -17,7 +17,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import type {
     PeraTransaction,
-    PeraSignedTransaction,
+    PeraSignedTxnResult,
     PeraTransactionType,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraArbitraryDataMessage } from '../models'
@@ -466,11 +466,17 @@ export interface SignerInfo {
 }
 
 /**
- * Signed transaction data
+ * Signed transaction data.
+ *
+ * `signed` is `PeraSignedTxnResult[]` (plain `PeraSignedTransaction` OR the
+ * `QuantumSignedTransaction` pqsig byte carrier) rather than
+ * `PeraSignedTransaction[]` because `createQuantumStrategy` produces the
+ * carrier for quantum accounts. Use `isQuantumSignedTransaction` to
+ * distinguish the two at consumption sites.
  */
 export interface SignedTransactionData {
     type: 'transactions'
-    signed: PeraSignedTransaction[]
+    signed: PeraSignedTxnResult[]
 }
 
 /**

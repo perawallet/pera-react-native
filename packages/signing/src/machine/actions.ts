@@ -16,6 +16,11 @@ import {
     isHardwareWalletAccount,
     isMultisigAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    isQuantumSignedTransaction,
+    type PeraSignedTransaction,
+    type PeraSignedTxnResult,
+} from '@perawallet/wallet-core-blockchain'
 import type {
     SignableGroup,
     SigningResult,
@@ -124,6 +129,29 @@ export const buildGroupSignerTypeMap = (
     return map
 }
 
+/**
+ * Narrows a signing result's `PeraSignedTxnResult[]` down to plain
+ * `PeraSignedTransaction[]` for delivery to a `TransactionSignRequest.approve`
+ * callback (WalletConnect / webview / deeplink / local-callback peers).
+ *
+ * Unlike the algod transport — which routes a quantum-signed group through
+ * `submitAndAutoRefresh`'s synthetic MOCK(quantum) submission — callback
+ * delivery hands signed bytes straight to an external peer with no node to
+ * accept a Falcon signature yet. Throw a clear error instead of silently
+ * mis-encoding the pqsig byte carrier as a plain signed transaction.
+ */
+export const assertNoQuantumSignedTransactions = (
+    signed: PeraSignedTxnResult[],
+): PeraSignedTransaction[] => {
+    const quantumItem = signed.find(isQuantumSignedTransaction)
+    if (quantumItem) {
+        throw new SigningError(
+            'Quantum-signed transactions cannot be delivered via the callback transport yet',
+        )
+    }
+    return signed as PeraSignedTransaction[]
+}
+
 // =============================================================================
 // SignableGroup construction
 // =============================================================================
@@ -174,7 +202,9 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
         const txApprove = request.approve
         approveCallback = async (result: SigningResult) => {
             if (result.signedData.type === 'transactions') {
-                await txApprove(result.signedData.signed)
+                await txApprove(
+                    assertNoQuantumSignedTransactions(result.signedData.signed),
+                )
             }
         }
     } else if (
