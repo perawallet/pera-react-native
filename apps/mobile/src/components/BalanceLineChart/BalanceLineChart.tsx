@@ -16,23 +16,24 @@ import { useTheme } from '@rneui/themed'
 import { PWButton, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
+import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { useLanguage } from '@hooks/useLanguage'
 import { CHART_ANIMATION_DURATION, CHART_HEIGHT } from '@constants/ui'
 import { getChartYAxisRange } from '@utils/chart'
 
 import type { StyleProp, ViewStyle } from 'react-native'
 
-type ChartPoint = { value: number }
-
-type ChartPointerEvent = {
-    pointerIndex: number
-    pointerX: number
-}
-
 // Shared area line chart for the wealth/asset-balance/asset-price charts, which
-// render an identical chart and only differ in how they fetch and map their data.
-type BalanceLineChartProps = {
-    dataPoints: ChartPoint[]
+// render an identical chart and only differ in how they fetch their series and
+// which field of it they plot. Mapping and pointer-focus wiring live here so
+// each caller is just its query plus this component.
+type BalanceLineChartProps<T> = {
+    /** Source series as fetched; undefined while the query has no data. */
+    series: T[] | undefined
+    /** Extracts the plotted value from a series item. */
+    getValue: (item: T) => number
+    /** Reports the pointer-focused series item, or null when focus leaves. */
+    onSelectionChanged: (item: T | null) => void
     isPending: boolean
     emptyBody: string
     /** When true, render an error state (with retry) instead of the empty copy. */
@@ -41,22 +42,27 @@ type BalanceLineChartProps = {
     errorBody?: string
     /** Triggers a refetch from the error state's retry button. */
     onRetry?: () => void
-    getPointerProps: (event: ChartPointerEvent) => void
     style?: StyleProp<ViewStyle>
 }
 
-export const BalanceLineChart = ({
-    dataPoints,
+export const BalanceLineChart = <T,>({
+    series,
+    getValue,
+    onSelectionChanged,
     isPending,
     emptyBody,
     isError = false,
     errorBody,
     onRetry,
-    getPointerProps,
     style,
-}: BalanceLineChartProps) => {
+}: BalanceLineChartProps<T>) => {
     const { theme } = useTheme()
     const { t } = useLanguage()
+    const dataPoints = useMemo(
+        () => series?.map(item => ({ value: getValue(item) })) ?? [],
+        [series, getValue],
+    )
+    const getPointerProps = useChartPointerFocus(series, onSelectionChanged)
     const yAxisRange = useMemo(
         () => getChartYAxisRange(dataPoints),
         [dataPoints],

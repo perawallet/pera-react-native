@@ -12,10 +12,7 @@
 
 import { PWDivider, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
-import {
-    microAlgosToAlgos,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -23,6 +20,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
 import { useTheme } from '@rneui/themed'
+import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
 import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
@@ -93,16 +91,7 @@ export const PaymentTransactionDisplay = ({
                     </PWView>
                 </KeyValueRow>
 
-                <KeyValueRow title={t('transactions.common.fee')}>
-                    <AssetAmount
-                        asset={ALGO_ASSET}
-                        value={Decimal(
-                            microAlgosToAlgos(transaction.fee ?? 0n),
-                        )}
-                        showSymbol
-                        ignorePrivacyMode
-                    />
-                </KeyValueRow>
+                <TransactionFeeRow transaction={transaction} />
 
                 <TransactionNoteRow transaction={transaction} />
             </PWView>

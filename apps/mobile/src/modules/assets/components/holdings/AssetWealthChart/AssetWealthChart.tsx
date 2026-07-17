@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import {
     type HistoryPeriod,
@@ -33,6 +31,9 @@ export type AssetWealthChartProps = {
     onSelectionChanged: (item: Nullable<AccountBalanceHistoryItem>) => void
 }
 
+const getPreferredValue = (item: AccountBalanceHistoryItem): number =>
+    item.preferredValue.toNumber()
+
 export const AssetWealthChart = ({
     onSelectionChanged,
     account,
@@ -45,25 +46,15 @@ export const AssetWealthChart = ({
     const { data, isPending, isError, refetch } =
         useAccountsAssetsBalanceHistoryQuery(account, asset.assetId, period)
 
-    const dataPoints = useMemo(
-        () =>
-            data?.map(p => ({
-                timestamp: p.datetime,
-                value: p.preferredValue.toNumber(),
-            })) ?? [],
-        [data],
-    )
-
-    const getPointerProps = useChartPointerFocus(data, onSelectionChanged)
-
     return (
         <BalanceLineChart
-            dataPoints={dataPoints}
+            series={data}
+            getValue={getPreferredValue}
+            onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
             onRetry={() => void refetch()}
             emptyBody={t('common.wealth_chart.asset_empty_body')}
-            getPointerProps={getPointerProps}
             style={themeStyle.container}
         />
     )
