@@ -735,6 +735,12 @@ describe('createHardwareStrategy', () => {
             ).rejects.toThrow(
                 'Hardware wallet signing of arbitrary data is not supported',
             )
+            // Retrying can never succeed — no Retry affordance should render.
+            await expect(
+                strategy.sign(group, makeLedgerAccount()),
+            ).rejects.toMatchObject({
+                metadata: expect.objectContaining({ retryable: false }),
+            })
         })
     })
 

@@ -2844,7 +2844,19 @@
             "address_mismatch_title": "Address Mismatch",
             "retry": "Try again",
             "troubleshoot": "Troubleshoot",
-            "troubleshooting_link": "Having Ledger connection issues?"
+            "troubleshooting_link": "Having Ledger connection issues?",
+            "device_locked_title": "Ledger Locked",
+            "device_locked": "Your Ledger device is locked. Unlock it with your PIN and try again.",
+            "usb_no_device_title": "No Ledger Found",
+            "usb_no_device": "No Ledger device is connected over USB. Plug it in, unlock it, and try again.",
+            "usb_multiple_devices_title": "Multiple Ledgers Connected",
+            "usb_multiple_devices": "More than one Ledger is connected over USB. Disconnect the others and try again — USB can only target a single device.",
+            "no_accounts_found_title": "No Accounts Found",
+            "no_accounts_found": "No accounts were found on this Ledger device.",
+            "location_services_disabled_title": "Location Services Off",
+            "location_services_disabled": "Location services must be enabled to search for nearby Ledger devices. Turn them on and try again.",
+            "provider_unavailable_title": "Connection Unavailable",
+            "provider_unavailable": "The hardware wallet connection service is unavailable. Restart Pera and try again."
         },
         "troubleshooting": {
             "title": "Having Ledger connection issues?",
