@@ -305,6 +305,7 @@
         "rekey_to_standard": "Rekey to Standard Account",
         "rekey_to_shared": "Rekey to Shared Account",
         "export_share_account": "Export/Share Account",
+        "scan_rekeyed": "Scan for Rekeyed Accounts",
         "rename_account": "Rename Account",
         "mute_notifications": "Mute Notifications",
         "unmute_notifications": "Unmute Notifications",
