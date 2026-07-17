@@ -74,6 +74,7 @@ export const RemoveAssetsScreen = () => {
                 <PWTouchableOpacity
                     style={styles.itemContainer}
                     onPress={() => handleToggleSelect(item.assetId)}
+                    testID={`remove_asset_row_${item.assetId}`}
                 >
                     <PWView style={styles.assetInfo}>
                         <AccountAssetItemView
@@ -92,6 +93,7 @@ export const RemoveAssetsScreen = () => {
 
     return (
         <PWScreen
+            testID='remove_assets_screen'
             scroll='never'
             footer={
                 isRemoveSelectedVisible ? (

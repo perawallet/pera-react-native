@@ -29,6 +29,7 @@ export const BackupVerificationScreen = () => {
 
     return (
         <PWScreen
+            testID='backup_verification_screen'
             footer={
                 <PWButton
                     title={t('backup.verification.cta_next')}

@@ -50,7 +50,12 @@ export const SearchFilterContent = ({
 
     return (
         <PWSheetLayout
-            header={<SheetHeader title={t('search.filter.title')} />}
+            header={
+                <SheetHeader
+                    title={t('search.filter.title')}
+                    testID='search_filter_sheet'
+                />
+            }
         >
             <PWView style={styles.body}>
                 {SEARCH_SCOPES.map(scope => (

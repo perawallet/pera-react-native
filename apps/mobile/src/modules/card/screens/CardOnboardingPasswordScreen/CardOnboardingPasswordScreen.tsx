@@ -35,7 +35,7 @@ export const CardOnboardingPasswordScreen = () => {
     } = useCardOnboardingPasswordScreen()
 
     return (
-        <PWScreen>
+        <PWScreen testID='card-onboarding-password'>
             <PWView style={styles.content}>
                 <PWView style={styles.fields}>
                     <Controller

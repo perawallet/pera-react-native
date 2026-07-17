@@ -103,7 +103,10 @@ export const OnrampScreen = () => {
     }
 
     return (
-        <PWView style={styles.screen}>
+        <PWView
+            style={styles.screen}
+            testID='onramp-screen'
+        >
             <PWView style={styles.header}>
                 <PWView style={styles.headerRow}>
                     <OnrampCountryChip

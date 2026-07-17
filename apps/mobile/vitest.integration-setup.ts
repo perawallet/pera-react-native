@@ -63,6 +63,7 @@ vi.unmock('@perawallet/wallet-core-polling')
 vi.unmock('@perawallet/wallet-core-background')
 vi.unmock('@perawallet/wallet-core-settings')
 vi.unmock('@perawallet/wallet-core-contacts')
+vi.unmock('@perawallet/wallet-core-staking')
 
 // Onboarding flows render the welcome screen, which gates on Terms & Conditions
 // acceptance (PERA-4468). Pre-accept the default `terms_version` so the blocking

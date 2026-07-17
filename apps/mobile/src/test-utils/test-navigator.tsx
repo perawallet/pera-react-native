@@ -45,7 +45,10 @@ import { type Optional } from '@perawallet/wallet-core-shared'
 
 type RouteState = {
     name: string
-    params: Record<string, unknown>
+    // Mirrors production @react-navigation: a route reached without params has
+    // `params === undefined`, not `{}`. Screens that branch on params
+    // truthiness (e.g. import-vs-create flows) depend on this distinction.
+    params: Optional<Record<string, unknown>>
     key: string
 }
 
@@ -127,34 +130,32 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
             const existing = prev.findIndex(r => r.name === name)
             if (existing !== -1) {
                 const trimmed = prev.slice(0, existing + 1)
+                const prevParams = trimmed[trimmed.length - 1].params
                 const merged = {
                     ...trimmed[trimmed.length - 1],
-                    params: {
-                        ...trimmed[trimmed.length - 1].params,
-                        ...(params ?? {}),
-                    },
+                    params:
+                        params || prevParams
+                            ? { ...prevParams, ...params }
+                            : undefined,
                 }
                 return [...trimmed.slice(0, -1), merged]
             }
-            return [...prev, { name, params: params ?? {}, key: newRouteKey() }]
+            return [...prev, { name, params, key: newRouteKey() }]
         })
     }
 
     const push: NavigateAction = (name, params) => {
         controller.setStack(prev => [
             ...prev,
-            { name, params: params ?? {}, key: newRouteKey() },
+            { name, params, key: newRouteKey() },
         ])
     }
 
     const replace: NavigateAction = (name, params) => {
         controller.setStack(prev =>
             prev.length === 0
-                ? [{ name, params: params ?? {}, key: newRouteKey() }]
-                : [
-                      ...prev.slice(0, -1),
-                      { name, params: params ?? {}, key: newRouteKey() },
-                  ],
+                ? [{ name, params, key: newRouteKey() }]
+                : [...prev.slice(0, -1), { name, params, key: newRouteKey() }],
         )
     }
 
@@ -203,7 +204,7 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
         controller.setStack(
             next.routes.map(r => ({
                 name: r.name,
-                params: r.params ?? {},
+                params: r.params,
                 key: r.key ?? newRouteKey(),
             })),
         )
@@ -394,7 +395,7 @@ export const createNativeStackNavigator = () => {
         const [stack, setStack] = useState<RouteState[]>(() => [
             {
                 name: initialName,
-                params: initialScreen?.initialParams ?? {},
+                params: initialScreen?.initialParams,
                 key: newRouteKey(),
             },
         ])

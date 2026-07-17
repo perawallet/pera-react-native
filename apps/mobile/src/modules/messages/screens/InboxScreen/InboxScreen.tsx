@@ -48,7 +48,10 @@ export const InboxScreen = () => {
     )
 
     return (
-        <PWScreen scroll='never'>
+        <PWScreen
+            scroll='never'
+            testID='inbox_screen'
+        >
             <PWFlatList
                 data={inboxItems}
                 renderItem={renderItem}
@@ -61,6 +64,7 @@ export const InboxScreen = () => {
                         icon='inbox'
                         title={t('messages.inbox.empty_title')}
                         body={t('messages.inbox.empty_body')}
+                        testID='inbox_empty_state'
                     />
                 }
                 refreshControl={
