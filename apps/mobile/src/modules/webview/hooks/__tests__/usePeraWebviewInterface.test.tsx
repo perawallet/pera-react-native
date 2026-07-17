@@ -100,6 +100,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isHDWalletAccount: vi.fn(account => account.type === 'hdWallet'),
     isRekeyedAccount: vi.fn(() => false),
     canSignWith: vi.fn(() => true),
+    canSignArbitraryData: vi.fn(() => true),
     useSigningAccounts: vi.fn(() => [
         {
             address: 'addr1',
@@ -308,10 +309,29 @@ describe('usePeraWebviewInterface', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any
 
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks()
         ;(Linking.canOpenURL as Mock).mockResolvedValue(true)
         ;(Linking.openURL as Mock).mockResolvedValue(true)
+        // The getAddresses-parity tests swap the account hooks with bare
+        // mockReturnValue calls, which survive clearAllMocks — restore the
+        // factory implementations so later tests see the default account.
+        const accounts = await import('@perawallet/wallet-core-accounts')
+        const defaultAccounts = [
+            {
+                address: 'addr1',
+                name: 'Account 1',
+                type: 'hdWallet',
+                hdWalletDetails: { hdWalletAddress: 'addr1' },
+            },
+        ] as unknown as ReturnType<typeof accounts.useAllAccounts>
+        vi.mocked(accounts.useAllAccounts).mockImplementation(
+            () => defaultAccounts,
+        )
+        vi.mocked(accounts.useSigningAccounts).mockImplementation(
+            () => defaultAccounts,
+        )
+        vi.mocked(accounts.canSignWith).mockImplementation(() => true)
     })
 
     it('should handle openSystemBrowser action', async () => {
@@ -922,6 +942,61 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"result":[{"0":4,"1":5,"2":6}]'),
+        )
+    })
+
+    it('rejects requestDataSigning before the review sheet when the signer cannot sign arbitrary data', async () => {
+        // Ledger/watch signers fail at the hardware strategy AFTER the user
+        // slides to confirm — the preflight must reject before enqueueing,
+        // matching the WC transport's up-front canSignArbitraryData gate.
+        const accounts = await import('@perawallet/wallet-core-accounts')
+        vi.mocked(accounts.canSignArbitraryData).mockReturnValueOnce(false)
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '14-preflight',
+                jsonrpc: '2.0',
+                method: 'requestDataSigning',
+                params: {
+                    data: { data: 'AQID', signer: 'addr1' },
+                    metadata: { name: 'Test dApp' },
+                },
+            })
+        })
+
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"14-preflight"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('Signer cannot sign arbitrary data'),
+        )
+    })
+
+    it('rejects requestDataSigning before the review sheet when the signer is not a wallet account', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '14-unknown-signer',
+                jsonrpc: '2.0',
+                method: 'requestDataSigning',
+                params: {
+                    data: { data: 'AQID', signer: 'not-a-wallet-address' },
+                    metadata: { name: 'Test dApp' },
+                },
+            })
+        })
+
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"14-unknown-signer"'),
         )
     })
 

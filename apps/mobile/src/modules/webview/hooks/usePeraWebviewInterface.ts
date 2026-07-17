@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     AccountTypes,
+    canSignArbitraryData,
     canSignArc60,
     canSignWith,
     isRekeyedAccount,
@@ -664,6 +665,24 @@ export const usePeraWebviewInterface = (
                             t('errors.webview.invalid_params', {
                                 params: 'signer',
                             }),
+                            webview,
+                        )
+                        return
+                    }
+                    // Preflight parity with the WC transport: a signer that
+                    // can't sign raw bytes (Ledger, watch) must be rejected
+                    // before the review sheet, not after the user slides.
+                    const signerAccount = allAccounts.find(
+                        account => account.address === signer,
+                    )
+                    if (
+                        !signerAccount ||
+                        !canSignArbitraryData(signerAccount)
+                    ) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            'Signer cannot sign arbitrary data',
                             webview,
                         )
                         return
