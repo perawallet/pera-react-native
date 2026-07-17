@@ -17,6 +17,7 @@
     "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:unit": "vitest run",
     "test:watch": "vitest --watch",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\"",
     "lint:fix": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\" --fix"

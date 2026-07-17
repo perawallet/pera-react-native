@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { parseDeeplink } from '../parser'
 import { parsePerawalletAppUri } from '../new-parser'
 import { DeeplinkType } from '../types'

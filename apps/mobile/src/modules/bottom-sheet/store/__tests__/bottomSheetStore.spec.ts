@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { createElement } from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
