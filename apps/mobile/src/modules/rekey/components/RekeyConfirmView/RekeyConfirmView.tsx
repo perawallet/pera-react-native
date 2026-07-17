@@ -37,6 +37,7 @@ type RekeyConfirmViewProps = {
     feePending: boolean
     hasPreviousRekey: boolean
     isSubmitting: boolean
+    isUnderfunded: boolean
     onConfirmPress: () => void
 }
 
@@ -51,6 +52,7 @@ export const RekeyConfirmView = ({
     feePending,
     hasPreviousRekey,
     isSubmitting,
+    isUnderfunded,
     onConfirmPress,
 }: RekeyConfirmViewProps) => {
     const styles = useStyles()
@@ -92,12 +94,26 @@ export const RekeyConfirmView = ({
                         />
                     </PWView>
 
+                    {isUnderfunded && (
+                        <PWText
+                            variant='footnoteMedium'
+                            style={styles.underfundedNotice}
+                            testID={`${testIDPrefix}-underfunded-notice`}
+                        >
+                            {t('rekey.confirm.insufficient_fee_balance', {
+                                fee: feeAlgos?.toString() ?? '',
+                            })}
+                        </PWText>
+                    )}
+
                     <PWButton
                         variant='primary'
                         title={t(`${i18nPrefix}.cta`)}
                         onPress={onConfirmPress}
                         isLoading={isSubmitting}
-                        isDisabled={!source || !target || feePending}
+                        isDisabled={
+                            !source || !target || feePending || isUnderfunded
+                        }
                         style={styles.cta}
                         testID={`${testIDPrefix}-confirm-cta`}
                     />

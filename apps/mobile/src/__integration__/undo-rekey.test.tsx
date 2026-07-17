@@ -38,6 +38,7 @@ import {
     within,
 } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+import { Decimal } from 'decimal.js'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -51,6 +52,7 @@ import {
 } from '@test-utils/database-setup'
 import {
     AccountTypes,
+    upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -111,6 +113,19 @@ const seedRekeyedSource = async (): Promise<{
     }
     useAccountsStore.getState().setAccounts([source, authAccount])
     useAccountsStore.getState().setSelectedAccountAddress(source.address)
+    // The source pays the undo fee — the confirm screen's fee preflight
+    // reads this balance row and disables the CTA without it.
+    await upsertAccountBalance({
+        accountAddress: source.address,
+        network: 'mainnet',
+        algoBalance: new Decimal(5),
+        totalAssetsOptedIn: 0,
+        totalCreatedAssets: 0,
+        totalAppsOptedIn: 0,
+        minBalance: new Decimal(0.1),
+        status: 'Offline',
+        authAddress: authAccount.address,
+    })
     return { source, authAccount }
 }
 

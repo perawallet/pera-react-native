@@ -86,6 +86,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const mockSubmitAsync = vi.fn()
+let mockIsUnderfunded = false
 vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-transactions')
@@ -98,6 +99,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
         feeAlgos: new Decimal('0.001'),
         isPending: false,
     }),
+    useRekeyFeePreflight: () => ({ isUnderfunded: mockIsUnderfunded }),
 }))
 
 const mockRequestBottomSheet = vi.fn()
@@ -128,6 +130,7 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
         currentTarget = mockEd25519Target
         mockQuantumSource.rekeyAddress = undefined
         mockEd25519Source.rekeyAddress = undefined
+        mockIsUnderfunded = false
     })
 
     it('requests the downgrade warning and gates submit when a quantum source rekeys to an Ed25519 target', async () => {
@@ -215,12 +218,61 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
     })
 })
 
+describe('useRekeyConfirmScreen - underfunded preflight gate', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockSubmitAsync.mockReset()
+        mockRequestBottomSheet.mockReset()
+        currentSource = mockEd25519Source
+        currentTarget = mockEd25519Target
+        mockEd25519Source.rekeyAddress = undefined
+        mockIsUnderfunded = false
+    })
+
+    it('exposes the underfunded state', () => {
+        mockIsUnderfunded = true
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        expect(result.current.isUnderfunded).toBe(true)
+    })
+
+    it('creates no sign request and opens no sheet when underfunded', async () => {
+        mockIsUnderfunded = true
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        expect(mockSubmitAsync).not.toHaveBeenCalled()
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+    })
+
+    it('submits normally when funded', async () => {
+        mockSubmitAsync.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(() => useRekeyConfirmScreen(config))
+
+        await act(async () => {
+            result.current.handleConfirmPress()
+        })
+
+        await waitFor(() => {
+            expect(mockSubmitAsync).toHaveBeenCalledTimes(1)
+        })
+        expect(result.current.isUnderfunded).toBe(false)
+    })
+})
+
 describe('useRekeyConfirmScreen - double-tap guard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
         mockEd25519Source.rekeyAddress = undefined
+        mockIsUnderfunded = false
     })
 
     it('a second tap while a submission is in flight is a no-op', async () => {
@@ -245,6 +297,7 @@ describe('useRekeyConfirmScreen - no-op rekey guard', () => {
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
         mockEd25519Source.rekeyAddress = undefined
+        mockIsUnderfunded = false
     })
 
     it("does not submit when the target is already the source's current auth", async () => {

@@ -1641,6 +1641,9 @@
                 "title": "Couldn't submit the rekey"
             }
         },
+        "confirm": {
+            "insufficient_fee_balance": "This account doesn't have enough ALGO to cover the {{fee}} ALGO fee. Add ALGO and try again."
+        },
         "to_standard": {
             "intro": {
                 "title": "Rekey to standard account",

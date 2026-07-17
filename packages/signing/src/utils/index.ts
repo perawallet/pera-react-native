@@ -13,7 +13,6 @@
 export * from './arc60'
 export * from './arc60-wire'
 export * from './assertTransactionsMatchNetwork'
-export * from './balance-validation'
 export * from './balanceImpact'
 export * from './classification'
 export * from './classifyLedgerErrorKind'

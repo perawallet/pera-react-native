@@ -81,6 +81,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const mockSubmitAsync = vi.fn()
+let mockIsUnderfunded = false
 vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-transactions')
@@ -93,6 +94,7 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
         feeAlgos: new Decimal('0.001'),
         isPending: false,
     }),
+    useRekeyFeePreflight: () => ({ isUnderfunded: mockIsUnderfunded }),
 }))
 
 const mockRequestBottomSheet = vi.fn()
@@ -128,6 +130,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         mockSubmitAsync.mockReset()
         mockRequestBottomSheet.mockReset()
         capturedSigningHandler = null
+        mockIsUnderfunded = false
     })
 
     it('returns feeAlgos from the rekey transaction fee query', () => {
@@ -276,6 +279,20 @@ describe('useUndoRekeyConfirmScreen', () => {
         })
         expect(mockShowError).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('exposes the underfunded state and blocks handleContinuePress when underfunded', async () => {
+        mockIsUnderfunded = true
+        const { result } = renderHook(() => useUndoRekeyConfirmScreen())
+
+        expect(result.current.isUnderfunded).toBe(true)
+
+        await act(async () => {
+            result.current.handleContinuePress()
+        })
+
+        expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        expect(mockSubmitAsync).not.toHaveBeenCalled()
     })
 
     it('calls showError and does not navigate on generic errors', async () => {

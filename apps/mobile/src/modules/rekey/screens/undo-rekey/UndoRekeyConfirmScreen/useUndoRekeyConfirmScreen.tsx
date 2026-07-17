@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
+    useRekeyFeePreflight,
     useRekeyTransactionFeeQuery,
     useSubmitRekeyMutation,
 } from '@perawallet/wallet-core-transactions'
@@ -40,6 +41,7 @@ export type UseUndoRekeyConfirmScreenResult = {
     feeAlgos: Decimal | undefined
     feePending: boolean
     isSubmitting: boolean
+    isUnderfunded: boolean
     handleContinuePress: () => void
 }
 
@@ -71,6 +73,9 @@ export const useUndoRekeyConfirmScreen =
             sourceAddress,
             sourceAddress,
         )
+        // The source pays the undo fee — block before any sign request is
+        // created (and before the Ledger device prompt for hardware auths).
+        const { isUnderfunded } = useRekeyFeePreflight(sourceAddress, feeAlgos)
 
         // Undoing the rekey of a shared account is a multisig propose whose
         // signing Promise never resolves — hand off to the pending-signatures
@@ -89,6 +94,7 @@ export const useUndoRekeyConfirmScreen =
                 navigation.goBack()
                 return
             }
+            if (isUnderfunded) return
 
             markSubmitted()
             try {
@@ -114,6 +120,7 @@ export const useUndoRekeyConfirmScreen =
             navigation,
             handleRekeyError,
             source,
+            isUnderfunded,
             markSubmitted,
             hasHandedOff,
         ])
@@ -128,6 +135,10 @@ export const useUndoRekeyConfirmScreen =
         const inFlightRef = useRef(false)
 
         const runContinueFlow = useCallback(async () => {
+            // Gate before the warning sheet too — confirming the warning
+            // must never lead into a rekey that cannot pay its fee.
+            if (isUnderfunded) return
+
             if (!source) {
                 // The CTA is disabled in this state, but guard anyway — a
                 // dead confirm screen with no feedback is worse than a toast.
@@ -165,6 +176,7 @@ export const useUndoRekeyConfirmScreen =
         }, [
             source,
             currentAuth,
+            isUnderfunded,
             requestBottomSheet,
             handleLearnMore,
             handleRekeyError,
@@ -188,6 +200,7 @@ export const useUndoRekeyConfirmScreen =
             feeAlgos,
             feePending,
             isSubmitting,
+            isUnderfunded,
             handleContinuePress: () => void handleContinuePress(),
         }
     }
