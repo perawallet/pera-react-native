@@ -20,8 +20,11 @@ import { describe, it, expect } from 'vitest'
 // one-module change. See docs/QUANTUM_PQ_INTEGRATION.md. This guard pins that
 // boundary: neither library may be imported anywhere else in the tree.
 // The quote class includes backticks so template-literal dynamic imports
-// (e.g. `import(\`@joe-p/algosdk\`)`) are caught too.
-const FORBIDDEN_SPECIFIER_PATTERN = /[`'"](@joe-p\/[^'"`]*|falcon-1024)[`'"]/
+// (e.g. `import(\`@joe-p/algosdk\`)`) are caught too. The falcon-1024
+// alternative also allows an optional subpath (e.g. `falcon-1024/wasm`) so a
+// deep import can't slip past a bare-specifier-only check.
+const FORBIDDEN_SPECIFIER_PATTERN =
+    /[`'"](@joe-p\/[^'"`]*|falcon-1024(\/[^'"`]*)?)[`'"]/
 
 // Seam A (pure crypto) and Seam B (the only `@joe-p/algosdk` importer) are
 // the sole sanctioned homes for these imports.
@@ -32,6 +35,10 @@ const ALLOWLISTED_SEAM_DIRS = [
 
 const SCAN_ROOT_DIRS = ['packages', 'apps']
 
+// `__tests__` is excluded tree-wide (not just in the seam dirs): tests
+// legitimately import the PQ libs directly and are never shipped, so a leak
+// planted inside a non-seam `__tests__` folder is a deliberate, accepted
+// blind spot of this guard.
 const SKIPPED_DIR_NAMES = new Set(['node_modules', '.git', 'dist', '__tests__'])
 
 // Resolved from __dirname rather than hardcoded, since this spec runs from

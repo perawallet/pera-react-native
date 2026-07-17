@@ -11,7 +11,7 @@
  */
 
 // SWAP: joe-p WASM Falcon-1024. Replace with the official PQ crypto lib per
-// docs/superpowers/specs/2026-07-16-real-quantum-falcon-accounts-design.md (Seam A).
+// docs/QUANTUM_PQ_INTEGRATION.md (Seam A).
 import {
     generateKey,
     signCompressed,
