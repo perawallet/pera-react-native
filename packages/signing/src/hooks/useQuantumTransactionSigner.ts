@@ -58,7 +58,7 @@ export const useQuantumTransactionSigner =
             async (txnGroup, indexesToSign, account: WalletAccount) => {
                 if (!account.keyPairId) {
                     throw new Error(
-                        `Quantum signing requires a keyPairId for ${account.address ?? account.id}`,
+                        `Quantum signing requires a keyPairId for ${account.address}`,
                     )
                 }
                 const keyPairId = account.keyPairId

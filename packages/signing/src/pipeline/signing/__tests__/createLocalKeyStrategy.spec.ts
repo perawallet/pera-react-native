@@ -159,6 +159,14 @@ describe('createLocalKeyStrategy', () => {
         test('returns false when account lacks signing keys', () => {
             expect(makeStrategy().canSign(unsupportedAccount)).toBe(false)
         })
+
+        test('returns false for quantum accounts even though they carry a keyPairId (they route through createQuantumStrategy instead)', () => {
+            expect(makeStrategy().canSign(quantumAccount)).toBe(false)
+        })
+
+        test('returns true for algo25 accounts', () => {
+            expect(makeStrategy().canSign(algo25Account)).toBe(true)
+        })
     })
 
     describe('sign - transactions', () => {

@@ -15,6 +15,7 @@ import {
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
+    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64, toError } from '@perawallet/wallet-core-shared'
@@ -70,7 +71,7 @@ export const createLocalKeyStrategy = (
 
     return {
         canSign: (account: WalletAccount): boolean => {
-            return hasSigningKeys(account)
+            return hasSigningKeys(account) && !isQuantumAccount(account)
         },
 
         sign: async (
