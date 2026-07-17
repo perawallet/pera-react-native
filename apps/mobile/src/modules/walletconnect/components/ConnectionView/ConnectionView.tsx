@@ -20,10 +20,12 @@ import {
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,
+    WalletConnectSessionRequestExpiredError,
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import React from 'react'
 import {
     useSigningAccounts,
@@ -56,21 +58,26 @@ export const ConnectionView = ({
     const { removeSessionRequest } = useWalletConnectSessionRequests()
     const { network } = useNetwork()
     const { approveSession, rejectSession } = useWalletConnect(network)
+    const { errorToast } = useToast()
     const accounts = useSigningAccounts()
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
+    const [isConnecting, setIsConnecting] = React.useState(false)
 
     const handleCancel = () => {
         trackEvent(WalletConnectEvent.SessionRejected, {
             [AnalyticsMetadataKey.DappName]: request.peerMeta.name,
             [AnalyticsMetadataKey.DappUrl]: request.peerMeta.url,
         })
-        rejectSession(request.clientId)
+        // Delivery failures are surfaced (and the request dropped) inside
+        // rejectSession — a dead socket must never trap the user here.
+        void rejectSession(request.clientId)
         removeSessionRequest(request)
     }
 
-    const handleConnect = () => {
+    const handleConnect = async () => {
+        setIsConnecting(true)
         try {
-            approveSession(request.clientId, request, selectedAccounts)
+            await approveSession(request.clientId, request, selectedAccounts)
             trackEvent(WalletConnectEvent.SessionApproved, {
                 [AnalyticsMetadataKey.DappName]: request.peerMeta.name,
                 [AnalyticsMetadataKey.DappUrl]: request.peerMeta.url,
@@ -80,9 +87,22 @@ export const ConnectionView = ({
             onSuccess(request)
             removeSessionRequest(request)
         } catch (error) {
-            onError(error as Error)
+            if (error instanceof WalletConnectSessionRequestExpiredError) {
+                onError(error)
+                return
+            }
+            // Delivery failure (dead socket that couldn't be revived):
+            // keep the sheet open so Connect can simply be retried.
+            errorToast(
+                t('walletconnect.request.error_sheet_title'),
+                t('walletconnect.connection.approve_delivery_failed'),
+            )
+        } finally {
+            setIsConnecting(false)
         }
     }
+
+    const handleConnectPress = () => void handleConnect()
 
     const handleAccountPress = (account: WalletAccount) => {
         setSelectedAccounts(prev => {
@@ -135,9 +155,10 @@ export const ConnectionView = ({
                 <PWButton
                     variant='primary'
                     title={t('common.connect.label')}
-                    onPress={handleConnect}
+                    onPress={handleConnectPress}
                     style={styles.connectButton}
                     isDisabled={!selectedAccounts.length}
+                    isLoading={isConnecting}
                 />
             </PWView>
         </>

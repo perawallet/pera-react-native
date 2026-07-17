@@ -96,6 +96,21 @@ export class WalletConnectConnectionTimeoutError extends WalletConnectError {
 }
 
 /**
+ * A queued session request outlived `SESSION_REQUEST_TTL_MS` before the
+ * user acted on it — the dApp's side of the handshake has expired, so
+ * approving it can only produce a fake "Connected!".
+ */
+export class WalletConnectSessionRequestExpiredError extends WalletConnectError {
+    constructor(message?: string, originalError?: Error) {
+        super(
+            message ??
+                'This connection request has expired. Start a new connection from the dApp and try again.',
+            originalError,
+        )
+    }
+}
+
+/**
  * Read the originating connector's `clientId` off a surfaced WalletConnect
  * error, if one was stamped on it (see `surfaceError`). `connectionError` is a
  * single shared store field written from several connectors, so consumers that

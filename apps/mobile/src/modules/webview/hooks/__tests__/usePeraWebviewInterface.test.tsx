@@ -55,6 +55,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: vi.fn(t => t),
     encodeToBase64: vi.fn(t => t),
     AppError: class AppError extends Error {},
+    // The `@modules/network` barrel transitively pulls store modules that
+    // self-register for reset-on-logout.
+    registerStore: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -222,9 +225,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     }),
 }))
 
-const mockConnect = vi.fn(() => Promise.resolve())
+const mockConnect = vi.fn(() => Promise.resolve('pairing-client'))
+const mockWaitForSessionOutcome = vi.fn(async () => ({ type: 'session' }))
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockConnect }),
+    waitForSessionOutcome: (...args: unknown[]) =>
+        mockWaitForSessionOutcome(...(args as [])),
 }))
 
 vi.mock('uuid', () => ({
@@ -1218,6 +1224,90 @@ describe('usePeraWebviewInterface', () => {
                     uri: 'wc:topic@2?relay-protocol=irn',
                 },
             })
+        })
+
+        it('answers the page with a readable error when the pairing outcome times out', async () => {
+            mockWaitForSessionOutcome.mockResolvedValueOnce({
+                type: 'timeout',
+            } as never)
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            await act(async () => {
+                result.current.handleMessage({
+                    id: 'wc-timeout',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                })
+                await Promise.resolve()
+                await Promise.resolve()
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"id":"wc-timeout"'),
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('No response from the dApp'),
+            )
+        })
+
+        it('relays a pairing rejection (e.g. wrong network) back to the page', async () => {
+            mockWaitForSessionOutcome.mockResolvedValueOnce({
+                type: 'error',
+                error: new Error('wrong network'),
+            } as never)
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            await act(async () => {
+                result.current.handleMessage({
+                    id: 'wc-rejected',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                })
+                await Promise.resolve()
+                await Promise.resolve()
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"id":"wc-rejected"'),
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('wrong network'),
+            )
+        })
+
+        it('short-circuits with an offline error instead of dialing a dead bridge', async () => {
+            const { useNetworkStatusStore } = await import('@modules/network')
+            useNetworkStatusStore.setState({ hasInternet: false })
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-offline',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+
+                expect(mockConnect).not.toHaveBeenCalled()
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('"id":"wc-offline"'),
+                )
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('offline'),
+                )
+            } finally {
+                useNetworkStatusStore.setState({ hasInternet: true })
+            }
         })
     })
 

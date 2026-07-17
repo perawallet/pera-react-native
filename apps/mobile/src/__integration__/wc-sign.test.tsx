@@ -181,8 +181,8 @@ const pairAndApprove = async () => {
     // Approve the session via the same hook so the production code path
     // populates `walletConnectConnections` (which `validateRequest` in
     // the sign handler keys off).
-    act(() => {
-        wc.current.approveSession(connector.clientId, sessionPayload, [
+    await act(async () => {
+        await wc.current.approveSession(connector.clientId, sessionPayload, [
             SIGNING_ACCOUNT.address,
         ])
     })

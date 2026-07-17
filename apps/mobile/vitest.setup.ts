@@ -2237,6 +2237,19 @@ vi.mock('react-native-notifier', () => {
 })
 
 // Mock @react-native-clipboard/clipboard
+// @react-native-community/netinfo ships untranspiled sources vitest can't
+// parse. Connectivity in tests is driven through useNetworkStatusStore.
+vi.mock('@react-native-community/netinfo', () => ({
+    default: {
+        configure: vi.fn(),
+        addEventListener: vi.fn(() => () => {}),
+        fetch: vi.fn(async () => ({
+            isConnected: true,
+            isInternetReachable: true,
+        })),
+    },
+}))
+
 vi.mock('@react-native-clipboard/clipboard', () => ({
     default: {
         setString: vi.fn(),
