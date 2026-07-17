@@ -37,7 +37,7 @@ import { useKeystoreKeys } from './useKeystoreState'
 import { entropyToIndices } from '../crypto/hdwallet-utils'
 import { algo25SeedToIndices } from '../crypto/algo25-utils'
 import { withSecret } from '../storage/secrets'
-import { falconSignMock } from '../crypto/falcon-utils'
+import { getPQProvider } from '../crypto/pq'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -147,12 +147,12 @@ export const useKMS = () => {
         [getKey],
     )
 
-    // MOCK(quantum): replace with real Falcon-1024 implementation when keystore support lands. See EPIC phase 2.
     /**
-     * Signs each payload with the mocked quantum signer. The quantum child
-     * entry holds no private material — the signature derives from the
-     * parent seed's private bytes, exported only for the duration of this
-     * call and zeroed in `finally`.
+     * Signs each payload with the real Falcon-1024 PQ signer. The quantum
+     * child entry holds no private material — the keypair is re-derived from
+     * the parent seed's private bytes, exported only for the duration of
+     * this call. Both the seed bytes and the derived secret key are zeroed
+     * in `finally` once signing completes.
      */
     const signWithQuantumSeed = (
         seedKey: Key,
@@ -166,9 +166,16 @@ export const useKMS = () => {
             }
             const seedBytes = new Uint8Array(seedData.privateKey)
             try {
-                return payloads.map(payload =>
-                    falconSignMock(seedBytes, payload),
-                )
+                const provider = getPQProvider()
+                const { secretKey } =
+                    provider.generateKeypairFromSeed(seedBytes)
+                try {
+                    return payloads.map(payload =>
+                        provider.sign(secretKey, payload),
+                    )
+                } finally {
+                    zeroBytes(secretKey)
+                }
             } finally {
                 zeroBytes(seedBytes)
             }

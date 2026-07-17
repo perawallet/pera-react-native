@@ -33,12 +33,13 @@ export {
 } from './crypto/hdwallet-utils'
 export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
 export {
-    deriveFalconAddressMock,
-    deriveFalconKeypairMock,
-    falconSignMock,
     FALCON_PUBLIC_KEY_LENGTH,
     FALCON_SIGNATURE_LENGTH,
 } from './crypto/falcon-utils'
+// Re-exported so consumers that need to derive a real Falcon keypair outside
+// the hook (e.g. quantum test fixtures) use the same PQ provider `useQuantum`
+// and `useKMS` do, rather than hand-rolling their own derivation.
+export { getPQProvider, type PQSignatureProvider } from './crypto/pq'
 export {
     SeedScheme,
     ALGO25_SEED_LENGTH,
