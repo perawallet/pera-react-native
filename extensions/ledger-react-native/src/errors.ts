@@ -53,6 +53,60 @@ export class LedgerAppNotOpenError extends AppError {
 }
 
 /**
+ * The device is locked on its PIN screen (APDU status 0x5515). The user
+ * unlocks the device and retries — no app-side remediation beyond that.
+ */
+export class LedgerDeviceLockedError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'The Ledger device is locked',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * No Ledger device is attached over USB at connect time.
+ */
+export class LedgerUsbNoDeviceError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'No Ledger connected over USB',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * More than one Ledger is attached over USB. The Android HID layer selects
+ * by vendorId alone, so a specific device cannot be targeted — the user must
+ * disconnect the extras.
+ */
+export class LedgerUsbMultipleDevicesError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'Multiple Ledger devices are connected over USB',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
  * The user rejected an operation on the Ledger device (APDU status 0x6985/0x6986).
  */
 export class LedgerUserRejectedError extends AppError {
@@ -468,6 +522,18 @@ export const classifyLedgerError = (error: unknown): AppError => {
                 error instanceof Error ? error : undefined,
             )
         }
+
+        if (statusCode === LEDGER_STATUS_CODES.LOCKED_DEVICE) {
+            return new LedgerDeviceLockedError(
+                error instanceof Error ? error : undefined,
+            )
+        }
+    }
+
+    // @ledgerhq/errors maps 0x5515 to a typed LockedDeviceError (name field)
+    // in some transport paths instead of surfacing the raw status word.
+    if (error instanceof Error && error.name === 'LockedDeviceError') {
+        return new LedgerDeviceLockedError(error)
     }
 
     // Check for disconnect-like errors by message

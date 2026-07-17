@@ -109,9 +109,13 @@ export class AnalysisError extends PipelineError {
  * Signing failed
  */
 export class SigningError extends PipelineError {
-    constructor(message: string, originalError?: Error) {
+    constructor(
+        message: string,
+        originalError?: Error,
+        options?: { retryable?: boolean },
+    ) {
         super(`Signing failed: ${message}`, originalError, {
-            retryable: true,
+            retryable: options?.retryable ?? true,
         })
     }
 }
@@ -141,7 +145,9 @@ export class HardwareWalletError extends PipelineError {
 
     constructor(reason: HardwareWalletErrorReason, originalError?: Error) {
         super(`Hardware wallet error: ${reason}`, originalError, {
-            retryable: true,
+            // Retrying an unsupported operation can never succeed; the other
+            // reasons are transient (transport/registry/signer lookup).
+            retryable: reason !== 'unsupported_data_type',
             params: { reason },
         })
         this.reason = reason

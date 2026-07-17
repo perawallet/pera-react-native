@@ -14,7 +14,9 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { toAlgodError } from '@perawallet/wallet-core-blockchain'
 import {
+    getRekeyedUnsignableReason,
     isSignRequestMultisigUnsignable,
     type SignRequest,
     type SigningPipelineEvent,
@@ -48,7 +50,12 @@ export type UseSigningActionButtonsResult = {
     hasMultipleTransactions: boolean
     currentRequest: Optional<SignRequest>
     isMultisigCosign: boolean
-    isMultisigUnsignable: boolean
+    /**
+     * When set, the request cannot be signed (unsignable multisig, or a
+     * sender rekeyed to a missing/watch-only auth) — the confirm slider is
+     * replaced by this explanation.
+     */
+    cannotSignNotice: Optional<{ title: string; body: string }>
     cosignSignerAddress: string
 }
 
@@ -84,8 +91,16 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             if (pipeline.resolved?.signerType === 'hardware') return
 
             if (pipeline.resolved?.transport.kind === 'algod') {
+                // Pipeline errors wrap the node's rejection text, which the
+                // toast would otherwise print raw. Recognized node rejections
+                // (overspend, stale-rekey "should have been authorized by"…)
+                // get their localized copy; unrecognized ones keep the
+                // original error's message.
+                const algodError = toAlgodError(event.error)
                 showError(
-                    event.error,
+                    algodError.code === 'unknown_node_error'
+                        ? event.error
+                        : algodError,
                     t('signing.transaction_view.transaction_failed_title'),
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,
@@ -122,12 +137,31 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         return presentTypes[0]
     }, [warnings, getPreference])
 
-    const isMultisigUnsignable = useMemo(
-        () =>
-            !!currentRequest &&
-            isSignRequestMultisigUnsignable(currentRequest, allAccounts),
-        [currentRequest, allAccounts],
-    )
+    const cannotSignNotice = useMemo(() => {
+        if (!currentRequest) return undefined
+        if (isSignRequestMultisigUnsignable(currentRequest, allAccounts)) {
+            return {
+                title: t('signing.cannot_sign.title'),
+                body: t('signing.cannot_sign.body'),
+            }
+        }
+        const rekeyedReason = getRekeyedUnsignableReason(
+            currentRequest,
+            allAccounts,
+        )
+        if (rekeyedReason) {
+            return {
+                title: t('signing.cannot_sign.title'),
+                body: t(
+                    rekeyedReason.kind === 'authMissing'
+                        ? 'signing.cannot_sign.rekeyed_auth_missing_body'
+                        : 'signing.cannot_sign.rekeyed_auth_watch_body',
+                    { authAddress: rekeyedReason.authAddress },
+                ),
+            }
+        }
+        return undefined
+    }, [currentRequest, allAccounts, t])
 
     // WalletConnect transaction confirm/decline analytics. Only dapp-originated
     // (`walletconnect`) requests carry these events; in-app/local signing is
@@ -145,7 +179,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     }, [currentRequest, allTransactions.length])
 
     const handleSignAndSend = useCallback(() => {
-        if (isMultisigUnsignable) return
+        if (cannotSignNotice) return
         if (guardedWarningType !== null) {
             void (async () => {
                 const result =
@@ -187,7 +221,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         }
         pipeline.next()
     }, [
-        isMultisigUnsignable,
+        cannotSignNotice,
         guardedWarningType,
         pipeline,
         requestBottomSheet,
@@ -220,7 +254,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         hasMultipleTransactions: allTransactions.length > 1,
         currentRequest,
         isMultisigCosign,
-        isMultisigUnsignable,
+        cannotSignNotice,
         cosignSignerAddress,
     }
 }

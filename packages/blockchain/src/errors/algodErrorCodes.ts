@@ -30,6 +30,12 @@ export const AlgodErrorCode = {
     DUPLICATE_TXN: 'duplicate_txn',
     /** Transaction's validity window has passed or is in the future. */
     EXPIRED_TXN: 'expired_txn',
+    /**
+     * Transaction signed with a key that is not the sender's current auth
+     * address — typically an externally-rekeyed account the wallet hasn't
+     * synced yet.
+     */
+    NOT_AUTHORIZED: 'not_authorized',
     /** Smart-contract TEAL assertion failure. Delegated from algokit's LogicError. */
     LOGIC_ERROR: 'logic_error',
     /** Network/transport error — node unreachable, 5xx, fetch failed, timeout. */
@@ -73,6 +79,12 @@ export interface AlgodErrorParamsByCode {
     expired_txn: {
         lastValid?: bigint
         currentRound?: bigint
+    }
+    not_authorized: {
+        /** The sender's current on-chain auth address. */
+        expectedAuthAddress: string
+        /** The address whose key actually signed. */
+        actualAuthAddress: string
     }
     logic_error: {
         txId?: string

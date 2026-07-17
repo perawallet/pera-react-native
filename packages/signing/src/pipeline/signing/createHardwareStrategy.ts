@@ -95,6 +95,9 @@ const validateAndExtract = (
     if (group.data.type === 'arbitrary-data') {
         throw new SigningError(
             'Hardware wallet signing of arbitrary data is not supported',
+            undefined,
+            // Retrying can never succeed — suppress the Retry affordance.
+            { retryable: false },
         )
     }
 
@@ -205,7 +208,7 @@ const signTransactions = async (
         callbacks?.onPhaseChange?.('awaiting-approval')
 
         const txnBytes = encodeTransaction(txn)
-        // Sign-time timeout uses CONFIRMATION (30s) not CONNECTION (10s) —
+        // Sign-time timeout uses CONFIRMATION (5 min) not CONNECTION (20s) —
         // the user is reading the transaction on the device. The timeout
         // exists so a dropped BLE link mid-confirmation doesn't hang the
         // promise forever, not to bound the user's reading time.

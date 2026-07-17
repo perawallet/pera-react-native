@@ -30,6 +30,7 @@ export {
     LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
+    LedgerDeviceLockedError,
     LedgerDisconnectedError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
@@ -43,6 +44,8 @@ export {
     LedgerTimeoutError,
     LedgerTransmissionError,
     LedgerUnsupportedDeviceError,
+    LedgerUsbMultipleDevicesError,
+    LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
     classifyLedgerError,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
@@ -62,4 +65,3 @@ export {
 
 export * from './discovery'
 export * from './hooks'
-export * from './store'

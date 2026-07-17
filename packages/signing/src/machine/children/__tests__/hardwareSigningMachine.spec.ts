@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { createActor, fromCallback, waitFor } from 'xstate'
+import { LEDGER_CONFIRMATION_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
 import { hardwareSigningMachine } from '../hardwareSigningMachine'
 import type { HardwareSigningInput } from '../hardwareSigningMachine.context'
 
@@ -172,7 +173,10 @@ describe('hardwareSigningMachine', () => {
                 actors: {
                     hardwareSignActor: fromCallback(() => () => {}) as never,
                 },
-                delays: { HARDWARE_TIMEOUT: timeoutMs },
+                delays: {
+                    SEARCHING_TIMEOUT: timeoutMs,
+                    APPROVAL_TIMEOUT: timeoutMs,
+                },
             })
 
         it('times out a step with no activity and routes to error; RETRY re-enters active', async () => {
@@ -259,7 +263,7 @@ describe('hardwareSigningMachine', () => {
             })
             const machine = hardwareSigningMachine.provide({
                 actors: { hardwareSignActor: countingActor as never },
-                delays: { HARDWARE_TIMEOUT: 100 },
+                delays: { SEARCHING_TIMEOUT: 100, APPROVAL_TIMEOUT: 100 },
             })
             const actor = createActor(machine, {
                 input: makeInput({ totalTxs: 3 }),
@@ -290,7 +294,7 @@ describe('hardwareSigningMachine', () => {
             })
             const machine = hardwareSigningMachine.provide({
                 actors: { hardwareSignActor: stubActor as never },
-                delays: { HARDWARE_TIMEOUT: 50 },
+                delays: { SEARCHING_TIMEOUT: 50, APPROVAL_TIMEOUT: 50 },
             })
             const actor = createActor(machine, {
                 input: makeInput(),
@@ -302,6 +306,90 @@ describe('hardwareSigningMachine', () => {
             })
             expect(done.context.error).toBeNull()
             expect(done.output).toEqual({ kind: 'success', results: [] })
+        })
+    })
+
+    it('a single slow on-device approval is bounded only by the confirmation ceiling', () => {
+        // A user scrolling a multi-screen app call can legitimately sit in
+        // `awaiting_approval` for minutes with no activity events — the
+        // machine must not tear the session down before the strategy's own
+        // LEDGER_CONFIRMATION_TIMEOUT_MS bound has had its say.
+        vi.useFakeTimers()
+        try {
+            const machine = hardwareSigningMachine.provide({
+                actors: {
+                    hardwareSignActor: fromCallback(() => () => {}) as never,
+                },
+            })
+            const actor = createActor(machine, { input: makeInput() })
+            actor.start()
+            actor.send({ type: 'AWAITING_APPROVAL' })
+
+            // Well past the old 35s per-step budget, still under the 300s
+            // confirmation ceiling: the machine must still be waiting.
+            vi.advanceTimersByTime(LEDGER_CONFIRMATION_TIMEOUT_MS - 60_000)
+            expect(actor.getSnapshot().matches('active')).toBe(true)
+
+            // The machine backstop (above the strategy ceiling) still bounds
+            // a genuinely hung step where no STRATEGY_ERROR ever arrives.
+            vi.advanceTimersByTime(120_000)
+            const snap = actor.getSnapshot()
+            expect(snap.matches('error')).toBe(true)
+            expect(snap.context.error?.kind).toBe('timeout')
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('RETRY after a partial multi-group success yields each group exactly once', async () => {
+        const resultA = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [{ address: 'A' }],
+        } as never
+        const resultA2 = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [{ address: 'A2' }],
+        } as never
+        const resultB = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [{ address: 'B' }],
+        } as never
+        // First invocation signs group 1 then dies; the RETRY re-invocation
+        // signs both groups. The stale group-1 result from the failed run
+        // must not survive into the output.
+        let invokeCount = 0
+        const stubActor = fromCallback(({ sendBack }) => {
+            invokeCount += 1
+            if (invokeCount === 1) {
+                sendBack({ type: 'GROUP_SIGNED', result: resultA })
+                sendBack({
+                    type: 'STRATEGY_ERROR',
+                    error: {
+                        kind: 'connection_failed',
+                        cause: new Error('disconnected mid-group'),
+                    },
+                })
+            } else {
+                sendBack({ type: 'GROUP_SIGNED', result: resultA2 })
+                sendBack({ type: 'GROUP_SIGNED', result: resultB })
+                sendBack({ type: 'ALL_DONE' })
+            }
+            return () => {}
+        })
+        const machine = hardwareSigningMachine.provide({
+            actors: { hardwareSignActor: stubActor as never },
+        })
+        const actor = createActor(machine, { input: makeInput() })
+        actor.start()
+        await waitFor(actor, s => s.matches('error'), { timeout: 1000 })
+
+        actor.send({ type: 'RETRY' })
+        const done = await waitFor(actor, s => s.matches('done'), {
+            timeout: 1000,
+        })
+        expect(done.output).toEqual({
+            kind: 'success',
+            results: [resultA2, resultB],
         })
     })
 

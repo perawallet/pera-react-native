@@ -33,10 +33,22 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
+const mockIsEligibleSharedRekeyTarget = vi.fn(
+    (
+        account: WalletAccount,
+        _source: WalletAccount,
+        _allAccounts: WalletAccount[],
+    ) => account.address !== 'SRC',
+)
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [sourceAccount, targetA, targetB],
-    isEligibleSharedRekeyTarget: (account: WalletAccount) =>
-        account.address !== 'SRC',
+    useFindAccountByAddress: (address: string) =>
+        address === 'SRC' ? sourceAccount : undefined,
+    isEligibleSharedRekeyTarget: (
+        account: WalletAccount,
+        source: WalletAccount,
+        allAccounts: WalletAccount[],
+    ) => mockIsEligibleSharedRekeyTarget(account, source, allAccounts),
 }))
 
 describe('useRekeyToSharedSelectTargetScreen', () => {
@@ -50,6 +62,16 @@ describe('useRekeyToSharedSelectTargetScreen', () => {
         )
 
         expect(result.current.targets).toEqual([targetA, targetB])
+    })
+
+    it('passes the resolved source account to isEligibleSharedRekeyTarget', () => {
+        renderHook(() => useRekeyToSharedSelectTargetScreen())
+
+        expect(mockIsEligibleSharedRekeyTarget).toHaveBeenCalledWith(
+            targetA,
+            sourceAccount,
+            [sourceAccount, targetA, targetB],
+        )
     })
 
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {

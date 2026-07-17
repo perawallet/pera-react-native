@@ -87,6 +87,8 @@ export const LEDGER_STATUS_CODES = {
     USER_REJECTED: 0x69_86,
     USER_REJECTED_LEGACY: StatusCodes.CONDITIONS_OF_USE_NOT_SATISFIED,
     APP_NOT_OPEN: StatusCodes.CLA_NOT_SUPPORTED,
+    /** Device is locked (PIN screen) — the user must unlock and retry. */
+    LOCKED_DEVICE: StatusCodes.LOCKED_DEVICE,
 } as const
 
 /**

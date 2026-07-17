@@ -148,7 +148,8 @@ export const AccountOptionsContent = ({
             o.id === 'rekey-to-ledger' ||
             o.id === 'rekey-to-standard' ||
             o.id === 'rekey-to-shared' ||
-            o.id === 'export-share-account',
+            o.id === 'export-share-account' ||
+            o.id === 'scan-rekeyed',
     )
 
     const managementOptions = options.filter(

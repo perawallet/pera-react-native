@@ -50,13 +50,15 @@ export const hardwareSignActor = fromCallback<
     })
 
     let cancelled = false
+    // The strategy reports progress per group (1..n within each group) while
+    // the overlay total spans ALL groups — offset by the transactions of the
+    // groups already signed so multi-group progress is monotonic.
+    let progressOffset = 0
 
     const callbacks = {
         onPhaseChange: (phase: SigningPhase) => {
             if (cancelled) return
-            if (phase === 'connecting') {
-                sendBack({ type: 'CONNECTING' })
-            } else if (phase === 'awaiting-approval') {
+            if (phase === 'awaiting-approval') {
                 sendBack({ type: 'AWAITING_APPROVAL' })
             }
         },
@@ -66,7 +68,11 @@ export const hardwareSignActor = fromCallback<
         },
         onProgress: (current: number, total: number) => {
             if (cancelled) return
-            sendBack({ type: 'PROGRESS', current, total })
+            sendBack({
+                type: 'PROGRESS',
+                current: progressOffset + current,
+                total,
+            })
         },
         onError: (error: Error) => {
             if (cancelled) return
@@ -110,6 +116,12 @@ export const hardwareSignActor = fromCallback<
                 )
                 if (cancelled) return
                 sendBack({ type: 'GROUP_SIGNED', result })
+                // Mirrors the parent's totalTxs accounting: transaction
+                // groups advance by their full length, data signs count as 1.
+                progressOffset +=
+                    group.data.type === 'transactions'
+                        ? group.data.transactions.length
+                        : 1
             }
             if (!cancelled) sendBack({ type: 'ALL_DONE' })
         } catch (err) {
