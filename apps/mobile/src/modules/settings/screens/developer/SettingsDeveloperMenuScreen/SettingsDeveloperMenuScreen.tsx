@@ -23,14 +23,6 @@ export const SettingsDeveloperMenuScreen = () => {
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
 
-    const openTestingWebview = () => {
-        pushWebView({
-            url: config.onrampBaseUrl + 'test',
-            id: 'Testing Webview',
-            enablePeraConnect: true,
-        })
-    }
-
     const openTestingDapp = () => {
         pushWebView({
             url: config.peraDemoDappUrl,
@@ -54,11 +46,6 @@ export const SettingsDeveloperMenuScreen = () => {
                 onPress={() => handleTapEvent('MigrationViewer')}
                 icon='code'
                 title='Migration Viewer'
-            />
-            <PWListItem
-                onPress={() => openTestingWebview()}
-                icon='globe'
-                title={t('settings.developer.debug_webview')}
             />
             <PWListItem
                 onPress={() => openTestingDapp()}

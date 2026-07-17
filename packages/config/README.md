@@ -126,7 +126,7 @@ Key configuration sections:
 - **Backend APIs** - Pera backend service URLs
 - **API keys** - Authentication keys for services
 - **Explorer URLs** - Block explorer links
-- **Service URLs** - Discover, staking, onramp, support sites
+- **Service URLs** - Support and external service links
 - **Timing** - Notification refresh, remote config refresh
 - **React Query** - Cache and stale time settings
 - **Feature flags** - Debug, profiling, polling toggles

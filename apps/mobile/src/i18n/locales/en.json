@@ -2045,7 +2045,6 @@
                 "switch_error_title": "Network Switch Failed",
                 "switch_error_body": "Unable to switch networks. Please try again."
             },
-            "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
             "screen_gallery": "Screen Gallery",
