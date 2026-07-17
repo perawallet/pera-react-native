@@ -26,18 +26,36 @@ import {
 const seed = new Uint8Array(32).fill(5)
 const { publicKey, privateKey } = generateKey(seed)
 
+const sp = {
+    fee: 1000n,
+    firstValid: 1n,
+    lastValid: 1001n,
+    genesisHash: new Uint8Array(32),
+    genesisID: 'x',
+    minFee: 1000n,
+}
+
 const makeTxn = () => {
     const address = deriveQuantumAddress(publicKey)
-    const sp = {
-        fee: 1000n,
-        firstValid: 1n,
-        lastValid: 1001n,
-        genesisHash: new Uint8Array(32),
-        genesisID: 'x',
-        minFee: 1000n,
-    }
     return algosdk.makePaymentTxnWithSuggestedParamsFromObject({
         sender: address,
+        receiver: address,
+        amount: 0,
+        suggestedParams: sp as never,
+    })
+}
+
+// A different quantum identity, used as the txn's actual sender to exercise
+// the rekey branch: the signing key (publicKey/privateKey above) differs from
+// the txn's own sender, so the fork must derive and set `sgnr`.
+const otherSeed = new Uint8Array(32).fill(7)
+const { publicKey: otherPublicKey } = generateKey(otherSeed)
+
+const makeRekeyedTxn = () => {
+    const rekeyedSender = deriveQuantumAddress(otherPublicKey)
+    const address = deriveQuantumAddress(publicKey)
+    return algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+        sender: rekeyedSender,
         receiver: address,
         amount: 0,
         suggestedParams: sp as never,
@@ -83,5 +101,40 @@ describe('quantumAdapter', () => {
         )
         expect(decoded.pqsig?.pk).toEqual(publicKey)
         expect(decoded.pqsig?.sig).toEqual(falconSignature)
+        // Self-payment: sender already is the quantum address, so the fork
+        // must NOT set an auth-addr (sgnr).
+        expect(decoded.sgnr).toBeUndefined()
+    })
+
+    test('assembleQuantumSignedTxn sets sgnr to the quantum address when the txn sender is rekeyed to it', async () => {
+        const txn = makeRekeyedTxn()
+
+        // Same digest-capture technique as above, for the rekeyed txn.
+        let capturedDigest: Uint8Array | undefined
+        const { txnSigner } = addressWithSignersFromRawFalcon1024Signer({
+            falcon1024PublicKey: publicKey,
+            falcon1024Signer: async (b: Uint8Array) => {
+                capturedDigest = b
+                return signCompressed(privateKey, b)
+            },
+        })
+        const [expected] = await txnSigner([txn], [0])
+
+        const falconSignature = signCompressed(privateKey, capturedDigest!)
+        const assembled = await assembleQuantumSignedTxn({
+            unsignedTxnBytes: encodeUnsignedTransaction(txn),
+            publicKey,
+            falconSignature,
+        })
+
+        expect(assembled).toEqual(expected)
+        const decoded = decodeSignedTransaction(assembled)
+        // The txn's own sender is the rekeyed (other) quantum address...
+        expect(decoded.txn.sender.toString()).toBe(
+            deriveQuantumAddress(otherPublicKey),
+        )
+        // ...but the fork must have derived sgnr as the signer's quantum
+        // address, since the signer differs from the txn sender.
+        expect(decoded.sgnr?.toString()).toBe(deriveQuantumAddress(publicKey))
     })
 })
