@@ -13,6 +13,7 @@ catalog:
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
+  "@joe-p/algosdk": 3.7.0-beta.1
   "@ledgerhq/errors": ^6.35.0
   "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/hashes": ^1.8.0
@@ -45,6 +46,7 @@ catalog:
   expo-local-authentication: ~57.0.0
   expo-localization: ~57.0.0
   expo-sqlite: ~57.0.0
+  falcon-1024: ^0.2.0
   fast-glob: ^3.3.2
   jsdom: ^27.4.0
   ky: ^2.0.2
@@ -164,10 +166,17 @@ minimumReleaseAge: 10080
 #     — active SDK 57 line: Expo ships frequent same-SDK patch releases (57.0.x)
 #       that we want to adopt immediately rather than wait out the window.
 #       Revisit once SDK 57 patch cadence settles.
+#   @joe-p/algosdk, falcon-1024
+#     — beta forks (single maintainer: Joe Polny, an Algorand Foundation
+#       tooling contributor) used for the PQ/Falcon-1024 integration spike
+#       (PERA-4642). @joe-p/algosdk is exact-pinned (no floating range);
+#       falcon-1024 is early-stage (0.x) so only one version exists to date.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
+  - "@joe-p/algosdk"
+  - falcon-1024
   - expo
   - "expo-*"
   - "@expo/*"

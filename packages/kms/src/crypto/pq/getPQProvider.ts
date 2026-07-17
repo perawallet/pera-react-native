@@ -10,16 +10,19 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
+import type { PQSignatureProvider } from './types'
+import { createWasmFalconProvider } from './wasmFalconProvider'
 
-export * from './models'
-export * from './hooks'
-export * from './fees'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './constants'
-export * from './arc0001'
-export * from './pq'
+let cached: PQSignatureProvider | undefined
 
-export { useNetworkStore } from './store/network-store'
+/**
+ * Returns the active PQ signature provider. The React Native native provider
+ * is wired in a later ticket (PQ-020); until then, and in node/test
+ * environments, the WASM provider is used.
+ */
+export const getPQProvider = (): PQSignatureProvider => {
+    if (!cached) {
+        cached = createWasmFalconProvider()
+    }
+    return cached
+}

@@ -10,16 +10,18 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
+// @vitest-environment node
+import { describe, expect, test } from 'vitest'
+import { getPQProvider } from '../getPQProvider'
 
-export * from './models'
-export * from './hooks'
-export * from './fees'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './constants'
-export * from './arc0001'
-export * from './pq'
+describe('getPQProvider', () => {
+    test('returns a falcon1024 provider', () => {
+        const p = getPQProvider()
+        expect(p.scheme).toBe('falcon1024')
+        expect(p.publicKeyLength).toBe(1793)
+    })
 
-export { useNetworkStore } from './store/network-store'
+    test('returns the same memoized instance on repeat calls', () => {
+        expect(getPQProvider()).toBe(getPQProvider())
+    })
+})
