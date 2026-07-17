@@ -39,6 +39,7 @@ import { File, Paths } from 'expo-file-system'
 import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
+import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
@@ -101,12 +102,26 @@ export const useCollectibleDetail = (
 
     const collectible = asset?.peraMetadata?.collectible
     const traits = collectible?.traits ?? []
-    const media = useMemo(() => collectible?.media ?? [], [collectible?.media])
+    const rawMedia = useMemo(
+        () => collectible?.media ?? [],
+        [collectible?.media],
+    )
+    // The model viewer needs react-native-webview, which is off-capability on
+    // web (inAppWebView is false there). Drop model media from what's exposed
+    // so the carousel never renders the 3D badge instead of wiring up a dead
+    // tap.
+    const media = useMemo(
+        () =>
+            routeCapabilities.inAppWebView
+                ? rawMedia
+                : rawMedia.filter(m => m.type !== 'model'),
+        [rawMedia],
+    )
     const hasImage = useMemo(
         () =>
-            media.some(m => m.type === 'image') ||
+            rawMedia.some(m => m.type === 'image') ||
             collectible?.primaryImage != null,
-        [media, collectible?.primaryImage],
+        [rawMedia, collectible?.primaryImage],
     )
 
     const accountAddress = account?.address ?? ''
@@ -123,24 +138,24 @@ export const useCollectibleDetail = (
     const projectUrl = asset?.peraMetadata?.projectUrl
 
     const getImageUrl = useCallback(() => {
-        const firstImageMedia = media.find(m => m.type === 'image')
+        const firstImageMedia = rawMedia.find(m => m.type === 'image')
         return (
             firstImageMedia?.downloadUrl ??
             firstImageMedia?.previewUrl ??
             collectible?.primaryImage ??
             undefined
         )
-    }, [media, collectible?.primaryImage])
+    }, [rawMedia, collectible?.primaryImage])
 
     // Copy stays image-only since it writes a bitmap to the clipboard.
     const saveableMedia = useMemo(
         () =>
-            media.find(
+            rawMedia.find(
                 m =>
                     (m.type === 'image' || m.type === 'video') &&
                     (m.downloadUrl != null || m.previewUrl != null),
             ),
-        [media],
+        [rawMedia],
     )
     const saveableMediaUrl =
         saveableMedia?.downloadUrl ??
@@ -307,13 +322,13 @@ export const useCollectibleDetail = (
     // into this list.
     const visualMedia = useMemo(
         () =>
-            media.filter(
+            rawMedia.filter(
                 m =>
                     m.type === 'image' ||
                     m.type === 'video' ||
                     m.type === 'audio',
             ),
-        [media],
+        [rawMedia],
     )
 
     const fullScreenMedia = useMemo<FullScreenMediaItem[]>(() => {
@@ -321,7 +336,7 @@ export const useCollectibleDetail = (
             collectible?.primaryImage ?? asset?.peraMetadata?.logo ?? undefined
 
         const items: FullScreenMediaItem[] = []
-        for (const m of media) {
+        for (const m of rawMedia) {
             if (
                 m.type !== 'image' &&
                 m.type !== 'video' &&
@@ -348,16 +363,19 @@ export const useCollectibleDetail = (
             return [{ uri: posterFallback, type: 'image' }]
         }
         return items
-    }, [media, collectible, asset])
+    }, [rawMedia, collectible, asset])
 
     const handleModelPress = useCallback(() => {
+        // The 3D badge is already hidden on web (see `media` above), but
+        // guard here too in case this is ever wired up directly.
+        if (!routeCapabilities.inAppWebView) return
         // Only downloadUrl is the real 3D asset; a preview image can't be opened
         // by the model viewer.
-        const modelUrl = media.find(m => m.type === 'model')?.downloadUrl
+        const modelUrl = rawMedia.find(m => m.type === 'model')?.downloadUrl
         if (!modelUrl) return
         setModelViewerUrl(modelUrl)
         modelViewerModal.open()
-    }, [media, modelViewerModal])
+    }, [rawMedia, modelViewerModal])
 
     const handleFullScreenPress = useCallback(
         (index: number) => {

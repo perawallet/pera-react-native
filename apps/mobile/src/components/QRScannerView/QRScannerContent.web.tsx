@@ -141,7 +141,6 @@ export const QRScannerContent = ({
         [
             handleDeepLink,
             isValidDeepLink,
-            onClose,
             onSuccess,
             onRestart,
             skipDeepLinkHandler,

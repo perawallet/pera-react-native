@@ -35,6 +35,17 @@ vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({ resolve: vi.fn(), dismiss: vi.fn() }),
 }))
 
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
 vi.mock(
     '@modules/assets/screens/FullScreenMediaViewer/FullScreenMediaViewer',
     () => ({
@@ -225,6 +236,7 @@ describe('useCollectibleDetail', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        Object.assign(mockCapabilities, { inAppWebView: true })
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         mockUseAllAccounts.mockReturnValue([mockAccount])
         mockUseAccountAssetBalanceQuery.mockReturnValue({
@@ -574,6 +586,73 @@ describe('useCollectibleDetail', () => {
 
             expect(result.current.modelViewerModal.isOpen).toBe(false)
             expect(result.current.modelViewerUrl).toBeUndefined()
+        })
+
+        describe('capability gating (inAppWebView)', () => {
+            it('keeps the model in `media` when inAppWebView is on (native)', () => {
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                expect(result.current.media.some(m => m.type === 'model')).toBe(
+                    true,
+                )
+            })
+
+            it('drops the model from `media` when inAppWebView is off (web)', () => {
+                Object.assign(mockCapabilities, { inAppWebView: false })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                expect(result.current.media.some(m => m.type === 'model')).toBe(
+                    false,
+                )
+            })
+
+            it('does not open the viewer when inAppWebView is off, even with a valid model URL', () => {
+                Object.assign(mockCapabilities, { inAppWebView: false })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                act(() => {
+                    result.current.handleModelPress()
+                })
+
+                expect(result.current.modelViewerModal.isOpen).toBe(false)
+                expect(result.current.modelViewerUrl).toBeUndefined()
+            })
         })
     })
 

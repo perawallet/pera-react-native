@@ -17,8 +17,8 @@
 // Omissions vs native (each deliberate):
 // - MigrationSplash: no legacy web data to migrate.
 // - Onboarding: the shell state machine (useWebAppShell) handles this branch.
-// - Multisig/PeraCard/Staking/rekey stacks/BannersCarouselModal:
-//   native-only or off-capability for v1 (see routes/capabilities.web.ts).
+// - Multisig/PeraCard/rekey stacks/BannersCarouselModal:
+//   native-only or off-capability (see routes/capabilities.web.ts).
 // - statusBarStyle: native-only, dropped.
 //
 // Wired in-place (user-feedback #7): Search (portfolio ellipsis menu) and
@@ -50,6 +50,8 @@ import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
 import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
+import { StakingScreen } from '@modules/staking/screens/StakingScreen'
+import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { navigationRef } from './navigationRef'
@@ -75,6 +77,9 @@ const AddAccountComponent = AddAccountStackNavigator
 const BackupComponent = isPopup
     ? createExpandedRedirect('backup-wallet')
     : BackupStackNavigator
+
+// Staking is age-gated at the navigator exactly as native routes/index.tsx.
+const GatedStakingScreen = withAgeGate(StakingScreen)
 
 export const WebMainRoutes = (): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
@@ -127,6 +132,18 @@ export const WebMainRoutes = (): React.JSX.Element => {
                 <RootStack.Screen
                     name='Messages'
                     component={MessagesStackNavigator}
+                />
+                <RootStack.Screen
+                    name='Staking'
+                    options={{
+                        headerShown: true,
+                        title: 'staking.title',
+                        header: (props: NativeStackHeaderProps) => (
+                            <NavigationHeader {...props} />
+                        ),
+                    }}
+                    layout={fullScreenLayout}
+                    component={GatedStakingScreen}
                 />
                 <RootStack.Screen
                     name='AddAccount'

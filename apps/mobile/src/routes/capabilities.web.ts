@@ -15,19 +15,19 @@ import type { RouteCapabilities } from './capabilities-types'
 export type { RouteCapabilities } from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
-    discoverTab: false,
-    swapTab: false,
-    fundTab: false,
-    staking: false,
-    peraCard: false,
-    giftCards: false,
-    inAppWebView: false,
+    discoverTab: false, // M6: needs the web PWWebView/iframe bridge layer
+    swapTab: true, // M5: native RN screen graph
+    fundTab: true, // M5: native RN screen graph (Meld checkout via window.open)
+    staking: true, // M5: native RN screen graph
+    peraCard: false, // M10
+    giftCards: false, // M8: needs the web PWWebView/iframe bridge layer
+    inAppWebView: false, // revisit after M6 lands
     qrScanner: true, // Task 15 (stretch): BarcodeDetector camera scan + paste fallback
-    pushNotificationSettings: false,
-    walletConnectSettings: false, // M5
-    passkeysAutofillSettings: false,
-    storeRating: false,
-    developerSettings: false,
+    pushNotificationSettings: false, // permanently off: no push on web
+    walletConnectSettings: false, // M7
+    passkeysAutofillSettings: false, // M9: WebAuthn-interception credential provider
+    storeRating: false, // permanently off: no store review flow
+    developerSettings: true, // M5: internal builds need network/debug toggles
     vaultSecuritySettings: true,
     dappConnections: true,
     networkSettings: true,

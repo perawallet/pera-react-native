@@ -16,28 +16,41 @@ import { routeCapabilities as webCapabilities } from '../capabilities.web'
 
 describe('route capabilities', () => {
     it('native map keeps every current-behavior capability on', () => {
-        // vaultSecuritySettings and dappConnections are new, web-only
-        // capabilities with no native equivalent (native has its own
+        // vaultSecuritySettings, dappConnections, and networkSettings are new,
+        // web-only capabilities with no native equivalent (native has its own
         // WalletConnect-based dapp connections, not the ARC-0027 injected
-        // provider) — both are deliberately off for native, not a
-        // current-behavior regression.
-        const { vaultSecuritySettings, dappConnections, ...rest } =
-            routeCapabilities
+        // provider; native uses Developer → Node Settings) — all are deliberately
+        // off for native, not a current-behavior regression.
+        const {
+            vaultSecuritySettings,
+            dappConnections,
+            networkSettings,
+            ...rest
+        } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
         expect(dappConnections).toBe(false)
+        expect(networkSettings).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
     })
 
-    it('web map switches off the v1-excluded features (spec)', () => {
+    it('web map: M5 native-tab features on, webview/WC/card features still off (spec)', () => {
         expect(webCapabilities).toMatchObject({
+            // M5 (2026-07-16 feature-completion spec): native RN screen graphs.
+            swapTab: true,
+            fundTab: true,
+            staking: true,
+            developerSettings: true,
+            // Still off: webview-dependent (M6/M8), WalletConnect (M7),
+            // Pera Card (M10), and permanently-off items.
             discoverTab: false,
-            swapTab: false,
-            fundTab: false,
-            staking: false,
             peraCard: false,
+            giftCards: false,
             walletConnectSettings: false,
+            pushNotificationSettings: false,
+            storeRating: false,
             vaultSecuritySettings: true,
             dappConnections: true,
+            networkSettings: true,
         })
     })
 

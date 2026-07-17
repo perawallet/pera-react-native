@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import { VaultLockedError } from '../../errors'
 import { createVault } from '../../vault/vault'
-import { decryptData, encryptData, getMasterKey } from '../crypto'
+import { decryptData, encryptData, readMasterKey } from '../crypto'
 
 const KEY = new Uint8Array(32).fill(7)
 
@@ -77,7 +77,7 @@ describe('encryptData / decryptData', () => {
     })
 })
 
-describe('getMasterKey', () => {
+describe('readMasterKey', () => {
     let fake: ChromeFake
 
     beforeEach(() => {
@@ -86,11 +86,11 @@ describe('getMasterKey', () => {
     })
 
     it('throws VaultLockedError when locked', async () => {
-        await expect(getMasterKey()).rejects.toBeInstanceOf(VaultLockedError)
+        await expect(readMasterKey()).rejects.toBeInstanceOf(VaultLockedError)
     })
 
     it('returns the 32-byte session master key when unlocked', async () => {
         await createVault('pw')
-        expect(await getMasterKey()).toHaveLength(32)
+        expect(await readMasterKey()).toHaveLength(32)
     })
 })

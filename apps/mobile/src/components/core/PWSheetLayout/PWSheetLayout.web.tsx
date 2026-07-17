@@ -18,11 +18,13 @@
 // ever exists — so `BottomSheetScrollView` throws
 // "'useBottomSheetInternal' cannot be used out of the BottomSheet!" the
 // instant any of this component's ~50 call sites render. That's an uncaught
-// error with no root error boundary in the web tree, which unmounts the
-// entire React app (not just the sheet), presenting as every bottom sheet
-// opening blank. Swap in a plain ScrollView here, mirroring the
-// PWInBottomSheetContext-gated pattern PWScreen/PWScrollView already use
-// correctly for the same reason.
+// error caught by AppShell.web's WebShellErrorBoundary (or App.web's outer
+// RootBoundary), so it shows the shell's error fallback instead of the sheet
+// content — still broken UX, but not a full app unmount. Swap in a plain
+// ScrollView here, mirroring PWScrollView's
+// own .web.tsx twin (same failure, same fix: never import
+// `@gorhom/bottom-sheet` on web at all — the PWInBottomSheetContext gate by
+// itself only picks which scroll component to use, it doesn't avoid gorhom).
 import { ScrollView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'

@@ -27,9 +27,10 @@ const GCM_TAG_LENGTH = 16
  * (which auto-generates in the OS Keychain), the web vault NEVER generates
  * here: creation happens in createVault() during onboarding, and every other
  * path requires an unlocked session. `options` (biometric prompt config) is
- * accepted for surface parity and ignored.
+ * accepted for surface parity and ignored. Mirrors upstream canary.13's
+ * read-only accessor name (`readMasterKey`, renamed from `getMasterKey`).
  */
-export async function getMasterKey(
+export async function readMasterKey(
     _options?: AuthenticationOptions,
 ): Promise<Uint8Array> {
     const key = await getSessionMasterKey()

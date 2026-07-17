@@ -128,6 +128,16 @@ const webStubs = {
     // app" option itself never renders, but the module import isn't gated.
     // See M3 Task 8 report for why this wasn't converted to a lazy import.
     'react-native-rate-app': 'react-native-rate-app.js',
+    // In-app webview: react-native-webview's own web-fallback module has a
+    // broken interopRequireDefault dependency that throws "t is not a
+    // function" at eval time, killing the whole web bundle (M5 Task 4/5 —
+    // ModelViewerBottomSheet and PWWebView statically import it, and M5's
+    // widened static Swap/Onramp/Staking imports now pull that graph in
+    // unconditionally). PWWebView's surfaces are off-capability (M6/M8), and
+    // the collectible 3D-model viewer is gated off `inAppWebView` on web too,
+    // so the shim only needs to survive eval; it throws clearly if ever
+    // rendered.
+    'react-native-webview': 'react-native-webview.js',
 };
 
 // Custom resolver function

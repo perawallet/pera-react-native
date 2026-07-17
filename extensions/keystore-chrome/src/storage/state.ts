@@ -24,7 +24,7 @@ import {
 import { clearBuffer } from '@algorandfoundation/wallet-provider'
 import { base64url } from '@scure/base'
 import type { Store } from '@tanstack/store'
-import { decryptData, encryptData, getMasterKey } from './crypto'
+import { decryptData, encryptData, readMasterKey } from './crypto'
 import type { AuthenticationOptions } from '../types'
 import { storage } from './chrome-storage'
 
@@ -48,7 +48,7 @@ export async function fetchSecret<T>({
         const encryptedData = storage.getString(keyId)
         if (!encryptedData) return null
         if (!key) {
-            key = await getMasterKey(options)
+            key = await readMasterKey(options)
             isInternalKey = true
         }
         return decode(decryptData(key, encryptedData)) as T
@@ -93,11 +93,11 @@ export async function commit({
     // Divergence from RN source: masterKey is captured so it can be zeroed in
     // the finally block. Fresh copy per call on web, safe to zero. Declared
     // here (not assigned via a pre-try await) so a locked vault's
-    // VaultLockedError from getMasterKey still hits the finally below —
+    // VaultLockedError from readMasterKey still hits the finally below —
     // otherwise the store would stay stuck at status 'commiting' forever.
     let masterKey: Uint8Array | undefined
     try {
-        masterKey = await getMasterKey(options)
+        masterKey = await readMasterKey(options)
         // Never allow the master key to touch memory longer than needed.
         // Divergence from RN source: storage.set is awaited — chrome.storage is
         // async where MMKV was synchronous; a failed write must fail the commit.
