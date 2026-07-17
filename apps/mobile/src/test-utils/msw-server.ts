@@ -11,6 +11,7 @@
  */
 
 import { setupServer } from 'msw/node'
+import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
 import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 
 // Shared MSW server for integration tests. Starts with only the ambient
@@ -28,6 +29,20 @@ export const server = setupServer(
     // error-logs after the test ends — racing vitest's worker teardown
     // ("Closing rpc while onUserConsoleLog was pending") and failing CI.
     mockNfdBulkRead({ response: { results: [] } }),
+    // The preferred-currency query (default USD) fires from any screen that
+    // renders a fiat value — same escape-to-staging teardown race as above
+    // (it has failed CI runs blaming whichever integration file happened to
+    // be last). Tests exercising currency behavior override via server.use.
+    mockGetCurrency({
+        id: 'USD',
+        response: {
+            currency_id: 'USD',
+            name: 'US Dollar',
+            symbol: '$',
+            exchange_price: '1',
+            usd_value: '1',
+        },
+    }),
 )
 
 export { http, HttpResponse } from 'msw'
