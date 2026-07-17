@@ -47,6 +47,16 @@ export const useStyles = makeStyles(theme => ({
     secondary: {
         color: theme.colors.textGray,
     },
+    /** Unknown-decimals holding — asset info left, a dash where the balance goes */
+    unknownAssetRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.sm,
+    },
+    unknownAssetInfo: {
+        flex: 1,
+    },
     centerState: {
         paddingVertical: theme.spacing['4xl'],
         alignItems: 'center',

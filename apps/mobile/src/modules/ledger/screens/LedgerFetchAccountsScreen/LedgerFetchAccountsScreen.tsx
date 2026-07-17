@@ -20,6 +20,7 @@ export const LedgerFetchAccountsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
+        deviceName,
         isDiscovering,
         isLoading,
         progress,
@@ -62,7 +63,9 @@ export const LedgerFetchAccountsScreen = () => {
                         >
                             {isDiscovering
                                 ? t('ledger.fetch_accounts.discovering')
-                                : t('ledger.fetch_accounts.connecting')}
+                                : t('ledger.fetch_accounts.connecting', {
+                                      deviceName,
+                                  })}
                         </PWText>
 
                         {isDiscovering && progress.current > 0 && (

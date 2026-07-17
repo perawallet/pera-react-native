@@ -46,4 +46,7 @@ export const useStyles = makeStyles(theme => ({
     deviceName: {
         color: theme.colors.textMain,
     },
+    transportBadge: {
+        marginRight: theme.spacing.sm,
+    },
 }))

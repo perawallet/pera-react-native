@@ -104,7 +104,7 @@ describe('Flow: Ledger imported account row checkbox', () => {
                         accounts: [
                             {
                                 address: LEDGER_ADDRESS,
-                                publicKey: new Uint8Array([1]),
+                                publicKeyHex: '01',
                                 accountIndex: 0,
                             },
                         ],

@@ -11,14 +11,32 @@
  */
 
 import React from 'react'
-import { PWView, PWText, PWTouchableOpacity, PWIcon } from '@components/core'
-import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
-
+import {
+    PWView,
+    PWText,
+    PWTouchableOpacity,
+    PWIcon,
+    PWChip,
+} from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { sanitizeDeviceName } from '../../utils'
 import { useStyles } from './styles'
+
+import type {
+    HardwareWalletDevice,
+    LedgerTransportType,
+} from '@perawallet/wallet-core-hardware-wallet'
 
 type LedgerDeviceItemProps = {
     device: HardwareWalletDevice
     onPress: (device: HardwareWalletDevice) => void
+}
+
+// On Android the same physical Ledger can be reachable over BLE and USB at
+// once — the badge is what distinguishes the two otherwise identical rows.
+const TRANSPORT_LABEL_KEY: Record<LedgerTransportType, string> = {
+    ble: 'ledger.scan.transport_ble',
+    usb: 'ledger.scan.transport_usb',
 }
 
 export const LedgerDeviceItem = ({
@@ -26,6 +44,7 @@ export const LedgerDeviceItem = ({
     onPress,
 }: LedgerDeviceItemProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     return (
         <PWTouchableOpacity
@@ -45,9 +64,16 @@ export const LedgerDeviceItem = ({
                     variant='body'
                     style={styles.deviceName}
                 >
-                    {device.name}
+                    {sanitizeDeviceName(device.name)}
                 </PWText>
             </PWView>
+
+            <PWChip
+                title={t(TRANSPORT_LABEL_KEY[device.transportType])}
+                variant='secondary'
+                textVariant='captionSmall'
+                style={styles.transportBadge}
+            />
 
             <PWIcon
                 name='chevron-right'

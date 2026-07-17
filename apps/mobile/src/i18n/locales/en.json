@@ -2747,6 +2747,8 @@
         "scan": {
             "title": "Looking for Devices",
             "description": "Select a Ledger device to connect to.",
+            "transport_ble": "Bluetooth",
+            "transport_usb": "USB",
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
             "location_services_disabled": "Turn on Location in your device settings to search for nearby Ledger devices.",

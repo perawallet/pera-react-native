@@ -2347,6 +2347,19 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         },
         truncateAlgorandAddress: vi.fn(a => a),
         stripUrlScheme: vi.fn(url => url),
+        // Real implementations — serialized route params round-trip through
+        // these, so a stub would silently corrupt every public key fixture.
+        hexToBytes: (hex: string): Uint8Array => {
+            const bytes = new Uint8Array(hex.length / 2)
+            for (let i = 0; i < hex.length; i += 2) {
+                bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16)
+            }
+            return bytes
+        },
+        bytesToHex: (bytes: Uint8Array): string =>
+            Array.from(bytes)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join(''),
         // Must mirror the real constant (packages/shared/src/models/constants.ts).
         // The precision policy reads this, so a wrong value silently invalidates
         // every precision/formatting assertion.

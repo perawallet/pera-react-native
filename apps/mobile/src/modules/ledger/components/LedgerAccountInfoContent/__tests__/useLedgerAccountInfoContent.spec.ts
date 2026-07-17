@@ -40,6 +40,7 @@ const baseAsset = {
     name: 'Algo',
     unitName: 'ALGO',
     decimals: 6,
+    hasKnownDecimals: true,
     amount: new Decimal(5),
     fiatValue: new Decimal(10),
     usdPrice: new Decimal(2),
@@ -52,6 +53,7 @@ const asaAsset = {
     name: 'USDC',
     unitName: 'USDC',
     decimals: 6,
+    hasKnownDecimals: true,
     amount: new Decimal(100),
     fiatValue: new Decimal(100),
     usdPrice: new Decimal(1),
@@ -319,6 +321,40 @@ describe('useLedgerAccountInfoContent', () => {
             // USDC holding value in ALGO = amount * usdPrice / algoUsdPrice
             //                            = 100 * 1 / 2 = 50.
             expect(assetItems[1].accountBalance.algoValue.toString()).toBe('50')
+        }
+    })
+
+    it('flags asset items whose decimals are unknown so the row renders no balance', () => {
+        mocks.useLedgerAccountPreview.mockReturnValue({
+            preview: {
+                address: 'ADDR',
+                algoBalance: new Decimal(0),
+                totalFiatValue: new Decimal(0),
+                assets: [
+                    baseAsset,
+                    {
+                        ...asaAsset,
+                        hasKnownDecimals: false,
+                        usdPrice: new Decimal(0),
+                    },
+                ],
+                rekey: { kind: 'none' },
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+
+        const { result } = renderHook(() =>
+            useLedgerAccountInfoContent('ADDR', 0),
+        )
+
+        const assetItems = result.current.items.filter(i => i.kind === 'asset')
+        if (assetItems[0].kind === 'asset') {
+            expect(assetItems[0].hasKnownDecimals).toBe(true)
+        }
+        if (assetItems[1].kind === 'asset') {
+            expect(assetItems[1].hasKnownDecimals).toBe(false)
         }
     })
 

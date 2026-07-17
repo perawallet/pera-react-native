@@ -94,6 +94,26 @@ export const LedgerAccountInfoContent = ({
                 }
 
                 case 'asset': {
+                    if (!item.hasKnownDecimals) {
+                        // Unknown decimals: the raw amount is base units and
+                        // must not render as a balance (1.5 USDC → 1,500,000).
+                        return (
+                            <PWView style={styles.unknownAssetRow}>
+                                <AccountAssetItemView
+                                    accountBalance={item.accountBalance}
+                                    showBalance={false}
+                                    style={styles.unknownAssetInfo}
+                                />
+                                <PWText
+                                    variant='body'
+                                    style={styles.secondary}
+                                    testID={`ledger_asset_unknown_${item.accountBalance.assetId}`}
+                                >
+                                    {'—'}
+                                </PWText>
+                            </PWView>
+                        )
+                    }
                     return (
                         <AccountAssetItemView
                             accountBalance={item.accountBalance}

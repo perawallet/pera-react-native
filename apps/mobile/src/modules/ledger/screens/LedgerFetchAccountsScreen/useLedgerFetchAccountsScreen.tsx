@@ -34,6 +34,7 @@ import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     getLedgerErrorPreset,
+    serializeLedgerAccount,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
 import { LedgerConnectingContent } from '../../components/LedgerConnectingContent'
@@ -45,6 +46,8 @@ type LedgerFetchAccountsRouteProp = RouteProp<
 
 type UseLedgerFetchAccountsScreenResult = {
     connectionStatus: LedgerConnectionStatus
+    /** Sanitized at the scan screen before being put on the route. */
+    deviceName: string
     isDiscovering: boolean
     isLoading: boolean
     progress: { current: number; total: Nullable<number> }
@@ -96,11 +99,14 @@ export const useLedgerFetchAccountsScreen =
                     )
                 }
 
-                setIsDiscovering(true)
                 const result = await connectAndDiscoverAccounts({
                     provider,
                     deviceId,
                     onProgress: (index: number) => {
+                        // First progress callback doubles as "connected":
+                        // discovery only probes once the transport is open,
+                        // so the connecting copy stays up until then.
+                        setIsDiscovering(true)
                         setProgress({ current: index + 1, total: null })
                     },
                     // On-chain probe drives the funded-account gap scan so a
@@ -130,7 +136,7 @@ export const useLedgerFetchAccountsScreen =
                     deviceId,
                     deviceName,
                     transportType,
-                    accounts: result.accounts,
+                    accounts: result.accounts.map(serializeLedgerAccount),
                 })
             } catch (err) {
                 if (!isMounted()) return
@@ -229,6 +235,7 @@ export const useLedgerFetchAccountsScreen =
 
         return {
             connectionStatus,
+            deviceName,
             isDiscovering,
             isLoading,
             progress,

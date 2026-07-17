@@ -46,6 +46,7 @@ import {
     useShouldPlayConfetti,
 } from '@modules/onboarding/hooks'
 import {
+    deserializeSelectableAccount,
     getLedgerErrorPreset,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
@@ -77,9 +78,13 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             deviceId,
             deviceName,
             transportType = 'ble',
-            selectedAccounts,
+            selectedAccounts: serializedSelectedAccounts,
         },
     } = useRoute<LedgerVerifyRouteProp>()
+    const selectedAccounts = useMemo(
+        () => serializedSelectedAccounts.map(deserializeSelectableAccount),
+        [serializedSelectedAccounts],
+    )
     const { t } = useLanguage()
     const { setAccounts } = useSetAccounts()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()

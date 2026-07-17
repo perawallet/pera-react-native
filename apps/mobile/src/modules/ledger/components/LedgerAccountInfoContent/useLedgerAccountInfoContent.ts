@@ -40,6 +40,8 @@ export type LedgerInfoListItem =
           key: string
           accountBalance: AssetWithAccountBalance
           usdPrice: Decimal
+          /** False when metadata is missing — the row shows no balance. */
+          hasKnownDecimals: boolean
       }
     | {
           kind: 'rekeyAddress'
@@ -141,6 +143,7 @@ export const useLedgerAccountInfoContent = (
                                   .div(algoUsdPrice),
                     } satisfies AssetWithAccountBalance,
                     usdPrice: asset.usdPrice,
+                    hasKnownDecimals: asset.hasKnownDecimals,
                 }),
             ),
         ]
