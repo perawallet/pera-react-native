@@ -14,6 +14,7 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest run",
+    "test:unit": "vitest run",
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\" --ignore-pattern \"**/*.generated.ts\"",
     "generate:arc59": "pnpm exec algokit-client-generator generate -a src/hooks/arc59-app-spec.json -o src/clients/Arc59Client.generated.ts --preserve-names"
   },

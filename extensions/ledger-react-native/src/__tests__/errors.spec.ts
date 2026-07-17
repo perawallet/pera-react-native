@@ -41,6 +41,9 @@ describe('classifyLedgerError', () => {
     it('classifies 0x6986 as LedgerUserRejectedError', () => {
         const result = classifyLedgerError(createErrorWithStatus(0x6986))
         expect(result).toBeInstanceOf(LedgerUserRejectedError)
+        // The swap flow's user-rejection classification matches by name to
+        // avoid a value import — the name must survive minification.
+        expect(result.name).toBe('LedgerUserRejectedError')
     })
 
     it('classifies 0x6985 (legacy) as LedgerUserRejectedError', () => {

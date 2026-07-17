@@ -18,6 +18,10 @@ import {
     signingEventBus,
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
+import {
+    useAllAccounts,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
@@ -67,6 +71,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             address: 'test-address',
             name: 'Test',
         })),
+        useAllAccounts: vi.fn(() => []),
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     }
 })
@@ -222,5 +227,46 @@ describe('useTransactionProcessingScreen', () => {
         renderHook(() => useTransactionProcessingScreen())
 
         expect(mockOnFinished).not.toHaveBeenCalled()
+    })
+
+    it('derives hardware copy from the auth account for a rekeyed-to-Ledger sender', () => {
+        // The device prompt comes from the AUTH account's Ledger — the
+        // processing copy must match the machine-driven overlay.
+        mockExecute.mockReturnValue(new Promise(() => {}))
+        const sender = {
+            address: 'SRC',
+            type: 'watch',
+            rekeyAddress: 'LEDGER_AUTH',
+        }
+        const ledgerAuth = {
+            address: 'LEDGER_AUTH',
+            type: 'hardware',
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'dev-1',
+                deviceName: 'Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        }
+        vi.mocked(useSelectedAccount).mockReturnValue(sender as never)
+        vi.mocked(useAllAccounts).mockReturnValue([sender, ledgerAuth] as never)
+
+        const { result } = renderHook(() => useTransactionProcessingScreen())
+
+        expect(result.current.isHardwareSender).toBe(true)
+        expect(result.current.hardwareDeviceName).toBe('Nano X')
+    })
+
+    it('keeps non-hardware copy for a plain local-key sender', () => {
+        mockExecute.mockReturnValue(new Promise(() => {}))
+        const sender = { address: 'SRC', type: 'algo25', keyPairId: 'kp' }
+        vi.mocked(useSelectedAccount).mockReturnValue(sender as never)
+        vi.mocked(useAllAccounts).mockReturnValue([sender] as never)
+
+        const { result } = renderHook(() => useTransactionProcessingScreen())
+
+        expect(result.current.isHardwareSender).toBe(false)
+        expect(result.current.hardwareDeviceName).toBeNull()
     })
 })

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({

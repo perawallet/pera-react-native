@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { describe, it, expect } from 'vitest'
 import type { OnrampStatus } from '@perawallet/wallet-core-onramp'
 import { getOnrampStatusDescriptor } from '../onrampStatus'

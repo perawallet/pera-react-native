@@ -237,7 +237,19 @@ export const hardwareSigningMachine = setup({
         error: {
             on: {
                 RETRY: { target: 'active', actions: 'clearError' },
-                ACKNOWLEDGE_ERROR: 'done',
+                ACKNOWLEDGE_ERROR: [
+                    // An on-device reject IS a user cancel: the error sheet
+                    // still offers Retry (a device reject is often a
+                    // mis-press), but Cancel resolves the request via the
+                    // rejected path — request.reject(), each feature's cancel
+                    // UX — never as a failure that fires request.error().
+                    {
+                        guard: ({ context }) =>
+                            context.error?.kind === 'user_rejected',
+                        target: 'rejected',
+                    },
+                    { target: 'done' },
+                ],
             },
         },
 

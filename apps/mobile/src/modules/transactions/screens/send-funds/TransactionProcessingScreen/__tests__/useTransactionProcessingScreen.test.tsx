@@ -58,6 +58,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         hd: 'hd',
     },
     isHardwareWalletAccount: vi.fn(() => false),
+    useAllAccounts: vi.fn(() => []),
+    resolveAuthAccount: vi.fn((account: unknown) => account),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

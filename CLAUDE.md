@@ -5,9 +5,12 @@ React Native monorepo for Pera Wallet, a non-custodial Algorand crypto wallet. *
 ```sh
 pnpm build                          # Run to confirm no type/compile issues
 pnpm pre-push --no-fail-on-error    # Run before completing any task
-pnpm test                           # Run tests
-pnpm --filter mobile test -t <filterpattern>        # Run only specific mobile tests
+pnpm test:unit                      # Fast tests — use this while iterating, not `pnpm test`
+pnpm test                           # Full suite (unit + mobile integration) — run once at the very end of a task, not on every change
+pnpm --filter mobile test:unit <path> -t <filterpattern> # Run only specific mobile tests — always pass a path too, or vitest collects (transforms + spins up jsdom for) all ~250 spec files before the name filter ever applies
 ```
+
+While iterating: run only the individual test file(s) you're touching, and move on. Don't re-run `pnpm test`/`pnpm test:unit` for the whole repo after every change — save the full-repo run for the end of the task.
 
 ## Architecture
 
@@ -233,7 +236,7 @@ See `docs/TESTING.md` for the integration test harness, MSW handler factories, a
 Before reporting any task complete:
 
 1. `pnpm pre-push --no-fail-on-error` must pass
-2. `pnpm test` must pass
+2. `pnpm test` must pass (the full suite — this is the one point in a task where the full run belongs; use `pnpm test:unit` or a single-file run for everything before this)
 3. Tests written for any new code
 4. For major changes: `pnpm build` must pass
 

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { UserPreferences } from '../user-preferences'
 
 describe('UserPreferences', () => {

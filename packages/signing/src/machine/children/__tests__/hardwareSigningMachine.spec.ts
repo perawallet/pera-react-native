@@ -124,6 +124,61 @@ describe('hardwareSigningMachine', () => {
         expect(snap.context.currentTx).toBe(0)
     })
 
+    it('ACKNOWLEDGE_ERROR after a device reject resolves as rejected, not failed', async () => {
+        // An on-device reject IS a user cancel: the error sheet still offers
+        // Retry (a device reject is often a mis-press), but Cancel must
+        // resolve the request via request.reject() — never as a failure that
+        // fires request.error() and error UX/metrics.
+        const stubActor = fromCallback(({ sendBack }) => {
+            sendBack({
+                type: 'STRATEGY_ERROR',
+                error: {
+                    kind: 'user_rejected',
+                    cause: new Error('rejected on device'),
+                },
+            })
+            return () => {}
+        })
+        const machine = hardwareSigningMachine.provide({
+            actors: { hardwareSignActor: stubActor as never },
+        })
+        const actor = createActor(machine, { input: makeInput() })
+        actor.start()
+        await waitFor(actor, s => s.matches('error'), { timeout: 1000 })
+
+        actor.send({ type: 'ACKNOWLEDGE_ERROR' })
+        const snapshot = actor.getSnapshot()
+        expect(snapshot.matches('rejected')).toBe(true)
+        expect(snapshot.output).toEqual({ kind: 'rejected' })
+    })
+
+    it('ACKNOWLEDGE_ERROR after a device reject still allows RETRY first', async () => {
+        let invokeCount = 0
+        const stubActor = fromCallback(({ sendBack }) => {
+            invokeCount += 1
+            if (invokeCount === 1) {
+                sendBack({
+                    type: 'STRATEGY_ERROR',
+                    error: {
+                        kind: 'user_rejected',
+                        cause: new Error('rejected on device'),
+                    },
+                })
+            }
+            return () => {}
+        })
+        const machine = hardwareSigningMachine.provide({
+            actors: { hardwareSignActor: stubActor as never },
+        })
+        const actor = createActor(machine, { input: makeInput() })
+        actor.start()
+        await waitFor(actor, s => s.matches('error'), { timeout: 1000 })
+
+        actor.send({ type: 'RETRY' })
+        expect(actor.getSnapshot().matches('active')).toBe(true)
+        expect(invokeCount).toBe(2)
+    })
+
     it('USER_REJECTED_ON_DEVICE transitions to rejected', async () => {
         const stubActor = fromCallback(() => () => {})
         const machine = hardwareSigningMachine.provide({

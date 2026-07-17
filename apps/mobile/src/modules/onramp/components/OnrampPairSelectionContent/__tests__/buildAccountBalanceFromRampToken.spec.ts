@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+// @vitest-environment node
+
 import { Decimal } from 'decimal.js'
 import { PeraAssetVerificationTier } from '@perawallet/wallet-core-assets'
 import type { RampToken } from '@perawallet/wallet-core-onramp'
