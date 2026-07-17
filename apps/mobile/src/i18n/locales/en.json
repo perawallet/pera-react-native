@@ -603,6 +603,10 @@
                 "title": "Transaction expired",
                 "body": "The transaction's validity window has passed. Please try submitting again."
             },
+            "not_authorized": {
+                "title": "Signing authority changed",
+                "body": "The network rejected the signature because this account’s signing authority has changed — it may have been rekeyed recently. Wait a moment for the wallet to sync and try again."
+            },
             "logic_error": {
                 "title": "Smart contract rejected the transaction",
                 "body": "The contract returned: {{msg}}"
@@ -2210,7 +2214,9 @@
         },
         "cannot_sign": {
             "title": "You can't sign this account",
-            "body": "This is a shared account and none of its signer accounts are in your wallet. Add a signer account to sign transactions for it."
+            "body": "This is a shared account and none of its signer accounts are in your wallet. Add a signer account to sign transactions for it.",
+            "rekeyed_auth_missing_body": "This account is rekeyed to {{authAddress}}, which is not in this wallet, so it can’t sign transactions. Import the auth account to sign for it.",
+            "rekeyed_auth_watch_body": "This account is rekeyed to a watch-only account, which holds no signing key. Import the auth account’s key to sign for it."
         },
         "transaction_request_faq": {
             "title": "Transaction Request FAQ",
