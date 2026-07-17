@@ -22,6 +22,10 @@ import {
  * so Ledger call sites reject with a typed `LedgerConnectionError` (mapped
  * preset + Retry) rather than the generic `Error` the shared utility would
  * otherwise produce.
+ *
+ * `operation` is a developer-facing label for the error message (logs /
+ * debugging only) — deliberately not localized. User-facing copy is resolved
+ * from the error's classified kind by the UI's `getLedgerErrorPreset`.
  */
 export const ledgerTimeoutReason =
     (operation: string) =>
