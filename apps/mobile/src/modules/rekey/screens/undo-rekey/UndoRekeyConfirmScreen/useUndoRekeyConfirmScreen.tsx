@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     AccountTypes,
@@ -129,7 +129,12 @@ export const useUndoRekeyConfirmScreen =
             pushWebView({ url: config.rekeyToStandardSupportUrl })
         }, [pushWebView])
 
-        const handleContinuePress = useCallback(async () => {
+        // Synchronous in-flight guard: `isSubmitting` only propagates on
+        // the next render, so a same-frame double tap would run the flow
+        // (sheet + submission) twice without it.
+        const inFlightRef = useRef(false)
+
+        const runContinueFlow = useCallback(async () => {
             // Gate before the warning sheet too — confirming the warning
             // must never lead into a rekey that cannot pay its fee.
             if (isUnderfunded) return
@@ -178,6 +183,16 @@ export const useUndoRekeyConfirmScreen =
             navigation,
             submit,
         ])
+
+        const handleContinuePress = useCallback(async () => {
+            if (inFlightRef.current) return
+            inFlightRef.current = true
+            try {
+                await runContinueFlow()
+            } finally {
+                inFlightRef.current = false
+            }
+        }, [runContinueFlow])
 
         return {
             source: source ?? null,

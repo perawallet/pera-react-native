@@ -131,12 +131,6 @@ export const LEDGER_CONFIRMATION_TIMEOUT_MS = 300_000
 export const LEDGER_CONNECTION_TIMEOUT_MS = 20_000
 
 /**
- * Stop scanning for accounts after this many consecutive indices
- * return addresses with no on-chain presence.
- */
-export const MAX_ACCOUNT_SCAN_GAP = 2
-
-/**
  * Minimum Ledger Algorand app version that ships the SIGN_ARBITRARY (0x10)
  * instruction required for ARC-60 arbitrary-data signing.
  *

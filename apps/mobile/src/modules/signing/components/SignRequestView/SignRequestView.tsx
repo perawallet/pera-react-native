@@ -165,10 +165,13 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
                 />
             )}
         >
-            <PWView style={styles.container}>
+            <PWView
+                style={styles.container}
+                testID='sign-request-view'
+            >
                 <NavigationIndependentTree>
                     <NavigationContainer>
-                        <SigningRoutes request={request} />
+                        <SigningRoutes />
                     </NavigationContainer>
                 </NavigationIndependentTree>
                 {isMultisigCosign && (

@@ -10,8 +10,19 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { warnMock } = vi.hoisted(() => ({ warnMock: vi.fn() }))
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: { warn: warnMock },
+}))
+
 import { discoverAccounts } from '../discovery'
+import {
+    DEFAULT_MAX_ACCOUNT_SCAN_GAP,
+    DEFAULT_MAX_ACCOUNT_SCAN_INDEX,
+    DEFAULT_ONCHAIN_ACCOUNT_SCAN_GAP,
+} from '../constants'
 import type { HardwareWalletTransport } from '../types'
 
 const makeAccount = (index: number) => ({
@@ -29,6 +40,10 @@ const makeMockTransport = (): HardwareWalletTransport => ({
 })
 
 describe('discoverAccounts', () => {
+    beforeEach(() => {
+        warnMock.mockClear()
+    })
+
     describe('with isAccountOnChain', () => {
         it('returns funded accounts and stops after maxGap consecutive empty', async () => {
             const transport = makeMockTransport()
@@ -69,6 +84,90 @@ describe('discoverAccounts', () => {
 
             // 0: funded, 1: empty (1), 2: funded (reset), 3: empty (1), 4: empty (2 = maxGap, stop)
             expect(accounts.map(a => a.accountIndex)).toEqual([0, 2])
+        })
+    })
+
+    describe('probed scan depth and resilience', () => {
+        it('finds funded accounts past unfunded gaps with the default on-chain gap', async () => {
+            // A migrator with funded accounts at {0, 5} must see both in the
+            // initial fetch — the on-chain gap (5, matching HD discovery)
+            // carries the scan across the 4 unfunded indices in between.
+            const transport = makeMockTransport()
+            const onChain = new Set(['ADDR_0', 'ADDR_5'])
+
+            const accounts = await discoverAccounts({
+                transport,
+                isAccountOnChain: async addr => onChain.has(addr),
+            })
+
+            expect(accounts.map(a => a.accountIndex)).toEqual([0, 5])
+        })
+
+        it('falls back to the capped scan when the probe is down from the start', async () => {
+            // Offline / indexer-down import must keep working exactly like
+            // the no-probe scan instead of failing discovery — but the
+            // degradation must be diagnosable, never silent.
+            const transport = makeMockTransport()
+
+            const accounts = await discoverAccounts({
+                transport,
+                isAccountOnChain: async () => {
+                    throw new Error('probe unavailable')
+                },
+            })
+
+            expect(accounts.map(a => a.accountIndex)).toEqual([0, 1, 2])
+            expect(warnMock).toHaveBeenCalledTimes(1)
+        })
+
+        it('keeps found accounts and completes capped when the probe dies mid-scan', async () => {
+            const transport = makeMockTransport()
+            let calls = 0
+
+            const accounts = await discoverAccounts({
+                transport,
+                isAccountOnChain: async () => {
+                    calls += 1
+                    if (calls === 1) return true
+                    throw new Error('probe unavailable')
+                },
+            })
+
+            // Index 0 was probed funded; the fallback then walks the capped
+            // range like a no-probe scan.
+            expect(accounts.map(a => a.accountIndex)).toEqual([0, 1, 2])
+        })
+
+        it('stops at the hard index ceiling even when every account is funded', async () => {
+            const transport = makeMockTransport()
+
+            const accounts = await discoverAccounts({
+                transport,
+                isAccountOnChain: async () => true,
+                maxIndex: 5,
+            })
+
+            expect(accounts.map(a => a.accountIndex)).toEqual([
+                0, 1, 2, 3, 4, 5,
+            ])
+            expect(transport.getAddress).toHaveBeenCalledTimes(6)
+        })
+
+        it('bounds an all-funded device by the default ceiling', async () => {
+            const transport = makeMockTransport()
+
+            const accounts = await discoverAccounts({
+                transport,
+                isAccountOnChain: async () => true,
+            })
+
+            expect(accounts).toHaveLength(DEFAULT_MAX_ACCOUNT_SCAN_INDEX + 1)
+        })
+
+        it('exposes distinct defaults for probed vs capped scans', () => {
+            expect(DEFAULT_ONCHAIN_ACCOUNT_SCAN_GAP).toBeGreaterThan(
+                DEFAULT_MAX_ACCOUNT_SCAN_GAP,
+            )
         })
     })
 

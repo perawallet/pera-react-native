@@ -44,8 +44,9 @@ export const LedgerScanScreen = () => {
         devices,
         error,
         isPermissionDenied,
-        isPermissionBlocked,
+        shouldOpenSettings,
         isLocationServicesDisabled,
+        isScanTimeout,
         handleDevicePress,
         handleRetry,
         handleRequestPermissions,
@@ -82,6 +83,23 @@ export const LedgerScanScreen = () => {
         if (!error) {
             return null
         }
+        if (isScanTimeout) {
+            return (
+                <EmptyView
+                    icon='warning'
+                    title={t('ledger.errors.scan_timeout_title')}
+                    body={t('ledger.errors.scan_timeout')}
+                    button={
+                        <PWButton
+                            testID='ledger_scan_retry_button'
+                            title={t('ledger.scan.retry')}
+                            onPress={handleRetry}
+                            variant='link'
+                        />
+                    }
+                />
+            )
+        }
         if (isLocationServicesDisabled) {
             return (
                 <EmptyView
@@ -116,13 +134,18 @@ export const LedgerScanScreen = () => {
 
     return (
         <PWScreen scroll='never'>
-            <PWLottie
-                autoPlay
-                loop
-                source={animationSource}
-                style={styles.headerAnimation}
-                testID='ledger_scan_animation'
-            />
+            {/* A failed scan (timeout, BLE error) must not keep faking an
+                active search — the looping animation only renders while the
+                scan can still produce devices. */}
+            {!error && (
+                <PWLottie
+                    autoPlay
+                    loop
+                    source={animationSource}
+                    style={styles.headerAnimation}
+                    testID='ledger_scan_animation'
+                />
+            )}
             <ScreenHeader
                 title={t('ledger.scan.title')}
                 description={t('ledger.scan.description')}
@@ -142,7 +165,7 @@ export const LedgerScanScreen = () => {
                     <PWButton
                         testID='ledger_scan_grant_permission_button'
                         title={t(
-                            isPermissionBlocked
+                            shouldOpenSettings
                                 ? 'ledger.scan.open_settings'
                                 : 'ledger.scan.grant_permission',
                         )}

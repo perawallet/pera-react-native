@@ -49,7 +49,11 @@ const {
             | 'resetting'
             | 'unknown',
     },
-    connectionState: { error: null as Error | null },
+    connectionState: {
+        error: null as Error | null,
+        supportedTransportTypes: ['ble'] as Array<'ble' | 'usb'>,
+        capturedOptions: undefined as unknown,
+    },
     platformState: { os: 'android' as 'android' | 'ios' },
 }))
 
@@ -74,13 +78,18 @@ vi.mock('@hooks/useToast', () => ({
 }))
 
 vi.mock('../../../hooks', () => ({
-    useLedgerConnection: () => ({
-        devices: [],
-        isScanning: true,
-        startScan: mockStartScan,
-        stopScan: mockStopScan,
-        error: connectionState.error,
-    }),
+    useLedgerConnection: (options?: unknown) => {
+        connectionState.capturedOptions = options
+        return {
+            devices: [],
+            isScanning: true,
+            startScan: mockStartScan,
+            stopScan: mockStopScan,
+            error: connectionState.error,
+            supportedTransportTypes: connectionState.supportedTransportTypes,
+            isReady: true,
+        }
+    },
     useBlePermissions: () => ({
         hasPermissions: blePermissionsState.hasPermissions,
         isChecking: blePermissionsState.isChecking,
@@ -105,6 +114,7 @@ import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wall
 import {
     LedgerConnectionError,
     LedgerLocationServicesDisabledError,
+    LedgerScanTimeoutError,
 } from '@perawallet/wallet-core-ledger'
 
 import { useLedgerScanScreen } from '../useLedgerScanScreen'
@@ -126,6 +136,8 @@ describe('useLedgerScanScreen', () => {
         blePermissionsState.isBlocked = false
         bluetoothState.adapterState = 'poweredOn'
         connectionState.error = null
+        connectionState.supportedTransportTypes = ['ble']
+        connectionState.capturedOptions = undefined
         platformState.os = 'android'
         mockRequestPermissions.mockResolvedValue(true)
         mockOpenSettings.mockResolvedValue(undefined)
@@ -209,7 +221,7 @@ describe('useLedgerScanScreen', () => {
 
         expect(mockOpenSettings).toHaveBeenCalledTimes(1)
         expect(mockRequestPermissions).not.toHaveBeenCalled()
-        expect(result.current.isPermissionBlocked).toBe(true)
+        expect(result.current.shouldOpenSettings).toBe(true)
     })
 
     it('stops scanning and navigates when a device is tapped', () => {
@@ -364,5 +376,67 @@ describe('useLedgerScanScreen', () => {
         })
 
         expect(mockOpenLocationSettings).toHaveBeenCalledTimes(1)
+    })
+
+    it('flags isScanTimeout for a scan-timeout error', () => {
+        connectionState.error = new LedgerScanTimeoutError('no device found')
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isScanTimeout).toBe(true)
+    })
+
+    it('does not flag isScanTimeout for other scan errors', () => {
+        connectionState.error = new LedgerConnectionError('generic ble failure')
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isScanTimeout).toBe(false)
+    })
+
+    it('starts a USB-only scan when BLE permission is denied but USB is supported', () => {
+        // USB HID needs no Bluetooth permission — denying BLE must not block
+        // the USB fallback the transport was pitched as.
+        blePermissionsState.hasPermissions = false
+        connectionState.supportedTransportTypes = ['ble', 'usb']
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(mockStartScan).toHaveBeenCalled()
+        expect(connectionState.capturedOptions).toEqual({
+            transportTypes: ['usb'],
+        })
+        // The full-screen denied state must not block the USB device list;
+        // the BLE permission request still fires once.
+        expect(result.current.isPermissionDenied).toBe(false)
+        expect(mockRequestPermissions).toHaveBeenCalled()
+    })
+
+    it('keeps the blocking denied state when BLE is denied and USB is unavailable', () => {
+        blePermissionsState.hasPermissions = false
+        connectionState.supportedTransportTypes = ['ble']
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(mockStartScan).not.toHaveBeenCalled()
+        expect(result.current.isPermissionDenied).toBe(true)
+    })
+
+    it('surfaces a persistent denied state with a Settings handoff for iOS Bluetooth denial', () => {
+        // iOS has no runtime BLE permission request — denial surfaces as the
+        // adapter's `unauthorized` state and only OS Settings can fix it.
+        platformState.os = 'ios'
+        bluetoothState.adapterState = 'unauthorized'
+
+        const { result } = renderHook(() => useLedgerScanScreen())
+
+        expect(result.current.isPermissionDenied).toBe(true)
+        expect(result.current.shouldOpenSettings).toBe(true)
+        expect(mockStartScan).not.toHaveBeenCalled()
+
+        act(() => {
+            result.current.handleRequestPermissions()
+        })
+        expect(mockOpenSettings).toHaveBeenCalledTimes(1)
     })
 })

@@ -47,8 +47,8 @@ describe('discoverLedgerAccounts', () => {
         expect(accounts[0].accountIndex).toBe(0)
         expect(accounts[1].accountIndex).toBe(1)
         expect(accounts[2].accountIndex).toBe(2)
-        // Should have tried indices 3 and 4 (not on-chain) to hit gap limit of 2
-        expect(transport.getAddress).toHaveBeenCalledTimes(5)
+        // Indices 3-7 (not on-chain) exhaust the on-chain gap limit of 5.
+        expect(transport.getAddress).toHaveBeenCalledTimes(8)
     })
 
     it('always includes index 0 even if not on-chain', async () => {
