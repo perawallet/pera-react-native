@@ -10,40 +10,89 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { BalanceLineChart } from '../BalanceLineChart'
 
+const { lineChartProps } = vi.hoisted(() => ({
+    lineChartProps: { current: null as Record<string, unknown> | null },
+}))
+
 vi.mock('react-native-gifted-charts', () => ({
-    LineChart: () => <div data-testid='line-chart'>LineChart</div>,
+    LineChart: (props: Record<string, unknown>) => {
+        lineChartProps.current = props
+        return <div data-testid='line-chart'>LineChart</div>
+    },
 }))
 
 const EMPTY_BODY = 'no balance history'
 
-const renderChart = (props: Partial<Parameters<typeof BalanceLineChart>[0]>) =>
+type SeriesItem = { balance: number }
+
+const renderChart = (
+    props: Partial<Parameters<typeof BalanceLineChart<SeriesItem>>[0]> = {},
+) =>
     render(
-        <BalanceLineChart
-            dataPoints={[]}
+        <BalanceLineChart<SeriesItem>
+            series={[]}
+            getValue={item => item.balance}
+            onSelectionChanged={vi.fn()}
             isPending={false}
             emptyBody={EMPTY_BODY}
-            getPointerProps={vi.fn()}
             {...props}
         />,
     )
 
 describe('BalanceLineChart', () => {
-    it('renders the chart when data points are present', () => {
-        renderChart({ dataPoints: [{ value: 1 }, { value: 2 }] })
+    beforeEach(() => {
+        lineChartProps.current = null
+    })
+
+    it('maps the series through getValue into chart points', () => {
+        renderChart({ series: [{ balance: 1 }, { balance: 2 }] })
 
         expect(screen.getByTestId('line-chart')).toBeTruthy()
+        expect(lineChartProps.current?.data).toEqual([
+            { value: 1 },
+            { value: 2 },
+        ])
         expect(screen.queryByText(EMPTY_BODY)).toBeNull()
     })
 
-    it('renders the empty body when there is no data and no error', () => {
-        renderChart({ dataPoints: [] })
+    it('reports the focused series item through onSelectionChanged', () => {
+        // The pointer-focus handler debounces from mount time — step the
+        // clock past the debounce window before firing the event.
+        vi.useFakeTimers()
+        try {
+            const onSelectionChanged = vi.fn()
+            renderChart({
+                series: [{ balance: 1 }, { balance: 2 }],
+                onSelectionChanged,
+            })
+
+            vi.advanceTimersByTime(10_000)
+            const getPointerProps = lineChartProps.current?.getPointerProps as (
+                e: unknown,
+            ) => void
+            getPointerProps({ pointerIndex: 1, pointerX: 10 })
+
+            expect(onSelectionChanged).toHaveBeenCalledWith({ balance: 2 })
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('renders the empty body when the series is empty and no error', () => {
+        renderChart({ series: [] })
 
         expect(screen.getByText(EMPTY_BODY)).toBeTruthy()
         expect(screen.queryByTestId('line-chart')).toBeNull()
+    })
+
+    it('renders the empty body while the series is still undefined', () => {
+        renderChart({ series: undefined })
+
+        expect(screen.getByText(EMPTY_BODY)).toBeTruthy()
     })
 
     it('renders a distinct error state instead of the empty body when isError', () => {

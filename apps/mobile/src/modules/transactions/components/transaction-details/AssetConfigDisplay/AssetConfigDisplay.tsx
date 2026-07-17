@@ -14,19 +14,15 @@ import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
-import {
-    microAlgosToAlgos,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'
 import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
+import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
 import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
-import { AssetAmount } from '@components/AssetAmount'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useAssetConfigDisplay } from './useAssetConfigDisplay'
 import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -220,14 +216,7 @@ export const AssetConfigDisplay = ({
                     </KeyValueRow>
                 )}
 
-                <KeyValueRow title={t('transactions.common.fee')}>
-                    <AssetAmount
-                        asset={ALGO_ASSET}
-                        value={microAlgosToAlgos(transaction.fee ?? 0n)}
-                        showSymbol
-                        ignorePrivacyMode
-                    />
-                </KeyValueRow>
+                <TransactionFeeRow transaction={transaction} />
 
                 <TransactionNoteRow transaction={transaction} />
             </PWView>

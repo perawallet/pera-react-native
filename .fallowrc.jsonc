@@ -44,6 +44,11 @@
   // outside the JS import graph. fallow cannot observe their usage, so they are not
   // dead — unlike a genuinely unused dependency, which we DO want reported.
   "ignoreDependencies": [
+    // Root devDependencies imported only by dev-only tsx scripts wired to
+    // package.json scripts (tools/localnet-fund.ts). fallow counts script
+    // entries as production, so it flags them as dev-dependencies-in-production.
+    "@algorandfoundation/algokit-utils",
+    "algosdk",
     "react-native-ble-plx", // Ledger BLE transport — autolinked native module
     "@ledgerhq/react-native-hid", // Ledger HID transport — autolinked native module
     "@craftzdog/react-native-buffer", // Buffer polyfill wired via shim.js / metro
