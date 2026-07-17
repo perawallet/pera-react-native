@@ -28,6 +28,7 @@ import {
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import {
+    isLedgerAccount,
     useAllAccounts,
     useSelectedAccountAddress,
     type WalletAccount,
@@ -36,6 +37,7 @@ import { config } from '@perawallet/wallet-core-config'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import {
+    canAutoFund,
     useAuthorizeCardDelegation,
     useCardErrorToast,
     useCardFundingSourcePicker,
@@ -119,6 +121,8 @@ export type UseCardOnboardingStatusScreenResult = {
     isAutoFundingUnavailable: boolean
     /** False when the auto-funding kill-switch is off — Auto is "coming soon". */
     isAutoFundingEnabled: boolean
+    /** True when the connected account is a Ledger — Auto is unsupported there. */
+    isLedgerAccount: boolean
     /** True while the auto-funding delegation is being signed and submitted. */
     isCreatingCard: boolean
     /** Persists the funding type and finishes onboarding (card creation deferred). */
@@ -319,9 +323,14 @@ export const useCardOnboardingStatusScreen =
         const { requirePinVerification } = useRequirePinVerification()
         const showError = useCardErrorToast()
         const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
+        // Auto availability keys off the auto-funding capability (LSig signing),
+        // NOT card creation: Ledger will create cards once ARC-60 lands but can
+        // never sign the AutoDraw LSig, so Auto must stay disabled for it.
+        const isConnectedLedger =
+            connectedAccount != null && isLedgerAccount(connectedAccount)
         const isAutoFundingUnavailable =
             !isAutoFundingEnabled ||
-            (connectedAccount != null && !canCreateCard(connectedAccount))
+            (connectedAccount != null && !canAutoFund(connectedAccount))
 
         // A connected account that can't sign (e.g. Ledger) can't use Auto, so
         // fall back to Manual. Without this the Auto option stays selected but
@@ -448,6 +457,7 @@ export const useCardOnboardingStatusScreen =
             handleSelectFundingType,
             isAutoFundingUnavailable,
             isAutoFundingEnabled,
+            isLedgerAccount: isConnectedLedger,
             isCreatingCard,
             handleCreatePeraCard,
             handleEnterDetails,

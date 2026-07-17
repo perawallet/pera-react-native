@@ -33,6 +33,8 @@ type SelectFundingTypeRowProps = {
     isAutoFundingUnavailable: boolean
     /** False when the kill-switch is off — Auto shows a "coming soon" hint. */
     isAutoFundingEnabled: boolean
+    /** True when the connected account is a Ledger — Auto gets a Ledger hint. */
+    isLedgerAccount: boolean
 }
 
 /** Checklist row 4 — "Select Funding Type", active once funds are connected. */
@@ -42,6 +44,7 @@ export const SelectFundingTypeRow = ({
     onSelectFundingType,
     isAutoFundingUnavailable,
     isAutoFundingEnabled,
+    isLedgerAccount,
 }: SelectFundingTypeRowProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -50,6 +53,7 @@ export const SelectFundingTypeRow = ({
     const autoHint = resolveAutoFundingHint(t, {
         isAutoFundingEnabled,
         isAutoUnavailable: isAutoFundingUnavailable,
+        isLedgerAccount,
         fallback: t('peraCard.setup_status.funding_type_limit_hint', {
             limit: formatCurrency(AUTO_FUNDING_PER_TX_LIMIT_USD, 0, 'USD'),
         }),

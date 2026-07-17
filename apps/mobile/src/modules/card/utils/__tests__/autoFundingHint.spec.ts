@@ -38,6 +38,27 @@ describe('resolveAutoFundingHint', () => {
         ).toBe('peraCard.account.funding_type_auto_unavailable_hint')
     })
 
+    it('shows the Ledger hint when the connected account is a Ledger', () => {
+        expect(
+            resolveAutoFundingHint(t, {
+                isAutoFundingEnabled: true,
+                isAutoUnavailable: true,
+                isLedgerAccount: true,
+                fallback: 'limit',
+            }),
+        ).toBe('peraCard.account.funding_type_auto_ledger_hint')
+    })
+
+    it('prefers the coming-soon hint over the Ledger hint when the flag is off', () => {
+        expect(
+            resolveAutoFundingHint(t, {
+                isAutoFundingEnabled: false,
+                isAutoUnavailable: true,
+                isLedgerAccount: true,
+            }),
+        ).toBe('peraCard.account.funding_type_auto_coming_soon_hint')
+    })
+
     it('returns the fallback when Auto is enabled and available', () => {
         expect(
             resolveAutoFundingHint(t, {

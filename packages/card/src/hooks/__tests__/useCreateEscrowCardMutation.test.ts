@@ -20,17 +20,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mockUseNetwork,
 }))
 
-const { createEscrowCard, postDelegatorLsig, compileAutoDrawProgram } =
-    vi.hoisted(() => ({
-        createEscrowCard: vi.fn(),
-        postDelegatorLsig: vi.fn(),
-        compileAutoDrawProgram: vi.fn(),
-    }))
+const { createEscrowCard, submitAutoDrawDelegation } = vi.hoisted(() => ({
+    createEscrowCard: vi.fn(),
+    // The compile→sign→POST LSig leg is covered by delegation.spec.ts; here we
+    // only assert the mutation invokes it with the right params and degrades on
+    // failure.
+    submitAutoDrawDelegation: vi.fn(),
+}))
 vi.mock('../../api/escrow', async () => ({
     ...(await vi.importActual('../../api/escrow')),
     createEscrowCard,
-    postDelegatorLsig,
-    compileAutoDrawProgram,
+    submitAutoDrawDelegation,
 }))
 
 import { useCreateEscrowCardMutation } from '../useCreateEscrowCardMutation'
@@ -42,7 +42,6 @@ const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
 const ADDRESS = 'FUNDINGADDR'
-const PROGRAM = new Uint8Array([0x06, 0x81, 0x01])
 
 const baseVars = () => ({
     address: ADDRESS,
@@ -59,8 +58,7 @@ describe('useCreateEscrowCardMutation', () => {
         mockUseNetwork.mockReturnValue({ network: 'testnet' })
         useCardStore.getState().resetState()
         createEscrowCard.mockResolvedValue({ cardAddress: 'ESCROW1' })
-        compileAutoDrawProgram.mockResolvedValue(PROGRAM)
-        postDelegatorLsig.mockResolvedValue({ delegatorAddress: ADDRESS })
+        submitAutoDrawDelegation.mockResolvedValue(undefined)
     })
 
     it('Manual: creates the card, persists it, and signs no LSig', async () => {
@@ -84,9 +82,7 @@ describe('useCreateEscrowCardMutation', () => {
                 signature: expect.any(String),
             }),
         )
-        expect(compileAutoDrawProgram).not.toHaveBeenCalled()
-        expect(postDelegatorLsig).not.toHaveBeenCalled()
-        expect(vars.signLsigProgram).not.toHaveBeenCalled()
+        expect(submitAutoDrawDelegation).not.toHaveBeenCalled()
         expect(outcome).toEqual({
             cardAddress: 'ESCROW1',
             fundingType: FundingType.Manual,
@@ -95,7 +91,7 @@ describe('useCreateEscrowCardMutation', () => {
         expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
     })
 
-    it('Auto: creates the card, then compiles → signs → posts the LSig in order', async () => {
+    it('Auto: creates the card, then delegates against it (create → delegate order)', async () => {
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
@@ -107,24 +103,19 @@ describe('useCreateEscrowCardMutation', () => {
         })
 
         expect(createEscrowCard).toHaveBeenCalledTimes(1)
-        expect(compileAutoDrawProgram).toHaveBeenCalledTimes(1)
-        expect(vars.signLsigProgram).toHaveBeenCalledWith(PROGRAM)
-        expect(postDelegatorLsig).toHaveBeenCalledWith(
+        expect(submitAutoDrawDelegation).toHaveBeenCalledWith(
             expect.objectContaining({
+                network: 'testnet',
                 token: 'usdc',
-                delegatorAddress: ADDRESS,
+                address: ADDRESS,
                 cardAddress: 'ESCROW1',
-                lsigBytes: expect.any(String),
+                signLsigProgram: vars.signLsigProgram,
             }),
         )
-        // create → compile → sign → post.
-        const createOrder = createEscrowCard.mock.invocationCallOrder[0]
-        const compileOrder = compileAutoDrawProgram.mock.invocationCallOrder[0]
-        const signOrder = vars.signLsigProgram.mock.invocationCallOrder[0]
-        const postOrder = postDelegatorLsig.mock.invocationCallOrder[0]
-        expect(createOrder).toBeLessThan(compileOrder)
-        expect(compileOrder).toBeLessThan(signOrder)
-        expect(signOrder).toBeLessThan(postOrder)
+        // create → delegate.
+        expect(createEscrowCard.mock.invocationCallOrder[0]).toBeLessThan(
+            submitAutoDrawDelegation.mock.invocationCallOrder[0],
+        )
 
         expect(outcome).toEqual({
             cardAddress: 'ESCROW1',
@@ -147,11 +138,11 @@ describe('useCreateEscrowCardMutation', () => {
         ).rejects.toThrow('create boom')
 
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
-        expect(postDelegatorLsig).not.toHaveBeenCalled()
+        expect(submitAutoDrawDelegation).not.toHaveBeenCalled()
     })
 
     it('LSig failure: keeps the created card and degrades Auto → Manual', async () => {
-        postDelegatorLsig.mockRejectedValue(new Error('lsig boom'))
+        submitAutoDrawDelegation.mockRejectedValue(new Error('lsig boom'))
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
@@ -189,7 +180,7 @@ describe('useCreateEscrowCardMutation', () => {
         expect(vars.signSiwaMessage).not.toHaveBeenCalled()
         expect(createEscrowCard).not.toHaveBeenCalled()
         // But the Auto LSig leg still runs against the existing card.
-        expect(postDelegatorLsig).toHaveBeenCalledWith(
+        expect(submitAutoDrawDelegation).toHaveBeenCalledWith(
             expect.objectContaining({ cardAddress: 'EXISTING_CARD' }),
         )
         expect(outcome.cardAddress).toBe('EXISTING_CARD')

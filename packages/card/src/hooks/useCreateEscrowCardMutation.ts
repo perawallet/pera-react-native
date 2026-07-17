@@ -22,9 +22,8 @@ import {
     buildEscrowSiwaMessage,
     buildEscrowSiwaPayload,
     buildEscrowSiwaSignData,
-    compileAutoDrawProgram,
     createEscrowCard,
-    postDelegatorLsig,
+    submitAutoDrawDelegation,
 } from '../api/escrow'
 import { DEFAULT_CARD_CURRENCY, FundingType } from '../models'
 import { useCardStore } from '../store'
@@ -153,14 +152,12 @@ export const useCreateEscrowCardMutation =
                 // Optional AutoDraw delegation. A failure here must not fail the
                 // whole flow: the card is created, so fall back to Manual.
                 try {
-                    const program = await compileAutoDrawProgram({ network })
-                    const lsigBytes = await signLsigProgram(program)
-                    await postDelegatorLsig({
+                    await submitAutoDrawDelegation({
                         network,
                         token: currency,
-                        delegatorAddress: address,
-                        lsigBytes: encodeToBase64(lsigBytes),
+                        address,
                         cardAddress,
+                        signLsigProgram,
                     })
                     return {
                         cardAddress,

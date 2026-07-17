@@ -756,6 +756,7 @@
             "funding_type_updated_title": "Funding type updated",
             "funding_type_updated_body": "Your card funding preference has been saved.",
             "funding_type_auto_unavailable_hint": "Not available for this account — it can't sign an auto-funding authorization.",
+            "funding_type_auto_ledger_hint": "Not supported on Ledger accounts. Connect a different account to use Auto Funding.",
             "funding_type_auto_coming_soon_hint": "Auto Funding is coming soon.",
             "authorize_delegation_title": "Authorize Auto Funding",
             "authorize_delegation_body": "You're authorizing auto-funding of up to {{limit}} per transaction from {{account}}. Pera signs a standing authorization you can switch back to Manual anytime.",

@@ -1848,6 +1848,9 @@ importers:
 
   packages/card:
     dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 9.2.0(algosdk@3.6.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -1872,6 +1875,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
+      algosdk:
+        specifier: 'catalog:'
+        version: 3.6.0
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
