@@ -1,0 +1,65 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect } from 'vitest'
+import { config, configSchema, type Config } from '../main'
+
+// The committed defaults deliberately point the backend URLs at staging (safe
+// for open-source builds); production builds are expected to override them
+// via env. A missing override must fail the build loudly, not ship a
+// production app that talks to staging. discoverBaseUrl needs no guard —
+// getConfig derives it from appEnvironment structurally.
+
+const prodOverrides = {
+    mainnetBackendUrl: 'https://mainnet.api.perawallet.app',
+    testnetBackendUrl: 'https://testnet.api.perawallet.app',
+}
+
+const baseProdConfig: Config = {
+    ...config,
+    ...prodOverrides,
+    appEnvironment: 'production',
+}
+
+const STAGING_FIELDS = [
+    ['mainnetBackendUrl', 'https://mainnet.staging.api.perawallet.app'],
+    ['testnetBackendUrl', 'https://testnet.staging.api.perawallet.app'],
+] as const
+
+describe('production staging-URL guard', () => {
+    it.each(STAGING_FIELDS)(
+        'rejects a production config whose %s still points at staging',
+        (field, stagingUrl) => {
+            const candidate = { ...baseProdConfig, [field]: stagingUrl }
+
+            expect(() => configSchema.parse(candidate)).toThrowError(
+                new RegExp(field),
+            )
+        },
+    )
+
+    it('accepts a production config with production URLs', () => {
+        expect(() => configSchema.parse(baseProdConfig)).not.toThrow()
+    })
+
+    it.each(['development', 'staging'] as const)(
+        'leaves %s builds free to use staging URLs',
+        environment => {
+            const candidate: Config = {
+                ...config,
+                appEnvironment: environment,
+            }
+
+            expect(() => configSchema.parse(candidate)).not.toThrow()
+        },
+    )
+})
