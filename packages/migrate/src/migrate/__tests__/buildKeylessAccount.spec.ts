@@ -17,6 +17,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         (version: number, threshold: number, addresses: string[]) =>
             `MSIG:v${version}:t${threshold}:${addresses.join(',')}`,
     ),
+    // The accounts barrel installs a network-switch subscription at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
 }))
 
 import { AccountTypes } from '@perawallet/wallet-core-accounts'

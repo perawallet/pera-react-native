@@ -86,6 +86,11 @@ vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: routeParams.current }),
 }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    // The accounts barrel subscribes to the network store at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
     isValidAlgorandAddress: (address?: string) =>
         typeof address === 'string' && !address.startsWith('!!'),
 }))

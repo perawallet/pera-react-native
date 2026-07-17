@@ -2935,6 +2935,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
                 setNetwork: vi.fn(),
                 resetState: vi.fn(),
             })),
+            // The accounts barrel subscribes at load to mirror per-network
+            // rekey state on switches.
+            subscribe: vi.fn(() => () => {}),
         },
     ),
     // Error-translation exports. Tests that need the real parser should use

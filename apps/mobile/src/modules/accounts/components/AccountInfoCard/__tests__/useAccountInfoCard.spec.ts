@@ -60,6 +60,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    // The accounts barrel subscribes to the network store at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
     microAlgosToAlgos: (v: bigint) => ({ toString: () => String(v) }),
 }))
 

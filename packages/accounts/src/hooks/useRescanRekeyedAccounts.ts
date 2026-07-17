@@ -91,9 +91,9 @@ export const useRescanRekeyedAccounts = (): UseRescanRekeyedAccountsResult => {
             const valid = addresses.filter(isValidAlgorandAddress)
             if (valid.length === 0) return 0
 
-            return addRekeyedWatchAccounts(sourceAddress, valid)
+            return addRekeyedWatchAccounts(sourceAddress, valid, network)
         },
-        [addRekeyedWatchAccounts],
+        [addRekeyedWatchAccounts, network],
     )
 
     return { scan, importSelected }

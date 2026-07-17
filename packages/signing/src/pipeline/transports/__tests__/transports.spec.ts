@@ -29,7 +29,10 @@ import type {
 const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: { getState: () => getNetworkMock() },
+    useNetworkStore: {
+        getState: () => getNetworkMock(),
+        subscribe: () => () => {},
+    },
     encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
 }))
 
