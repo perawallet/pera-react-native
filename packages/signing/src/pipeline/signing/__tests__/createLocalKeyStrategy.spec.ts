@@ -207,37 +207,29 @@ describe('createLocalKeyStrategy', () => {
             )
         })
 
-        test('signs quantum accounts through the injected signTransactions (rekey support)', async () => {
-            // Quantum accounts hold a keyPairId and are signed at the KMS layer
-            // via the Falcon scheme branch. The local strategy must route them
-            // through the same injected signTransactions path (not reject them),
-            // otherwise rekey-out / undo-rekey for quantum accounts is blocked.
-            const group = makeTransactionGroup()
-
-            const result = await makeStrategy().sign(group, quantumAccount)
-
-            expect(signTransactions).toHaveBeenCalledWith(
-                group.data.type === 'transactions'
-                    ? group.data.transactions
-                    : undefined,
-                group.data.type === 'transactions'
-                    ? group.data.indicesToSign
-                    : undefined,
-                quantumAccount,
-            )
-            expect(result.signedData.type).toBe('transactions')
+        test('rejects quantum accounts with CannotSignError (quantum now routes through the dedicated quantum strategy)', async () => {
+            // PQ-006 / PERA-4488: quantum accounts are no longer swept into the
+            // local-key strategy. A dedicated quantumSignerActor +
+            // createQuantumStrategy produce the pqsig byte carrier, so the
+            // local-key guard must REJECT quantum rather than mis-signing it as
+            // a plain Ed25519 signed transaction.
+            await expect(
+                makeStrategy().sign(makeTransactionGroup(), quantumAccount),
+            ).rejects.toThrow('Unsupported account type')
+            expect(signTransactions).not.toHaveBeenCalled()
         })
 
         test('tags the signer with the account type for transactions groups', async () => {
-            // PQ-014 Task 1: the submission boundary needs to detect quantum
-            // signers without parsing signature bytes, so SignerInfo carries
-            // the signing account's type.
+            // PQ-014 Task 1: the submission boundary needs to detect the
+            // signing account's type without parsing signature bytes, so
+            // SignerInfo carries it. (Quantum's own accountType is covered in
+            // createQuantumStrategy.spec.ts now that quantum has its own path.)
             const result = await makeStrategy().sign(
                 makeTransactionGroup(),
-                quantumAccount,
+                algo25Account,
             )
 
-            expect(result.signers[0]!.accountType).toBe('quantum')
+            expect(result.signers[0]!.accountType).toBe('algo25')
         })
 
         test('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {

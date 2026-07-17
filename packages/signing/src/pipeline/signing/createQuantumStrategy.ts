@@ -54,18 +54,19 @@ export type QuantumStrategyOptions = {
 
 /**
  * Creates a dedicated signing strategy for quantum (post-quantum, Falcon)
- * accounts. Unlike `createLocalKeyStrategy` — which currently still
- * accepts quantum accounts as part of its broader local-key guard — this
- * strategy produces the carrier-typed `QuantumSignedTransaction` result for
- * the `transactions` modality instead of a plain algosdk `SignedTransaction`,
- * so downstream code (encoding, submission) can distinguish a pqsig byte
- * carrier from a normal signed transaction via `isQuantumSignedTransaction`.
+ * accounts. Unlike `createLocalKeyStrategy` — which rejects quantum accounts
+ * outright — this strategy produces the carrier-typed
+ * `QuantumSignedTransaction` result for the `transactions` modality instead of
+ * a plain algosdk `SignedTransaction`, so downstream code (encoding,
+ * submission) can distinguish a pqsig byte carrier from a normal signed
+ * transaction via `isQuantumSignedTransaction`.
  *
  * Arbitrary-data and ARC-60 signing are identical in shape to the local-key
  * path (same injected function types), so both are delegated to the shared
  * helpers in `./standardDataSigning`.
  *
- * Not yet wired into the strategy selector — see PQ-006 follow-up task.
+ * Wired into the signing machine via `quantumSignerActor` and into the
+ * multisig selector via `getSigningStrategy` (PQ-006 / PERA-4488).
  */
 export const createQuantumStrategy = (
     options: QuantumStrategyOptions,
@@ -127,7 +128,7 @@ export const createQuantumStrategy = (
                         }
                     }
 
-                    case 'arbitrary-data':
+                    case 'arbitrary-data': {
                         return await signArbitraryDataCase(
                             group.data,
                             group.originalIndices,
@@ -135,8 +136,9 @@ export const createQuantumStrategy = (
                             signArbitraryData,
                             callbacks,
                         )
+                    }
 
-                    case 'arc60':
+                    case 'arc60': {
                         return await signArc60Case(
                             group.data,
                             group.originalIndices,
@@ -144,6 +146,7 @@ export const createQuantumStrategy = (
                             signArc60,
                             callbacks,
                         )
+                    }
                 }
             } catch (error) {
                 const cause = toError(error)

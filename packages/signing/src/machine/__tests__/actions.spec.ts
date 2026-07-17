@@ -62,6 +62,14 @@ const multisig = (address: string, addresses: string[] = []): WalletAccount =>
         multisigDetails: { threshold: 1, addresses, version: 1 },
     }) as unknown as WalletAccount
 
+const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
+    ({
+        type: 'quantum',
+        address,
+        keyPairId: `kp-${address}`,
+        rekeyAddress,
+    }) as unknown as WalletAccount
+
 const buildGroup = (
     overrides: Partial<SignableGroup> & Pick<SignableGroup, 'source'>,
 ): SignableGroup => ({
@@ -217,6 +225,52 @@ describe('buildGroupSignerTypeMap', () => {
             const map = buildGroupSignerTypeMap([group], [sender, auth])
 
             expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+    })
+
+    describe('quantum classification (PQ-006 / PERA-4488)', () => {
+        it('classifies a non-rekeyed quantum sender as quantum', () => {
+            // Quantum accounts carry a keyPairId, so the pre-existing
+            // hasSigningKeys check would have swallowed them into localKey.
+            // The quantum branch must run BEFORE hasSigningKeys.
+            const sender = quantum(PARTICIPANT)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender])
+
+            expect(map.get(PARTICIPANT)).toBe('quantum')
+        })
+
+        it('classifies a local-key sender rekeyed to a quantum auth as quantum (auth-account rule)', () => {
+            const sender = algo25(PARTICIPANT, AUTH)
+            const auth = quantum(AUTH)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('quantum')
+        })
+
+        it('classifies a quantum sender rekeyed to a local-key auth as localKey (auth-account rule)', () => {
+            const sender = quantum(PARTICIPANT, AUTH)
+            const auth = algo25(AUTH)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+
+        it('classifies a multisig sender as multisig, never quantum, even when it lists quantum participants (regression)', () => {
+            // A quantum key can never satisfy a multisig slot (slots verify
+            // Ed25519 only), so a multisig account must always route to the
+            // multisig strategy — the quantum branch must not intercept it.
+            const sender = multisig(PARTICIPANT, ['Q1', 'Q2'])
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender])
+
+            expect(map.get(PARTICIPANT)).toBe('multisig')
         })
     })
 

@@ -15,6 +15,7 @@ import {
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
+    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     isQuantumSignedTransaction,
@@ -63,6 +64,7 @@ import {
  *   self-resolves, a multisig rekeyed to another multisig, and any sender
  *   rekeyed on-chain to a Pera-held multisig)
  * - hardware: the auth account is a hardware wallet
+ * - quantum: the auth account is a post-quantum (Falcon) account
  * - localKey: the auth account has local signing keys (Algo25 / HDWallet)
  *
  * Routing on the auth account also carries the externally-rekeyed-multisig
@@ -78,6 +80,12 @@ const determineSignerType = (
     }
     if (isHardwareWalletAccount(authAccount)) {
         return 'hardware'
+    }
+    // Quantum accounts carry a keyPairId, so this MUST run before the
+    // hasSigningKeys check below — otherwise a Falcon account is swallowed
+    // into the localKey path and mis-signed as a plain Ed25519 transaction.
+    if (isQuantumAccount(authAccount)) {
+        return 'quantum'
     }
     if (hasSigningKeys(authAccount)) {
         return 'localKey'
@@ -403,6 +411,7 @@ const buildSignableGroups = (
  */
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
+    signQuantumTransactions: input.signQuantumTransactions,
     signArbitraryData: input.signArbitraryData,
     signArc60: input.signArc60,
     createTransport: input.createTransport,

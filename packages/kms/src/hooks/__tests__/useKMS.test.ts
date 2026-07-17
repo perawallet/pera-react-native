@@ -724,6 +724,26 @@ describe('useKMS', () => {
                     result.current.getQuantumPublicKey('quantum-2-quantum'),
                 ).toThrow(KeyManagementError)
             })
+
+            it('throws KeyManagementError when the keyPairId points at a non-quantum child (wrong type)', () => {
+                // A real caller now resolves account.keyPairId here; guarding on
+                // the child type prevents silently returning the wrong bytes for
+                // a keyPairId that belongs to a non-Falcon (e.g. Ed25519) child.
+                seedQuantumRoot('quantum-3')
+                mockKeystoreKeys.push({
+                    id: 'quantum-3-ed25519',
+                    type: 'ed25519',
+                    algorithm: 'raw',
+                    extractable: false,
+                    publicKey: new Uint8Array([1, 2, 3]),
+                    metadata: { parentKeyId: 'quantum-3' },
+                })
+
+                const { result } = renderHook(() => useKMS())
+                expect(() =>
+                    result.current.getQuantumPublicKey('quantum-3-ed25519'),
+                ).toThrow(KeyManagementError)
+            })
         })
     })
 

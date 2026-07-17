@@ -15,7 +15,6 @@ import {
     hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
-    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64, toError } from '@perawallet/wallet-core-shared'
@@ -57,8 +56,12 @@ export type LocalKeyStrategyOptions = {
 }
 
 /**
- * Creates a signing strategy for accounts with local keys (Algo25, HDWallet,
- * Quantum). These accounts have immediate access to private keys via KMS.
+ * Creates a signing strategy for accounts with local Ed25519 keys (Algo25,
+ * HDWallet). These accounts have immediate access to private keys via KMS.
+ *
+ * Quantum (Falcon) accounts are deliberately NOT handled here — they route
+ * through the dedicated {@link createQuantumStrategy}, which produces the
+ * pqsig byte carrier rather than a plain algosdk `SignedTransaction`.
  */
 export const createLocalKeyStrategy = (
     options: LocalKeyStrategyOptions,
@@ -82,11 +85,7 @@ export const createLocalKeyStrategy = (
                 )
             }
 
-            if (
-                !isAlgo25Account(account) &&
-                !isHDWalletAccount(account) &&
-                !isQuantumAccount(account)
-            ) {
+            if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
                 throw new CannotSignError(
                     account.address,
                     `Unsupported account type: ${account.type}`,
@@ -129,7 +128,7 @@ export const createLocalKeyStrategy = (
                         }
                     }
 
-                    case 'arbitrary-data':
+                    case 'arbitrary-data': {
                         return await signArbitraryDataCase(
                             group.data,
                             group.originalIndices,
@@ -137,8 +136,9 @@ export const createLocalKeyStrategy = (
                             signArbitraryData,
                             callbacks,
                         )
+                    }
 
-                    case 'arc60':
+                    case 'arc60': {
                         return await signArc60Case(
                             group.data,
                             group.originalIndices,
@@ -146,6 +146,7 @@ export const createLocalKeyStrategy = (
                             signArc60,
                             callbacks,
                         )
+                    }
                 }
             } catch (error) {
                 const cause = toError(error)

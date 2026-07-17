@@ -25,6 +25,7 @@ import {
     seedSchemeOf,
 } from '../utils'
 import { SeedScheme } from '../constants'
+import { FALCON_CHILD_KEY_TYPE } from '../models/keys'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
 import { useQuantum } from './useQuantum'
@@ -197,6 +198,15 @@ export const useKMS = () => {
         if (!child?.publicKey) {
             throw new KeyManagementError(
                 `No quantum public key for keyPairId ${keyPairId}`,
+            )
+        }
+        // Guard the algorithm at the point of use: a non-quantum keyPairId
+        // (e.g. an Ed25519 child) also carries a `publicKey`, so without this
+        // check we would silently hand back the wrong bytes for a caller that
+        // resolved account.keyPairId to a non-Falcon child.
+        if (child.type !== FALCON_CHILD_KEY_TYPE) {
+            throw new KeyManagementError(
+                `keyPairId ${keyPairId} is not a quantum key (type: ${child.type})`,
             )
         }
         return new Uint8Array(child.publicKey)

@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-// KNOWN GAP (PQ-006 / PERA-4488): `useLocalKeyTransactionSigner.ts` gates local
-// signing to algo25/HD accounts only, so a quantum sender is rejected at the
-// signing step BEFORE the synthetic-submission short-circuit in
-// `submitAndAutoRefresh` (which correctly skips the algod broadcast for quantum
-// signers) can ever run. The full send-to-success + "algod submit never hit"
-// assertion therefore cannot pass yet — it lives below as an `it.todo`. Once the
-// signer guard is opened to `isQuantumAccount`, implement that todo to drive the
-// send to the success screen and assert the algod submit spy is not called.
+// PQ-006 / PERA-4488: quantum accounts now route end-to-end through the signing
+// state machine via the dedicated `quantumSignerActor` + `createQuantumStrategy`,
+// producing a `QuantumSignedTransaction` carrier. The second test below drives a
+// real quantum payment through the machine and proves the carrier is produced.
+//
+// Actual submission stays GATED/synthetic (out of scope, PQ-019): the local
+// send self-submits via the callback transport, whose delivery step
+// (`assertNoQuantumSignedTransactions`) deliberately refuses a Falcon pqsig
+// carrier — no node accepts it yet. So the machine SIGNS the payment (carrier
+// produced) but delivery is gated and NO algod `/v2/transactions` broadcast ever
+// happens, which is exactly what the test asserts.
 
 import {
     afterAll,
@@ -30,6 +33,7 @@ import {
     vi,
 } from 'vitest'
 import { renderHook, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
@@ -63,6 +67,12 @@ import { TransactionProcessingScreen } from '@modules/transactions/screens/send-
 import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
+
+import {
+    buildPaymentTransaction,
+    buildTransactionSignRequest,
+    renderSignReview,
+} from '@test-utils/signing-review'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
@@ -198,14 +208,67 @@ describe('send from quantum account (PQ-015)', () => {
         SLOW_TEST_TIMEOUT_MS,
     )
 
-    // Blocked on PQ-006 / PERA-4488: `useLocalKeyTransactionSigner` rejects
-    // quantum accounts ("Unsupported account type quantum") before the synthetic
-    // quantum submission in `submitAndAutoRefresh` runs, so the send cannot yet
-    // reach the success screen. When the signer guard is opened to
-    // `isQuantumAccount`, implement this to drive confirm → processing → success
-    // and assert the algod submit spy (`http.post('*/v2/transactions', spy)`) is
-    // NOT called (the quantum path synthesizes the txid instead of broadcasting).
-    it.todo(
-        'reaches success screen via synthetic submission (no algod broadcast) — blocked on PQ-006/PERA-4488: useLocalKeyTransactionSigner guard rejects quantum',
+    it(
+        'Given a real quantum sender, when a local payment is signed, then the machine routes it through the quantum strategy to a QuantumSignedTransaction carrier and delivery is gated with no algod broadcast',
+        async () => {
+            await enableQuantumFlag()
+            await seedQuantumSender()
+
+            // A real payment from the quantum sender. Enqueued as a LOCAL
+            // callback request — the same transport the send-funds flow uses —
+            // so the machine signs headlessly (no review sheet) and then hits
+            // the callback delivery step.
+            const payment = buildPaymentTransaction({
+                sender: QUANTUM_TEST_ADDRESS,
+                receiver: RECEIVER_ADDRESS,
+                amount: 1_000_000n,
+                fee: 1000n,
+            })
+            const { request, error: errorSpy } = buildTransactionSignRequest({
+                sourceType: 'local',
+                txs: [payment],
+            })
+
+            // Any algod broadcast is a failure: a Falcon-signed group must
+            // never be POSTed to a node that cannot verify it.
+            const sendSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        txId: 'SHOULDNOTBEHIT00000000000000000000000000000000000000',
+                    },
+                    { status: 200 },
+                ),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderSignReview(request)
+
+            // The machine dispatches the group to quantumSignerActor, the
+            // dedicated strategy produces a QuantumSignedTransaction carrier,
+            // and the callback delivery step then refuses to hand a Falcon
+            // carrier to an external consumer — surfacing the gate error.
+            await waitFor(
+                () => {
+                    expect(errorSpy).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+
+            // The callback-delivery gate only fires AFTER signing produced a
+            // pqsig carrier — its presence is the load-bearing proof that the
+            // quantum account signed the payment end-to-end through the machine.
+            // Matching the delivery-specific message (not just any "quantum"
+            // error) rules out an earlier signing rejection — e.g. a stale
+            // "Unsupported account type: quantum" — masquerading as this
+            // outcome.
+            const gateError = errorSpy.mock.calls[0]?.[0] as Error
+            expect(String(gateError?.message)).toMatch(
+                /cannot be delivered via the callback transport/i,
+            )
+
+            // No node ever saw the Falcon-signed group.
+            expect(sendSpy).not.toHaveBeenCalled()
+        },
+        SLOW_TEST_TIMEOUT_MS,
     )
 })
