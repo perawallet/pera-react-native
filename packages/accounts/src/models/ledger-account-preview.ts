@@ -19,7 +19,13 @@ export type LedgerAccountPreviewAsset = {
     unitName: string
     /** Asset decimals (display precision) */
     decimals: number
-    /** Holding amount in display units */
+    /**
+     * False when the asset's metadata (and so its decimals) is unknown —
+     * `amount` then still holds raw base units and must not be rendered as a
+     * balance; `fiatValue` is zero regardless of any known price.
+     */
+    hasKnownDecimals: boolean
+    /** Holding amount in display units (base units when decimals unknown) */
     amount: Decimal
     /** Holding value in the user's preferred currency */
     fiatValue: Decimal

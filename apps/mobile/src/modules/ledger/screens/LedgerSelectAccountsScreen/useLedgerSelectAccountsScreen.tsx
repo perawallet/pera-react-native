@@ -42,7 +42,11 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccountInfoContent'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
-import { getLedgerErrorPreset } from '@modules/ledger/utils'
+import {
+    deserializeLedgerAccount,
+    getLedgerErrorPreset,
+    serializeSelectableAccount,
+} from '@modules/ledger/utils'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -88,12 +92,14 @@ export const useLedgerSelectAccountsScreen =
         const { request } = useBottomSheet()
         const { exitAccountFlow } = useExitAccountFlow()
 
-        const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
+        const [accounts, setAccounts] = useState<LedgerAccount[]>(() =>
+            routeAccounts.map(deserializeLedgerAccount),
+        )
         const [isFetchingMore, setIsFetchingMore] = useState(false)
 
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const inFlightRef = useRef(false)
-        const accountsRef = useRef<LedgerAccount[]>(routeAccounts)
+        const accountsRef = useRef<LedgerAccount[]>(accounts)
         // Network-scoped set of addresses already warmed, so growing the
         // list (Find another / rekeyed scan) only prefetches new addresses.
         const prefetchedRef = useRef<Set<string>>(new Set())
@@ -226,7 +232,7 @@ export const useLedgerSelectAccountsScreen =
                 deviceId,
                 deviceName,
                 transportType,
-                selectedAccounts: result,
+                selectedAccounts: result.map(serializeSelectableAccount),
             })
         }, [
             areAllImported,

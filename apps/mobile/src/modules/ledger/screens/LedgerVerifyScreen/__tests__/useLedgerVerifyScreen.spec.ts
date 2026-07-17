@@ -47,7 +47,13 @@ vi.mock('@modules/onboarding/hooks', () => ({
     useExitAccountFlow: () => ({ exitAccountFlow: mockExit }),
     useShouldPlayConfetti: () => ({ setShouldPlayConfetti: mockSetConfetti }),
 }))
-vi.mock('@modules/ledger/utils', () => ({
+vi.mock('@modules/ledger/utils', async () => ({
+    // Real deserializers (from the submodule, not the barrel — the barrel
+    // drags the signing-package error chain in); the hook decodes the
+    // serialized route params.
+    ...(await vi.importActual<
+        typeof import('../../../utils/serializedLedgerAccounts')
+    >('../../../utils/serializedLedgerAccounts')),
     getLedgerErrorPreset: () => ({ title: 't', body: 'b' }),
 }))
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -95,9 +101,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         typeof address === 'string' && !address.startsWith('!!'),
 }))
 
+// Route params carry the serialized (JSON-safe) shape; the hook decodes it.
 const derived = (address: string, accountIndex: number) => ({
     address,
-    publicKey: new Uint8Array([accountIndex]),
+    publicKeyHex: accountIndex.toString(16).padStart(2, '0'),
     accountIndex,
 })
 
@@ -131,7 +138,13 @@ describe('useLedgerVerifyScreen', () => {
         await waitFor(() => expect(result.current.areAllVerified).toBe(true))
         expect(mockVerify).toHaveBeenCalledTimes(1)
         expect(mockVerify).toHaveBeenCalledWith(expect.anything(), 0)
-        expect(result.current.verifyTargets).toEqual([d0])
+        expect(result.current.verifyTargets).toEqual([
+            {
+                address: 'LEDGER0',
+                publicKey: new Uint8Array([0]),
+                accountIndex: 0,
+            },
+        ])
     })
 
     it('handleAdd imports derived as hardware, rekeyed as watch+rekeyAddress, auto-includes auth, skips already-imported and invalid', async () => {
@@ -175,7 +188,7 @@ describe('useLedgerVerifyScreen', () => {
     it('does not persist a rekeyed watch account when its auth account address is invalid', async () => {
         const badAuth = {
             address: '!!invalidauth',
-            publicKey: new Uint8Array([9]),
+            publicKeyHex: '09',
             accountIndex: 9,
         }
         routeParams.current = {

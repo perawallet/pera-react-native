@@ -15,11 +15,13 @@ import {
     type HDWalletAccount,
     type ImportAccountType,
     type DerivationType,
-    type LedgerSelectableAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
-import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import type { Optional } from '@perawallet/wallet-core-shared'
+import type {
+    SerializedLedgerAccount,
+    SerializedLedgerSelectableAccount,
+} from '@modules/ledger'
 
 /**
  * Where to go after an account is created + named, instead of the default
@@ -105,13 +107,13 @@ export type ImportFlowParamList = {
         deviceId: string
         deviceName: string
         transportType: LedgerTransportType
-        accounts: LedgerAccount[]
+        accounts: SerializedLedgerAccount[]
     }
     LedgerVerify: {
         deviceId: string
         deviceName: string
         transportType: LedgerTransportType
-        selectedAccounts: LedgerSelectableAccount[]
+        selectedAccounts: SerializedLedgerSelectableAccount[]
     }
     LedgerTroubleshooting: undefined
     AsbImportInfo: undefined

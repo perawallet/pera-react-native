@@ -149,7 +149,7 @@ describe('useLedgerAccountPreview', () => {
         expect(usdc?.usdPrice.toString()).toBe('1')
     })
 
-    it('falls back to asset-id string, empty unitName, unverified tier and decimals=0 when asset metadata is missing', () => {
+    it('flags holdings with missing asset metadata instead of pretending decimals=0', () => {
         // Arrange
         mocks.useOnChainAccountInformationQuery.mockReturnValue({
             data: {
@@ -165,7 +165,6 @@ describe('useLedgerAccountPreview', () => {
             refetch: vi.fn(),
         })
         // useAssetsQuery returns an empty Map (beforeEach default) — no metadata for 99999999
-        // useAssetPricesQuery default only has ALGO id '0' — no price for 99999999 → fiat 0
 
         // Act
         const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
@@ -177,11 +176,80 @@ describe('useLedgerAccountPreview', () => {
         expect(asa?.name).toBe('99999999')
         expect(asa?.unitName).toBe('')
         expect(asa?.verificationTier).toBe('unverified')
-        expect(asa?.amount.toString()).toBe('42')
+        expect(asa?.hasKnownDecimals).toBe(false)
         expect(asa?.fiatValue.toString()).toBe('0')
         expect(asa?.isAlgo).toBe(false)
-        expect(asa?.decimals).toBe(0)
-        expect(asa?.usdPrice.toString()).toBe('0')
+    })
+
+    it('excludes unknown-decimals holdings from fiat totals even when a price exists', () => {
+        mocks.useOnChainAccountInformationQuery.mockReturnValue({
+            data: {
+                address: 'ADDR',
+                amount: 0n,
+                minBalance: 0n,
+                status: 'Offline',
+                rewards: 0n,
+                assets: [{ assetId: 99999999n, amount: 42n, isFrozen: false }],
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+        mocks.useAssetPricesQuery.mockReturnValue({
+            data: new Map([
+                ['0', { assetId: '0', usdPrice: new Decimal(2) }],
+                ['99999999', { assetId: '99999999', usdPrice: new Decimal(1) }],
+            ]),
+            isPending: false,
+        })
+
+        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+
+        // A price times a base-unit amount would be garbage — the holding
+        // must contribute nothing to fiat until its decimals are known.
+        const asa = result.current.preview?.assets.find(
+            a => a.assetId === '99999999',
+        )
+        expect(asa?.fiatValue.toString()).toBe('0')
+        expect(result.current.preview?.totalFiatValue.toString()).toBe('0')
+    })
+
+    it('marks ALGO and metadata-backed holdings as having known decimals', () => {
+        mocks.useOnChainAccountInformationQuery.mockReturnValue({
+            data: {
+                address: 'ADDR',
+                amount: 1_000_000n,
+                minBalance: 0n,
+                status: 'Offline',
+                rewards: 0n,
+                assets: [
+                    { assetId: 31566704n, amount: 1_500_000n, isFrozen: false },
+                ],
+            },
+            isLoading: false,
+            isError: false,
+            refetch: vi.fn(),
+        })
+        mocks.useAssetsQuery.mockReturnValue({
+            data: new Map([
+                [
+                    '31566704',
+                    {
+                        assetId: '31566704',
+                        name: 'USDC',
+                        unitName: 'USDC',
+                        decimals: 6,
+                    },
+                ],
+            ]),
+            isPending: false,
+        })
+
+        const { result } = renderHook(() => useLedgerAccountPreview('ADDR'))
+
+        expect(
+            result.current.preview?.assets.map(a => a.hasKnownDecimals),
+        ).toEqual([true, true])
     })
 
     it('reports rekeyedTo when the account is rekeyed', () => {

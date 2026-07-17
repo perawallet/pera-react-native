@@ -11,11 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { PWChip } from '@components/core'
+import { PWChip, PWRoundIcon } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { SelectableAccountCheckboxRow } from '@modules/accounts/components/SelectableAccountCheckboxRow'
 import { useLanguage } from '@hooks/useLanguage'
-import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
 
 export type LedgerAccountSelectionRowProps = {
     address: string
@@ -48,9 +47,12 @@ export const LedgerAccountSelectionRow = ({
         <SelectableAccountCheckboxRow
             title={truncateAlgorandAddress(address)}
             leadingIcon={
-                <LightLedgerAccountIcon
-                    width={40}
-                    height={40}
+                // Same glyph resolution as useAccountIcon's hardware entry —
+                // theme-aware, unlike the light-theme SVG this replaced.
+                <PWRoundIcon
+                    icon='accounts/glyph/ledger-account'
+                    variant='accountPurple'
+                    size='md'
                 />
             }
             badge={

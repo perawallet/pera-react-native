@@ -63,17 +63,10 @@ vi.mock('@react-navigation/native', () => ({
             deviceId: 'device-1',
             deviceName: 'Fred Nano X',
             transportType: 'ble',
+            // Route params carry the serialized (JSON-safe) account shape.
             accounts: [
-                {
-                    address: 'AAA111',
-                    publicKey: new Uint8Array([1]),
-                    accountIndex: 0,
-                },
-                {
-                    address: 'BBB222',
-                    publicKey: new Uint8Array([2]),
-                    accountIndex: 1,
-                },
+                { address: 'AAA111', publicKeyHex: '01', accountIndex: 0 },
+                { address: 'BBB222', publicKeyHex: '02', accountIndex: 1 },
             ],
         },
     }),
@@ -549,7 +542,7 @@ describe('useLedgerSelectAccountsScreen', () => {
                     kind: 'derived',
                     account: {
                         address: 'AAA111',
-                        publicKey: new Uint8Array([1]),
+                        publicKeyHex: '01',
                         accountIndex: 0,
                     },
                 },
@@ -624,12 +617,21 @@ describe('useLedgerSelectAccountsScreen', () => {
             result.current.handleContinue()
         })
 
+        const serializedAuth = {
+            address: 'AAA111',
+            publicKeyHex: '01',
+            accountIndex: 0,
+        }
         const arg = mockNavigate.mock.calls.find(
             c => c[0] === 'LedgerVerify',
         )?.[1] as { selectedAccounts: unknown[] }
         expect(arg.selectedAccounts).toEqual([
-            { kind: 'rekeyed', address: 'REKEYED_A', authAccount: auth },
-            { kind: 'derived', account: auth },
+            {
+                kind: 'rekeyed',
+                address: 'REKEYED_A',
+                authAccount: serializedAuth,
+            },
+            { kind: 'derived', account: serializedAuth },
         ])
     })
 

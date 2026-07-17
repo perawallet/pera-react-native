@@ -41,7 +41,7 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { LedgerFetchAccountsScreen } from '@modules/ledger/screens/LedgerFetchAccountsScreen'
 
-import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import type { SerializedLedgerAccount } from '@modules/ledger/utils'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
@@ -75,10 +75,11 @@ const registerFakeLedgerProvider = () => {
 }
 
 // Captures the params the fetch screen forwards to the select screen.
-let capturedAccounts: LedgerAccount[] | null = null
+let capturedAccounts: SerializedLedgerAccount[] | null = null
 const SelectAccountsProbe = () => {
     const route = useRoute()
-    capturedAccounts = (route.params as { accounts: LedgerAccount[] }).accounts
+    capturedAccounts = (route.params as { accounts: SerializedLedgerAccount[] })
+        .accounts
     return null
 }
 
