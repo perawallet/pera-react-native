@@ -14,6 +14,7 @@ catalog:
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/algosdk": 3.7.0-beta.1
+  "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
   "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/hashes": ^1.8.0
@@ -166,16 +167,19 @@ minimumReleaseAge: 10080
 #     — active SDK 57 line: Expo ships frequent same-SDK patch releases (57.0.x)
 #       that we want to adopt immediately rather than wait out the window.
 #       Revisit once SDK 57 patch cadence settles.
-#   @joe-p/algosdk, falcon-1024
+#   @joe-p/algosdk, falcon-1024, @joe-p/react-native-falcon
 #     — beta forks (single maintainer: Joe Polny, an Algorand Foundation
 #       tooling contributor) used for the PQ/Falcon-1024 integration spike
 #       (PERA-4642). @joe-p/algosdk is exact-pinned (no floating range);
 #       falcon-1024 is early-stage (0.x) so only one version exists to date.
+#       @joe-p/react-native-falcon (the on-device native Falcon-1024 nitro
+#       module, PQ-020) is likewise exact-pinned to its single 0.x release.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
   - "@joe-p/algosdk"
+  - "@joe-p/react-native-falcon"
   - falcon-1024
   - expo
   - "expo-*"

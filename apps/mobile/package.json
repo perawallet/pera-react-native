@@ -43,6 +43,7 @@
     "@expo/app-integrity": "catalog:",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.4.0",
+    "@joe-p/react-native-falcon": "catalog:",
     "@ledgerhq/react-native-hid": "catalog:",
     "@noble/hashes": "catalog:",
     "@notifee/react-native": "catalog:",

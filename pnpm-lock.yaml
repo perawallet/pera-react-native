@@ -30,6 +30,9 @@ catalogs:
     '@joe-p/algosdk':
       specifier: 3.7.0-beta.1
       version: 3.7.0-beta.1
+    '@joe-p/react-native-falcon':
+      specifier: 0.1.0
+      version: 0.1.0
     '@ledgerhq/errors':
       specifier: ^6.35.0
       version: 6.35.0
@@ -318,6 +321,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.4.0
         version: 5.4.0(react-hook-form@7.81.0(react@19.2.3))
+      '@joe-p/react-native-falcon':
+        specifier: 'catalog:'
+        version: 0.1.0(react-native-nitro-modules@0.35.9(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       '@ledgerhq/react-native-hid':
         specifier: 'catalog:'
         version: 6.39.5(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
@@ -2323,6 +2329,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@joe-p/react-native-falcon':
+        specifier: 'catalog:'
+        version: 0.1.0(react-native-nitro-modules@0.35.9(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
@@ -5428,6 +5437,13 @@ packages:
   '@joe-p/algosdk@3.7.0-beta.1':
     resolution: {integrity: sha512-8JDI1yivZ2qRmgRZL540K49N5STlBDEN1C8N7CTrfUNs0miOP2lbiI30PEPHOrtZOcRnkfreCb3i8Y5XbWfhig==}
     engines: {node: '>=18.0.0'}
+
+  '@joe-p/react-native-falcon@0.1.0':
+    resolution: {integrity: sha512-WD4/nndBoq4bgH2K9b77mIkFHkrAxqW2ry8Lb/qZ+kKG/YKUQpyKFdPj/l5Gwm+VUhaARetXT5J6sXNaIMBmkQ==}
+    peerDependencies:
+      react: 19.2.3
+      react-native: 0.86.0
+      react-native-nitro-modules: 0.35.9
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -12231,6 +12247,12 @@ snapshots:
       tweetnacl: 1.0.3
       vlq: 2.0.4
 
+  '@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.35.9(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+      react-native: 0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
+      react-native-nitro-modules: 0.35.9(react-native@0.86.0(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -13250,7 +13272,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.14.6(@types/node@20.19.43)(typescript@5.9.3))(vite@8.1.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
+      vitest: 4.1.10(@types/node@26.1.0)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.14.6(@types/node@26.1.0)(typescript@5.9.3))(vite@8.1.0(@types/node@26.1.0)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.22.4)(yaml@2.8.3))
 
   '@vitest/expect@4.1.10':
     dependencies:

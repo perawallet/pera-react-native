@@ -24,6 +24,7 @@
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
+    "@joe-p/react-native-falcon": "catalog:",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",

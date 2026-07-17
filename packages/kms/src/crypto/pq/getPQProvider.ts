@@ -10,19 +10,33 @@
  limitations under the License
  */
 
+import { createRNFalconProvider } from './rnFalconProvider'
 import type { PQSignatureProvider } from './types'
 import { createWasmFalconProvider } from './wasmFalconProvider'
 
 let cached: PQSignatureProvider | undefined
 
 /**
- * Returns the active PQ signature provider. The React Native native provider
- * is wired in a later ticket (PQ-020); until then, and in node/test
- * environments, the WASM provider is used.
+ * Whether we are executing inside the React Native runtime. React Native
+ * defines `navigator.product === 'ReactNative'`; node and jsdom (tests) do
+ * not, so this stays `false` there and the WASM provider is selected. The
+ * `typeof` guard avoids a ReferenceError under node versions without a global
+ * `navigator`.
+ */
+const isReactNative = (): boolean =>
+    typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
+
+/**
+ * Returns the active PQ signature provider (memoized). On-device (React
+ * Native) this is the native nitro Falcon-1024 module; in node/test
+ * environments it is the WASM provider. Both satisfy the same pure
+ * {@link PQSignatureProvider} contract.
  */
 export const getPQProvider = (): PQSignatureProvider => {
     if (!cached) {
-        cached = createWasmFalconProvider()
+        cached = isReactNative()
+            ? createRNFalconProvider()
+            : createWasmFalconProvider()
     }
     return cached
 }

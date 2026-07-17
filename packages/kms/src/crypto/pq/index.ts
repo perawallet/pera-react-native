@@ -12,4 +12,5 @@
 
 export type { PQSignatureProvider } from './types'
 export { createWasmFalconProvider } from './wasmFalconProvider'
+export { createRNFalconProvider } from './rnFalconProvider'
 export { getPQProvider } from './getPQProvider'
