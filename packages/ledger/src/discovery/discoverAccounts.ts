@@ -15,7 +15,6 @@ import type {
     LedgerAccount,
     LedgerTransport,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
-import { MAX_ACCOUNT_SCAN_GAP } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 export type DiscoverAccountsOptions = {
@@ -35,9 +34,11 @@ export type DiscoverAccountsOptions = {
 /**
  * Sequentially discovers Algorand accounts on a connected Ledger device.
  *
- * Fetches accounts at indices 0, 1, 2... and stops after
- * {@link MAX_ACCOUNT_SCAN_GAP} consecutive indices with no on-chain presence.
- * Index 0 is always included even if not funded (matches native app behavior).
+ * Gap/ceiling semantics live in `@perawallet/wallet-core-hardware-wallet`
+ * (the layer that owns the scan loop): with an `isAccountOnChain` probe the
+ * scan continues past unfunded gaps up to a hard index ceiling; without one
+ * it stays capped at the shallow default. Index 0 is always included even
+ * if not funded (matches native app behavior).
  */
 export const discoverLedgerAccounts = async (
     options: DiscoverAccountsOptions,
@@ -47,6 +48,5 @@ export const discoverLedgerAccounts = async (
         isAccountOnChain: options.isAccountOnChain,
         onProgress: options.onProgress,
         classifyError: classifyLedgerError,
-        maxGap: MAX_ACCOUNT_SCAN_GAP,
     })
 }

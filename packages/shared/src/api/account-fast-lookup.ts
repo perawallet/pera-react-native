@@ -39,6 +39,27 @@ export type RawFastLookupResponse = {
     account_exists?: boolean
 }
 
+/**
+ * Single-address on-chain presence probe that DISTINGUISHES "not on chain"
+ * (`false`) from "probe unavailable" (network/API failure, which THROWS).
+ * {@link fetchAccountFastLookup} deliberately swallows failures as inactive
+ * — right for HD onboarding's best-effort batches, wrong for callers that
+ * must degrade to a capped scan when the probe is down (Ledger
+ * funded-account discovery).
+ */
+export const fetchAccountExists = async (
+    address: string,
+    network: Network,
+): Promise<boolean> => {
+    const response = await queryClient<RawFastLookupResponse>({
+        backend: 'pera',
+        network,
+        method: 'GET',
+        url: getAccountFastLookupEndpointPath(address),
+    })
+    return response.data?.account_exists ?? false
+}
+
 export const fetchAccountFastLookup = async (
     addresses: string[],
     network: Network,

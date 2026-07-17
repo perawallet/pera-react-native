@@ -19,6 +19,7 @@ vi.mock('../query-client', () => ({
 }))
 
 import {
+    fetchAccountExists,
     fetchAccountFastLookup,
     getAccountFastLookupEndpointPath,
 } from '../account-fast-lookup'
@@ -96,6 +97,32 @@ describe('fetchAccountFastLookup', () => {
     test('getAccountFastLookupEndpointPath embeds the address in the URL', () => {
         expect(getAccountFastLookupEndpointPath('SOMEADDRESS')).toBe(
             '/v1/accounts/fast-lookup/SOMEADDRESS/',
+        )
+    })
+})
+
+describe('fetchAccountExists', () => {
+    beforeEach(() => {
+        queryClientMock.mockReset()
+    })
+
+    test('maps account_exists for a single address', async () => {
+        queryClientMock.mockResolvedValue({ data: { account_exists: true } })
+
+        await expect(fetchAccountExists('ADDR1', 'mainnet')).resolves.toBe(true)
+        expect(queryClientMock).toHaveBeenCalledWith({
+            backend: 'pera',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v1/accounts/fast-lookup/ADDR1/',
+        })
+    })
+
+    test('throws on request failure so callers can distinguish probe-down from not-on-chain', async () => {
+        queryClientMock.mockRejectedValue(new Error('offline'))
+
+        await expect(fetchAccountExists('ADDR1', 'mainnet')).rejects.toThrow(
+            'offline',
         )
     })
 })

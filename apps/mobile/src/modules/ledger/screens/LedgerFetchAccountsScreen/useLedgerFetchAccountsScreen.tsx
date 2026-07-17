@@ -24,7 +24,12 @@ import {
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
-import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    fetchAccountExists,
+    type AppError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
@@ -57,6 +62,7 @@ export const useLedgerFetchAccountsScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const isMounted = useIsMounted()
+        const { network } = useNetwork()
         const { request: requestBottomSheet, dismiss } = useBottomSheet()
 
         const [connectionStatus, setConnectionStatus] =
@@ -97,6 +103,13 @@ export const useLedgerFetchAccountsScreen =
                     onProgress: (index: number) => {
                         setProgress({ current: index + 1, total: null })
                     },
+                    // On-chain probe drives the funded-account gap scan so a
+                    // migrator's deep indices surface in the initial fetch.
+                    // It throws when the API is unreachable, which discovery
+                    // treats as "probe unavailable" and degrades to the
+                    // shallow capped scan — offline import keeps working.
+                    isAccountOnChain: address =>
+                        fetchAccountExists(address, network),
                 })
 
                 transportRef.current = result.transport
@@ -126,7 +139,14 @@ export const useLedgerFetchAccountsScreen =
                 setConnectionStatus('disconnected')
                 setIsDiscovering(false)
             }
-        }, [deviceId, deviceName, transportType, navigation, isMounted])
+        }, [
+            deviceId,
+            deviceName,
+            transportType,
+            network,
+            navigation,
+            isMounted,
+        ])
 
         useEffect(() => {
             if (hasStartedRef.current) return
