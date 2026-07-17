@@ -18,13 +18,11 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { seedFromMnemonic } from 'algosdk'
+import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
 import { quantumSignKeyId } from '../models'
 import { useKMSService } from './useKMSServices'
 import { buildSeedMetadata } from '../utils'
-import {
-    deriveFalconAddressMock,
-    deriveFalconKeypairMock,
-} from '../crypto/falcon-utils'
+import { getPQProvider } from '../crypto/pq'
 import { commitQuantumChildKey } from '../storage/quantum-child'
 import { zeroBytes } from '../crypto/secure-memory'
 import { QUANTUM_SEED_LENGTH, SeedScheme } from '../constants'
@@ -57,8 +55,8 @@ export const useQuantum = () => {
                 ? seedFromMnemonic(params.mnemonic)
                 : nacl.randomBytes(QUANTUM_SEED_LENGTH)
 
-            const { publicKey } = deriveFalconKeypairMock(seed)
-            const address = deriveFalconAddressMock(publicKey)
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+            const address = deriveQuantumAddress(publicKey)
 
             const metadata = buildSeedMetadata({ scheme: SeedScheme.Quantum })
 
