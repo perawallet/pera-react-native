@@ -18,6 +18,7 @@ import { useToast } from '@hooks/useToast'
 import type {
     HardwareWalletAdapterState,
     HardwareWalletDevice,
+    LedgerTransportType,
 } from '@perawallet/wallet-core-hardware-wallet'
 import {
     LedgerLocationServicesDisabledError,
@@ -59,7 +60,12 @@ type UseLedgerScanScreenResult = {
     isCheckingPermissions: boolean
     hasPermissions: boolean
     isPermissionDenied: boolean
-    isPermissionBlocked: boolean
+    /**
+     * True when re-requesting the permission can't help and the CTA should
+     * hand off to OS Settings instead: Android NEVER_ASK_AGAIN, or iOS
+     * Bluetooth denial (which has no runtime prompt at all).
+     */
+    shouldOpenSettings: boolean
     /**
      * True when the scan failed because the OS location toggle is off (Android
      * ≤ 11 needs it on for BLE discovery). Lets the screen render an
@@ -80,7 +86,7 @@ type UseLedgerScanScreenResult = {
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
-const USB_ONLY_TRANSPORTS: Array<'usb'> = ['usb']
+const USB_ONLY_TRANSPORTS: LedgerTransportType[] = ['usb']
 
 export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const { t } = useLanguage()
@@ -264,9 +270,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         isCheckingPermissions,
         hasPermissions,
         isPermissionDenied,
-        // iOS Bluetooth denial behaves like a blocked permission: the system
-        // dialog can't reopen, only Settings helps.
-        isPermissionBlocked: isPermissionBlocked || isIosBluetoothDenied,
+        shouldOpenSettings: isPermissionBlocked || isIosBluetoothDenied,
         isLocationServicesDisabled,
         isScanTimeout,
         handleDevicePress,

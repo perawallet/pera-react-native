@@ -221,7 +221,7 @@ describe('useLedgerScanScreen', () => {
 
         expect(mockOpenSettings).toHaveBeenCalledTimes(1)
         expect(mockRequestPermissions).not.toHaveBeenCalled()
-        expect(result.current.isPermissionBlocked).toBe(true)
+        expect(result.current.shouldOpenSettings).toBe(true)
     })
 
     it('stops scanning and navigates when a device is tapped', () => {
@@ -431,7 +431,7 @@ describe('useLedgerScanScreen', () => {
         const { result } = renderHook(() => useLedgerScanScreen())
 
         expect(result.current.isPermissionDenied).toBe(true)
-        expect(result.current.isPermissionBlocked).toBe(true)
+        expect(result.current.shouldOpenSettings).toBe(true)
         expect(mockStartScan).not.toHaveBeenCalled()
 
         act(() => {
