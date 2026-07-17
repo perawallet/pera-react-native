@@ -38,6 +38,20 @@
       "run_at": "document_start",
       "world": "ISOLATED",
       "all_frames": false
+    },
+    {
+      "matches": ["https://*.perawallet.app/*"],
+      "js": ["content-discover-main.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
+    {
+      "matches": ["https://*.perawallet.app/*"],
+      "js": ["content-discover-relay.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": true
     }
   ],
   "permissions": ["storage", "alarms", "offscreen"],

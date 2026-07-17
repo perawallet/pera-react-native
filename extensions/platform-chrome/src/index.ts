@@ -36,6 +36,7 @@ export {
     openExpandedTab,
     closeCurrentTab,
     consumeInitialExpandedFlow,
+    openExternalTab,
     type ExpandedFlow,
 } from './navigation'
 export { isTrustedExtensionPageSender } from './trusted-sender'
@@ -79,3 +80,8 @@ export * from './dapp/router-protocol'
 export * from './dapp/router'
 export * from './dapp/approval-bridge'
 export * from './dapp/approval-client'
+export {
+    createDiscoverBridgeHost,
+    type DiscoverBridgeHost,
+} from './webview/bridge-host'
+export * from './webview/bridge-wire'

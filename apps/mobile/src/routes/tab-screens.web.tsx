@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-// Web tab registration (see capabilities.web.ts): Discover stays off until
-// the M6 iframe/bridge layer exists, and keeping its import out of this
-// platform file keeps the webview screen graph out of the web bundle
-// entirely. Swap and Fund are pure RN screen graphs, registered as of M5
-// (2026-07-16 feature-completion spec) with native's layouts and age gates.
+// Web tab registration (see capabilities.web.ts): Discover, Swap, and Fund are
+// registered as of M5 (2026-07-16 feature-completion spec). Discover is now
+// web-real as of M6 (2026-07-16 feature-completion spec) with the iframe/bridge
+// layer. Swap and Fund are pure RN screen graphs with native's layouts and age gates.
 import type React from 'react'
 import { withAgeGate } from '@components/AgeGated'
 import { TabbarEvent } from '@analytics'
+import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
 import { SwapScreen } from '@modules/swap/screens/SwapScreen'
 import { OnrampScreen } from '@modules/onramp/screens/OnrampScreen'
 import { MenuScreen } from '@modules/menu/screens/MenuScreen'
@@ -33,6 +33,7 @@ export type {
 
 // Age-gated at the navigator so the screens (and their side effects) only
 // mount for users who pass the gate (same rule as native tab-screens.tsx).
+const GatedDiscoverScreen = withAgeGate(DiscoverScreen)
 const GatedSwapScreen = withAgeGate(SwapScreen)
 const GatedOnrampScreen = withAgeGate(OnrampScreen)
 
@@ -41,6 +42,13 @@ export const tabScreens: TabScreenDescriptor[] = [
         name: 'Home',
         component: AccountStackNavigator as React.ComponentType,
         event: TabbarEvent.Home,
+    },
+    {
+        name: 'Discover',
+        component: GatedDiscoverScreen as React.ComponentType,
+        layout: headeredLayout,
+        options: { tabBarButtonTestID: 'tab_discover_button' },
+        event: TabbarEvent.Discover,
     },
     {
         name: 'Swap',

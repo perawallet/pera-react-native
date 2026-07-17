@@ -552,7 +552,8 @@
         "webview": {
             "failed_title": "Failed to load page",
             "reload": "Reload",
-            "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
+            "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
+            "walletconnect_not_supported": "WalletConnect connections aren't supported in the extension yet"
         },
         "done": "Done",
         "save": "Save",

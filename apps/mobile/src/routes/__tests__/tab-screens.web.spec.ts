@@ -13,12 +13,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
 const {
+    DiscoverScreen,
     SwapScreen,
     OnrampScreen,
     MenuScreen,
     AccountStackNavigator,
     ageGateCalls,
 } = vi.hoisted(() => ({
+    DiscoverScreen: () => null,
     SwapScreen: () => null,
     OnrampScreen: () => null,
     MenuScreen: () => null,
@@ -26,6 +28,7 @@ const {
     ageGateCalls: [] as unknown[],
 }))
 
+vi.mock('@modules/discover/screens/DiscoverScreen', () => ({ DiscoverScreen }))
 vi.mock('@modules/swap/screens/SwapScreen', () => ({ SwapScreen }))
 vi.mock('@modules/onramp/screens/OnrampScreen', () => ({ OnrampScreen }))
 vi.mock('@modules/menu/screens/MenuScreen', () => ({ MenuScreen }))
@@ -46,6 +49,7 @@ vi.mock('@layouts/index', () => ({
 vi.mock('@analytics', () => ({
     TabbarEvent: {
         Home: 'tabbar_home',
+        Discover: 'tabbar_discover',
         Swap: 'tabbar_swap',
         Fund: 'tabbar_fund',
         Menu: 'tabbar_menu',
@@ -56,24 +60,31 @@ import { headeredLayout, safeAreaLayout } from '@layouts/index'
 import { tabScreens } from '../tab-screens.web'
 
 describe('web tab registration', () => {
-    it('registers Home, Swap, Fund, Menu in native order (Discover deferred to M6)', () => {
+    it('registers Home, Discover, Swap, Fund, Menu in native order', () => {
         expect(tabScreens.map(screen => screen.name)).toEqual([
             'Home',
+            'Discover',
             'Swap',
             'Fund',
             'Menu',
         ])
     })
 
-    it('age-gates Swap and Fund exactly like native', () => {
+    it('age-gates Discover, Swap and Fund exactly like native', () => {
+        expect(ageGateCalls).toContain(DiscoverScreen)
         expect(ageGateCalls).toContain(SwapScreen)
         expect(ageGateCalls).toContain(OnrampScreen)
-        expect(ageGateCalls).toHaveLength(2)
+        expect(ageGateCalls).toHaveLength(3)
     })
 
     it('mirrors native layouts and exposes e2e tab testIDs', () => {
+        const discover = tabScreens.find(screen => screen.name === 'Discover')
         const swap = tabScreens.find(screen => screen.name === 'Swap')
         const fund = tabScreens.find(screen => screen.name === 'Fund')
+        expect(discover?.layout).toBe(headeredLayout)
+        expect(discover?.options?.tabBarButtonTestID).toBe(
+            'tab_discover_button',
+        )
         expect(swap?.layout).toBe(safeAreaLayout)
         expect(swap?.options?.tabBarButtonTestID).toBe('tab_swap_button')
         expect(fund?.layout).toBe(headeredLayout)

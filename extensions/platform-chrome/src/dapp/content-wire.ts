@@ -24,3 +24,4 @@ export {
     type Arc0027ResponseEnvelope,
 } from './arc0027-types'
 export { DAPP_RELAY_SCOPE } from './router-protocol'
+export * from '../webview/bridge-wire'

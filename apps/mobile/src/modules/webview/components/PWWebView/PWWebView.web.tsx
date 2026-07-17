@@ -1,0 +1,263 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// Web replacement for PWWebView: react-native-webview does not exist on web
+// (metro webStubs shims it to a throwing stub). Renders the URL in an iframe
+// (PWStaticWebView.web.tsx cast precedent) and rebuilds the bridge transport:
+// the Discover-origin content scripts (apps/extension/src/content/
+// discover-main.ts / discover-relay.ts) install window.peraMobileInterface
+// inside the iframe and relay over a chrome.runtime Port that
+// createDiscoverBridgeHost accepts only for this mount's token + the
+// Discover origin. The native usePeraWebviewInterface registry handles every
+// op unchanged (its senders resolve to handlers.web.ts on web); only two ops
+// are intercepted here: pushWebView (dapps open in real tabs — the injected
+// ARC-0027 provider supplies connect/sign, no nested viewer) and
+// walletConnect (toast until M7 pairing).
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { config } from '@perawallet/wallet-core-config'
+import { logger } from '@perawallet/wallet-core-shared'
+import {
+    createDiscoverBridgeHost,
+    openExternalTab,
+} from '@perawallet/wallet-extension-platform-chrome'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
+import { PWView } from '@components/core/PWView'
+import { usePeraWebviewInterface } from '../../hooks/usePeraWebviewInterface'
+import { useNotifyWebViewOnContextChange } from '../../hooks/useNotifyWebViewOnContextChange'
+import { useContextFingerprints } from '../../hooks/useContextFingerprints'
+import {
+    generateBridgeToken,
+    hasValidBridgeToken,
+    isSafeBrowserUrl,
+    isTrustedWebviewOrigin,
+} from '../../hooks/handlers'
+// asBridgeWebview/WebviewBridgeTransport/requireSecure are bound to the web
+// transport (native handlers.ts binds its own requireSecure to
+// injectJavaScript, not a Port) — imported with the explicit .web suffix so
+// both Metro (redundantly) and vitest (which has no platform resolution for
+// bare specifiers) land on the same file.
+import {
+    asBridgeWebview,
+    requireSecure,
+    type WebviewBridgeTransport,
+} from '../../hooks/handlers.web'
+import { toLoadableUrl } from './toLoadableUrl'
+import { useStyles } from './styles'
+import type { PWWebViewProps } from './PWWebView'
+
+export type { PWWebViewProps } from './PWWebView'
+
+const TOKEN_PARAM = 'peraBridgeToken' // = DISCOVER_BRIDGE_TOKEN_PARAM (bridge-wire.ts)
+
+// Bounds the disconnect → regenerate-token → reconnect → disconnect… cycle a
+// crash-looping relay (or a permanently broken extension context) could
+// otherwise drive forever. A burst of disconnects within the quiet window
+// gets at most this many auto-reloads before giving up and leaving the
+// iframe as-is; a tab-switch/manual remount is the recovery path from there.
+const MAX_RAPID_RECONNECTS = 3
+const DISCONNECT_QUIET_WINDOW_MS = 10_000
+
+const IFrame = 'iframe' as unknown as React.ComponentType<{
+    src: string
+    sandbox?: string
+    title: string
+    style?: Record<string, string | number>
+}>
+
+export const PWWebView = ({
+    url,
+    enablePeraConnect,
+    onClose,
+    onBack,
+    customJavaScript,
+    onCustomMessage,
+    containerStyle,
+}: PWWebViewProps) => {
+    const styles = useStyles({ bottomInset: 0 })
+    const { showToast } = useToast()
+    const { t } = useLanguage()
+
+    // Regenerated when the bridge host reports its port died mid-life
+    // (extension reload, host disposal) so every future call wouldn't
+    // otherwise silently vanish for the rest of the iframe's life — see the
+    // token/host effect below. Assigning a fresh value remounts the iframe
+    // (via its `key`) into a fresh page JS realm and stands up a fresh
+    // host/port for it.
+    const [bridgeToken, setBridgeToken] = useState(() => generateBridgeToken())
+
+    const isMountedRef = useRef(true)
+    useEffect(
+        () => () => {
+            isMountedRef.current = false
+        },
+        [],
+    )
+
+    // Consecutive-disconnect bookkeeping for the reload backoff below. Plain
+    // refs (no timers) — nothing to clean up on unmount beyond isMountedRef.
+    const disconnectCountRef = useRef(0)
+    const lastDisconnectAtRef = useRef(0)
+
+    useEffect(() => {
+        if (customJavaScript) {
+            logger.warn(
+                'PWWebView.web: customJavaScript is unsupported on web (M8 extends the content-script pattern instead)',
+            )
+        }
+    }, [customJavaScript])
+
+    const src = useMemo(() => {
+        const loadable = new URL(toLoadableUrl(url))
+        loadable.searchParams.set(TOKEN_PARAM, bridgeToken)
+        return loadable.toString()
+    }, [url, bridgeToken])
+
+    // Structural trust: the bridge content scripts only run on the Discover
+    // origin, and createDiscoverBridgeHost verifies the browser-stamped
+    // port.sender.origin — an off-origin navigation inside the iframe kills
+    // the bridge rather than reaching the handlers. This flag mirrors
+    // native's isSecure for the requireSecure gate.
+    const isSecure = isTrustedWebviewOrigin(url, [config.discoverBaseUrl])
+
+    const hostRef = useRef<ReturnType<typeof createDiscoverBridgeHost> | null>(
+        null,
+    )
+    const transport = useMemo<WebviewBridgeTransport>(
+        () => ({ postToWebview: data => hostRef.current?.post(data) }),
+        [],
+    )
+    const bridgeWebview = useMemo(() => asBridgeWebview(transport), [transport])
+    const bridgeWebviewRef = useRef(bridgeWebview)
+
+    const mobileInterface = usePeraWebviewInterface(
+        bridgeWebview,
+        isSecure,
+        url,
+        onClose,
+        onBack,
+    )
+    const contextFingerprints = useContextFingerprints()
+    useNotifyWebViewOnContextChange(
+        bridgeWebviewRef,
+        enablePeraConnect ? contextFingerprints : undefined,
+    )
+
+    // Mirror native handleEvent's dispatch order (PWWebView.tsx:173-215),
+    // with the two web op intercepts between token validation and dispatch.
+    const handleBridgeMessage = (data: unknown): void => {
+        if (onCustomMessage) {
+            onCustomMessage(data)
+            return
+        }
+        if (!enablePeraConnect) return
+        if (!hasValidBridgeToken(data, bridgeToken)) return
+        const messages = Array.isArray(data) ? data : [data]
+        for (const message of messages) {
+            const { method, params } = message as {
+                method?: string
+                params?: Record<string, unknown>
+            }
+            if (method === 'pushWebView') {
+                // Every other privileged op runs through requireSecure inside
+                // usePeraWebviewInterface — this web-only intercept must too,
+                // rather than trusting the token check alone, so an insecure
+                // connection gets the standard Unauthorized envelope instead
+                // of a silent tab-open.
+                requireSecure(
+                    isSecure,
+                    {
+                        operation: 'pushWebView',
+                        messageId: (message as { id?: string }).id ?? '',
+                        sourceUrl: url,
+                        webview: bridgeWebview,
+                    },
+                    () => {
+                        const targetUrl = params?.url
+                        if (
+                            typeof targetUrl === 'string' &&
+                            isSafeBrowserUrl(targetUrl)
+                        ) {
+                            openExternalTab(targetUrl)
+                        }
+                    },
+                )
+                continue
+            }
+            if (method === 'walletConnect') {
+                showToast({
+                    title: '',
+                    body: t('common.webview.walletconnect_not_supported'),
+                    type: 'info',
+                })
+                continue
+            }
+            mobileInterface.handleMessage(
+                message as Parameters<typeof mobileInterface.handleMessage>[0],
+            )
+        }
+    }
+    const handleBridgeMessageRef = useRef(handleBridgeMessage)
+    handleBridgeMessageRef.current = handleBridgeMessage
+
+    useEffect(() => {
+        const host = createDiscoverBridgeHost({
+            token: bridgeToken,
+            trustedOrigin: new URL(config.discoverBaseUrl).origin,
+            onMessage: data => handleBridgeMessageRef.current(data),
+            onDisconnect: () => {
+                if (!isMountedRef.current) return
+
+                const now = Date.now()
+                if (
+                    now - lastDisconnectAtRef.current >
+                    DISCONNECT_QUIET_WINDOW_MS
+                ) {
+                    disconnectCountRef.current = 0
+                }
+                lastDisconnectAtRef.current = now
+                disconnectCountRef.current += 1
+
+                if (disconnectCountRef.current > MAX_RAPID_RECONNECTS) {
+                    logger.warn(
+                        'PWWebView.web: bridge port disconnect-looped — giving up on auto-reload',
+                        { consecutiveDisconnects: disconnectCountRef.current },
+                    )
+                    return
+                }
+
+                setBridgeToken(generateBridgeToken())
+            },
+        })
+        hostRef.current = host
+        return () => {
+            hostRef.current = null
+            host.dispose()
+        }
+    }, [bridgeToken])
+
+    return (
+        <PWView style={[styles.flex, containerStyle]}>
+            <IFrame
+                key={bridgeToken}
+                src={src}
+                sandbox='allow-same-origin allow-scripts allow-forms allow-popups'
+                title='pera-webview'
+                // Raw DOM element rendered via react-dom, not an RN View:
+                // makeStyles produces RN stylesheet ids that a host
+                // <iframe> can't consume.
+                // oxlint-disable-next-line react-native/no-inline-styles
+                style={{ border: 0, width: '100%', height: '100%', flex: 1 }}
+            />
+        </PWView>
+    )
+}

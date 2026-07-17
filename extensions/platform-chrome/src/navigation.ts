@@ -53,6 +53,12 @@ export const openExpandedTab = async (flow?: ExpandedFlow): Promise<void> => {
     await chrome.tabs.create({ url })
 }
 
+/** Opens an arbitrary external URL in a new browser tab (webview pushWebView
+ * → real tab on web; the injected ARC-0027 provider supplies connect/sign). */
+export const openExternalTab = (url: string): void => {
+    void chrome.tabs.create({ url })
+}
+
 /**
  * Closes the tab hosting the calling extension page. `window.close()`
  * can't close a chrome.tabs.create'd tab, but tabs.getCurrent/remove can,

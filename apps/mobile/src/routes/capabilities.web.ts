@@ -15,13 +15,13 @@ import type { RouteCapabilities } from './capabilities-types'
 export type { RouteCapabilities } from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
-    discoverTab: false, // M6: needs the web PWWebView/iframe bridge layer
+    discoverTab: true, // M6: iframe webview layer + discover bridge
     swapTab: true, // M5: native RN screen graph
     fundTab: true, // M5: native RN screen graph (Meld checkout via window.open)
     staking: true, // M5: native RN screen graph
     peraCard: false, // M10
-    giftCards: false, // M8: needs the web PWWebView/iframe bridge layer
-    inAppWebView: false, // revisit after M6 lands
+    giftCards: false, // M8: rides the M6 iframe layer
+    inAppWebView: false, // revisit after M6 lands — decision deferred to M8 planning
     qrScanner: true, // Task 15 (stretch): BarcodeDetector camera scan + paste fallback
     pushNotificationSettings: false, // permanently off: no push on web
     walletConnectSettings: false, // M7

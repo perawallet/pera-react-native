@@ -204,6 +204,8 @@ cpSync(
 for (const [entry, outfile] of [
     ['src/content/inject-main.ts', 'content-inject-main.js'],
     ['src/content/relay-isolated.ts', 'content-relay-isolated.js'],
+    ['src/content/discover-main.ts', 'content-discover-main.js'],
+    ['src/content/discover-relay.ts', 'content-discover-relay.js'],
 ]) {
     await build({
         entryPoints: [path.join(root, entry)],
