@@ -45,13 +45,17 @@ const safeOrigin = (url: string): string | null => {
 // override already pointing at the giftcards host directly) so the caller
 // falls back to trusting only the configured origin itself.
 const redirectTwinOrigin = (base: string): string | null => {
-    const parsed = safeOrigin(base)
-    if (!parsed) return null
-    const hostname = new URL(base).hostname
-    if (!hostname.startsWith(COMMERCE_HOST_PREFIX)) return null
-    const twinHost =
-        GIFTCARDS_HOST_PREFIX + hostname.slice(COMMERCE_HOST_PREFIX.length)
-    return parsed.replace(hostname, twinHost)
+    let parsed: URL
+    try {
+        parsed = new URL(base)
+    } catch {
+        return null
+    }
+    if (!parsed.hostname.startsWith(COMMERCE_HOST_PREFIX)) return null
+    parsed.hostname =
+        GIFTCARDS_HOST_PREFIX +
+        parsed.hostname.slice(COMMERCE_HOST_PREFIX.length)
+    return parsed.origin
 }
 
 const bidaliBases = (): string[] => [
