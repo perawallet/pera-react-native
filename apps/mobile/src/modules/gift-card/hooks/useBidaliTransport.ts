@@ -39,6 +39,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
 import { Decimal } from 'decimal.js'
+import { sendBidaliEvent } from './bidali-events'
 
 const SUPPORTED_CURRENCIES = ['algorand', 'usdcalgorand']
 const SUPPORTED_CURRENCIES_JSON = JSON.stringify(SUPPORTED_CURRENCIES)
@@ -126,15 +127,6 @@ const isBidaliRPC = (data: unknown): data is BidaliRPCMessage => {
         typeof msg.method === 'string' &&
         typeof msg.id === 'string' &&
         msg.id.startsWith('bidali-')
-    )
-}
-
-const sendBidaliEvent = (
-    webviewRef: React.RefObject<Nullable<WebView>>,
-    event: 'paymentSent' | 'paymentCancelled',
-) => {
-    webviewRef.current?.injectJavaScript(
-        `window.bidaliProvider.${event}?.(); true;`,
     )
 }
 

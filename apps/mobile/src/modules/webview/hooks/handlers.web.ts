@@ -33,8 +33,15 @@ export type WebviewBridgeTransport = { postToWebview: (data: unknown) => void }
 export const asBridgeWebview = (transport: WebviewBridgeTransport): WebView =>
     transport as unknown as WebView
 
-const transportOf = (webview: WebView | null): WebviewBridgeTransport | null =>
+/** Typed inverse of `asBridgeWebview` — recovers the transport a bridge
+ * webview object was built from (e.g. to send from a caller that only holds
+ * a `WebView | null` ref, like native's webviewRef). Null-safe. */
+export const asBridgeTransport = (
+    webview: WebView | null,
+): WebviewBridgeTransport | null =>
     (webview as unknown as WebviewBridgeTransport | null) ?? null
+
+const transportOf = asBridgeTransport
 
 export const sendMessageToWebview = (
     messageId: string,

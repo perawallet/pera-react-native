@@ -85,6 +85,7 @@ export const PWWebView = ({
     customJavaScript,
     onCustomMessage,
     containerStyle,
+    webviewRef,
 }: PWWebViewProps) => {
     const styles = useStyles({ bottomInset: 0 })
 
@@ -148,6 +149,20 @@ export const PWWebView = ({
     )
     const bridgeWebview = useMemo(() => asBridgeWebview(transport), [transport])
     const bridgeWebviewRef = useRef(bridgeWebview)
+
+    // Populates the caller-supplied webviewRef (native fills it with the
+    // real WebView instance) with this mount's transport-backed twin, so a
+    // hook like useBidaliTransport can reach the SAME ref on both platforms
+    // — its web sender (bidali-events.web.ts) recovers the transport back
+    // out via asBridgeTransport. Nulled on unmount so a stale twin never
+    // outlives this mount.
+    useEffect(() => {
+        if (!webviewRef) return undefined
+        webviewRef.current = bridgeWebview
+        return () => {
+            webviewRef.current = null
+        }
+    }, [webviewRef, bridgeWebview])
 
     const mobileInterface = usePeraWebviewInterface(
         bridgeWebview,

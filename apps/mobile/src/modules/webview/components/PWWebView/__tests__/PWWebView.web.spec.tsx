@@ -14,6 +14,8 @@ import React from 'react'
 import { act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@test-utils/render'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import type WebView from 'react-native-webview'
 
 const {
     handleMessage,
@@ -79,6 +81,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
 }))
 
+import { asBridgeTransport } from '../../../hooks/handlers.web'
 import { PWWebView } from '../PWWebView.web'
 
 const DISCOVER = 'https://discover-mobile-staging.perawallet.app/'
@@ -282,6 +285,32 @@ describe('PWWebView.web', () => {
             expect.anything(),
             undefined,
         )
+    })
+
+    // M8 Task 2: the incoming webviewRef prop (used by e.g. useBidaliTransport
+    // to reach webview.current?.injectJavaScript on native) must be populated
+    // on web with this mount's transport-backed twin so the same ref works on
+    // both platforms — bidali-events.web.ts recovers the transport back out
+    // via asBridgeTransport and posts through it.
+    it('populates the incoming webviewRef with a transport-backed bridge webview, and nulls it on unmount', () => {
+        const webviewRef = {
+            current: null,
+        } as React.RefObject<Nullable<WebView>>
+
+        const { unmount } = render(
+            <PWWebView
+                url={DISCOVER}
+                enablePeraConnect={true}
+                webviewRef={webviewRef}
+            />,
+        )
+
+        expect(webviewRef.current).not.toBeNull()
+        asBridgeTransport(webviewRef.current)?.postToWebview({ hello: 'world' })
+        expect(hostPost).toHaveBeenCalledWith({ hello: 'world' })
+
+        unmount()
+        expect(webviewRef.current).toBeNull()
     })
 
     // Review finding 2: a crash-looping relay must not drive the

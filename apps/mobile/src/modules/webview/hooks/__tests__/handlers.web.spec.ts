@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import {
+    asBridgeTransport,
     asBridgeWebview,
     sendActionToWebview,
     sendErrorToWebview,
@@ -91,6 +92,15 @@ describe('handlers.web senders', () => {
 
     it('drops sends when webview is null instead of throwing', () => {
         expect(() => sendMessageToWebview('1', {}, null)).not.toThrow()
+    })
+
+    it('asBridgeTransport recovers the same transport asBridgeWebview wrapped', () => {
+        const transport = makeTransport()
+        expect(asBridgeTransport(asBridgeWebview(transport))).toBe(transport)
+    })
+
+    it('asBridgeTransport is null-safe', () => {
+        expect(asBridgeTransport(null)).toBeNull()
     })
 
     it('requireSecure blocks untrusted origins with an Unauthorized error', () => {
