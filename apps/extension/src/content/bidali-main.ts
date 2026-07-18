@@ -116,6 +116,12 @@ if (token) {
     // Host → page direction: bidali-events.web.ts (Task 2) posts this exact,
     // deliberately id-less fire-and-forget notification onto the same
     // window — never attempt request/response correlation on it.
+    // NOTE the source check below only excludes OTHER frames — it does not
+    // authenticate the relay: page scripts share this realm and can forge the
+    // message. That is safe today only because paymentSent/paymentCancelled
+    // are callbacks the page itself assigns (forging them grants the page
+    // nothing it can't already call directly). Do not extend this listener
+    // with anything that carries security weight.
     window.addEventListener('message', event => {
         if (event.source !== window) return
         const data = event.data as
