@@ -14,7 +14,6 @@ import {
     type AgeGateDeviceCapability,
     type AgeGateResult,
     type AgeGateService,
-    type AnalyticsService,
     type AppIntegrityAttestation,
     type AppIntegrityService,
     type BiometricSecurityLevel,
@@ -32,11 +31,6 @@ import {
 } from '@perawallet/wallet-extension-platform'
 
 const noop = (): void => undefined
-
-export class ChromeAnalyticsService implements AnalyticsService {
-    initializeAnalytics(): void {}
-    logEvent(_key: string, _payload?: unknown): void {}
-}
 
 export class ChromeCrashReportingService implements CrashReportingService {
     initializeCrashReporting(): void {}

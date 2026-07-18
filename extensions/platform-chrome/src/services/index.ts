@@ -15,7 +15,6 @@ export { ChromeDeviceInfoService } from './device'
 export { ChromeDatabaseService } from './database'
 export {
     ChromeAgeGateService,
-    ChromeAnalyticsService,
     ChromeAppIntegrityService,
     ChromeBiometricsService,
     ChromeCrashReportingService,
@@ -23,3 +22,4 @@ export {
     ChromePushNotificationService,
 } from './stubs'
 export { ChromeRemoteConfigService } from './remote-config'
+export { ChromeAnalyticsService } from './analytics'
