@@ -54,4 +54,24 @@ describe('tools/generate-config.sh', () => {
         const output = run({ PERA_ENV_OVERLAY: overlay })
         expect(output).toContain('testnetAlgodUrl: "http://localhost:4001"')
     })
+
+    test('emits firebase config from FIREBASE_* env vars', () => {
+        const output = run({
+            FIREBASE_API_KEY: 'test-api-key',
+            FIREBASE_PROJECT_ID: 'test-project',
+        })
+        expect(output).toContain('firebaseApiKey: "test-api-key"')
+        expect(output).toContain('firebaseProjectId: "test-project"')
+    })
+
+    test('emits gaMeasurementApiSecret and sentryDsn', () => {
+        const output = run({
+            GA_MEASUREMENT_API_SECRET: 'test-ga-secret',
+            SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0',
+        })
+        expect(output).toContain('gaMeasurementApiSecret: "test-ga-secret"')
+        expect(output).toContain(
+            'sentryDsn: "https://key@o0.ingest.sentry.io/0"',
+        )
+    })
 })
