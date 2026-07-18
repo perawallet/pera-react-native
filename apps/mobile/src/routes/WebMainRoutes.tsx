@@ -110,8 +110,8 @@ export const WebMainRoutes = (): React.JSX.Element => {
     useDeviceRegistration(addresses)
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
 
-    const handleReady = useExpandedFlowNavigation(screen => {
-        navigationRef.navigate(screen)
+    const handleReady = useExpandedFlowNavigation((screen, params) => {
+        navigationRef.navigate(screen, params)
     })
 
     return (

@@ -43,8 +43,9 @@ type UseLedgerConnectionWrapperResult = UseLedgerConnectionResult & {
 /**
  * App-level wrapper around the core useLedgerConnection hook.
  * Resolves all Ledger transport providers from the registry, filters
- * to the ones supported on this platform (BLE on iOS+Android, USB on
- * Android only), and passes them to the core hook.
+ * to the ones supported on this platform (BLE on iOS+Android+web via Web
+ * Bluetooth, USB on Android+web via WebHID), and passes them to the core
+ * hook.
  *
  * The supported-providers list is computed with local state instead of
  * React Query. The provider objects expose methods (`scan`, `connect`,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export { useBlePermissions } from './useBlePermissions'
-export { useBluetoothState } from './useBluetoothState'
-export { useLedgerConnection } from './useLedgerConnectionProvider'
-export { useLedgerExpandedTabHandoff } from './useLedgerExpandedTabHandoff'
+export const name = '@perawallet/wallet-extension-ledger-web-usb'
+
+export { WithLedgerWebUsbExtension } from './extension'
+export { LedgerWebUsbService } from './LedgerWebUsbService'

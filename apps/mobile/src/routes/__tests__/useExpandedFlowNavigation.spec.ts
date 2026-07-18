@@ -58,6 +58,34 @@ describe('useExpandedFlowNavigation', () => {
         expect(navigate).toHaveBeenCalledTimes(1)
     })
 
+    it('deep-links into LedgerScan with transportType usb when the flow is ledger-usb', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('ledger-usb')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'LedgerScan',
+            params: { transportType: 'usb' },
+        })
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('deep-links into LedgerScan with transportType ble when the flow is ledger-ble', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('ledger-ble')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'LedgerScan',
+            params: { transportType: 'ble' },
+        })
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
     it('does not navigate when there is no flow', () => {
         consumeInitialExpandedFlowMock.mockReturnValue(null)
         const navigate = vi.fn()

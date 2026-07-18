@@ -10,9 +10,20 @@
  limitations under the License
  */
 
-export type ExpandedFlow = 'add-account' | 'backup-wallet' | 'scan'
+export type ExpandedFlow =
+    | 'add-account'
+    | 'backup-wallet'
+    | 'scan'
+    | 'ledger-usb'
+    | 'ledger-ble'
 
-const FLOWS: readonly string[] = ['add-account', 'backup-wallet', 'scan']
+const FLOWS: readonly string[] = [
+    'add-account',
+    'backup-wallet',
+    'scan',
+    'ledger-usb',
+    'ledger-ble',
+]
 
 /**
  * Finds an already-open expanded tab, if any, so re-triggering a

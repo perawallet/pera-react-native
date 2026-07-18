@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,19 +10,16 @@
  limitations under the License
  */
 
-// Web shim for @perawallet/wallet-extension-ledger-react-native-usb.
-// The real package imports @ledgerhq/react-native-hid (USB HID transport) which
-// requires native bridge modules unavailable in browser environments.
-// On web, USB HID Ledger transport is unavailable; the registry has no USB provider.
+// Web implementation of @perawallet/wallet-extension-ledger-react-native-usb.
+// Metro's webStubs (apps/mobile/metro.config.js) alias the bare specifier to
+// this file for web builds. The native package's export surface
+// (WithLedgerUsbExtension, RNLedgerUsbService, name) is re-exported here,
+// backed by WebHID (@ledgerhq/hw-transport-webhid) instead of the Android-only
+// @ledgerhq/react-native-hid native bridge.
+
+export {
+    WithLedgerWebUsbExtension as WithLedgerUsbExtension,
+    LedgerWebUsbService as RNLedgerUsbService,
+} from '@perawallet/wallet-extension-ledger-web-usb'
 
 export const name = '@perawallet/wallet-extension-ledger-react-native-usb'
-
-// No-op: registers nothing into the hardware wallet registry (USB HID unavailable on web).
-export const WithLedgerUsbExtension = (_provider) => ({})
-
-// No-op class: mirrors RNLedgerUsbService shape without any HID dependency.
-export class RNLedgerUsbService {
-    createTransportProvider() {
-        return null
-    }
-}

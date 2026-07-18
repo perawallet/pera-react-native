@@ -81,9 +81,26 @@ updateQueryHeaders()
 // than the popup/tab viewport) so nothing falls through to the unstyled
 // html/body grey. The build.mjs global CSS paints html/body as a pre-mount
 // fallback only; this View is what's authoritative once React has mounted.
+//
+// `root` paints a distinct surface tone behind everything — visible only on
+// the wide "expanded" browser-tab surface, where `card` caps the actual app
+// content to a popup-like width and centers it (the whole UI was designed
+// for a 360px popup and looks broken stretched edge-to-edge across a full
+// desktop tab). In the popup/approval surfaces `card`'s cap never binds
+// (both are already narrower than it), so `card` fills `root` exactly and
+// the grey tone is never visible there — no surface check needed.
+const CARD_MAX_WIDTH = 420
+
 const useAppShellRootStyles = makeStyles(theme => ({
     root: {
         flex: 1,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    card: {
+        flex: 1,
+        width: '100%',
+        maxWidth: CARD_MAX_WIDTH,
+        alignSelf: 'center',
         backgroundColor: theme.colors.background,
     },
 }))
@@ -239,24 +256,26 @@ const ShellErrorFallback = ({
 
     return (
         <PWView style={rootStyles.root}>
-            <EmptyView
-                title={t('app.initialization_failed.title')}
-                body={t('app.initialization_failed.body')}
-                testID='shell-error-fallback'
-                button={
-                    <PWButton
-                        variant='primary'
-                        title={t('common.retry.label')}
-                        testID='shell-error-reload'
-                        onPress={() => {
-                            reset()
-                            if (typeof window !== 'undefined') {
-                                window.location.reload()
-                            }
-                        }}
-                    />
-                }
-            />
+            <PWView style={rootStyles.card}>
+                <EmptyView
+                    title={t('app.initialization_failed.title')}
+                    body={t('app.initialization_failed.body')}
+                    testID='shell-error-fallback'
+                    button={
+                        <PWButton
+                            variant='primary'
+                            title={t('common.retry.label')}
+                            testID='shell-error-reload'
+                            onPress={() => {
+                                reset()
+                                if (typeof window !== 'undefined') {
+                                    window.location.reload()
+                                }
+                            }}
+                        />
+                    }
+                />
+            </PWView>
         </PWView>
     )
 }
@@ -289,21 +308,23 @@ const AppShellThemedRoot = (): React.JSX.Element => {
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={rootStyles.root}>
-                <KeyboardProvider>
-                    <NotifierWrapper
-                        componentProps={{
-                            ContainerComponent: SafeAreaView,
-                        }}
-                    >
-                        <QueryProvider persister={persister}>
-                            {/* VaultGate OUTERMOST inside providers: locked ⇒ nothing else renders */}
-                            <VaultGate>
-                                <ShellRouter />
-                            </VaultGate>
-                            <ActivityAutoLock />
-                        </QueryProvider>
-                    </NotifierWrapper>
-                </KeyboardProvider>
+                <PWView style={rootStyles.card}>
+                    <KeyboardProvider>
+                        <NotifierWrapper
+                            componentProps={{
+                                ContainerComponent: SafeAreaView,
+                            }}
+                        >
+                            <QueryProvider persister={persister}>
+                                {/* VaultGate OUTERMOST inside providers: locked ⇒ nothing else renders */}
+                                <VaultGate>
+                                    <ShellRouter />
+                                </VaultGate>
+                                <ActivityAutoLock />
+                            </QueryProvider>
+                        </NotifierWrapper>
+                    </KeyboardProvider>
+                </PWView>
             </GestureHandlerRootView>
         </SafeAreaProvider>
     )
