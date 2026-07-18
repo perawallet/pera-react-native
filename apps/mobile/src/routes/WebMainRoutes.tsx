@@ -17,7 +17,7 @@
 // Omissions vs native (each deliberate):
 // - MigrationSplash: no legacy web data to migrate.
 // - Onboarding: the shell state machine (useWebAppShell) handles this branch.
-// - Multisig/PeraCard/rekey stacks/BannersCarouselModal:
+// - Multisig/rekey stacks/BannersCarouselModal:
 //   native-only or off-capability (see routes/capabilities.web.ts).
 // - statusBarStyle: native-only, dropped.
 //
@@ -44,12 +44,14 @@ import { ContactsStackNavigator } from '@modules/contacts/routes'
 import { SettingsStackNavigator } from '@modules/settings/routes'
 import { SearchStackNavigator } from '@modules/search/routes'
 import { MessagesStackNavigator } from '@modules/messages/routes'
+import { PeraCardStackNavigator } from '@modules/card'
 import { AddAccountStackNavigator } from '@modules/onboarding/routes'
 import { BackupStackNavigator } from '@modules/backup'
 import { ScanQRScreen } from '@modules/menu/screens/ScanQRScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
 import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
@@ -63,6 +65,7 @@ import { navigationRef } from './navigationRef'
 import { createAppStackNavigator } from './createAppStackNavigator'
 import { createExpandedRedirect } from './createExpandedRedirect'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation'
+import { routeCapabilities } from '@routes/capabilities'
 import { type RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
@@ -98,6 +101,7 @@ const handleOverlayError = (error: string | Error) => {
 
 export const WebMainRoutes = (): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
+    const isPeraCardEnabled = useIsPeraCardEnabled()
     const accounts = useAllAccounts()
     const addresses = useMemo(
         () => accounts?.map(account => account.address) ?? [],
@@ -166,6 +170,12 @@ export const WebMainRoutes = (): React.JSX.Element => {
                         name='Messages'
                         component={MessagesStackNavigator}
                     />
+                    {routeCapabilities.peraCard && isPeraCardEnabled && (
+                        <RootStack.Screen
+                            name='PeraCard'
+                            component={PeraCardStackNavigator}
+                        />
+                    )}
                     <RootStack.Screen
                         name='Staking'
                         options={{

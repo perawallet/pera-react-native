@@ -48,9 +48,9 @@ describe('route capabilities', () => {
             giftCards: true,
             // M9 (shipped): WebAuthn-interception credential provider + settings toggle.
             passkeysAutofillSettings: true,
-            // Still off: Pera Card (M10), and permanently-off items.
+            // M10 (shipped): Pera Card on web. Still off: inAppWebView, pushNotificationSettings, storeRating.
+            peraCard: true,
             inAppWebView: false, // M8 decision: stays false — help/terms open browser tabs
-            peraCard: false,
             pushNotificationSettings: false,
             storeRating: false,
             vaultSecuritySettings: true,

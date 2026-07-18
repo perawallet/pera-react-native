@@ -19,7 +19,7 @@ export const routeCapabilities: RouteCapabilities = {
     swapTab: true, // M5: native RN screen graph
     fundTab: true, // M5: native RN screen graph (Meld checkout via window.open)
     staking: true, // M5: native RN screen graph
-    peraCard: false, // M10
+    peraCard: true, // M10: Baanx card, additionally gated by useIsPeraCardEnabled() remote flag
     giftCards: true, // M8
     inAppWebView: false, // M8 decision: stays false — help/terms open browser tabs
     qrScanner: true, // Task 15 (stretch): BarcodeDetector camera scan + paste fallback

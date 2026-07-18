@@ -39,6 +39,26 @@ vi.mock('@hooks/useClipboard', () => ({
     }),
 }))
 
+const mockOpenURL = vi.fn()
+vi.mock('react-native', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
+    }
+})
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useTransactionHashRow } from '../useTransactionHashRow'
 
@@ -47,6 +67,7 @@ const TX_HASH = 'H2KQF3YLVJZP4W6XNBTAM5RUE7DCGS2IK4LMOQ6PYAWBVXCZE3TR'
 describe('useTransactionHashRow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        Object.assign(mockCapabilities, { inAppWebView: true })
     })
 
     it('derives the display hash through the shared middle-truncation util', () => {
@@ -74,6 +95,21 @@ describe('useTransactionHashRow', () => {
                 url: `https://explorer.test/tx/${TX_HASH}`,
             }),
         )
+        expect(mockOpenURL).not.toHaveBeenCalled()
+    })
+
+    it('opens the explorer page in a browser tab when inAppWebView is off (web)', () => {
+        Object.assign(mockCapabilities, { inAppWebView: false })
+        const { result } = renderHook(() =>
+            useTransactionHashRow(TX_HASH, 'algorand'),
+        )
+
+        result.current.onOpenExplorer?.()
+
+        expect(mockOpenURL).toHaveBeenCalledWith(
+            `https://explorer.test/tx/${TX_HASH}`,
+        )
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
     it('offers no explorer action for a non-Algorand funding leg', () => {

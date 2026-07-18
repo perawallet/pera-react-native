@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Platform } from 'react-native'
+import { Linking, Platform } from 'react-native'
 import {
     CardStatus,
     FundingType,
@@ -27,6 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
 import {
     useAuthorizeCardDelegation,
@@ -292,6 +293,10 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         if (!(await requirePinVerification())) return
         try {
             const session = await setPin.mutateAsync()
+            if (!routeCapabilities.inAppWebView) {
+                void Linking.openURL(session.hostedPageUrl)
+                return
+            }
             pushWebView({ url: session.hostedPageUrl, id: 'card-set-pin' })
         } catch (error) {
             await showError(error)

@@ -11,6 +11,7 @@
  */
 
 import { createElement, useCallback, useEffect, useRef, useState } from 'react'
+import { Linking } from 'react-native'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -33,6 +34,7 @@ import { CardCountryPickerContent } from '@modules/card/components/CardCountryPi
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -229,10 +231,18 @@ export const useCardOnboardingAddressScreen =
         )
 
         const handleOpenCardTerms = useCallback(() => {
+            if (!routeCapabilities.inAppWebView) {
+                void Linking.openURL(cardTermsUrl)
+                return
+            }
             pushWebView({ url: cardTermsUrl, id: 'card-terms' })
         }, [pushWebView, cardTermsUrl])
         const handleOpenPlatformTerms = useCallback(() => {
             // Checkbox 2 is Pera's own Terms & Conditions.
+            if (!routeCapabilities.inAppWebView) {
+                void Linking.openURL(config.termsOfServiceUrl)
+                return
+            }
             pushWebView({ url: config.termsOfServiceUrl, id: 'platform-terms' })
         }, [pushWebView])
 
