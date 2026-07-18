@@ -10,10 +10,17 @@
  limitations under the License
  */
 
-// ISOLATED-world half of the Discover iframe bridge — see webview-relay.ts
-// for the shared implementation this pair delegates to.
-import { runWebviewRelay } from './webview-relay'
+export type BuildBidaliUrlParams = {
+    baseUrl: string
+    apiKey: string
+    // Accepted for signature parity with bidali-url.web.ts, which stamps
+    // this onto the URL. Native ignores it — balances are embedded directly
+    // into the injected provider JS instead (buildBidaliProviderJS in
+    // useBidaliTransport.ts).
+    balances?: Record<string, string>
+}
 
-runWebviewRelay()
-
-export {}
+export const buildBidaliUrl = ({
+    baseUrl,
+    apiKey,
+}: BuildBidaliUrlParams): string => `${baseUrl}?key=${apiKey}`

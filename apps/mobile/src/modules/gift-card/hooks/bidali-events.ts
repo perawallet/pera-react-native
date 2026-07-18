@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-// ISOLATED-world half of the Discover iframe bridge — see webview-relay.ts
-// for the shared implementation this pair delegates to.
-import { runWebviewRelay } from './webview-relay'
+import type WebView from 'react-native-webview'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-runWebviewRelay()
-
-export {}
+export const sendBidaliEvent = (
+    webviewRef: React.RefObject<Nullable<WebView>>,
+    event: 'paymentSent' | 'paymentCancelled',
+) => {
+    webviewRef.current?.injectJavaScript(
+        `window.bidaliProvider.${event}?.(); true;`,
+    )
+}

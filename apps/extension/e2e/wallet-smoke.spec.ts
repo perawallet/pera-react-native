@@ -19,6 +19,7 @@ import {
     test,
     chromium,
     type BrowserContext,
+    type Locator,
     type Page,
 } from '@playwright/test'
 import path from 'node:path'
@@ -66,6 +67,30 @@ const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
     if (await notNow.isVisible().catch(() => false)) {
         await notNow.click()
     }
+}
+
+// Bounded retry-and-dismiss click (ported from feature-tabs.spec.ts, where
+// M5 generalized this file's narrower openMoreSheet pattern): the pin prompt
+// fires on a wall-clock delay, so it can appear BETWEEN a dismiss check and
+// the click it was guarding — the click then retries forever against the
+// prompt's overlay. Every click downstream of a wait should go through this.
+const clickThroughPinPrompt = async (
+    targetPage: Page,
+    locator: Locator,
+): Promise<void> => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+        await dismissPinPromptIfPresent(targetPage)
+        const clicked = await locator
+            .click({ timeout: 3000 })
+            .then(() => true)
+            .catch(() => false)
+        if (clicked) return
+        await dismissPinPromptIfPresent(targetPage)
+    }
+    // Bounded, not left to Playwright's unlimited default action timeout: a
+    // locator that's genuinely stuck should fail with a clear timeout instead
+    // of exhausting the whole test's budget.
+    await locator.click({ timeout: 10_000 })
 }
 
 // The pin-security prompt above fires on a wall-clock delay from account
@@ -613,12 +638,11 @@ test('the header QR icon opens the camera-in-tab hand-off, not a blank sheet', a
 })
 
 test('settings opens from the menu tab', async () => {
-    await dismissPinPromptIfPresent(page)
-    await page.getByTestId('tab_menu_button').click()
+    await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))
     await expect(page.getByTestId('menu_screen')).toBeVisible({
         timeout: 20_000,
     })
-    await page.getByTestId('menu_settings_button').click()
+    await clickThroughPinPrompt(page, page.getByTestId('menu_settings_button'))
     await expect(page.getByTestId('settings_screen')).toBeVisible()
 
     // User-feedback round 2 #2: PWScreen's flex chain needs minHeight:0 on

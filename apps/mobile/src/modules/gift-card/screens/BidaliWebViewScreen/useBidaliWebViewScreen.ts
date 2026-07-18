@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Linking } from 'react-native'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
@@ -19,7 +19,11 @@ import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
-import { useBidaliTransport } from '../../hooks/useBidaliTransport'
+import {
+    useBidaliTransport,
+    computeBidaliBalances,
+} from '../../hooks/useBidaliTransport'
+import { buildBidaliUrl } from './bidali-url'
 import type WebView from 'react-native-webview'
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -49,10 +53,31 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
         accountBalances,
     )
 
+    // Web-only: bidali-url.web.ts stamps this onto the URL for the content
+    // script to parse; native's bidali-url.ts ignores it (balances are
+    // embedded in the injected provider JS instead — see useBidaliTransport's
+    // computeBidaliBalances, the same selector reused here so both surfaces
+    // stay in sync). Frozen at mount (lazy useState initializer, never
+    // updated) rather than recomputed live: on web the `url` feeds the
+    // iframe's `src`, so a post-mount balance change (including the sync the
+    // user's own gift-card payment triggers) would otherwise change the url
+    // string and re-navigate the iframe mid/post-checkout, resetting
+    // Bidali's page and the paymentSent/paymentCancelled callbacks it
+    // assigned. Adjudicated M8 design: balances stamped at mount, staleness
+    // accepted within the session. Native is unaffected either way — its
+    // builder ignores this value, so freezing it is provably harmless there.
+    const [frozenBalances] = useState(() =>
+        computeBidaliBalances(selectedAccount, accountBalances, network),
+    )
+
     const url = useMemo(() => {
         const networkConfig = getNetworkConfig(network)
-        return `${networkConfig.bidaliBaseUrl}?key=${networkConfig.bidaliApiKey}`
-    }, [network])
+        return buildBidaliUrl({
+            baseUrl: networkConfig.bidaliBaseUrl,
+            apiKey: networkConfig.bidaliApiKey,
+            balances: frozenBalances,
+        })
+    }, [network, frozenBalances])
 
     // The provider global (API key + user balances) is re-injected into the
     // main frame on every navigation, so no foreign origin may ever load in

@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-// ISOLATED-world half of the Discover iframe bridge — see webview-relay.ts
-// for the shared implementation this pair delegates to.
+// ISOLATED-world half of the Bidali gift-card bridge — see webview-relay.ts
+// for the shared implementation this pair delegates to, and for why sharing
+// the Discover-named constants across disjoint-origin pairs is safe.
 import { runWebviewRelay } from './webview-relay'
 
 runWebviewRelay()

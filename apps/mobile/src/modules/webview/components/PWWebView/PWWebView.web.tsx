@@ -25,7 +25,6 @@
 // { uri }, parses it, and calls connect() — the mounted WalletConnectProvider
 // then surfaces ConnectionView for the real pairing flow.
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     createDiscoverBridgeHost,
@@ -41,6 +40,10 @@ import {
     isSafeBrowserUrl,
     isTrustedWebviewOrigin,
 } from '../../hooks/handlers'
+import {
+    getTrustedIframeOrigins,
+    getTrustedIframeSourceBases,
+} from '../../hooks/trusted-iframe-origins.web'
 // asBridgeWebview/WebviewBridgeTransport/requireSecure are bound to the web
 // transport (native handlers.ts binds its own requireSecure to
 // injectJavaScript, not a Port) — imported with the explicit .web suffix so
@@ -79,9 +82,17 @@ export const PWWebView = ({
     enablePeraConnect,
     onClose,
     onBack,
-    customJavaScript,
+    // customJavaScript is intentionally inert on web: the content-script
+    // pattern (bidali-main.ts / discover-main.ts) owns provider installation
+    // for both Discover and Bidali instead of an injected-JS channel, which
+    // doesn't exist for a cross-origin iframe. Callers (e.g.
+    // BidaliWebViewScreen) pass it unconditionally so native and web share a
+    // single prop surface — accepted here only so destructuring the shared
+    // PWWebViewProps type doesn't require a cast.
+    customJavaScript: _customJavaScript,
     onCustomMessage,
     containerStyle,
+    webviewRef,
 }: PWWebViewProps) => {
     const styles = useStyles({ bottomInset: 0 })
 
@@ -106,26 +117,27 @@ export const PWWebView = ({
     const disconnectCountRef = useRef(0)
     const lastDisconnectAtRef = useRef(0)
 
-    useEffect(() => {
-        if (customJavaScript) {
-            logger.warn(
-                'PWWebView.web: customJavaScript is unsupported on web (M8 extends the content-script pattern instead)',
-            )
-        }
-    }, [customJavaScript])
-
     const src = useMemo(() => {
         const loadable = new URL(toLoadableUrl(url))
         loadable.searchParams.set(TOKEN_PARAM, bridgeToken)
         return loadable.toString()
     }, [url, bridgeToken])
 
-    // Structural trust: the bridge content scripts only run on the Discover
-    // origin, and createDiscoverBridgeHost verifies the browser-stamped
+    // Structural trust: the bridge content scripts only run on a known,
+    // configured mount origin (Discover or, from M8, Bidali), and
+    // createDiscoverBridgeHost verifies the browser-stamped
     // port.sender.origin — an off-origin navigation inside the iframe kills
     // the bridge rather than reaching the handlers. This flag mirrors
-    // native's isSecure for the requireSecure gate.
-    const isSecure = isTrustedWebviewOrigin(url, [config.discoverBaseUrl])
+    // native's isSecure for the requireSecure gate. isTrustedWebviewOrigin
+    // compares by origin, so the pre-redirect configured bases (not the
+    // post-redirect giftcards twin — the mounted `url` never becomes that)
+    // are the right source list here.
+    const isSecure = isTrustedWebviewOrigin(url, getTrustedIframeSourceBases())
+
+    // The bridge-host trust set for this mount: empty for any URL that isn't
+    // a known surface, which below skips host creation entirely rather than
+    // standing up a host nothing could ever authenticate against.
+    const trustedOrigins = useMemo(() => getTrustedIframeOrigins(url), [url])
 
     const hostRef = useRef<ReturnType<typeof createDiscoverBridgeHost> | null>(
         null,
@@ -136,6 +148,20 @@ export const PWWebView = ({
     )
     const bridgeWebview = useMemo(() => asBridgeWebview(transport), [transport])
     const bridgeWebviewRef = useRef(bridgeWebview)
+
+    // Populates the caller-supplied webviewRef (native fills it with the
+    // real WebView instance) with this mount's transport-backed twin, so a
+    // hook like useBidaliTransport can reach the SAME ref on both platforms
+    // — its web sender (bidali-events.web.ts) recovers the transport back
+    // out via asBridgeTransport. Nulled on unmount so a stale twin never
+    // outlives this mount.
+    useEffect(() => {
+        if (!webviewRef) return undefined
+        webviewRef.current = bridgeWebview
+        return () => {
+            webviewRef.current = null
+        }
+    }, [webviewRef, bridgeWebview])
 
     const mobileInterface = usePeraWebviewInterface(
         bridgeWebview,
@@ -200,9 +226,14 @@ export const PWWebView = ({
     handleBridgeMessageRef.current = handleBridgeMessage
 
     useEffect(() => {
+        // Untrusted mount (unrecognized URL): render the iframe with no
+        // bridge at all rather than a host that could never authenticate a
+        // port against an empty trust set.
+        if (trustedOrigins.length === 0) return undefined
+
         const host = createDiscoverBridgeHost({
             token: bridgeToken,
-            trustedOrigin: new URL(config.discoverBaseUrl).origin,
+            trustedOrigins,
             onMessage: data => handleBridgeMessageRef.current(data),
             onDisconnect: () => {
                 if (!isMountedRef.current) return
@@ -233,7 +264,7 @@ export const PWWebView = ({
             hostRef.current = null
             host.dispose()
         }
-    }, [bridgeToken])
+    }, [bridgeToken, trustedOrigins])
 
     return (
         <PWView style={[styles.flex, containerStyle]}>

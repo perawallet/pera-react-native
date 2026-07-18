@@ -20,8 +20,8 @@ export const routeCapabilities: RouteCapabilities = {
     fundTab: true, // M5: native RN screen graph (Meld checkout via window.open)
     staking: true, // M5: native RN screen graph
     peraCard: false, // M10
-    giftCards: false, // M8: rides the M6 iframe layer
-    inAppWebView: false, // revisit after M6 lands — decision deferred to M8 planning
+    giftCards: true, // M8
+    inAppWebView: false, // M8 decision: stays false — help/terms open browser tabs
     qrScanner: true, // Task 15 (stretch): BarcodeDetector camera scan + paste fallback
     pushNotificationSettings: false, // permanently off: no push on web
     walletConnectSettings: true, // M7: WC v1 pairing + sessions on web
