@@ -19,7 +19,6 @@ import {
     type BiometricSecurityLevel,
     type BiometricType,
     type BiometricsService,
-    type CrashReportingService,
     type LegacyMigrationData,
     type LegacyMigrationSourcePlatform,
     type MigrationPlanSummary,
@@ -31,13 +30,6 @@ import {
 } from '@perawallet/wallet-extension-platform'
 
 const noop = (): void => undefined
-
-export class ChromeCrashReportingService implements CrashReportingService {
-    initializeCrashReporting(): void {}
-    recordNonFatalError(error: unknown): void {
-        console.error('[pera] non-fatal', error)
-    }
-}
 
 export class ChromePushNotificationService implements PushNotificationService {
     // Chrome ≥116 supports MV3 web push, but the backend only accepts FCM

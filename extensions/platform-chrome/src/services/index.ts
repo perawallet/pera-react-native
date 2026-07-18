@@ -17,9 +17,9 @@ export {
     ChromeAgeGateService,
     ChromeAppIntegrityService,
     ChromeBiometricsService,
-    ChromeCrashReportingService,
     ChromeMigrationService,
     ChromePushNotificationService,
 } from './stubs'
 export { ChromeRemoteConfigService } from './remote-config'
 export { ChromeAnalyticsService } from './analytics'
+export { ChromeCrashReportingService } from './crash-reporting'
