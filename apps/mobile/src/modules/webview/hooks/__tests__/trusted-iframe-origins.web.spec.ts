@@ -11,7 +11,11 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getTrustedIframeOrigins } from '../trusted-iframe-origins.web'
+import { isTrustedWebviewOrigin } from '../handlers-shared'
+import {
+    getTrustedIframeOrigins,
+    getTrustedIframeSourceBases,
+} from '../trusted-iframe-origins.web'
 
 const { getNetworkConfig } = vi.hoisted(() => ({
     getNetworkConfig: vi.fn(),
@@ -74,5 +78,24 @@ describe('getTrustedIframeOrigins', () => {
         expect(
             getTrustedIframeOrigins('https://giftcards.bidali.com/dapp?key=x'),
         ).toEqual(['https://giftcards.bidali.com'])
+    })
+
+    // Both exports derive from one shared base-list source (knownSurfaceBases)
+    // so they can't drift apart — this pins that invariant directly rather
+    // than relying on it holding by convention. PWWebView.web's isSecure gate
+    // and its host-creation gate rely on this staying true for every url.
+    it('keeps isSecure (via getTrustedIframeSourceBases) and host-creation (via getTrustedIframeOrigins) in lockstep for every known/unknown URL', () => {
+        const urls = [
+            'https://discover-mobile-staging.perawallet.app/some/dapp',
+            'https://commerce.bidali.com/dapp?key=x',
+            'https://commerce.staging.bidali.com/dapp?key=x',
+            'https://giftcards.bidali.com/dapp?key=x', // redirect twin, not a configured base
+            'https://example.com',
+        ]
+        for (const url of urls) {
+            expect(
+                isTrustedWebviewOrigin(url, getTrustedIframeSourceBases()),
+            ).toBe(getTrustedIframeOrigins(url).length > 0)
+        }
     })
 })

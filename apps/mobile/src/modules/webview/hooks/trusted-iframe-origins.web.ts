@@ -58,32 +58,29 @@ const redirectTwinOrigin = (base: string): string | null => {
     return parsed.origin
 }
 
-const bidaliBases = (): string[] => [
+// Single source of truth for "what are the known mountable surfaces" —
+// getTrustedIframeSourceBases and getTrustedIframeOrigins both derive from
+// this instead of each re-enumerating Discover + Bidali independently, so
+// the two can't drift out of lockstep as future surfaces are added here.
+const knownSurfaceBases = (): string[] => [
+    config.discoverBaseUrl,
     getNetworkConfig(Networks.mainnet).bidaliBaseUrl,
     getNetworkConfig(Networks.testnet).bidaliBaseUrl,
 ]
 
 /**
- * The full set of configured source bases (Discover + both networks'
- * Bidali) — pre-redirect-twin-derivation. Used by PWWebView.web for the
- * `isSecure` check against the *mounted* URL, which is always one of these
- * configured bases and never the post-redirect giftcards twin.
+ * The full set of configured source bases — pre-redirect-twin-derivation.
+ * Used by PWWebView.web for the `isSecure` check against the *mounted* URL,
+ * which is always one of these configured bases and never the post-redirect
+ * giftcards twin.
  */
-export const getTrustedIframeSourceBases = (): string[] => [
-    config.discoverBaseUrl,
-    ...bidaliBases(),
-]
+export const getTrustedIframeSourceBases = (): string[] => knownSurfaceBases()
 
 export const getTrustedIframeOrigins = (url: string): string[] => {
     const targetOrigin = safeOrigin(url)
     if (!targetOrigin) return []
 
-    const discoverOrigin = safeOrigin(config.discoverBaseUrl)
-    if (discoverOrigin && targetOrigin === discoverOrigin) {
-        return [discoverOrigin]
-    }
-
-    for (const base of bidaliBases()) {
+    for (const base of knownSurfaceBases()) {
         const baseOrigin = safeOrigin(base)
         if (baseOrigin && targetOrigin === baseOrigin) {
             const twin = redirectTwinOrigin(base)
