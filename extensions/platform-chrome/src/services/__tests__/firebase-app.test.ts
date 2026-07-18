@@ -12,9 +12,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const initializeAppMock = vi.hoisted(() =>
-    vi.fn(() => ({ name: '[DEFAULT]' })),
-)
+const initializeAppMock = vi.hoisted(() => vi.fn(() => ({ name: '[DEFAULT]' })))
 vi.mock('firebase/app', () => ({ initializeApp: initializeAppMock }))
 
 const configMock = vi.hoisted(() => ({
