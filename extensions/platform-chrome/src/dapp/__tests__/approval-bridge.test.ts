@@ -610,6 +610,165 @@ describe('ApprovalWindowBridge', () => {
         })
     })
 
+    it('openPasskeyCreate: falls back to the window and resolve-passkey returns the credential', async () => {
+        const { chromeLike, created, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+        const decision = bridge.openPasskeyCreate({
+            requestId: 'pkc1',
+            origin: 'https://webauthn.io',
+            rpId: 'webauthn.io',
+            userName: 'alice',
+            options: { rp: { id: 'webauthn.io' } } as any,
+        })
+        await flush()
+        expect(created[0].url).toContain('approval.html?requestId=pkc1')
+        const ctx = await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'get-approval',
+                requestId: 'pkc1',
+            },
+            trustedSender,
+        )
+        expect(ctx).toMatchObject({
+            kind: 'passkey-create',
+            rpId: 'webauthn.io',
+            userName: 'alice',
+        })
+        const CREDENTIAL = { id: 'cred', rawId: 'cred', type: 'public-key' }
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-passkey',
+                requestId: 'pkc1',
+                credential: CREDENTIAL,
+            },
+            trustedSender,
+        )
+        expect(await decision).toEqual({ credential: CREDENTIAL })
+    })
+
+    it('openPasskeyCreate: resolves null when the window is closed without a decision', async () => {
+        const { chromeLike, closeWindow } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+        const decision = bridge.openPasskeyCreate({
+            requestId: 'pkc2',
+            origin: 'https://webauthn.io',
+            rpId: 'webauthn.io',
+            options: {} as any,
+        })
+        await flush()
+        closeWindow(100)
+        expect(await decision).toBeNull()
+    })
+
+    it('reject-passkey settles with the given reason', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+        const decision = bridge.openPasskeyCreate({
+            requestId: 'pkc3',
+            origin: 'https://webauthn.io',
+            rpId: 'webauthn.io',
+            options: {} as any,
+        })
+        await flush()
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'reject-passkey',
+                requestId: 'pkc3',
+                reason: 'declined',
+            },
+            trustedSender,
+        )
+        expect(await decision).toEqual({ error: 'declined' })
+    })
+
+    it('ignores resolve-passkey messages from an untrusted sender', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+        const decision = bridge.openPasskeyCreate({
+            requestId: 'pkc4',
+            origin: 'https://webauthn.io',
+            rpId: 'webauthn.io',
+            options: {} as any,
+        })
+        const ack = await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-passkey',
+                requestId: 'pkc4',
+                credential: { id: 'x' },
+            },
+            { id: 'ext-id', url: 'https://evil.com/x' },
+        )
+        expect(ack).toMatchObject({ ok: false })
+        let settled = false
+        void decision.then(() => (settled = true))
+        await Promise.resolve()
+        expect(settled).toBe(false)
+    })
+
+    it('openPasskeyGet: falls back to the window and resolve-passkey returns the credential', async () => {
+        const { chromeLike, created, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+        const decision = bridge.openPasskeyGet({
+            requestId: 'pkg1',
+            origin: 'https://webauthn.io',
+            rpId: 'webauthn.io',
+            options: {} as any,
+        })
+        await flush()
+        expect(created[0].url).toContain('approval.html?requestId=pkg1')
+        const ctx = await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'get-approval',
+                requestId: 'pkg1',
+            },
+            trustedSender,
+        )
+        expect(ctx).toMatchObject({ kind: 'passkey-get', rpId: 'webauthn.io' })
+        const CREDENTIAL = { id: 'cred2', rawId: 'cred2', type: 'public-key' }
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-passkey',
+                requestId: 'pkg1',
+                credential: CREDENTIAL,
+            },
+            trustedSender,
+        )
+        expect(await decision).toEqual({ credential: CREDENTIAL })
+    })
+
+    it('reject-passkey with no reason defaults to "declined"', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+        const decision = bridge.openPasskeyGet({
+            requestId: 'pkg2',
+            origin: 'https://webauthn.io',
+            rpId: 'webauthn.io',
+            options: {} as any,
+        })
+        await flush()
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'reject-passkey',
+                requestId: 'pkg2',
+            },
+            trustedSender,
+        )
+        expect(await decision).toEqual({ error: 'declined' })
+    })
+
     it('finish() does not call windows.remove for a popup-surface enable resolved via resolve-approval', async () => {
         const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
         const bridge = new ApprovalWindowBridge(chromeLike)

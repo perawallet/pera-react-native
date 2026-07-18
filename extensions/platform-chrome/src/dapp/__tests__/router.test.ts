@@ -53,7 +53,13 @@ const setup = (
             iconUrl: 'data:image/png;base64,AA==',
             networks: [{ genesisHash: GENESIS, genesisId: 'mainnet-v1.0' }],
         }),
-        approvals: { openEnable, openSignTransactions, openSignMessage },
+        approvals: {
+            openEnable,
+            openSignTransactions,
+            openSignMessage,
+            openPasskeyCreate: vi.fn(async () => null),
+            openPasskeyGet: vi.fn(async () => null),
+        },
     })
     return {
         router,
@@ -149,6 +155,8 @@ describe('DappRequestRouter', () => {
                 openEnable,
                 openSignTransactions: vi.fn(async () => null),
                 openSignMessage: vi.fn(async () => null),
+                openPasskeyCreate: vi.fn(async () => null),
+                openPasskeyGet: vi.fn(async () => null),
             },
         })
         const first = call(router, req('enable', 'dup'), 'https://x.com')
@@ -277,6 +285,8 @@ describe('DappRequestRouter', () => {
                     openEnable: vi.fn(async () => null),
                     openSignTransactions,
                     openSignMessage: vi.fn(async () => null),
+                    openPasskeyCreate: vi.fn(async () => null),
+                    openPasskeyGet: vi.fn(async () => null),
                 },
             })
             const params = { txns: [{ txn: TXN }] }

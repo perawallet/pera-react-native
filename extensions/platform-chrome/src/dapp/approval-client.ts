@@ -16,6 +16,7 @@
 // no-restricted-globals rule from touching the ambient `chrome` global
 // directly — has a package-level accessor to go through instead, same as
 // every other chrome API surface it needs.
+import { type SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import { DAPP_APPROVAL_SCOPE, type PendingApproval } from './approval-bridge'
 
 const isPendingApproval = (value: unknown): value is PendingApproval =>
@@ -81,5 +82,33 @@ export const resolveSignMessage = async (
         kind: 'resolve-sign-message',
         requestId,
         signature,
+    })
+}
+
+export const resolvePasskey = async (
+    requestId: string,
+    credential: SerializedCredential,
+): Promise<void> => {
+    await chrome.runtime.sendMessage({
+        scope: DAPP_APPROVAL_SCOPE,
+        kind: 'resolve-passkey',
+        requestId,
+        credential,
+    })
+}
+
+// `reason` is a WebAuthn-ish error name ('declined' for an explicit user
+// decline, or an Error.name like 'SecurityError'/'InvalidStateError' from a
+// failed authenticator ceremony) — never leave the request unsettled, see
+// usePasskeyApproval.
+export const rejectPasskey = async (
+    requestId: string,
+    reason: string,
+): Promise<void> => {
+    await chrome.runtime.sendMessage({
+        scope: DAPP_APPROVAL_SCOPE,
+        kind: 'reject-passkey',
+        requestId,
+        reason,
     })
 }

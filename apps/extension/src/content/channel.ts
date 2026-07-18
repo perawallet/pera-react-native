@@ -33,3 +33,13 @@ export type BridgeResponseEnvelope<TResponse = unknown> = {
     id: string // per-message correlation id (channel-local, not the ARC id)
     response: TResponse
 }
+
+// Same per-load-randomized-channel scheme as the ARC-0027 pair above, reused
+// for the WebAuthn interception pair (webauthn-main.ts / webauthn-relay.ts).
+// A separate handshake/ready event pair (not the ARC-0027 constants above) so
+// the two unrelated content-script pairs — both matching every http/https
+// page — never cross-wire even though they share this file's generic
+// BridgeRequestEnvelope/BridgeResponseEnvelope shapes.
+export const WEBAUTHN_CHANNEL_HANDSHAKE_EVENT = '__pera_webauthn_handshake__'
+export const WEBAUTHN_CHANNEL_RELAY_READY_EVENT =
+    '__pera_webauthn_relay_ready__'

@@ -80,6 +80,8 @@ export * from './dapp/router-protocol'
 export * from './dapp/router'
 export * from './dapp/approval-bridge'
 export * from './dapp/approval-client'
+export * from './dapp/webauthn-router-protocol'
+export * from './dapp/passkey-router'
 export {
     createDiscoverBridgeHost,
     type DiscoverBridgeHost,

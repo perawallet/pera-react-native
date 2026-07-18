@@ -25,7 +25,7 @@ export const routeCapabilities: RouteCapabilities = {
     qrScanner: true, // Task 15 (stretch): BarcodeDetector camera scan + paste fallback
     pushNotificationSettings: false, // permanently off: no push on web
     walletConnectSettings: true, // M7: WC v1 pairing + sessions on web
-    passkeysAutofillSettings: false, // M9: WebAuthn-interception credential provider
+    passkeysAutofillSettings: true, // M9: WebAuthn-interception credential provider + settings toggle
     storeRating: false, // permanently off: no store review flow
     developerSettings: true, // M5: internal builds need network/debug toggles
     vaultSecuritySettings: true,

@@ -26,6 +26,15 @@ export const UserPreferences = {
     onrampIntroductionSeen: 'onramp-introduction-seen',
     onrampXoTermsAccepted: 'onramp-xo-terms-accepted',
 
+    // Web-only master toggle for WebAuthn interception (M9). Deliberately
+    // camelCase (breaking this map's kebab-case convention) — it must match
+    // WEBAUTHN_TOGGLE_PREFERENCE_KEY in
+    // apps/extension/src/content/webauthn-toggle.ts verbatim, since the
+    // ISOLATED relay content script parses this exact string key out of the
+    // persisted settings-store envelope. Do not "normalize" this value
+    // without updating that parser too.
+    webauthnInterceptionEnabled: 'webauthnInterceptionEnabled',
+
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
     _securityPinSetupPrompt: 'security_pin_setup_prompt',
 } as const

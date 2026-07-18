@@ -25,3 +25,8 @@ export {
 } from './arc0027-types'
 export { DAPP_RELAY_SCOPE } from './router-protocol'
 export * from '../webview/bridge-wire'
+export {
+    WEBAUTHN_RELAY_SCOPE,
+    type WebauthnCeremonyRequest,
+    type WebauthnCeremonyResponse,
+} from './webauthn-router-protocol'

@@ -10,10 +10,27 @@
  limitations under the License
  */
 
+import {
+    type SerializedCreateOptions,
+    type SerializedGetOptions,
+    type SerializedCredential,
+} from '@perawallet/wallet-core-passkeys/webauthn'
 import { isTrustedExtensionPageSender } from './../trusted-sender'
 import { type ApprovalOpener } from './router'
 
 export const DAPP_APPROVAL_SCOPE = 'pera-dapp-approval' as const
+
+// Settled by resolve-passkey (a minted/asserted credential), reject-passkey
+// (an explicit reason — user decline or an authenticator error name, see
+// usePasskeyApproval) or a window close (null, same as every other kind).
+// The reason string (not just null) is what lets Task 5's content script
+// translate a decline into the *specific* native WebAuthn error the page's
+// `navigator.credentials` promise should reject with, rather than a single
+// generic cancellation.
+export type PasskeyDecision =
+    | { credential: SerializedCredential }
+    | { error: string }
+    | null
 
 export type PendingApproval =
     | {
@@ -37,6 +54,31 @@ export type PendingApproval =
           faviconUrl?: string
           message: Record<string, unknown>
           approvedAddresses: string[]
+      }
+    | {
+          kind: 'passkey-create'
+          requestId: string
+          // Browser-stamped frame origin (never page-asserted) — passed
+          // verbatim as SigningContext.origin to the Task 2 authenticator
+          // core by usePasskeyApproval.
+          origin: string
+          rpId: string
+          userName?: string
+          options: SerializedCreateOptions
+          // Optional on every kind (see 'enable' above) so code that reads
+          // it generically off a `PendingApproval | null` (no per-kind
+          // narrowing) — e.g. useEnableRequestScreen — keeps type-checking
+          // without every call site branching on `kind` first.
+          faviconUrl?: string
+      }
+    | {
+          kind: 'passkey-get'
+          requestId: string
+          origin: string
+          rpId: string
+          userName?: string
+          options: SerializedGetOptions
+          faviconUrl?: string
       }
 
 // Each open* method creates its own typed Promise and stores its `resolve`
@@ -137,6 +179,47 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         return decision
     }
 
+    async openPasskeyCreate(ctx: {
+        requestId: string
+        origin: string
+        rpId: string
+        userName?: string
+        options: SerializedCreateOptions
+    }): Promise<PasskeyDecision> {
+        const approval: PendingApproval = { ...ctx, kind: 'passkey-create' }
+        // See openEnable's comment: finish() for this requestId only ever
+        // passes a PasskeyDecision (handleMessage's 'resolve-passkey' /
+        // 'reject-passkey' cases, or null on window-close), so this cast is
+        // safe.
+        const decision = new Promise<PasskeyDecision>(resolve => {
+            this.pending.set(ctx.requestId, {
+                approval,
+                settle: resolve as Settle,
+            })
+        })
+        await this.openViaPopupOrWindow(ctx.requestId)
+        return decision
+    }
+
+    async openPasskeyGet(ctx: {
+        requestId: string
+        origin: string
+        rpId: string
+        userName?: string
+        options: SerializedGetOptions
+    }): Promise<PasskeyDecision> {
+        const approval: PendingApproval = { ...ctx, kind: 'passkey-get' }
+        // See openPasskeyCreate's comment above.
+        const decision = new Promise<PasskeyDecision>(resolve => {
+            this.pending.set(ctx.requestId, {
+                approval,
+                settle: resolve as Settle,
+            })
+        })
+        await this.openViaPopupOrWindow(ctx.requestId)
+        return decision
+    }
+
     // Shared by every open* method: every approval kind prefers the toolbar
     // popup (attached to the extension icon, no extra window chrome). The
     // popup gets no ?requestId, so it discovers the pending approval via
@@ -211,6 +294,8 @@ export class ApprovalWindowBridge implements ApprovalOpener {
             approvedAddresses?: string[]
             stxns?: (string | null)[]
             signature?: string
+            credential?: SerializedCredential
+            reason?: string
         }
         if (msg?.scope !== DAPP_APPROVAL_SCOPE) return false
         if (!isTrustedExtensionPageSender(sender, this.chromeLike)) {
@@ -261,6 +346,22 @@ export class ApprovalWindowBridge implements ApprovalOpener {
             }
             case 'reject-approval': {
                 this.finish(msg.requestId!, null)
+                sendResponse({ ok: true })
+                return true
+            }
+            case 'resolve-passkey': {
+                if (!msg.credential) {
+                    sendResponse({ ok: false, error: 'missing credential' })
+                    return true
+                }
+                this.finish(msg.requestId!, { credential: msg.credential })
+                sendResponse({ ok: true })
+                return true
+            }
+            case 'reject-passkey': {
+                this.finish(msg.requestId!, {
+                    error: msg.reason ?? 'declined',
+                })
                 sendResponse({ ok: true })
                 return true
             }

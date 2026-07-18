@@ -28,6 +28,7 @@ import { getNavigationTheme } from '@theme/theme'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { useDappRequest } from '../hooks/useDappRequest'
 import { EnableRequestScreen } from '../screens/EnableRequestScreen'
+import { PasskeyApprovalScreen } from '../screens/PasskeyApprovalScreen'
 import { SignRequestApprovalScreen } from '../screens/SignRequestApprovalScreen'
 import { useStyles } from './styles'
 
@@ -47,6 +48,10 @@ const DappRequestSurface = (): React.JSX.Element => {
         case 'sign-transactions':
         case 'sign-message': {
             return <SignRequestApprovalScreen />
+        }
+        case 'passkey-create':
+        case 'passkey-get': {
+            return <PasskeyApprovalScreen />
         }
         case 'enable':
         default: {

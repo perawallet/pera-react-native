@@ -15,6 +15,17 @@
             "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
             "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
             "unauthorized_signer": "This site isn't authorized to request a signature for that account."
+        },
+        "passkey": {
+            "create": {
+                "title": "Create a passkey for this site"
+            },
+            "get": {
+                "title": "Sign in with a passkey"
+            },
+            "approve_button": "Continue",
+            "decline_button": "Cancel",
+            "error": "Pera couldn't complete this passkey request. The request has been declined."
         }
     },
     "account_menu": {
@@ -2173,7 +2184,10 @@
             "hd_wallet_warning_title": "Universal wallet required",
             "hd_wallet_warning_body": "Passkeys are derived from a Universal Wallet's recovery passphrase. Create or recover a Universal Wallet on this device to use passkeys.",
             "hd_wallet_required_body": "You can't use passkeys until you have a Universal Wallet on this device. Create or recover one, then scan again.",
-            "hd_wallet_required_dismiss": "Got it"
+            "hd_wallet_required_dismiss": "Got it",
+            "interception_toggle_title": "Passkey Autofill",
+            "interception_toggle_body_enabled": "Pera Wallet can save and offer passkeys for sites you sign in to.",
+            "interception_toggle_body_disabled": "Turn this on to let Pera Wallet save and offer passkeys for sites you sign in to."
         },
         "connected_sites": {
             "empty_title": "No connected sites",

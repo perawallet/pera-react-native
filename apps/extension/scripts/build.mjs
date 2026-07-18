@@ -208,6 +208,8 @@ for (const [entry, outfile] of [
     ['src/content/discover-relay.ts', 'content-discover-relay.js'],
     ['src/content/bidali-main.ts', 'content-bidali-main.js'],
     ['src/content/bidali-relay.ts', 'content-bidali-relay.js'],
+    ['src/content/webauthn-main.ts', 'content-webauthn-main.js'],
+    ['src/content/webauthn-relay.ts', 'content-webauthn-relay.js'],
 ]) {
     await build({
         entryPoints: [path.join(root, entry)],

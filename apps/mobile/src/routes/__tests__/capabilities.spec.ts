@@ -46,6 +46,8 @@ describe('route capabilities', () => {
             walletConnectSettings: true,
             // M8: Bidali stack complete.
             giftCards: true,
+            // M9 (shipped): WebAuthn-interception credential provider + settings toggle.
+            passkeysAutofillSettings: true,
             // Still off: Pera Card (M10), and permanently-off items.
             inAppWebView: false, // M8 decision: stays false — help/terms open browser tabs
             peraCard: false,

@@ -16,6 +16,7 @@ import {
     DB_CONTROL_SCOPE,
     DappPermissionStore,
     DappRequestRouter,
+    PasskeyRouter,
     ensureDeviceID,
     startStorageProxyHost,
     type DiscoverInfo,
@@ -130,5 +131,11 @@ const dappRouter = new DappRequestRouter({
     discoverInfo,
     approvals,
 })
+// Task 5: intercepted navigator.credentials ceremonies (webauthn-relay.ts)
+// share the same ApprovalWindowBridge/approval surface as the ARC-0027 flow
+// above, routed by a dedicated handler since the two protocols (ARC-0027 vs.
+// raw WebAuthn create/get) don't share a request shape.
+const passkeyRouter = new PasskeyRouter(approvals)
 approvals.listen()
 dappRouter.listen()
+passkeyRouter.listen()

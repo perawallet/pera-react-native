@@ -271,13 +271,15 @@ export const SettingsStackNavigator = () => {
                     component={WalletConnectSettingsStackNavigator}
                 />
             )}
-            <SettingsStack.Screen
-                name='PasskeysSettings'
-                options={{
-                    title: 'screens.passkeys',
-                }}
-                component={SettingsPasskeyScreen}
-            />
+            {routeCapabilities.passkeysAutofillSettings && (
+                <SettingsStack.Screen
+                    name='PasskeysSettings'
+                    options={{
+                        title: 'screens.passkeys',
+                    }}
+                    component={SettingsPasskeyScreen}
+                />
+            )}
             {routeCapabilities.dappConnections && (
                 <SettingsStack.Screen
                     name='ConnectedSites'

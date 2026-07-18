@@ -30,9 +30,11 @@
     "@algorandfoundation/wallet-provider": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@noble/ciphers": "catalog:",
+    "@noble/hashes": "catalog:",
     "@scure/base": "catalog:",
     "@tanstack/store": "catalog:",
-    "before-after-hook": "catalog:"
+    "before-after-hook": "catalog:",
+    "@perawallet/wallet-core-passkeys": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",

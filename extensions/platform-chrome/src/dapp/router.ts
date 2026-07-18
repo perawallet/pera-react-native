@@ -17,6 +17,10 @@
 // ApprovalOpener (implemented by the approval bridge in a later task) and
 // parks the request until the window resolves it.
 import {
+    type SerializedCreateOptions,
+    type SerializedGetOptions,
+} from '@perawallet/wallet-core-passkeys/webauthn'
+import {
     ARC0027_ERROR_CODES,
     type Arc0027RequestEnvelope,
     type Arc0027ResponseEnvelope,
@@ -27,6 +31,7 @@ import {
     isArc0027Request,
     parseReference,
 } from './arc0027-codec'
+import { type PasskeyDecision } from './approval-bridge'
 import { type DappPermissionStore } from './permissions'
 import { isDappRelayMessage, type DiscoverInfo } from './router-protocol'
 
@@ -53,6 +58,20 @@ export interface ApprovalOpener {
         message: Record<string, unknown>
         approvedAddresses: string[]
     }): Promise<{ signature: string } | null>
+    openPasskeyCreate(ctx: {
+        requestId: string
+        origin: string
+        rpId: string
+        userName?: string
+        options: SerializedCreateOptions
+    }): Promise<PasskeyDecision>
+    openPasskeyGet(ctx: {
+        requestId: string
+        origin: string
+        rpId: string
+        userName?: string
+        options: SerializedGetOptions
+    }): Promise<PasskeyDecision>
 }
 
 export interface RouterDeps {

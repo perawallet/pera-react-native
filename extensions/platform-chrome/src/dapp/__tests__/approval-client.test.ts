@@ -15,7 +15,9 @@ import { DAPP_APPROVAL_SCOPE } from '../approval-bridge'
 import {
     getPendingApproval,
     rejectApproval,
+    rejectPasskey,
     resolveApproval,
+    resolvePasskey,
     resolveSignMessage,
     resolveSignTransactions,
 } from '../approval-client'
@@ -101,6 +103,38 @@ describe('resolveSignMessage', () => {
             kind: 'resolve-sign-message',
             requestId: 'q1',
             signature: 'SIG',
+        })
+    })
+})
+
+describe('resolvePasskey', () => {
+    it('sends a resolve-passkey message with the serialized credential', async () => {
+        sendMessage.mockResolvedValueOnce({ ok: true })
+        const credential = {
+            id: 'cred',
+            rawId: 'cred',
+            type: 'public-key' as const,
+            response: { clientDataJSON: 'CDJ', attestationObject: 'AO' },
+        }
+        await resolvePasskey('q1', credential)
+        expect(sendMessage).toHaveBeenCalledWith({
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'resolve-passkey',
+            requestId: 'q1',
+            credential,
+        })
+    })
+})
+
+describe('rejectPasskey', () => {
+    it('sends a reject-passkey message with the reason', async () => {
+        sendMessage.mockResolvedValueOnce({ ok: true })
+        await rejectPasskey('q1', 'declined')
+        expect(sendMessage).toHaveBeenCalledWith({
+            scope: DAPP_APPROVAL_SCOPE,
+            kind: 'reject-passkey',
+            requestId: 'q1',
+            reason: 'declined',
         })
     })
 })

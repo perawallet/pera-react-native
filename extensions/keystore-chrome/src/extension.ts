@@ -233,6 +233,16 @@ export const WithKeyStore: Extension<KeyStoreExtension> = (
                                     type: 'hd-root-key',
                                     format: 'raw',
                                 } as any
+                                // NOTE: this is a RAW signing primitive over
+                                // `data`. For `hd-derived-p256` (P-256/ES256)
+                                // keys the underlying dp256/noble path signs the
+                                // bytes directly (prehash:false) — it does NOT
+                                // hash-and-sign. WebAuthn ES256 callers MUST pass
+                                // an already-computed SHA-256 digest (the
+                                // createKeystoreSigner adapter does this in
+                                // signP256); a future P-256 caller through this
+                                // generic surface that hands a raw message will
+                                // get an invalid ES256 signature.
                                 return sign({
                                     store: keyStore,
                                     key,
