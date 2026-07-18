@@ -19,7 +19,11 @@ import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
-import { useBidaliTransport } from '../../hooks/useBidaliTransport'
+import {
+    useBidaliTransport,
+    computeBidaliBalances,
+} from '../../hooks/useBidaliTransport'
+import { buildBidaliUrl } from './bidali-url'
 import type WebView from 'react-native-webview'
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -51,8 +55,22 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
 
     const url = useMemo(() => {
         const networkConfig = getNetworkConfig(network)
-        return `${networkConfig.bidaliBaseUrl}?key=${networkConfig.bidaliApiKey}`
-    }, [network])
+        // Web-only: bidali-url.web.ts stamps this onto the URL for the
+        // content script to parse; native's bidali-url.ts ignores it
+        // (balances are embedded in the injected provider JS instead — see
+        // useBidaliTransport's computeBidaliBalances, the same selector
+        // reused here so both surfaces stay in sync).
+        const balances = computeBidaliBalances(
+            selectedAccount,
+            accountBalances,
+            network,
+        )
+        return buildBidaliUrl({
+            baseUrl: networkConfig.bidaliBaseUrl,
+            apiKey: networkConfig.bidaliApiKey,
+            balances,
+        })
+    }, [network, selectedAccount, accountBalances])
 
     // The provider global (API key + user balances) is re-injected into the
     // main frame on every navigation, so no foreign origin may ever load in

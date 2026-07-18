@@ -70,6 +70,32 @@ const getCurrencyInfo = (
     }
 }
 
+// Selects the balances object the Bidali provider surface embeds: the
+// selected account's ALGO/USDC amounts, keyed by Bidali's currency protocol
+// names. Exported so bidali-url.web.ts (Task 4) can stamp the identical
+// shape onto the web iframe URL instead of duplicating this math.
+export const computeBidaliBalances = (
+    account: Optional<WalletAccount>,
+    balances: AccountBalances,
+    network: 'mainnet' | 'testnet',
+): Record<string, string> => {
+    const balance = balances.get(account?.address ?? '')
+
+    const algoBalance = balance?.assetBalances.find(a =>
+        isAlgoAssetId(a.assetId),
+    )?.amount
+    const usdcBalance = balance?.assetBalances.find(
+        a => a.assetId === getKnownAssetId('USDC', network),
+    )?.amount
+
+    const isTestnet = network === 'testnet'
+    return {
+        algorand: algoBalance?.toString() ?? '0',
+        [isTestnet ? 'testusdcalgorand' : 'usdcalgorand']:
+            usdcBalance?.toString() ?? '0',
+    }
+}
+
 const buildBidaliProviderJS = (apiKey: string, balances: string): string => {
     return `
         (function() {
@@ -147,27 +173,13 @@ export const useBidaliTransport = (
     const webviewRef = useRef<Nullable<WebView>>(null)
 
     const providerJS = useMemo(() => {
-        const balance = balances.get(account?.address ?? '')
-
-        const algoBalance = balance?.assetBalances.find(a =>
-            isAlgoAssetId(a.assetId),
-        )?.amount
-        const usdcBalance = balance?.assetBalances.find(
-            a => a.assetId === getKnownAssetId('USDC', network),
-        )?.amount
-
-        const isTestnet = network === 'testnet'
-        const balanceMap: Record<string, string> = {
-            algorand: algoBalance?.toString() ?? '0',
-            [isTestnet ? 'testusdcalgorand' : 'usdcalgorand']:
-                usdcBalance?.toString() ?? '0',
-        }
+        const balanceMap = computeBidaliBalances(account, balances, network)
 
         return buildBidaliProviderJS(
             getNetworkConfig(network).bidaliApiKey,
             JSON.stringify(balanceMap),
         )
-    }, [network, account?.address, balances])
+    }, [network, account, balances])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
