@@ -44,11 +44,11 @@ describe('route capabilities', () => {
             discoverTab: true,
             // M7 (2026-07-17 shipped): WalletConnect v1 pairing + sessions on web.
             walletConnectSettings: true,
-            // Still off: webview-dependent leftovers (M8), Pera Card (M10),
-            // and permanently-off items.
-            inAppWebView: false, // M8 revisit
+            // M8: Bidali stack complete.
+            giftCards: true,
+            // Still off: Pera Card (M10), and permanently-off items.
+            inAppWebView: false, // M8 decision: stays false — help/terms open browser tabs
             peraCard: false,
-            giftCards: false,
             pushNotificationSettings: false,
             storeRating: false,
             vaultSecuritySettings: true,
