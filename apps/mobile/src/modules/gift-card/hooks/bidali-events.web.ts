@@ -25,6 +25,9 @@ export const sendBidaliEvent = (
     webviewRef: React.RefObject<Nullable<WebView>>,
     event: 'paymentSent' | 'paymentCancelled',
 ) => {
+    // Deliberately no `id` field: this is a fire-and-forget JSON-RPC
+    // notification (mirroring native's one-way injectJavaScript call) — the
+    // content-script listener must not attempt request/response correlation.
     asBridgeTransport(webviewRef.current)?.postToWebview({
         jsonrpc: '2.0',
         method: 'bidaliEvent',
