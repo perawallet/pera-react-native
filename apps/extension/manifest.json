@@ -52,13 +52,28 @@
       "run_at": "document_start",
       "world": "ISOLATED",
       "all_frames": true
+    },
+    {
+      "matches": ["https://*.bidali.com/*"],
+      "js": ["content-bidali-main.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
+    {
+      "matches": ["https://*.bidali.com/*"],
+      "js": ["content-bidali-relay.js"],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": true
     }
   ],
   "permissions": ["storage", "alarms", "offscreen"],
   "host_permissions": [
     "https://*.perawallet.app/*",
     "https://*.algonode.cloud/*",
-    "https://*.baanx.com/*"
+    "https://*.baanx.com/*",
+    "https://*.bidali.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; font-src 'self'"
