@@ -91,4 +91,23 @@ describe('ChromeRemoteConfigService', () => {
         })
         expect(service.getBooleanValue('enable_pera_card', false)).toBe(true)
     })
+
+    it("honours the caller's fallback over the bundled default when the source isn't remote", async () => {
+        // enable_pera_card's bundled default is `false`. A caller like
+        // useIsPeraCardEnabled passes `true` in dev/staging specifically to
+        // override that default. Before the first successful fetch,
+        // getSource() is 'default', not 'remote' — the bundled default must
+        // NOT win over the caller's fallback here.
+        getFirebaseAppMock.mockReturnValue({ name: '[DEFAULT]' })
+        mockGetValue.mockReturnValue({
+            getSource: () => 'default',
+            asBoolean: () => false,
+            asString: () => '',
+            asNumber: () => 0,
+        })
+        const service = new ChromeRemoteConfigService()
+        await service.initializeRemoteConfig()
+
+        expect(service.getBooleanValue('enable_pera_card', true)).toBe(true)
+    })
 })

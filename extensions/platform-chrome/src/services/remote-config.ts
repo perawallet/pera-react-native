@@ -78,13 +78,18 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
             // which seeds every key via defaultConfig so getValue never
             // throws even pre-fetch; treating that seeded value as "real"
             // would let a stale default silently override the caller's
-            // fallback (e.g. a kill switch reading as enabled before the
-            // first successful fetch).
+            // fallback. A non-remote source falls through to the caller's
+            // `fallback`, not the bundled default: e.g.
+            // useIsPeraCardEnabled calls
+            // getBooleanValue('enable_pera_card', isDebug || isStaging) to
+            // override the bundled `false` with `true` in dev/staging —
+            // before the first successful fetch, getSource() is 'default',
+            // and falling back to the bundled default would hide Pera Card.
             return value.getSource() === 'remote'
                 ? value.asBoolean()
-                : effectiveFallback
+                : (fallback ?? false)
         } catch {
-            return effectiveFallback
+            return fallback ?? false
         }
     }
 
