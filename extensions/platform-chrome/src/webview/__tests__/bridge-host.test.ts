@@ -65,7 +65,7 @@ describe('createDiscoverBridgeHost', () => {
         const onMessage = vi.fn()
         const host = createDiscoverBridgeHost({
             token: 'tok1',
-            trustedOrigin: TRUSTED,
+            trustedOrigins: [TRUSTED],
             onMessage,
         })
         const port = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
@@ -84,7 +84,7 @@ describe('createDiscoverBridgeHost', () => {
     it('rejects a port whose sender origin is not the Discover origin', () => {
         const host = createDiscoverBridgeHost({
             token: 'tok1',
-            trustedOrigin: TRUSTED,
+            trustedOrigins: [TRUSTED],
             onMessage: vi.fn(),
         })
         const evil = makePort(
@@ -99,13 +99,49 @@ describe('createDiscoverBridgeHost', () => {
     it('ignores ports for other tokens (another mount/surface)', () => {
         const host = createDiscoverBridgeHost({
             token: 'tok1',
-            trustedOrigin: TRUSTED,
+            trustedOrigins: [TRUSTED],
             onMessage: vi.fn(),
         })
         const other = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok2`, TRUSTED)
         connectListeners.forEach(cb => cb(other))
         expect(host.isConnected()).toBe(false)
         expect(other.disconnect).not.toHaveBeenCalled()
+    })
+
+    // M8: multi-origin support (Bidali's commerce config origin plus its
+    // giftcards.-prefixed redirect twin — see trusted-iframe-origins.web.ts).
+    it('accepts a port whose sender origin is the second entry of a multi-origin trust list', () => {
+        const onMessage = vi.fn()
+        const TWIN = 'https://giftcards.bidali.com'
+        const host = createDiscoverBridgeHost({
+            token: 'tok1',
+            trustedOrigins: ['https://commerce.bidali.com', TWIN],
+            onMessage,
+        })
+        const port = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TWIN)
+        connectListeners.forEach(cb => cb(port))
+
+        expect(host.isConnected()).toBe(true)
+        port.emitMessage({ method: 'getSettings' })
+        expect(onMessage).toHaveBeenCalledWith({ method: 'getSettings' })
+    })
+
+    it('still rejects a port whose origin is not in a multi-origin trust list', () => {
+        const host = createDiscoverBridgeHost({
+            token: 'tok1',
+            trustedOrigins: [
+                'https://commerce.bidali.com',
+                'https://giftcards.bidali.com',
+            ],
+            onMessage: vi.fn(),
+        })
+        const evil = makePort(
+            `${DISCOVER_BRIDGE_PORT_PREFIX}tok1`,
+            'https://evil.example',
+        )
+        connectListeners.forEach(cb => cb(evil))
+        expect(evil.disconnect).toHaveBeenCalled()
+        expect(host.isConnected()).toBe(false)
     })
 
     // Fix 2 (M6 final-review): an iframe self-reload with the same token can
@@ -116,7 +152,7 @@ describe('createDiscoverBridgeHost', () => {
         const onDisconnect = vi.fn()
         const host = createDiscoverBridgeHost({
             token: 'tok1',
-            trustedOrigin: TRUSTED,
+            trustedOrigins: [TRUSTED],
             onMessage: vi.fn(),
             onDisconnect,
         })
@@ -144,7 +180,7 @@ describe('createDiscoverBridgeHost', () => {
         const onMessage = vi.fn()
         const host = createDiscoverBridgeHost({
             token: 'tok1',
-            trustedOrigin: TRUSTED,
+            trustedOrigins: [TRUSTED],
             onMessage,
         })
         const oldPort = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
@@ -163,7 +199,7 @@ describe('createDiscoverBridgeHost', () => {
     it('post() is a safe no-op after disconnect; dispose unregisters', () => {
         const host = createDiscoverBridgeHost({
             token: 'tok1',
-            trustedOrigin: TRUSTED,
+            trustedOrigins: [TRUSTED],
             onMessage: vi.fn(),
         })
         const port = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)

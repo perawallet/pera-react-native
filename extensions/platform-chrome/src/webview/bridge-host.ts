@@ -23,13 +23,18 @@ export type DiscoverBridgeHost = {
  * script inside the iframe opens a chrome.runtime Port named
  * `pera-discover-bridge:<token>`; the token was stamped onto the iframe URL
  * by PWWebView.web, so the name routes the port to the right mount. Trust is
- * the browser-stamped port.sender.origin — same authority DappRequestRouter
- * uses (dapp/router.ts). Ports are the only bidirectional channel that works
- * from a popup surface (no tab id → no chrome.tabs.sendMessage).
+ * exact membership of the browser-stamped port.sender.origin in
+ * `trustedOrigins` — same authority DappRequestRouter uses (dapp/router.ts).
+ * Ports are the only bidirectional channel that works from a popup surface
+ * (no tab id → no chrome.tabs.sendMessage). `trustedOrigins` is a list (not a
+ * single origin) because a mounted URL can 302-redirect to a different host
+ * before the port connects (M8 Bidali → giftcards.* twin — see
+ * trusted-iframe-origins.web.ts); membership is exact-match only, never a
+ * suffix/pattern check.
  */
 export const createDiscoverBridgeHost = (params: {
     token: string
-    trustedOrigin: string
+    trustedOrigins: string[]
     onMessage: (data: unknown) => void
     onDisconnect?: () => void
 }): DiscoverBridgeHost => {
@@ -39,7 +44,7 @@ export const createDiscoverBridgeHost = (params: {
         if (port.name !== `${DISCOVER_BRIDGE_PORT_PREFIX}${params.token}`) {
             return // another mount's port — leave it alone
         }
-        if (port.sender?.origin !== params.trustedOrigin) {
+        if (!params.trustedOrigins.includes(port.sender?.origin ?? '')) {
             console.warn(
                 '[pera] discover bridge port rejected: origin mismatch',
             )

@@ -25,7 +25,6 @@
 // { uri }, parses it, and calls connect() — the mounted WalletConnectProvider
 // then surfaces ConnectionView for the real pairing flow.
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     createDiscoverBridgeHost,
@@ -41,6 +40,10 @@ import {
     isSafeBrowserUrl,
     isTrustedWebviewOrigin,
 } from '../../hooks/handlers'
+import {
+    getTrustedIframeOrigins,
+    getTrustedIframeSourceBases,
+} from '../../hooks/trusted-iframe-origins.web'
 // asBridgeWebview/WebviewBridgeTransport/requireSecure are bound to the web
 // transport (native handlers.ts binds its own requireSecure to
 // injectJavaScript, not a Port) — imported with the explicit .web suffix so
@@ -120,12 +123,21 @@ export const PWWebView = ({
         return loadable.toString()
     }, [url, bridgeToken])
 
-    // Structural trust: the bridge content scripts only run on the Discover
-    // origin, and createDiscoverBridgeHost verifies the browser-stamped
+    // Structural trust: the bridge content scripts only run on a known,
+    // configured mount origin (Discover or, from M8, Bidali), and
+    // createDiscoverBridgeHost verifies the browser-stamped
     // port.sender.origin — an off-origin navigation inside the iframe kills
     // the bridge rather than reaching the handlers. This flag mirrors
-    // native's isSecure for the requireSecure gate.
-    const isSecure = isTrustedWebviewOrigin(url, [config.discoverBaseUrl])
+    // native's isSecure for the requireSecure gate. isTrustedWebviewOrigin
+    // compares by origin, so the pre-redirect configured bases (not the
+    // post-redirect giftcards twin — the mounted `url` never becomes that)
+    // are the right source list here.
+    const isSecure = isTrustedWebviewOrigin(url, getTrustedIframeSourceBases())
+
+    // The bridge-host trust set for this mount: empty for any URL that isn't
+    // a known surface, which below skips host creation entirely rather than
+    // standing up a host nothing could ever authenticate against.
+    const trustedOrigins = useMemo(() => getTrustedIframeOrigins(url), [url])
 
     const hostRef = useRef<ReturnType<typeof createDiscoverBridgeHost> | null>(
         null,
@@ -200,9 +212,14 @@ export const PWWebView = ({
     handleBridgeMessageRef.current = handleBridgeMessage
 
     useEffect(() => {
+        // Untrusted mount (unrecognized URL): render the iframe with no
+        // bridge at all rather than a host that could never authenticate a
+        // port against an empty trust set.
+        if (trustedOrigins.length === 0) return undefined
+
         const host = createDiscoverBridgeHost({
             token: bridgeToken,
-            trustedOrigin: new URL(config.discoverBaseUrl).origin,
+            trustedOrigins,
             onMessage: data => handleBridgeMessageRef.current(data),
             onDisconnect: () => {
                 if (!isMountedRef.current) return
@@ -233,7 +250,7 @@ export const PWWebView = ({
             hostRef.current = null
             host.dispose()
         }
-    }, [bridgeToken])
+    }, [bridgeToken, trustedOrigins])
 
     return (
         <PWView style={[styles.flex, containerStyle]}>

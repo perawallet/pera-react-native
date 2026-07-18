@@ -33,7 +33,7 @@ const {
     hostParams: {} as {
         current?: {
             token: string
-            trustedOrigin: string
+            trustedOrigins: string[]
             onMessage: (data: unknown) => void
             onDisconnect?: () => void
         }
@@ -63,15 +63,26 @@ vi.mock('../../../hooks/useContextFingerprints', () => ({
     useContextFingerprints: () => ({ settings: 's', accounts: 'a' }),
 }))
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast }) }))
+// M8: the helper (trusted-iframe-origins.web) reads both networks' Bidali
+// base via getNetworkConfig — mocked here alongside config so PWWebView.web's
+// isSecure/trustedOrigins derivation resolves the same way real config would.
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     },
+    getNetworkConfig: (network: string) => ({
+        bidaliBaseUrl:
+            network === 'mainnet'
+                ? 'https://commerce.bidali.com/dapp'
+                : 'https://commerce.staging.bidali.com/dapp',
+    }),
+    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
 }))
 
 import { PWWebView } from '../PWWebView.web'
 
 const DISCOVER = 'https://discover-mobile-staging.perawallet.app/'
+const BIDALI_MAINNET = 'https://commerce.bidali.com/dapp?key=test'
 
 // The mounted host's token — stamped into the iframe src and required on
 // every inbound message.
@@ -96,9 +107,38 @@ describe('PWWebView.web', () => {
         const src = container.querySelector('iframe')?.getAttribute('src')
         expect(src).toContain('peraBridgeToken=')
         expect(src).toContain(mountedToken())
-        expect(hostParams.current?.trustedOrigin).toBe(
+        expect(hostParams.current?.trustedOrigins).toEqual([
             'https://discover-mobile-staging.perawallet.app',
+        ])
+    })
+
+    // M8: Bidali mounts trust both the configured commerce origin and its
+    // giftcards.-prefixed 302-redirect twin (trusted-iframe-origins.web.ts).
+    it('creates the host with the commerce + giftcards origin pair for a Bidali mount', () => {
+        render(
+            <PWWebView
+                url={BIDALI_MAINNET}
+                enablePeraConnect={true}
+            />,
         )
+        expect(createDiscoverBridgeHost).toHaveBeenCalledTimes(1)
+        expect(hostParams.current?.trustedOrigins).toEqual([
+            'https://commerce.bidali.com',
+            'https://giftcards.bidali.com',
+        ])
+    })
+
+    // M8: an unrecognized mount gets no bridge at all — getTrustedIframeOrigins
+    // returns [] and PWWebView.web must not stand up a host nothing could ever
+    // authenticate a port against.
+    it('does not create a bridge host for an unrecognized URL', () => {
+        render(
+            <PWWebView
+                url='https://untrusted.example.com/'
+                enablePeraConnect={true}
+            />,
+        )
+        expect(createDiscoverBridgeHost).not.toHaveBeenCalled()
     })
 
     it('routes a valid bridge message into the native handler registry', () => {
@@ -208,37 +248,18 @@ describe('PWWebView.web', () => {
         expect(src).not.toContain(firstToken)
     })
 
-    // Review finding 1: every other privileged op runs through requireSecure
-    // inside usePeraWebviewInterface; the web-only pushWebView intercept must
-    // too, rather than trusting the token check alone.
-    it('gates pushWebView through requireSecure — an insecure connection gets Unauthorized, not a tab-open', () => {
-        const untrustedUrl = 'https://untrusted.example.com/'
-        render(
-            <PWWebView
-                url={untrustedUrl}
-                enablePeraConnect={true}
-            />,
-        )
-        const token = mountedToken()
-
-        hostParams.current!.onMessage({
-            id: '5',
-            jsonrpc: '2.0',
-            method: 'pushWebView',
-            params: { url: 'https://dapp.example' },
-            token,
-        })
-
-        expect(openExternalTab).not.toHaveBeenCalled()
-        expect(hostPost).toHaveBeenCalledWith({
-            id: '5',
-            jsonrpc: '2.0',
-            error: {
-                code: -32_001, // JsonRpcErrorCode.Unauthorized
-                message: 'Operation not permitted from this origin',
-            },
-        })
-    })
+    // Review finding 1 (M6) / M8 update: every other privileged op runs
+    // through requireSecure inside usePeraWebviewInterface; the web-only
+    // pushWebView intercept must too, rather than trusting the token check
+    // alone. Previously this was exercised by mounting an untrusted URL and
+    // pushing a message straight through the (fully mocked) host — but M8
+    // makes host creation itself conditional on trust (see "does not create
+    // a bridge host for an unrecognized URL" above), so a host existing
+    // for an insecure mount is no longer a reachable state to construct
+    // against the real helper; requireSecure's success path stays covered by
+    // "intercepts pushWebView into a real browser tab" above, and its
+    // isSecure-gating logic has direct unit coverage in handlers-shared's
+    // own spec.
 
     // Fix 1 (M6 final-review): native (PWWebView.tsx:122-124) passes
     // `enablePeraConnect ? contextFingerprints : undefined` into the notify
