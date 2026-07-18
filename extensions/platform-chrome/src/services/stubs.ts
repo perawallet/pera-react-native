@@ -11,7 +11,6 @@
  */
 
 import {
-    RemoteConfigDefaults,
     type AgeGateDeviceCapability,
     type AgeGateResult,
     type AgeGateService,
@@ -30,31 +29,9 @@ import {
     type NotificationOpenListener,
     type PushNotificationInitResult,
     type PushNotificationService,
-    type RemoteConfigKey,
-    type RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
 
 const noop = (): void => undefined
-
-/** Serves the bundled defaults; a live backend (Firebase web) is a later phase. */
-export class ChromeRemoteConfigService implements RemoteConfigService {
-    initializeRemoteConfig(): void {}
-
-    getStringValue(key: string, fallback?: string): string {
-        const value = RemoteConfigDefaults[key as RemoteConfigKey]
-        return typeof value === 'string' ? value : (fallback ?? '')
-    }
-
-    getBooleanValue(key: string, fallback?: boolean): boolean {
-        const value = RemoteConfigDefaults[key as RemoteConfigKey]
-        return typeof value === 'boolean' ? value : (fallback ?? false)
-    }
-
-    getNumberValue(key: string, fallback?: number): number {
-        const value = RemoteConfigDefaults[key as RemoteConfigKey]
-        return typeof value === 'number' ? value : (fallback ?? 0)
-    }
-}
 
 export class ChromeAnalyticsService implements AnalyticsService {
     initializeAnalytics(): void {}

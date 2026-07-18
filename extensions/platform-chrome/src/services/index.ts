@@ -21,5 +21,5 @@ export {
     ChromeCrashReportingService,
     ChromeMigrationService,
     ChromePushNotificationService,
-    ChromeRemoteConfigService,
 } from './stubs'
+export { ChromeRemoteConfigService } from './remote-config'
