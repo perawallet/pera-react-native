@@ -87,7 +87,11 @@
     "https://*.perawallet.app/*",
     "https://*.algonode.cloud/*",
     "https://*.baanx.com/*",
-    "https://*.bidali.com/*"
+    "https://*.bidali.com/*",
+    "https://firebaseremoteconfig.googleapis.com/*",
+    "https://firebaseinstallations.googleapis.com/*",
+    "https://www.google-analytics.com/*",
+    "https://*.ingest.sentry.io/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; font-src 'self'"

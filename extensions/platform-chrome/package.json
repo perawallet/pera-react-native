@@ -21,18 +21,21 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-passkeys": "workspace:*",
-    "drizzle-orm": "catalog:"
+    "@perawallet/wallet-extension-platform": "workspace:*",
+    "@sentry/browser": "^10.65.0",
+    "drizzle-orm": "catalog:",
+    "firebase": "^12.16.0"
   },
   "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@types/chrome": "catalog:",
+    "@types/node": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
-    "vitest": "catalog:",
-    "@types/chrome": "catalog:",
-    "@types/node": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*"
+    "vitest": "catalog:"
   }
 }

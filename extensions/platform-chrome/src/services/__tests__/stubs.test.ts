@@ -17,24 +17,7 @@ import {
     ChromeBiometricsService,
     ChromeMigrationService,
     ChromePushNotificationService,
-    ChromeRemoteConfigService,
 } from '../stubs'
-
-describe('ChromeRemoteConfigService', () => {
-    const service = new ChromeRemoteConfigService()
-
-    it('serves bundled defaults', () => {
-        expect(service.getNumberValue('fee_min_txn_fee')).toBe(1000)
-        expect(service.getBooleanValue('enable_pera_card')).toBe(false)
-        expect(service.getStringValue('terms_version')).toBe('1')
-    })
-
-    it('falls back for unknown keys', () => {
-        expect(service.getStringValue('nope', 'fb')).toBe('fb')
-        expect(service.getBooleanValue('nope', true)).toBe(true)
-        expect(service.getNumberValue('nope', 7)).toBe(7)
-    })
-})
 
 describe('capability stubs', () => {
     it('reports unsupported/none capabilities', async () => {
