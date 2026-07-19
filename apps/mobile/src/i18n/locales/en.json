@@ -500,6 +500,7 @@
     "common": {
         "offline_mode": "Offline Mode",
         "back_online": "Back online",
+        "testnet_indicator": "TestNet",
         "yes": "Yes",
         "no": "No",
         "enter_stealth_mode": "Enter Stealth Mode",

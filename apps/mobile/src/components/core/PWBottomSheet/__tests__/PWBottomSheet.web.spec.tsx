@@ -233,4 +233,26 @@ describe('PWBottomSheet.web', () => {
 
         expect(screen.getByTestId('my-sheet')).toBeTruthy()
     })
+
+    // Regression test for the sheet bleeding to the full browser-tab width
+    // on the wide "expanded" surface: react-native-web's Modal portals to
+    // document.body outside AppShell.web.tsx's width-capped card, so the
+    // backdrop and sheet must be wrapped in their own width-capped stage
+    // rather than relying on an ancestor in the React tree.
+    it('nests the backdrop and sheet content inside the width-capped stage container', () => {
+        render(
+            <PWBottomSheet
+                isVisible={true}
+                testID='my-sheet'
+            >
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        const stage = screen.getByTestId('pw-bottom-sheet-stage')
+        expect(
+            stage.contains(screen.getByTestId('pw-bottom-sheet-backdrop')),
+        ).toBe(true)
+        expect(stage.contains(screen.getByTestId('my-sheet'))).toBe(true)
+    })
 })

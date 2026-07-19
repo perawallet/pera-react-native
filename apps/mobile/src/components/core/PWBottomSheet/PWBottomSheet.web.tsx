@@ -146,29 +146,37 @@ export const PWBottomSheet = ({
             animationType='none'
             onRequestClose={handleBackdropPress}
         >
-            <Animated.View
-                style={[styles.backdrop, { opacity: backdropOpacity }]}
+            {/* Caps the sheet to the same width as AppShell's card on the
+                expanded surface — see the `stage` style comment for why this
+                wrapper is required. */}
+            <PWView
+                testID='pw-bottom-sheet-stage'
+                style={styles.stage}
             >
-                <Pressable
-                    style={styles.backdropPressable}
-                    onPress={handleBackdropPress}
-                    testID='pw-bottom-sheet-backdrop'
-                />
-            </Animated.View>
-            <Animated.View
-                style={[
-                    styles.sheet,
-                    containerStyle,
-                    { transform: [{ translateY }] },
-                ]}
-            >
-                <PWView
-                    testID={testID}
-                    style={[styles.inner, innerContainerStyle]}
+                <Animated.View
+                    style={[styles.backdrop, { opacity: backdropOpacity }]}
                 >
-                    {children}
-                </PWView>
-            </Animated.View>
+                    <Pressable
+                        style={styles.backdropPressable}
+                        onPress={handleBackdropPress}
+                        testID='pw-bottom-sheet-backdrop'
+                    />
+                </Animated.View>
+                <Animated.View
+                    style={[
+                        styles.sheet,
+                        containerStyle,
+                        { transform: [{ translateY }] },
+                    ]}
+                >
+                    <PWView
+                        testID={testID}
+                        style={[styles.inner, innerContainerStyle]}
+                    >
+                        {children}
+                    </PWView>
+                </Animated.View>
+            </PWView>
         </Modal>
     )
 }

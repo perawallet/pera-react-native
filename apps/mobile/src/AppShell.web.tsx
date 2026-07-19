@@ -61,6 +61,8 @@ import {
 } from '@perawallet/wallet-extension-platform-chrome'
 import { WebMainRoutes } from '@routes/WebMainRoutes'
 import { DappRequestRoutes } from '@modules/dapp'
+import { TestnetIndicator } from '@components/TestnetIndicator'
+import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell'
 import { updateQueryHeaders } from './bootstrap/query-headers'
 
@@ -89,8 +91,10 @@ updateQueryHeaders()
 // desktop tab). In the popup/approval surfaces `card`'s cap never binds
 // (both are already narrower than it), so `card` fills `root` exactly and
 // the grey tone is never visible there — no surface check needed.
-const CARD_MAX_WIDTH = 420
-
+//
+// PWBottomSheet.web.tsx applies this same WEB_EXPANDED_CARD_MAX_WIDTH cap to
+// its own stage, since gorhom-on-web's Modal portals to document.body and
+// would otherwise bypass this card entirely.
 const useAppShellRootStyles = makeStyles(theme => ({
     root: {
         flex: 1,
@@ -99,7 +103,7 @@ const useAppShellRootStyles = makeStyles(theme => ({
     card: {
         flex: 1,
         width: '100%',
-        maxWidth: CARD_MAX_WIDTH,
+        maxWidth: WEB_EXPANDED_CARD_MAX_WIDTH,
         alignSelf: 'center',
         backgroundColor: theme.colors.background,
     },
@@ -309,6 +313,7 @@ const AppShellThemedRoot = (): React.JSX.Element => {
         <SafeAreaProvider>
             <GestureHandlerRootView style={rootStyles.root}>
                 <PWView style={rootStyles.card}>
+                    <TestnetIndicator />
                     <KeyboardProvider>
                         <NotifierWrapper
                             componentProps={{

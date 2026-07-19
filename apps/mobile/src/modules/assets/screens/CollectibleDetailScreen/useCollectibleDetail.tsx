@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import { Linking, Platform } from 'react-native'
 import { shareText } from '@utils/shareText'
+import { getImageBase64 } from '@utils/getImageBase64'
+import { saveImageToDevice } from '@utils/saveImageToDevice'
+import { MediaPermissionDeniedError } from '@utils/mediaErrors'
 import { useNavigation } from '@react-navigation/native'
 import {
     useSingleAssetDetailsQuery,
@@ -35,8 +39,6 @@ import { Decimal } from 'decimal.js'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import * as Clipboard from 'expo-clipboard'
-import { File, Paths } from 'expo-file-system'
-import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { routeCapabilities } from '@routes/capabilities'
@@ -232,11 +234,10 @@ export const useCollectibleDetail = (
         if (!imageUrl) return
 
         try {
-            const dest = new File(Paths.cache, `collectible_${assetId}`)
-            const file = await File.downloadFileAsync(imageUrl, dest, {
-                idempotent: true,
-            })
-            const base64 = await file.base64()
+            const base64 = await getImageBase64(
+                imageUrl,
+                `collectible_${assetId}`,
+            )
 
             await Clipboard.setImageAsync(base64)
             void Haptics.notificationAsync(
@@ -261,13 +262,22 @@ export const useCollectibleDetail = (
         if (!saveableMediaUrl) return
 
         try {
-            // writeOnly: we only save to the gallery, never read it. On
-            // Android 13+ this needs no runtime permission (scoped MediaStore
-            // write), so the app doesn't request READ_MEDIA_IMAGES — which Play
-            // gates under its Photo & Video Permissions policy.
-            const { status } = await MediaLibrary.requestPermissionsAsync(true)
+            const extension = saveableMedia?.extension ?? 'png'
+            await saveImageToDevice(
+                saveableMediaUrl,
+                `collectible_${assetId}.${extension}`,
+            )
 
-            if (status !== 'granted') {
+            void Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+            )
+            showToast({
+                title: t('asset_details.collectible.media_saved'),
+                body: '',
+                type: 'success',
+            })
+        } catch (err) {
+            if (err instanceof MediaPermissionDeniedError) {
                 showToast({
                     title: t(
                         'asset_details.collectible.media_permission_denied',
@@ -277,26 +287,6 @@ export const useCollectibleDetail = (
                 })
                 return
             }
-
-            const extension = saveableMedia?.extension ?? 'png'
-            const dest = new File(
-                Paths.cache,
-                `collectible_${assetId}.${extension}`,
-            )
-            const file = await File.downloadFileAsync(saveableMediaUrl, dest, {
-                idempotent: true,
-            })
-
-            await MediaLibrary.saveToLibraryAsync(file.uri)
-            void Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-            )
-            showToast({
-                title: t('asset_details.collectible.media_saved'),
-                body: '',
-                type: 'success',
-            })
-        } catch {
             // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible image-save error; bespoke localized title preserved
             showToast({
                 title: t('asset_details.collectible.media_save_failed'),
@@ -366,13 +356,22 @@ export const useCollectibleDetail = (
     }, [rawMedia, collectible, asset])
 
     const handleModelPress = useCallback(() => {
-        // The 3D badge is already hidden on web (see `media` above), but
-        // guard here too in case this is ever wired up directly.
-        if (!routeCapabilities.inAppWebView) return
         // Only downloadUrl is the real 3D asset; a preview image can't be opened
         // by the model viewer.
         const modelUrl = rawMedia.find(m => m.type === 'model')?.downloadUrl
         if (!modelUrl) return
+
+        if (!routeCapabilities.inAppWebView) {
+            // The 3D badge is already hidden from `media` on web (no
+            // react-native-webview there for ModelViewerBottomSheet to run
+            // in), and there's no dedicated web model-viewer page yet — this
+            // only guards a caller that ever wires the tap up directly.
+            // Opening the raw .glb in a new tab is a strictly-better
+            // fallback than a silent no-op: the browser will offer to
+            // download/preview it rather than doing nothing at all.
+            void Linking.openURL(modelUrl)
+            return
+        }
         setModelViewerUrl(modelUrl)
         modelViewerModal.open()
     }, [rawMedia, modelViewerModal])
@@ -383,11 +382,23 @@ export const useCollectibleDetail = (
             const item = visualMedia[index]
             const uri = item?.downloadUrl ?? item?.previewUrl
             const matchIndex = fullScreenMedia.findIndex(m => m.uri === uri)
+            const targetIndex = matchIndex >= 0 ? matchIndex : 0
+
+            // A bottom sheet is a fine stand-in for a full-screen native
+            // modal, but it's not "full screen" in a 360x600 popup (or even
+            // the expanded tab) — open the raw media in a real browser tab
+            // instead, which is what actually fills the screen there.
+            if (Platform.OS === 'web') {
+                const targetUri = fullScreenMedia[targetIndex]?.uri
+                if (targetUri) void Linking.openURL(targetUri)
+                return
+            }
+
             void requestBottomSheet({
                 contents: (
                     <FullScreenMediaViewer
                         media={fullScreenMedia}
-                        initialIndex={matchIndex >= 0 ? matchIndex : 0}
+                        initialIndex={targetIndex}
                     />
                 ),
                 options: {
