@@ -416,7 +416,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             // renders once algod accepts the submission.
             await waitFor(
                 () => {
-                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 15_000 },
             )
@@ -487,7 +487,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             // builds + signs + submits the reject group and lands on success.
             await waitFor(
                 () => {
-                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 15_000 },
             )
