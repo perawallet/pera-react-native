@@ -46,6 +46,8 @@ const mockSource = {
     layers: [],
 }
 
+const mockStyle = { width: 160, height: 46 }
+
 describe('PWLottie', () => {
     it('renders and forwards props to LottieView', () => {
         render(
@@ -62,16 +64,12 @@ describe('PWLottie', () => {
             <PWLottie
                 source={mockSource}
                 testID='lottie'
-                style={{ width: 160, height: 46 }}
+                style={mockStyle}
             />,
         )
         const element = screen.getByTestId('lottie')
-        expect(element.dataset.style).toBe(
-            JSON.stringify({ width: 160, height: 46 }),
-        )
-        expect(element.dataset.webStyle).toBe(
-            JSON.stringify({ width: 160, height: 46 }),
-        )
+        expect(element.dataset.style).toBe(JSON.stringify(mockStyle))
+        expect(element.dataset.webStyle).toBe(JSON.stringify(mockStyle))
     })
 
     it('does not set webStyle when no style is passed', () => {

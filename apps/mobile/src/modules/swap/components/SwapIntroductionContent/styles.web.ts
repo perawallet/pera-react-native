@@ -29,6 +29,7 @@ export const useStyles = makeStyles(theme => ({
     heroImage: {
         width: '100%',
         aspectRatio: 1.4,
+        // guardrails-ignore-next-line no-numeric-sizes reason: bespoke web popup height cap for the hero illustration, not a spacing value; no theme token matches
         maxHeight: 120,
     },
     contentSection: {

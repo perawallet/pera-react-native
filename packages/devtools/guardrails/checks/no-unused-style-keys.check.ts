@@ -131,6 +131,21 @@ function resolveRelativeImport(
     return null
 }
 
+// Metro/webpack resolve a plain `./styles` import to `styles.web.ts` at
+// bundle time when building for web, transparently to the importer — so a
+// key referenced via the platform-agnostic import is equally "used" in the
+// `.web` sibling, if that sibling declares the same key.
+function resolvePlatformVariants(
+    resolvedFile: string,
+    sources: SourceMap,
+): string[] {
+    const ext = path.extname(resolvedFile)
+    const stem = resolvedFile.slice(0, -ext.length)
+    if (stem.endsWith('.web')) return []
+    const variant = `${stem}.web${ext}`
+    return sources.has(variant) ? [variant] : []
+}
+
 function findImportedStyleHooks(
     sf: ts.SourceFile,
     sources: SourceMap,
@@ -147,18 +162,24 @@ function findImportedStyleHooks(
             sources,
         )
         if (!resolved) continue
-        const declaredHooks = hookIndex.get(resolved)
-        if (!declaredHooks) continue
+        const candidateFiles = [
+            resolved,
+            ...resolvePlatformVariants(resolved, sources),
+        ]
         const bindings = stmt.importClause?.namedBindings
         if (!bindings || !ts.isNamedImports(bindings)) continue
-        for (const el of bindings.elements) {
-            const original = el.propertyName?.text ?? el.name.text
-            if (!declaredHooks.has(original)) continue
-            result.push({
-                hookFile: resolved,
-                hookName: original,
-                localName: el.name.text,
-            })
+        for (const file of candidateFiles) {
+            const declaredHooks = hookIndex.get(file)
+            if (!declaredHooks) continue
+            for (const el of bindings.elements) {
+                const original = el.propertyName?.text ?? el.name.text
+                if (!declaredHooks.has(original)) continue
+                result.push({
+                    hookFile: file,
+                    hookName: original,
+                    localName: el.name.text,
+                })
+            }
         }
     }
     return result
@@ -195,15 +216,26 @@ function isVariableNamePosition(id: ts.Identifier): boolean {
     return ts.isVariableDeclaration(p) && p.name === id
 }
 
+function usagesFor(
+    hooks: ImportedHook[],
+    out: Map<string, HookUsage>,
+): HookUsage[] {
+    return hooks.map(hook => ensureUsage(hook.hookFile, hook.hookName, out))
+}
+
 function recordConsumerUsage(
     consumer: ts.SourceFile,
     imported: ImportedHook[],
     out: Map<string, HookUsage>,
 ): void {
-    const localToHook = new Map<string, ImportedHook>()
-    for (const h of imported) localToHook.set(h.localName, h)
+    const localToHooks = new Map<string, ImportedHook[]>()
+    for (const h of imported) {
+        const list = localToHooks.get(h.localName) ?? []
+        list.push(h)
+        localToHooks.set(h.localName, list)
+    }
 
-    const stylesVarToHook = new Map<string, ImportedHook>()
+    const stylesVarToHooks = new Map<string, ImportedHook[]>()
 
     const collectBindings = (node: ts.Node): void => {
         if (ts.isVariableDeclaration(node) && node.initializer) {
@@ -211,30 +243,34 @@ function recordConsumerUsage(
             if (
                 ts.isCallExpression(init) &&
                 ts.isIdentifier(init.expression) &&
-                localToHook.has(init.expression.text)
+                localToHooks.has(init.expression.text)
             ) {
-                const hook = localToHook.get(init.expression.text)!
-                const usage = ensureUsage(hook.hookFile, hook.hookName, out)
+                const hooks = localToHooks.get(init.expression.text)!
+                const usages = usagesFor(hooks, out)
                 if (ts.isIdentifier(node.name)) {
-                    stylesVarToHook.set(node.name.text, hook)
+                    stylesVarToHooks.set(node.name.text, hooks)
                 } else if (ts.isObjectBindingPattern(node.name)) {
                     for (const el of node.name.elements) {
                         if (!ts.isBindingElement(el)) continue
                         if (el.dotDotDotToken) {
-                            usage.hasDynamicAccess = true
+                            usages.forEach(u => (u.hasDynamicAccess = true))
                             continue
                         }
                         const propName = el.propertyName ?? el.name
                         if (ts.isIdentifier(propName)) {
-                            usage.explicitKeys.add(propName.text)
+                            usages.forEach(u =>
+                                u.explicitKeys.add(propName.text),
+                            )
                         } else if (ts.isStringLiteral(propName)) {
-                            usage.explicitKeys.add(propName.text)
+                            usages.forEach(u =>
+                                u.explicitKeys.add(propName.text),
+                            )
                         } else {
-                            usage.hasDynamicAccess = true
+                            usages.forEach(u => (u.hasDynamicAccess = true))
                         }
                     }
                 } else {
-                    usage.hasDynamicAccess = true
+                    usages.forEach(u => (u.hasDynamicAccess = true))
                 }
             }
         }
@@ -242,69 +278,73 @@ function recordConsumerUsage(
     }
     collectBindings(consumer)
 
-    if (stylesVarToHook.size === 0) return
+    if (stylesVarToHooks.size === 0) return
 
     const collectRefs = (node: ts.Node): void => {
         if (
             ts.isPropertyAccessExpression(node) &&
             ts.isIdentifier(node.expression) &&
-            stylesVarToHook.has(node.expression.text)
+            stylesVarToHooks.has(node.expression.text)
         ) {
-            const hook = stylesVarToHook.get(node.expression.text)!
-            const usage = ensureUsage(hook.hookFile, hook.hookName, out)
+            const usages = usagesFor(
+                stylesVarToHooks.get(node.expression.text)!,
+                out,
+            )
             if (ts.isIdentifier(node.name)) {
-                usage.explicitKeys.add(node.name.text)
+                usages.forEach(u => u.explicitKeys.add(node.name.text))
             } else {
-                usage.hasDynamicAccess = true
+                usages.forEach(u => (u.hasDynamicAccess = true))
             }
             return
         }
         if (
             ts.isElementAccessExpression(node) &&
             ts.isIdentifier(node.expression) &&
-            stylesVarToHook.has(node.expression.text)
+            stylesVarToHooks.has(node.expression.text)
         ) {
-            const hook = stylesVarToHook.get(node.expression.text)!
-            const usage = ensureUsage(hook.hookFile, hook.hookName, out)
+            const usages = usagesFor(
+                stylesVarToHooks.get(node.expression.text)!,
+                out,
+            )
             const arg = node.argumentExpression
             if (ts.isStringLiteral(arg)) {
-                usage.explicitKeys.add(arg.text)
+                usages.forEach(u => u.explicitKeys.add(arg.text))
             } else {
-                usage.hasDynamicAccess = true
+                usages.forEach(u => (u.hasDynamicAccess = true))
             }
             return
         }
         if (
             ts.isSpreadAssignment(node) &&
             ts.isIdentifier(node.expression) &&
-            stylesVarToHook.has(node.expression.text)
+            stylesVarToHooks.has(node.expression.text)
         ) {
-            const hook = stylesVarToHook.get(node.expression.text)!
-            ensureUsage(hook.hookFile, hook.hookName, out).hasDynamicAccess =
-                true
+            usagesFor(stylesVarToHooks.get(node.expression.text)!, out).forEach(
+                u => (u.hasDynamicAccess = true),
+            )
             return
         }
         if (
             ts.isSpreadElement(node) &&
             ts.isIdentifier(node.expression) &&
-            stylesVarToHook.has(node.expression.text)
+            stylesVarToHooks.has(node.expression.text)
         ) {
-            const hook = stylesVarToHook.get(node.expression.text)!
-            ensureUsage(hook.hookFile, hook.hookName, out).hasDynamicAccess =
-                true
+            usagesFor(stylesVarToHooks.get(node.expression.text)!, out).forEach(
+                u => (u.hasDynamicAccess = true),
+            )
             return
         }
         if (
             ts.isIdentifier(node) &&
-            stylesVarToHook.has(node.text) &&
+            stylesVarToHooks.has(node.text) &&
             !isPropertyAccessSubject(node) &&
             !isElementAccessSubject(node) &&
             !isVariableNamePosition(node) &&
             !isPropertyAccessName(node)
         ) {
-            const hook = stylesVarToHook.get(node.text)!
-            ensureUsage(hook.hookFile, hook.hookName, out).hasDynamicAccess =
-                true
+            usagesFor(stylesVarToHooks.get(node.text)!, out).forEach(
+                u => (u.hasDynamicAccess = true),
+            )
         }
         ts.forEachChild(node, collectRefs)
     }
