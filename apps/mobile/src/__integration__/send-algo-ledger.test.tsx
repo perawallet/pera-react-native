@@ -289,7 +289,7 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
             await waitFor(
                 () => {
-                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 10_000 },
             )

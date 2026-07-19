@@ -19,7 +19,10 @@ export const CloseAccountWarning = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='close_account_warning'
+        >
             <PWRoundIcon
                 icon='trash'
                 size='md'

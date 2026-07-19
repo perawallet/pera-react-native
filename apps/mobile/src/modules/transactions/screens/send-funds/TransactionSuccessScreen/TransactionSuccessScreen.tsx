@@ -38,6 +38,7 @@ export const TransactionSuccessScreen = () => {
     return (
         <PWResultView
             variant='success'
+            testID='send_success'
             title={t(titleKey[variant] ?? titleKey['payment'])}
             body={t(subtitleKey[variant] ?? subtitleKey['payment'])}
             linkAction={{

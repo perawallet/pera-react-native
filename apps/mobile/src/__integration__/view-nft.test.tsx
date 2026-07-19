@@ -380,7 +380,7 @@ describe('Flow: View NFT collectible detail', () => {
 
             await waitFor(
                 () => {
-                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 10_000 },
             )
