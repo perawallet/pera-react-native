@@ -549,4 +549,136 @@ describe('services/accounts/store', () => {
             expect(r1.rekeyAddressByNetwork).toEqual({ mainnet: 'SRC' })
         })
     })
+
+    describe('upgradeWatchAccountToHardware', () => {
+        const hardwareDetails = {
+            manufacturer: 'ledger' as const,
+            deviceId: 'dev-1',
+            deviceName: 'Nano X',
+            accountIndex: 0,
+            transportType: 'ble' as const,
+        }
+
+        test('replaces a watch account with a hardware account, preserving id, name and rekey state', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'w1',
+                    name: 'My Ledger (watched)',
+                    type: 'watch',
+                    address: 'WATCHED',
+                    rekeyAddress: 'AUTH',
+                    rekeyAddressByNetwork: { mainnet: 'AUTH' },
+                } as WalletAccount,
+            ])
+
+            const upgraded = useAccountsStore
+                .getState()
+                .upgradeWatchAccountToHardware('WATCHED', hardwareDetails)
+
+            expect(upgraded).toBe(true)
+            const account = useAccountsStore.getState().accounts[0]
+            expect(account).toEqual({
+                id: 'w1',
+                name: 'My Ledger (watched)',
+                type: 'hardware',
+                address: 'WATCHED',
+                rekeyAddress: 'AUTH',
+                rekeyAddressByNetwork: { mainnet: 'AUTH' },
+                hardwareDetails,
+            })
+        })
+
+        test('refuses to touch a non-watch account', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'h1',
+                    type: 'algo25',
+                    address: 'SIGNER',
+                    keyPairId: 'kp1',
+                } as WalletAccount,
+            ])
+
+            const upgraded = useAccountsStore
+                .getState()
+                .upgradeWatchAccountToHardware('SIGNER', hardwareDetails)
+
+            expect(upgraded).toBe(false)
+            expect(useAccountsStore.getState().accounts[0].type).toBe('algo25')
+        })
+
+        test('is a no-op for an unknown address', () => {
+            useAccountsStore.getState().setAccounts([])
+
+            const upgraded = useAccountsStore
+                .getState()
+                .upgradeWatchAccountToHardware('MISSING', hardwareDetails)
+
+            expect(upgraded).toBe(false)
+            expect(useAccountsStore.getState().accounts).toEqual([])
+        })
+    })
+
+    describe('updateHardwareDetails', () => {
+        const staleDetails = {
+            manufacturer: 'ledger' as const,
+            deviceId: 'old-device',
+            deviceName: 'Nano X',
+            accountIndex: 0,
+            transportType: 'ble' as const,
+        }
+        const account = {
+            id: 'hw1',
+            name: 'Ledger 1',
+            type: 'hardware',
+            address: 'HW',
+            hardwareDetails: staleDetails,
+        } as WalletAccount
+
+        test('re-binds the stored details when the device id changes', () => {
+            useAccountsStore.getState().setAccounts([account])
+
+            const updated = useAccountsStore
+                .getState()
+                .updateHardwareDetails('HW', {
+                    ...staleDetails,
+                    deviceId: 'new-device',
+                })
+
+            expect(updated).toBe(true)
+            const stored = useAccountsStore.getState().accounts[0]
+            expect(
+                stored.type === 'hardware' &&
+                    stored.hardwareDetails.deviceId === 'new-device',
+            ).toBe(true)
+            expect(stored.name).toBe('Ledger 1')
+            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        })
+
+        test('is a no-op when the details are unchanged', () => {
+            useAccountsStore.getState().setAccounts([account])
+
+            const updated = useAccountsStore
+                .getState()
+                .updateHardwareDetails('HW', { ...staleDetails })
+
+            expect(updated).toBe(false)
+        })
+
+        test('refuses to touch a non-hardware account', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    id: 'w1',
+                    type: 'watch',
+                    address: 'WATCHED',
+                } as WalletAccount,
+            ])
+
+            const updated = useAccountsStore
+                .getState()
+                .updateHardwareDetails('WATCHED', staleDetails)
+
+            expect(updated).toBe(false)
+            expect(useAccountsStore.getState().accounts[0].type).toBe('watch')
+        })
+    })
 })

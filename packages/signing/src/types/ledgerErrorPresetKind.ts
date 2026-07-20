@@ -38,6 +38,7 @@ export type LedgerErrorPresetKind =
     | 'no_accounts_found'
     | 'location_services_disabled'
     | 'provider_unavailable'
+    | 'interrupted'
 
 /**
  * Subset of error kinds where the user-facing remediation lives in the
