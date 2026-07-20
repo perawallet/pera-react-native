@@ -208,6 +208,45 @@ export const mockAlgodStatus = ({
 }: MockAlgodStatusParams = {}): HttpHandler =>
     http.get('*/v2/status', () => HttpResponse.json(response, { status }))
 
+export type MockAlgodVersionsParams = {
+    /**
+     * Base64-encoded genesis hash the node reports at `GET /versions`. algosdk's
+     * `Version` decoder reads the wire key `genesis_hash_b64` (a base64 string)
+     * and base64-decodes it into the `genesisHashB64` `Uint8Array` that
+     * `supportsQuantumBroadcast` re-encodes and compares against the production
+     * hash list. A non-production hash ⇒ node reported as quantum-capable.
+     */
+    genesisHashB64: string
+    status?: number
+}
+
+// algod `GET /versions` — the node capability probe (`versionsCheck().do()`)
+// used by `supportsQuantumBroadcast`. Keys are snake_case to match algosdk's
+// `Version` / `BuildVersion` encoding schema (`genesis_hash_b64`, `genesis_id`,
+// `build_number`, `commit_hash`); the full shape keeps the SDK decoder happy.
+export const mockAlgodVersions = ({
+    genesisHashB64,
+    status = 200,
+}: MockAlgodVersionsParams): HttpHandler =>
+    http.get('*/versions', () =>
+        HttpResponse.json(
+            {
+                genesis_hash_b64: genesisHashB64,
+                genesis_id: 'test-v1',
+                build: {
+                    major: 3,
+                    minor: 0,
+                    build_number: 0,
+                    commit_hash: '',
+                    branch: '',
+                    channel: '',
+                },
+                versions: ['v1', 'v2'],
+            },
+            { status },
+        ),
+    )
+
 export type MockAlgodTealCompileParams = {
     /** Base64-encoded compiled program bytes (algod's `result` field). */
     result?: string
