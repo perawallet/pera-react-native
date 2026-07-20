@@ -317,6 +317,11 @@ describe('migrateLegacyAccount with authAddress', () => {
                 '../buildKeylessAccount',
             )
 
+        // Route the module mock to the real implementation for this test
+        vi.mocked(buildWatchAccount).mockImplementationOnce(
+            realBuildWatchAccount,
+        )
+
         const account = buildAccount({
             type: 'standard',
             secretKey: null,
@@ -326,7 +331,7 @@ describe('migrateLegacyAccount with authAddress', () => {
             authAddress: 'AUTHADDR',
         })
 
-        const created = realBuildWatchAccount(account)
+        const created = await migrateLegacyAccount(buildArgs(account))
 
         expect(created.type).toBe('watch')
         expect(created.rekeyAddress).toBe('AUTHADDR')
