@@ -102,6 +102,7 @@ export const SwapConfigurationContent = (
             <PrimaryCurrencyToggle
                 value={useLocalCurrency}
                 onValueChange={setUseLocalCurrency}
+                testID='swap_local_currency_toggle'
             />
         </PWSheetLayout>
     )
