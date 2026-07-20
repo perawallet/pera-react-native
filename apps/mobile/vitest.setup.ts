@@ -2408,6 +2408,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ),
         generateUniqueId: vi.fn(() => 'mock-uuid'),
         generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
+        encodeToBase64: (bytes: Uint8Array) =>
+            Buffer.from(bytes).toString('base64'),
+        decodeFromBase64: (value: string) =>
+            new Uint8Array(Buffer.from(value, 'base64')),
         toError: vi.fn((e: unknown) =>
             e instanceof Error ? e : new Error(String(e)),
         ),
