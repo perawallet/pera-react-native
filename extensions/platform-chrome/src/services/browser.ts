@@ -30,7 +30,9 @@ const firstMatch = (ua: string, re: RegExp): string => ua.match(re)?.[1] ?? ''
 
 // Chromium embeds "Chrome" and "Safari" tokens, Edge/Opera embed "Chrome", and
 // Safari embeds "Safari" — so the more specific brands must be tested first.
-const detectNameAndVersion = (ua: string): { name: string; version: string } => {
+const detectNameAndVersion = (
+    ua: string,
+): { name: string; version: string } => {
     if (/Firefox\//.test(ua)) {
         return { name: 'Firefox', version: firstMatch(ua, /Firefox\/([\d.]+)/) }
     }
