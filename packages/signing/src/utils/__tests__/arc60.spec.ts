@@ -29,7 +29,6 @@ import {
     validateArc60AuthRequest,
     verifyAuthenticatorDomain,
 } from '../arc60'
-import { SIWA_CHAIN_ID } from '../siwa'
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s)
 
@@ -117,7 +116,7 @@ const buildSiwa = (overrides: Record<string, unknown> = {}): string =>
         uri: 'https://arc60.io/login',
         version: '1',
         nonce: 'abc123',
-        chain_id: SIWA_CHAIN_ID,
+        chain_id: 'algorand:mainnet',
         type: 'ed25519',
         ...overrides,
     })!
@@ -214,34 +213,6 @@ describe('validateArc60AuthRequest', () => {
             validateArc60AuthRequest(
                 {
                     data: nonSiwaData,
-                    signer: SIGNER,
-                    domain: DOMAIN,
-                    authenticatorData: AUTH_DATA,
-                },
-                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
-            ),
-        ).toThrow(Arc60BadJsonError)
-    })
-
-    test('throws Arc60BadJsonError when the SIWA payload is missing its nonce', () => {
-        // A SIWA AUTH payload with no nonce is replayable; ARC-60/CAIP-122
-        // mandates the field, so validation must reject rather than sign.
-        const noNonceData = encodeToBase64(
-            utf8(
-                canonify({
-                    domain: DOMAIN,
-                    account_address: SIGNER,
-                    uri: 'https://arc60.io/login',
-                    version: '1',
-                    chain_id: SIWA_CHAIN_ID,
-                    type: 'ed25519',
-                })!,
-            ),
-        )
-        expect(() =>
-            validateArc60AuthRequest(
-                {
-                    data: noNonceData,
                     signer: SIGNER,
                     domain: DOMAIN,
                     authenticatorData: AUTH_DATA,

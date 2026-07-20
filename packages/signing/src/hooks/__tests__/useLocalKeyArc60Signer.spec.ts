@@ -25,7 +25,6 @@ import {
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
 } from '../../utils/arc60'
-import { SIWA_CHAIN_ID } from '../../utils/siwa'
 import type { Arc60Metadata, Arc60StdSigData } from '../../pipeline/types'
 
 const mockSignDataWithKey = vi.fn()
@@ -93,7 +92,7 @@ const buildSiwa = (overrides: Record<string, unknown> = {}): string =>
         uri: 'https://arc60.io/login',
         version: '1',
         nonce: 'abc123',
-        chain_id: SIWA_CHAIN_ID,
+        chain_id: 'algorand:mainent',
         type: 'ed25519',
         ...overrides,
     })!
