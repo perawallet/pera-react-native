@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { useRescanRekeyedAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useRescanRekeyedAccounts,
+    useSigningAccounts,
+    type RekeyedSweepCandidate,
+} from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
@@ -21,9 +25,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { RescanRekeyedStackParamList } from '../../../routes/rescan-rekeyed/types'
 
 export type UseRescanRekeyedSelectScreenResult = {
-    sourceAddress: string
+    /** True when scanning every signable key rather than a single one. */
+    isSweep: boolean
     isLoading: boolean
     isError: boolean
+    scanProgress: { scanned: number; total: number } | null
+    /** Keys whose indexer scan failed while others succeeded. */
+    failedSourceCount: number
     importedAddresses: string[]
     candidateAddresses: string[]
     selectedAddresses: Set<string>
@@ -44,17 +52,32 @@ export const useRescanRekeyedSelectScreen =
             useRoute<
                 RouteProp<RescanRekeyedStackParamList, 'RescanRekeyedSelect'>
             >()
-        const sourceAddress = route.params.sourceAddress
+        const sourceAddress = route.params?.sourceAddress
 
-        const { scan, importSelected } = useRescanRekeyedAccounts()
+        const { scanAll, importFromSweep } = useRescanRekeyedAccounts()
+        const signingAccounts = useSigningAccounts()
         const { showError } = useErrorToast()
         const { showToast } = useToast()
         const { t } = useLanguage()
 
+        // Freeze the key set at entry. Importing sweep candidates writes the
+        // accounts store, which would otherwise change the signable set and
+        // re-trigger the scan effect mid-import.
+        const [sources] = useState<string[]>(() =>
+            sourceAddress
+                ? [sourceAddress]
+                : signingAccounts.map(account => account.address),
+        )
+
         const [isLoading, setIsLoading] = useState(true)
         const [isError, setIsError] = useState(false)
+        const [scanProgress, setScanProgress] = useState<{
+            scanned: number
+            total: number
+        } | null>(null)
+        const [failedSourceCount, setFailedSourceCount] = useState(0)
         const [importedAddresses, setImportedAddresses] = useState<string[]>([])
-        const [candidateAddresses, setCandidateAddresses] = useState<string[]>(
+        const [candidates, setCandidates] = useState<RekeyedSweepCandidate[]>(
             [],
         )
         const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
@@ -69,14 +92,29 @@ export const useRescanRekeyedSelectScreen =
             const scanId = ++scanIdRef.current
             setIsLoading(true)
             setIsError(false)
+            setScanProgress({ scanned: 0, total: sources.length })
             try {
-                const result = await scan(sourceAddress)
+                const result = await scanAll(sources, {
+                    onProgress: (scanned, total) => {
+                        if (scanIdRef.current !== scanId) return
+                        setScanProgress({ scanned, total })
+                    },
+                })
                 if (scanIdRef.current !== scanId) return
                 setImportedAddresses(result.importedAddresses)
-                setCandidateAddresses(result.notImportedAddresses)
+                setCandidates(result.candidates)
                 // Default-select every candidate so tapping "Add accounts"
                 // works with a single tap when the list is short.
-                setSelectedAddresses(new Set(result.notImportedAddresses))
+                setSelectedAddresses(
+                    new Set(result.candidates.map(c => c.address)),
+                )
+                setFailedSourceCount(result.failedSources.length)
+                // Every key failing is an error; a subset failing is a
+                // partial sweep the screen annotates instead.
+                setIsError(
+                    sources.length > 0 &&
+                        result.failedSources.length === sources.length,
+                )
             } catch {
                 if (scanIdRef.current !== scanId) return
                 setIsError(true)
@@ -85,11 +123,16 @@ export const useRescanRekeyedSelectScreen =
                     setIsLoading(false)
                 }
             }
-        }, [scan, sourceAddress])
+        }, [scanAll, sources])
 
         useEffect(() => {
             void runScan()
         }, [runScan])
+
+        const candidateAddresses = useMemo(
+            () => candidates.map(c => c.address),
+            [candidates],
+        )
 
         const toggleAddress = useCallback((address: string) => {
             setSelectedAddresses(prev => {
@@ -119,9 +162,10 @@ export const useRescanRekeyedSelectScreen =
             if (selectedAddresses.size === 0) return
             try {
                 setIsSubmitting(true)
-                const importedCount = await importSelected(
-                    sourceAddress,
-                    Array.from(selectedAddresses),
+                const importedCount = await importFromSweep(
+                    candidates.filter(candidate =>
+                        selectedAddresses.has(candidate.address),
+                    ),
                 )
                 if (importedCount > 0) {
                     navigation.navigate('TabBar', { screen: 'Home' })
@@ -141,13 +185,13 @@ export const useRescanRekeyedSelectScreen =
                 setIsSubmitting(false)
             }
         }, [
-            importSelected,
+            importFromSweep,
             navigation,
+            candidates,
             selectedAddresses,
             showError,
             showToast,
             t,
-            sourceAddress,
         ])
 
         const handleSkip = useCallback(() => {
@@ -159,9 +203,11 @@ export const useRescanRekeyedSelectScreen =
         }, [runScan])
 
         return {
-            sourceAddress,
+            isSweep: !sourceAddress,
             isLoading,
             isError,
+            scanProgress,
+            failedSourceCount,
             importedAddresses,
             candidateAddresses,
             selectedAddresses,
