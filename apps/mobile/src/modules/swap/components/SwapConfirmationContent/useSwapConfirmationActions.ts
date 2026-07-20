@@ -57,7 +57,7 @@ type UseSwapConfirmationActionsParams = {
 type UseSwapConfirmationActionsResult = {
     swapStatus: SwapExecutionStatus
     handleSlideConfirm: () => Promise<void>
-    handleClose: (isProcessing: boolean) => void
+    handleClose: (isCommitted: boolean, isCancellable: boolean) => void
 }
 
 export const useSwapConfirmationActions = ({
@@ -68,7 +68,7 @@ export const useSwapConfirmationActions = ({
     const successCloseTimer = useRunAfterDelay()
     const inFlightRef = useRef(false)
 
-    const { execute, reset, status: swapStatus } = swapExecution
+    const { execute, cancel, reset, status: swapStatus } = swapExecution
     const quoteIdStr = quote.quoteIdStr
 
     const handleSlideConfirm = useCallback(async () => {
@@ -100,6 +100,13 @@ export const useSwapConfirmationActions = ({
                 resolve({ kind: 'pending-cosign' })
                 return
             }
+            if (outcome.kind === 'stale-quote') {
+                // The quote outlived its TTL (e.g. an offline gap between
+                // quote and confirm). Nothing executed — hand back to the
+                // form for a re-quote and a fresh confirm.
+                resolve({ kind: 'stale-quote' })
+                return
+            }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
             resolve({ kind: 'error', message: outcome.message })
         } finally {
@@ -108,12 +115,23 @@ export const useSwapConfirmationActions = ({
     }, [quote, quoteIdStr, execute, successCloseTimer, resolve])
 
     const handleClose = useCallback(
-        (isProcessing: boolean) => {
-            if (isProcessing) return
+        (isCommitted: boolean, isCancellable: boolean) => {
+            // While preparing, closing must genuinely abandon the attempt:
+            // the in-flight execute() observes the cancel after prepare
+            // settles and resolves the sheet as cancelled — a slow prepare
+            // can never resume into the signing sheet with nobody watching.
+            if (isCancellable) {
+                cancel()
+                return
+            }
+            // Signing onward the swap may already be committing — the sheet
+            // stays until the outcome lands (PERA-4587 owns the richer
+            // "verifying" semantics for the submitted window).
+            if (isCommitted) return
             successCloseTimer.flush()
             dismiss()
         },
-        [successCloseTimer, dismiss],
+        [cancel, successCloseTimer, dismiss],
     )
 
     // Reset execution state once on mount so a re-opened sheet starts clean.

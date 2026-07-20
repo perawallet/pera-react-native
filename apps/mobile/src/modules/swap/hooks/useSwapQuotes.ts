@@ -61,6 +61,8 @@ type UseSwapQuotesResult = {
     isQuoteError: boolean
     /** Clears the quotes and resets the underlying mutation. */
     reset: () => void
+    /** Re-fetches quotes for the unchanged inputs (stale-quote recovery). */
+    refresh: () => void
 }
 
 /**
@@ -125,6 +127,12 @@ export const useSwapQuotes = ({
         setNotFoundPair(null)
         resetQuoteMutation()
     }, [resetQuoteMutation])
+
+    // Re-runs the quote effect with unchanged inputs — used when a quote
+    // went stale at confirm time (PERA-4589) and the same amount needs a
+    // fresh rate.
+    const [refreshNonce, setRefreshNonce] = useState(0)
+    const refresh = useCallback(() => setRefreshNonce(nonce => nonce + 1), [])
 
     useEffect(() => {
         // Clear a stale tombstone and bail — the state change re-runs the
@@ -215,6 +223,7 @@ export const useSwapQuotes = ({
         isPairChecked,
         isPairOnNetwork,
         notFoundPair,
+        refreshNonce,
     ])
 
     const isQuoteError =
@@ -229,5 +238,12 @@ export const useSwapQuotes = ({
     const isQuoteFetching =
         enabled && (isQuoteLoading || isDebouncing || hasUnresolvedQuote)
 
-    return { allQuotes, quotedAmount, isQuoteFetching, isQuoteError, reset }
+    return {
+        allQuotes,
+        quotedAmount,
+        isQuoteFetching,
+        isQuoteError,
+        reset,
+        refresh,
+    }
 }
