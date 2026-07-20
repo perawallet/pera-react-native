@@ -926,18 +926,19 @@ workflows:
             # set -e without -x: keep the Slack webhook URL out of the trace log.
             set -e
 
-            # Non-tag / manual runs have no release to announce.
-            if [ -z "${BITRISE_GIT_TAG:-}" ]; then
-              echo "No release tag; skipping release notification"
-              exit 0
+            # Channel label and tag/branch from tag shape or fallback.
+            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
+              TAG_OR_BRANCH="$BITRISE_GIT_TAG"
+              case "$BITRISE_GIT_TAG" in
+                *-alpha.*) CHANNEL="Nightly" ;;
+                *-rc.*)    CHANNEL="RC" ;;
+                v*)        CHANNEL="Release" ;;
+                *)         CHANNEL="Release" ;;
+              esac
+            else
+              TAG_OR_BRANCH="${BITRISE_GIT_BRANCH:-manual}"
+              CHANNEL="Manual"
             fi
-
-            # Channel label from the tag shape.
-            case "$BITRISE_GIT_TAG" in
-              *-alpha.*) CHANNEL="Nightly" ;;
-              *-rc.*)    CHANNEL="RC" ;;
-              v*)        CHANNEL="Release" ;;
-            esac
 
             # One mrkdwn row per build. Platform/env/destination are static;
             # status + links come from each build's shared pipeline variables
@@ -959,11 +960,12 @@ workflows:
             ROWS="${ROWS}\n$(row "${WEB_STAGING_STATUS:-}" "${WEB_STAGING_URL:-}" "${WEB_STAGING_INSTALL:-}" "Zip" "Web staging" "Bitrise artifact")"
 
             # Header icon per channel on success (any failed build flips it
-            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly.
+            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
             case "$CHANNEL" in
               Release) OVERALL="🚀" ;;
               RC)      OVERALL="⭐" ;;
               Nightly) OVERALL="🌙" ;;
+              *)       OVERALL="📦" ;;
             esac
             COLOR="#36a64f"
             for s in "${WEB_STAGING_STATUS:-}" "${WEB_PRODUCTION_STATUS:-}"; do
@@ -984,7 +986,7 @@ workflows:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "${OVERALL} Web ${CHANNEL} ${BITRISE_GIT_TAG}",
+                    "text": "${OVERALL} Web ${CHANNEL} ${TAG_OR_BRANCH}",
                     "emoji": true
                   }
                 }
@@ -1031,18 +1033,19 @@ workflows:
             # set -e without -x: keep the Slack webhook URL out of the trace log.
             set -e
 
-            # Non-tag / manual runs have no release to announce.
-            if [ -z "${BITRISE_GIT_TAG:-}" ]; then
-              echo "No release tag; skipping release notification"
-              exit 0
+            # Channel label and tag/branch from tag shape or fallback.
+            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
+              TAG_OR_BRANCH="$BITRISE_GIT_TAG"
+              case "$BITRISE_GIT_TAG" in
+                *-alpha.*) CHANNEL="Nightly" ;;
+                *-rc.*)    CHANNEL="RC" ;;
+                v*)        CHANNEL="Release" ;;
+                *)         CHANNEL="Release" ;;
+              esac
+            else
+              TAG_OR_BRANCH="${BITRISE_GIT_BRANCH:-manual}"
+              CHANNEL="Manual"
             fi
-
-            # Channel label from the tag shape.
-            case "$BITRISE_GIT_TAG" in
-              *-alpha.*) CHANNEL="Nightly" ;;
-              *-rc.*)    CHANNEL="RC" ;;
-              v*)        CHANNEL="Release" ;;
-            esac
 
             # One mrkdwn row per build. Platform/env/destination are static;
             # status + links come from each build's shared pipeline variables
@@ -1066,11 +1069,12 @@ workflows:
             ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "" "" "iOS staging" "TestFlight")"
 
             # Header icon per channel on success (any failed build flips it
-            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly.
+            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
             case "$CHANNEL" in
               Release) OVERALL="🚀" ;;
               RC)      OVERALL="⭐" ;;
               Nightly) OVERALL="🌙" ;;
+              *)       OVERALL="📦" ;;
             esac
             COLOR="#36a64f"
             for s in "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}"; do
@@ -1091,7 +1095,7 @@ workflows:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "${OVERALL} RN ${CHANNEL} ${BITRISE_GIT_TAG}",
+                    "text": "${OVERALL} RN ${CHANNEL} ${TAG_OR_BRANCH}",
                     "emoji": true
                   }
                 }
