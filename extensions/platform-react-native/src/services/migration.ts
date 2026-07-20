@@ -30,9 +30,11 @@ import {
     type LegacyWalletConnectV1Session,
     type LegacyWalletConnectV2Session,
     MIGRATION_SENTINEL_KEY,
+    MIGRATION_STEPS_KEY,
     type MigrationPlanSummary,
     type MigrationSentinelValue,
     type MigrationService,
+    type MigrationStepVersions,
     type SimulateLegacyDatabaseArgs,
 } from '@perawallet/wallet-extension-platform'
 
@@ -123,6 +125,7 @@ export class RNMigrationService implements MigrationService {
     async clearMigrationComplete(): Promise<void> {
         log('clearMigrationComplete() removing sentinel')
         this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
     }
 
     async getMigrationPlans(): Promise<MigrationPlanSummary[]> {
@@ -161,6 +164,36 @@ export class RNMigrationService implements MigrationService {
         }
         await module.resetLegacyData()
         this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
+    }
+
+    async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
+        const raw = this.keyValueStorage.getItem(MIGRATION_STEPS_KEY)
+        if (!raw) return null
+        try {
+            const parsed = JSON.parse(raw) as unknown
+            if (typeof parsed !== 'object' || parsed === null) {
+                warn('getCompletedStepVersions() ignored malformed record', {
+                    raw,
+                })
+                return null
+            }
+            return parsed as MigrationStepVersions
+        } catch {
+            warn('getCompletedStepVersions() ignored non-JSON record', {
+                raw,
+            })
+            return null
+        }
+    }
+
+    async setCompletedStepVersions(
+        versions: MigrationStepVersions,
+    ): Promise<void> {
+        this.keyValueStorage.setItem(
+            MIGRATION_STEPS_KEY,
+            JSON.stringify(versions),
+        )
     }
 
     private readSentinel(): MigrationSentinelValue | null {

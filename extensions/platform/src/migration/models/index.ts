@@ -14,12 +14,28 @@ export const LEGACY_MIGRATION_SCHEMA_VERSION = 1
 
 export const MIGRATION_SENTINEL_KEY = 'legacy-migration-v1-complete'
 
+export const MIGRATION_STEPS_KEY = 'legacy-migration-steps'
+
 export type LegacyMigrationSourcePlatform = 'android' | 'ios'
 
 export interface MigrationSentinelValue {
     completedAt: number
     sourcePlatform: LegacyMigrationSourcePlatform
 }
+
+export type MigrationStepName =
+    | 'accounts'
+    | 'preferences'
+    | 'swaps'
+    | 'deviceIdentifiers'
+    | 'contacts'
+    | 'notifications'
+    | 'auth'
+    | 'walletConnect'
+    | 'passkeys'
+    | 'stashed'
+
+export type MigrationStepVersions = Partial<Record<MigrationStepName, number>>
 
 export interface MigrationService {
     hasLegacyData(): Promise<boolean>
@@ -36,6 +52,10 @@ export interface MigrationService {
     simulatePreSixxAccounts(): Promise<void>
     /** Removes all legacy (v6) migration data and clears the migration sentinel. */
     resetLegacyData(): Promise<void>
+    /** Returns the per-step version record, or `null` when no record has ever been written. */
+    getCompletedStepVersions(): Promise<MigrationStepVersions | null>
+    /** Persists the per-step version record. */
+    setCompletedStepVersions(versions: MigrationStepVersions): Promise<void>
 }
 
 export interface SimulateLegacyDatabaseArgs {

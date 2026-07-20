@@ -14,6 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import {
     LEGACY_MIGRATION_SCHEMA_VERSION,
     MIGRATION_SENTINEL_KEY,
+    MIGRATION_STEPS_KEY,
     type KeyValueStorageService,
     type LegacyMigrationData,
     type MigrationSentinelValue,
@@ -822,6 +823,34 @@ describe('RNMigrationService', () => {
 
             await expect(service.resetLegacyData()).rejects.toThrow('boom')
             expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBe('x')
+        })
+    })
+
+    describe('step versions', () => {
+        test('returns null when no step record exists', async () => {
+            await expect(
+                service.getCompletedStepVersions(),
+            ).resolves.toBeNull()
+        })
+
+        test('round-trips a step-version record through key-value storage', async () => {
+            await service.setCompletedStepVersions({
+                accounts: 1,
+                passkeys: 2,
+            })
+            await expect(
+                service.getCompletedStepVersions(),
+            ).resolves.toEqual({
+                accounts: 1,
+                passkeys: 2,
+            })
+        })
+
+        test('ignores a malformed step record instead of throwing', async () => {
+            storage.setItem(MIGRATION_STEPS_KEY, 'not-json{')
+            await expect(
+                service.getCompletedStepVersions(),
+            ).resolves.toBeNull()
         })
     })
 })

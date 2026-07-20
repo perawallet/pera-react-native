@@ -137,6 +137,8 @@ const buildServices = (): PlatformServices => {
         simulateLegacyDatabase: async () => {},
         simulatePreSixxAccounts: async () => {},
         resetLegacyData: async () => {},
+        getCompletedStepVersions: async () => null,
+        setCompletedStepVersions: async () => {},
     }
 
     return {
