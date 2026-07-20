@@ -34,8 +34,10 @@ describe('stepVersions', () => {
         for (const step of ALL_MIGRATION_STEPS) {
             expect(resolved[step]).toBe(1)
         }
-        // With all targets at 1 nothing is pending for a legacy-sentinel user.
-        await expect(getPendingSteps(service)).resolves.toEqual([])
+        // accounts target is 2 (PERA-4655 reconciliation pass); a legacy
+        // sentinel user is synthesized at version 1 for every step, so
+        // accounts is the only one left pending.
+        await expect(getPendingSteps(service)).resolves.toEqual(['accounts'])
     })
 
     it('reports only steps whose recorded version is behind the target', async () => {

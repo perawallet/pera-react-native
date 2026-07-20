@@ -308,7 +308,10 @@ describe('step-version orchestration', () => {
         const result = await runMigration(service, buildDeps())
         expect(result.completed).toBe(false)
         expect(service.setCompletedStepVersions).toHaveBeenCalledWith(
-            expect.objectContaining({ accounts: 1, deviceIdentifiers: 1 }),
+            expect.objectContaining({
+                accounts: MIGRATION_STEP_TARGET_VERSIONS.accounts,
+                deviceIdentifiers: 1,
+            }),
         )
         const written = (
             service.setCompletedStepVersions as ReturnType<typeof vi.fn>

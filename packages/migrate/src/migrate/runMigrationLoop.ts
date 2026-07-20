@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
@@ -20,7 +23,9 @@ import type {
 import {
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
+    removeAccountFromStore,
 } from './accountStoreOps'
 import {
     classifyLegacyAccountRoute,
@@ -53,8 +58,33 @@ export const runMigrationLoop = async (
 
     for (const account of orderForImport(args.accounts)) {
         if (existingAddresses.has(account.address)) {
-            summary.skipped += 1
-            continue
+            const existing = useAccountsStore
+                .getState()
+                .accounts.find(a => a.address === account.address)
+            const hasSigningMaterial =
+                (account.secretKey !== null && account.secretKey.length > 0) ||
+                account.hdWalletId !== null
+
+            if (existing?.type === AccountTypes.watch && hasSigningMaterial) {
+                // Earlier migration builds imported this as watch (key was
+                // withheld natively); reimport now that the key is present.
+                removeAccountFromStore(account.address)
+                existingAddresses.delete(account.address)
+                // fall through to the import path below
+            } else {
+                if (
+                    existing?.type === AccountTypes.watch &&
+                    existing.rekeyAddress === undefined &&
+                    account.authAddress !== null
+                ) {
+                    applyRekeyAddressToStoreAccount(
+                        account.address,
+                        account.authAddress,
+                    )
+                }
+                summary.skipped += 1
+                continue
+            }
         }
 
         try {

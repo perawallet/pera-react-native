@@ -21,7 +21,9 @@ import {
     addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
+    removeAccountFromStore,
 } from '../accountStoreOps'
 import type { MigratedAccountPair } from '../types'
 
@@ -298,5 +300,64 @@ describe('applyLegacyAccountOrder', () => {
         const order = useAccountsStore.getState().manualAccountOrder
         expect(order[0]).toBe('ADDR_B')
         expect(order).toContain('ADDR_A')
+    })
+})
+
+describe('removeAccountFromStore', () => {
+    it('removes exactly the requested address', () => {
+        useAccountsStore.getState().setAccounts([
+            buildWalletAccount({
+                type: AccountTypes.watch,
+                address: 'ADDR_A',
+            }),
+            buildWalletAccount({
+                type: AccountTypes.watch,
+                address: 'ADDR_B',
+            }),
+        ])
+
+        removeAccountFromStore('ADDR_A')
+
+        expect(
+            useAccountsStore.getState().accounts.map(a => a.address),
+        ).toEqual(['ADDR_B'])
+    })
+})
+
+describe('applyRekeyAddressToStoreAccount', () => {
+    it('sets the rekeyAddress mirror on the matching account', () => {
+        useAccountsStore.getState().setAccounts([
+            buildWalletAccount({
+                type: AccountTypes.watch,
+                address: 'ADDR_A',
+            }),
+        ])
+
+        applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH')
+
+        expect(useAccountsStore.getState().accounts[0].rekeyAddress).toBe(
+            'AUTH',
+        )
+    })
+
+    it('leaves other accounts untouched', () => {
+        useAccountsStore.getState().setAccounts([
+            buildWalletAccount({
+                type: AccountTypes.watch,
+                address: 'ADDR_A',
+            }),
+            buildWalletAccount({
+                type: AccountTypes.watch,
+                address: 'ADDR_B',
+            }),
+        ])
+
+        applyRekeyAddressToStoreAccount('ADDR_A', 'AUTH')
+
+        expect(
+            useAccountsStore
+                .getState()
+                .accounts.find(a => a.address === 'ADDR_B')?.rekeyAddress,
+        ).toBeUndefined()
     })
 })

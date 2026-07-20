@@ -109,9 +109,26 @@ describe('useNeedsMigration', () => {
         expect(result.current.needsMigration).toBe(true)
     })
 
-    it('clears needsMigration when migration is already complete', async () => {
+    it('still needs migration for a legacy-sentinel user because accounts v2 must reconcile', async () => {
+        // accounts target is 2 (PERA-4655 watch-account reconciliation); a
+        // legacy-sentinel-only user (no per-step record) is synthesized at
+        // version 1 for every step, so accounts is pending once more even
+        // though the old boolean sentinel says migration is "complete".
         hasLegacyDataMock.mockResolvedValue(true)
         isMigrationCompleteMock.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useNeedsMigration())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+        expect(result.current.needsMigration).toBe(true)
+    })
+
+    it('clears needsMigration when migration is already complete at every step version', async () => {
+        hasLegacyDataMock.mockResolvedValue(true)
+        isMigrationCompleteMock.mockResolvedValue(true)
+        getCompletedStepVersionsMock.mockResolvedValue(allStepsAtTarget())
 
         const { result } = renderHook(() => useNeedsMigration())
 

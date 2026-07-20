@@ -24,7 +24,8 @@ import type {
  */
 export const MIGRATION_STEP_TARGET_VERSIONS: Record<MigrationStepName, number> =
     {
-        accounts: 1,
+        // v2 (PERA-4655): authAddress fidelity + watch-account reconciliation.
+        accounts: 2,
         preferences: 1,
         swaps: 1,
         deviceIdentifiers: 1,
