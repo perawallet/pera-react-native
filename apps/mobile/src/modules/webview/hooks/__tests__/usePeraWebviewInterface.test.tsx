@@ -24,6 +24,7 @@ import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
 import { useWebView } from '..'
 import { Linking } from 'react-native'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('react-native', () => ({
     Platform: {
@@ -319,6 +320,7 @@ describe('usePeraWebviewInterface', () => {
         vi.clearAllMocks()
         ;(Linking.canOpenURL as Mock).mockResolvedValue(true)
         ;(Linking.openURL as Mock).mockResolvedValue(true)
+        ;(useDeviceID as Mock).mockReturnValue('device-id')
         // The getAddresses-parity tests swap the account hooks with bare
         // mockReturnValue calls, which survive clearAllMocks — restore the
         // factory implementations so later tests see the default account.
@@ -547,6 +549,63 @@ describe('usePeraWebviewInterface', () => {
             action: 'getDeviceId',
             payload: 'device-id',
         })
+    })
+
+    it('pushes the migrated device id to the Discover web app when it lands after mount', () => {
+        ;(useDeviceID as Mock).mockReturnValue(null)
+        const { rerender } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+        // No push on mount while the id is unavailable.
+        expect(mockWebview.injectJavaScript).not.toHaveBeenCalled()
+
+        ;(useDeviceID as Mock).mockReturnValue('device-id')
+        act(() => {
+            rerender()
+        })
+
+        const injected = mockWebview.injectJavaScript.mock.calls.at(
+            -1,
+        )?.[0] as string
+        const eventData = JSON.parse(
+            injected.replace(/^window\.postMessage\(/, '').replace(/\);$/, ''),
+        )
+        expect(JSON.parse(eventData)).toEqual({
+            action: 'getDeviceId',
+            payload: 'device-id',
+        })
+    })
+
+    it('does not push the device id on the initial mount when already present', () => {
+        ;(useDeviceID as Mock).mockReturnValue('device-id')
+        renderHook(() => usePeraWebviewInterface(mockWebview, true, null))
+        expect(mockWebview.injectJavaScript).not.toHaveBeenCalled()
+    })
+
+    it('does not push the device id when the connection is insecure', () => {
+        ;(useDeviceID as Mock).mockReturnValue(null)
+        const { rerender } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, false, 'https://evil.com/'),
+        )
+        ;(useDeviceID as Mock).mockReturnValue('device-id')
+        act(() => {
+            rerender()
+        })
+        const pushed = mockWebview.injectJavaScript.mock.calls.some(
+            ([js]: [string]) => js.includes('getDeviceId'),
+        )
+        expect(pushed).toBe(false)
+    })
+
+    it('does not push the device id while it remains unavailable', () => {
+        ;(useDeviceID as Mock).mockReturnValue(null)
+        const { rerender } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+        act(() => {
+            rerender()
+        })
+        expect(mockWebview.injectJavaScript).not.toHaveBeenCalled()
     })
 
     it('should handle getPublicSettings action', () => {
