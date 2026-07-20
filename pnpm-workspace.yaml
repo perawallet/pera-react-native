@@ -39,7 +39,7 @@ catalog:
   before-after-hook: ^4.0.0
   decimal.js: ^10.6.0
   drizzle-orm: ^0.45.2
-  eslint: 9.39.4
+  eslint: 9.39.5
   eslint-plugin-unused-imports: 4.4.1
   expo: ^57.0.2
   expo-application: ~57.0.0
@@ -51,7 +51,7 @@ catalog:
   fast-glob: ^3.3.2
   jsdom: ^27.4.0
   ky: ^2.0.2
-  oxfmt: ^0.57.0
+  oxfmt: ^0.58.0
   # Must equal react-native 0.86.0's bundled renderer version. RN does an exact
   # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
   # "Incompatible React versions". Keep in lockstep with the override below.

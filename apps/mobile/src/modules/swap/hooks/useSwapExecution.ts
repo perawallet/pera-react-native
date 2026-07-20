@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
     useTransactionEncoder,
     useAlgorandClient,
@@ -29,6 +29,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
+    isQuoteFresh,
     usePrepareTransactionsMutation,
     useUpdateSwapStatusMutation,
     useSwapHandoffStore,
@@ -87,10 +88,20 @@ export type SwapExecutionOutcome =
     | { kind: 'cancelled' }
     // Shared-account swap proposed; co-signer must approve before it submits.
     | { kind: 'pending-cosign' }
+    // The quote outlived its client TTL (e.g. the app sat offline between
+    // quote and confirm) — never executed; the caller re-quotes.
+    | { kind: 'stale-quote' }
     | { kind: 'error'; phase: SwapExecutionErrorPhase; message: string }
 
 type UseSwapExecutionResult = {
     execute: (quote: SwapQuote) => Promise<SwapExecutionOutcome>
+    /**
+     * Abandons an execution that has not committed yet: effective while
+     * `preparing` (checked after the prepare call settles, before anything
+     * is handed to the signing pipeline). Once signing has started the
+     * execution is no longer cancellable from here.
+     */
+    cancel: () => void
     status: SwapExecutionStatus
     error: Nullable<SwapExecutionError>
     txIds: string[]
@@ -118,11 +129,13 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const { mutateAsync: prepareTransactions } =
         usePrepareTransactionsMutation()
     const { mutateAsync: updateSwapStatus } = useUpdateSwapStatusMutation()
+    const cancelRequestedRef = useRef(false)
 
     const execute = useCallback(
         async (quote: SwapQuote): Promise<SwapExecutionOutcome> => {
             setError(null)
             setTxIds([])
+            cancelRequestedRef.current = false
 
             const quoteIdStr = quote.quoteIdStr
             if (!quoteIdStr) {
@@ -130,6 +143,14 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 return { kind: 'error', phase: 'prepare', message }
+            }
+
+            // A quote that outlived its TTL (e.g. the confirm sat behind an
+            // offline gap) must never reach prepare — the rate it shows is
+            // no longer the rate that would execute.
+            if (!isQuoteFresh(quote)) {
+                setStatus('idle')
+                return { kind: 'stale-quote' }
             }
 
             let prepareResult: Optional<PrepareTransactionsResult>
@@ -147,6 +168,15 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 return { kind: 'error', phase: 'prepare', message }
+            }
+
+            // The user backed out while prepare was in flight — nothing has
+            // been signed or broadcast, so abandoning here is safe. Without
+            // this check a slow prepare would resume into the signing sheet
+            // with nobody watching.
+            if (cancelRequestedRef.current) {
+                setStatus('idle')
+                return { kind: 'cancelled' }
             }
 
             const groups = prepareResult.transactionGroups ?? []
@@ -373,10 +403,16 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
         setStatus('idle')
         setError(null)
         setTxIds([])
+        cancelRequestedRef.current = false
+    }, [])
+
+    const cancel = useCallback(() => {
+        cancelRequestedRef.current = true
     }, [])
 
     return {
         execute,
+        cancel,
         status,
         error,
         txIds,

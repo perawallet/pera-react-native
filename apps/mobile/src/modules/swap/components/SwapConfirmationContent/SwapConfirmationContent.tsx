@@ -35,6 +35,9 @@ export type SwapConfirmationResult =
     // from their inbox before it submits. The form shows an informational
     // toast rather than the swap-completed one.
     | { kind: 'pending-cosign' }
+    // The quote outlived its TTL before confirm — nothing executed; the
+    // form re-quotes and asks the user to confirm the fresh rate.
+    | { kind: 'stale-quote' }
     | { kind: 'error'; message: string }
 
 export type SwapConfirmationContentProps = {
@@ -55,6 +58,8 @@ export const SwapConfirmationContent = ({
         inAsset,
         outAsset,
         isProcessing,
+        isCancellable,
+        isCommitted,
         payDisplay,
         receiveDisplay,
         payFiatDisplay,
@@ -69,8 +74,8 @@ export const SwapConfirmationContent = ({
     } = useSwapConfirmation({ quote, swapStatus })
 
     const onClosePress = useCallback(
-        () => handleClose(isProcessing),
-        [handleClose, isProcessing],
+        () => handleClose(isCommitted, isCancellable),
+        [handleClose, isCommitted, isCancellable],
     )
 
     return (

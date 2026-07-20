@@ -462,6 +462,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
         "back_online": "Back online",
         "yes": "Yes",
         "no": "No",
@@ -526,7 +527,9 @@
         "webview": {
             "failed_title": "Failed to load page",
             "reload": "Reload",
-            "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
+            "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
+            "offline_title": "You're offline",
+            "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online."
         },
         "done": "Done",
         "save": "Save",
@@ -1764,6 +1767,9 @@
             "title": "Rekeyed Accounts",
             "subtitle": "Select the accounts you would like to import as rekeyed accounts.",
             "fetching": "Searching for rekeyed accounts…",
+            "sweep_fetching": "Scanning your keys ({{scanned}}/{{total}})…",
+            "partial_failure_notice_one": "1 key couldn't be scanned — results may be incomplete. Retry to scan it again.",
+            "partial_failure_notice_other": "{{count}} keys couldn't be scanned — results may be incomplete. Retry to scan them again.",
             "empty_title": "No Rekeyed Accounts Found",
             "empty_body": "We have scanned the blockchain and were not able to find any accounts that have not been imported.",
             "empty_cta": "Continue",
@@ -2011,6 +2017,7 @@
             "account_section": "Account",
             "security_title": "Security",
             "notifications_title": "Notifications",
+            "scan_rekeyed_title": "Scan for Rekeyed Accounts",
             "wallet_connect_title": "WalletConnect Sessions",
             "passkeys_title": "Passkeys",
             "app_preferences_section": "App Preferences",
@@ -2045,9 +2052,7 @@
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet",
                 "enable_mainnet": "Enable MainNet",
-                "enable_testnet": "Enable TestNet",
-                "switch_error_title": "Network Switch Failed",
-                "switch_error_body": "Unable to switch networks. Please try again."
+                "enable_testnet": "Enable TestNet"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
@@ -2531,6 +2536,8 @@
             "max": "MAX"
         },
         "quote": {
+            "refreshed_title": "Quote refreshed",
+            "refreshed_body": "That quote had expired, so we fetched a fresh rate. Review it and confirm again.",
             "rate": "Rate",
             "price_impact": "Price Impact",
             "slippage_tolerance": "Slippage Tolerance",

@@ -103,7 +103,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
-    const { successToast, errorToast } = useToast()
+    const { successToast, errorToast, infoToast } = useToast()
     const { t } = useLanguage()
 
     const { data: payAssets } = useAssetsQuery([fromAsset])
@@ -124,6 +124,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         isQuoteFetching,
         isQuoteError,
         reset: resetQuotes,
+        refresh: refreshQuotes,
     } = useSwapQuotes({
         swapperAddress: selectedAccount?.address ?? null,
         fromAssetId: fromAsset,
@@ -331,6 +332,17 @@ export const useSwapForm = (): UseSwapFormResult => {
             },
         })
         if (!result || result.kind === 'cancelled') return
+        if (result.kind === 'stale-quote') {
+            // The quote outlived its TTL (e.g. the app sat offline between
+            // quote and confirm). Nothing executed — fetch a fresh rate and
+            // ask the user to review and confirm again.
+            refreshQuotes()
+            infoToast(
+                t('swap.quote.refreshed_title'),
+                t('swap.quote.refreshed_body'),
+            )
+            return
+        }
         if (result.kind === 'error') {
             errorToast(t('swap.execution.error_title'), result.message)
             return
@@ -373,6 +385,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         invalidateAccountBalances,
         successToast,
         errorToast,
+        infoToast,
+        refreshQuotes,
         t,
         resetQuotes,
     ])

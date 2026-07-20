@@ -12,7 +12,7 @@
 
 import { ActivityIndicator, SectionList } from 'react-native'
 import { useStyles } from './styles'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWRefreshControl, PWText, PWView } from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
@@ -41,6 +41,8 @@ export const AssetTransactionList = ({
         sections,
         isFetchingNextPage,
         handleLoadMore,
+        handleRefresh,
+        isRefreshing,
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
@@ -75,6 +77,13 @@ export const AssetTransactionList = ({
                 stickySectionHeadersEnabled={false}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
+                refreshControl={
+                    <PWRefreshControl
+                        isRefreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                        testID='asset-transaction-list-refresh'
+                    />
+                }
                 ListHeaderComponent={
                     <PWView>
                         {children}
