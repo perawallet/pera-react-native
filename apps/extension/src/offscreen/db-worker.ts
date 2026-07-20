@@ -86,6 +86,7 @@ const respond = (response: WorkerResponse): void => {
 }
 
 self.onmessage = async (event: MessageEvent<WorkerRequest>): Promise<void> => {
+    if (event.origin && event.origin !== location.origin) return
     const message = event.data
     try {
         if (message.op === 'delete') {

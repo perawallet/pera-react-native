@@ -57,6 +57,7 @@ describe('inject-main provider', () => {
 
         const responses: unknown[] = []
         window.addEventListener('message', e => {
+            if (e.source && e.source !== window) return
             if (e.data?.reference === 'arc0027:discover:response')
                 responses.push(e.data)
         })

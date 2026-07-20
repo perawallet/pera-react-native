@@ -91,6 +91,7 @@ describe('discover-relay content script', () => {
 
         const received: unknown[] = []
         const listener = (event: MessageEvent): void => {
+            if (event.source && event.source !== window) return
             received.push(event.data)
         }
         window.addEventListener('message', listener)
