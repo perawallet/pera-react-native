@@ -37,15 +37,16 @@ TransactionPool.Remember: transaction TXID: overspend (account ADDRESS, data {_s
 **Cause:** Sender account has insufficient balance for amount + fee + minimum balance.
 
 **Minimum balance requirements:**
-| Item | MBR |
-|------|-----|
-| Base account | 100,000 microAlgo |
-| Each opted-in asset | +100,000 microAlgo |
-| Each created asset | +100,000 microAlgo |
-| Each opted-in app | +100,000 microAlgo |
-| Each created app | +100,000 microAlgo |
-| App local state per schema | Varies |
-| Box storage | 2,500 + 400 \* size |
+
+| Item                       | MBR                 |
+| -------------------------- | ------------------- |
+| Base account               | 100,000 microAlgo   |
+| Each opted-in asset        | +100,000 microAlgo  |
+| Each created asset         | +100,000 microAlgo  |
+| Each opted-in app          | +100,000 microAlgo  |
+| Each created app           | +100,000 microAlgo  |
+| App local state per schema | Varies              |
+| Box storage                | 2,500 + 400 \* size |
 
 **Fix:**
 
@@ -330,12 +331,13 @@ AlgodHTTPError: Network request error. Received status 401
 ```
 
 **Common status codes:**
-| Status | Meaning | Fix |
-|--------|---------|-----|
-| 401 | Unauthorized | Check API token |
-| 404 | Not found | Check server URL |
-| 500 | Server error | Node issue, retry |
-| 503 | Unavailable | Node overloaded, retry |
+
+| Status | Meaning      | Fix                    |
+| ------ | ------------ | ---------------------- |
+| 401    | Unauthorized | Check API token        |
+| 404    | Not found    | Check server URL       |
+| 500    | Server error | Node issue, retry      |
+| 503    | Unavailable  | Node overloaded, retry |
 
 **Fix for 401:**
 
