@@ -63,6 +63,14 @@ export type WalletConnectSessionRequest = {
     chainId: AlgorandChainId
     permissions: string[]
     clientId: string
+    /**
+     * Epoch ms when the request was queued (stamped by
+     * `addSessionRequest`). Requests older than `SESSION_REQUEST_TTL_MS`
+     * are pruned instead of popping an approval sheet — the dApp side of
+     * the handshake has long timed out, so approving one only feeds a
+     * dead socket.
+     */
+    createdAt?: number
 }
 
 export type WalletConnectStore = BaseStoreState & {

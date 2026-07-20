@@ -96,6 +96,29 @@ const deliverReject = async (
     readyConnector.rejectRequest({ id, error })
 }
 
+/**
+ * Fire-and-forget variant for user rejections and error responses —
+ * cleanup paths that must never throw back into the caller. A failed
+ * revival is logged and dropped: the dApp times out exactly as it would
+ * have when the response was queued into the dead socket.
+ */
+const deliverRejectInBackground = (
+    clientId: string,
+    id: number,
+    error: Error,
+): void => {
+    void deliverReject(clientId, id, error).catch((deliveryError: unknown) => {
+        logger.warn('WC reject delivery failed', {
+            clientId,
+            id,
+            error:
+                deliveryError instanceof Error
+                    ? deliveryError.message
+                    : String(deliveryError),
+        })
+    })
+}
+
 const validateRequest = (
     connector: WalletConnect,
     connections: WalletConnectConnection[],
@@ -330,19 +353,21 @@ export const useWalletConnectHandlers = () => {
                         removeSignRequest(signRequest)
                         return
                     }
-                    connector.rejectRequest({
-                        id: payload.id,
-                        error: new Error('User rejected'),
-                    })
+                    deliverRejectInBackground(
+                        connector.clientId,
+                        payload.id,
+                        new Error('User rejected'),
+                    )
                 },
                 error: async (err: Error) => {
                     if (isConnectionTimeout(err)) {
                         return
                     }
-                    connector.rejectRequest({
-                        id: payload.id,
-                        error: err,
-                    })
+                    deliverRejectInBackground(
+                        connector.clientId,
+                        payload.id,
+                        err,
+                    )
                     useWalletConnectStore
                         .getState()
                         .setConnectionError(
@@ -426,19 +451,21 @@ export const useWalletConnectHandlers = () => {
                         removeSignRequest(signRequest)
                         return
                     }
-                    connector.rejectRequest({
-                        id: payload.id,
-                        error: new Error('User rejected'),
-                    })
+                    deliverRejectInBackground(
+                        connector.clientId,
+                        payload.id,
+                        new Error('User rejected'),
+                    )
                 },
                 error: async (error: Error) => {
                     if (isConnectionTimeout(error)) {
                         return
                     }
-                    connector.rejectRequest({
-                        id: payload.id,
+                    deliverRejectInBackground(
+                        connector.clientId,
+                        payload.id,
                         error,
-                    })
+                    )
                     useWalletConnectStore
                         .getState()
                         .setConnectionError(
@@ -501,10 +528,11 @@ export const useWalletConnectHandlers = () => {
                 respondWithResult: result =>
                     deliverApprove(connector.clientId, payload.id, result),
                 respondWithReject: () =>
-                    connector.rejectRequest({
-                        id: payload.id,
-                        error: new Error('User rejected'),
-                    }),
+                    deliverRejectInBackground(
+                        connector.clientId,
+                        payload.id,
+                        new Error('User rejected'),
+                    ),
                 // softReject: the multisig propose handoff succeeded, so
                 // we tell the dApp peer the request was rejected without
                 // raising the connection-error banner on our side.
@@ -512,7 +540,11 @@ export const useWalletConnectHandlers = () => {
                     deliverReject(connector.clientId, payload.id, error),
                 respondWithError: error => {
                     if (isConnectionTimeout(error)) return
-                    connector.rejectRequest({ id: payload.id, error })
+                    deliverRejectInBackground(
+                        connector.clientId,
+                        payload.id,
+                        error,
+                    )
                     useWalletConnectStore
                         .getState()
                         .setConnectionError(

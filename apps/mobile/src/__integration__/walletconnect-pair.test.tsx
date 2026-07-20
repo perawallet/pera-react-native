@@ -275,11 +275,13 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             })
             fireEvent.click(findConnectButton()!)
 
-            // The wallet's approveSession reaches into the
-            // module-scoped `connectors` Map by clientId and calls
+            // The wallet's approveSession first revives the bridge socket
+            // (ensureConnectorReady) and only then calls
             // `.approveSession({chainId, accounts})` on the matching
             // connector — that's the stub instance we captured.
-            expect(connector.approveSessionCalls).toHaveLength(1)
+            await waitFor(() => {
+                expect(connector.approveSessionCalls).toHaveLength(1)
+            })
             const call = connector.approveSessionCalls[0]
             expect(call.chainId).toBe(AlgorandChainId.mainnet)
             expect(call.accounts).toEqual([SIGNING_ACCOUNT_A.address])
@@ -339,9 +341,12 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             fireEvent.click(findCancelButton()!)
 
             // ConnectionView.handleReject calls
-            // `useWalletConnect.rejectSession(clientId)`, which forwards to
-            // `connector.rejectSession()` on the captured stub.
-            expect(connector.rejectSessionCalls).toBe(1)
+            // `useWalletConnect.rejectSession(clientId)`, which revives the
+            // socket and forwards to `connector.rejectSession()` on the
+            // captured stub.
+            await waitFor(() => {
+                expect(connector.rejectSessionCalls).toBe(1)
+            })
             expect(connector.approveSessionCalls).toHaveLength(0)
 
             // The pending request is removed so the bottom sheet closes.

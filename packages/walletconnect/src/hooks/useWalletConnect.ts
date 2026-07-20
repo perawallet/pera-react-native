@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-import { ALL_PERMISSIONS, PERA_CLIENT_META } from '../constants'
 import {
+    ALL_PERMISSIONS,
+    PERA_CLIENT_META,
+    WC_DELIVERY_TIMEOUT_MS,
+} from '../constants'
+import {
+    WalletConnectError,
     WalletConnectInvalidNetworkError,
-    WalletConnectInvalidSessionError,
+    WalletConnectSessionRequestExpiredError,
 } from '../errors'
 import {
     AlgorandChainId,
@@ -22,11 +27,13 @@ import {
 } from '../models'
 import { useWalletConnectStore } from '../store'
 import {
+    ensureConnectorReady,
     forgetConnector,
     getConnector,
     registerConnector,
     setConnectorHandlerBinder,
 } from '../connection'
+import { isSessionRequestFresh } from './useWalletConnectSessionRequests'
 import WalletConnect from '@perawallet/walletconnect'
 import { useCallback, useEffect, useRef } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
@@ -163,21 +170,30 @@ export const useWalletConnect = (network: Network) => {
     )
 
     const approveSession = useCallback(
-        (
+        async (
             clientId: string,
             request: WalletConnectSessionRequest,
             addresses: string[],
-        ) => {
+        ): Promise<void> => {
             const existingSession = connections.find(
                 conn => conn.clientId === clientId,
             )
 
-            const connector = getConnector(clientId)
-            if (!connector) {
-                throw new WalletConnectInvalidSessionError(
-                    'No wallet connect session found.',
-                )
+            // The dApp's side of the handshake expires long before ours —
+            // approving a stale queued request can only fake-succeed.
+            if (!isSessionRequestFresh(request)) {
+                throw new WalletConnectSessionRequestExpiredError()
             }
+
+            // WC v1 silently queues into a dead socket, so "Connected!"
+            // must mean the approval was handed to an OPEN socket. Revive
+            // first; failure throws the retryable timeout error and no
+            // session is persisted (the dApp never heard back, so the
+            // settings list must not claim it did).
+            const connector = await ensureConnectorReady(
+                clientId,
+                WC_DELIVERY_TIMEOUT_MS,
+            )
 
             connector.approveSession({
                 chainId: request.chainId,
@@ -213,15 +229,29 @@ export const useWalletConnect = (network: Network) => {
     )
 
     const rejectSession = useCallback(
-        (clientId: string) => {
-            const connector = getConnector(clientId)
-            if (!connector) {
-                throw new WalletConnectInvalidSessionError(
-                    'No wallet connect session found.',
+        async (clientId: string): Promise<void> => {
+            try {
+                const connector = await ensureConnectorReady(
+                    clientId,
+                    WC_DELIVERY_TIMEOUT_MS,
+                )
+                connector.rejectSession()
+            } catch (error) {
+                // The user explicitly declined — never trap them behind a
+                // dead socket. Drop the request locally and tell them the
+                // dApp may not have heard (it times out on its own side).
+                logger.warn('[WC] session reject delivery failed', {
+                    clientId,
+                    error,
+                })
+                surfaceError(
+                    new WalletConnectError(
+                        "Couldn't notify the dApp of the rejection. It may keep waiting until it times out.",
+                        error as Error,
+                    ),
+                    clientId,
                 )
             }
-
-            connector.rejectSession()
 
             setConnections(
                 connections.filter(conn => conn.clientId !== clientId),
