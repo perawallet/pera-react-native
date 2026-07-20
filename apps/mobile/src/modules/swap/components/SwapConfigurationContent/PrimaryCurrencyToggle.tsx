@@ -17,11 +17,13 @@ import { useStyles } from './styles'
 type PrimaryCurrencyToggleProps = {
     value: boolean
     onValueChange: (value: boolean) => void
+    testID?: string
 }
 
 export const PrimaryCurrencyToggle = ({
     value,
     onValueChange,
+    testID,
 }: PrimaryCurrencyToggleProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -44,6 +46,7 @@ export const PrimaryCurrencyToggle = ({
                 <PWSwitch
                     value={value}
                     onValueChange={onValueChange}
+                    testID={testID}
                 />
             </PWView>
         </PWView>

@@ -22,8 +22,9 @@ const mockSetOnboardingStep = vi.fn()
 const mockSetSelectedFundingType = vi.fn()
 const mockConnectAsync = vi.fn()
 const mockPickFundingSource = vi.fn()
-const mockDelegateTo = vi.fn()
-const mockCanDelegate = vi.fn()
+const mockCreateCard = vi.fn()
+const mockCanCreateCard = vi.fn()
+const mockRequirePin = vi.fn()
 let mockVerificationState: string | null = null
 let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
@@ -114,14 +115,22 @@ vi.mock('@modules/card/hooks', () => ({
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mockPickFundingSource,
     }),
-    useCardFundingDelegation: () => ({
-        delegateTo: mockDelegateTo,
-        cancelDelegation: vi.fn(),
+    useEscrowCardCreation: () => ({
+        createCard: mockCreateCard,
+        canCreateCard: mockCanCreateCard,
         isPending: false,
-        canDelegate: mockCanDelegate,
     }),
     useAuthorizeCardDelegation: () => ({
         authorizeDelegation: mockAuthorizeDelegation,
+    }),
+    // The picker's account filter is exercised elsewhere; here it just needs
+    // to be a function the screen can pass through.
+    isSigningCapableFundingSource: () => true,
+}))
+
+vi.mock('@modules/security', () => ({
+    useRequirePinVerification: () => ({
+        requirePinVerification: mockRequirePin,
     }),
 }))
 
@@ -183,11 +192,12 @@ vi.mock('@react-navigation/native', async () => {
 
 const mockSuccessToast = vi.fn()
 const mockErrorToast = vi.fn()
+const mockInfoToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: mockSuccessToast,
         errorToast: mockErrorToast,
-        infoToast: vi.fn(),
+        infoToast: mockInfoToast,
         showToast: vi.fn(),
     }),
 }))
@@ -225,8 +235,16 @@ beforeEach(() => {
     mockSelectedAddress = null
     mockBeforeRemoveCallback = null
     mockPickFundingSource.mockResolvedValue(null)
-    mockDelegateTo.mockResolvedValue(undefined)
-    mockCanDelegate.mockReturnValue(true)
+    // createCard echoes the requested funding type (no LSig degradation).
+    mockCreateCard.mockImplementation(
+        async (_account: WalletAccount, fundingType: FundingType) => ({
+            cardAddress: 'ESCROW_CARD',
+            fundingType,
+            autoFundingDegraded: false,
+        }),
+    )
+    mockCanCreateCard.mockReturnValue(true)
+    mockRequirePin.mockResolvedValue(true)
     mockIsAutoFundingEnabled = true
     mockAuthorizeDelegation.mockImplementation(passThroughAuthorizeDelegation)
 })
@@ -498,7 +516,11 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(result.current.selectedFundingType).toBe(FundingType.Manual)
     })
 
-    it('persists the funding type and finishes onboarding on Create Pera Card', async () => {
+    it('creates the card via the Manual path (PIN, no delegation) on Create Pera Card', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        const connected = account('ADDR1', 'algo25')
+        mockAccounts = [connected]
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -513,13 +535,85 @@ describe('useCardOnboardingStatusScreen', () => {
                 FundingType.Manual,
             ),
         )
-        // Manual funding needs no delegation.
-        expect(mockDelegateTo).not.toHaveBeenCalled()
+        // Manual still signs the ownership proof, gated by PIN — but no
+        // delegation consent sheet.
+        expect(mockRequirePin).toHaveBeenCalled()
+        expect(mockCreateCard).toHaveBeenCalledWith(
+            connected,
+            FundingType.Manual,
+        )
+        expect(mockAuthorizeDelegation).not.toHaveBeenCalled()
         expect(mockSuccessToast).toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
     })
 
-    it('signs the delegation with the connected account before finishing when Auto is selected', async () => {
+    it('rejects Create when there is no signing-capable connected account', async () => {
+        // No funds connected → creation can't sign the ownership proof.
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleSelectFundingType(FundingType.Manual)
+        })
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() =>
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.setup_status.create_card_account_error_title',
+                'peraCard.setup_status.create_card_account_error_body',
+            ),
+        )
+        expect(mockCreateCard).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('rejects Create for a connected account that cannot sign (e.g. Ledger)', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'hardware')]
+        mockCanCreateCard.mockReturnValue(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockCreateCard).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('cancels cleanly and allows retry when the Manual PIN gate is declined', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [account('ADDR1', 'algo25')]
+        mockRequirePin.mockResolvedValueOnce(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleSelectFundingType(FundingType.Manual)
+        })
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+
+        await waitFor(() => expect(mockRequirePin).toHaveBeenCalled())
+        expect(mockCreateCard).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+
+        // The one-shot guard reset on decline so a retry can go through.
+        act(() => {
+            result.current.handleCreatePeraCard()
+        })
+        await waitFor(() =>
+            expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+                screen: 'Home',
+            }),
+        )
+    })
+
+    it('creates the card through the consent + auth gate when Auto is selected', async () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         const connected = account('ADDR1', 'algo25')
@@ -531,19 +625,24 @@ describe('useCardOnboardingStatusScreen', () => {
         })
 
         await waitFor(() =>
-            expect(mockDelegateTo).toHaveBeenCalledWith(connected),
+            expect(mockAuthorizeDelegation).toHaveBeenCalledWith(
+                connected,
+                expect.any(Function),
+            ),
         )
+        // The gate's delegate callback creates the card with Auto funding.
+        expect(mockCreateCard).toHaveBeenCalledWith(connected, FundingType.Auto)
         expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
             FundingType.Auto,
         )
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
     })
 
-    it('stays on the screen and allows retry when the delegation fails', async () => {
+    it('stays on the screen and allows retry when card creation fails', async () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         mockAccounts = [account('ADDR1', 'algo25')]
-        mockDelegateTo.mockRejectedValueOnce(new Error('baanx down'))
+        mockCreateCard.mockRejectedValueOnce(new Error('escrow down'))
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -565,11 +664,17 @@ describe('useCardOnboardingStatusScreen', () => {
         )
     })
 
-    it('routes the Auto grant through the consent + auth gate', async () => {
+    it('shows the degraded info toast and persists Manual when Auto downgrades', async () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         const connected = account('ADDR1', 'algo25')
         mockAccounts = [connected]
+        // The card is created but the LSig leg failed → Manual, degraded.
+        mockCreateCard.mockResolvedValueOnce({
+            cardAddress: 'ESCROW_CARD',
+            fundingType: FundingType.Manual,
+            autoFundingDegraded: true,
+        })
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -577,11 +682,16 @@ describe('useCardOnboardingStatusScreen', () => {
         })
 
         await waitFor(() =>
-            expect(mockAuthorizeDelegation).toHaveBeenCalledWith(
-                connected,
-                expect.any(Function),
+            expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
+                FundingType.Manual,
             ),
         )
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'peraCard.setup_status.auto_funding_degraded_title',
+            'peraCard.setup_status.auto_funding_degraded_body',
+        )
+        expect(mockSuccessToast).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
     })
 
     it('stays on the screen and allows retry when authorization is declined', async () => {
@@ -596,7 +706,7 @@ describe('useCardOnboardingStatusScreen', () => {
         })
 
         await waitFor(() => expect(mockAuthorizeDelegation).toHaveBeenCalled())
-        expect(mockDelegateTo).not.toHaveBeenCalled()
+        expect(mockCreateCard).not.toHaveBeenCalled()
         expect(mockSetSelectedFundingType).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
 
@@ -615,7 +725,7 @@ describe('useCardOnboardingStatusScreen', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         mockAccounts = [account('ADDR1', 'hardware')]
-        mockCanDelegate.mockReturnValue(false)
+        mockCanCreateCard.mockReturnValue(false)
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.isAutoFundingUnavailable).toBe(true)
@@ -625,35 +735,13 @@ describe('useCardOnboardingStatusScreen', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         mockAccounts = [account('ADDR1', 'hardware')]
-        mockCanDelegate.mockReturnValue(false)
+        mockCanCreateCard.mockReturnValue(false)
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         // Auto is impossible for a non-signing account, so the default Auto
         // selection migrates to Manual instead of staying stuck on the
         // disabled Auto option.
         expect(result.current.selectedFundingType).toBe(FundingType.Manual)
-    })
-
-    it('creates the card via the Manual path (no delegation) for a non-signing account', async () => {
-        mockOnboardingStep = OnboardingStep.Completed
-        mockConnectedAddress = 'ADDR1'
-        mockAccounts = [account('ADDR1', 'hardware')]
-        mockCanDelegate.mockReturnValue(false)
-        const { result } = renderHook(() => useCardOnboardingStatusScreen())
-
-        act(() => {
-            result.current.handleCreatePeraCard()
-        })
-
-        await waitFor(() =>
-            expect(mockSetSelectedFundingType).toHaveBeenCalledWith(
-                FundingType.Manual,
-            ),
-        )
-        // A Ledger can't sign a delegation, so Create must not attempt one and
-        // must not dead-end on an error.
-        expect(mockDelegateTo).not.toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
     })
 
     it('flags auto funding unavailable when the kill-switch flag is off', () => {

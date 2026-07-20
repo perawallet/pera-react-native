@@ -40,6 +40,9 @@ const initialState = {
     allowSms: null,
     connectedFundingSourceAddress: null,
     selectedFundingType: null,
+    escrowCardAddress: null,
+    escrowCardOwner: null,
+    escrowCardNetwork: null,
     cardId: null,
     lastKnownStatus: null,
     lastKnownPanLast4: null,
@@ -68,6 +71,12 @@ export const useCardStore: UseBoundStore<
             setConnectedFundingSourceAddress: address =>
                 set({ connectedFundingSourceAddress: address }),
             setSelectedFundingType: type => set({ selectedFundingType: type }),
+            setEscrowCard: card =>
+                set({
+                    escrowCardAddress: card?.cardAddress ?? null,
+                    escrowCardOwner: card?.ownerAddress ?? null,
+                    escrowCardNetwork: card?.network ?? null,
+                }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({
                     cardId,
@@ -119,6 +128,9 @@ export const useCardStore: UseBoundStore<
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,
                 selectedFundingType: state.selectedFundingType,
+                escrowCardAddress: state.escrowCardAddress,
+                escrowCardOwner: state.escrowCardOwner,
+                escrowCardNetwork: state.escrowCardNetwork,
                 cardId: state.cardId,
                 lastKnownStatus: state.lastKnownStatus,
                 lastKnownPanLast4: state.lastKnownPanLast4,

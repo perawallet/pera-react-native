@@ -10,7 +10,21 @@
  limitations under the License
  */
 
-import { LogicSig } from 'algosdk'
+import { LogicSig, LogicSigAccount, decodeAddress } from 'algosdk'
+
+/**
+ * Thrown when an assembled delegated LogicSig fails local signature
+ * verification against the signer's public key — a wrong signer address, a
+ * corrupt signature, or a program/signature mismatch.
+ */
+export class LsigSignatureVerificationError extends Error {
+    constructor(signerAddress: string) {
+        super(
+            `Delegated LogicSig signature failed verification for ${signerAddress}`,
+        )
+        this.name = 'LsigSignatureVerificationError'
+    }
+}
 
 /**
  * Builds the msgpack-encoded delegated LogicSig from a program and an
@@ -23,4 +37,30 @@ export const encodeDelegatedLsig = (
     const lsig = new LogicSig(program)
     lsig.sig = sig
     return lsig.toByte()
+}
+
+/**
+ * Builds the msgpack-encoded delegated `LogicSigAccount` from a program, an
+ * externally produced ed25519 signature over `"Program" || program`, and the
+ * signer's address. Unlike {@link encodeDelegatedLsig}, this records the
+ * signer's public key (`sigkey`) so the delegation can be verified without the
+ * escrow address — the wire shape AppliedBlockchain's `/lsig` endpoint expects
+ * (matches the demo's `LogicSigAccount.toByte()`).
+ *
+ * Throws {@link LsigSignatureVerificationError} if the signature does not
+ * verify against the signer's public key.
+ */
+export const encodeDelegatedLsigAccount = (
+    program: Uint8Array,
+    sig: Uint8Array,
+    signerAddress: string,
+): Uint8Array => {
+    const publicKey = decodeAddress(signerAddress).publicKey
+    const lsigAccount = new LogicSigAccount(program)
+    lsigAccount.lsig.sig = sig
+    lsigAccount.sigkey = publicKey
+    if (!lsigAccount.lsig.verify(publicKey)) {
+        throw new LsigSignatureVerificationError(signerAddress)
+    }
+    return lsigAccount.toByte()
 }

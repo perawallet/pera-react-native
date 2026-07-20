@@ -1153,7 +1153,11 @@
             "funding_type_limit_hint": "Up to {{limit}} per transaction",
             "funding_type_button": "Create Pera Card",
             "create_card_success_title": "You're all set",
-            "create_card_success_body": "Your Pera Card is on its way."
+            "create_card_success_body": "Your Pera Card is on its way.",
+            "create_card_account_error_title": "This account can't sign",
+            "create_card_account_error_body": "Card creation needs a signature this account type can't provide. Connect a standard Pera account as your funding source.",
+            "auto_funding_degraded_title": "Card created",
+            "auto_funding_degraded_body": "Auto Funding couldn't be enabled right now, so your card starts on Manual Funding. You can switch later in card settings."
         },
         "connect_account": {
             "title": "Choose Card account",

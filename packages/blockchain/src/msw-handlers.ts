@@ -208,6 +208,26 @@ export const mockAlgodStatus = ({
 }: MockAlgodStatusParams = {}): HttpHandler =>
     http.get('*/v2/status', () => HttpResponse.json(response, { status }))
 
+export type MockAlgodTealCompileParams = {
+    /** Base64-encoded compiled program bytes (algod's `result` field). */
+    result?: string
+    /** Program address hash (algod's `hash` field). */
+    hash?: string
+    status?: number
+}
+
+// algod `POST /v2/teal/compile` — returns `{ hash, result }` where `result` is
+// the base64 compiled program. Default `result` is base64 of `[0x06,0x81,0x01]`
+// (`#pragma version 6; int 1`).
+export const mockAlgodTealCompile = ({
+    result = 'BoEB',
+    hash = 'MOCKPROGRAMHASHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    status = 200,
+}: MockAlgodTealCompileParams = {}): HttpHandler =>
+    http.post('*/v2/teal/compile', () =>
+        HttpResponse.json({ hash, result }, { status }),
+    )
+
 // ---------------------------------------------------------------------------
 // indexer
 // ---------------------------------------------------------------------------

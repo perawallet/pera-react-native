@@ -18,8 +18,12 @@ import type { Network } from '@perawallet/wallet-core-shared'
  * `proxy` → Pera's backend, which attaches the server-only x-secret-key and
  * forwards to Baanx. Use `proxy` only for calls that require the secret key
  * (e.g. OAuth token exchange / refresh).
+ * `escrow` → the AppliedBlockchain (AB) card service (card creation + delegated
+ * LSig `/lsig`), on its own base URL with a static raw `Authorization` token
+ * from config. No per-user Bearer, no 401 refresh. SWAP POINT — AB-hosted on
+ * testnet until Baanx wraps these endpoints.
  */
-export type CardRoute = 'direct' | 'proxy'
+export type CardRoute = 'direct' | 'proxy' | 'escrow'
 
 export type CardHttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 

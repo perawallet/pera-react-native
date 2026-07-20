@@ -25,6 +25,12 @@ export type NetworkConfig = {
     baanxBaseUrl: string
     baanxClientKey: string
     baanxTenantId: string
+    // SWAP POINT: AB escrow card service (card creation + delegated-LSig `/lsig`).
+    cardEscrowBaseUrl: string
+    cardEscrowAuthToken: string
+    cardW3CardAppId: string
+    cardKillswitchAppId: string
+    cardUsdcAssetId: string
     isTestnet: boolean
     isMainnet: boolean
 }
@@ -67,5 +73,20 @@ export const getNetworkConfig = (network: Network): NetworkConfig => {
         baanxTenantId: isMain
             ? config.mainnetBaanxTenantId
             : config.testnetBaanxTenantId,
+        cardEscrowBaseUrl: isMain
+            ? config.mainnetCardEscrowBaseUrl
+            : config.testnetCardEscrowBaseUrl,
+        cardEscrowAuthToken: isMain
+            ? config.mainnetCardEscrowAuthToken
+            : config.testnetCardEscrowAuthToken,
+        cardW3CardAppId: isMain
+            ? config.mainnetCardW3CardAppId
+            : config.testnetCardW3CardAppId,
+        cardKillswitchAppId: isMain
+            ? config.mainnetCardKillswitchAppId
+            : config.testnetCardKillswitchAppId,
+        cardUsdcAssetId: isMain
+            ? config.mainnetCardUsdcAssetId
+            : config.testnetCardUsdcAssetId,
     }
 }

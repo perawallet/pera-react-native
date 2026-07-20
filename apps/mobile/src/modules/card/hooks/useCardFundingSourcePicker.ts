@@ -13,6 +13,7 @@
 import { createElement, useCallback } from 'react'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import {
+    canSignArbitraryData,
     isAlgo25Account,
     isHardwareWalletAccount,
     isHDWalletAccount,
@@ -40,6 +41,23 @@ export const isEligibleFundingSource = (account: WalletAccount): boolean =>
         isHardwareWalletAccount(account)) &&
     !isRekeyedAccount(account)
 
+/**
+ * Funding sources that can also produce a signature — the stricter filter used
+ * during onboarding, where creating the card requires an ARC-60 (and, for Auto,
+ * a delegated LSig) signature. Excludes Ledger, which is eligible as a funding
+ * source but can't sign arbitrary data / programs.
+ *
+ * TODO(card): the Ledger exclusion is temporary. It exists only because we sign
+ * the creation proof as MX arbitrary data (`useArbitraryDataSigner`), which is
+ * local-key-only. Switching to the wallet's standard ARC-60 signer (once AB
+ * adopt the standard schema — see api/escrow/siwa.ts) makes this on-device
+ * signable, so Ledger could create a card and this filter could relax back to
+ * `isEligibleFundingSource`.
+ */
+export const isSigningCapableFundingSource = (
+    account: WalletAccount,
+): boolean => isEligibleFundingSource(account) && canSignArbitraryData(account)
+
 export type UseCardFundingSourcePickerResult = {
     /**
      * Opens the eligible-accounts picker and resolves with the chosen account,
@@ -48,64 +66,76 @@ export type UseCardFundingSourcePickerResult = {
     pickFundingSource: () => Promise<Nullable<WalletAccount>>
 }
 
-export const useCardFundingSourcePicker =
-    (): UseCardFundingSourcePickerResult => {
-        const { request } = useBottomSheet()
-        const { handleCreateAccount } = useCardAddAccount()
-        const connectedAddress = useCardStore(
-            state => state.connectedFundingSourceAddress,
-        )
+export type UseCardFundingSourcePickerParams = {
+    /**
+     * Which accounts to offer. Defaults to {@link isEligibleFundingSource}
+     * (includes Ledger); onboarding passes {@link isSigningCapableFundingSource}
+     * so only signing-capable accounts are offered.
+     */
+    accountFilter?: (account: WalletAccount) => boolean
+}
 
-        const pickFundingSource = useCallback(async (): Promise<
-            Nullable<WalletAccount>
-        > => {
-            // Reuse the standard account menu as-is, customised only through
-            // its existing props: the card header and the eligibility filter.
-            const openPicker = async (): Promise<Nullable<WalletAccount>> => {
-                const result = await request<AccountMenuContentResult>({
-                    id: 'card-connect-funding-source',
-                    contents: createElement(AccountMenuContent, {
-                        headerContent: createElement(ConnectAccountHeader),
-                        accountFilter: isEligibleFundingSource,
-                        // Fresh on first connect (null → nothing highlighted);
-                        // the connected source is highlighted on "Change".
-                        selectedAddress: connectedAddress,
-                    }),
-                    options: {
-                        size: 'full',
-                        enablePanDownToClose: false,
-                        autoCreateContainer: false,
-                    },
-                })
-                if (!result) return null
-                switch (result.kind) {
-                    case 'selected': {
-                        return result.account
-                    }
-                    case 'add-account': {
-                        handleCreateAccount()
-                        return null
-                    }
-                    case 'sort': {
-                        await request<void>({
-                            contents: createElement(AccountSortContent),
-                            options: {
-                                size: 'modal',
-                                enablePanDownToClose: false,
-                                autoCreateContainer: false,
-                            },
-                        })
-                        // After sorting, reopen the picker so the user can choose.
-                        return openPicker()
-                    }
-                    case 'search':
-                    default: {
-                        return null
-                    }
+export const useCardFundingSourcePicker = ({
+    accountFilter = isEligibleFundingSource,
+}: UseCardFundingSourcePickerParams = {}): UseCardFundingSourcePickerResult => {
+    const { request } = useBottomSheet()
+    const { handleCreateAccount } = useCardAddAccount()
+    const connectedAddress = useCardStore(
+        state => state.connectedFundingSourceAddress,
+    )
+
+    const pickFundingSource = useCallback(async (): Promise<
+        Nullable<WalletAccount>
+    > => {
+        // Reuse the standard account menu as-is, customised only through
+        // its existing props: the card header and the eligibility filter.
+        const openPicker = async (): Promise<Nullable<WalletAccount>> => {
+            const result = await request<AccountMenuContentResult>({
+                id: 'card-connect-funding-source',
+                contents: createElement(AccountMenuContent, {
+                    headerContent: createElement(ConnectAccountHeader),
+                    accountFilter,
+                    // Fresh on first connect (null → nothing highlighted);
+                    // the connected source is highlighted on "Change".
+                    selectedAddress: connectedAddress,
+                }),
+                options: {
+                    size: 'full',
+                    enablePanDownToClose: false,
+                    enableContentPanningGesture: false,
+                    autoCreateContainer: false,
+                },
+            })
+            if (!result) return null
+            switch (result.kind) {
+                case 'selected': {
+                    return result.account
+                }
+                case 'add-account': {
+                    handleCreateAccount()
+                    return null
+                }
+                case 'sort': {
+                    await request<void>({
+                        contents: createElement(AccountSortContent),
+                        options: {
+                            size: 'modal',
+                            enablePanDownToClose: false,
+                            enableContentPanningGesture: false,
+                            autoCreateContainer: false,
+                        },
+                    })
+                    // After sorting, reopen the picker so the user can choose.
+                    return openPicker()
+                }
+                case 'search':
+                default: {
+                    return null
                 }
             }
-            return openPicker()
-        }, [request, handleCreateAccount, connectedAddress])
+        }
+        return openPicker()
+    }, [request, handleCreateAccount, connectedAddress, accountFilter])
 
-        return { pickFundingSource }
-    }
+    return { pickFundingSource }
+}

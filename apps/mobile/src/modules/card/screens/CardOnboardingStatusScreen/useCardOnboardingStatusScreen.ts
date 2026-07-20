@@ -19,6 +19,7 @@ import {
 } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    type CreateEscrowCardResult,
     FundingType,
     isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
@@ -39,10 +40,12 @@ import { routeCapabilities } from '@routes/capabilities'
 import {
     useAuthorizeCardDelegation,
     useCardErrorToast,
-    useCardFundingDelegation,
     useCardFundingSourcePicker,
     useCardOnboardingLogout,
+    useEscrowCardCreation,
+    isSigningCapableFundingSource,
 } from '@modules/card/hooks'
+import { useRequirePinVerification } from '@modules/security'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import { useLanguage } from '@hooks/useLanguage'
@@ -138,7 +141,7 @@ export const useCardOnboardingStatusScreen =
     (): UseCardOnboardingStatusScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { successToast, errorToast } = useToast()
+        const { successToast, errorToast, infoToast } = useToast()
         const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
 
@@ -287,7 +290,11 @@ export const useCardOnboardingStatusScreen =
             navigation.navigate('CardOnboardingPersonalDetails')
         }, [navigation])
 
-        const { pickFundingSource } = useCardFundingSourcePicker()
+        // Onboarding creation always needs a signature, so only offer accounts
+        // that can sign (excludes Ledger, which is otherwise fundable).
+        const { pickFundingSource } = useCardFundingSourcePicker({
+            accountFilter: isSigningCapableFundingSource,
+        })
         const handleConnectAccount = useCallback(() => {
             void (async () => {
                 const account = await pickFundingSource()
@@ -306,16 +313,17 @@ export const useCardOnboardingStatusScreen =
         }, [pickFundingSource, connectFundingSourceAsync, errorToast, t])
 
         const {
-            delegateTo,
-            canDelegate,
+            createCard,
+            canCreateCard,
             isPending: isCreatingCard,
-        } = useCardFundingDelegation()
+        } = useEscrowCardCreation()
         const { authorizeDelegation } = useAuthorizeCardDelegation()
+        const { requirePinVerification } = useRequirePinVerification()
         const showError = useCardErrorToast()
         const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
         const isAutoFundingUnavailable =
             !isAutoFundingEnabled ||
-            (connectedAccount != null && !canDelegate(connectedAccount))
+            (connectedAccount != null && !canCreateCard(connectedAccount))
 
         // A connected account that can't sign (e.g. Ledger) can't use Auto, so
         // fall back to Manual. Without this the Auto option stays selected but
@@ -330,51 +338,95 @@ export const useCardOnboardingStatusScreen =
             }
         }, [isAutoFundingUnavailable, selectedFundingType])
 
-        // One-shot guard so a fast double-tap can't fire the toast + navigation
-        // twice before the screen unmounts; reset on failure so retry works.
+        // One-shot guard so a fast double-tap can't fire creation twice before
+        // the screen unmounts; reset on failure so retry works.
         const hasCreatedRef = useRef(false)
         const createPeraCard = useCallback(async () => {
             if (hasCreatedRef.current) return
             hasCreatedRef.current = true
-            // Auto funding only takes effect once Baanx holds the signed
-            // delegation, so it is created here, before finishing onboarding.
-            if (selectedFundingType === FundingType.Auto) {
-                if (!connectedAccount) {
-                    hasCreatedRef.current = false
-                    await showError(null)
-                    return
-                }
-                try {
-                    // Consent + live PIN/biometric before signing the grant.
+
+            // Both paths sign (ARC-60 for creation; +LSig for Auto), so a
+            // signing-capable connected account is required.
+            if (!connectedAccount || !canCreateCard(connectedAccount)) {
+                hasCreatedRef.current = false
+                errorToast(
+                    t('peraCard.setup_status.create_card_account_error_title'),
+                    t('peraCard.setup_status.create_card_account_error_body'),
+                )
+                return
+            }
+
+            // Set inside the try; the Auto path routes creation through the
+            // consent sheet's delegate callback, whose return value it swallows.
+            let outcome: Nullable<CreateEscrowCardResult> = null
+            try {
+                // Auto grants a spending delegation → consent + live PIN.
+                // Manual signs only the ownership proof → PIN gate alone.
+                if (selectedFundingType === FundingType.Auto) {
                     const authorized = await authorizeDelegation(
                         connectedAccount,
-                        delegateTo,
+                        async account => {
+                            outcome = await createCard(
+                                account,
+                                FundingType.Auto,
+                            )
+                        },
                     )
                     if (!authorized) {
                         hasCreatedRef.current = false
                         return
                     }
-                } catch (error) {
-                    hasCreatedRef.current = false
-                    await showError(error)
-                    return
+                } else {
+                    if (!(await requirePinVerification())) {
+                        hasCreatedRef.current = false
+                        return
+                    }
+                    outcome = await createCard(
+                        connectedAccount,
+                        FundingType.Manual,
+                    )
                 }
+            } catch (error) {
+                hasCreatedRef.current = false
+                await showError(error)
+                return
             }
-            useCardStore.getState().setSelectedFundingType(selectedFundingType)
-            successToast(
-                t('peraCard.setup_status.create_card_success_title'),
-                t('peraCard.setup_status.create_card_success_body'),
-            )
-            // TODO(card): call the Baanx card-creation API and route to the card
-            // dashboard once that slice lands; for now Home is the terminus.
+
+            // Defensive: creation succeeded but produced no result.
+            if (!outcome) {
+                hasCreatedRef.current = false
+                return
+            }
+
+            // Persist the EFFECTIVE funding type — Auto is downgraded to Manual
+            // when the (optional) LSig leg failed after the card was created.
+            useCardStore.getState().setSelectedFundingType(outcome.fundingType)
+
+            if (outcome.autoFundingDegraded) {
+                infoToast(
+                    t('peraCard.setup_status.auto_funding_degraded_title'),
+                    t('peraCard.setup_status.auto_funding_degraded_body'),
+                )
+            } else {
+                successToast(
+                    t('peraCard.setup_status.create_card_success_title'),
+                    t('peraCard.setup_status.create_card_success_body'),
+                )
+            }
+            // TODO(card): route to the card dashboard once card-status reflects
+            // freshly-created escrow cards; for now Home is the terminus.
             navigation.navigate('TabBar', { screen: 'Home' })
         }, [
             selectedFundingType,
             connectedAccount,
-            delegateTo,
+            canCreateCard,
+            createCard,
             authorizeDelegation,
+            requirePinVerification,
             showError,
             successToast,
+            infoToast,
+            errorToast,
             navigation,
             t,
         ])
