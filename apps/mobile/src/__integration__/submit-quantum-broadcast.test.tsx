@@ -10,17 +10,16 @@
  limitations under the License
  */
 
-// PQ-019 / PERA-4643: the quantum submission gate in `submitAndAutoRefresh`
-// decides — per node — whether a Falcon-signed group may be broadcast for real.
-// A quantum group is POSTed to algod only when the connected node's genesis
-// hash (probed via `GET /versions`) is NOT a known production hash (LocalNet /
-// custom net ⇒ capable); against a mainnet/testnet node the gate throws
-// `QuantumBroadcastUnsupportedError` and nothing is broadcast.
+// PQ-019 / PERA-4643: a Falcon-signed group is broadcast through the ordinary
+// submission path — quantum is not special-cased at submit time. The
+// carrier-aware `encodeSignedTransaction` emits the node-ready `pqsig` bytes,
+// so a quantum payment over the ALGOD transport reaches algod's
+// send-raw-transaction endpoint exactly like any other account's send. It
+// therefore confirms only against a `pqsig`-capable node (LocalNet until an
+// official algod ships Falcon support); other nodes reject it at submit.
 //
-// These two tests drive a real quantum payment through the signing state
-// machine over the ALGOD transport (the path that reaches
-// `submitAndAutoRefresh`) and assert both sides of that gate: a capable node
-// broadcasts for real; a production node fails loudly with no broadcast.
+// This test drives a real quantum payment through the signing state machine
+// over the algod transport and asserts the group is broadcast for real.
 
 import {
     afterAll,
@@ -52,12 +51,10 @@ import {
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
 import {
     mockAlgodAccountInformation,
     mockAlgodStatus,
     mockAlgodTransactionParams,
-    mockAlgodVersions,
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-blockchain/test-handlers'
 
@@ -78,14 +75,6 @@ const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
 const QUANTUM_FLAG_KEY = 'enable_quantum_accounts'
-
-// A valid base64 32-byte genesis hash that is NOT the mainnet/testnet hash, so
-// the capability probe reports the node as quantum-capable. Distinct from the
-// production hash used in Case B, so the module-level per-genesis-hash memo in
-// `supportsQuantumBroadcast` never conflates the two cases.
-const CAPABLE_GENESIS_HASH_B64 = Buffer.from(
-    new Uint8Array(32).fill(7),
-).toString('base64')
 
 const enableQuantumFlag = async (): Promise<void> => {
     await useRemoteConfigStore.persist.rehydrate()
@@ -157,7 +146,7 @@ describe('submit from quantum account over algod transport (PQ-019)', () => {
     })
 
     it(
-        'Given a quantum-capable node, when a quantum payment is signed over the algod transport, then the Falcon group is broadcast for real and the gate does not fire',
+        'Given a real quantum sender, when a payment is signed over the algod transport, then the Falcon group is broadcast to algod through the ordinary submission path',
         async () => {
             await enableQuantumFlag()
             await seedQuantumSender()
@@ -173,12 +162,6 @@ describe('submit from quantum account over algod transport (PQ-019)', () => {
                 txs: [payment],
                 overrides: { transport: 'algod' },
             })
-
-            // The node's genesis hash is NOT a production hash → capable → the
-            // Falcon group is broadcast for real via `sendRawTransaction`.
-            server.use(
-                mockAlgodVersions({ genesisHashB64: CAPABLE_GENESIS_HASH_B64 }),
-            )
 
             const sendSpy = vi.fn(() =>
                 HttpResponse.json(
@@ -192,9 +175,9 @@ describe('submit from quantum account over algod transport (PQ-019)', () => {
 
             renderSignReview(request)
 
-            // The real broadcast is the load-bearing assertion: a POST to
-            // algod's send-raw-transaction endpoint means the gate resolved
-            // this node as quantum-capable and handed off the Falcon group.
+            // The load-bearing assertion: quantum bytes reached algod's
+            // send-raw-transaction endpoint — i.e. the group was broadcast for
+            // real, not routed to a synthetic/mock submission.
             await waitFor(
                 () => {
                     expect(sendSpy).toHaveBeenCalled()
@@ -202,73 +185,8 @@ describe('submit from quantum account over algod transport (PQ-019)', () => {
                 { timeout: 15_000 },
             )
 
-            // The capability gate must NOT have surfaced its unsupported error.
-            const surfacedUnsupported = errorSpy.mock.calls.some(call =>
-                /does not support quantum/i.test(
-                    String((call[0] as Error | undefined)?.message),
-                ),
-            )
-            expect(surfacedUnsupported).toBe(false)
-        },
-        SLOW_TEST_TIMEOUT_MS,
-    )
-
-    it(
-        'Given a production (mainnet) node, when a quantum payment is signed over the algod transport, then the gate throws QuantumBroadcastUnsupportedError and nothing is broadcast',
-        async () => {
-            await enableQuantumFlag()
-            await seedQuantumSender()
-
-            const payment = buildPaymentTransaction({
-                sender: QUANTUM_TEST_ADDRESS,
-                receiver: RECEIVER_ADDRESS,
-                amount: 1_000_000n,
-                fee: 1000n,
-            })
-            const { request, error: errorSpy } = buildTransactionSignRequest({
-                sourceType: 'local',
-                txs: [payment],
-                overrides: { transport: 'algod' },
-            })
-
-            // The node reports the mainnet genesis hash → NOT capable → the gate
-            // throws before any broadcast.
-            server.use(
-                mockAlgodVersions({
-                    genesisHashB64: config.mainnetGenesisHash,
-                }),
-            )
-
-            // Any broadcast is a failure: a Falcon group must never reach a
-            // node that cannot verify it.
-            const sendSpy = vi.fn(() =>
-                HttpResponse.json(
-                    {
-                        txId: 'SHOULDNOTBEHIT00000000000000000000000000000000000000',
-                    },
-                    { status: 200 },
-                ),
-            )
-            server.use(http.post('*/v2/transactions', sendSpy))
-
-            renderSignReview(request)
-
-            await waitFor(
-                () => {
-                    expect(errorSpy).toHaveBeenCalled()
-                },
-                { timeout: 15_000 },
-            )
-
-            // The algod transport wraps the gate error, so match the
-            // gate-specific message rather than the concrete class.
-            const gateError = errorSpy.mock.calls[0]?.[0] as Error
-            expect(String(gateError?.message)).toMatch(
-                /does not support quantum/i,
-            )
-
-            // No node ever saw the Falcon-signed group.
-            expect(sendSpy).not.toHaveBeenCalled()
+            // Signing/broadcast surfaced no error to the request originator.
+            expect(errorSpy).not.toHaveBeenCalled()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

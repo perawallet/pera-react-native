@@ -11,4 +11,3 @@
  */
 
 export * from './quantumAdapter'
-export * from './nodeCapability'

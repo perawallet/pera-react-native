@@ -90,11 +90,6 @@ export const configSchema = z.object({
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
 
-    // Gates the PQ-019 synthetic quantum-submission mock path (kept for UI
-    // testing only). Defaults off so real broadcast is the default; this flag
-    // is an explicit opt-in.
-    quantumMockSubmit: z.boolean().default(false),
-
     // Build-time escape hatch for e2e automation (Appium/BrowserStack), whose
     // tooling can't drive a FLAG_SECURE surface. Sourced only from the
     // DISABLE_SCREEN_CAPTURE_PREVENTION build env — never a remote/runtime
@@ -250,7 +245,6 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     debugEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
-    quantumMockSubmit: false,
     disableScreenCapturePrevention: false,
 
     mainnetBidaliApiKey: '',
@@ -354,7 +348,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     debugEnabled: 'DEBUG_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
-    quantumMockSubmit: 'PERA_QUANTUM_MOCK_SUBMIT',
     disableScreenCapturePrevention: 'DISABLE_SCREEN_CAPTURE_PREVENTION',
 
     mainnetBidaliApiKey: 'MAINNET_BIDALI_API_KEY',

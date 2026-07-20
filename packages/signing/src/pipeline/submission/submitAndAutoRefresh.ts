@@ -13,41 +13,18 @@
 import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
-import {
-    supportsQuantumBroadcast,
-    useNetworkStore,
-} from '@perawallet/wallet-core-blockchain'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { config } from '@perawallet/wallet-core-config'
-import {
-    concatBytes,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
-import { synthesizeQuantumTxid } from './synthesizeQuantumSubmission'
-import { containsQuantumSigner } from './containsQuantumSigner'
-import { QuantumBroadcastUnsupportedError } from '../errors'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
 } from './types'
 
 const DEFAULT_ROUNDS_TO_WAIT = 10
-
-/**
- * How a quantum-signed group is broadcast, resolved by the wrapper before the
- * pure core runs:
- * - `'none'`  — no quantum signer; the ordinary path.
- * - `'real'`  — quantum signer + a node that accepts `pqsig`; broadcast for real.
- * - `'mock'`  — quantum signer + the `quantumMockSubmit` dev flag; synthetic txid.
- *
- * `'unsupported'` (quantum signer + a node that does NOT accept `pqsig`) never
- * reaches the core — the wrapper throws {@link QuantumBroadcastUnsupportedError}.
- */
-export type QuantumSubmissionMode = 'none' | 'real' | 'mock'
 
 /**
  * Inputs for the testable core helper.
@@ -72,13 +49,6 @@ export interface SubmitAndAutoRefreshCoreInput {
         network: Network,
     ) => void | Promise<void>
     signedTxns: readonly PeraSignedTxnResult[]
-    /**
-     * How a quantum-signed group is submitted, resolved by the wrapper. Only
-     * `'mock'` diverges from the ordinary path: it returns a synthetic txid and
-     * skips the confirmation wait (account-refresh callbacks still fire). Both
-     * `'none'` and `'real'` broadcast for real. Defaults to `'none'`.
-     */
-    quantumMode?: QuantumSubmissionMode
 }
 
 /**
@@ -91,29 +61,22 @@ export interface SubmitAndAutoRefreshCoreInput {
  * - Confirmation timeouts and other background errors are swallowed and
  *   logged. Periodic sync is the safety net.
  *
+ * Quantum (Falcon) groups are not special-cased here: the carrier-aware
+ * `encodeSignedTransaction` emits the node-ready `pqsig` bytes, so a
+ * quantum-signed group broadcasts through the same path as any other. It
+ * therefore reaches the chain only on a `pqsig`-capable node (LocalNet until
+ * an official algod ships Falcon support); other nodes reject it at submit.
+ *
  * Exposed primarily for unit testing — call sites use {@link submitAndAutoRefresh}.
  */
 export const submitAndAutoRefreshCore = async (
     input: SubmitAndAutoRefreshCoreInput,
 ): Promise<{ txIds: string[] }> => {
-    const txIds =
-        input.quantumMode === 'mock'
-            ? // MOCK(quantum): dev-flag-only synthetic submission for UI testing;
-              // no node accepts these Falcon bytes. See QuantumSubmissionMode.
-              [
-                  synthesizeQuantumTxid(
-                      concatBytes(
-                          ...input.encodeSignedTransactions([
-                              ...input.signedTxns,
-                          ]),
-                      ),
-                  ),
-              ]
-            : await submitSignedTransactionGroup(
-                  input.algokit,
-                  input.encodeSignedTransactions,
-                  [...input.signedTxns],
-              )
+    const txIds = await submitSignedTransactionGroup(
+        input.algokit,
+        input.encodeSignedTransactions,
+        [...input.signedTxns],
+    )
 
     void backgroundConfirmAndRefresh(input, txIds)
 
@@ -126,18 +89,14 @@ const backgroundConfirmAndRefresh = async (
 ): Promise<void> => {
     if (txIds.length === 0) return
 
-    // MOCK(quantum): synthetic submissions have no on-chain txid to poll —
-    // skip the confirmation wait but still run the account-refresh callbacks.
-    if (input.quantumMode !== 'mock') {
-        try {
-            await input.waitForConfirmation(txIds[0]!)
-        } catch (error) {
-            logger.warn(
-                'submitAndAutoRefresh: confirmation wait failed; relying on periodic sync',
-                { error, txIds },
-            )
-            return
-        }
+    try {
+        await input.waitForConfirmation(txIds[0]!)
+    } catch (error) {
+        logger.warn(
+            'submitAndAutoRefresh: confirmation wait failed; relying on periodic sync',
+            { error, txIds },
+        )
+        return
     }
 
     const transactions = input.signedTxns.map(s => s.txn)
@@ -181,35 +140,6 @@ export const submitAndAutoRefresh = async (
     const accounts = useAccountsStore.getState().accounts
     const walletAddresses = accounts.map(a => a.address)
 
-    // Resolve how a quantum-signed group is broadcast. Non-quantum groups take
-    // the ordinary path. A quantum group broadcasts for real only against a
-    // node that accepts `pqsig`; otherwise it fails loudly (never a silent
-    // mock). The dev flag restores the synthetic path for UI testing only, and
-    // takes precedence over the capability probe.
-    let quantumMode: QuantumSubmissionMode = 'none'
-    if (
-        containsQuantumSigner(
-            signedTxns.map(s => s.txn),
-            accounts,
-        )
-    ) {
-        if (config.quantumMockSubmit) {
-            quantumMode = 'mock'
-        } else if (
-            await supportsQuantumBroadcast(
-                // The runtime instance is always an AlgorandClient whose
-                // .client.algod is the SDK AlgodClient; the cast bridges the
-                // intentionally-narrow AlgokitClientInterface used for testing.
-                (algokit as unknown as AlgorandClient).client.algod,
-                [config.mainnetGenesisHash, config.testnetGenesisHash],
-            )
-        ) {
-            quantumMode = 'real'
-        } else {
-            throw new QuantumBroadcastUnsupportedError(network)
-        }
-    }
-
     const { txIds } = await submitAndAutoRefreshCore({
         algokit,
         encodeSignedTransactions,
@@ -230,7 +160,6 @@ export const submitAndAutoRefresh = async (
             return handler?.(addresses, networkAtSubmission)
         },
         signedTxns,
-        quantumMode,
     })
 
     return txIds

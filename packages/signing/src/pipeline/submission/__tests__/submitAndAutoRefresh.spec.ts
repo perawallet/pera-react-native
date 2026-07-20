@@ -17,7 +17,6 @@ import {
     submitAndAutoRefreshCore,
 } from '../submitAndAutoRefresh'
 import { setOnConfirmedHandler } from '../onConfirmedRegistry'
-import { QuantumBroadcastUnsupportedError } from '../../errors'
 import {
     AccountTypes,
     useAccountsStore,
@@ -28,45 +27,14 @@ import {
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 
-const {
-    mockWaitForConfirmation,
-    mockSupportsQuantumBroadcast,
-    mockConfigState,
-} = vi.hoisted(() => ({
+const { mockWaitForConfirmation } = vi.hoisted(() => ({
     mockWaitForConfirmation: vi.fn(),
-    mockSupportsQuantumBroadcast: vi.fn(),
-    mockConfigState: { quantumMockSubmit: false },
 }))
 
 vi.mock('algosdk', async importOriginal => ({
     ...(await importOriginal<typeof import('algosdk')>()),
     waitForConfirmation: mockWaitForConfirmation,
 }))
-
-// Partial-mock so all real blockchain exports (stores, types) are preserved;
-// only the node capability probe is controllable per-test.
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >()),
-    supportsQuantumBroadcast: mockSupportsQuantumBroadcast,
-}))
-
-// Preserve the real (frozen) config's values (genesis hashes, etc.) but expose
-// a mutable getter for the one flag under test so it can be toggled per-test.
-vi.mock('@perawallet/wallet-core-config', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
-    return {
-        ...actual,
-        config: {
-            ...actual.config,
-            get quantumMockSubmit() {
-                return mockConfigState.quantumMockSubmit
-            },
-        },
-    }
-})
 
 const WALLET = 'WALLET_A'
 const EXTERNAL = 'EXTERNAL'
@@ -231,55 +199,7 @@ describe('submitAndAutoRefreshCore', () => {
         expect(onConfirmed).not.toHaveBeenCalled()
     })
 
-    test("quantumMode 'mock': uses a synthetic txid and does not call algod", async () => {
-        const algokit = makeAlgokit('TX1')
-        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
-        const onConfirmed = vi.fn()
-
-        const { txIds } = await submitAndAutoRefreshCore({
-            algokit,
-            encodeSignedTransactions: () => [new Uint8Array([1, 2, 3])],
-            waitForConfirmation,
-            walletAddresses: [WALLET],
-            network: 'mainnet',
-            onConfirmed,
-            signedTxns: [makeSigned(WALLET, EXTERNAL)],
-            quantumMode: 'mock',
-        })
-
-        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
-        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
-        expect(waitForConfirmation).not.toHaveBeenCalled()
-        await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet'),
-        )
-    })
-
-    test("quantumMode 'real': broadcasts the signed bytes via algod and waits for confirmation", async () => {
-        const algokit = makeAlgokit('REALQTX')
-        const encode = vi.fn().mockReturnValue([new Uint8Array([9, 9, 9])])
-        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
-        const onConfirmed = vi.fn()
-
-        const { txIds } = await submitAndAutoRefreshCore({
-            algokit,
-            encodeSignedTransactions: encode,
-            waitForConfirmation,
-            walletAddresses: [WALLET],
-            network: 'mainnet',
-            onConfirmed,
-            signedTxns: [makeSigned(WALLET, EXTERNAL)],
-            quantumMode: 'real',
-        })
-
-        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
-        expect(txIds).toEqual(['REALQTX'])
-        await vi.waitFor(() =>
-            expect(waitForConfirmation).toHaveBeenCalledWith('REALQTX'),
-        )
-    })
-
-    test('uses the real path and waits for confirmation when quantumMode is omitted', async () => {
+    test('submits via algod and waits for confirmation on the real path', async () => {
         const algokit = makeAlgokit('REALTXID')
         const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
         const onConfirmed = vi.fn()
@@ -292,7 +212,6 @@ describe('submitAndAutoRefreshCore', () => {
             network: 'mainnet',
             onConfirmed,
             signedTxns: [makeSigned(WALLET, EXTERNAL)],
-            // quantumMode omitted → 'none'
         })
 
         expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
@@ -334,7 +253,7 @@ describe('submitAndAutoRefreshCore', () => {
     })
 })
 
-describe('submitAndAutoRefresh (public, gated quantum submission)', () => {
+describe('submitAndAutoRefresh (public)', () => {
     const PUBLIC_WALLET = 'PUBLIC_WALLET'
     const PUBLIC_EXTERNAL = 'PUBLIC_EXTERNAL'
 
@@ -351,14 +270,6 @@ describe('submitAndAutoRefresh (public, gated quantum submission)', () => {
         .fn()
         .mockReturnValue([new Uint8Array([1])])
 
-    const quantumAccount = (address: string): WalletAccount =>
-        ({
-            id: address,
-            address,
-            type: AccountTypes.quantum,
-            keyPairId: 'kp-quantum',
-        }) as WalletAccount
-
     const algo25Account = (address: string): WalletAccount =>
         ({
             id: address,
@@ -371,84 +282,13 @@ describe('submitAndAutoRefresh (public, gated quantum submission)', () => {
         useAccountsStore.getState().resetState()
         useNetworkStore.getState().resetState()
         mockWaitForConfirmation.mockReset().mockResolvedValue(undefined)
-        mockSupportsQuantumBroadcast.mockReset().mockResolvedValue(true)
-        mockConfigState.quantumMockSubmit = false
     })
 
     afterEach(() => {
         setOnConfirmedHandler(null)
-        mockConfigState.quantumMockSubmit = false
     })
 
-    test('quantum sender + node supports pqsig → real broadcast of the signed bytes + waits for confirmation', async () => {
-        useAccountsStore.getState().setAccounts([quantumAccount(PUBLIC_WALLET)])
-        mockSupportsQuantumBroadcast.mockResolvedValue(true)
-        const onConfirmed = vi.fn()
-        setOnConfirmedHandler(onConfirmed)
-        const algokit = makeAlgokit('REALQTX')
-
-        const txIds = await submitAndAutoRefresh(
-            algokit,
-            encodeSignedTransactions,
-            [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
-        )
-
-        expect(txIds).toEqual(['REALQTX'])
-        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
-        await vi.waitFor(() =>
-            expect(mockWaitForConfirmation).toHaveBeenCalled(),
-        )
-        await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith(
-                [PUBLIC_WALLET],
-                expect.anything(),
-            ),
-        )
-    })
-
-    test('quantum sender + node does NOT support pqsig + mock flag off → throws QuantumBroadcastUnsupportedError, does not submit', async () => {
-        useAccountsStore.getState().setAccounts([quantumAccount(PUBLIC_WALLET)])
-        mockSupportsQuantumBroadcast.mockResolvedValue(false)
-        const algokit = makeAlgokit('SHOULD_NOT_BE_USED')
-
-        await expect(
-            submitAndAutoRefresh(algokit, encodeSignedTransactions, [
-                makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL),
-            ]),
-        ).rejects.toBeInstanceOf(QuantumBroadcastUnsupportedError)
-
-        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
-        expect(mockWaitForConfirmation).not.toHaveBeenCalled()
-    })
-
-    test('quantum sender + quantumMockSubmit flag on → synthetic txid, algod not called, wait skipped, onConfirmed still fires (probe short-circuited)', async () => {
-        useAccountsStore.getState().setAccounts([quantumAccount(PUBLIC_WALLET)])
-        mockConfigState.quantumMockSubmit = true
-        // Even if the node is unsupported, the dev flag takes precedence.
-        mockSupportsQuantumBroadcast.mockResolvedValue(false)
-        const onConfirmed = vi.fn()
-        setOnConfirmedHandler(onConfirmed)
-        const algokit = makeAlgokit('TX1')
-
-        const txIds = await submitAndAutoRefresh(
-            algokit,
-            encodeSignedTransactions,
-            [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
-        )
-
-        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
-        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
-        expect(mockWaitForConfirmation).not.toHaveBeenCalled()
-        expect(mockSupportsQuantumBroadcast).not.toHaveBeenCalled()
-        await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith(
-                [PUBLIC_WALLET],
-                expect.anything(),
-            ),
-        )
-    })
-
-    test('uses the real submission path for a non-quantum (algo25) sender without probing capability — regression guard', async () => {
+    test('submits the group through the real path and confirms in the background', async () => {
         useAccountsStore.getState().setAccounts([algo25Account(PUBLIC_WALLET)])
         const onConfirmed = vi.fn()
         setOnConfirmedHandler(onConfirmed)
@@ -463,7 +303,6 @@ describe('submitAndAutoRefresh (public, gated quantum submission)', () => {
 
         expect(txIds).toEqual(['REALTXID'])
         expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
-        expect(mockSupportsQuantumBroadcast).not.toHaveBeenCalled()
         await vi.waitFor(() =>
             expect(mockWaitForConfirmation).toHaveBeenCalled(),
         )

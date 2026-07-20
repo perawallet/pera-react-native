@@ -33,7 +33,6 @@ export function loadEnvOverrides(): OverridesType {
                 key === 'debugEnabled' ||
                 key === 'profilingEnabled' ||
                 key === 'pollingEnabled' ||
-                key === 'quantumMockSubmit' ||
                 key === 'disableScreenCapturePrevention'
             ) {
                 overrides[key] = envValue === 'true'
