@@ -51,6 +51,7 @@ const buildLegacyAccount = (
         isBackedUp: true,
         secretKey: null,
         hdWalletId: null,
+        authAddress: null,
         ...overrides,
     }) as LegacyAccount
 

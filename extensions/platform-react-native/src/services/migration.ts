@@ -340,8 +340,12 @@ type RawLegacyPreferences = Omit<
     notificationRefreshTimestampMs: LongString
 }
 
-interface RawLegacyAccount extends Omit<LegacyAccount, 'secretKey'> {
+interface RawLegacyAccount extends Omit<
+    LegacyAccount,
+    'secretKey' | 'authAddress'
+> {
     secretKey: Base64
+    authAddress?: string | null
 }
 
 interface RawLegacyHDWallet extends Omit<LegacyHDWallet, 'entropy' | 'keys'> {
@@ -460,6 +464,7 @@ const decodeLegacyMigrationData = (
 const decodeAccount = (raw: RawLegacyAccount): LegacyAccount => ({
     ...raw,
     secretKey: decodeBase64(raw.secretKey),
+    authAddress: raw.authAddress ?? null,
 })
 
 const decodeAccounts = (

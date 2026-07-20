@@ -219,6 +219,13 @@ export interface LegacyAccount {
     ledger: LegacyLedgerAccountDetails | null
 
     joint: LegacyJointAccountDetails | null
+
+    /**
+     * On-chain auth address Pera 6 had recorded for this account (rekey
+     * target), when the legacy store carried one. Null when unknown — the
+     * account syncer self-heals from chain state either way.
+     */
+    authAddress: string | null
 }
 
 export interface LegacyLedgerAccountDetails {

@@ -542,6 +542,59 @@ describe('RNMigrationService', () => {
             expect(summary.accountsWithJoint).toBe(1)
         })
 
+        test('decodes authAddress on an account', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(
+                    buildRawPayload({
+                        accounts: [
+                            {
+                                address: 'REKEYEDADDR',
+                                name: 'Rekeyed',
+                                type: 'standard',
+                                preferredOrder: 0,
+                                isBackedUp: false,
+                                secretKey: null,
+                                hdWalletId: null,
+                                ledger: null,
+                                joint: null,
+                                authAddress: 'AUTHADDR',
+                            },
+                        ],
+                    }),
+                ),
+            })
+
+            const data = await service.getLegacyData()
+
+            expect(data.accounts[0].authAddress).toBe('AUTHADDR')
+        })
+
+        test('defaults authAddress to null when the native payload omits it (old natives)', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(
+                    buildRawPayload({
+                        accounts: [
+                            {
+                                address: 'PLAINADDR',
+                                name: 'Plain',
+                                type: 'watch',
+                                preferredOrder: 0,
+                                isBackedUp: false,
+                                secretKey: null,
+                                hdWalletId: null,
+                                ledger: null,
+                                joint: null,
+                            },
+                        ],
+                    }),
+                ),
+            })
+
+            const data = await service.getLegacyData()
+
+            expect(data.accounts[0].authAddress).toBeNull()
+        })
+
         describe('corrupt-blob resilience', () => {
             const CORRUPT_BASE64 = 'AQI'
 
