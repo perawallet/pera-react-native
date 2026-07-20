@@ -16,9 +16,9 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 import { config } from '@perawallet/wallet-core-config'
 import { ARC59Client } from '../clients'
+import { buildPopulatedGroup } from '../utils'
 import {
     BASE_CLAIM_TX_COUNT,
     BASE_REJECT_TX_COUNT,
@@ -112,15 +112,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 }),
             )
 
-            // v9's composer.build() doesn't populate app-call resources (only
-            // .send() does); populate them via simulate so the ARC59 router's
-            // dynamic resource accesses are available when the pipeline submits.
-            const { atc } = await composer.build()
-            const populatedAtc = await populateAppCallResources(
-                atc,
-                algokit.client.algod,
-            )
-            return populatedAtc.buildGroup().map(t => t.txn)
+            return buildPopulatedGroup(composer, algokit)
         },
         [algokit, isMainnet, isOptedInToAsset],
     )
@@ -165,15 +157,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 }),
             )
 
-            // v9's composer.build() doesn't populate app-call resources (only
-            // .send() does); populate them via simulate so the ARC59 router's
-            // dynamic resource accesses are available when the pipeline submits.
-            const { atc } = await composer.build()
-            const populatedAtc = await populateAppCallResources(
-                atc,
-                algokit.client.algod,
-            )
-            return populatedAtc.buildGroup().map(t => t.txn)
+            return buildPopulatedGroup(composer, algokit)
         },
         [algokit, isMainnet],
     )

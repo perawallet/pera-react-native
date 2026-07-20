@@ -37,7 +37,10 @@ export const CardAddFundsScreen = () => {
     } = useCardAddFundsScreen()
 
     return (
-        <PWScreen scroll='never'>
+        <PWScreen
+            scroll='never'
+            testID='card-add-funds'
+        >
             <PWView style={styles.container}>
                 <PWView style={styles.topGroup}>
                     <PWText

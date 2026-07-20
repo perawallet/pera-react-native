@@ -43,7 +43,10 @@ export const GroupDetailScreen = () => {
     // can render and own its own in-sheet scrolling — a plain PWView wrapper
     // collapsed the list to zero height (only the header showed).
     return (
-        <PWScreen scroll='never'>
+        <PWScreen
+            scroll='never'
+            testID='group_detail_screen'
+        >
             <PWFlatList
                 data={transactions}
                 renderItem={renderItem}

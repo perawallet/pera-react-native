@@ -13,7 +13,6 @@
 import { useMemo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import {
     type HistoryPeriod,
@@ -33,6 +32,9 @@ export type WealthChartProps = {
     /** Gate the (slow) history fetch on chart visibility. */
     enabled?: boolean
 }
+
+const getPreferredValue = (item: AccountBalanceHistoryItem): number =>
+    item.preferredValue.toNumber()
 
 export const WealthChart = ({
     onSelectionChanged,
@@ -55,25 +57,15 @@ export const WealthChart = ({
     const { data, isPending, isError, refetch } =
         useAccountBalancesHistoryQuery(addresses, period, enabled)
 
-    const dataPoints = useMemo(
-        () =>
-            data?.map(p => ({
-                datetime: p.datetime,
-                value: p.preferredValue.toNumber(),
-            })) ?? [],
-        [data],
-    )
-
-    const getPointerProps = useChartPointerFocus(data, onSelectionChanged)
-
     return (
         <BalanceLineChart
-            dataPoints={dataPoints}
+            series={data}
+            getValue={getPreferredValue}
+            onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
             onRetry={() => void refetch()}
             emptyBody={t('common.wealth_chart.empty_body')}
-            getPointerProps={getPointerProps}
             style={themeStyle.container}
         />
     )

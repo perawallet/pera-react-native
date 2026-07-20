@@ -66,7 +66,7 @@ case "$PROFILE" in
       "BACKEND_API_KEY"
     )
     optional_prefixed+=(
-      "DISCOVER_BASE_URL" "STAKING_BASE_URL" "ONRAMP_BASE_URL" "TESTNET_BAANX_CLIENT_KEY"
+      "TESTNET_BAANX_CLIENT_KEY"
     )
     ;;
   android)
@@ -91,7 +91,7 @@ case "$PROFILE" in
       required_global+=( "ANDROID_JSON_KEY_FILE" )
     fi
     optional_prefixed+=(
-      "DISCOVER_BASE_URL" "STAKING_BASE_URL" "ONRAMP_BASE_URL" "TESTNET_BAANX_CLIENT_KEY"
+      "TESTNET_BAANX_CLIENT_KEY"
     )
     ;;
   web)

@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderHook, waitFor, act } from '@testing-library/react'
+import { onlineManager, focusManager } from '@tanstack/react-query'
 
 const mockRegisterDevice = vi.fn()
 const mockClearDevicePushToken = vi.fn()
@@ -57,11 +58,19 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 describe('useDeviceRegistration', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks()
         mockRegisterDevice.mockResolvedValue(undefined)
         mockClearDevicePushToken.mockResolvedValue(undefined)
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
+        onlineManager.setOnline(true)
+        const { useDeviceStore } = await import('../../store')
+        useDeviceStore.getState().resetState()
+    })
+
+    afterEach(() => {
+        onlineManager.setOnline(true)
+        focusManager.setFocused(undefined)
     })
 
     test('registers device on mount without clearing push token (no prior network)', async () => {
@@ -95,6 +104,322 @@ describe('useDeviceRegistration', () => {
             expect(mockClearDevicePushToken).toHaveBeenCalledWith('mainnet')
             expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
         })
+    })
+
+    test('does not re-register when a new array carries the same addresses', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1', 'acct-2'] } },
+        )
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({ addresses: ['acct-1', 'acct-2'] })
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not re-register when the same addresses arrive reordered', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1', 'acct-2'] } },
+        )
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({ addresses: ['acct-2', 'acct-1'] })
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+    })
+
+    test('re-registers when the address set changes', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1'] } },
+        )
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({ addresses: ['acct-1', 'acct-2'] })
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith([
+            'acct-1',
+            'acct-2',
+        ])
+    })
+
+    test('registers with an empty list when no accounts exist', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        renderHook(() => useDeviceRegistration([]))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledWith([])
+        })
+    })
+
+    test('swallows push-token cleanup failures on network switch', async () => {
+        mockClearDevicePushToken.mockRejectedValueOnce(new Error('boom'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(() => useDeviceRegistration(['acct-1']))
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        mockUseNetwork.mockReturnValue({ network: 'testnet' })
+        rerender()
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    test('retries a failed registration when connectivity returns', async () => {
+        mockRegisterDevice.mockRejectedValueOnce(new Error('offline'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+        const addresses = ['acct-1']
+        renderHook(() => useDeviceRegistration(addresses))
+
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toContain('mainnet')
+        })
+
+        act(() => onlineManager.setOnline(false))
+        act(() => onlineManager.setOnline(true))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toEqual([])
+        })
+    })
+
+    test('retries a failed registration when the app is foregrounded', async () => {
+        mockRegisterDevice.mockRejectedValueOnce(new Error('degraded link'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+        const addresses = ['acct-1']
+        renderHook(() => useDeviceRegistration(addresses))
+
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toContain('mainnet')
+        })
+
+        act(() => focusManager.setFocused(false))
+        act(() => focusManager.setFocused(true))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    test('suppresses reconnect retry while a mount registration is in flight', async () => {
+        mockRegisterDevice.mockRejectedValueOnce(new Error('first attempt'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+
+        let addresses = ['acct-1']
+        const { rerender } = renderHook(() => useDeviceRegistration(addresses))
+
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toContain('mainnet')
+        })
+
+        // Account-set change fires a second mount registration that hangs.
+        let resolveHanging = () => {}
+        mockRegisterDevice.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    resolveHanging = () => resolve()
+                }),
+        )
+        addresses = ['acct-1', 'acct-2']
+        rerender()
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+
+        // A reconnect edge during the in-flight attempt must not stack a third.
+        act(() => onlineManager.setOnline(false))
+        act(() => onlineManager.setOnline(true))
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+
+        act(() => resolveHanging())
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toEqual([])
+        })
+    })
+
+    test('does not re-register on reconnect once registration succeeded', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const addresses = ['acct-1']
+        renderHook(() => useDeviceRegistration(addresses))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        act(() => onlineManager.setOnline(false))
+        act(() => onlineManager.setOnline(true))
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+    })
+
+    test('retries with the same sorted address list the mount path registers', async () => {
+        mockRegisterDevice.mockRejectedValueOnce(new Error('offline'))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+        renderHook(() => useDeviceRegistration(['acct-2', 'acct-1']))
+
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toContain('mainnet')
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith([
+            'acct-1',
+            'acct-2',
+        ])
+
+        act(() => onlineManager.setOnline(false))
+        act(() => onlineManager.setOnline(true))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith([
+            'acct-1',
+            'acct-2',
+        ])
+    })
+
+    test('ignores a stale success settling after a newer attempt failed', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+
+        let resolveFirst = () => {}
+        mockRegisterDevice.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    resolveFirst = () => resolve()
+                }),
+        )
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1'] } },
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        // Account-set change: the newer attempt fails and marks pending.
+        mockRegisterDevice.mockRejectedValueOnce(new Error('newer failed'))
+        rerender({ addresses: ['acct-1', 'acct-2'] })
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toContain('mainnet')
+        })
+
+        // The stale first attempt settles late — it must not mark the newer
+        // failure as healed.
+        await act(async () => resolveFirst())
+        expect(useDeviceStore.getState().pendingRegistrationNetworks).toContain(
+            'mainnet',
+        )
+    })
+
+    test('a stale settle does not release the lock a newer attempt owns', async () => {
+        mockRegisterDevice.mockRejectedValueOnce(new Error('first failed'))
+        let rejectSecond = (_reason?: unknown) => {}
+        mockRegisterDevice.mockImplementationOnce(
+            () =>
+                new Promise<void>((_resolve, reject) => {
+                    rejectSecond = reject
+                }),
+        )
+        mockRegisterDevice.mockImplementationOnce(() => new Promise(() => {}))
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+        const { useDeviceStore } = await import('../../store')
+
+        const { rerender } = renderHook(
+            ({ addresses }: { addresses: string[] }) =>
+                useDeviceRegistration(addresses),
+            { initialProps: { addresses: ['acct-1'] } },
+        )
+        await waitFor(() => {
+            expect(
+                useDeviceStore.getState().pendingRegistrationNetworks,
+            ).toContain('mainnet')
+        })
+
+        // Two further attempts: #2 hangs, then #3 starts and owns the lock.
+        rerender({ addresses: ['acct-1', 'acct-2'] })
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+        rerender({ addresses: ['acct-1', 'acct-2', 'acct-3'] })
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(3)
+        })
+
+        // #2 settles late; its finally must not release #3's lock, so a
+        // reconnect edge cannot stack a retry on the in-flight attempt.
+        await act(async () => rejectSecond(new Error('stale failure')))
+        act(() => onlineManager.setOnline(false))
+        act(() => onlineManager.setOnline(true))
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(3)
     })
 
     test('swallows registration failures (best-effort)', async () => {

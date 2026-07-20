@@ -183,12 +183,16 @@ export const PWBottomSheet = ({
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
             enablePanDownToClose={enablePanDownToClose}
-            // Content panning only serves pan-down-to-close (snap points are
-            // never draggable here); on non-closable sheets it just competes
-            // with taps on Android and can swallow them (PERA-4437).
-            enableContentPanningGesture={
-                enableContentPanningGesture ?? enablePanDownToClose
-            }
+            // Never derive this to false: gorhom wraps content in a disabled
+            // GestureDetector, which stops delivering touches on Android —
+            // taps fall through to the closing backdrop and dismiss the
+            // sheet (PERA-4647). Tap-swallowing by the enabled gesture
+            // (PERA-4437) is instead solved by activeOffsetY below.
+            enableContentPanningGesture={enableContentPanningGesture}
+            // The content pan claims a touch only after ~10px of vertical
+            // travel, so taps reach the touchables underneath — gorhom's
+            // documented remedy for Android tap-swallowing.
+            activeOffsetY={[-10, 10]}
             enableOverDrag={false}
         >
             <NotifierWrapper

@@ -74,4 +74,16 @@ describe('tools/generate-config.sh', () => {
             'sentryDsn: "https://key@o0.ingest.sentry.io/0"',
         )
     })
+    
+    test('ignores obsolete web-feature URL environment variables', () => {
+        const output = run({
+            DISCOVER_BASE_URL: 'https://discover.example.com/',
+            STAKING_BASE_URL: 'https://staking.example.com/',
+            ONRAMP_BASE_URL: 'https://onramp.example.com/',
+        })
+
+        expect(output).not.toContain('discoverBaseUrl')
+        expect(output).not.toContain('stakingBaseUrl')
+        expect(output).not.toContain('onrampBaseUrl')
+    })
 })

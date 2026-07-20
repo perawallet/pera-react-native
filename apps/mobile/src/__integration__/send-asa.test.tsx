@@ -218,7 +218,7 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
 
             await waitFor(
                 () => {
-                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 10_000 },
             )

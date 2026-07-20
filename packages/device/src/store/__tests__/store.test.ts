@@ -52,6 +52,33 @@ describe('device/store', () => {
         expect(result.current.pushToken).toBeNull()
     })
 
+    test('setRegistrationPending tracks pending registrations per network', async () => {
+        const { useDeviceStore } = await import('../index')
+        const { result } = renderHook(() => useDeviceStore())
+
+        act(() => {
+            result.current.setRegistrationPending('mainnet', true)
+            result.current.setRegistrationPending('testnet', true)
+        })
+        expect(result.current.pendingRegistrationNetworks).toEqual([
+            'mainnet',
+            'testnet',
+        ])
+
+        act(() => {
+            result.current.setRegistrationPending('mainnet', true)
+        })
+        expect(result.current.pendingRegistrationNetworks).toEqual([
+            'mainnet',
+            'testnet',
+        ])
+
+        act(() => {
+            result.current.setRegistrationPending('mainnet', false)
+        })
+        expect(result.current.pendingRegistrationNetworks).toEqual(['testnet'])
+    })
+
     test('setPushToken stores the token', async () => {
         const { useDeviceStore } = await import('../index')
         const { result } = renderHook(() => useDeviceStore())
@@ -87,6 +114,31 @@ describe('device/store', () => {
         })
 
         expect(result.current.deviceIDs).not.toBe(original)
+    })
+
+    test('does not persist pendingRegistrationNetworks', async () => {
+        const { useDeviceStore } = await import('../index')
+        act(() => {
+            useDeviceStore.getState().setRegistrationPending('mainnet', true)
+        })
+
+        const { partialize } = useDeviceStore.persist.getOptions()
+        const persisted = partialize?.(useDeviceStore.getState())
+
+        expect(persisted).not.toHaveProperty('pendingRegistrationNetworks')
+    })
+
+    test('resetState clears pendingRegistrationNetworks', async () => {
+        const { useDeviceStore } = await import('../index')
+        act(() => {
+            useDeviceStore.getState().setRegistrationPending('mainnet', true)
+        })
+
+        act(() => useDeviceStore.getState().resetState())
+
+        expect(useDeviceStore.getState().pendingRegistrationNetworks).toEqual(
+            [],
+        )
     })
 
     test('registers a resetState and clearStorage callback with the store registry', async () => {

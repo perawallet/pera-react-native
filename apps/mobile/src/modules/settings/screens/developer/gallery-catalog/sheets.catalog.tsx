@@ -196,7 +196,6 @@ export const getSheetSections = (): GallerySection[] => [
                         options: {
                             size: 'modal',
                             enablePanDownToClose: false,
-                            enableContentPanningGesture: false,
                             autoCreateContainer: false,
                         },
                     }),

@@ -84,8 +84,6 @@ export const configSchema = z.object({
     reactQueryPersistenceAge: z.number().int(),
 
     discoverBaseUrl: z.url(),
-    stakingBaseUrl: z.url(),
-    onrampBaseUrl: z.url(),
     /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
     onrampSupportEmail: z.email(),
     /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
@@ -177,10 +175,18 @@ export const configSchema = z.object({
 
 export type Config = z.infer<typeof configSchema>
 
+type ConfigOverrides = Partial<Omit<Config, 'discoverBaseUrl'>>
+
+const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
+    development: 'https://discover-mobile-staging.perawallet.app/',
+    staging: 'https://discover-mobile-staging.perawallet.app/',
+    production: 'https://discover-mobile.perawallet.app/',
+}
+
 /**
  * Production configuration with safe defaults for open source builds.
  */
-const productionConfig = {
+const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
     mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
@@ -228,9 +234,6 @@ const productionConfig = {
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
-    discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
-    stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
-    onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
     onrampSupportEmail: 'support@xoswap.com',
     cardSupportEmail: 'support@baanx.com',
     supportBaseUrl: 'https://support.perawallet.app/',
@@ -358,9 +361,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
-    discoverBaseUrl: 'DISCOVER_BASE_URL',
-    stakingBaseUrl: 'STAKING_BASE_URL',
-    onrampBaseUrl: 'ONRAMP_BASE_URL',
     onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
     cardSupportEmail: 'CARD_SUPPORT_EMAIL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
@@ -413,10 +413,14 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
  *
  * @returns Validated configuration object
  */
-export function getConfig(): Config {
-    const mergedConfig = { ...productionConfig, ...generatedEnv }
+export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
+    const mergedConfig = { ...productionConfig, ...overrides }
 
-    return configSchema.parse(mergedConfig)
+    return configSchema.parse({
+        ...mergedConfig,
+        discoverBaseUrl:
+            discoverBaseUrlByEnvironment[mergedConfig.appEnvironment],
+    })
 }
 
 export const config = getConfig()

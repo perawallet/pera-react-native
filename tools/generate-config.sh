@@ -112,9 +112,6 @@ append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"
 append_config "TESTNET_EXPLORER_URL" "testnetExplorerUrl" "string"
 
 # Base URLs
-append_config "DISCOVER_BASE_URL" "discoverBaseUrl" "string"
-append_config "STAKING_BASE_URL" "stakingBaseUrl" "string"
-append_config "ONRAMP_BASE_URL" "onrampBaseUrl" "string"
 append_config "SUPPORT_BASE_URL" "supportBaseUrl" "string"
 append_config "TOS_URL" "termsOfServiceUrl" "string"
 append_config "PRIVACY_POLICY_URL" "privacyPolicyUrl" "string"

@@ -25,7 +25,10 @@ export const RecipientBelowMbrWarning = ({
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.recipientMbrContainer}>
+        <PWView
+            style={styles.recipientMbrContainer}
+            testID='recipient_below_mbr_warning'
+        >
             <PWRoundIcon
                 icon='info'
                 size='md'

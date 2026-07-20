@@ -1,0 +1,204 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest'
+import { screen, waitFor } from '@testing-library/react'
+
+import { server } from '@test-utils/msw-server'
+import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    AccountTypes,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useDeviceStore } from '@perawallet/wallet-core-device'
+import {
+    mockInbox,
+    mockNotificationList,
+} from '@perawallet/wallet-core-messages/test-handlers'
+import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
+import { NotificationsScreen } from '@modules/messages/screens/NotificationsScreen/NotificationsScreen'
+
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+
+const DEVICE_ID = 'test-device-id'
+
+// The inbox query is enabled only when the wallet holds at least one signing
+// account (its addresses scope the request) and a device id is registered.
+const SIGNER: WalletAccount = {
+    id: 'signer-1',
+    type: AccountTypes.algo25,
+    address: ALGO25_TEST_ADDRESS,
+    keyPairId: 'signer-key',
+    name: 'Trading',
+}
+
+const EMPTY_INBOX = {
+    joint_account_import_requests: [],
+    joint_account_sign_requests: [],
+    asa_inboxes: [],
+}
+
+const SLOW_TEST_TIMEOUT_MS = 30_000
+
+describe('Flow: Messages — inbox & notifications lists', () => {
+    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+    afterEach(() => server.resetHandlers())
+    afterAll(() => server.close())
+
+    beforeEach(() => {
+        resetTestKeystore()
+        useAccountsStore.getState().setAccounts([SIGNER])
+        useAccountsStore.getState().setSelectedAccountAddress(SIGNER.address)
+        useDeviceStore.getState().resetState()
+        useDeviceStore.getState().setDeviceID('mainnet', DEVICE_ID)
+        useDeviceStore.getState().setDeviceID('testnet', DEVICE_ID)
+    })
+
+    it(
+        'Given the inbox endpoint returns one ASA request, when InboxScreen mounts, then the ASA request row renders',
+        async () => {
+            server.use(
+                mockInbox({
+                    deviceID: DEVICE_ID,
+                    response: {
+                        ...EMPTY_INBOX,
+                        asa_inboxes: [
+                            {
+                                address: HD_TEST_ADDRESS,
+                                inbox_address: null,
+                                request_count: 3,
+                            },
+                        ],
+                    },
+                }),
+            )
+
+            renderWithNavigation(InboxScreen, 'Inbox')
+
+            // AsaInboxItem titles the row with `messages.inbox.asa_requests`;
+            // i18n falls back to the raw key under the integration setup.
+            await waitFor(() => {
+                expect(
+                    screen.getAllByText((_, node) =>
+                        (node?.textContent ?? '').includes(
+                            'messages.inbox.asa_requests',
+                        ),
+                    ).length,
+                ).toBeGreaterThan(0)
+            })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the inbox endpoint returns no requests, when InboxScreen mounts, then the empty state renders',
+        async () => {
+            server.use(
+                mockInbox({ deviceID: DEVICE_ID, response: EMPTY_INBOX }),
+            )
+
+            renderWithNavigation(InboxScreen, 'Inbox')
+
+            await waitFor(() => {
+                expect(
+                    screen.getAllByText((_, node) =>
+                        (node?.textContent ?? '').includes(
+                            'messages.inbox.empty_title',
+                        ),
+                    ).length,
+                ).toBeGreaterThan(0)
+            })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the notifications endpoint returns two notifications, when NotificationsScreen mounts, then both messages render',
+        async () => {
+            server.use(
+                mockNotificationList({
+                    deviceID: DEVICE_ID,
+                    response: {
+                        next: null,
+                        previous: null,
+                        results: [
+                            {
+                                id: '101',
+                                type: 'transaction',
+                                account_address: ALGO25_TEST_ADDRESS,
+                                message: 'You received 5 ALGO',
+                                url: null,
+                                creation_datetime: '2024-01-02T00:00:00Z',
+                                is_unread: true,
+                                icon: null,
+                            },
+                            {
+                                id: '100',
+                                type: 'transaction',
+                                account_address: ALGO25_TEST_ADDRESS,
+                                message: 'You sent 2 ALGO',
+                                url: null,
+                                creation_datetime: '2024-01-01T00:00:00Z',
+                                is_unread: false,
+                                icon: null,
+                            },
+                        ],
+                    },
+                }),
+            )
+
+            renderWithNavigation(NotificationsScreen, 'Notifications')
+
+            // NotificationItem renders `item.message` directly as text.
+            await waitFor(() => {
+                expect(screen.getByText('You received 5 ALGO')).toBeTruthy()
+            })
+            expect(screen.getByText('You sent 2 ALGO')).toBeTruthy()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the notifications endpoint returns nothing, when NotificationsScreen mounts, then the empty state renders',
+        async () => {
+            server.use(
+                mockNotificationList({
+                    deviceID: DEVICE_ID,
+                    response: { next: null, previous: null, results: [] },
+                }),
+            )
+
+            renderWithNavigation(NotificationsScreen, 'Notifications')
+
+            await waitFor(() => {
+                expect(
+                    screen.getAllByText((_, node) =>
+                        (node?.textContent ?? '').includes(
+                            'notifications.empty_title',
+                        ),
+                    ).length,
+                ).toBeGreaterThan(0)
+            })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})

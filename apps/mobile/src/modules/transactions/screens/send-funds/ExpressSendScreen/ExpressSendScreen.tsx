@@ -34,11 +34,13 @@ export const ExpressSendScreen = () => {
                         title={t('send_funds.express_send.continue')}
                         variant='primary'
                         onPress={handleContinue}
+                        testID='express_continue_button'
                     />
                     <PWButton
                         title={t('send_funds.express_send.dont_show_again')}
                         variant='secondary'
                         onPress={handleDontShowAgain}
+                        testID='express_dont_show_button'
                     />
                 </PWView>
             }

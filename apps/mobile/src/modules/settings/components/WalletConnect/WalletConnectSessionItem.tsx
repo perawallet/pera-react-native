@@ -53,6 +53,7 @@ export const WalletConnectSessionItem = ({
         <PWTouchableOpacity
             style={styles.sessionItem}
             onPress={handlePress}
+            testID='wallet_connect_session_item'
         >
             <PWImage
                 source={{ uri: preferredIcon }}

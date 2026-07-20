@@ -16,10 +16,10 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 import { config } from '@perawallet/wallet-core-config'
 import type { Arc59SendSummaryResponse } from '../api'
 import { ARC59Client } from '../clients'
+import { buildPopulatedGroup } from '../utils'
 
 type SendViaInboxParams = {
     sender: string
@@ -100,20 +100,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 }),
             )
 
-            // algokit-utils v9's `composer.build()` does NOT populate app-call
-            // resources (only `.send()` does). The ARC59 router reads dynamic
-            // resources at runtime — e.g. `asset_holding_get AssetBalance` on
-            // the receiver/inbox — which the node reports as "unavailable
-            // Account" unless they're referenced. Since Pera signs + submits
-            // through its own pipeline (not algokit's send), populate the
-            // foreign account/asset/box references here via simulate before the
-            // group is signed.
-            const { atc } = await composer.build()
-            const populatedAtc = await populateAppCallResources(
-                atc,
-                algokit.client.algod,
-            )
-            return populatedAtc.buildGroup().map(t => t.txn)
+            return buildPopulatedGroup(composer, algokit)
         },
         [algokit, isMainnet],
     )

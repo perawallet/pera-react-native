@@ -62,6 +62,7 @@ export const ARC59SendSummaryScreen = () => {
                         title={t('common.go_back.label')}
                         variant='linkNeutral'
                         onPress={handleClose}
+                        testID='arc59_go_back_button'
                     />
                 </PWView>
             }

@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import {
     type HistoryPeriod,
@@ -31,6 +29,9 @@ export type AssetPriceChartProps = {
     onSelectionChanged: (item: Nullable<AssetPriceHistoryItem>) => void
 }
 
+const getUsdPriceValue = (item: AssetPriceHistoryItem): number =>
+    item.usdPrice.toNumber()
+
 export const AssetPriceChart = ({
     onSelectionChanged,
     asset,
@@ -44,26 +45,16 @@ export const AssetPriceChart = ({
         period,
     )
 
-    const dataPoints = useMemo(
-        () =>
-            data?.map(p => ({
-                timestamp: p.datetime,
-                value: p.usdPrice.toNumber(),
-            })) ?? [],
-        [data],
-    )
-
-    const getPointerProps = useChartPointerFocus(data, onSelectionChanged)
-
     return (
         <BalanceLineChart
-            dataPoints={dataPoints}
+            series={data}
+            getValue={getUsdPriceValue}
+            onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
             onRetry={() => void refetch()}
             emptyBody={t('asset_details.markets.chart_empty_body')}
             errorBody={t('asset_details.markets.something_went_wrong_body')}
-            getPointerProps={getPointerProps}
             style={themeStyle.container}
         />
     )

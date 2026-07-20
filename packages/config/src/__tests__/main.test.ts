@@ -11,7 +11,12 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import { config, configSchema, getConfig } from '../main'
+import {
+    config,
+    configSchema,
+    getConfig,
+    overrideEnvironmentMap,
+} from '../main'
 
 describe('config/main', () => {
     test('config object is frozen', () => {
@@ -26,6 +31,30 @@ describe('config/main', () => {
     test('getConfig returns a valid config', () => {
         const result = getConfig()
         expect(configSchema.safeParse(result).success).toBe(true)
+    })
+
+    test.each([
+        ['production', 'https://discover-mobile.perawallet.app/'],
+        ['staging', 'https://discover-mobile-staging.perawallet.app/'],
+        ['development', 'https://discover-mobile-staging.perawallet.app/'],
+    ] as const)(
+        'uses the expected Discover URL for %s builds',
+        (appEnvironment, expectedUrl) => {
+            expect(getConfig({ appEnvironment }).discoverBaseUrl).toBe(
+                expectedUrl,
+            )
+        },
+    )
+
+    test('does not expose obsolete staking or onramp URLs', () => {
+        expect('stakingBaseUrl' in config).toBe(false)
+        expect('onrampBaseUrl' in config).toBe(false)
+    })
+
+    test('does not map obsolete web-feature URL environment variables', () => {
+        expect(overrideEnvironmentMap).not.toHaveProperty('discoverBaseUrl')
+        expect(overrideEnvironmentMap).not.toHaveProperty('stakingBaseUrl')
+        expect(overrideEnvironmentMap).not.toHaveProperty('onrampBaseUrl')
     })
 
     test('exposes bounded-timeout defaults in milliseconds', () => {
