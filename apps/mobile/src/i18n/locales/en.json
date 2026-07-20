@@ -526,7 +526,9 @@
         "webview": {
             "failed_title": "Failed to load page",
             "reload": "Reload",
-            "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
+            "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
+            "offline_title": "You're offline",
+            "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online."
         },
         "done": "Done",
         "save": "Save",

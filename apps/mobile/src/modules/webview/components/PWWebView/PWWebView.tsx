@@ -30,7 +30,6 @@ import {
     peraConnectJS,
     peraMobileInterfaceJS,
 } from './injected-scripts'
-import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
 import {
     useContextFingerprints,
@@ -43,13 +42,9 @@ import {
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
+import { usePWWebViewLoadState } from './usePWWebViewLoadState'
 import { EmptyView } from '@components/EmptyView'
-import {
-    PWView,
-    PWButton,
-    bottomSheetNotifier,
-    PWScrollView,
-} from '@components/core'
+import { PWView, PWButton, PWScrollView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
@@ -113,7 +108,6 @@ export const PWWebView = (props: PWWebViewProps) => {
     // Per-mount secret stamped onto bridge messages by the main-frame-only
     // injected script; native drops messages without it (subframe-forged).
     const bridgeToken = useRef(generateBridgeToken()).current
-    const { showToast } = useToast()
     const [title, setTitle] = useState('')
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
     const isDarkMode = useIsDarkMode()
@@ -229,57 +223,59 @@ export const PWWebView = (props: PWWebViewProps) => {
         [],
     )
 
-    const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
-        logger.debug('WebView: Loading', {
-            url: event.nativeEvent.url,
-            isSecure,
-        })
-        // isSecure is only debug-logged here; a stable callback is intentional.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-    const loadCompleted = useCallback((event: WebViewNavigationEvent) => {
-        logger.debug('WebView: Title', { title: event.nativeEvent.title })
-        setTitle(event.nativeEvent.title)
-    }, [])
-
     const reload = useCallback(() => {
         webview.current?.reload()
         // webview is a ref (stable); a ref is not a valid dependency.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const showLoadError = useCallback(
+    const loadState = usePWWebViewLoadState({ onReload: reload })
+
+    const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
+        logger.debug('WebView: Loading', {
+            url: event.nativeEvent.url,
+            isSecure,
+        })
+        loadState.handleLoadStart()
+        // isSecure is only debug-logged here; loadState handlers are
+        // stable useCallbacks.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    const loadCompleted = useCallback((event: WebViewNavigationEvent) => {
+        logger.debug('WebView: Title', { title: event.nativeEvent.title })
+        setTitle(event.nativeEvent.title)
+        loadState.handleLoadEnd()
+        loadState.markDocumentLoaded()
+        // loadState handlers are stable useCallbacks.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    // Load failures surface through the in-view error/offline pages, not
+    // toasts: `onError` fires PER FAILED SUBRESOURCE, so an offline page
+    // load used to storm the global notifier with hardcoded-English
+    // "Failed to load resource" toasts carrying raw URLs (PERA-4582).
+    const handleLoadError = useCallback(
         (event: WebViewErrorEvent) => {
-            showToast(
-                {
-                    title: 'Failed to load resource',
-                    body: `${event.nativeEvent.url}`,
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
+            loadState.handleLoadEnd()
+            logger.warn('WebView: load error', {
+                url: event.nativeEvent.url,
+                code: event.nativeEvent.code,
+                description: event.nativeEvent.description,
+            })
         },
-        [showToast],
+        // loadState handlers are stable useCallbacks.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [],
     )
 
-    const showError = useCallback(
-        (event: WebViewHttpErrorEvent) => {
-            showToast(
-                {
-                    title: event.nativeEvent.title,
-                    body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
-        },
-        [showToast],
-    )
+    const handleHttpError = useCallback((event: WebViewHttpErrorEvent) => {
+        logger.warn('WebView: http error', {
+            url: event.nativeEvent.url,
+            statusCode: event.nativeEvent.statusCode,
+            description: event.nativeEvent.description,
+        })
+    }, [])
 
     const jsToLoad = useMemo(() => {
         let js = baseJS
@@ -343,8 +339,8 @@ export const PWWebView = (props: PWWebViewProps) => {
                 forceDarkOn={isDarkMode}
                 onLoadStart={verifyLoad}
                 onLoad={loadCompleted}
-                onError={showLoadError}
-                onHttpError={showError}
+                onError={handleLoadError}
+                onHttpError={handleHttpError}
                 dataDetectorTypes={[]}
                 onNavigationStateChange={navigationStateChange}
                 onShouldStartLoadWithRequest={
@@ -359,8 +355,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         handleEvent,
         verifyLoad,
         loadCompleted,
-        showLoadError,
-        showError,
+        handleLoadError,
+        handleHttpError,
         navigationStateChange,
         onShouldStartLoadWithRequest,
         isDarkMode,
@@ -391,6 +387,42 @@ export const PWWebView = (props: PWWebViewProps) => {
                 contentContainerStyle={styles.scrollContent}
             >
                 {renderWebView()}
+                {loadState.showOfflineView && (
+                    <PWView
+                        style={styles.absoluteFill}
+                        testID='pw-webview-offline'
+                    >
+                        <EmptyView
+                            title={t('common.webview.offline_title')}
+                            body={t('common.webview.offline_body')}
+                            button={
+                                <PWButton
+                                    title={t('common.webview.reload')}
+                                    onPress={loadState.handleRetry}
+                                    variant='primary'
+                                />
+                            }
+                        />
+                    </PWView>
+                )}
+                {loadState.showTimeoutView && (
+                    <PWView
+                        style={styles.absoluteFill}
+                        testID='pw-webview-timeout'
+                    >
+                        <EmptyView
+                            title={t('common.webview.failed_title')}
+                            body={t('common.webview.failed_body')}
+                            button={
+                                <PWButton
+                                    title={t('common.webview.reload')}
+                                    onPress={loadState.handleRetry}
+                                    variant='primary'
+                                />
+                            }
+                        />
+                    </PWView>
+                )}
             </PWScrollView>
 
             {showControls && showFooterBar && (
