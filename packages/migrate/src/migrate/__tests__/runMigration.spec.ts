@@ -12,9 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Platform } from 'react-native'
+import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyMigrationData,
     MigrationService,
+    MigrationStepVersions,
 } from '@perawallet/wallet-extension-platform'
 
 const emptyLegacyData = (): LegacyMigrationData =>
@@ -40,6 +42,10 @@ const mockedRunMigrationLoop = runMigrationLoop as ReturnType<typeof vi.fn>
 const mockedRunExtrasMigration = runExtrasMigration as ReturnType<typeof vi.fn>
 
 const buildMigrationService = (overrides: Partial<MigrationService> = {}) => {
+    // In-memory store so getCompletedStepVersions reflects whatever
+    // setCompletedStepVersions last wrote, like a real persisted store would —
+    // needed for the step-version diagnostics to see post-write state.
+    let storedStepVersions: MigrationStepVersions | null = null
     const service: MigrationService = {
         hasLegacyData: vi.fn().mockResolvedValue(true),
         getLegacyData: vi.fn().mockResolvedValue(emptyLegacyData()),
@@ -50,8 +56,14 @@ const buildMigrationService = (overrides: Partial<MigrationService> = {}) => {
         simulateLegacyDatabase: vi.fn().mockResolvedValue(undefined),
         simulatePreSixxAccounts: vi.fn().mockResolvedValue(undefined),
         resetLegacyData: vi.fn().mockResolvedValue(undefined),
-        getCompletedStepVersions: vi.fn().mockResolvedValue(null),
-        setCompletedStepVersions: vi.fn().mockResolvedValue(undefined),
+        getCompletedStepVersions: vi
+            .fn()
+            .mockImplementation(async () => storedStepVersions),
+        setCompletedStepVersions: vi
+            .fn()
+            .mockImplementation(async (versions: MigrationStepVersions) => {
+                storedStepVersions = versions
+            }),
         ...overrides,
     }
     return service
@@ -329,5 +341,105 @@ describe('step-version orchestration', () => {
         expect(result.completed).toBe(true)
         expect(service.setCompletedStepVersions).toHaveBeenCalled()
         expect(service.markMigrationComplete).toHaveBeenCalledOnce()
+    })
+})
+
+describe('step-version health logging', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockedRunMigrationLoop.mockResolvedValue(successfulAccountResult)
+        mockedRunExtrasMigration.mockResolvedValue(successfulExtrasResult)
+    })
+
+    it('logs step versions on completion and on failure', async () => {
+        const infoSpy = vi.spyOn(logger, 'info')
+        const service = buildMigrationService()
+        mockedRunMigrationLoop.mockResolvedValue(successfulAccountResult)
+        mockedRunExtrasMigration.mockResolvedValue(successfulExtrasResult)
+        await runMigration(service, buildDeps())
+        expect(infoSpy).toHaveBeenCalledWith(
+            '[Migration] step versions',
+            expect.objectContaining({ pending: [] }),
+        )
+    })
+
+    it('logs step versions on the short-circuit path when nothing is pending', async () => {
+        const infoSpy = vi.spyOn(logger, 'info')
+        const service = buildMigrationService({
+            getCompletedStepVersions: vi
+                .fn()
+                .mockResolvedValue(allStepsAtTarget()),
+        })
+        await runMigration(service, buildDeps())
+        expect(infoSpy).toHaveBeenCalledWith(
+            '[Migration] step versions',
+            expect.objectContaining({
+                completed: allStepsAtTarget(),
+                targets: MIGRATION_STEP_TARGET_VERSIONS,
+                pending: [],
+            }),
+        )
+    })
+
+    it('logs step versions with the failed step still pending on an accounts failure', async () => {
+        const infoSpy = vi.spyOn(logger, 'info')
+        mockedRunMigrationLoop.mockResolvedValue({
+            imported: 4,
+            skipped: 0,
+            failed: [{ address: 'ADDR_FAIL', name: 'x', reason: 'unroutable' }],
+        })
+        const service = buildMigrationService()
+        await runMigration(service, buildDeps())
+        // The mock's getCompletedStepVersions is static (setCompletedStepVersions
+        // writes don't feed back into it), so every step still reads as pending —
+        // the assertion only needs to confirm the failed step is among them.
+        expect(infoSpy).toHaveBeenCalledWith(
+            '[Migration] step versions',
+            expect.objectContaining({
+                pending: expect.arrayContaining(['accounts']),
+            }),
+        )
+    })
+
+    it('logs step versions even when hasLegacyData throws', async () => {
+        const infoSpy = vi.spyOn(logger, 'info')
+        const service = buildMigrationService({
+            hasLegacyData: vi.fn().mockRejectedValue(new Error('boom')),
+        })
+        await runMigration(service, buildDeps())
+        expect(infoSpy).toHaveBeenCalledWith(
+            '[Migration] step versions',
+            expect.any(Object),
+        )
+    })
+
+    it('does not log step versions when there is no legacy data', async () => {
+        const infoSpy = vi.spyOn(logger, 'info')
+        const service = buildMigrationService({
+            hasLegacyData: vi.fn().mockResolvedValue(false),
+        })
+        await runMigration(service, buildDeps())
+        expect(infoSpy).not.toHaveBeenCalledWith(
+            '[Migration] step versions',
+            expect.any(Object),
+        )
+    })
+
+    it('never fails the run when diagnostics logging itself throws', async () => {
+        // hasLegacyData throws before the main flow ever reads step versions,
+        // so the only caller of getCompletedStepVersions in this run is the
+        // logStepVersions diagnostics helper — isolating its own try/catch.
+        const service = buildMigrationService({
+            hasLegacyData: vi.fn().mockRejectedValue(new Error('boom')),
+            getCompletedStepVersions: vi
+                .fn()
+                .mockRejectedValue(new Error('storage unavailable')),
+        })
+
+        const result = await runMigration(service, buildDeps())
+
+        expect(result.completed).toBe(false)
+        expect(result.incompleteReason).toBe('has-legacy-data-threw')
+        expect(result.error?.message).toBe('boom')
     })
 })

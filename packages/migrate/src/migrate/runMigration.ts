@@ -49,6 +49,31 @@ export type MigrationRunResult = {
     error: Error | null
 }
 
+/**
+ * Emits the `[Migration] step versions` diagnostic every `runMigration` call
+ * should end with — the recorded/target/pending snapshot support needs to
+ * answer "why didn't this user's data come across". Always re-fetches fresh
+ * state (rather than trusting a caller-supplied snapshot) so it reflects any
+ * writes `recordSucceededSteps` just made. Wrapped in try/catch: a storage
+ * read failing here must never turn a successful (or already-handled-failure)
+ * migration outcome into an uncaught rejection.
+ */
+const logStepVersions = async (migration: MigrationService): Promise<void> => {
+    try {
+        const completed = await resolveCompletedStepVersions(migration)
+        const pending = await getPendingSteps(migration)
+        logger.info('[Migration] step versions', {
+            completed,
+            targets: MIGRATION_STEP_TARGET_VERSIONS,
+            pending,
+        })
+    } catch (err) {
+        logger.error('[Migration] failed to log step versions', {
+            error: toError(err),
+        })
+    }
+}
+
 export const runMigration = async (
     migration: MigrationService,
     deps: MigrationDeps,
@@ -59,6 +84,7 @@ export const runMigration = async (
     } catch (err) {
         const error = toError(err)
         logger.error('[Migration] hasLegacyData threw', { error })
+        await logStepVersions(migration)
         return {
             completed: false,
             incompleteReason: 'has-legacy-data-threw',
@@ -68,6 +94,9 @@ export const runMigration = async (
         }
     }
     if (!hasData) {
+        // No legacy install exists on this device at all — there is nothing
+        // pending or completed to report, so skip the diagnostic rather than
+        // logging a noisy "everything is pending" line for every fresh install.
         return {
             completed: false,
             incompleteReason: 'no-legacy-data',
@@ -79,6 +108,7 @@ export const runMigration = async (
 
     const pending = await getPendingSteps(migration)
     if (pending.length === 0) {
+        await logStepVersions(migration)
         return {
             completed: true,
             incompleteReason: null,
@@ -97,6 +127,7 @@ export const runMigration = async (
             '[Migration] getLegacyData threw; sentinel not set, will retry next launch',
             { error },
         )
+        await logStepVersions(migration)
         return {
             completed: false,
             incompleteReason: 'get-legacy-data-threw',
@@ -139,6 +170,7 @@ const runMigrationWithLegacyData = async (
                 '[Migration] runMigrationLoop threw; sentinel not set, will retry next launch',
                 { error },
             )
+            await logStepVersions(migration)
             return {
                 completed: false,
                 incompleteReason: 'accounts-threw',
@@ -164,6 +196,7 @@ const runMigrationWithLegacyData = async (
             extras: null,
             pendingExtras,
         })
+        await logStepVersions(migration)
         return {
             completed: false,
             incompleteReason: 'extras-threw',
@@ -188,6 +221,7 @@ const runMigrationWithLegacyData = async (
                 skipped: accountResult.skipped,
             },
         )
+        await logStepVersions(migration)
         return {
             completed: false,
             incompleteReason: 'accounts-failed',
@@ -202,6 +236,7 @@ const runMigrationWithLegacyData = async (
             '[Migration] extras failures; sentinel not set, will retry next launch',
             { failed: extrasResult.failed },
         )
+        await logStepVersions(migration)
         return {
             completed: false,
             incompleteReason: 'extras-failed',
@@ -220,6 +255,7 @@ const runMigrationWithLegacyData = async (
             '[Migration] markMigrationComplete threw; sentinel not set, will retry next launch',
             { error },
         )
+        await logStepVersions(migration)
         return {
             completed: false,
             incompleteReason: 'mark-complete-threw',
@@ -234,6 +270,7 @@ const runMigrationWithLegacyData = async (
         skipped: accountResult.skipped,
         extras: extrasResult,
     })
+    await logStepVersions(migration)
     return {
         completed: true,
         incompleteReason: null,
