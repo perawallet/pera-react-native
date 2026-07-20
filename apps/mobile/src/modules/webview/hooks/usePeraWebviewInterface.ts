@@ -31,7 +31,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -756,6 +756,30 @@ export const usePeraWebviewInterface = (
         },
         [securedConnection, sourceUrl, deviceID, webview],
     )
+
+    // PERA-4564: The Discover web app reads the device id once (via
+    // getSettings) when it loads and only fetches the user's server-side
+    // favorites while it holds a non-null id. If the migrated device id lands
+    // *after* that first query — store hydration, migration finishing, or
+    // device re-registration — getSettings already returned null and the web
+    // app never retries. Push the id to the live web app whenever it changes
+    // so its device-id listener refires the favorites fetch. Skip the initial
+    // mount: getSettings already carries the mount-time value.
+    const previousDeviceIDRef = useRef<string | null | undefined>(undefined)
+    useEffect(() => {
+        const previous = previousDeviceIDRef.current
+        previousDeviceIDRef.current = deviceID
+        if (previous === undefined) {
+            return
+        }
+        if (previous === deviceID) {
+            return
+        }
+        if (!securedConnection || !deviceID || !webview) {
+            return
+        }
+        sendActionToWebview(GET_DEVICE_ID_ACTION, deviceID, webview)
+    }, [deviceID, securedConnection, webview])
 
     const getPublicSettings = useCallback(
         (message: WebviewMessage) => {
