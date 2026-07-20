@@ -828,9 +828,7 @@ describe('RNMigrationService', () => {
 
     describe('step versions', () => {
         test('returns null when no step record exists', async () => {
-            await expect(
-                service.getCompletedStepVersions(),
-            ).resolves.toBeNull()
+            await expect(service.getCompletedStepVersions()).resolves.toBeNull()
         })
 
         test('round-trips a step-version record through key-value storage', async () => {
@@ -838,9 +836,7 @@ describe('RNMigrationService', () => {
                 accounts: 1,
                 passkeys: 2,
             })
-            await expect(
-                service.getCompletedStepVersions(),
-            ).resolves.toEqual({
+            await expect(service.getCompletedStepVersions()).resolves.toEqual({
                 accounts: 1,
                 passkeys: 2,
             })
@@ -848,9 +844,7 @@ describe('RNMigrationService', () => {
 
         test('ignores a malformed step record instead of throwing', async () => {
             storage.setItem(MIGRATION_STEPS_KEY, 'not-json{')
-            await expect(
-                service.getCompletedStepVersions(),
-            ).resolves.toBeNull()
+            await expect(service.getCompletedStepVersions()).resolves.toBeNull()
         })
     })
 })
