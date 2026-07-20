@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { isValidAddress } from 'algosdk'
+import { isValidAddress, seedFromMnemonic } from 'algosdk'
 
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
@@ -51,6 +51,8 @@ import { useQuantum, type QuantumKeyResult } from '../useQuantum'
 import { quantumSignKeyId, FALCON_CHILD_KEY_TYPE } from '../../models'
 import { FALCON_PUBLIC_KEY_LENGTH } from '../../crypto/falcon-utils'
 import { SeedScheme } from '../../constants'
+import { getPQProvider } from '../../crypto/pq'
+import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
 
 // THROWAWAY TEST VECTOR — same as algo25-integration.test.ts; NEVER fund it.
 const TEST_MNEMONIC =
@@ -189,6 +191,21 @@ describe('useQuantum', () => {
             ).rejects.toThrow('boom')
 
             expect(mockKeyStoreRemove).toHaveBeenCalledWith('my-key')
+        })
+
+        test('derives the real Falcon address matching the adapter for a fixed mnemonic', async () => {
+            const { result } = renderHook(() => useQuantum())
+
+            let created: Optional<QuantumKeyResult>
+            await act(async () => {
+                created = await result.current.createQuantumKey({
+                    mnemonic: TEST_MNEMONIC,
+                })
+            })
+
+            const seed = seedFromMnemonic(TEST_MNEMONIC)
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+            expect(created!.address).toBe(deriveQuantumAddress(publicKey))
         })
     })
 })

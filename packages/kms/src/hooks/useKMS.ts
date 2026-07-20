@@ -25,6 +25,7 @@ import {
     seedSchemeOf,
 } from '../utils'
 import { SeedScheme } from '../constants'
+import { FALCON_CHILD_KEY_TYPE } from '../models/keys'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
 import { useQuantum } from './useQuantum'
@@ -37,7 +38,7 @@ import { useKeystoreKeys } from './useKeystoreState'
 import { entropyToIndices } from '../crypto/hdwallet-utils'
 import { algo25SeedToIndices } from '../crypto/algo25-utils'
 import { withSecret } from '../storage/secrets'
-import { falconSignMock } from '../crypto/falcon-utils'
+import { getPQProvider } from '../crypto/pq'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -147,12 +148,12 @@ export const useKMS = () => {
         [getKey],
     )
 
-    // MOCK(quantum): replace with real Falcon-1024 implementation when keystore support lands. See EPIC phase 2.
     /**
-     * Signs each payload with the mocked quantum signer. The quantum child
-     * entry holds no private material — the signature derives from the
-     * parent seed's private bytes, exported only for the duration of this
-     * call and zeroed in `finally`.
+     * Signs each payload with the real Falcon-1024 PQ signer. The quantum
+     * child entry holds no private material — the keypair is re-derived from
+     * the parent seed's private bytes, exported only for the duration of
+     * this call. Both the seed bytes and the derived secret key are zeroed
+     * in `finally` once signing completes.
      */
     const signWithQuantumSeed = (
         seedKey: Key,
@@ -166,13 +167,50 @@ export const useKMS = () => {
             }
             const seedBytes = new Uint8Array(seedData.privateKey)
             try {
-                return payloads.map(payload =>
-                    falconSignMock(seedBytes, payload),
-                )
+                const provider = getPQProvider()
+                const { secretKey } =
+                    provider.generateKeypairFromSeed(seedBytes)
+                try {
+                    return payloads.map(payload =>
+                        provider.sign(secretKey, payload),
+                    )
+                } finally {
+                    zeroBytes(secretKey)
+                }
             } finally {
                 zeroBytes(seedBytes)
             }
         })
+
+    /**
+     * Returns the Falcon public-key bytes committed on the quantum signing
+     * child at `keyPairId` (the id `createQuantumKey` returns as
+     * `signKeyId`, and what `account.keyPairId` is set to for quantum
+     * accounts). Reads from the live reactive store rather than
+     * `keyStore.export`: the child is minted `extractable: false`, and
+     * `commitQuantumChildKey` stores the public key as plain (non-secret)
+     * metadata on the entry itself.
+     */
+    const getQuantumPublicKey = (keyPairId: string): Uint8Array => {
+        const child = getKeystoreStore().state.keys.find(
+            k => k.id === keyPairId,
+        )
+        if (!child?.publicKey) {
+            throw new KeyManagementError(
+                `No quantum public key for keyPairId ${keyPairId}`,
+            )
+        }
+        // Guard the algorithm at the point of use: a non-quantum keyPairId
+        // (e.g. an Ed25519 child) also carries a `publicKey`, so without this
+        // check we would silently hand back the wrong bytes for a caller that
+        // resolved account.keyPairId to a non-Falcon child.
+        if (child.type !== FALCON_CHILD_KEY_TYPE) {
+            throw new KeyManagementError(
+                `keyPairId ${keyPairId} is not a quantum key (type: ${child.type})`,
+            )
+        }
+        return new Uint8Array(child.publicKey)
+    }
 
     const hasSeedWithEntropy = useCallback((seedKeyId: string): boolean => {
         const keys = getKeystoreStore().state.keys
@@ -307,6 +345,7 @@ export const useKMS = () => {
         persistHDMasterKey,
         generateDerivedKey,
         getDerivedPublicKey,
+        getQuantumPublicKey,
         withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,

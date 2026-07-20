@@ -16,6 +16,7 @@ catalog:
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/algosdk": 3.7.0-beta.1
+  "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
@@ -51,7 +52,7 @@ catalog:
   decimal.js: ^10.6.0
   drizzle-orm: ^0.45.2
   esbuild: ^0.25.0
-  eslint: 9.39.4
+  eslint: 9.39.5
   eslint-plugin-unused-imports: 4.4.1
   expo: ^57.0.2
   expo-application: ~57.0.0
@@ -63,7 +64,7 @@ catalog:
   fast-glob: ^3.3.2
   jsdom: ^27.4.0
   ky: ^2.0.2
-  oxfmt: ^0.57.0
+  oxfmt: ^0.58.0
   # Must equal react-native 0.86.0's bundled renderer version. RN does an exact
   # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
   # "Incompatible React versions". Keep in lockstep with the override below.
@@ -179,16 +180,19 @@ minimumReleaseAge: 10080
 #     — active SDK 57 line: Expo ships frequent same-SDK patch releases (57.0.x)
 #       that we want to adopt immediately rather than wait out the window.
 #       Revisit once SDK 57 patch cadence settles.
-#   @joe-p/algosdk, falcon-1024
+#   @joe-p/algosdk, falcon-1024, @joe-p/react-native-falcon
 #     — beta forks (single maintainer: Joe Polny, an Algorand Foundation
 #       tooling contributor) used for the PQ/Falcon-1024 integration spike
 #       (PERA-4642). @joe-p/algosdk is exact-pinned (no floating range);
 #       falcon-1024 is early-stage (0.x) so only one version exists to date.
+#       @joe-p/react-native-falcon (the on-device native Falcon-1024 nitro
+#       module, PQ-020) is likewise exact-pinned to its single 0.x release.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
   - "@joe-p/algosdk"
+  - "@joe-p/react-native-falcon"
   - falcon-1024
   - expo
   - "expo-*"

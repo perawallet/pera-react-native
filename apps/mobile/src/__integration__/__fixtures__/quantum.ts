@@ -11,16 +11,14 @@
  */
 
 import { seedFromMnemonic } from 'algosdk'
-import {
-    deriveFalconAddressMock,
-    deriveFalconKeypairMock,
-} from '@perawallet/wallet-core-kms'
+import { getPQProvider } from '@perawallet/wallet-core-kms'
+import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
 import { ALGO25_TEST_MNEMONIC } from './onboarding'
 
 /**
  * Shared quantum-account test fixture. The quantum mnemonic format IS algo25
  * (24 data words + 1 checksum word), so we reuse the pinned algo25 vector and
- * derive the mock Falcon public key / address through the same PQ-003 utils
+ * derive the real Falcon public key / address through the same PQ provider
  * the app uses (`useQuantum`). Every quantum test suite should import these.
  *
  * @example
@@ -28,10 +26,10 @@ import { ALGO25_TEST_MNEMONIC } from './onboarding'
  */
 export const QUANTUM_TEST_MNEMONIC = ALGO25_TEST_MNEMONIC
 
-export const QUANTUM_TEST_PUBLIC_KEY = deriveFalconKeypairMock(
+export const QUANTUM_TEST_PUBLIC_KEY = getPQProvider().generateKeypairFromSeed(
     seedFromMnemonic(QUANTUM_TEST_MNEMONIC),
 ).publicKey
 
-export const QUANTUM_TEST_ADDRESS = deriveFalconAddressMock(
+export const QUANTUM_TEST_ADDRESS = deriveQuantumAddress(
     QUANTUM_TEST_PUBLIC_KEY,
 )

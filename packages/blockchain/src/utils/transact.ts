@@ -29,6 +29,7 @@ import {
     assignGroupID,
     type TransactionSigner,
 } from 'algosdk'
+import { isQuantumSignedTransaction, type PeraSignedTxnResult } from '../models'
 
 const TX_TAG = new Uint8Array([0x54, 0x58]) // "TX"
 
@@ -54,12 +55,19 @@ export const decodeTransaction = (encoded: Uint8Array): Transaction =>
 export const decodeTransactions = (encoded: Uint8Array[]): Transaction[] =>
     encoded.map(decodeTransaction)
 
+// Carrier-aware: a `QuantumSignedTransaction` already holds node-ready
+// msgpack bytes assembled by Seam B (see `pq/quantumAdapter.ts`), so it is
+// returned verbatim; a plain algosdk `SignedTransaction` is msgpack-encoded
+// as before.
 export const encodeSignedTransaction = (
-    signedTransaction: SignedTransaction,
-): Uint8Array => encodeMsgpack(signedTransaction)
+    signedTransaction: PeraSignedTxnResult,
+): Uint8Array =>
+    isQuantumSignedTransaction(signedTransaction)
+        ? signedTransaction.pqSignedBytes
+        : encodeMsgpack(signedTransaction)
 
 export const encodeSignedTransactions = (
-    signedTransactions: SignedTransaction[],
+    signedTransactions: PeraSignedTxnResult[],
 ): Uint8Array[] => signedTransactions.map(encodeSignedTransaction)
 
 export const decodeSignedTransaction = (
@@ -79,4 +87,6 @@ export {
     OnApplicationComplete,
     SignedTransaction,
     type TransactionSigner,
+    isQuantumSignedTransaction,
+    type PeraSignedTxnResult,
 }

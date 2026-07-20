@@ -110,7 +110,9 @@ export class DappPermissionStore {
             const map = await this.readMap()
             let changed = false
             for (const [origin, permission] of Object.entries(map)) {
-                const kept = permission.addresses.filter(a => validAddresses.has(a))
+                const kept = permission.addresses.filter(a =>
+                    validAddresses.has(a),
+                )
                 if (kept.length === permission.addresses.length) continue
                 changed = true
                 if (kept.length === 0) delete map[origin]

@@ -70,6 +70,33 @@ export type PeraSignedTransaction = SignedTransaction
 
 export type PeraSignedTransactionGroup = PeraSignedTransaction[]
 
+/**
+ * Byte carrier for a quantum (post-quantum, Falcon-1024) signed transaction.
+ *
+ * Seam B (`packages/blockchain/src/pq/quantumAdapter.ts`) assembles pqsig
+ * transactions via the joe-p algosdk fork, which is the only module
+ * allowed to decode/encode that fork's `SignedTransaction` shape (the
+ * firewall in `pq/__tests__/pqLibraryFirewall.spec.ts` enforces this). To
+ * avoid leaking the fork's types outside Seam B, the adapter instead returns
+ * already-encoded, node-ready msgpack bytes, carried here alongside the
+ * plain (fork-agnostic) `PeraTransaction` for display/bookkeeping.
+ */
+export type QuantumSignedTransaction = {
+    txn: PeraTransaction
+    /** Already-encoded, node-ready msgpack bytes (see Seam B). */
+    pqSignedBytes: Uint8Array
+}
+
+/** Result of signing: either a normal algosdk `SignedTransaction`, or the quantum byte carrier. */
+export type PeraSignedTxnResult =
+    | PeraSignedTransaction
+    | QuantumSignedTransaction
+
+export const isQuantumSignedTransaction = (
+    t: PeraSignedTxnResult,
+): t is QuantumSignedTransaction =>
+    (t as QuantumSignedTransaction).pqSignedBytes instanceof Uint8Array
+
 export type PeraTransactionType =
     | 'payment'
     | 'asset-transfer'

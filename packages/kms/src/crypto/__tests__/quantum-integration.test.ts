@@ -12,17 +12,15 @@
 
 import { describe, test, expect } from 'vitest'
 import { seedFromMnemonic } from 'algosdk'
+import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
 import { algo25SeedToIndices } from '../algo25-utils'
 import { mnemonicIndexToWord } from '../mnemonic-indices'
-import {
-    deriveFalconAddressMock,
-    deriveFalconKeypairMock,
-} from '../falcon-utils'
+import { getPQProvider } from '../pq'
 
 /**
  * Integration tests for the quantum key pipeline. The quantum
  * mnemonic format IS algo25, so import→export must round-trip through the
- * shared algo25 utilities, and the mocked quantum derivation must be
+ * shared algo25 utilities, and the real Falcon derivation must be
  * deterministic from the mnemonic (device portability).
  *
  * THROWAWAY TEST VECTOR — published in source; NEVER fund it.
@@ -44,8 +42,8 @@ describe('quantum integration', () => {
     test('same mnemonic yields the same quantum public key and address across independent derivations', () => {
         const deriveOnce = (): { publicKey: Uint8Array; address: string } => {
             const seed = seedFromMnemonic(TEST_MNEMONIC)
-            const { publicKey } = deriveFalconKeypairMock(seed)
-            return { publicKey, address: deriveFalconAddressMock(publicKey) }
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+            return { publicKey, address: deriveQuantumAddress(publicKey) }
         }
 
         const first = deriveOnce()

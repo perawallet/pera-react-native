@@ -15,6 +15,7 @@ import {
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
+    isQuantumAccount,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
@@ -27,6 +28,10 @@ import {
     type LocalArc60SigningFunction,
 } from './createLocalKeyStrategy'
 import {
+    createQuantumStrategy,
+    type QuantumSigningFunction,
+} from './createQuantumStrategy'
+import {
     createHardwareStrategy,
     type EncodeTransactionFunction,
 } from './createHardwareStrategy'
@@ -38,6 +43,9 @@ import { createMultisigStrategy } from './createMultisigStrategy'
 export interface GetSigningStrategyOptions {
     /** Transaction signing function from useLocalKeyTransactionSigner */
     signTransactions: LocalSigningFunction
+
+    /** Falcon transaction signing function from useQuantumTransactionSigner */
+    signQuantumTransactions: QuantumSigningFunction
 
     /** Arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
@@ -80,6 +88,11 @@ export const createSigningStrategySelector = (
         hardwareWalletRegistry: options.hardwareWalletRegistry,
         encodeTransaction: options.encodeTransaction,
     })
+    const quantumStrategy = createQuantumStrategy({
+        signQuantumTransactions: options.signQuantumTransactions,
+        signArbitraryData: options.signArbitraryData,
+        signArc60: options.signArc60,
+    })
 
     // Given an account that is already the resolved signing account
     // (i.e. rekey has been followed where applicable, or doesn't apply),
@@ -88,6 +101,10 @@ export const createSigningStrategySelector = (
         account: WalletAccount,
     ): SigningStrategy => {
         if (isHardwareWalletAccount(account)) return hardwareStrategy
+        // Quantum accounts carry a keyPairId, so this MUST precede the
+        // hasSigningKeys check — otherwise a Falcon account is routed to the
+        // Ed25519 local-key strategy and mis-signed.
+        if (isQuantumAccount(account)) return quantumStrategy
         if (hasSigningKeys(account)) return localStrategy
         throw new CannotSignError(
             account.address,
