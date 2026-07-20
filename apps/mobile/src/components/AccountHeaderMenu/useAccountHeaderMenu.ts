@@ -16,12 +16,10 @@ import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useToast } from '@hooks/useToast'
 
 export type UseAccountHeaderMenuResult = {
     items: PWDropdownItem[]
@@ -34,8 +32,6 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
     const { privacyMode, setPrivacyMode } = useSettings()
     const { isMainnet } = useNetwork()
     const { switchNetwork } = useSwitchNetwork()
-    const accounts = useAllAccounts()
-    const { showToast } = useToast()
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
     const isDeveloperMenuEnabled = !!getPreference(
@@ -44,25 +40,17 @@ export const useAccountHeaderMenu = (): UseAccountHeaderMenuResult => {
 
     const handleNetworkSwitch = useCallback(async () => {
         const target = isMainnet ? Networks.testnet : Networks.mainnet
-        const addresses = accounts?.map(account => account.address) ?? []
+        // Offline-safe local write; registration is deferred (see
+        // useSwitchNetwork). No failure to toast about.
+        await switchNetwork(target)
         try {
-            await switchNetwork(target, addresses)
-            try {
-                const syncService = getSyncService()
-                syncService.invalidateQueries()
-                syncService.restart()
-            } catch {
-                // SyncService not yet initialized
-            }
+            const syncService = getSyncService()
+            syncService.invalidateQueries()
+            syncService.restart()
         } catch {
-            // guardrails-ignore-next-line no-error-toast-in-catch reason: localized network-switch error copy preserved
-            showToast({
-                title: t('settings.developer.node_settings.switch_error_title'),
-                body: t('settings.developer.node_settings.switch_error_body'),
-                type: 'error',
-            })
+            // SyncService not yet initialized
         }
-    }, [accounts, isMainnet, showToast, switchNetwork, t])
+    }, [isMainnet, switchNetwork])
 
     const items = useMemo<PWDropdownItem[]>(() => {
         const baseItems: PWDropdownItem[] = [

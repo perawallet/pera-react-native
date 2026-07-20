@@ -2045,9 +2045,7 @@
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet",
                 "enable_mainnet": "Enable MainNet",
-                "enable_testnet": "Enable TestNet",
-                "switch_error_title": "Network Switch Failed",
-                "switch_error_body": "Unable to switch networks. Please try again."
+                "enable_testnet": "Enable TestNet"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
