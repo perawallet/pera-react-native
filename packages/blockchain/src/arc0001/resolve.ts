@@ -101,6 +101,7 @@ export const resolveArc0001SignTxnRequest = (
 
     const toSign: Arc0001ResolvedTransaction[] = []
     const signerOverrides = new Map<number, string>()
+    let requestedCount = 0
 
     for (let i = 0; i < transactions.length; i++) {
         const entry = transactions[i]
@@ -109,6 +110,7 @@ export const resolveArc0001SignTxnRequest = (
         const entrySigner = resolveEntrySigner(entry, sender, i)
 
         if (entrySigner.kind === 'do-not-sign') continue
+        requestedCount++
 
         // Multisig sender short-circuits the `signers` hint — sign with
         // the multisig address itself so the transport selector picks the
@@ -148,6 +150,18 @@ export const resolveArc0001SignTxnRequest = (
         if (candidate !== sender) {
             signerOverrides.set(toSignIndex, candidate)
         }
+    }
+
+    // A request that asked for at least one signature but yielded nothing
+    // signable (watch-only signer, account rekeyed to an external key,
+    // unknown address) gets an error — an all-null "success" gives the
+    // dApp nothing to act on. Groups that are explicitly all-`signers: []`
+    // keep the spec's all-null response.
+    if (requestedCount > 0 && toSign.length === 0) {
+        throw new Arc0001Error(
+            Arc0001ErrorCode.Unauthorized,
+            'the wallet cannot sign any of the requested transactions',
+        )
     }
 
     return { allDecoded, toSign, signerOverrides }

@@ -65,6 +65,11 @@ class StubWalletConnect {
         accounts?: string[]
         peerMeta?: unknown
     } = {}
+    // The real WC v1 client opens its SocketTransport in the constructor;
+    // `ensureConnectorReady` fast-paths on `_transport.connected`, so the
+    // stub models an immediately-open socket. Tests that need a dead
+    // socket can flip this to false.
+    _transport = { connected: true }
     handlers = new Map<string, Handler>()
 
     approveSessionCalls: { chainId: number; accounts: string[] }[] = []

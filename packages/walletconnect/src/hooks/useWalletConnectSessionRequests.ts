@@ -10,30 +10,62 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { type WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
+import { SESSION_REQUEST_TTL_MS } from '../constants'
+
+/**
+ * A queued session request is only approvable while the dApp's side of
+ * the handshake can still be listening. Requests without a `createdAt`
+ * stamp (constructed outside `addSessionRequest`) are treated as fresh.
+ */
+export const isSessionRequestFresh = (
+    request: WalletConnectSessionRequest,
+    nowMs: number = Date.now(),
+): boolean =>
+    request.createdAt === undefined ||
+    nowMs - request.createdAt <= SESSION_REQUEST_TTL_MS
 
 export const useWalletConnectSessionRequests = () => {
-    const sessionRequests = useWalletConnectStore(
+    const allSessionRequests = useWalletConnectStore(
         state => state.sessionRequests,
     )
     const setSessionRequests = useWalletConnectStore(
         state => state.setSessionRequests,
     )
 
+    const sessionRequests = useMemo(
+        () =>
+            allSessionRequests.filter(request =>
+                isSessionRequestFresh(request),
+            ),
+        [allSessionRequests],
+    )
+
+    // Physically drop expired entries so no consumer of the raw store
+    // (e.g. the pairing outcome waiter) can resurrect a stale request.
+    useEffect(() => {
+        if (sessionRequests.length !== allSessionRequests.length) {
+            setSessionRequests(sessionRequests)
+        }
+    }, [sessionRequests, allSessionRequests, setSessionRequests])
+
     const addSessionRequest = useCallback(
         (request: WalletConnectSessionRequest) => {
-            setSessionRequests([...sessionRequests, request])
+            setSessionRequests([
+                ...allSessionRequests,
+                { ...request, createdAt: Date.now() },
+            ])
         },
-        [sessionRequests],
+        [allSessionRequests],
     )
 
     const removeSessionRequest = useCallback(
         (request: WalletConnectSessionRequest) => {
-            setSessionRequests(sessionRequests.filter(r => r !== request))
+            setSessionRequests(allSessionRequests.filter(r => r !== request))
         },
-        [sessionRequests],
+        [allSessionRequests],
     )
 
     return {

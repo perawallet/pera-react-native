@@ -20,6 +20,14 @@ vi.mock('../../store', () => ({
     useWalletConnectStore: vi.fn(),
 }))
 
+// The constants module re-exports signing caps whose barrel pulls in
+// react-native-mmkv — stub just those.
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    MAX_DATA_SIGN_REQUESTS: 10,
+    MAX_TRANSACTION_SIGN_REQUESTS: 64,
+    ARC60_MAX_REQUEST_BYTES: 64 * 1024,
+}))
+
 describe('useWalletConnectSessionRequests', () => {
     let mockSessionRequests: any[]
     let mockSetSessionRequests: any
@@ -36,7 +44,7 @@ describe('useWalletConnectSessionRequests', () => {
         })
     })
 
-    it('should add session request', () => {
+    it('should add session request stamped with createdAt', () => {
         const { result } = renderHook(() => useWalletConnectSessionRequests())
         const request = { peerMeta: { name: 'Test App' }, chainId: 4160 } as any
 
@@ -44,7 +52,40 @@ describe('useWalletConnectSessionRequests', () => {
             result.current.addSessionRequest(request)
         })
 
-        expect(mockSetSessionRequests).toHaveBeenCalledWith([request])
+        expect(mockSetSessionRequests).toHaveBeenCalledWith([
+            { ...request, createdAt: expect.any(Number) },
+        ])
+    })
+
+    it('filters expired requests out of the returned list and prunes them from the store', () => {
+        const fresh = {
+            clientId: 'fresh',
+            peerMeta: { name: 'Fresh dApp' },
+            createdAt: Date.now(),
+        } as any
+        const stale = {
+            clientId: 'stale',
+            peerMeta: { name: 'Stale dApp' },
+            createdAt: Date.now() - 6 * 60 * 1000,
+        } as any
+        mockSessionRequests = [stale, fresh]
+
+        const { result } = renderHook(() => useWalletConnectSessionRequests())
+
+        // A stale request queued during an outage must never pop its
+        // approval sheet — approving it would feed a dead socket.
+        expect(result.current.sessionRequests).toEqual([fresh])
+        expect(mockSetSessionRequests).toHaveBeenCalledWith([fresh])
+    })
+
+    it('treats requests without createdAt as fresh', () => {
+        const legacy = { clientId: 'legacy', peerMeta: { name: 'Old' } } as any
+        mockSessionRequests = [legacy]
+
+        const { result } = renderHook(() => useWalletConnectSessionRequests())
+
+        expect(result.current.sessionRequests).toEqual([legacy])
+        expect(mockSetSessionRequests).not.toHaveBeenCalled()
     })
 
     it('should remove session request', () => {
