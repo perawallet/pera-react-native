@@ -15,16 +15,10 @@ import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
 import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import {
-    concatBytes,
-    logger,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
-import { synthesizeQuantumTxid } from './synthesizeQuantumSubmission'
-import { containsQuantumSigner } from './containsQuantumSigner'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
@@ -55,13 +49,6 @@ export interface SubmitAndAutoRefreshCoreInput {
         network: Network,
     ) => void | Promise<void>
     signedTxns: readonly PeraSignedTxnResult[]
-    /**
-     * MOCK(quantum): when true, the group contains a quantum signer whose
-     * Falcon signature no node can yet accept. Submission returns a synthetic
-     * txid and the confirmation wait is skipped, but account-refresh callbacks
-     * still fire. See EPIC phase 2.
-     */
-    isQuantumMock?: boolean
 }
 
 /**
@@ -74,25 +61,22 @@ export interface SubmitAndAutoRefreshCoreInput {
  * - Confirmation timeouts and other background errors are swallowed and
  *   logged. Periodic sync is the safety net.
  *
+ * Quantum (Falcon) groups are not special-cased here: the carrier-aware
+ * `encodeSignedTransaction` emits the node-ready `pqsig` bytes, so a
+ * quantum-signed group broadcasts through the same path as any other. It
+ * therefore reaches the chain only on a `pqsig`-capable node (LocalNet until
+ * an official algod ships Falcon support); other nodes reject it at submit.
+ *
  * Exposed primarily for unit testing — call sites use {@link submitAndAutoRefresh}.
  */
 export const submitAndAutoRefreshCore = async (
     input: SubmitAndAutoRefreshCoreInput,
 ): Promise<{ txIds: string[] }> => {
-    const txIds = input.isQuantumMock
-        ? // MOCK(quantum): synthetic submission until node release supports Falcon — see EPIC phase 2
-          [
-              synthesizeQuantumTxid(
-                  concatBytes(
-                      ...input.encodeSignedTransactions([...input.signedTxns]),
-                  ),
-              ),
-          ]
-        : await submitSignedTransactionGroup(
-              input.algokit,
-              input.encodeSignedTransactions,
-              [...input.signedTxns],
-          )
+    const txIds = await submitSignedTransactionGroup(
+        input.algokit,
+        input.encodeSignedTransactions,
+        [...input.signedTxns],
+    )
 
     void backgroundConfirmAndRefresh(input, txIds)
 
@@ -105,18 +89,14 @@ const backgroundConfirmAndRefresh = async (
 ): Promise<void> => {
     if (txIds.length === 0) return
 
-    // MOCK(quantum): synthetic submissions have no on-chain txid to poll —
-    // skip the confirmation wait but still run the account-refresh callbacks.
-    if (!input.isQuantumMock) {
-        try {
-            await input.waitForConfirmation(txIds[0]!)
-        } catch (error) {
-            logger.warn(
-                'submitAndAutoRefresh: confirmation wait failed; relying on periodic sync',
-                { error, txIds },
-            )
-            return
-        }
+    try {
+        await input.waitForConfirmation(txIds[0]!)
+    } catch (error) {
+        logger.warn(
+            'submitAndAutoRefresh: confirmation wait failed; relying on periodic sync',
+            { error, txIds },
+        )
+        return
     }
 
     const transactions = input.signedTxns.map(s => s.txn)
@@ -160,13 +140,6 @@ export const submitAndAutoRefresh = async (
     const accounts = useAccountsStore.getState().accounts
     const walletAddresses = accounts.map(a => a.address)
 
-    // MOCK(quantum): a group authorized by any quantum signer cannot broadcast
-    // (no node accepts Falcon yet) — route it to synthetic submission.
-    const isQuantumMock = containsQuantumSigner(
-        signedTxns.map(s => s.txn),
-        accounts,
-    )
-
     const { txIds } = await submitAndAutoRefreshCore({
         algokit,
         encodeSignedTransactions,
@@ -187,7 +160,6 @@ export const submitAndAutoRefresh = async (
             return handler?.(addresses, networkAtSubmission)
         },
         signedTxns,
-        isQuantumMock,
     })
 
     return txIds

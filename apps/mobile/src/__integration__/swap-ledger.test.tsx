@@ -152,6 +152,11 @@ const buildQuote = (swapperAddress: string): SwapQuote =>
         // network fee, which validateSwapGroupAgainstQuote allows for.
         amountIn: new Decimal(1_000_000),
         peraFeeAmount: new Decimal(0),
+        // Client-stamped freshness marker (PERA-4589): execute() refuses a
+        // quote without a recent `fetchedAt` as stale before it ever reaches
+        // prepare. Stamp it "now" so these signing-pipeline flows exercise a
+        // fresh quote rather than tripping the staleness guard.
+        fetchedAt: Date.now(),
     }) as unknown as SwapQuote
 
 // One swap group with a single user-signable payment from `sender`.
