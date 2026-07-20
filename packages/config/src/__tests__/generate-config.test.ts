@@ -74,7 +74,7 @@ describe('tools/generate-config.sh', () => {
             'sentryDsn: "https://key@o0.ingest.sentry.io/0"',
         )
     })
-    
+
     test('ignores obsolete web-feature URL environment variables', () => {
         const output = run({
             DISCOVER_BASE_URL: 'https://discover.example.com/',
