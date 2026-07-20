@@ -11,7 +11,12 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { HardwareWalletError, SigningError } from '../errors'
+import {
+    HardwareWalletError,
+    PipelineError,
+    QuantumBroadcastUnsupportedError,
+    SigningError,
+} from '../errors'
 
 describe('pipeline error retryable flags', () => {
     it('marks unsupported_data_type hardware errors as non-retryable', () => {
@@ -39,5 +44,54 @@ describe('pipeline error retryable flags', () => {
             new SigningError('x', undefined, { retryable: false }).metadata
                 .retryable,
         ).toBe(false)
+    })
+})
+
+describe('QuantumBroadcastUnsupportedError', () => {
+    it('is an instance of QuantumBroadcastUnsupportedError, PipelineError and Error', () => {
+        // Arrange & Act
+        const error = new QuantumBroadcastUnsupportedError('testnet')
+
+        // Assert
+        expect(error).toBeInstanceOf(QuantumBroadcastUnsupportedError)
+        expect(error).toBeInstanceOf(PipelineError)
+        expect(error).toBeInstanceOf(Error)
+    })
+
+    it('exposes the QuantumBroadcastUnsupportedError name', () => {
+        // Arrange & Act
+        const error = new QuantumBroadcastUnsupportedError('mainnet')
+
+        // Assert
+        expect(error.name).toBe('QuantumBroadcastUnsupportedError')
+    })
+
+    it('preserves the offending network in the message and params', () => {
+        // Arrange & Act
+        const error = new QuantumBroadcastUnsupportedError('testnet')
+
+        // Assert
+        expect(error.message).toContain('testnet')
+        expect(error.message.toLowerCase()).toContain('pqsig')
+        expect(error.metadata.params).toEqual({ network: 'testnet' })
+    })
+
+    it('is non-retryable', () => {
+        // Arrange & Act
+        const error = new QuantumBroadcastUnsupportedError('mainnet')
+
+        // Assert
+        expect(error.metadata.retryable).toBe(false)
+    })
+
+    it('preserves the original error as cause', () => {
+        // Arrange
+        const cause = new Error('node rejected pqsig field')
+
+        // Act
+        const error = new QuantumBroadcastUnsupportedError('mainnet', cause)
+
+        // Assert
+        expect(error.originalError).toBe(cause)
     })
 })

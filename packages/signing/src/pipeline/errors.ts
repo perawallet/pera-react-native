@@ -232,3 +232,19 @@ export class GenesisHashMismatchError extends PipelineError {
         )
     }
 }
+
+/**
+ * A quantum (Falcon) transaction group was submitted to a node that does not
+ * accept the `pqsig` transaction field. Expected on testnet/mainnet until an
+ * official algod release ships quantum broadcast support. Non-retryable:
+ * retrying against the same node cannot succeed.
+ */
+export class QuantumBroadcastUnsupportedError extends PipelineError {
+    constructor(network: string, originalError?: Error) {
+        super(
+            `The connected node does not support quantum (Falcon pqsig) transaction broadcast on ${network}. This is expected on testnet/mainnet until the official algod release adds pqsig support.`,
+            originalError,
+            { params: { network } },
+        )
+    }
+}
