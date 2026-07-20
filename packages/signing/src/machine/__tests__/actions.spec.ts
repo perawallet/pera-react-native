@@ -12,8 +12,16 @@
 
 import { describe, it, expect } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    PeraSignedTransaction,
+    QuantumSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import type { SignableGroup } from '../../pipeline/types'
-import { buildGroupSignerTypeMap } from '../actions'
+import { SigningError } from '../../pipeline/errors'
+import {
+    assertNoQuantumSignedTransactions,
+    buildGroupSignerTypeMap,
+} from '../actions'
 
 const PARTICIPANT = 'PARTICIPANT'
 const AUTH = 'AUTH'
@@ -52,6 +60,14 @@ const multisig = (address: string, addresses: string[] = []): WalletAccount =>
         type: 'multisig',
         address,
         multisigDetails: { threshold: 1, addresses, version: 1 },
+    }) as unknown as WalletAccount
+
+const quantum = (address: string, rekeyAddress?: string): WalletAccount =>
+    ({
+        type: 'quantum',
+        address,
+        keyPairId: `kp-${address}`,
+        rekeyAddress,
     }) as unknown as WalletAccount
 
 const buildGroup = (
@@ -212,6 +228,52 @@ describe('buildGroupSignerTypeMap', () => {
         })
     })
 
+    describe('quantum classification (PQ-006 / PERA-4488)', () => {
+        it('classifies a non-rekeyed quantum sender as quantum', () => {
+            // Quantum accounts carry a keyPairId, so the pre-existing
+            // hasSigningKeys check would have swallowed them into localKey.
+            // The quantum branch must run BEFORE hasSigningKeys.
+            const sender = quantum(PARTICIPANT)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender])
+
+            expect(map.get(PARTICIPANT)).toBe('quantum')
+        })
+
+        it('classifies a local-key sender rekeyed to a quantum auth as quantum (auth-account rule)', () => {
+            const sender = algo25(PARTICIPANT, AUTH)
+            const auth = quantum(AUTH)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('quantum')
+        })
+
+        it('classifies a quantum sender rekeyed to a local-key auth as localKey (auth-account rule)', () => {
+            const sender = quantum(PARTICIPANT, AUTH)
+            const auth = algo25(AUTH)
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender, auth])
+
+            expect(map.get(PARTICIPANT)).toBe('localKey')
+        })
+
+        it('classifies a multisig sender as multisig, never quantum, even when it lists quantum participants (regression)', () => {
+            // A quantum key can never satisfy a multisig slot (slots verify
+            // Ed25519 only), so a multisig account must always route to the
+            // multisig strategy — the quantum branch must not intercept it.
+            const sender = multisig(PARTICIPANT, ['Q1', 'Q2'])
+            const group = buildGroup({ source: { type: 'local' } })
+
+            const map = buildGroupSignerTypeMap([group], [sender])
+
+            expect(map.get(PARTICIPANT)).toBe('multisig')
+        })
+    })
+
     describe('mixed batches', () => {
         it('classifies cosign and non-cosign groups independently in one call', () => {
             const cosignParticipant = algo25('A', 'A_AUTH')
@@ -273,5 +335,41 @@ describe('buildGroupSignerTypeMap', () => {
                 /signer account not found/,
             )
         })
+    })
+})
+
+describe('assertNoQuantumSignedTransactions', () => {
+    const plainSigned = (id: string): PeraSignedTransaction =>
+        ({ txn: { sender: id } }) as unknown as PeraSignedTransaction
+
+    const quantumCarrier = (): QuantumSignedTransaction => ({
+        txn: { sender: 'Q' } as never,
+        pqSignedBytes: new Uint8Array([1, 2, 3]),
+    })
+
+    it('returns the same plain signed transactions unchanged when no quantum carrier is present', () => {
+        // The callback-approve path (WalletConnect / webview / deeplink /
+        // local-callback) hands these straight to an external peer, so the
+        // guard must pass them through untouched.
+        const signed = [plainSigned('A'), plainSigned('B')]
+
+        const result = assertNoQuantumSignedTransactions(signed)
+
+        expect(result).toBe(signed)
+        expect(result).toEqual(signed)
+    })
+
+    it('throws a SigningError when a quantum signed-transaction carrier is present', () => {
+        // No peer can consume a Falcon pqsig byte carrier via callback
+        // delivery yet — fail loudly instead of silently mis-encoding it as
+        // a plain signed transaction.
+        const signed = [plainSigned('A'), quantumCarrier()]
+
+        expect(() => assertNoQuantumSignedTransactions(signed)).toThrow(
+            SigningError,
+        )
+        expect(() => assertNoQuantumSignedTransactions(signed)).toThrow(
+            /quantum/i,
+        )
     })
 })

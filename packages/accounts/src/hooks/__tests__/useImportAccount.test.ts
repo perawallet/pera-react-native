@@ -13,16 +13,23 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import algosdk from 'algosdk'
+import { createHash } from 'crypto'
 import { useImportAccount } from '../useImportAccount'
 import { useAccountsStore } from '../../store'
-import {
-    SeedScheme,
-    deriveFalconAddressMock,
-    deriveFalconKeypairMock,
-} from '@perawallet/wallet-core-kms'
+import { SeedScheme } from '@perawallet/wallet-core-kms'
 import { DuplicateAccountError } from '../../errors'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
+
+// Test-only stand-in for the quantum address derivation: deterministic per
+// seed (so repeated imports of the same mnemonic hit the duplicate guard)
+// and distinct across seeds. Not the real Falcon derivation — that's covered
+// by the kms package's own tests (useQuantum.test.ts, useKMS.test.ts) — this
+// only needs to exercise useImportAccount's dedup/branching logic.
+const deriveTestQuantumAddress = (seed: Uint8Array): string =>
+    algosdk.encodeAddress(
+        new Uint8Array(createHash('sha512-256').update(seed).digest()),
+    )
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 9 },
@@ -394,7 +401,6 @@ describe('useImportAccount', () => {
         kmsMock.createQuantumKey.mockImplementation(
             async ({ mnemonic: m }: { mnemonic: string }) => {
                 const seed = algosdk.seedFromMnemonic(m)
-                const { publicKey } = deriveFalconKeypairMock(seed)
                 return {
                     seedKey: {
                         id: 'QSEED1',
@@ -403,7 +409,7 @@ describe('useImportAccount', () => {
                         extractable: true,
                         metadata: { scheme: SeedScheme.Quantum },
                     },
-                    address: deriveFalconAddressMock(publicKey),
+                    address: deriveTestQuantumAddress(seed),
                     signKeyId: 'QSEED1-quantum',
                 }
             },
@@ -433,7 +439,6 @@ describe('useImportAccount', () => {
         kmsMock.createQuantumKey.mockImplementation(
             async ({ mnemonic: m }: { mnemonic: string }) => {
                 const seed = algosdk.seedFromMnemonic(m)
-                const { publicKey } = deriveFalconKeypairMock(seed)
                 return {
                     seedKey: {
                         id: 'QSEED1',
@@ -442,7 +447,7 @@ describe('useImportAccount', () => {
                         extractable: true,
                         metadata: { scheme: SeedScheme.Quantum },
                     },
-                    address: deriveFalconAddressMock(publicKey),
+                    address: deriveTestQuantumAddress(seed),
                     signKeyId: 'QSEED1-quantum',
                 }
             },

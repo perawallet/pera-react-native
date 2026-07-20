@@ -41,6 +41,7 @@ const mockRequest: TransactionSignRequest = {
 const makeDeps = (): SigningMachineDeps =>
     ({
         signTransactions: vi.fn(),
+        signQuantumTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
         signArc60: vi.fn(),
         createTransport: vi.fn(),

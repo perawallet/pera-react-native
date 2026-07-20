@@ -60,6 +60,7 @@ const weirdAccount = {
 const makeSelector = () =>
     createSigningStrategySelector({
         signTransactions: vi.fn(),
+        signQuantumTransactions: vi.fn(),
         signArbitraryData: vi.fn(),
         signArc60: vi.fn(),
         getLocalParticipants: vi.fn(() => []),
@@ -160,6 +161,7 @@ describe('createSigningStrategySelector', () => {
 
             const select = createSigningStrategySelector({
                 signTransactions,
+                signQuantumTransactions: vi.fn(),
                 signArbitraryData: vi.fn(),
                 signArc60: vi.fn(),
                 getLocalParticipants: vi.fn(() => participants),

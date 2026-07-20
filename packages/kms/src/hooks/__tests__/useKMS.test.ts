@@ -14,10 +14,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { InvalidKeyError, KeyAccessError, KeyNotFoundError } from '../../errors'
+import {
+    InvalidKeyError,
+    KeyAccessError,
+    KeyManagementError,
+    KeyNotFoundError,
+} from '../../errors'
 import { SeedScheme } from '../../constants'
 import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
 import { FALCON_SIGNATURE_LENGTH } from '../../crypto/falcon-utils'
+import { getPQProvider } from '../../crypto/pq'
+import { FALCON_CHILD_KEY_TYPE } from '../../models'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -476,7 +483,7 @@ describe('useKMS', () => {
             return child
         }
 
-        it('signTransactionsWithKey routes quantum children to the mock signer, not keyStore.sign', async () => {
+        it('signTransactionsWithKey routes quantum children to the real Falcon signer, not keyStore.sign', async () => {
             const child = arrangeQuantumPair()
             const tx = new Uint8Array([1, 2, 3])
 
@@ -492,10 +499,40 @@ describe('useKMS', () => {
 
             expect(mockKeyStoreSign).not.toHaveBeenCalled()
             expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
-            expect(sigs![0]).toHaveLength(FALCON_SIGNATURE_LENGTH)
+            expect(sigs![0].length).toBeGreaterThan(0)
+            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
         })
 
-        it('quantum signatures are deterministic per payload and differ across payloads', async () => {
+        it('signTransactionsWithKey produces a real Falcon signature for the seed keypair', async () => {
+            const child = arrangeQuantumPair()
+            const payload = new Uint8Array([1, 2, 3, 4])
+
+            const { result } = renderHook(() => useKMS())
+            let sigs: Optional<Uint8Array[]>
+            await act(async () => {
+                sigs = await result.current.signTransactionsWithKey(
+                    child.id,
+                    'pera.accounts',
+                    [payload],
+                )
+            })
+
+            // Cross-check against the provider directly: deriving the
+            // keypair from the same seed and signing the same payload must
+            // reproduce byte-identical output. This proves the hook routes
+            // through the real PQ provider rather than the old hash-based
+            // mock (whose output never matched a real Falcon signature).
+            const provider = getPQProvider()
+            const { secretKey } =
+                provider.generateKeypairFromSeed(QUANTUM_SEED_BYTES)
+            const expected = provider.sign(secretKey, payload)
+
+            expect(sigs![0].length).toBeGreaterThan(0)
+            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
+            expect(Array.from(sigs![0])).toEqual(Array.from(expected))
+        })
+
+        it('quantum signatures are deterministic per (seed, payload) and differ across payloads', async () => {
             const child = arrangeQuantumPair()
             const txA = new Uint8Array([1, 2, 3])
             const txB = new Uint8Array([4, 5, 6])
@@ -520,7 +557,7 @@ describe('useKMS', () => {
             expect(Array.from(first![0])).not.toEqual(Array.from(first![1]))
         })
 
-        it('signDataWithKey routes quantum children to the mock signer', async () => {
+        it('signDataWithKey routes quantum children to the real Falcon signer', async () => {
             const child = arrangeQuantumPair()
 
             const { result } = renderHook(() => useKMS())
@@ -534,7 +571,8 @@ describe('useKMS', () => {
             })
 
             expect(mockKeyStoreSign).not.toHaveBeenCalled()
-            expect(sigs![0]).toHaveLength(FALCON_SIGNATURE_LENGTH)
+            expect(sigs![0].length).toBeGreaterThan(0)
+            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
         })
 
         it('rejects and never exports the seed when the ACL denies the domain', async () => {
@@ -637,6 +675,75 @@ describe('useKMS', () => {
             })
             expect(mockCreateQuantumKey).toHaveBeenCalledWith({ id: 'f-1' })
             expect(keyResult).toEqual(mockResult)
+        })
+
+        describe('getQuantumPublicKey', () => {
+            it('returns the committed Falcon public key, matching the real seed derivation', async () => {
+                const { seedFromMnemonic } = await import('algosdk')
+                const seed = seedFromMnemonic(TEST_MNEMONIC)
+                const { publicKey } =
+                    getPQProvider().generateKeypairFromSeed(seed)
+
+                seedQuantumRoot('quantum-1')
+                mockKeystoreKeys.push({
+                    id: 'quantum-1-quantum',
+                    type: FALCON_CHILD_KEY_TYPE,
+                    algorithm: 'raw',
+                    extractable: false,
+                    publicKey,
+                    metadata: { parentKeyId: 'quantum-1' },
+                })
+
+                const { result } = renderHook(() => useKMS())
+                const pub =
+                    result.current.getQuantumPublicKey('quantum-1-quantum')
+
+                expect(pub).toBeInstanceOf(Uint8Array)
+                expect(Array.from(pub)).toEqual(Array.from(publicKey))
+            })
+
+            it('throws KeyManagementError when the keyPairId is unknown', () => {
+                const { result } = renderHook(() => useKMS())
+                expect(() =>
+                    result.current.getQuantumPublicKey('missing-id'),
+                ).toThrow(KeyManagementError)
+            })
+
+            it('throws KeyManagementError when the key exists but has no public key', () => {
+                seedQuantumRoot('quantum-2')
+                mockKeystoreKeys.push({
+                    id: 'quantum-2-quantum',
+                    type: FALCON_CHILD_KEY_TYPE,
+                    algorithm: 'raw',
+                    extractable: false,
+                    metadata: { parentKeyId: 'quantum-2' },
+                })
+
+                const { result } = renderHook(() => useKMS())
+                expect(() =>
+                    result.current.getQuantumPublicKey('quantum-2-quantum'),
+                ).toThrow(KeyManagementError)
+            })
+
+            it('throws KeyManagementError when the keyPairId points at a non-quantum child (wrong type)', () => {
+                // A real caller now resolves account.keyPairId here; guarding on
+                // the child type prevents silently returning the wrong bytes for
+                // a keyPairId that belongs to a non-Falcon (e.g. Ed25519) child.
+                seedQuantumRoot('quantum-3')
+                mockKeystoreKeys.push({
+                    id: 'quantum-3-ed25519',
+                    type: 'ed25519',
+                    algorithm: 'raw',
+                    extractable: false,
+                    publicKey: new Uint8Array([1, 2, 3]),
+                    metadata: { parentKeyId: 'quantum-3' },
+                })
+
+                const { result } = renderHook(() => useKMS())
+                expect(() =>
+                    result.current.getQuantumPublicKey('quantum-3-ed25519'),
+                ).toThrow(KeyManagementError)
+            })
         })
     })
 

@@ -419,6 +419,11 @@ function buildAppConfig(env) {
       // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
       './plugins/withPublicSwiftImports.js',
 
+      // On-device Falcon-1024 signing (@joe-p/react-native-falcon, PQ-020):
+      // pin the New Architecture flag the Nitro module requires. The native
+      // pod/Gradle module itself is picked up by RN/Nitro autolinking.
+      './plugins/withFalconNitro.js',
+
       // Custom plugin: exclude the local data stores (MMKV + pera.db) from iOS
       // backups (NSURLIsExcludedFromBackupKey), and on Android from cloud-backup
       // + device-transfer via dataExtractionRules / fullBackupContent — alongside

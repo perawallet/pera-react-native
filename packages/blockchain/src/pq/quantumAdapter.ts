@@ -28,6 +28,25 @@ export const assembleQuantumSignedTxn = async (input: {
     unsignedTxnBytes: Uint8Array
     publicKey: Uint8Array
     falconSignature: Uint8Array
+    // SWAP: fork limitation — accepted for interface parity with the
+    // rekey-routing seam (Task 6 selects this quantum signer when an
+    // account's authAddress is itself a quantum address) but currently a
+    // documented NO-OP. `addressWithSignersFromRawPQSigner` (the fork
+    // function backing `addressWithSignersFromRawFalcon1024Signer`, see
+    // `@joe-p/algosdk`'s `src/pq-signer.ts`) hardcodes the `sgnr` it writes
+    // to the SIGNING KEY's own derived quantum address whenever the decoded
+    // txn's sender differs from it — there is no knob to make `sgnr` carry
+    // an arbitrary caller-supplied address instead. The fork's only
+    // override, `sendingAddress` (2nd positional arg), changes what is
+    // COMPARED against the txn sender to decide whether to emit `sgnr` at
+    // all — it does not change the VALUE written into `sgnr` — so wiring
+    // `authAddress` into it would not achieve "carry this address as
+    // sgnr"; it would either no-op (already the derived address) or
+    // silently suppress `sgnr` (if it happened to equal the txn sender).
+    // Left unwired rather than faked. See quantumAdapter.spec.ts's
+    // rekey tests: `sgnr` is already set correctly and automatically from
+    // the txn's own sender field, with no extra argument required.
+    authAddress?: string
 }): Promise<Uint8Array> => {
     const txn = decodeUnsignedTransaction(input.unsignedTxnBytes)
     // The fork's raw signer builds the pqsig SignedTransaction (computing the

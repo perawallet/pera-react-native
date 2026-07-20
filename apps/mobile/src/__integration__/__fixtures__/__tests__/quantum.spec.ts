@@ -14,10 +14,8 @@
 
 import { describe, expect, it } from 'vitest'
 import { seedFromMnemonic } from 'algosdk'
-import {
-    deriveFalconAddressMock,
-    deriveFalconKeypairMock,
-} from '@perawallet/wallet-core-kms'
+import { getPQProvider } from '@perawallet/wallet-core-kms'
+import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC,
@@ -35,7 +33,7 @@ describe('quantumAccountFixtures', () => {
 
         // Act / Assert: the exported address must match re-deriving from the exported pubkey
         expect(QUANTUM_TEST_ADDRESS).toBe(
-            deriveFalconAddressMock(QUANTUM_TEST_PUBLIC_KEY),
+            deriveQuantumAddress(QUANTUM_TEST_PUBLIC_KEY),
         )
     })
 
@@ -44,12 +42,12 @@ describe('quantumAccountFixtures', () => {
         const seed = seedFromMnemonic(QUANTUM_TEST_MNEMONIC)
 
         // Act
-        const { publicKey } = deriveFalconKeypairMock(seed)
+        const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
 
         // Assert
         expect(new Uint8Array(publicKey)).toEqual(
             new Uint8Array(QUANTUM_TEST_PUBLIC_KEY),
         )
-        expect(deriveFalconAddressMock(publicKey)).toBe(QUANTUM_TEST_ADDRESS)
+        expect(deriveQuantumAddress(publicKey)).toBe(QUANTUM_TEST_ADDRESS)
     })
 })

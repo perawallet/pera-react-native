@@ -13,7 +13,7 @@
 import { toError, type Network } from '@perawallet/wallet-core-shared'
 import {
     useNetworkStore,
-    type PeraSignedTransaction,
+    type PeraSignedTxnResult,
 } from '@perawallet/wallet-core-blockchain'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import type {
@@ -77,12 +77,15 @@ export type GetDeviceIdFn = () => string | undefined
 export type CreateDraftSignRequestInput = {
     multisigAddress: string
     /**
-     * Unsigned `PeraSignedTransaction[]` — `.txn` is populated, `sig`/`msig`
-     * are absent. The app-side createDraftSignRequest encodes these to the
-     * raw msgpack bytes (without the "TX" prefix) that the propose API
-     * expects, and persists them in the draft store.
+     * Unsigned transactions — `.txn` is populated, `sig`/`msig` are absent.
+     * Typed as `PeraSignedTxnResult[]` because it's sourced directly from
+     * `SigningResult['signedData']['signed']`; deferred propose is a
+     * multisig-only path, so this is a plain `PeraSignedTransaction[]` in
+     * practice. The app-side createDraftSignRequest only reads `.txn` to
+     * encode the raw msgpack bytes (without the "TX" prefix) that the
+     * propose API expects, and persists them in the draft store.
      */
-    signedTransactions: PeraSignedTransaction[]
+    signedTransactions: PeraSignedTxnResult[]
     proposeType: MultisigProposeMode
     source: SourceMetadata
 }

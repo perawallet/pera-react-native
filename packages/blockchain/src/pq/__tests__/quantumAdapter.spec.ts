@@ -137,4 +137,51 @@ describe('quantumAdapter', () => {
         // address, since the signer differs from the txn sender.
         expect(decoded.sgnr?.toString()).toBe(deriveQuantumAddress(publicKey))
     })
+
+    // `authAddress` is accepted for interface parity with the rekey-routing
+    // seam (Task 6 selects the quantum signer when an account's authAddress
+    // is a quantum address) but is a documented NO-OP here: the fork's
+    // addressWithSignersFromRawPQSigner hardcodes `sgnr` to the SIGNING KEY's
+    // own derived quantum address whenever the decoded txn's sender differs
+    // from it (see node_modules @joe-p/algosdk src/pq-signer.ts). There is no
+    // knob to make `sgnr` carry an arbitrary caller-supplied address instead
+    // — the fork's only override (`sendingAddress`, 2nd positional arg to
+    // addressWithSignersFromRawFalcon1024Signer) changes what is COMPARED
+    // against the txn sender to decide whether to emit `sgnr` at all; it does
+    // NOT change the VALUE written into `sgnr`. So passing our own
+    // `authAddress` through as that override would not achieve "carry this
+    // address as sgnr" — it would either be a no-op (already the derived
+    // address) or suppress `sgnr` entirely (if it happened to equal the txn
+    // sender). Rather than wire something misleading, we accept-and-ignore
+    // the param and rely on the automatic rekey detection proven above.
+    test('assembleQuantumSignedTxn treats authAddress as a documented no-op (fork cannot carry an arbitrary sgnr)', async () => {
+        const txn = makeTxn()
+
+        let capturedDigest: Uint8Array | undefined
+        const { txnSigner } = addressWithSignersFromRawFalcon1024Signer({
+            falcon1024PublicKey: publicKey,
+            falcon1024Signer: async (b: Uint8Array) => {
+                capturedDigest = b
+                return signCompressed(privateKey, b)
+            },
+        })
+        await txnSigner([txn], [0])
+
+        const falconSignature = signCompressed(privateKey, capturedDigest!)
+        const unsignedTxnBytes = encodeUnsignedTransaction(txn)
+
+        const withoutAuthAddress = await assembleQuantumSignedTxn({
+            unsignedTxnBytes,
+            publicKey,
+            falconSignature,
+        })
+        const withAuthAddress = await assembleQuantumSignedTxn({
+            unsignedTxnBytes,
+            publicKey,
+            falconSignature,
+            authAddress: deriveQuantumAddress(otherPublicKey),
+        })
+
+        expect(withAuthAddress).toEqual(withoutAuthAddress)
+    })
 })
