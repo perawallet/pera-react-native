@@ -94,6 +94,29 @@ case "$PROFILE" in
       "DISCOVER_BASE_URL" "STAKING_BASE_URL" "ONRAMP_BASE_URL" "TESTNET_BAANX_CLIENT_KEY"
     )
     ;;
+  web)
+    # Zip-only build (no store/CWS upload yet), so no signing/upload
+    # credentials are required — just the same backend wiring as ios/android.
+    required_global+=(
+      "SLACK_WEBHOOK_URL"
+    )
+    required_prefixed+=(
+      "MAINNET_BACKEND_URL"
+      "TESTNET_BACKEND_URL"
+      "BACKEND_API_KEY"
+    )
+    # Firebase Web SDK / GA4 / Sentry are extension-only features that
+    # degrade gracefully when unset (see extensions/platform-chrome/src/
+    # services/firebase-app.ts) — optional here, but effectively required for
+    # Remote Config, analytics, and crash reporting to work in staging/prod.
+    optional_prefixed+=(
+      "DISCOVER_BASE_URL" "STAKING_BASE_URL" "ONRAMP_BASE_URL" "TESTNET_BAANX_CLIENT_KEY"
+      "FIREBASE_API_KEY" "FIREBASE_AUTH_DOMAIN" "FIREBASE_DATABASE_URL"
+      "FIREBASE_PROJECT_ID" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID"
+      "FIREBASE_APP_ID" "FIREBASE_MEASUREMENT_ID" "GA_MEASUREMENT_API_SECRET"
+      "SENTRY_DSN"
+    )
+    ;;
   *)
     echo "ERROR: unknown VALIDATE_PROFILE '$PROFILE'" >&2
     exit 1
