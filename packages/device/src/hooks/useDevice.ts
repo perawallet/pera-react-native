@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useRef } from 'react'
-import { isNotFoundError, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isNotFoundError,
+    isPeraNetworkError,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useCreateDeviceMutation } from './useCreateDeviceMutation'
@@ -20,6 +24,12 @@ import { useDeviceID } from './useDeviceID'
 import { usePushToken } from './usePushToken'
 import { useDeviceStore } from '../store'
 import { updateDevice as updateDeviceEndpoint } from './endpoints'
+
+const DEVICE_ALREADY_EXISTS = 'device_already_exists'
+
+const shouldRecreateDevice = (error: unknown): boolean =>
+    isNotFoundError(error) ||
+    (isPeraNetworkError(error) && error.backendType === DEVICE_ALREADY_EXISTS)
 
 export const useDevice = () => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
@@ -71,10 +81,15 @@ export const useDevice = () => {
     // handled by ky inside the shared query-client; layering another retry
     // loop here would compound to up to 6 requests per call.
     //
-    // The 404 → createDevice fallback stays at this layer because it is
-    // application logic, not a transport concern: the server doesn't know
-    // this device anymore (stale ID after env reset, deletion, etc.) so we
-    // re-register. Mirrors Android's 404 → re-register handling.
+    // The createDevice fallback stays at this layer because it is application
+    // logic, not a transport concern: it fires when the server doesn't
+    // recognize this device anymore, either because (a) the PUT 404s — stale
+    // ID after env reset, deletion, etc. (mirrors Android's 404 →
+    // re-register handling), or (b) the backend reports
+    // `device_already_exists` — Pera 6 iOS's DeviceRegistrationController hit
+    // this when the device row exists but is no longer addressable by this
+    // ID, and fell back to POST the same way. Either condition re-registers
+    // via createDevice.
     const registerDevice = useCallback(
         async (addresses: string[]) => {
             const attemptId = ++inFlightIdRef.current
@@ -91,9 +106,12 @@ export const useDevice = () => {
 
             try {
                 const payload = await buildPayload(addresses)
-                await updateDevice({ deviceId, data: payload })
+                await updateDevice({
+                    deviceId,
+                    data: { ...payload, id: deviceId },
+                })
             } catch (error) {
-                if (!isNotFoundError(error)) throw error
+                if (!shouldRecreateDevice(error)) throw error
                 await createDeviceForNetwork(
                     targetNetwork,
                     addresses,
