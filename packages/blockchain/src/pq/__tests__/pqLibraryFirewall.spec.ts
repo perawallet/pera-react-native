@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import { readdirSync, readFileSync, existsSync } from 'node:fs'
+import {
+    readdirSync,
+    readFileSync,
+    existsSync,
+    mkdtempSync,
+    writeFileSync,
+    rmSync,
+} from 'node:fs'
 import { join, dirname, sep } from 'node:path'
+import { tmpdir } from 'node:os'
 import { describe, it, expect } from 'vitest'
 
 // Pera's quantum (post-quantum, Falcon-1024) accounts integrate Joe Polny's
@@ -40,6 +48,21 @@ const SCAN_ROOT_DIRS = ['packages', 'apps']
 // planted inside a non-seam `__tests__` folder is a deliberate, accepted
 // blind spot of this guard.
 const SKIPPED_DIR_NAMES = new Set(['node_modules', '.git', 'dist', '__tests__'])
+
+// Build-config files (e.g. `vite.config.ts`, `vitest.config.ts`) are a
+// deliberate, accepted blind spot — the same class as `__tests__` above. They
+// run at BUILD time, are never shipped in the runtime bundle, and legitimately
+// NAME external packages: a bundler `external: ['@joe-p/react-native-falcon']`
+// entry is a build directive telling the bundler "don't inline this; the app's
+// Metro bundler resolves it", NOT a runtime import of the PQ lib. Scanning
+// configs would flag that safe declaration. The exemption is scoped to the
+// `*.config.(ts|tsx)` filename suffix so it cannot widen to arbitrary source
+// files — a genuine `import ... from '@joe-p/...'` in a non-config, non-seam
+// source file is still caught (see the regression test below).
+const BUILD_CONFIG_FILE_PATTERN = /\.config\.(ts|tsx)$/
+
+const isBuildConfigFile = (fileName: string): boolean =>
+    BUILD_CONFIG_FILE_PATTERN.test(fileName)
 
 // Resolved from __dirname rather than hardcoded, since this spec runs from
 // inside a git worktree where `../../../..` would not reliably land on the
@@ -79,7 +102,10 @@ const listSourceFilesRecursively = (root: string, dir: string): string[] =>
             if (isInsideSeam(root, fullPath)) return []
             return listSourceFilesRecursively(root, fullPath)
         }
-        return /\.(ts|tsx)$/.test(entry.name) ? [fullPath] : []
+        if (!/\.(ts|tsx)$/.test(entry.name)) return []
+        // Build configs name externals legitimately; deliberate blind spot.
+        if (isBuildConfigFile(entry.name)) return []
+        return [fullPath]
     })
 
 const findViolations = (files: string[]): string[] =>
@@ -158,5 +184,44 @@ describe('PQ library import firewall', () => {
             'quantumAdapter.ts',
         )
         expect(isInsideSeam(root, genuineSeamFile)).toBe(true)
+    })
+
+    it('build-config files are a deliberate blind spot: an @joe-p external string in vite.config.ts is NOT flagged', () => {
+        // packages/kms/vite.config.ts declares '@joe-p/react-native-falcon' in
+        // rollup `external` (a build directive — the app's Metro bundler
+        // resolves the native module — not a runtime import). It genuinely
+        // contains the forbidden specifier, yet must be excluded from the scan.
+        const viteConfig = join(root, 'packages', 'kms', 'vite.config.ts')
+        const content = readFileSync(viteConfig, 'utf-8')
+        expect(content).toMatch(FORBIDDEN_SPECIFIER_PATTERN)
+
+        expect(isBuildConfigFile('vite.config.ts')).toBe(true)
+        expect(isBuildConfigFile('vitest.config.ts')).toBe(true)
+
+        // ...and it is actually dropped from the collected scan set, so the
+        // main guard above stays green because of the exemption (not because
+        // the string is absent).
+        const scanned = SCAN_ROOT_DIRS.flatMap(dir =>
+            listSourceFilesRecursively(root, join(root, dir)),
+        )
+        expect(scanned).not.toContain(viteConfig)
+    })
+
+    it('regression: a real @joe-p import in a non-config, non-seam source file IS still flagged (exemption cannot widen)', () => {
+        // The build-config exemption is scoped to the `*.config.ts` filename
+        // suffix. A plain source file with the same import must still trip the
+        // guard, so the blind spot can never be widened to arbitrary files.
+        const tmpDir = mkdtempSync(join(tmpdir(), 'pq-firewall-'))
+        try {
+            const leakFile = join(tmpDir, 'leak.ts')
+            writeFileSync(leakFile, "import { x } from '@joe-p/algosdk'\n")
+
+            expect(isBuildConfigFile('leak.ts')).toBe(false)
+            expect(findViolations([leakFile])).toEqual([
+                `${leakFile} → @joe-p/algosdk`,
+            ])
+        } finally {
+            rmSync(tmpDir, { recursive: true, force: true })
+        }
     })
 })

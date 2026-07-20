@@ -50,7 +50,10 @@ export const AddNoteContent = () => {
                             : t('send_funds.add_note.button')
                     }
                     rightAction={
-                        <PWText onPress={() => void handleSubmit(done)()}>
+                        <PWText
+                            onPress={() => void handleSubmit(done)()}
+                            testID='add_note_done_button'
+                        >
                             {t('send_funds.add_note.done')}
                         </PWText>
                     }
@@ -68,6 +71,7 @@ export const AddNoteContent = () => {
                         label={t('send_funds.add_note.placeholder')}
                         errorMessage={errors.note?.message}
                         autoFocus
+                        testID='add_note_input'
                         InputComponent={BottomSheetTextInput}
                     />
                 )}

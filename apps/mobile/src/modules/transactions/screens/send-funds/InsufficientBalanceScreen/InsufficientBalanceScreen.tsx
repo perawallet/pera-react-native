@@ -37,6 +37,7 @@ export const InsufficientBalanceScreen = () => {
     return (
         <PWResultView
             variant='error'
+            testID='send_insufficient_balance'
             title={t('send_funds.insufficient_balance.title')}
             body={t('send_funds.insufficient_balance.message', {
                 amount: requiredBalance,

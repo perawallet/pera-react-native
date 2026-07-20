@@ -83,7 +83,9 @@ const {
     const mockRequest = vi.fn().mockResolvedValue(undefined)
     const mockQueryClient = {}
     const mockRekeyedScan = vi.fn()
-    const mockAllAccounts = vi.fn<() => { address: string }[]>(() => [])
+    const mockAllAccounts = vi.fn<() => { address: string; type: string }[]>(
+        () => [],
+    )
     return {
         mockPrefetch,
         mockRequest,
@@ -553,8 +555,8 @@ describe('useLedgerSelectAccountsScreen', () => {
 
     it('reports areAllImported and exits the flow on continue when every discovered account is already imported', () => {
         mockAllAccounts.mockReturnValue([
-            { address: 'AAA111' },
-            { address: 'BBB222' },
+            { address: 'AAA111', type: 'hardware' },
+            { address: 'BBB222', type: 'hardware' },
         ])
 
         const { result } = renderHook(() => useLedgerSelectAccountsScreen())
@@ -633,6 +635,90 @@ describe('useLedgerSelectAccountsScreen', () => {
             },
             { kind: 'derived', account: serializedAuth },
         ])
+    })
+
+    it('keeps a derived address imported as a watch account selectable and marks it upgradeable', () => {
+        mockAllAccounts.mockReturnValue([{ address: 'AAA111', type: 'watch' }])
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        expect(result.current.alreadyImportedAddresses.has('AAA111')).toBe(
+            false,
+        )
+        expect(result.current.upgradeableAddresses.has('AAA111')).toBe(true)
+        expect(result.current.areAllImported).toBe(false)
+
+        act(() => {
+            result.current.toggleSelection('AAA111')
+        })
+        expect(result.current.selectedAddresses.has('AAA111')).toBe(true)
+
+        act(() => {
+            result.current.handleContinue()
+        })
+        const arg = mockNavigate.mock.calls.find(
+            c => c[0] === 'LedgerVerify',
+        )?.[1] as { selectedAccounts: Array<{ account: { address: string } }> }
+        expect(arg.selectedAccounts[0].account.address).toBe('AAA111')
+    })
+
+    it('still disables a derived address imported as a hardware account', () => {
+        mockAllAccounts.mockReturnValue([
+            { address: 'AAA111', type: 'hardware' },
+        ])
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        expect(result.current.alreadyImportedAddresses.has('AAA111')).toBe(true)
+        expect(result.current.upgradeableAddresses.has('AAA111')).toBe(false)
+
+        act(() => {
+            result.current.toggleSelection('AAA111')
+        })
+        expect(result.current.selectedAddresses.has('AAA111')).toBe(false)
+    })
+
+    it('keeps a rekeyed candidate disabled when its address already exists as a watch account', () => {
+        // A rekeyed import IS a watch account — nothing to upgrade.
+        mockRekeyedScan.mockReturnValue({
+            rekeyed: [
+                {
+                    kind: 'rekeyed',
+                    address: 'REKEYED_A',
+                    authAccount: {
+                        address: 'AAA111',
+                        publicKey: new Uint8Array([1]),
+                        accountIndex: 0,
+                    },
+                },
+            ],
+            isScanning: false,
+        })
+        mockAllAccounts.mockReturnValue([
+            { address: 'REKEYED_A', type: 'watch' },
+        ])
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        expect(result.current.alreadyImportedAddresses.has('REKEYED_A')).toBe(
+            true,
+        )
+        expect(result.current.upgradeableAddresses.has('REKEYED_A')).toBe(false)
+    })
+
+    it('does not report areAllImported while a watch upgrade is still actionable', () => {
+        mockAllAccounts.mockReturnValue([
+            { address: 'AAA111', type: 'watch' },
+            { address: 'BBB222', type: 'hardware' },
+        ])
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        expect(result.current.areAllImported).toBe(false)
+        act(() => {
+            result.current.handleContinue()
+        })
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
     })
 
     it('does not double-include the auth account when it is also explicitly selected', () => {

@@ -11,6 +11,7 @@
  */
 
 export * from './isSwappableAsset'
+export * from './quoteFreshness'
 export * from './slippage'
 export * from './resolveSwapHandoffOutcome'
 export * from './validateSwapGroupAgainstQuote'

@@ -25,10 +25,21 @@ import type {
     SigningResult,
     SigningCallbacks,
     SignerInfo,
-    Arc60StdSigData,
-    Arc60Metadata,
 } from '../types'
 import { CannotSignError, SigningError } from '../errors'
+import { signArbitraryDataCase, signArc60Case } from './standardDataSigning'
+
+// Re-exported for backward compatibility with the many call sites that
+// import these from `./createLocalKeyStrategy` — the types now live in
+// `./standardDataSigning`, shared with `createQuantumStrategy`.
+export type {
+    LocalArbitrarySigningFunction,
+    LocalArc60SigningFunction,
+} from './standardDataSigning'
+import type {
+    LocalArbitrarySigningFunction,
+    LocalArc60SigningFunction,
+} from './standardDataSigning'
 
 /**
  * Signing function type that matches useLocalKeyTransactionSigner's signTransactions.
@@ -39,23 +50,6 @@ export type LocalSigningFunction = (
     account: WalletAccount,
 ) => Promise<PeraSignedTransaction[]>
 
-/**
- * Signing function type that matches useArbitraryDataSigner's signArbitraryData
- */
-export type LocalArbitrarySigningFunction = (
-    account: WalletAccount,
-    data: string | string[],
-) => Promise<Uint8Array[]>
-
-/**
- * Signing function type that matches useLocalKeyArc60Signer's signArc60
- */
-export type LocalArc60SigningFunction = (
-    account: WalletAccount,
-    stdSigData: Arc60StdSigData,
-    metadata: Arc60Metadata,
-) => Promise<Uint8Array>
-
 export type LocalKeyStrategyOptions = {
     signTransactions: LocalSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
@@ -63,8 +57,12 @@ export type LocalKeyStrategyOptions = {
 }
 
 /**
- * Creates a signing strategy for accounts with local keys (Algo25, HDWallet,
- * Quantum). These accounts have immediate access to private keys via KMS.
+ * Creates a signing strategy for accounts with local Ed25519 keys (Algo25,
+ * HDWallet). These accounts have immediate access to private keys via KMS.
+ *
+ * Quantum (Falcon) accounts are deliberately NOT handled here — they route
+ * through the dedicated {@link createQuantumStrategy}, which produces the
+ * pqsig byte carrier rather than a plain algosdk `SignedTransaction`.
  */
 export const createLocalKeyStrategy = (
     options: LocalKeyStrategyOptions,
@@ -73,7 +71,7 @@ export const createLocalKeyStrategy = (
 
     return {
         canSign: (account: WalletAccount): boolean => {
-            return hasSigningKeys(account)
+            return hasSigningKeys(account) && !isQuantumAccount(account)
         },
 
         sign: async (
@@ -88,11 +86,7 @@ export const createLocalKeyStrategy = (
                 )
             }
 
-            if (
-                !isAlgo25Account(account) &&
-                !isHDWalletAccount(account) &&
-                !isQuantumAccount(account)
-            ) {
+            if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
                 throw new CannotSignError(
                     account.address,
                     `Unsupported account type: ${account.type}`,
@@ -136,53 +130,23 @@ export const createLocalKeyStrategy = (
                     }
 
                     case 'arbitrary-data': {
-                        // Defense in depth: never sign an item whose claimed
-                        // signer differs from the account producing the
-                        // signature (the build step already rejects mixed
-                        // signers, but the signing key must never be applied to
-                        // data attributed to another account).
-                        const mismatched = group.data.data.find(
-                            m => m.signer !== account.address,
-                        )
-                        if (mismatched) {
-                            throw new CannotSignError(
-                                account.address,
-                                `Arbitrary-data item claims signer ${mismatched.signer} but is being signed by ${account.address}`,
-                            )
-                        }
-
-                        callbacks?.onSigningStart?.()
-                        const payloads = group.data.data.map(m => m.data)
-                        const signatures = await signArbitraryData(
+                        return await signArbitraryDataCase(
+                            group.data,
+                            group.originalIndices,
                             account,
-                            payloads,
+                            signArbitraryData,
+                            callbacks,
                         )
-                        callbacks?.onSigningComplete?.()
-
-                        return {
-                            signedData: {
-                                type: 'arbitrary-data',
-                                signatures,
-                            },
-                            signers: [{ address: account.address }],
-                            originalIndices: group.originalIndices,
-                        }
                     }
 
                     case 'arc60': {
-                        callbacks?.onSigningStart?.()
-                        const signature = await signArc60(
+                        return await signArc60Case(
+                            group.data,
+                            group.originalIndices,
                             account,
-                            group.data.stdSigData,
-                            group.data.metadata,
+                            signArc60,
+                            callbacks,
                         )
-                        callbacks?.onSigningComplete?.()
-
-                        return {
-                            signedData: { type: 'arc60', signature },
-                            signers: [{ address: account.address }],
-                            originalIndices: group.originalIndices,
-                        }
                     }
                 }
             } catch (error) {

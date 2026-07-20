@@ -106,6 +106,7 @@ const {
         }> = []
         const signerOverrides = new Map<number, string>()
         const signableAddresses: Set<string> = context.signableAddresses
+        let requested = 0
 
         for (let i = 0; i < transactions.length; i++) {
             const entry = transactions[i]
@@ -131,6 +132,7 @@ const {
                     field: 'signers',
                 })
             }
+            requested++
             const sender = decodedSender(i, entry)
             let candidate: string
             if (entry.signers && entry.signers.length === 1) {
@@ -173,6 +175,16 @@ const {
             if (candidate !== sender) {
                 signerOverrides.set(toSignIndex, candidate)
             }
+        }
+
+        // Mirrors the real resolver: a request that asked for at least one
+        // signature but yielded nothing signable is an error, not an
+        // all-null success.
+        if (requested > 0 && toSign.length === 0) {
+            throw new MockArc0001Error(
+                4100,
+                'the wallet cannot sign any of the requested transactions',
+            )
         }
 
         return { allDecoded, toSign, signerOverrides }
@@ -329,6 +341,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ...(actual as any),
         logger: {
             debug: vi.fn(),
+            warn: vi.fn(),
             error: vi.fn(),
         },
         decodeFromBase64: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
@@ -460,12 +473,13 @@ describe('useWalletConnectHandlers', () => {
             })
         })
 
-        it('should handle rejection callback', () => {
+        it('should handle rejection callback', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
                 rejectRequest: vi.fn(),
             }
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
             const payload = {
                 params: [
                     {
@@ -487,13 +501,17 @@ describe('useWalletConnectHandlers', () => {
 
             const { reject } = mockAddSignRequest.mock.calls[0][0]
 
-            act(() => {
-                reject()
+            await act(async () => {
+                await reject()
             })
 
-            expect(connector.rejectRequest).toHaveBeenCalledWith({
-                id: 1,
-                error: expect.objectContaining({ message: 'User rejected' }),
+            await vi.waitFor(() => {
+                expect(connector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: expect.objectContaining({
+                        message: 'User rejected',
+                    }),
+                })
             })
         })
 
@@ -543,6 +561,7 @@ describe('useWalletConnectHandlers', () => {
                 accounts: ['addr1'],
                 rejectRequest: vi.fn(),
             }
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
             const payload = {
                 params: [
                     {
@@ -570,9 +589,11 @@ describe('useWalletConnectHandlers', () => {
             const incomingError = new Error('Rejected')
             await error(incomingError)
 
-            expect(connector.rejectRequest).toHaveBeenCalledWith({
-                id: 1,
-                error: incomingError,
+            await vi.waitFor(() => {
+                expect(connector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: incomingError,
+                })
             })
             expect(mockSetConnectionError).toHaveBeenCalledWith(
                 expect.any(WalletConnectSignRequestError),
@@ -925,12 +946,13 @@ describe('useWalletConnectHandlers', () => {
             })
         })
 
-        it('wires reject to connector.rejectRequest', () => {
+        it('wires reject to guarded delivery on the revived connector', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
                 rejectRequest: vi.fn(),
             }
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
 
             result.current.handleSignTransaction(
                 connector as any,
@@ -940,22 +962,27 @@ describe('useWalletConnectHandlers', () => {
             )
 
             const { reject } = mockAddSignRequest.mock.calls[0][0]
-            act(() => {
-                reject()
+            await act(async () => {
+                await reject()
             })
 
-            expect(connector.rejectRequest).toHaveBeenCalledWith({
-                id: 1,
-                error: expect.objectContaining({ message: 'User rejected' }),
+            await vi.waitFor(() => {
+                expect(connector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: expect.objectContaining({
+                        message: 'User rejected',
+                    }),
+                })
             })
         })
 
-        it('wires error to rejectRequest and surfaces a connection error', async () => {
+        it('wires error to guarded delivery and surfaces a connection error', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
                 rejectRequest: vi.fn(),
             }
+            ;(ensureConnectorReady as any).mockResolvedValue(connector)
 
             result.current.handleSignTransaction(
                 connector as any,
@@ -968,9 +995,11 @@ describe('useWalletConnectHandlers', () => {
             const incomingError = new Error('Rejected')
             await error(incomingError)
 
-            expect(connector.rejectRequest).toHaveBeenCalledWith({
-                id: 1,
-                error: incomingError,
+            await vi.waitFor(() => {
+                expect(connector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: incomingError,
+                })
             })
             expect(mockSetConnectionError).toHaveBeenCalledWith(
                 expect.any(WalletConnectSignRequestError),
@@ -1149,7 +1178,7 @@ describe('useWalletConnectHandlers', () => {
             expect(signRequest.signerOverrides).toEqual(new Map([[0, 'addr1']]))
         })
 
-        it('approves with all-nulls when signers only references unknown addresses', async () => {
+        it('rejects with 4100 when signers only references unknown addresses (no all-null success)', async () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -1158,20 +1187,22 @@ describe('useWalletConnectHandlers', () => {
             }
             ;(ensureConnectorReady as any).mockResolvedValue(connector)
 
-            result.current.handleSignTransaction(
-                connector as any,
-                Networks.mainnet,
-                null,
-                txnPayload([{ txn: 'txn', signers: ['UNKNOWN_ADDR'] }]),
+            expect(() =>
+                result.current.handleSignTransaction(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    txnPayload([{ txn: 'txn', signers: ['UNKNOWN_ADDR'] }]),
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    name: 'Arc0001Error',
+                    code: 4100,
+                }),
             )
-            await Promise.resolve()
-            await Promise.resolve()
 
             expect(mockAddSignRequest).not.toHaveBeenCalled()
-            expect(connector.approveRequest).toHaveBeenCalledWith({
-                id: 1,
-                result: [null],
-            })
+            expect(connector.approveRequest).not.toHaveBeenCalled()
         })
 
         it('forwards the full pre-filter payload as groupContext for group-integrity validation', () => {
@@ -1350,6 +1381,262 @@ describe('useWalletConnectHandlers', () => {
             // the inline connection-error banner.
             expect(connector.rejectRequest).not.toHaveBeenCalled()
             expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+    })
+
+    // User rejections and error responses must not call the (possibly
+    // dead-socketed) connector directly — WC v1 silently queues into a dead
+    // socket after backgrounding, leaving the dApp hanging. Every response
+    // goes through ensureConnectorReady's revived connector.
+    describe('guarded reject delivery', () => {
+        beforeEach(() => {
+            // Earlier hardware-signer tests override these with bare
+            // mockReturnValue calls, which survive clearAllMocks —
+            // restore the factory implementations.
+            ;(canSignArbitraryData as any).mockImplementation(
+                (account: any) => account?.type !== 'hardware',
+            )
+            ;(useAllAccounts as any).mockImplementation(
+                () => signingAccountsState.current,
+            )
+        })
+
+        const dataPayload = () => ({
+            params: [
+                {
+                    message: 'Sign me',
+                    data: 'somedata',
+                    chainId: 4160,
+                    signer: 'addr1',
+                },
+            ],
+            id: 1,
+        })
+        const arc60Payload = () => ({
+            id: 42,
+            params: {
+                data: 'aGVsbG8=',
+                signer: 'addr1',
+                domain: 'example.com',
+                authenticatorData: 'YXV0aA==',
+                metadata: { scope: 1, encoding: 'utf-8' },
+            },
+        })
+        const txnPayload = () =>
+            ({
+                params: [[{ txn: 'encodedTxn' }]],
+                method: 'algo_signTxn',
+                jsonrpc: '2.0',
+                id: 1,
+            }) as unknown as WalletConnectTransactionPayload
+
+        it('delivers an arbitrary-data user reject through the revived connector', async () => {
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            const readyConnector = {
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            ;(ensureConnectorReady as any).mockResolvedValue(readyConnector)
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                dataPayload(),
+            )
+
+            const { reject } = mockAddSignRequest.mock.calls[0][0]
+            await act(async () => {
+                await reject()
+            })
+
+            await vi.waitFor(() => {
+                expect(readyConnector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: expect.objectContaining({
+                        message: 'User rejected',
+                    }),
+                })
+            })
+            expect(ensureConnectorReady).toHaveBeenCalledWith(
+                'test-client-id',
+                expect.any(Number),
+            )
+            expect(connector.rejectRequest).not.toHaveBeenCalled()
+        })
+
+        it('delivers an ARC-60 user reject through the revived connector', async () => {
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            const readyConnector = {
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            ;(ensureConnectorReady as any).mockResolvedValue(readyConnector)
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                arc60Payload(),
+            )
+
+            const { reject } = mockAddSignRequest.mock.calls[0][0]
+            await act(async () => {
+                await reject()
+            })
+
+            await vi.waitFor(() => {
+                expect(readyConnector.rejectRequest).toHaveBeenCalledWith({
+                    id: 42,
+                    error: expect.objectContaining({
+                        message: 'User rejected',
+                    }),
+                })
+            })
+            expect(connector.rejectRequest).not.toHaveBeenCalled()
+        })
+
+        it('delivers a transaction user reject through the revived connector', async () => {
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            const readyConnector = {
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            ;(ensureConnectorReady as any).mockResolvedValue(readyConnector)
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                txnPayload(),
+            )
+
+            const { reject } = mockAddSignRequest.mock.calls[0][0]
+            await act(async () => {
+                await reject()
+            })
+
+            await vi.waitFor(() => {
+                expect(readyConnector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: expect.objectContaining({
+                        message: 'User rejected',
+                    }),
+                })
+            })
+            expect(connector.rejectRequest).not.toHaveBeenCalled()
+        })
+
+        it('delivers an arbitrary-data error response through the revived connector and still raises the banner', async () => {
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            const readyConnector = {
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            ;(ensureConnectorReady as any).mockResolvedValue(readyConnector)
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                dataPayload(),
+            )
+
+            const { error } = mockAddSignRequest.mock.calls[0][0]
+            const incomingError = new Error('boom')
+            await act(async () => {
+                await error(incomingError)
+            })
+
+            await vi.waitFor(() => {
+                expect(readyConnector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: incomingError,
+                })
+            })
+            expect(mockSetConnectionError).toHaveBeenCalledWith(
+                expect.any(WalletConnectSignRequestError),
+            )
+            expect(connector.rejectRequest).not.toHaveBeenCalled()
+        })
+
+        it('delivers a transaction error response through the revived connector and still raises the banner', async () => {
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            const readyConnector = {
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            ;(ensureConnectorReady as any).mockResolvedValue(readyConnector)
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                txnPayload(),
+            )
+
+            const { error } = mockAddSignRequest.mock.calls[0][0]
+            const incomingError = new Error('boom')
+            await act(async () => {
+                await error(incomingError)
+            })
+
+            await vi.waitFor(() => {
+                expect(readyConnector.rejectRequest).toHaveBeenCalledWith({
+                    id: 1,
+                    error: incomingError,
+                })
+            })
+            expect(mockSetConnectionError).toHaveBeenCalledWith(
+                expect.any(WalletConnectSignRequestError),
+            )
+            expect(connector.rejectRequest).not.toHaveBeenCalled()
+        })
+
+        it('swallows a failed revival on user reject without throwing', async () => {
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            ;(ensureConnectorReady as any).mockRejectedValue(
+                new WalletConnectConnectionTimeoutError('socket stayed dead'),
+            )
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                dataPayload(),
+            )
+
+            const { reject } = mockAddSignRequest.mock.calls[0][0]
+            await expect(reject()).resolves.toBeUndefined()
+
+            await act(async () => {
+                await Promise.resolve()
+            })
+            expect(connector.rejectRequest).not.toHaveBeenCalled()
         })
     })
 })

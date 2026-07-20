@@ -17,16 +17,19 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-const { submitAutoDrawDelegation, isKillswitchConfigured } = vi.hoisted(() => ({
-    submitAutoDrawDelegation: vi.fn(),
-    isKillswitchConfigured: vi.fn(),
-}))
+const { compileAutoDrawProgram, postDelegatorLsig, isKillswitchConfigured } =
+    vi.hoisted(() => ({
+        compileAutoDrawProgram: vi.fn(),
+        postDelegatorLsig: vi.fn(),
+        isKillswitchConfigured: vi.fn(),
+    }))
 const mockBuildEnable = vi.fn()
 const mockBuildKill = vi.fn()
 const mockIsAutoDrawEnabled = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
-    submitAutoDrawDelegation,
+    compileAutoDrawProgram,
+    postDelegatorLsig,
     isKillswitchConfigured,
     useKillswitchAutoDraw: () => ({
         buildEnable: mockBuildEnable,
@@ -66,7 +69,8 @@ const ledgerAccount: WalletAccount = {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    submitAutoDrawDelegation.mockResolvedValue(undefined)
+    compileAutoDrawProgram.mockResolvedValue(new Uint8Array([7, 7, 7]))
+    postDelegatorLsig.mockResolvedValue({ delegatorAddress: 'FUNDINGADDR' })
     isKillswitchConfigured.mockReturnValue(true)
     mockSignProgram.mockResolvedValue(new Uint8Array([1, 2, 3]))
     mockBuildEnable.mockResolvedValue([{ txn: 'enable' }])
@@ -89,13 +93,13 @@ describe('useAutoDrawSwitch', () => {
 
         await result.current.enableAutoDraw(localAccount, 'CARD')
 
-        expect(submitAutoDrawDelegation).toHaveBeenCalledWith(
+        expect(postDelegatorLsig).toHaveBeenCalledWith(
             expect.objectContaining({
                 network: 'testnet',
                 token: 'usdc',
-                address: 'FUNDINGADDR',
+                delegatorAddress: 'FUNDINGADDR',
                 cardAddress: 'CARD',
-                signLsigProgram: expect.any(Function),
+                lsigBytes: expect.any(String),
             }),
         )
         expect(mockBuildEnable).toHaveBeenCalledWith({
@@ -105,9 +109,9 @@ describe('useAutoDrawSwitch', () => {
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({ unsignedTxs: [{ txn: 'enable' }] }),
         )
-        expect(
-            submitAutoDrawDelegation.mock.invocationCallOrder[0],
-        ).toBeLessThan(mockSubmit.mock.invocationCallOrder[0])
+        expect(postDelegatorLsig.mock.invocationCallOrder[0]).toBeLessThan(
+            mockSubmit.mock.invocationCallOrder[0],
+        )
     })
 
     it('enableAutoDraw skips the on-chain leg when the Killswitch is unconfigured', async () => {
@@ -116,7 +120,7 @@ describe('useAutoDrawSwitch', () => {
 
         await result.current.enableAutoDraw(localAccount, 'CARD')
 
-        expect(submitAutoDrawDelegation).toHaveBeenCalledTimes(1)
+        expect(postDelegatorLsig).toHaveBeenCalledTimes(1)
         expect(mockBuildEnable).not.toHaveBeenCalled()
         expect(mockSubmit).not.toHaveBeenCalled()
     })
@@ -131,7 +135,7 @@ describe('useAutoDrawSwitch', () => {
 
         // The LSig is still (re-)registered — AB upserts it — but the enable
         // would revert ALREADY_ENABLED, so it must not be built or submitted.
-        expect(submitAutoDrawDelegation).toHaveBeenCalledTimes(1)
+        expect(postDelegatorLsig).toHaveBeenCalledTimes(1)
         expect(mockBuildEnable).not.toHaveBeenCalled()
         expect(mockSubmit).not.toHaveBeenCalled()
     })

@@ -44,6 +44,10 @@ type UseSwapConfirmationResult = {
     inAsset: Optional<PeraAsset>
     outAsset: Optional<PeraAsset>
     isProcessing: boolean
+    /** Preparing only — the close affordance cancels instead of trapping. */
+    isCancellable: boolean
+    /** Signing onward — the sheet stays until the outcome lands. */
+    isCommitted: boolean
     payDisplay: string
     receiveDisplay: string
     payFiatDisplay: Optional<string>
@@ -77,6 +81,10 @@ export const useSwapConfirmation = ({
         swapStatus === 'signing' ||
         swapStatus === 'submitting' ||
         swapStatus === 'updating-status'
+    // Preparing hasn't signed or broadcast anything yet — the sheet's close
+    // affordance cancels cleanly instead of trapping the user (PERA-4589).
+    const isCancellable = swapStatus === 'preparing'
+    const isCommitted = isProcessing && !isCancellable
 
     const payDisplay = useMemo(() => {
         if (!quote?.amountIn) return '-'
@@ -160,6 +168,8 @@ export const useSwapConfirmation = ({
         inAsset,
         outAsset,
         isProcessing,
+        isCancellable,
+        isCommitted,
         payDisplay,
         receiveDisplay,
         payFiatDisplay,

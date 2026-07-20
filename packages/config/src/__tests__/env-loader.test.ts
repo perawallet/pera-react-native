@@ -279,8 +279,6 @@ describe('env-loader', () => {
             reactQueryLongLivedStaleTime: 604800000,
             reactQueryPersistenceAge: 5184000000,
             discoverBaseUrl: 'https://discover.example.com',
-            stakingBaseUrl: 'https://staking.example.com',
-            onrampBaseUrl: 'https://onramp.example.com',
             onrampSupportEmail: 'support@xoswap.example.com',
             cardSupportEmail: 'support@baanx.example.com',
             supportBaseUrl: 'https://support.example.com',

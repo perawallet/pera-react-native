@@ -38,6 +38,8 @@ export const RescanRekeyedSelectScreen = () => {
     const {
         isLoading,
         isError,
+        scanProgress,
+        failedSourceCount,
         importedAddresses,
         candidateAddresses,
         selectedAddresses,
@@ -52,6 +54,7 @@ export const RescanRekeyedSelectScreen = () => {
     } = useRescanRekeyedSelectScreen()
 
     if (isLoading) {
+        const isSweepInProgress = (scanProgress?.total ?? 0) > 1
         return (
             <PWView style={styles.statusContainer}>
                 <LoadingView
@@ -62,7 +65,12 @@ export const RescanRekeyedSelectScreen = () => {
                     variant='body'
                     style={styles.statusText}
                 >
-                    {t('rekey.rescan.fetching')}
+                    {isSweepInProgress
+                        ? t('rekey.rescan.sweep_fetching', {
+                              scanned: scanProgress!.scanned,
+                              total: scanProgress!.total,
+                          })
+                        : t('rekey.rescan.fetching')}
                 </PWText>
             </PWView>
         )
@@ -138,6 +146,18 @@ export const RescanRekeyedSelectScreen = () => {
                     title={t('rekey.rescan.title')}
                     description={t('rekey.rescan.subtitle')}
                 />
+
+                {failedSourceCount > 0 && (
+                    <PWText
+                        variant='footnoteMedium'
+                        style={styles.statusText}
+                        testID='rescan-rekeyed-partial-notice'
+                    >
+                        {t('rekey.rescan.partial_failure_notice', {
+                            count: failedSourceCount,
+                        })}
+                    </PWText>
+                )}
 
                 {hasCandidates && (
                     <PWView style={styles.section}>

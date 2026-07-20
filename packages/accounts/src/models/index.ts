@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { WalletAccount, AccountSortMode } from './accounts'
+import type {
+    WalletAccount,
+    AccountSortMode,
+    HardwareWalletDetails,
+} from './accounts'
 import type {
     BaseStoreState,
     Network,
@@ -66,4 +70,24 @@ export type AccountsState = BaseStoreState & {
         addresses: string[],
         network: Network,
     ) => number
+    /**
+     * Replace the watch account at `address` with a hardware account bound to
+     * `hardwareDetails`, preserving its id, name and rekey state. Returns
+     * whether an upgrade happened; refuses (false) when the address is
+     * missing or not a watch account. Callers own the user confirmation.
+     */
+    upgradeWatchAccountToHardware: (
+        address: string,
+        hardwareDetails: HardwareWalletDetails,
+    ) => boolean
+    /**
+     * Re-bind the hardware account at `address` to `hardwareDetails` (e.g.
+     * after an OS forget/re-pair rotated the BLE device id — an address match
+     * proves it is the same key). Returns whether anything changed; refuses
+     * (false) for non-hardware accounts.
+     */
+    updateHardwareDetails: (
+        address: string,
+        hardwareDetails: HardwareWalletDetails,
+    ) => boolean
 }

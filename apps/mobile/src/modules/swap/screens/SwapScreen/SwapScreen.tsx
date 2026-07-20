@@ -77,6 +77,7 @@ export const SwapScreen = () => {
                         <PWIcon
                             name='info'
                             onPress={handleInfoPress}
+                            testID='swap_info_button'
                         />
                     </PWView>
                 }

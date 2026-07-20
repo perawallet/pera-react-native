@@ -13,7 +13,8 @@
 import { useCallback, useState } from 'react'
 import {
     DEFAULT_CARD_CURRENCY,
-    submitAutoDrawDelegation,
+    compileAutoDrawProgram,
+    postDelegatorLsig,
     useKillswitchAutoDraw,
     isKillswitchConfigured,
 } from '@perawallet/wallet-core-card'
@@ -24,7 +25,7 @@ import {
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import { encodeToBase64, logger } from '@perawallet/wallet-core-shared'
 import { canAutoFund } from './useCardFundingSourcePicker'
 
 export type UseAutoDrawSwitchResult = {
@@ -68,18 +69,23 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
         async (account: WalletAccount, cardAddress: string): Promise<void> => {
             setIsPending(true)
             try {
-                // 1. Register the signed LSig with AB (its own ownership proof).
-                await submitAutoDrawDelegation({
+                // 1. Register the signed LSig with AB (its own ownership
+                // proof): compile the pinned AutoDraw program, sign it with the
+                // funding account's key, then POST the delegated LogicSig —
+                // the same compile → sign → post the onboarding flow uses
+                // (useCreateEscrowCardMutation / useEscrowCardCreation).
+                const program = await compileAutoDrawProgram({ network })
+                const lsigBytes = encodeDelegatedLsigAccount(
+                    program,
+                    await signProgram(account, program),
+                    account.address,
+                )
+                await postDelegatorLsig({
                     network,
                     token: DEFAULT_CARD_CURRENCY.toLowerCase(),
-                    address: account.address,
+                    delegatorAddress: account.address,
+                    lsigBytes: encodeToBase64(lsigBytes),
                     cardAddress,
-                    signLsigProgram: async program =>
-                        encodeDelegatedLsigAccount(
-                            program,
-                            await signProgram(account, program),
-                            account.address,
-                        ),
                 })
 
                 // 2. Activate on-chain. Skipped until AB's Killswitch app is

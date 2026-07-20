@@ -38,11 +38,12 @@ export {
     resetCardFundingProvider,
 } from './api/funding'
 
-// AutoDraw delegation helper — the compile → sign → POST /lsig leg, shared by
+// AutoDraw delegation helpers — the compile → sign → POST /lsig leg, shared by
 // onboarding card creation and the post-onboarding funding-type switch.
 export {
-    submitAutoDrawDelegation,
-    type SubmitAutoDrawDelegationParams,
+    compileAutoDrawProgram,
+    postDelegatorLsig,
+    type PostDelegatorLsigParams,
 } from './api/escrow'
 
 // API error normalization — lets screens attribute a Baanx failure to a field.

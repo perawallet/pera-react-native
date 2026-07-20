@@ -10,13 +10,16 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
 
 /**
- * Encoder function type for signed transactions.
+ * Encoder function type for signed transactions. Accepts `PeraSignedTxnResult`
+ * (plain `PeraSignedTransaction` or the quantum pqsig byte carrier) — real
+ * implementations must be carrier-aware (see
+ * `@perawallet/wallet-core-blockchain`'s `encodeSignedTransaction`).
  */
 export type EncodeSignedTransactionsFn = (
-    txns: PeraSignedTransaction[],
+    txns: PeraSignedTxnResult[],
 ) => Uint8Array[]
 
 /**

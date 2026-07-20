@@ -19,11 +19,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
-// Deterministic quantum address: seedFromMnemonic(ALGO25_TEST_MNEMONIC)
-// → deriveFalconKeypairMock → deriveFalconAddressMock (algosdk 3.6.0).
-// Pinned as a constant (rather than derived in-test) because
-// `@perawallet/wallet-core-kms` is globally stubbed in vitest.setup.ts and
-// does not expose deriveFalconKeypairMock/deriveFalconAddressMock.
+// A pinned, syntactically-valid Algorand address (passes the real
+// `isValidAlgorandAddress` checksum round-trip mocked above) used to exercise
+// the quantum-looking-address code path. Not derived from any real quantum
+// keypair — `@perawallet/wallet-core-kms` is globally stubbed in
+// vitest.setup.ts, so this is a plain literal rather than a live derivation.
 const QUANTUM_TEST_ADDRESS =
     'XGOHUMHM7JDVEMHV4GP6JRFDVMLIF72P76O5756D2C427WJOM7PFB6ZXK4'
 

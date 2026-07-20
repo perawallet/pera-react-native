@@ -36,6 +36,7 @@ export const NoFundsButtonPanel = () => {
                 variant='secondary'
                 onPress={handleReceive}
                 style={themeStyle.button}
+                testID='receive_button'
             />
             <RoundButton
                 title={t('account_details.no_balance.more')}

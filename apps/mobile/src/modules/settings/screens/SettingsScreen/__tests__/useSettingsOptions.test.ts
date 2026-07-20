@@ -50,11 +50,18 @@ describe('useSettingsOptions', () => {
 
         // Account Section
         expect(settingsOptions[0].title).toBe('settings.main.account_section')
-        expect(settingsOptions[0].items).toHaveLength(4)
+        expect(settingsOptions[0].items).toHaveLength(5)
         expect(settingsOptions[0].items[0]).toEqual({
             route: 'SecuritySettings',
             icon: 'shield-check',
             title: 'settings.main.security_title',
+        })
+        // The wallet-wide rekeyed-account sweep is an action, not a
+        // settings sub-route (PERA-4619).
+        expect(settingsOptions[0].items[4]).toEqual({
+            action: 'scanRekeyed',
+            icon: 'magnifying-glass',
+            title: 'settings.main.scan_rekeyed_title',
         })
 
         // App Preferences Section

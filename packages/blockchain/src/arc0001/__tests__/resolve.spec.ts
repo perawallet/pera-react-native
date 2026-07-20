@@ -249,12 +249,14 @@ describe('resolveArc0001SignTxnRequest', () => {
                         wrap(makePayment(addrA), {
                             signers: [addrA.toString()],
                         }),
+                        wrap(makePayment(addrB)),
                     ],
                 },
                 { signableAddresses: new Set([addrB.toString()]) },
             )
 
-            expect(result.toSign).toHaveLength(0)
+            expect(result.toSign).toHaveLength(1)
+            expect(result.toSign[0].index).toBe(1)
         })
     })
 
@@ -457,6 +459,43 @@ describe('resolveArc0001SignTxnRequest', () => {
                     signableAddresses: new Set([addrA.toString()]),
                     authorizedAddresses: new Set([addrB.toString()]),
                 },
+            )
+
+            expect(result.toSign).toHaveLength(0)
+        })
+    })
+
+    describe('all-unsignable requests', () => {
+        it('rejects with 4100 when no requested transaction is wallet-signable', () => {
+            // Post-session-approval drift (e.g. the approved account rekeyed
+            // to an external key) must produce an error, not a success-shaped
+            // all-null response the dApp can't act on.
+            expect(() =>
+                resolveArc0001SignTxnRequest(
+                    {
+                        transactions: [
+                            wrap(makePayment(addrC)),
+                            wrap(makePayment(addrC), { signers: [] }),
+                        ],
+                    },
+                    { signableAddresses: new Set([addrA.toString()]) },
+                ),
+            ).toThrow(
+                expect.objectContaining({
+                    code: Arc0001ErrorCode.Unauthorized,
+                }),
+            )
+        })
+
+        it('keeps the all-null success contract when every entry is an explicit do-not-sign', () => {
+            const result = resolveArc0001SignTxnRequest(
+                {
+                    transactions: [
+                        wrap(makePayment(addrA), { signers: [] }),
+                        wrap(makePayment(addrC), { signers: [] }),
+                    ],
+                },
+                { signableAddresses: new Set([addrA.toString()]) },
             )
 
             expect(result.toSign).toHaveLength(0)

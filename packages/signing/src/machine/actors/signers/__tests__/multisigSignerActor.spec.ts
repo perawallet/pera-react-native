@@ -118,6 +118,7 @@ const buildInput = (
     signTransactions: vi
         .fn()
         .mockResolvedValue([{ txn: {}, sig: new Uint8Array([1, 2, 3]) }]),
+    signQuantumTransactions: vi.fn(),
     signArbitraryData: vi.fn(),
     signArc60: vi.fn(),
     encodeTransaction: vi.fn(),

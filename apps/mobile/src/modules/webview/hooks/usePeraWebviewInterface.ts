@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     AccountTypes,
+    canSignArbitraryData,
     canSignArc60,
     canSignWith,
     isRekeyedAccount,
@@ -61,11 +62,16 @@ import {
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+import {
+    useWalletConnect,
+    waitForSessionOutcome,
+} from '@perawallet/wallet-core-walletconnect'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
+import { withTimeout } from '@hooks/deeplink/handlers/timeout'
+import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type WebviewMessage = {
@@ -137,6 +143,7 @@ export const usePeraWebviewInterface = (
     const signingAccounts = useSigningAccounts()
     const allAccounts = useAllAccounts()
     const { network } = useNetwork()
+    const { hasInternet } = useNetworkStatus()
     const deviceID = useDeviceID(network)
     const darkmode = useIsDarkMode()
     const theme = darkmode ? 'dark' : 'light'
@@ -668,6 +675,24 @@ export const usePeraWebviewInterface = (
                         )
                         return
                     }
+                    // Preflight parity with the WC transport: a signer that
+                    // can't sign raw bytes (Ledger, watch) must be rejected
+                    // before the review sheet, not after the user slides.
+                    const signerAccount = allAccounts.find(
+                        account => account.address === signer,
+                    )
+                    if (
+                        !signerAccount ||
+                        !canSignArbitraryData(signerAccount)
+                    ) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            'Signer cannot sign arbitrary data',
+                            webview,
+                        )
+                        return
+                    }
                     const metadata = message.params![
                         'metadata'
                     ] as SignRequestSource
@@ -788,25 +813,75 @@ export const usePeraWebviewInterface = (
                 return
             }
 
+            // Pairing needs a live bridge; fail the page fast instead of
+            // letting the handshake rot silently until its timeout.
+            if (!hasInternet) {
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InternalError,
+                    'Cannot open a WalletConnect session while offline',
+                    webview,
+                )
+                return
+            }
+
             // Always surface the connection approval sheet — as if the user
             // had scanned the QR themselves. The bridge never auto-approves a
             // WC session (which would expose account addresses with no UI),
             // regardless of origin trust.
-            // Fire-and-forget, but guarded: connect() constructs the WC client
-            // synchronously, which throws on a malformed URI. Without a catch
-            // that throw surfaces as an uncaught promise rejection.
-            connect({
-                connection: {
-                    uri: parsed.uri,
-                },
-            }).catch(error => {
-                logger.error('[webview/wc] connect failed', {
-                    error,
-                    uri: parsed.uri,
-                })
-            })
+            // Bounded like the deeplink path: wait for this pairing's
+            // session_request / connection error and answer the page with a
+            // readable error instead of staying silent forever.
+            void (async () => {
+                let pairingClientId: string
+                try {
+                    pairingClientId = await withTimeout(
+                        'walletConnect.connect',
+                        10_000,
+                        connect({ connection: { uri: parsed.uri } }),
+                    )
+                } catch (error) {
+                    logger.error('[webview/wc] connect failed', {
+                        error,
+                        uri: parsed.uri,
+                    })
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        'Could not start the WalletConnect session',
+                        webview,
+                    )
+                    return
+                }
+                const outcome = await waitForSessionOutcome(
+                    pairingClientId,
+                    8000,
+                )
+                if (outcome.type === 'error') {
+                    // Relay the surfaced reason (e.g. wrong network) —
+                    // passing the Error object would collapse it into the
+                    // generic signing-error copy.
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        outcome.error.message,
+                        webview,
+                    )
+                    return
+                }
+                if (outcome.type === 'timeout') {
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
+                        webview,
+                    )
+                }
+                // 'session': the approval sheet pops via the provider; the
+                // page hears back through the session approve/reject path.
+            })()
         },
-        [connect, hadRequiredParams, webview],
+        [connect, hadRequiredParams, webview, hasInternet],
     )
 
     const onBackPressed = useCallback(() => {
