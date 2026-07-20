@@ -60,7 +60,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 describe('useDeviceRegistration', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
-        mockRegisterDevice.mockResolvedValue(undefined)
+        mockRegisterDevice.mockResolvedValue({ createdNew: false })
         mockClearDevicePushToken.mockResolvedValue(undefined)
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         onlineManager.setOnline(true)
@@ -270,8 +270,8 @@ describe('useDeviceRegistration', () => {
         let resolveHanging = () => {}
         mockRegisterDevice.mockImplementationOnce(
             () =>
-                new Promise<void>(resolve => {
-                    resolveHanging = () => resolve()
+                new Promise<{ createdNew: boolean }>(resolve => {
+                    resolveHanging = () => resolve({ createdNew: false })
                 }),
         )
         addresses = ['acct-1', 'acct-2']
@@ -347,8 +347,8 @@ describe('useDeviceRegistration', () => {
         let resolveFirst = () => {}
         mockRegisterDevice.mockImplementationOnce(
             () =>
-                new Promise<void>(resolve => {
-                    resolveFirst = () => resolve()
+                new Promise<{ createdNew: boolean }>(resolve => {
+                    resolveFirst = () => resolve({ createdNew: false })
                 }),
         )
 
@@ -438,5 +438,30 @@ describe('useDeviceRegistration', () => {
         // Hook never re-throws; the unhandled rejection guard would fire
         // otherwise. The render stays clean.
         expect(result.result.current).toBeUndefined()
+    })
+
+    test('invokes onDeviceCreated when registration created a new device', async () => {
+        mockRegisterDevice.mockResolvedValue({ createdNew: true })
+        const onDeviceCreated = vi.fn()
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        renderHook(() => useDeviceRegistration(['ADDR'], { onDeviceCreated }))
+        await waitFor(() =>
+            expect(onDeviceCreated).toHaveBeenCalledWith('mainnet'),
+        )
+    })
+
+    test('does not invoke onDeviceCreated on a plain update', async () => {
+        mockRegisterDevice.mockResolvedValue({ createdNew: false })
+        const onDeviceCreated = vi.fn()
+
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        renderHook(() => useDeviceRegistration(['ADDR'], { onDeviceCreated }))
+        await waitFor(() => expect(mockRegisterDevice).toHaveBeenCalled())
+        expect(onDeviceCreated).not.toHaveBeenCalled()
     })
 })

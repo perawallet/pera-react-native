@@ -15,3 +15,4 @@ export {
     useHandleInboxItemPress,
     type UseHandleInboxItemPressResult,
 } from './useHandleInboxItemPress'
+export { useReplayNotificationMutes } from './useReplayNotificationMutes'

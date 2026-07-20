@@ -77,6 +77,13 @@ export const useDevice = () => {
         [buildPayload, createDevice, setDeviceID],
     )
 
+    // `createdNew` tells callers whether this attempt actually created a
+    // fresh device record (no prior id, or a recreate fallback) versus a
+    // clean PUT against an existing one. Consumers use it to know when a
+    // backend-side device record started from scratch — e.g. to replay
+    // locally-migrated notification mute preferences, which the backend
+    // otherwise defaults to "notifying" for a brand-new device row.
+
     // Single-attempt registration. Transient retries (5xx, network errors) are
     // handled by ky inside the shared query-client; layering another retry
     // loop here would compound to up to 6 requests per call.
@@ -91,7 +98,7 @@ export const useDevice = () => {
     // ID, and fell back to POST the same way. Either condition re-registers
     // via createDevice.
     const registerDevice = useCallback(
-        async (addresses: string[]) => {
+        async (addresses: string[]): Promise<{ createdNew: boolean }> => {
             const attemptId = ++inFlightIdRef.current
             const targetNetwork = network
 
@@ -101,7 +108,7 @@ export const useDevice = () => {
                     addresses,
                     attemptId,
                 )
-                return
+                return { createdNew: true }
             }
 
             try {
@@ -110,6 +117,7 @@ export const useDevice = () => {
                     deviceId,
                     data: { ...payload, id: deviceId },
                 })
+                return { createdNew: false }
             } catch (error) {
                 if (!shouldRecreateDevice(error)) throw error
                 await createDeviceForNetwork(
@@ -117,6 +125,7 @@ export const useDevice = () => {
                     addresses,
                     attemptId,
                 )
+                return { createdNew: true }
             }
         },
         [deviceId, network, buildPayload, updateDevice, createDeviceForNetwork],

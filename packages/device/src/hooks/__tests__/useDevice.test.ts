@@ -174,8 +174,11 @@ describe('services/device/hooks', () => {
             wrapper,
         })
 
+        let registrationResult: { createdNew: boolean } | undefined
         await act(async () => {
-            await result.current.registerDevice(['account-1'])
+            registrationResult = await result.current.registerDevice([
+                'account-1',
+            ])
         })
 
         expect(mockCreateDevice).toHaveBeenCalledWith({
@@ -190,6 +193,7 @@ describe('services/device/hooks', () => {
         })
 
         expect(store.current.deviceIDs.get('mainnet')).toBe('new-device-id')
+        expect(registrationResult).toEqual({ createdNew: true })
     })
 
     test('useDevice updates existing device if ID exists', async () => {
@@ -222,8 +226,11 @@ describe('services/device/hooks', () => {
             wrapper,
         })
 
+        let registrationResult: { createdNew: boolean } | undefined
         await act(async () => {
-            await result.current.registerDevice(['account-1'])
+            registrationResult = await result.current.registerDevice([
+                'account-1',
+            ])
         })
 
         expect(mockUpdateDevice).toHaveBeenCalledWith({
@@ -240,6 +247,7 @@ describe('services/device/hooks', () => {
         })
 
         expect(mockCreateDevice).not.toHaveBeenCalled()
+        expect(registrationResult).toEqual({ createdNew: false })
     })
 
     test('useDevice falls back to createDevice when updateDevice 404s (stale id)', async () => {
@@ -273,13 +281,17 @@ describe('services/device/hooks', () => {
 
         const { result } = renderHook(() => useDevice(), { wrapper })
 
+        let registrationResult: { createdNew: boolean } | undefined
         await act(async () => {
-            await result.current.registerDevice(['account-1'])
+            registrationResult = await result.current.registerDevice([
+                'account-1',
+            ])
         })
 
         expect(mockUpdateDevice).toHaveBeenCalledTimes(1)
         expect(mockCreateDevice).toHaveBeenCalledTimes(1)
         expect(store.current.deviceIDs.get('mainnet')).toBe('fresh-id')
+        expect(registrationResult).toEqual({ createdNew: true })
     })
 
     test('useDevice falls back to createDevice when updateDevice rejects with a PeraNetworkError 404 (stale id)', async () => {
@@ -311,13 +323,17 @@ describe('services/device/hooks', () => {
 
         const { result } = renderHook(() => useDevice(), { wrapper })
 
+        let registrationResult: { createdNew: boolean } | undefined
         await act(async () => {
-            await result.current.registerDevice(['account-1'])
+            registrationResult = await result.current.registerDevice([
+                'account-1',
+            ])
         })
 
         expect(mockUpdateDevice).toHaveBeenCalledTimes(1)
         expect(mockCreateDevice).toHaveBeenCalledTimes(1)
         expect(store.current.deviceIDs.get('mainnet')).toBe('fresh-id-2')
+        expect(registrationResult).toEqual({ createdNew: true })
     })
 
     test('useDevice does not retry at the application layer (delegated to ky)', async () => {
@@ -503,12 +519,14 @@ describe('services/device/hooks', () => {
 
         const { result } = renderHook(() => useDevice(), { wrapper })
 
+        let registrationResult: { createdNew: boolean } | undefined
         await act(async () => {
-            await result.current.registerDevice(['ADDR'])
+            registrationResult = await result.current.registerDevice(['ADDR'])
         })
 
         expect(mockCreateDevice).toHaveBeenCalledOnce()
         expect(store.current.deviceIDs.get('mainnet')).toBe('DEV-2')
+        expect(registrationResult).toEqual({ createdNew: true })
     })
 
     test('still rethrows unrelated client errors without re-creating', async () => {
