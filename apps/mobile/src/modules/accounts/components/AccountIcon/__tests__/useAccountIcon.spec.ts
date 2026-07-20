@@ -30,6 +30,7 @@ import {
     AccountTypes,
     isRekeyedAccount,
     useCanSignWith,
+    useRekeyAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAccountIcon } from '../useAccountIcon'
@@ -41,6 +42,7 @@ describe('useAccountIcon', () => {
     beforeEach(() => {
         vi.mocked(isRekeyedAccount).mockReturnValue(false)
         vi.mocked(useCanSignWith).mockReturnValue(true)
+        vi.mocked(useRekeyAccount).mockReturnValue(null)
     })
 
     it('returns null without an account', () => {
@@ -80,6 +82,21 @@ describe('useAccountIcon', () => {
         })
     })
 
+    it('returns the purple rekeyed-ledger glyph when a standard account is rekeyed to a Ledger auth account', () => {
+        vi.mocked(isRekeyedAccount).mockReturnValue(true)
+        vi.mocked(useCanSignWith).mockReturnValue(true)
+        vi.mocked(useRekeyAccount).mockReturnValue(
+            account(AccountTypes.hardware),
+        )
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.algo25)),
+        )
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/rekeyed-ledger',
+            variant: 'accountPurple',
+        })
+    })
+
     it('returns the noauth glyph for an unsignable rekeyed account', () => {
         vi.mocked(isRekeyedAccount).mockReturnValue(true)
         vi.mocked(useCanSignWith).mockReturnValue(false)
@@ -106,6 +123,9 @@ describe('useAccountIcon', () => {
     it('returns the rekeyed-multisig glyph for a signable rekeyed multisig account', () => {
         vi.mocked(isRekeyedAccount).mockReturnValue(true)
         vi.mocked(useCanSignWith).mockReturnValue(true)
+        vi.mocked(useRekeyAccount).mockReturnValue(
+            account(AccountTypes.multisig),
+        )
         const { result } = renderHook(() =>
             useAccountIcon(account(AccountTypes.multisig)),
         )
