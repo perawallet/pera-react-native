@@ -43,14 +43,6 @@ export class RNMigrationService implements MigrationService {
 
     async hasLegacyData(): Promise<boolean> {
         log('hasLegacyData() called')
-        const sentinel = this.readSentinel()
-        if (sentinel !== null) {
-            log('hasLegacyData() → false (sentinel already set)', {
-                completedAt: new Date(sentinel.completedAt).toISOString(),
-                sourcePlatform: sentinel.sourcePlatform,
-            })
-            return false
-        }
         const module = getNativeModule()
         if (!module) {
             warn(
@@ -172,7 +164,11 @@ export class RNMigrationService implements MigrationService {
         if (!raw) return null
         try {
             const parsed = JSON.parse(raw) as unknown
-            if (typeof parsed !== 'object' || parsed === null) {
+            if (
+                typeof parsed !== 'object' ||
+                parsed === null ||
+                Array.isArray(parsed)
+            ) {
                 warn('getCompletedStepVersions() ignored malformed record', {
                     raw,
                 })

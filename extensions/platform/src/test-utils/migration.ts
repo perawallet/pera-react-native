@@ -104,7 +104,6 @@ export class StubMigrationService implements MigrationService {
     }
 
     async hasLegacyData(): Promise<boolean> {
-        if (this.sentinel !== null) return false
         return this.hasData
     }
 

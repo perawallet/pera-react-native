@@ -157,7 +157,7 @@ describe('RNMigrationService', () => {
     })
 
     describe('hasLegacyData', () => {
-        test('returns false when the sentinel is already set', async () => {
+        test('reports the native probe result even when the sentinel is already set (the "already done" gate lives upstream in getPendingSteps)', async () => {
             storage.setItem(
                 MIGRATION_SENTINEL_KEY,
                 JSON.stringify({
@@ -165,8 +165,14 @@ describe('RNMigrationService', () => {
                     sourcePlatform: 'ios',
                 }),
             )
+            await service.markMigrationComplete('ios')
+            const module = createNativeModule({
+                hasLegacyData: vi.fn().mockResolvedValue(true),
+            })
+            nativeModulesMock.LegacyMigration = module
 
-            expect(await service.hasLegacyData()).toBe(false)
+            expect(await service.hasLegacyData()).toBe(true)
+            expect(module.hasLegacyData).toHaveBeenCalledOnce()
         })
 
         test('returns false when the native module is not registered', async () => {
@@ -921,6 +927,14 @@ describe('RNMigrationService', () => {
 
         test('ignores a malformed step record instead of throwing', async () => {
             storage.setItem(MIGRATION_STEPS_KEY, 'not-json{')
+            await expect(service.getCompletedStepVersions()).resolves.toBeNull()
+        })
+
+        test('ignores a JSON array record (arrays are objects but not a version map)', async () => {
+            storage.setItem(
+                MIGRATION_STEPS_KEY,
+                JSON.stringify(['accounts', 2]),
+            )
             await expect(service.getCompletedStepVersions()).resolves.toBeNull()
         })
     })
