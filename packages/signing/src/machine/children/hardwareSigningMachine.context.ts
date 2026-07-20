@@ -65,6 +65,20 @@ export type HardwareSigningEvent =
     | { type: 'USER_REJECTED_ON_DEVICE' }
     | { type: 'RETRY' }
     | { type: 'ACKNOWLEDGE_ERROR' }
+    /**
+     * The app stayed backgrounded past the hardware grace window — abort
+     * the exchange (leaving `active` stops the invoked actor, whose
+     * cleanup disconnects the transport) and land in a retryable
+     * `interrupted` error.
+     */
+    | { type: 'INTERRUPTED_BY_BACKGROUND' }
+    /**
+     * The app resumed within the grace window. Re-enters the current
+     * substate so its backstop timer is re-armed from now — the pre-
+     * background timer either already fired (and was swallowed by the
+     * backgrounded guard) or would fire with suspended time counted in.
+     */
+    | { type: 'REARM_TIMERS' }
 
 export type HardwareSigningOutput =
     | { kind: 'success'; results: SigningResult[] }
