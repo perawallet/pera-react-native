@@ -414,6 +414,30 @@ describe('RNMigrationService', () => {
             )
         })
 
+        test('decodes legacyFallbackDeviceId and defaults it to null when absent', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(
+                    buildRawPayload({
+                        deviceIdentifiers: {
+                            notificationUserId: null,
+                            mainnetDeviceId: null,
+                            testnetDeviceId: null,
+                            lastSeenNotificationId: null,
+                            legacyFallbackDeviceId: '12345',
+                        },
+                    }),
+                ),
+            })
+            const data = await service.getLegacyData()
+            expect(data.deviceIdentifiers.legacyFallbackDeviceId).toBe('12345')
+
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(buildRawPayload()),
+            })
+            const legacy = await service.getLegacyData()
+            expect(legacy.deviceIdentifiers.legacyFallbackDeviceId).toBeNull()
+        })
+
         test('decodeLongString returns null for non-numeric and empty strings', async () => {
             const raw = buildRawPayload({
                 preferences: {

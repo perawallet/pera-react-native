@@ -310,7 +310,8 @@ describe('step-version orchestration', () => {
         expect(service.setCompletedStepVersions).toHaveBeenCalledWith(
             expect.objectContaining({
                 accounts: MIGRATION_STEP_TARGET_VERSIONS.accounts,
-                deviceIdentifiers: 1,
+                deviceIdentifiers:
+                    MIGRATION_STEP_TARGET_VERSIONS.deviceIdentifiers,
             }),
         )
         const written = (

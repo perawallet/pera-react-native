@@ -19,8 +19,10 @@ export const migrateDeviceIdentifiers = (
     identifiers: LegacyDeviceIdentifiers,
 ): void => {
     const device = useDeviceStore.getState()
-    if (identifiers.mainnetDeviceId) {
-        device.setDeviceID(Networks.mainnet, identifiers.mainnetDeviceId)
+    const mainnetDeviceId =
+        identifiers.mainnetDeviceId ?? identifiers.legacyFallbackDeviceId
+    if (mainnetDeviceId) {
+        device.setDeviceID(Networks.mainnet, mainnetDeviceId)
     }
     if (identifiers.testnetDeviceId) {
         device.setDeviceID(Networks.testnet, identifiers.testnetDeviceId)

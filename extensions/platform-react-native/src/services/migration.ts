@@ -390,9 +390,10 @@ interface RawLegacyPasskey extends Omit<LegacyPasskey, 'lastUsedAtMs'> {
 
 interface RawLegacyDeviceIdentifiers extends Omit<
     LegacyMigrationData['deviceIdentifiers'],
-    'lastSeenNotificationId'
+    'lastSeenNotificationId' | 'legacyFallbackDeviceId'
 > {
     lastSeenNotificationId: LongString
+    legacyFallbackDeviceId?: string | null
 }
 
 const decodeLegacyMigrationData = (
@@ -438,6 +439,8 @@ const decodeLegacyMigrationData = (
                 raw.deviceIdentifiers.lastSeenNotificationId,
                 'lastSeenNotificationId',
             ),
+            legacyFallbackDeviceId:
+                raw.deviceIdentifiers.legacyFallbackDeviceId ?? null,
         },
         tooltipPreferences: {
             qrTooltipSeen: null,
@@ -581,6 +584,7 @@ const emptyLegacyMigrationData = (): LegacyMigrationData => ({
         mainnetDeviceId: null,
         testnetDeviceId: null,
         lastSeenNotificationId: null,
+        legacyFallbackDeviceId: null,
     },
     tooltipPreferences: {
         qrTooltipSeen: null,

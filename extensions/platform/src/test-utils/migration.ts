@@ -65,6 +65,7 @@ export const createEmptyLegacyMigrationData = (
         mainnetDeviceId: null,
         testnetDeviceId: null,
         lastSeenNotificationId: null,
+        legacyFallbackDeviceId: null,
     },
     dismissedBanners: {
         bannerIds: [],

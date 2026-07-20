@@ -309,4 +309,11 @@ export interface LegacyDeviceIdentifiers {
     mainnetDeviceId: string | null
     testnetDeviceId: string | null
     lastSeenNotificationId: number | null
+    /**
+     * Pre-per-network single device id (iOS: `User.deviceId`; Android:
+     * `notification_user_id`, mirroring Pera 6's own promotion of it to
+     * `mainnet_device_id`). Used by `migrateDeviceIdentifiers` as a mainnet
+     * fallback only when `mainnetDeviceId` is null.
+     */
+    legacyFallbackDeviceId: string | null
 }

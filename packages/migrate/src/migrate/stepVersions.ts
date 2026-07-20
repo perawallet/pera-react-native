@@ -28,7 +28,8 @@ export const MIGRATION_STEP_TARGET_VERSIONS: Record<MigrationStepName, number> =
         accounts: 2,
         preferences: 1,
         swaps: 1,
-        deviceIdentifiers: 1,
+        // v2 (PERA-4655): legacy single-id fallback.
+        deviceIdentifiers: 2,
         contacts: 1,
         notifications: 1,
         auth: 1,
