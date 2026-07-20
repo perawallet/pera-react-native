@@ -176,8 +176,12 @@ internal object FixturesAddressDb {
     private val JOINT_ADDRESS = FixtureCrypto.EXTERNAL_PARTICIPANT_ADDRESS
 
     // Algo25 account marked no_auth in Pera 6 but kept in Pera 7
-    private const val ALGO25_REKEYED_AWAY_ADDRESS = "ZZ4REKEYED3EF6N27XZSJZPTMDWVCCM5X3XMQC4XNKGJLMRZ5M"
-    private const val ALGO25_REKEYED_AWAY_SK64_HEX = "6d6967726174696f6e2d73696d756c61746f722d616c676f32352d726b65796564f6c5d51380e2b3debd05babdc1a6e7a35b27eb37e073df787b1b8523600d376a"
+    // Seed "migration-simulator-rekeyed-away" (32 ASCII bytes) + its genuine
+    // ed25519 public key, following the same convention as FixtureCrypto's
+    // generated entries. Address/SK64 verified via algosdk's
+    // mnemonicFromSeed -> mnemonicToSecretKey round trip.
+    private const val ALGO25_REKEYED_AWAY_ADDRESS = "HOL4LZNBJ6MS7CL2DM4UUWAFFAHOX2TC7QPSKLMT3HXUKK42OCEY5Y7OPY"
+    private const val ALGO25_REKEYED_AWAY_SK64_HEX = "6d6967726174696f6e2d73696d756c61746f722d72656b657965642d617761793b97c5e5a14f992f897a1b394a5805280eebea62fc1f252d93d9ef452b9a7089"
 
     private data class HdKeyDescriptor(
         val address: String,
