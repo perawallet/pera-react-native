@@ -29,6 +29,7 @@ export const InboxScreen = () => {
         inboxItems,
         isPending,
         isRefetching,
+        isAwaitingRegistration,
         refetch,
         keyExtractor,
         handleInboxItemPress,
@@ -56,7 +57,7 @@ export const InboxScreen = () => {
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
                     <EmptyView
-                        isLoading={isPending}
+                        isLoading={isPending || isAwaitingRegistration}
                         style={styles.emptyView}
                         icon='inbox'
                         title={t('messages.inbox.empty_title')}
