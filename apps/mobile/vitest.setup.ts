@@ -714,6 +714,7 @@ vi.mock('@components/core', () => {
                 : null,
         PWPinCircles: createMockComponent('PWPinCircles'),
         PWRadioButton: createMockComponent('PWRadioButton'),
+        PWRefreshControl: createMockComponent('PWRefreshControl'),
         PWRoundIcon: vi.fn(({ icon, size, testID, ...props }: any) =>
             React.createElement('div', {
                 ...props,

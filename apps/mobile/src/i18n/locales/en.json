@@ -462,6 +462,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
         "back_online": "Back online",
         "yes": "Yes",
         "no": "No",
