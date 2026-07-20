@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-/* oxlint-disable react-native/no-inline-styles, react-native/no-color-literals -- temporary M1 bootstrap; replaced by makeStyles shell in milestone 3 */
+/* oxlint-disable react-native/no-inline-styles, react-native/no-color-literals -- minimal pre-hydration bootstrap shell */
 
 import React, { useEffect, useState } from 'react'
 // oxlint-disable-next-line no-restricted-imports -- pre-hydration boot screen;

@@ -348,6 +348,7 @@ describe('env-loader', () => {
             defaultNetwork: 'mainnet',
             appEnvironment: 'development',
             releaseTag: '',
+            appBuildNumber: '',
         }
 
         test('returns base config when no environment variables are set', () => {

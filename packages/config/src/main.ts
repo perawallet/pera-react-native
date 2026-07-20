@@ -164,6 +164,15 @@ export const configSchema = z.object({
      * falls back to the native store version).
      */
     releaseTag: z.string().default(''),
+
+    /**
+     * Incrementing CI build number baked at build time, mirroring mobile's
+     * `Application.nativeBuildVersion`. Sourced from BITRISE_BUILD_NUMBER;
+     * empty for local builds (getAppBuild then falls back to the manifest
+     * version). Feeds the user-agent so backend/Cloudflare rules can key off
+     * it the same way they do on mobile.
+     */
+    appBuildNumber: z.string().default(''),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -208,11 +217,12 @@ const productionConfig = {
     firebaseStorageBucket: 'pera-wallet-public.firebasestorage.app',
     firebaseMessagingSenderId: '537717066676',
     firebaseAppId: '1:537717066676:web:6bb1d3cbae6b949172c0e1',
-    firebaseMeasurementId: 'G-SN62V3K36G',
 
-    // Secrets — never bake a default. Empty until generated in each
-    // service's console; both ChromeAnalyticsService and
-    // ChromeCrashReportingService no-op safely while empty.
+    // Analytics identifiers — never bake a default. Injected only for
+    // staging/production via FIREBASE_MEASUREMENT_ID + GA_MEASUREMENT_API_SECRET.
+    // ChromeAnalyticsService no-ops while either is empty, so open-source and
+    // local builds send no analytics.
+    firebaseMeasurementId: '',
     gaMeasurementApiSecret: '',
     sentryDsn: '',
 
@@ -309,6 +319,7 @@ const productionConfig = {
     defaultNetwork: 'mainnet',
     appEnvironment: 'development',
     releaseTag: '',
+    appBuildNumber: '',
 }
 
 // A map of which environment variable (if any) to read config overrides from
@@ -393,6 +404,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',
     releaseTag: 'BITRISE_GIT_TAG',
+    appBuildNumber: 'BITRISE_BUILD_NUMBER',
 }
 
 /**

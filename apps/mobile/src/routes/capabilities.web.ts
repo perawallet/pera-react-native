@@ -15,19 +15,19 @@ import type { RouteCapabilities } from './capabilities-types'
 export type { RouteCapabilities } from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
-    discoverTab: true, // M6: iframe webview layer + discover bridge
-    swapTab: true, // M5: native RN screen graph
-    fundTab: true, // M5: native RN screen graph (Meld checkout via window.open)
-    staking: true, // M5: native RN screen graph
-    peraCard: true, // M10: Baanx card, additionally gated by useIsPeraCardEnabled() remote flag
-    giftCards: true, // M8
-    inAppWebView: false, // M8 decision: stays false — help/terms open browser tabs
-    qrScanner: true, // Task 15 (stretch): BarcodeDetector camera scan + paste fallback
+    discoverTab: true, // iframe webview layer + discover bridge
+    swapTab: true, // native RN screen graph
+    fundTab: true, // native RN screen graph (Meld checkout via window.open)
+    staking: true, // native RN screen graph
+    peraCard: true, // Baanx card, additionally gated by useIsPeraCardEnabled() remote flag
+    giftCards: true,
+    inAppWebView: false, // stays false — help/terms open browser tabs
+    qrScanner: true, // BarcodeDetector camera scan + paste fallback
     pushNotificationSettings: false, // permanently off: no push on web
-    walletConnectSettings: true, // M7: WC v1 pairing + sessions on web
-    passkeysAutofillSettings: true, // M9: WebAuthn-interception credential provider + settings toggle
+    walletConnectSettings: true, // WC v1 pairing + sessions on web
+    passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
     storeRating: false, // permanently off: no store review flow
-    developerSettings: true, // M5: internal builds need network/debug toggles
+    developerSettings: true, // internal builds need network/debug toggles
     vaultSecuritySettings: true,
     dappConnections: true,
     networkSettings: true,

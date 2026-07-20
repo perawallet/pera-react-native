@@ -16,11 +16,9 @@ import {
     type DeviceInfoService,
     type DevicePlatform,
 } from '@perawallet/wallet-extension-platform'
+import { config } from '@perawallet/wallet-core-config'
 import { ensureDeviceID } from '../device-id'
-
-type NavigatorWithUAData = Navigator & {
-    userAgentData?: { platform?: string }
-}
+import { detectBrowser } from './browser'
 
 export class ChromeDeviceInfoService implements DeviceInfoService {
     private idPromise: Promise<string> | null = null
@@ -38,7 +36,10 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getAppBuild(): string {
-        return chrome.runtime.getManifest().version
+        // Mirrors mobile's nativeBuildVersion — the incrementing CI build
+        // number, not the semantic manifest version. Falls back to the
+        // manifest version for local builds where BITRISE_BUILD_NUMBER is unset.
+        return config.appBuildNumber || chrome.runtime.getManifest().version
     }
 
     getAppVersion(): string {
@@ -53,7 +54,7 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getDeviceModel(): string {
-        return 'browser'
+        return detectBrowser().name
     }
 
     getDevicePlatform(): DevicePlatform {
@@ -61,8 +62,7 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getDeviceOSVersion(): string {
-        const nav = navigator as NavigatorWithUAData
-        return nav.userAgentData?.platform ?? 'unknown'
+        return detectBrowser().osVersion
     }
 
     getDeviceLocale(): string {
@@ -74,11 +74,23 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
     }
 
     getDeviceModelId(): string {
-        return 'browser'
+        return detectBrowser().version
     }
 
     getUserAgent(): string {
-        return navigator.userAgent
+        // Mirror mobile's buildUserAgent format so shared backend/Cloudflare
+        // rules (rate limiting etc.) parse it the same way. Mobile emits e.g.
+        // `Pera/7.0.0.1234 (ios; iPhone14,2; 17.0) pera_ios_7.0.0`; the web
+        // build substitutes the browser name/version for the device model and
+        // `web` for the platform token.
+        const platform = this.getDevicePlatform()
+        const version = this.getAppVersion()
+        const { name, version: browserVersion, osVersion } = detectBrowser()
+        return (
+            `${this.getAppName()}/${version}.${this.getAppBuild()} ` +
+            `(${platform}; ${name} ${browserVersion}; ${osVersion}) ` +
+            `pera_${platform}_${version}`
+        )
     }
 
     getAppEnvironment(): AppEnvironment {

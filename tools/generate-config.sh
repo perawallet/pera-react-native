@@ -103,6 +103,10 @@ append_config "APP_ENV" "appEnvironment" "string"
 # Set by Bitrise on tag builds; absent locally/off-tag.
 append_config "BITRISE_GIT_TAG" "releaseTag" "string"
 
+# Incrementing CI build number, mirroring mobile's native build version.
+# Set by Bitrise; absent locally.
+append_config "BITRISE_BUILD_NUMBER" "appBuildNumber" "string"
+
 # Explorer URLs
 append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"
 append_config "TESTNET_EXPLORER_URL" "testnetExplorerUrl" "string"
