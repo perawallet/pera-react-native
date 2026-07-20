@@ -47,11 +47,17 @@ export const NumberPad = memo(
                                     />
                                 )
                             }
+                            const keyTestID = key
+                                ? key === '.'
+                                    ? 'numpad_key_decimal'
+                                    : `numpad_key_${key}`
+                                : 'numpad_key_delete'
                             return (
                                 <PWTouchableOpacity
                                     key={`numpad-key-${idx}-${keyIdx}`}
                                     onPress={() => onPress(key)}
                                     style={styles.key}
+                                    testID={keyTestID}
                                 >
                                     {!!key && (
                                         <PWText

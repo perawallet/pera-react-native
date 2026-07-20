@@ -60,8 +60,6 @@ export const configSchema = z.object({
     reactQueryPersistenceAge: z.number().int(),
 
     discoverBaseUrl: z.url(),
-    stakingBaseUrl: z.url(),
-    onrampBaseUrl: z.url(),
     /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
     onrampSupportEmail: z.email(),
     /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
@@ -115,6 +113,23 @@ export const configSchema = z.object({
     mainnetBaanxTenantId: z.string(),
     testnetBaanxTenantId: z.string(),
 
+    // SWAP POINT: AppliedBlockchain (AB) escrow card service. Card creation and
+    // the delegated-LSig `/lsig` endpoint are hosted by AB on testnet until Baanx
+    // wraps them. The auth token is an AB-issued static secret sent as a RAW
+    // `Authorization` header (no Bearer). Base URL uses z.string() (not z.url())
+    // so an empty default validates before the values arrive. App ids and the
+    // USDC asset id feed the AutoDraw LogicSig TEAL template.
+    mainnetCardEscrowBaseUrl: z.string(),
+    testnetCardEscrowBaseUrl: z.string(),
+    mainnetCardEscrowAuthToken: z.string(),
+    testnetCardEscrowAuthToken: z.string(),
+    mainnetCardW3CardAppId: z.string(),
+    testnetCardW3CardAppId: z.string(),
+    mainnetCardKillswitchAppId: z.string(),
+    testnetCardKillswitchAppId: z.string(),
+    mainnetCardUsdcAssetId: z.string(),
+    testnetCardUsdcAssetId: z.string(),
+
     arc59: z.object({
         testnet: z.object({
             appId: z.bigint(),
@@ -144,10 +159,18 @@ export const configSchema = z.object({
 
 export type Config = z.infer<typeof configSchema>
 
+type ConfigOverrides = Partial<Omit<Config, 'discoverBaseUrl'>>
+
+const discoverBaseUrlByEnvironment: Record<Config['appEnvironment'], string> = {
+    development: 'https://discover-mobile-staging.perawallet.app/',
+    staging: 'https://discover-mobile-staging.perawallet.app/',
+    production: 'https://discover-mobile.perawallet.app/',
+}
+
 /**
  * Production configuration with safe defaults for open source builds.
  */
-const productionConfig = {
+const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
     mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
@@ -168,9 +191,6 @@ const productionConfig = {
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
-    discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
-    stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
-    onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
     onrampSupportEmail: 'support@xoswap.com',
     cardSupportEmail: 'support@baanx.com',
     supportBaseUrl: 'https://support.perawallet.app/',
@@ -243,6 +263,23 @@ const productionConfig = {
     mainnetBaanxTenantId: '',
     testnetBaanxTenantId: 'perawallet',
 
+    // SWAP POINT: AB escrow card service. Base URLs, auth tokens, and app ids
+    // are injected at build time from env (bitrise secrets in CI, .env locally)
+    // via tools/generate-config.sh — empty defaults keep the flow dev-mockable
+    // until AB provides testnet values. The USDC asset ids default to the public
+    // network assets (mirrors KNOWN_ASSET_IDS.USDC); AB may override with a test
+    // asset via TESTNET_CARD_USDC_ASSET_ID.
+    mainnetCardEscrowBaseUrl: '',
+    testnetCardEscrowBaseUrl: '',
+    mainnetCardEscrowAuthToken: '',
+    testnetCardEscrowAuthToken: '',
+    mainnetCardW3CardAppId: '',
+    testnetCardW3CardAppId: '',
+    mainnetCardKillswitchAppId: '',
+    testnetCardKillswitchAppId: '',
+    mainnetCardUsdcAssetId: '31566704',
+    testnetCardUsdcAssetId: '10458941',
+
     arc59: {
         testnet: {
             appId: 643_020_148n,
@@ -285,9 +322,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
-    discoverBaseUrl: 'DISCOVER_BASE_URL',
-    stakingBaseUrl: 'STAKING_BASE_URL',
-    onrampBaseUrl: 'ONRAMP_BASE_URL',
     onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
     cardSupportEmail: 'CARD_SUPPORT_EMAIL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
@@ -328,6 +362,17 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetBaanxTenantId: 'MAINNET_BAANX_TENANT_ID',
     testnetBaanxTenantId: 'TESTNET_BAANX_TENANT_ID',
 
+    mainnetCardEscrowBaseUrl: 'MAINNET_CARD_ESCROW_BASE_URL',
+    testnetCardEscrowBaseUrl: 'TESTNET_CARD_ESCROW_BASE_URL',
+    mainnetCardEscrowAuthToken: 'MAINNET_CARD_ESCROW_AUTH_TOKEN',
+    testnetCardEscrowAuthToken: 'TESTNET_CARD_ESCROW_AUTH_TOKEN',
+    mainnetCardW3CardAppId: 'MAINNET_CARD_W3CARD_APP_ID',
+    testnetCardW3CardAppId: 'TESTNET_CARD_W3CARD_APP_ID',
+    mainnetCardKillswitchAppId: 'MAINNET_CARD_KILLSWITCH_APP_ID',
+    testnetCardKillswitchAppId: 'TESTNET_CARD_KILLSWITCH_APP_ID',
+    mainnetCardUsdcAssetId: 'MAINNET_CARD_USDC_ASSET_ID',
+    testnetCardUsdcAssetId: 'TESTNET_CARD_USDC_ASSET_ID',
+
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',
     releaseTag: 'BITRISE_GIT_TAG',
@@ -339,10 +384,14 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
  *
  * @returns Validated configuration object
  */
-export function getConfig(): Config {
-    const mergedConfig = { ...productionConfig, ...generatedEnv }
+export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
+    const mergedConfig = { ...productionConfig, ...overrides }
 
-    return configSchema.parse(mergedConfig)
+    return configSchema.parse({
+        ...mergedConfig,
+        discoverBaseUrl:
+            discoverBaseUrlByEnvironment[mergedConfig.appEnvironment],
+    })
 }
 
 export const config = getConfig()

@@ -41,6 +41,7 @@ export const AccountSelectionScreen = () => {
         <AccountPicker
             accounts={accounts}
             onSelect={handleSelected}
+            rowTestIDPrefix='receive_account_row'
         />
     )
 }

@@ -193,7 +193,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             // useEffect — wait for the success screen to render.
             await waitFor(
                 () => {
-                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 10_000 },
             )
@@ -355,7 +355,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
             await waitFor(
                 () => {
-                    expect(screen.getByTestId('PWResultView')).toBeTruthy()
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
                 },
                 { timeout: 10_000 },
             )
