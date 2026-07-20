@@ -884,9 +884,19 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
-            set -ex
-            # BITRISE_PUBLIC_INSTALL_PAGE_URL is set by deploy-to-bitrise-io
-            envman add --key INSTALL_PAGE_URL --value "${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+            # set -e without -x: keep temporary S3 download signatures out of the trace log.
+            set -e
+            INSTALL_URL="${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+            if [ -z "$INSTALL_URL" ] && [ -n "${BITRISE_PERMANENT_DOWNLOAD_URL_MAP:-}" ]; then
+              IFS='|' read -ra ADDR <<< "$BITRISE_PERMANENT_DOWNLOAD_URL_MAP"
+              for i in "${ADDR[@]}"; do
+                if [[ "$i" =~ pera-extension-web-.*\.zip=\>(.+) ]]; then
+                  INSTALL_URL="${BASH_REMATCH[1]}"
+                  break
+                fi
+              done
+            fi
+            envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
   _publish-result:
     steps:
     - script@1:
