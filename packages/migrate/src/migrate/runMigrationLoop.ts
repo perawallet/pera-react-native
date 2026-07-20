@@ -13,6 +13,7 @@
 import {
     AccountTypes,
     useAccountsStore,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
@@ -21,6 +22,7 @@ import type {
     LegacyUndecodableAccount,
 } from '@perawallet/wallet-extension-platform'
 import {
+    addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
     applyRekeyAddressToStoreAccount,
@@ -43,6 +45,13 @@ export type RunMigrationLoopArgs = MigrationDeps & {
     accounts: LegacyAccount[]
     hdWallets: LegacyHDWallet[]
     undecodableAccounts?: LegacyUndecodableAccount[]
+    /**
+     * True when the accounts step is re-running for an already-migrated user
+     * (recorded accounts version >= 1). On a re-run the legacy Pera 6 ordering
+     * must NOT be re-applied — doing so would wipe any reordering the user made
+     * post-migration. First runs (undefined/false) still apply it.
+     */
+    isRerun?: boolean
 }
 
 export const runMigrationLoop = async (
@@ -57,6 +66,10 @@ export const runMigrationLoop = async (
     const pendingMetadata: MigratedAccountPair[] = []
 
     for (const account of orderForImport(args.accounts)) {
+        // When this iteration removes a watch account to reconcile it, keep the
+        // removed record so a failed reimport can restore it instead of
+        // orphaning the user's visible account.
+        let removedForReconcile: WalletAccount | null = null
         if (existingAddresses.has(account.address)) {
             const existing = useAccountsStore
                 .getState()
@@ -70,6 +83,7 @@ export const runMigrationLoop = async (
                 // withheld natively); reimport now that the key is present.
                 removeAccountFromStore(account.address)
                 existingAddresses.delete(account.address)
+                removedForReconcile = existing
                 // fall through to the import path below
             } else {
                 if (
@@ -101,6 +115,13 @@ export const runMigrationLoop = async (
             pendingMetadata.push({ created, legacy: account })
             summary.imported += 1
         } catch (e) {
+            if (removedForReconcile !== null) {
+                // Restore the watch account we removed for reconciliation so a
+                // transient reimport failure never leaves the user's account
+                // permanently gone; it will be retried next launch.
+                addKeylessAccountToStore(removedForReconcile)
+                existingAddresses.add(removedForReconcile.address)
+            }
             const route = classifyLegacyAccountRoute(account)
             const errorName = e instanceof Error ? e.name : 'Unknown'
             const errorMessage = e instanceof Error ? e.message : String(e)
@@ -135,7 +156,10 @@ export const runMigrationLoop = async (
 
     applyAllLegacyMetadata(pendingMetadata)
     markLegacyBackedUpAccounts(pendingMetadata, args.markAccountBackedUp)
-    applyLegacyAccountOrder(args.accounts)
+    // First-run only: on a re-run the store already holds the user's own
+    // ordering (incl. Pera-7-native accounts), and reapplying the legacy Pera 6
+    // order would clobber it.
+    if (!args.isRerun) applyLegacyAccountOrder(args.accounts)
 
     return summary
 }

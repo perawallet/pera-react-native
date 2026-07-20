@@ -54,6 +54,7 @@ vi.mock('../migrateLegacyAccount', () => ({
 }))
 
 vi.mock('../accountStoreOps', () => ({
+    addKeylessAccountToStore: vi.fn(),
     applyAllLegacyMetadata: vi.fn(),
     applyLegacyAccountOrder: vi.fn(),
     applyRekeyAddressToStoreAccount: vi.fn(),
@@ -71,6 +72,7 @@ import {
     classifyLegacyAccountRoute,
 } from '../migrateLegacyAccount'
 import {
+    addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
     applyRekeyAddressToStoreAccount,
@@ -122,6 +124,7 @@ beforeEach(() => {
     vi.mocked(applyAllLegacyMetadata).mockReset()
     vi.mocked(applyLegacyAccountOrder).mockReset()
     vi.mocked(markLegacyBackedUpAccounts).mockReset()
+    vi.mocked(addKeylessAccountToStore).mockReset()
     vi.mocked(removeAccountFromStore).mockReset()
     vi.mocked(applyRekeyAddressToStoreAccount).mockReset()
     loggerMock.error.mockReset()
@@ -401,6 +404,68 @@ describe('runMigrationLoop', () => {
         expect(
             accountsStoreMock.accounts.filter(a => a.address === 'UPGRADEME'),
         ).toHaveLength(1)
+    })
+
+    it('restores the removed watch account when the reconciling reimport throws', async () => {
+        const watch = watchAccount('RECONCILE')
+        accountsStoreMock.accounts = [watch]
+        const legacy = buildAccount({
+            address: 'RECONCILE',
+            type: 'standard',
+            secretKey: new Uint8Array(64).fill(2),
+            authAddress: null,
+        })
+        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(
+            new Error('kms exploded'),
+        )
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(removeAccountFromStore).toHaveBeenCalledWith('RECONCILE')
+        // The visible watch account must be re-added before the failure is
+        // recorded, so a transient import error never orphans the user's account.
+        expect(addKeylessAccountToStore).toHaveBeenCalledWith(watch)
+        expect(result.imported).toBe(0)
+        expect(result.failed).toEqual([
+            {
+                address: 'RECONCILE',
+                name: '',
+                reason: '[algo25] Error: kms exploded',
+            },
+        ])
+    })
+
+    it('does not re-add anything when a non-reconciling import throws', async () => {
+        const legacy = buildAccount({ address: 'FRESH', name: 'F' })
+        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(new Error('boom'))
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(addKeylessAccountToStore).not.toHaveBeenCalled()
+        expect(result.failed).toHaveLength(1)
+    })
+
+    it('skips applyLegacyAccountOrder on an accounts-v2 re-run to preserve user reordering', async () => {
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'X',
+        } as never)
+
+        await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [buildAccount({ address: 'A', preferredOrder: 0 })],
+            hdWallets: [],
+            isRerun: true,
+        })
+
+        expect(applyLegacyAccountOrder).not.toHaveBeenCalled()
     })
 
     it('backfills rekeyAddress on an existing watch account without reimporting', async () => {

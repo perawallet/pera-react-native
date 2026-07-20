@@ -252,11 +252,28 @@ describe('runMigration', () => {
         expect(mockedRunMigrationLoop).toHaveBeenCalledWith({
             accounts: data.accounts,
             hdWallets: data.hdWallets,
+            isRerun: false,
             importAccount: deps.importAccount,
             createHdWalletAccount: deps.createHdWalletAccount,
             createHDWalletKey: deps.createHDWalletKey,
             hasSeedWithEntropy: deps.hasSeedWithEntropy,
         })
+    })
+
+    it('passes isRerun: true to the loop when the recorded accounts version is >= 1', async () => {
+        const migration = buildMigrationService({
+            // accounts already at v1 (behind target v2) → a re-run; other steps
+            // stay pending so the loop still runs.
+            getCompletedStepVersions: vi
+                .fn()
+                .mockResolvedValue({ accounts: 1 }),
+        })
+
+        await runMigration(migration, buildDeps())
+
+        expect(mockedRunMigrationLoop).toHaveBeenCalledWith(
+            expect.objectContaining({ isRerun: true }),
+        )
     })
 
     it('captures markMigrationComplete throw without re-throwing', async () => {
@@ -390,9 +407,9 @@ describe('step-version health logging', () => {
         })
         const service = buildMigrationService()
         await runMigration(service, buildDeps())
-        // The mock's getCompletedStepVersions is static (setCompletedStepVersions
-        // writes don't feed back into it), so every step still reads as pending —
-        // the assertion only needs to confirm the failed step is among them.
+        // The stateful mock starts empty; the accounts step never records a
+        // version because the loop reports a failure, so it stays pending — the
+        // assertion only needs to confirm the failed step is among them.
         expect(infoSpy).toHaveBeenCalledWith(
             '[Migration] step versions',
             expect.objectContaining({

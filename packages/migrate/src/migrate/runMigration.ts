@@ -26,6 +26,7 @@ import { runMigrationLoop } from './runMigrationLoop'
 import { scrubLegacyPayloadSecrets } from './scrubLegacyPayload'
 import {
     getPendingSteps,
+    pendingStepsFromVersions,
     resolveCompletedStepVersions,
     MIGRATION_STEP_TARGET_VERSIONS,
 } from './stepVersions'
@@ -106,7 +107,8 @@ export const runMigration = async (
         }
     }
 
-    const pending = await getPendingSteps(migration)
+    const resolved = await resolveCompletedStepVersions(migration)
+    const pending = pendingStepsFromVersions(resolved)
     if (pending.length === 0) {
         await logStepVersions(migration)
         return {
@@ -117,6 +119,9 @@ export const runMigration = async (
             error: null,
         }
     }
+    // The accounts step has already run at least once when its recorded version
+    // is >= 1; the loop must then skip re-applying the legacy account order.
+    const isRerun = (resolved.accounts ?? 0) >= 1
 
     let data: LegacyMigrationData
     try {
@@ -138,7 +143,13 @@ export const runMigration = async (
     }
 
     try {
-        return await runMigrationWithLegacyData(migration, deps, data, pending)
+        return await runMigrationWithLegacyData(
+            migration,
+            deps,
+            data,
+            pending,
+            isRerun,
+        )
     } finally {
         scrubLegacyPayloadSecrets(data)
     }
@@ -149,6 +160,7 @@ const runMigrationWithLegacyData = async (
     deps: MigrationDeps,
     data: LegacyMigrationData,
     pending: MigrationStepName[],
+    isRerun: boolean,
 ): Promise<MigrationRunResult> => {
     const accountsPending = pending.includes('accounts')
     const pendingExtras = pending.filter(
@@ -162,6 +174,7 @@ const runMigrationWithLegacyData = async (
                 accounts: data.accounts,
                 undecodableAccounts: data.undecodableAccounts,
                 hdWallets: data.hdWallets,
+                isRerun,
                 ...deps,
             })
         } catch (err) {

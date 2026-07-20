@@ -56,11 +56,14 @@ export const resolveCompletedStepVersions = async (
     return Object.fromEntries(ALL_MIGRATION_STEPS.map(step => [step, 1]))
 }
 
-export const getPendingSteps = async (
-    service: MigrationService,
-): Promise<MigrationStepName[]> => {
-    const completed = await resolveCompletedStepVersions(service)
-    return ALL_MIGRATION_STEPS.filter(
+export const pendingStepsFromVersions = (
+    completed: MigrationStepVersions,
+): MigrationStepName[] =>
+    ALL_MIGRATION_STEPS.filter(
         step => (completed[step] ?? 0) < MIGRATION_STEP_TARGET_VERSIONS[step],
     )
-}
+
+export const getPendingSteps = async (
+    service: MigrationService,
+): Promise<MigrationStepName[]> =>
+    pendingStepsFromVersions(await resolveCompletedStepVersions(service))
