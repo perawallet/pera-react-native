@@ -73,11 +73,12 @@ logic eval error: dynamic cost budget exceeded
 **Cause:** Contract exceeded the 700 opcode budget per app call.
 
 **Budget limits:**
-| Context | Budget |
-|---------|--------|
-| Single app call | 700 opcodes |
+
+| Context                   | Budget         |
+| ------------------------- | -------------- |
+| Single app call           | 700 opcodes    |
 | Max pooled (16 app calls) | 11,200 opcodes |
-| Logic signature | 20,000 opcodes |
+| Logic signature           | 20,000 opcodes |
 
 **Solutions:**
 
