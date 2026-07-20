@@ -15,13 +15,20 @@ import { logger } from '@perawallet/wallet-core-shared'
 import type {
     LegacyMigrationData,
     MigrationService,
+    MigrationStepName,
 } from '@perawallet/wallet-extension-platform'
 import {
     runExtrasMigration,
     type ExtrasMigrationResult,
+    type ExtrasMigrationStepName,
 } from './runExtrasMigration'
 import { runMigrationLoop } from './runMigrationLoop'
 import { scrubLegacyPayloadSecrets } from './scrubLegacyPayload'
+import {
+    getPendingSteps,
+    resolveCompletedStepVersions,
+    MIGRATION_STEP_TARGET_VERSIONS,
+} from './stepVersions'
 import type { MigrationDeps, MigrationResult } from './types'
 
 export type MigrationRunIncompleteReason =
@@ -70,6 +77,17 @@ export const runMigration = async (
         }
     }
 
+    const pending = await getPendingSteps(migration)
+    if (pending.length === 0) {
+        return {
+            completed: true,
+            incompleteReason: null,
+            accounts: null,
+            extras: null,
+            error: null,
+        }
+    }
+
     let data: LegacyMigrationData
     try {
         data = await migration.getLegacyData()
@@ -89,7 +107,7 @@ export const runMigration = async (
     }
 
     try {
-        return await runMigrationWithLegacyData(migration, deps, data)
+        return await runMigrationWithLegacyData(migration, deps, data, pending)
     } finally {
         scrubLegacyPayloadSecrets(data)
     }
@@ -99,39 +117,53 @@ const runMigrationWithLegacyData = async (
     migration: MigrationService,
     deps: MigrationDeps,
     data: LegacyMigrationData,
+    pending: MigrationStepName[],
 ): Promise<MigrationRunResult> => {
-    let accountResult: MigrationResult
-    try {
-        accountResult = await runMigrationLoop({
-            accounts: data.accounts,
-            undecodableAccounts: data.undecodableAccounts,
-            hdWallets: data.hdWallets,
-            ...deps,
-        })
-    } catch (err) {
-        const error = toError(err)
-        logger.error(
-            '[Migration] runMigrationLoop threw; sentinel not set, will retry next launch',
-            { error },
-        )
-        return {
-            completed: false,
-            incompleteReason: 'accounts-threw',
-            accounts: null,
-            extras: null,
-            error,
+    const accountsPending = pending.includes('accounts')
+    const pendingExtras = pending.filter(
+        (step): step is ExtrasMigrationStepName => step !== 'accounts',
+    )
+
+    let accountResult: MigrationResult = { imported: 0, skipped: 0, failed: [] }
+    if (accountsPending) {
+        try {
+            accountResult = await runMigrationLoop({
+                accounts: data.accounts,
+                undecodableAccounts: data.undecodableAccounts,
+                hdWallets: data.hdWallets,
+                ...deps,
+            })
+        } catch (err) {
+            const error = toError(err)
+            logger.error(
+                '[Migration] runMigrationLoop threw; sentinel not set, will retry next launch',
+                { error },
+            )
+            return {
+                completed: false,
+                incompleteReason: 'accounts-threw',
+                accounts: null,
+                extras: null,
+                error,
+            }
         }
     }
 
     let extrasResult: ExtrasMigrationResult
     try {
-        extrasResult = await runExtrasMigration(data)
+        extrasResult = await runExtrasMigration(data, pendingExtras)
     } catch (err) {
         const error = toError(err)
         logger.error(
             '[Migration] runExtrasMigration threw; sentinel not set, will retry next launch',
             { error },
         )
+        await recordSucceededSteps(migration, {
+            accountsSucceeded:
+                accountsPending && accountResult.failed.length === 0,
+            extras: null,
+            pendingExtras,
+        })
         return {
             completed: false,
             incompleteReason: 'extras-threw',
@@ -140,6 +172,12 @@ const runMigrationWithLegacyData = async (
             error,
         }
     }
+
+    await recordSucceededSteps(migration, {
+        accountsSucceeded: accountsPending && accountResult.failed.length === 0,
+        extras: extrasResult,
+        pendingExtras,
+    })
 
     if (accountResult.failed.length > 0) {
         logger.error(
@@ -202,6 +240,37 @@ const runMigrationWithLegacyData = async (
         accounts: accountResult,
         extras: extrasResult,
         error: null,
+    }
+}
+
+const recordSucceededSteps = async (
+    migration: MigrationService,
+    args: {
+        accountsSucceeded: boolean
+        extras: ExtrasMigrationResult | null
+        pendingExtras: ExtrasMigrationStepName[]
+    },
+): Promise<void> => {
+    const succeeded: MigrationStepName[] = []
+    if (args.accountsSucceeded) succeeded.push('accounts')
+    if (args.extras) {
+        const failedSteps = new Set(args.extras.failed.map(f => f.step))
+        for (const step of args.pendingExtras) {
+            if (!failedSteps.has(step)) succeeded.push(step)
+        }
+    }
+    if (succeeded.length === 0) return
+    try {
+        const current = await resolveCompletedStepVersions(migration)
+        const next = { ...current }
+        for (const step of succeeded) {
+            next[step] = MIGRATION_STEP_TARGET_VERSIONS[step]
+        }
+        await migration.setCompletedStepVersions(next)
+    } catch (err) {
+        logger.error('[Migration] failed to record step versions', {
+            error: err,
+        })
     }
 }
 

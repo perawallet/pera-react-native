@@ -27,6 +27,10 @@ const emptyLegacyData = (): LegacyMigrationData =>
 import { runMigration } from '../runMigration'
 import { runMigrationLoop } from '../runMigrationLoop'
 import { runExtrasMigration } from '../runExtrasMigration'
+import {
+    ALL_MIGRATION_STEPS,
+    MIGRATION_STEP_TARGET_VERSIONS,
+} from '../stepVersions'
 import type { MigrationDeps } from '../types'
 
 vi.mock('../runMigrationLoop', () => ({ runMigrationLoop: vi.fn() }))
@@ -76,8 +80,17 @@ const successfulExtrasResult = {
     },
     stashed: { walletConnectHistoryBlobStashed: false },
     walletConnect: { imported: 0, skipped: 0 },
+    passkeys: { imported: 0, skipped: 0 },
     failed: [],
 }
+
+const allStepsAtTarget = () =>
+    Object.fromEntries(
+        ALL_MIGRATION_STEPS.map(step => [
+            step,
+            MIGRATION_STEP_TARGET_VERSIONS[step],
+        ]),
+    )
 
 describe('runMigration', () => {
     beforeEach(() => {
@@ -246,5 +259,71 @@ describe('runMigration', () => {
         expect(result.completed).toBe(false)
         expect(result.incompleteReason).toBe('mark-complete-threw')
         expect(result.error?.message).toBe('disk full')
+    })
+})
+
+describe('step-version orchestration', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockedRunMigrationLoop.mockResolvedValue(successfulAccountResult)
+        mockedRunExtrasMigration.mockResolvedValue(successfulExtrasResult)
+    })
+
+    it('short-circuits without reading legacy data when nothing is pending', async () => {
+        const service = buildMigrationService({
+            getCompletedStepVersions: vi
+                .fn()
+                .mockResolvedValue(allStepsAtTarget()),
+        })
+        const result = await runMigration(service, buildDeps())
+        expect(result.completed).toBe(true)
+        expect(service.getLegacyData).not.toHaveBeenCalled()
+        expect(mockedRunMigrationLoop).not.toHaveBeenCalled()
+    })
+
+    it('skips the account loop when only extras steps are pending', async () => {
+        const service = buildMigrationService({
+            getCompletedStepVersions: vi.fn().mockResolvedValue({
+                ...allStepsAtTarget(),
+                deviceIdentifiers: 0,
+            }),
+        })
+        mockedRunExtrasMigration.mockResolvedValue(successfulExtrasResult)
+        const result = await runMigration(service, buildDeps())
+        expect(mockedRunMigrationLoop).not.toHaveBeenCalled()
+        expect(mockedRunExtrasMigration).toHaveBeenCalledWith(
+            expect.anything(),
+            ['deviceIdentifiers'],
+        )
+        expect(result.completed).toBe(true)
+    })
+
+    it('records versions for succeeded steps even when another step fails', async () => {
+        const service = buildMigrationService()
+        mockedRunMigrationLoop.mockResolvedValue(successfulAccountResult)
+        mockedRunExtrasMigration.mockResolvedValue({
+            ...successfulExtrasResult,
+            failed: [{ step: 'passkeys', reason: 'boom' }],
+        })
+        const result = await runMigration(service, buildDeps())
+        expect(result.completed).toBe(false)
+        expect(service.setCompletedStepVersions).toHaveBeenCalledWith(
+            expect.objectContaining({ accounts: 1, deviceIdentifiers: 1 }),
+        )
+        const written = (
+            service.setCompletedStepVersions as ReturnType<typeof vi.fn>
+        ).mock.calls[0][0]
+        expect(written.passkeys).toBeUndefined()
+        expect(service.markMigrationComplete).not.toHaveBeenCalled()
+    })
+
+    it('writes the sentinel only when every step reached its target', async () => {
+        const service = buildMigrationService()
+        mockedRunMigrationLoop.mockResolvedValue(successfulAccountResult)
+        mockedRunExtrasMigration.mockResolvedValue(successfulExtrasResult)
+        const result = await runMigration(service, buildDeps())
+        expect(result.completed).toBe(true)
+        expect(service.setCompletedStepVersions).toHaveBeenCalled()
+        expect(service.markMigrationComplete).toHaveBeenCalledOnce()
     })
 })
