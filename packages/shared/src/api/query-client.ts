@@ -252,7 +252,7 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             if (error instanceof Error && error.name === 'AbortError') {
                 throw error
             }
-            throw PeraNetworkError.fromKyError(error)
+            throw await PeraNetworkError.fromKyErrorWithBody(error)
         }
     }
 }
