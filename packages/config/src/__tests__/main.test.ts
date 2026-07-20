@@ -17,6 +17,7 @@ import {
     getConfig,
     overrideEnvironmentMap,
 } from '../main'
+import { loadEnvOverrides } from '../env-loader'
 
 describe('config/main', () => {
     test('config object is frozen', () => {
@@ -69,5 +70,24 @@ describe('config/main', () => {
             algodReadTimeout: 10.5,
         })
         expect(result.success).toBe(false)
+    })
+
+    test('quantumMockSubmit defaults to false so real broadcast is the default', () => {
+        expect(config.quantumMockSubmit).toBe(false)
+    })
+
+    test('quantumMockSubmit can be enabled via PERA_QUANTUM_MOCK_SUBMIT', () => {
+        const original = process.env.PERA_QUANTUM_MOCK_SUBMIT
+        process.env.PERA_QUANTUM_MOCK_SUBMIT = 'true'
+        try {
+            const result = loadEnvOverrides()
+            expect(result.quantumMockSubmit).toBe(true)
+        } finally {
+            if (original === undefined) {
+                delete process.env.PERA_QUANTUM_MOCK_SUBMIT
+            } else {
+                process.env.PERA_QUANTUM_MOCK_SUBMIT = original
+            }
+        }
     })
 })

@@ -330,6 +330,7 @@ describe('env-loader', () => {
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,
+            quantumMockSubmit: false,
             disableScreenCapturePrevention: false,
             arc59: {
                 testnet: {
