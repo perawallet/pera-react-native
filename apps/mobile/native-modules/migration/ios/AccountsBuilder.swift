@@ -31,12 +31,18 @@ enum AccountsBuilder {
             for (authAddress, ledger) in rekeyDetail {
                 guard !addresses.contains(authAddress) else { continue }
                 let ledgerMap = composeLedger(ledger)
-                if ledgerMap is NSNull { continue }
-                out.append(authLedgerAccount(
-                    address: authAddress,
-                    ledger: ledgerMap,
-                    preferredOrder: info.preferredOrder
-                ))
+                if ledgerMap is NSNull {
+                    out.append(authWatchAccount(
+                        address: authAddress,
+                        preferredOrder: info.preferredOrder
+                    ))
+                } else {
+                    out.append(authLedgerAccount(
+                        address: authAddress,
+                        ledger: ledgerMap,
+                        preferredOrder: info.preferredOrder
+                    ))
+                }
                 addresses.insert(authAddress)
             }
         }
@@ -58,6 +64,7 @@ enum AccountsBuilder {
         m.putString("hdWalletId", info.hdWalletAddressDetail?.walletId)
         m.putRaw("ledger", composeLedger(info.ledgerDetail))
         m.putRaw("joint", composeJoint(info.jointAccountDetail))
+        m.putString("authAddress", info.rekeyDetail?.keys.first)
         return m.dict
     }
 
@@ -76,6 +83,25 @@ enum AccountsBuilder {
         m.putString("hdWalletId", nil)
         m.putRaw("ledger", ledger)
         m.putRaw("joint", NSNull())
+        m.putString("authAddress", nil)
+        return m.dict
+    }
+
+    private static func authWatchAccount(
+        address: String,
+        preferredOrder: Int?
+    ) -> [String: Any] {
+        var m = BridgeMap()
+        m.putString("address", address)
+        m.putString("name", "")
+        m.putString("type", "watch")
+        m.putInt("preferredOrder", preferredOrder ?? 0)
+        m.putBool("isBackedUp", false)
+        m.putBytes("secretKey", nil)
+        m.putString("hdWalletId", nil)
+        m.putRaw("ledger", NSNull())
+        m.putRaw("joint", NSNull())
+        m.putString("authAddress", nil)
         return m.dict
     }
 
