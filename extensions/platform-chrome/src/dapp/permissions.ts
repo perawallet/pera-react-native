@@ -32,10 +32,21 @@ export interface LocalStorageArea {
 }
 
 export class DappPermissionStore {
+    private queue: Promise<unknown> = Promise.resolve()
+
     constructor(
         private readonly area: LocalStorageArea,
         private readonly now: () => number = () => Date.now(),
     ) {}
+
+    private async withLock<T>(fn: () => Promise<T>): Promise<T> {
+        if (typeof navigator !== 'undefined' && navigator.locks) {
+            return navigator.locks.request('pera-dapp-permissions', fn)
+        }
+        const next = this.queue.then(fn)
+        this.queue = next.catch(() => {})
+        return next
+    }
 
     private async readMap(): Promise<DappPermissionsMap> {
         const raw = await this.area.get(DAPP_PERMISSIONS_STORAGE_KEY)
@@ -70,36 +81,42 @@ export class DappPermissionStore {
         addresses: string[],
         meta?: { name?: string; iconUrl?: string },
     ): Promise<DappPermission> {
-        const map = await this.readMap()
-        const permission: DappPermission = {
-            origin,
-            addresses: [...addresses],
-            name: meta?.name,
-            iconUrl: meta?.iconUrl,
-            grantedAt: this.now(),
-        }
-        map[origin] = permission
-        await this.writeMap(map)
-        return permission
+        return this.withLock(async () => {
+            const map = await this.readMap()
+            const permission: DappPermission = {
+                origin,
+                addresses: [...addresses],
+                name: meta?.name,
+                iconUrl: meta?.iconUrl,
+                grantedAt: this.now(),
+            }
+            map[origin] = permission
+            await this.writeMap(map)
+            return permission
+        })
     }
 
     async revoke(origin: string): Promise<void> {
-        const map = await this.readMap()
-        if (!(origin in map)) return
-        delete map[origin]
-        await this.writeMap(map)
+        return this.withLock(async () => {
+            const map = await this.readMap()
+            if (!(origin in map)) return
+            delete map[origin]
+            await this.writeMap(map)
+        })
     }
 
     async pruneAddresses(validAddresses: Set<string>): Promise<void> {
-        const map = await this.readMap()
-        let changed = false
-        for (const [origin, permission] of Object.entries(map)) {
-            const kept = permission.addresses.filter(a => validAddresses.has(a))
-            if (kept.length === permission.addresses.length) continue
-            changed = true
-            if (kept.length === 0) delete map[origin]
-            else map[origin] = { ...permission, addresses: kept }
-        }
-        if (changed) await this.writeMap(map)
+        return this.withLock(async () => {
+            const map = await this.readMap()
+            let changed = false
+            for (const [origin, permission] of Object.entries(map)) {
+                const kept = permission.addresses.filter(a => validAddresses.has(a))
+                if (kept.length === permission.addresses.length) continue
+                changed = true
+                if (kept.length === 0) delete map[origin]
+                else map[origin] = { ...permission, addresses: kept }
+            }
+            if (changed) await this.writeMap(map)
+        })
     }
 }

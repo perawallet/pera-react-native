@@ -155,9 +155,10 @@ export const installOffscreenStorageShim = (
     }
 
     const listeners = new Set<ChangeListener>()
-    chromeLike.runtime.onMessage.addListener((message: unknown) => {
+    chromeLike.runtime.onMessage.addListener((message: unknown, sender) => {
         const msg = message as StorageChangedBroadcast | undefined
         if (msg?.scope !== STORAGE_EVENT_SCOPE) return undefined
+        if (!isTrustedExtensionPageSender(sender, chromeLike)) return undefined
         listeners.forEach(listener => listener(msg.changes, msg.areaName))
         return undefined
     })

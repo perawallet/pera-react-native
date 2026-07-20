@@ -138,4 +138,20 @@ describe('storage proxy', () => {
         )
         expect(response).toEqual({ ok: false, error: 'untrusted sender' })
     })
+
+    it('offscreen shim rejects storage events from untrusted senders', async () => {
+        const listener = vi.fn()
+        offscreenChrome.storage.onChanged.addListener(listener)
+
+        await fake.chrome.runtime.sendMessage(
+            {
+                scope: 'pera-storage-event',
+                changes: { 'kv:x': { newValue: 'y' } },
+                areaName: 'local',
+            },
+            { url: 'https://dapp.example' },
+        )
+        await new Promise(resolve => setTimeout(resolve, 0))
+        expect(listener).not.toHaveBeenCalled()
+    })
 })
