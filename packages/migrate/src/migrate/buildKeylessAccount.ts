@@ -23,6 +23,10 @@ export const buildWatchAccount = (account: LegacyAccount): WalletAccount => ({
     name: account.name || undefined,
     type: AccountTypes.watch,
     address: account.address,
+    // Only the mirror — deliberately NOT rekeyAddressByNetwork: rekeys are per-network on-chain
+    // and the legacy value's network is ambiguous; the syncer's updateAccountRekeyAddress
+    // writes the authoritative per-network map on first tick, per the field's documented contract.
+    ...(account.authAddress ? { rekeyAddress: account.authAddress } : {}),
 })
 
 export const buildLedgerAccount = (account: LegacyAccount): WalletAccount => {

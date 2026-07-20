@@ -308,3 +308,27 @@ describe('classifyLegacyAccountRoute', () => {
         expect(classifyLegacyAccountRoute(buildAccount())).toBe('unroutable')
     })
 })
+
+describe('migrateLegacyAccount with authAddress', () => {
+    it('migrates a keyless account with authAddress as a rekeyed watch account', async () => {
+        // Import the real implementation to test the actual behavior
+        const { buildWatchAccount: realBuildWatchAccount } =
+            await vi.importActual<typeof import('../buildKeylessAccount')>(
+                '../buildKeylessAccount',
+            )
+
+        const account = buildAccount({
+            type: 'standard',
+            secretKey: null,
+            hdWalletId: null,
+            ledger: null,
+            joint: null,
+            authAddress: 'AUTHADDR',
+        })
+
+        const created = realBuildWatchAccount(account)
+
+        expect(created.type).toBe('watch')
+        expect(created.rekeyAddress).toBe('AUTHADDR')
+    })
+})

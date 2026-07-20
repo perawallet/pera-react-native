@@ -79,6 +79,26 @@ describe('buildWatchAccount', () => {
 
         expect(account.name).toBeUndefined()
     })
+
+    it('prefills rekeyAddress from legacy authAddress on watch accounts', () => {
+        const account = buildWatchAccount(
+            buildLegacyAccount({
+                type: 'standard',
+                secretKey: null,
+                authAddress: 'AUTHADDR',
+            }),
+        )
+
+        expect(account.rekeyAddress).toBe('AUTHADDR')
+    })
+
+    it('leaves rekeyAddress unset when legacy authAddress is null', () => {
+        const account = buildWatchAccount(
+            buildLegacyAccount({ type: 'watch', authAddress: null }),
+        )
+
+        expect(account.rekeyAddress).toBeUndefined()
+    })
 })
 
 describe('buildLedgerAccount', () => {
