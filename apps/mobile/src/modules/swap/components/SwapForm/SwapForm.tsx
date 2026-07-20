@@ -82,7 +82,10 @@ export const SwapForm = () => {
             )}
 
             {isQuoteError && (
-                <PWView style={styles.errorContainer}>
+                <PWView
+                    style={styles.errorContainer}
+                    testID='swap_quote_error'
+                >
                     <PWText
                         variant='body'
                         style={styles.errorText}
