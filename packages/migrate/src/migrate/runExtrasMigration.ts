@@ -60,9 +60,23 @@ export type ExtrasMigrationStepName =
     | 'passkeys'
     | 'stashed'
 
+export const EXTRAS_STEP_NAMES: ExtrasMigrationStepName[] = [
+    'preferences',
+    'swaps',
+    'deviceIdentifiers',
+    'contacts',
+    'notifications',
+    'auth',
+    'walletConnect',
+    'passkeys',
+    'stashed',
+]
+
 export const runExtrasMigration = async (
     data: LegacyMigrationData,
+    steps?: ExtrasMigrationStepName[],
 ): Promise<ExtrasMigrationResult> => {
+    const enabled = new Set(steps ?? EXTRAS_STEP_NAMES)
     const result: ExtrasMigrationResult = {
         preferences: false,
         swaps: false,
@@ -80,48 +94,57 @@ export const runExtrasMigration = async (
         failed: [],
     }
 
-    runStep(result, 'preferences', () => {
-        migratePreferences(data.preferences)
-        result.preferences = true
-    })
-
-    runStep(result, 'swaps', () => {
-        migrateSwaps(data.preferences)
-        result.swaps = true
-    })
-
-    runStep(result, 'deviceIdentifiers', () => {
-        migrateDeviceIdentifiers(data.deviceIdentifiers)
-        result.deviceIdentifiers = true
-    })
-
-    runStep(result, 'contacts', () => {
-        result.contacts = migrateContacts(data.contacts)
-    })
-
-    runStep(result, 'notifications', () => {
-        result.notifications = migrateNotificationMutes(
-            data.notificationFilters,
-        )
-    })
-
-    await runAsyncStep(result, 'auth', async () => {
-        result.auth = await migrateAuth(data.auth, data.preferences)
-    })
-
-    runStep(result, 'walletConnect', () => {
-        result.walletConnect = migrateWalletConnect(data.walletConnectV1)
-    })
-
-    await runAsyncStep(result, 'passkeys', async () => {
-        result.passkeys = await migratePasskeys(data.passkeys)
-    })
-
-    runStep(result, 'stashed', () => {
-        result.stashed = migrateStashed({
-            walletConnectHistoryBlob: data.walletConnectHistoryBlob,
+    if (enabled.has('preferences'))
+        runStep(result, 'preferences', () => {
+            migratePreferences(data.preferences)
+            result.preferences = true
         })
-    })
+
+    if (enabled.has('swaps'))
+        runStep(result, 'swaps', () => {
+            migrateSwaps(data.preferences)
+            result.swaps = true
+        })
+
+    if (enabled.has('deviceIdentifiers'))
+        runStep(result, 'deviceIdentifiers', () => {
+            migrateDeviceIdentifiers(data.deviceIdentifiers)
+            result.deviceIdentifiers = true
+        })
+
+    if (enabled.has('contacts'))
+        runStep(result, 'contacts', () => {
+            result.contacts = migrateContacts(data.contacts)
+        })
+
+    if (enabled.has('notifications'))
+        runStep(result, 'notifications', () => {
+            result.notifications = migrateNotificationMutes(
+                data.notificationFilters,
+            )
+        })
+
+    if (enabled.has('auth'))
+        await runAsyncStep(result, 'auth', async () => {
+            result.auth = await migrateAuth(data.auth, data.preferences)
+        })
+
+    if (enabled.has('walletConnect'))
+        runStep(result, 'walletConnect', () => {
+            result.walletConnect = migrateWalletConnect(data.walletConnectV1)
+        })
+
+    if (enabled.has('passkeys'))
+        await runAsyncStep(result, 'passkeys', async () => {
+            result.passkeys = await migratePasskeys(data.passkeys)
+        })
+
+    if (enabled.has('stashed'))
+        runStep(result, 'stashed', () => {
+            result.stashed = migrateStashed({
+                walletConnectHistoryBlob: data.walletConnectHistoryBlob,
+            })
+        })
 
     return result
 }
