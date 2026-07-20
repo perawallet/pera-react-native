@@ -43,6 +43,11 @@ describe('network-config', () => {
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
             baanxClientKey: config.mainnetBaanxClientKey,
             baanxTenantId: config.mainnetBaanxTenantId,
+            cardEscrowBaseUrl: config.mainnetCardEscrowBaseUrl,
+            cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
+            cardW3CardAppId: config.mainnetCardW3CardAppId,
+            cardKillswitchAppId: config.mainnetCardKillswitchAppId,
+            cardUsdcAssetId: config.mainnetCardUsdcAssetId,
         })
     })
 
@@ -63,6 +68,11 @@ describe('network-config', () => {
             baanxBaseUrl: config.testnetBaanxBaseUrl,
             baanxClientKey: config.testnetBaanxClientKey,
             baanxTenantId: config.testnetBaanxTenantId,
+            cardEscrowBaseUrl: config.testnetCardEscrowBaseUrl,
+            cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
+            cardW3CardAppId: config.testnetCardW3CardAppId,
+            cardKillswitchAppId: config.testnetCardKillswitchAppId,
+            cardUsdcAssetId: config.testnetCardUsdcAssetId,
         })
     })
 })

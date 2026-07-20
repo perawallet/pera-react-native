@@ -36,8 +36,14 @@ export {
 export {
     useCardFundingSourcePicker,
     isEligibleFundingSource,
+    isSigningCapableFundingSource,
     type UseCardFundingSourcePickerResult,
+    type UseCardFundingSourcePickerParams,
 } from './useCardFundingSourcePicker'
+export {
+    useEscrowCardCreation,
+    type UseEscrowCardCreationResult,
+} from './useEscrowCardCreation'
 // useReportSuspiciousFlow is intentionally NOT re-exported here: it is a flow
 // orchestrator that imports the report sheet components, and those components
 // import hooks from this barrel — routing it through here closes an import

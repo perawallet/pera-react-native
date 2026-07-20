@@ -44,6 +44,7 @@ export * from './useWithdrawFromCardMutation'
 // Funding delegation (auto-funding LSig lifecycle)
 export * from './useCardExternalWalletsQuery'
 export * from './useUpdateCardFundingDelegationMutation'
+export * from './useCreateEscrowCardMutation'
 
 // Onboarding / KYC
 export * from './useSendEmailVerificationMutation'

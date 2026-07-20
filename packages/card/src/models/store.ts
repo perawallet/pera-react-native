@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    BaseStoreState,
+    Network,
+    Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { OnboardingStep } from './onboarding'
 import type { CardStatus } from './card'
 import type { CardTransactionFilters } from './transaction'
@@ -80,6 +84,19 @@ export type CardUxState = BaseStoreState & {
      * Funding Type" step. Persisted so the card-creation step can read it.
      */
     selectedFundingType: Nullable<FundingType>
+    /**
+     * Escrow card account address returned by the AB card-creation call, plus
+     * the funding account and network it was created for. Persisted (and left
+     * intact by `resetOnboardingProgress`) so a retry reuses the already-created
+     * card instead of creating a second one. Reuse is scoped to BOTH
+     * `escrowCardOwner` and `escrowCardNetwork` — a different funding account,
+     * or the same account on the other network, never reuses this card.
+     */
+    escrowCardAddress: Nullable<string>
+    /** Funding-source address that owns {@link escrowCardAddress}. */
+    escrowCardOwner: Nullable<string>
+    /** Network {@link escrowCardAddress} was created on. */
+    escrowCardNetwork: Nullable<Network>
     cardId: Nullable<string>
     lastKnownStatus: Nullable<CardStatus>
     /** PCI-safe render hint shown before the status query resolves. */
@@ -98,6 +115,14 @@ export type CardUxState = BaseStoreState & {
     setAllowSms: (allowSms: boolean) => void
     setConnectedFundingSourceAddress: (address: Nullable<string>) => void
     setSelectedFundingType: (type: Nullable<FundingType>) => void
+    /** Records (or clears, with null) the escrow card, its owner, and network. */
+    setEscrowCard: (
+        card: Nullable<{
+            cardAddress: string
+            ownerAddress: string
+            network: Network
+        }>,
+    ) => void
     setCardSnapshot: (snapshot: {
         cardId: string
         status: CardStatus

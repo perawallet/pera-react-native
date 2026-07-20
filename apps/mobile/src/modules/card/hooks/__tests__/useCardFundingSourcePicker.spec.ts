@@ -68,6 +68,7 @@ vi.mock('../useCardAddAccount', () => ({
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import {
     isEligibleFundingSource,
+    isSigningCapableFundingSource,
     useCardFundingSourcePicker,
 } from '../useCardFundingSourcePicker'
 
@@ -97,6 +98,30 @@ describe('isEligibleFundingSource', () => {
     })
 })
 
+describe('isSigningCapableFundingSource', () => {
+    it('excludes Ledger (eligible but cannot sign) and needs a signing key', () => {
+        // Local-key accounts (with a keyPairId) can sign; Ledger cannot.
+        expect(
+            isSigningCapableFundingSource(
+                account('A', 'algo25', { keyPairId: 'k1' }),
+            ),
+        ).toBe(true)
+        expect(
+            isSigningCapableFundingSource(
+                account('B', 'hdWallet', { keyPairId: 'k2' }),
+            ),
+        ).toBe(true)
+        // Ledger is an eligible funding source but can't sign arbitrary data.
+        expect(isSigningCapableFundingSource(account('C', 'hardware'))).toBe(
+            false,
+        )
+        // A local-key type with no keyPairId can't sign either.
+        expect(isSigningCapableFundingSource(account('D', 'algo25'))).toBe(
+            false,
+        )
+    })
+})
+
 describe('useCardFundingSourcePicker', () => {
     it('opens the account menu with the card header and the funding filter', async () => {
         mockRequest.mockResolvedValue(undefined)
@@ -113,6 +138,22 @@ describe('useCardFundingSourcePicker', () => {
         expect(props.accountFilter).toBe(isEligibleFundingSource)
         // Fresh pick: nothing connected yet → no account pre-highlighted.
         expect(props.selectedAddress).toBeNull()
+    })
+
+    it('threads a custom account filter through to the menu', async () => {
+        mockRequest.mockResolvedValue(undefined)
+        const { result } = renderHook(() =>
+            useCardFundingSourcePicker({
+                accountFilter: isSigningCapableFundingSource,
+            }),
+        )
+
+        await result.current.pickFundingSource()
+
+        const props = mockRequest.mock.calls[0][0].contents.props as {
+            accountFilter: (account: WalletAccount) => boolean
+        }
+        expect(props.accountFilter).toBe(isSigningCapableFundingSource)
     })
 
     it('highlights the connected funding source when one exists', async () => {
