@@ -32,6 +32,14 @@ export const ALL_PERMISSIONS = Object.values(AlgorandPermission)
  */
 export const WC_DELIVERY_TIMEOUT_MS = 8000
 
+/**
+ * How long a queued session request stays approvable. dApps time out
+ * their side of the WC v1 handshake much sooner, so a request that sat
+ * in the queue through an outage must expire rather than pop a sheet
+ * whose approval would be queued into a dead socket.
+ */
+export const SESSION_REQUEST_TTL_MS = 5 * 60 * 1000
+
 export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,

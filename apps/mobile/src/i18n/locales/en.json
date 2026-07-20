@@ -2434,6 +2434,9 @@
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
             "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request."
         },
+        "connection": {
+            "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
+        },
         "settings": {
             "empty_title": "No WalletConnect Sessions",
             "empty_body": "You don't have any active WalletConnect sessions.",
