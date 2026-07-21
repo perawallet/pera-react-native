@@ -16,3 +16,9 @@ export {
     type MigrationRunIncompleteReason,
 } from './runMigration'
 export type { MigrationDeps, MigrationResult } from './types'
+export {
+    ALL_MIGRATION_STEPS,
+    MIGRATION_STEP_TARGET_VERSIONS,
+    getPendingSteps,
+    resolveCompletedStepVersions,
+} from './stepVersions'

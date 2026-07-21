@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useRef } from 'react'
-import { isNotFoundError, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isNotFoundError,
+    isPeraNetworkError,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useCreateDeviceMutation } from './useCreateDeviceMutation'
@@ -20,6 +24,12 @@ import { useDeviceID } from './useDeviceID'
 import { usePushToken } from './usePushToken'
 import { useDeviceStore } from '../store'
 import { updateDevice as updateDeviceEndpoint } from './endpoints'
+
+const DEVICE_ALREADY_EXISTS = 'device_already_exists'
+
+const shouldRecreateDevice = (error: unknown): boolean =>
+    isNotFoundError(error) ||
+    (isPeraNetworkError(error) && error.backendType === DEVICE_ALREADY_EXISTS)
 
 export const useDevice = () => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
@@ -60,23 +70,41 @@ export const useDevice = () => {
             const result = await createDevice({
                 data: payload,
             })
+            if (!result.id) {
+                // Storing null would report this registration as healed
+                // (createdNew fires mute replay) while
+                // useIsDeviceRegistrationPending stays true forever. Fail the
+                // attempt instead so the reconnect/foreground retry re-runs it.
+                throw new Error('Device create response carried no id')
+            }
             if (inFlightIdRef.current === attemptId) {
-                setDeviceID(targetNetwork, result.id ?? null)
+                setDeviceID(targetNetwork, result.id)
             }
         },
         [buildPayload, createDevice, setDeviceID],
     )
 
-    // Single-attempt registration. Transient retries (5xx, network errors) are
+    // Single-attempt registration. The returned `createdNew` tells callers
+    // whether this attempt created a fresh device record (no prior id, or a
+    // recreate fallback) versus a clean PUT against an existing one — e.g. to
+    // replay locally-migrated notification mute preferences, which the
+    // backend otherwise defaults to "notifying" for a brand-new device row.
+    //
+    // Transient retries (5xx, network errors) are
     // handled by ky inside the shared query-client; layering another retry
     // loop here would compound to up to 6 requests per call.
     //
-    // The 404 → createDevice fallback stays at this layer because it is
-    // application logic, not a transport concern: the server doesn't know
-    // this device anymore (stale ID after env reset, deletion, etc.) so we
-    // re-register. Mirrors Android's 404 → re-register handling.
+    // The createDevice fallback stays at this layer because it is application
+    // logic, not a transport concern: it fires when the server doesn't
+    // recognize this device anymore, either because (a) the PUT 404s — stale
+    // ID after env reset, deletion, etc. (mirrors Android's 404 →
+    // re-register handling), or (b) the backend reports
+    // `device_already_exists` — Pera 6 iOS's DeviceRegistrationController hit
+    // this when the device row exists but is no longer addressable by this
+    // ID, and fell back to POST the same way. Either condition re-registers
+    // via createDevice.
     const registerDevice = useCallback(
-        async (addresses: string[]) => {
+        async (addresses: string[]): Promise<{ createdNew: boolean }> => {
             const attemptId = ++inFlightIdRef.current
             const targetNetwork = network
 
@@ -86,19 +114,24 @@ export const useDevice = () => {
                     addresses,
                     attemptId,
                 )
-                return
+                return { createdNew: true }
             }
 
             try {
                 const payload = await buildPayload(addresses)
-                await updateDevice({ deviceId, data: payload })
+                await updateDevice({
+                    deviceId,
+                    data: { ...payload, id: deviceId },
+                })
+                return { createdNew: false }
             } catch (error) {
-                if (!isNotFoundError(error)) throw error
+                if (!shouldRecreateDevice(error)) throw error
                 await createDeviceForNetwork(
                     targetNetwork,
                     addresses,
                     attemptId,
                 )
+                return { createdNew: true }
             }
         },
         [deviceId, network, buildPayload, updateDevice, createDeviceForNetwork],

@@ -16,10 +16,19 @@ import {
     useNetwork,
     useOnNetworkSwitch,
 } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 
 import { useDevice } from './useDevice'
 import { useDeviceStore } from '../store'
+
+export type UseDeviceRegistrationOptions = {
+    /**
+     * Invoked after a registration attempt whose `createdNew` is true — the
+     * backend device record was created from scratch (no local id, or a
+     * recreate fallback), rather than a clean PUT against an existing one.
+     */
+    onDeviceCreated?: (network: Network) => void
+}
 
 /**
  * Drives best-effort device registration off network and account changes.
@@ -27,7 +36,10 @@ import { useDeviceStore } from '../store'
  * thrown — but marked pending so the reconnect/foreground recovery below
  * heals them.
  */
-export const useDeviceRegistration = (addresses: string[]): void => {
+export const useDeviceRegistration = (
+    addresses: string[],
+    options?: UseDeviceRegistrationOptions,
+): void => {
     const { network } = useNetwork()
     const { registerDevice, clearDevicePushToken } = useDevice()
     const setRegistrationPending = useDeviceStore(
@@ -36,6 +48,12 @@ export const useDeviceRegistration = (addresses: string[]): void => {
     const isRegistrationPending = useDeviceStore(state =>
         state.pendingRegistrationNetworks.includes(network),
     )
+
+    // Kept live every render (not just in an effect) so the mount effect and
+    // the retry closure below always call the latest callback without being
+    // listed as an effect dependency — mirrors `retryArgsRef` further down.
+    const optionsRef = useRef(options)
+    optionsRef.current = options
 
     // Callers typically derive `addresses` from the accounts store array,
     // which gets a new reference on every store write (incl. background sync
@@ -70,8 +88,12 @@ export const useDeviceRegistration = (addresses: string[]): void => {
         const stableAddresses = addressesKey ? addressesKey.split('\n') : []
         inFlightRef.current = true
         registerDevice(stableAddresses)
-            .then(() => {
-                if (isCurrent()) setRegistrationPending(network, false)
+            .then(result => {
+                if (!isCurrent()) return
+                setRegistrationPending(network, false)
+                if (result.createdNew) {
+                    optionsRef.current?.onDeviceCreated?.(network)
+                }
             })
             .catch(error => {
                 if (isCurrent()) setRegistrationPending(network, true)
@@ -107,8 +129,12 @@ export const useDeviceRegistration = (addresses: string[]): void => {
             const current = retryArgsRef.current
             current
                 .registerDevice(current.addresses)
-                .then(() => {
-                    if (isCurrent()) setRegistrationPending(network, false)
+                .then(result => {
+                    if (!isCurrent()) return
+                    setRegistrationPending(network, false)
+                    if (result.createdNew) {
+                        optionsRef.current?.onDeviceCreated?.(network)
+                    }
                 })
                 .catch(error => {
                     logger.warn('Device registration retry failed', {

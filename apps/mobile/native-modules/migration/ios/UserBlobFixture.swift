@@ -23,6 +23,7 @@ enum UserBlobFixture {
             "deviceIDOnMainnet": FixtureIdentities.mainnetDeviceId,
             "deviceIDOnTestnet": FixtureIdentities.testnetDeviceId,
             "notificationUserId": FixtureIdentities.notificationUserId,
+            "deviceId": FixtureIdentities.legacyFallbackDeviceId,
         ]
         return try JSONSerialization.data(withJSONObject: user, options: [])
     }
@@ -105,22 +106,45 @@ enum UserBlobFixture {
                 ledgerName: FixtureIdentities.rekeyAuthLedgerName,
                 ledgerIndex: FixtureIdentities.rekeyAuthLedgerIndex
             ))
+            list.append(rekeyedToLedger(
+                address: rekeyedToStandardAddress,
+                name: "Rekeyed To Standard",
+                order: 10,
+                authAddress: rekeyAuthWatchAddress,
+                ledgerId: nil,
+                ledgerName: "Unknown Device",
+                ledgerIndex: 0
+            ))
         }
         list.append(joint())
 
         return list
     }
 
+    // MARK: - Rekeyed to Standard (auth account has no ledger id, synthesized as watch)
+
+    private static let rekeyedToStandardAddress =
+        "REKEYEDTOSTANDARDACCOUNT" + String(repeating: "A", count: 34)
+    private static let rekeyAuthWatchAddress =
+        "REKEYAUTHWATCHACCOUNT" + String(repeating: "A", count: 37)
+
     private static func rekeyedToLedger(
         address: String,
         name: String,
         order: Int,
         authAddress: String,
-        ledgerId: String,
+        ledgerId: String?,
         ledgerName: String,
         ledgerIndex: Int
     ) -> [String: Any] {
-        [
+        var ledgerDetail: [String: Any] = [
+            "name": ledgerName,
+            "index": ledgerIndex,
+        ]
+        if let ledgerId = ledgerId {
+            ledgerDetail["id"] = ledgerId
+        }
+        return [
             "address": address,
             "name": name,
             "type": "standard",
@@ -128,11 +152,7 @@ enum UserBlobFixture {
             "isBackedUp": false,
             "receivesNotification": true,
             "rekeyDetail": [
-                authAddress: [
-                    "id": ledgerId,
-                    "name": ledgerName,
-                    "index": ledgerIndex,
-                ] as [String: Any],
+                authAddress: ledgerDetail,
             ] as [String: Any],
         ]
     }

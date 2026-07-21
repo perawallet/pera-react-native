@@ -30,9 +30,11 @@ import {
     type LegacyWalletConnectV1Session,
     type LegacyWalletConnectV2Session,
     MIGRATION_SENTINEL_KEY,
+    MIGRATION_STEPS_KEY,
     type MigrationPlanSummary,
     type MigrationSentinelValue,
     type MigrationService,
+    type MigrationStepVersions,
     type SimulateLegacyDatabaseArgs,
 } from '@perawallet/wallet-extension-platform'
 
@@ -41,14 +43,6 @@ export class RNMigrationService implements MigrationService {
 
     async hasLegacyData(): Promise<boolean> {
         log('hasLegacyData() called')
-        const sentinel = this.readSentinel()
-        if (sentinel !== null) {
-            log('hasLegacyData() → false (sentinel already set)', {
-                completedAt: new Date(sentinel.completedAt).toISOString(),
-                sourcePlatform: sentinel.sourcePlatform,
-            })
-            return false
-        }
         const module = getNativeModule()
         if (!module) {
             warn(
@@ -123,6 +117,7 @@ export class RNMigrationService implements MigrationService {
     async clearMigrationComplete(): Promise<void> {
         log('clearMigrationComplete() removing sentinel')
         this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
     }
 
     async getMigrationPlans(): Promise<MigrationPlanSummary[]> {
@@ -161,6 +156,40 @@ export class RNMigrationService implements MigrationService {
         }
         await module.resetLegacyData()
         this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
+        this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
+    }
+
+    async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
+        const raw = this.keyValueStorage.getItem(MIGRATION_STEPS_KEY)
+        if (!raw) return null
+        try {
+            const parsed = JSON.parse(raw) as unknown
+            if (
+                typeof parsed !== 'object' ||
+                parsed === null ||
+                Array.isArray(parsed)
+            ) {
+                warn('getCompletedStepVersions() ignored malformed record', {
+                    raw,
+                })
+                return null
+            }
+            return parsed as MigrationStepVersions
+        } catch {
+            warn('getCompletedStepVersions() ignored non-JSON record', {
+                raw,
+            })
+            return null
+        }
+    }
+
+    async setCompletedStepVersions(
+        versions: MigrationStepVersions,
+    ): Promise<void> {
+        this.keyValueStorage.setItem(
+            MIGRATION_STEPS_KEY,
+            JSON.stringify(versions),
+        )
     }
 
     private readSentinel(): MigrationSentinelValue | null {
@@ -307,8 +336,12 @@ type RawLegacyPreferences = Omit<
     notificationRefreshTimestampMs: LongString
 }
 
-interface RawLegacyAccount extends Omit<LegacyAccount, 'secretKey'> {
+interface RawLegacyAccount extends Omit<
+    LegacyAccount,
+    'secretKey' | 'authAddress'
+> {
     secretKey: Base64
+    authAddress?: string | null
 }
 
 interface RawLegacyHDWallet extends Omit<LegacyHDWallet, 'entropy' | 'keys'> {
@@ -353,9 +386,10 @@ interface RawLegacyPasskey extends Omit<LegacyPasskey, 'lastUsedAtMs'> {
 
 interface RawLegacyDeviceIdentifiers extends Omit<
     LegacyMigrationData['deviceIdentifiers'],
-    'lastSeenNotificationId'
+    'lastSeenNotificationId' | 'legacyFallbackDeviceId'
 > {
     lastSeenNotificationId: LongString
+    legacyFallbackDeviceId?: string | null
 }
 
 const decodeLegacyMigrationData = (
@@ -401,6 +435,8 @@ const decodeLegacyMigrationData = (
                 raw.deviceIdentifiers.lastSeenNotificationId,
                 'lastSeenNotificationId',
             ),
+            legacyFallbackDeviceId:
+                raw.deviceIdentifiers.legacyFallbackDeviceId ?? null,
         },
         tooltipPreferences: {
             qrTooltipSeen: null,
@@ -427,6 +463,7 @@ const decodeLegacyMigrationData = (
 const decodeAccount = (raw: RawLegacyAccount): LegacyAccount => ({
     ...raw,
     secretKey: decodeBase64(raw.secretKey),
+    authAddress: raw.authAddress ?? null,
 })
 
 const decodeAccounts = (
@@ -543,6 +580,7 @@ const emptyLegacyMigrationData = (): LegacyMigrationData => ({
         mainnetDeviceId: null,
         testnetDeviceId: null,
         lastSeenNotificationId: null,
+        legacyFallbackDeviceId: null,
     },
     tooltipPreferences: {
         qrTooltipSeen: null,

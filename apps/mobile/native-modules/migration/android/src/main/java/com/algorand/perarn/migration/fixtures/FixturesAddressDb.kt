@@ -90,12 +90,26 @@ internal object FixturesAddressDb {
                 )
             },
         )
+        // Algo25 account that was marked no_auth in Pera 6 (rekeyed-away) but
+        // Pera 7 now derives signability dynamically, so keep the key.
+        db.insert(
+            "algo_25",
+            null,
+            ContentValues().apply {
+                put("algo_address", ALGO25_REKEYED_AWAY_ADDRESS)
+                put(
+                    "encrypted_secret_key",
+                    enc.encrypt(hexToBytes(ALGO25_REKEYED_AWAY_SK64_HEX)),
+                )
+            },
+        )
     }
 
     private fun insertNoAuth(db: SQLiteDatabase) {
         for (address in listOf(
             FixtureIdentities.WATCH_ONLY_1_ADDRESS,
             FixtureIdentities.WATCH_ONLY_2_ADDRESS,
+            ALGO25_REKEYED_AWAY_ADDRESS,
         )) {
             db.insert(
                 "no_auth",
@@ -160,6 +174,14 @@ internal object FixturesAddressDb {
     }
 
     private val JOINT_ADDRESS = FixtureCrypto.EXTERNAL_PARTICIPANT_ADDRESS
+
+    // Algo25 account marked no_auth in Pera 6 but kept in Pera 7
+    // Seed "migration-simulator-rekeyed-away" (32 ASCII bytes) + its genuine
+    // ed25519 public key, following the same convention as FixtureCrypto's
+    // generated entries. Address/SK64 verified via algosdk's
+    // mnemonicFromSeed -> mnemonicToSecretKey round trip.
+    private const val ALGO25_REKEYED_AWAY_ADDRESS = "HOL4LZNBJ6MS7CL2DM4UUWAFFAHOX2TC7QPSKLMT3HXUKK42OCEY5Y7OPY"
+    private const val ALGO25_REKEYED_AWAY_SK64_HEX = "6d6967726174696f6e2d73696d756c61746f722d72656b657965642d617761793b97c5e5a14f992f897a1b394a5805280eebea62fc1f252d93d9ef452b9a7089"
 
     private data class HdKeyDescriptor(
         val address: String,

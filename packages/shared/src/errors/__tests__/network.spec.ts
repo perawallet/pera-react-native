@@ -36,6 +36,14 @@ const makeNetworkError = (): NetworkError => new NetworkError({} as Request)
 // ky's isTimeoutError checks `instanceof TimeoutError`.
 const makeTimeoutError = (): TimeoutError => new TimeoutError({} as Request)
 
+// Same HTTPError shape as makeHttpError, but with a real Response carrying a
+// body so `.clone().json()` (or `.text()`) resolves against real content.
+const makeHttpErrorWithBody = (status: number, body: unknown): HTTPError => {
+    const response = new Response(JSON.stringify(body), { status })
+    const request = {} as Request
+    return new HTTPError(response as never, request, {} as never)
+}
+
 describe('PeraNetworkError.fromKyError', () => {
     it('classifies a fetch network TypeError as offline (retryable)', () => {
         const err = PeraNetworkError.fromKyError(makeNetworkError())
@@ -96,6 +104,42 @@ describe('PeraNetworkError.fromKyError', () => {
             ),
         ).toBe(true)
         expect(isPeraNetworkError(new Error('x'))).toBe(false)
+    })
+})
+
+describe('PeraNetworkError.fromKyErrorWithBody', () => {
+    it('extracts the backend error type from the response body', async () => {
+        const error = await PeraNetworkError.fromKyErrorWithBody(
+            makeHttpErrorWithBody(400, { type: 'device_already_exists' }),
+        )
+        expect(error.kind).toBe('client')
+        expect(error.status).toBe(400)
+        expect(error.backendType).toBe('device_already_exists')
+    })
+
+    it('tolerates a non-JSON body', async () => {
+        const response = new Response('nope', { status: 500 })
+        const request = {} as Request
+        const error = new HTTPError(response as never, request, {} as never)
+        const result = await PeraNetworkError.fromKyErrorWithBody(error)
+        expect(result.kind).toBe('server')
+        expect(result.backendType).toBeUndefined()
+    })
+
+    it('leaves backendType unset for a JSON body without a type field', async () => {
+        const error = await PeraNetworkError.fromKyErrorWithBody(
+            makeHttpErrorWithBody(400, { message: 'bad request' }),
+        )
+        expect(error.kind).toBe('client')
+        expect(error.backendType).toBeUndefined()
+    })
+
+    it('leaves backendType unset for a non-string type field', async () => {
+        const error = await PeraNetworkError.fromKyErrorWithBody(
+            makeHttpErrorWithBody(400, { type: 42 }),
+        )
+        expect(error.kind).toBe('client')
+        expect(error.backendType).toBeUndefined()
     })
 })
 

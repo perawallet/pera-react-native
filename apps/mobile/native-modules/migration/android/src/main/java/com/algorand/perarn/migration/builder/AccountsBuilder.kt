@@ -57,7 +57,7 @@ internal fun composeAccountsArray(
     for ((address, row) in algo25) {
         if (address in seen) continue
         seen += address
-        out.pushMap(row.toBridgeMap(noAuth, customInfo[address]))
+        out.pushMap(row.toBridgeMap(customInfo[address]))
     }
 
     for ((address, row) in ledgerBle) {
@@ -95,15 +95,15 @@ private fun HdKeyRow.toBridgeMap(info: CustomAccountInfoRow?): WritableMap =
     )
 
 private fun Algo25Row.toBridgeMap(
-    noAuth: Set<String>,
     info: CustomAccountInfoRow?,
 ): WritableMap {
-    val watch = address in noAuth
+    // Pera 6 flagged rekeyed-away accounts as no_auth, but signability in
+    // Pera 7 is derived from the synced on-chain auth-addr — keep the key.
     val map = newAccountMap(
         address = address,
-        type = if (watch) LegacyAccountType.Watch else LegacyAccountType.Standard,
+        type = LegacyAccountType.Standard,
         info = info,
-        secretKey = if (watch) null else decryptedSecretKey,
+        secretKey = decryptedSecretKey,
     )
     decryptedSecretKey?.fill(0)
     return map

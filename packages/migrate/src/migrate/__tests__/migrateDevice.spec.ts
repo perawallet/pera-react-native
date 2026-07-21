@@ -39,6 +39,7 @@ const buildIdentifiers = (
     mainnetDeviceId: null,
     testnetDeviceId: null,
     lastSeenNotificationId: null,
+    legacyFallbackDeviceId: null,
     ...overrides,
 })
 
@@ -118,5 +119,37 @@ describe('migrateDeviceIdentifiers', () => {
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M' }))
 
         expect(settingsStoreMock.setPreference).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the legacy single device id for mainnet when no per-network id exists', () => {
+        migrateDeviceIdentifiers({
+            notificationUserId: null,
+            mainnetDeviceId: null,
+            testnetDeviceId: null,
+            lastSeenNotificationId: null,
+            legacyFallbackDeviceId: 'LEGACY-1',
+        })
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
+            'mainnet',
+            'LEGACY-1',
+        )
+    })
+
+    it('prefers the per-network id over the legacy fallback', () => {
+        migrateDeviceIdentifiers({
+            notificationUserId: null,
+            mainnetDeviceId: 'MAIN-1',
+            testnetDeviceId: null,
+            lastSeenNotificationId: null,
+            legacyFallbackDeviceId: 'LEGACY-1',
+        })
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
+            'mainnet',
+            'MAIN-1',
+        )
+        expect(deviceStoreMock.setDeviceID).not.toHaveBeenCalledWith(
+            'mainnet',
+            'LEGACY-1',
+        )
     })
 })

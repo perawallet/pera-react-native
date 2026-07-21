@@ -170,6 +170,7 @@ final class LegacyDataBuilder {
         m.putString("mainnetDeviceId", userBlob?.deviceIDOnMainnet)
         m.putString("testnetDeviceId", userBlob?.deviceIDOnTestnet)
         m.putLongString("lastSeenNotificationId", prefs.lastSeenNotificationId)
+        m.putString("legacyFallbackDeviceId", userBlob?.deviceId)
         return m.dict
     }
 
