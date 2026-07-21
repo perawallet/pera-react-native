@@ -67,6 +67,7 @@ vi.mock('../useCardAddAccount', () => ({
 
 import { AccountSortContent } from '@modules/accounts/components/AccountSortContent'
 import {
+    canAutoFund,
     isEligibleFundingSource,
     isSigningCapableFundingSource,
     useCardFundingSourcePicker,
@@ -119,6 +120,20 @@ describe('isSigningCapableFundingSource', () => {
         expect(isSigningCapableFundingSource(account('D', 'algo25'))).toBe(
             false,
         )
+    })
+})
+
+describe('canAutoFund', () => {
+    it('allows local-key accounts and rejects Ledger (cannot sign the LSig)', () => {
+        expect(canAutoFund(account('A', 'algo25', { keyPairId: 'k1' }))).toBe(
+            true,
+        )
+        expect(canAutoFund(account('B', 'hdWallet', { keyPairId: 'k2' }))).toBe(
+            true,
+        )
+        // Ledger can create a card once ARC-60 lands but can never sign an LSig.
+        expect(canAutoFund(account('C', 'hardware'))).toBe(false)
+        expect(canAutoFund(account('D', 'algo25'))).toBe(false)
     })
 })
 

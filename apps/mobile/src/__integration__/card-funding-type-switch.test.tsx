@@ -23,15 +23,36 @@ import {
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
-// The real program signer needs a provisioned KMS keystore; stub just the
-// crypto so the flow (sheet → mutation → Baanx wire) stays real.
-vi.mock('@perawallet/wallet-core-signing', async () => ({
-    ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
-    useProgramSigner: () => ({
-        signProgram: vi.fn(),
-        signDelegatedLsig: vi.fn(async () => ({
-            signedProgram: new Uint8Array([1, 2, 3]),
-        })),
+// The switch orchestration (LSig POST + on-chain Killswitch enable/kill) is
+// unit-tested in useAutoDrawSwitch.spec / useKillswitchAutoDraw.test; here we
+// mock it at the hook boundary and keep the sheet → orchestration → store wire
+// real. The consent gate passes through (unit-tested separately).
+const { enableAutoDraw, disableAutoDraw } = vi.hoisted(() => ({
+    enableAutoDraw: vi.fn(),
+    disableAutoDraw: vi.fn(),
+}))
+vi.mock('@modules/card/hooks', async () => {
+    const { passThroughAuthorizeDelegation } =
+        await import('@test-utils/cardDelegation')
+    return {
+        ...(await vi.importActual<object>('@modules/card/hooks')),
+        useAuthorizeCardDelegation: () => ({
+            authorizeDelegation: passThroughAuthorizeDelegation,
+        }),
+        useAutoDrawSwitch: () => ({
+            enableAutoDraw,
+            disableAutoDraw,
+            canSwitchToAuto: () => true,
+            isPending: false,
+        }),
+    }
+})
+
+// Manual gates on PIN; skip the sheet (unit-tested in useRequirePinVerification).
+vi.mock('@modules/security', async () => ({
+    ...(await vi.importActual<object>('@modules/security')),
+    useRequirePinVerification: () => ({
+        requirePinVerification: vi.fn(async () => true),
     }),
 }))
 
@@ -41,19 +62,6 @@ vi.mock('@hooks/useIsCardAutoFundingEnabled', () => ({
     useIsCardAutoFundingEnabled: () => true,
 }))
 
-// The consent + PIN gate is unit-tested in useAuthorizeCardDelegation.spec;
-// pass through here so this test stays focused on the delegation wire.
-vi.mock('@modules/card/hooks', async () => {
-    const { passThroughAuthorizeDelegation } =
-        await import('@test-utils/cardDelegation')
-    return {
-        ...(await vi.importActual<object>('@modules/card/hooks')),
-        useAuthorizeCardDelegation: () => ({
-            authorizeDelegation: passThroughAuthorizeDelegation,
-        }),
-    }
-})
-
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
@@ -61,16 +69,12 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import {
     FundingType,
     useCardSessionStore,
     useCardStore,
 } from '@perawallet/wallet-core-card'
-import {
-    mockGetDelegationProgram,
-    mockGetDelegationToken,
-    mockPostAlgorandDelegationApproval,
-} from '@perawallet/wallet-core-card/test-handlers'
 import { PeraCardDetails } from '@modules/card/components/PeraCardDetails'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
@@ -82,6 +86,8 @@ const ACCOUNT: WalletAccount = {
     keyPairId: 'funding-account-key',
     name: 'Main Account',
 }
+
+const CARD_ADDRESS = 'ESCROWCARDADDRESS1'
 
 const activeCardStatus = http.get('*/v1/card/status', () =>
     HttpResponse.json(
@@ -107,26 +113,20 @@ describe('Flow: Card funding type switch', () => {
         const store = useCardStore.getState()
         store.resetState()
         store.setConnectedFundingSourceAddress(ACCOUNT.address)
+        // A card exists for the connected account on the active network.
+        store.setEscrowCard({
+            cardAddress: CARD_ADDRESS,
+            ownerAddress: ACCOUNT.address,
+            network: useNetworkStore.getState().network,
+        })
         useCardSessionStore.getState().setAuthenticated(true)
-        server.use(
-            activeCardStatus,
-            mockGetDelegationProgram(),
-            mockGetDelegationToken(),
-        )
+        server.use(activeCardStatus)
     })
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('cancels the delegation with an allowance of 0 when switching Auto → Manual', async () => {
+    it('disables auto-draw and persists Manual when switching Auto → Manual', async () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Auto)
-        let postBody: Record<string, unknown> | null = null
-        server.use(
-            mockPostAlgorandDelegationApproval({
-                onRequest: body => {
-                    postBody = body
-                },
-            }),
-        )
 
         renderWithNavigation(PeraCardDetails, 'CardDetails')
         await openFundingTypeSheet()
@@ -134,38 +134,20 @@ describe('Flow: Card funding type switch', () => {
         fireEvent.click(screen.getByTestId('card_funding_type_option_manual'))
         fireEvent.click(screen.getByTestId('card_funding_type_apply_button'))
 
-        await waitFor(() => expect(postBody).not.toBeNull())
-        expect(postBody).toEqual(
-            expect.objectContaining({
-                address: ACCOUNT.address,
-                network: 'algorand',
-                currency: 'usdc',
-                amount: '0',
-            }),
-        )
-        // The preference is only persisted after Baanx accepts.
+        await waitFor(() => expect(disableAutoDraw).toHaveBeenCalled())
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Manual,
             ),
         )
-        // The Funding Type row reflects the new mode (test i18n renders keys).
         expect(
             (await screen.findByTestId('pera_card_funding_type_row'))
                 .textContent,
         ).toContain('funding_type_manual_title')
     })
 
-    it('signs and posts a fresh delegation when switching Manual → Auto', async () => {
+    it('enables auto-draw against the escrow card when switching Manual → Auto', async () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Manual)
-        let postBody: Record<string, unknown> | null = null
-        server.use(
-            mockPostAlgorandDelegationApproval({
-                onRequest: body => {
-                    postBody = body
-                },
-            }),
-        )
 
         renderWithNavigation(PeraCardDetails, 'CardDetails')
         await openFundingTypeSheet()
@@ -173,16 +155,12 @@ describe('Flow: Card funding type switch', () => {
         fireEvent.click(screen.getByTestId('card_funding_type_option_auto'))
         fireEvent.click(screen.getByTestId('card_funding_type_apply_button'))
 
-        await waitFor(() => expect(postBody).not.toBeNull())
-        expect(postBody).toEqual(
-            expect.objectContaining({
-                address: ACCOUNT.address,
-                amount: '400',
-                // base64 of the stubbed signed LSig bytes [1, 2, 3].
-                signedProgram: 'AQID',
-            }),
+        await waitFor(() =>
+            expect(enableAutoDraw).toHaveBeenCalledWith(
+                expect.objectContaining({ address: ACCOUNT.address }),
+                CARD_ADDRESS,
+            ),
         )
-        expect((postBody as Record<string, unknown> | null)?.token).toBeTruthy()
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Auto,
@@ -198,7 +176,6 @@ describe('Flow: Card funding type switch', () => {
         expect(
             await screen.findByTestId('pera_card_funding_type_row'),
         ).toBeTruthy()
-        // The account row offers Connect instead of hiding.
         expect(
             screen.getByTestId('pera_card_funding_account_row').textContent,
         ).toContain('no_funding_account')
@@ -207,24 +184,23 @@ describe('Flow: Card funding type switch', () => {
         ).toContain('connect')
     })
 
-    it('keeps the sheet open and skips the store write when Baanx rejects', async () => {
-        useCardStore.getState().setSelectedFundingType(FundingType.Auto)
-        server.use(mockPostAlgorandDelegationApproval({ status: 400 }))
+    it('keeps the sheet open and skips the store write on failure', async () => {
+        useCardStore.getState().setSelectedFundingType(FundingType.Manual)
+        enableAutoDraw.mockRejectedValueOnce(new Error('chain down'))
 
         renderWithNavigation(PeraCardDetails, 'CardDetails')
         await openFundingTypeSheet()
 
-        fireEvent.click(screen.getByTestId('card_funding_type_option_manual'))
+        fireEvent.click(screen.getByTestId('card_funding_type_option_auto'))
         fireEvent.click(screen.getByTestId('card_funding_type_apply_button'))
 
+        await waitFor(() => expect(enableAutoDraw).toHaveBeenCalled())
         // The sheet stays open for a retry and nothing was persisted.
-        await waitFor(() =>
-            expect(
-                screen.getByTestId('card_select_funding_type_sheet'),
-            ).toBeTruthy(),
-        )
+        expect(
+            screen.getByTestId('card_select_funding_type_sheet'),
+        ).toBeTruthy()
         expect(useCardStore.getState().selectedFundingType).toBe(
-            FundingType.Auto,
+            FundingType.Manual,
         )
     })
 })

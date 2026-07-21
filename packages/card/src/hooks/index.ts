@@ -45,6 +45,7 @@ export * from './useWithdrawFromCardMutation'
 export * from './useCardExternalWalletsQuery'
 export * from './useUpdateCardFundingDelegationMutation'
 export * from './useCreateEscrowCardMutation'
+export * from './useKillswitchAutoDraw'
 
 // Onboarding / KYC
 export * from './useSendEmailVerificationMutation'
