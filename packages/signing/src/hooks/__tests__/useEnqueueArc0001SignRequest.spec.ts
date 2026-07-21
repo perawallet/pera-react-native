@@ -613,4 +613,48 @@ describe('useEnqueueArc0001SignRequest', () => {
             )
         })
     })
+
+    // --- PQ-017: quantum fee delivery failure ---
+
+    describe('quantum fee delivery failure', () => {
+        it('wraps a respondWithResult rejection in QuantumFeeDeliveryError when the request carries feeAdjustments', async () => {
+            mockUseAllAccounts.mockReturnValue([quantumAccount()])
+            const txn = makePayment(QUANTUM_ADDRESS, { fee: 1000n })
+            const resolved = resolvedFor([txn], [0])
+            const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+            const transport = makeTransport()
+            const deliveryFailure = new Error('dApp closed the socket')
+            transport.respondWithResult.mockRejectedValueOnce(deliveryFailure)
+
+            await result.current(resolved, transport)
+            const req = mockAddSignRequest.mock.calls[0][0]
+            expect(req.feeAdjustments).toBeDefined()
+
+            await expect(
+                req.approve([{ sig: 1 } as any]),
+            ).rejects.toMatchObject({
+                name: 'QuantumFeeDeliveryError',
+                originalError: deliveryFailure,
+            })
+        })
+
+        it('propagates the original error unchanged when there are no feeAdjustments (regression)', async () => {
+            // No quantum signer → no feeAdjustments; a delivery failure must
+            // surface as-is, not wrapped.
+            const txn = makePayment(QUANTUM_ADDRESS, { fee: 1000n })
+            const resolved = resolvedFor([txn], [0])
+            const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+            const transport = makeTransport()
+            const deliveryFailure = new Error('dApp closed the socket')
+            transport.respondWithResult.mockRejectedValueOnce(deliveryFailure)
+
+            await result.current(resolved, transport)
+            const req = mockAddSignRequest.mock.calls[0][0]
+            expect(req.feeAdjustments).toBeUndefined()
+
+            await expect(req.approve([{ sig: 1 } as any])).rejects.toBe(
+                deliveryFailure,
+            )
+        })
+    })
 })

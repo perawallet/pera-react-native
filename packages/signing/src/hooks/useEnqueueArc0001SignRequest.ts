@@ -37,6 +37,7 @@ import {
     applyQuantumFeeOverride,
     type QuantumFeeAdjustment,
 } from '../pipeline/sources'
+import { QuantumFeeDeliveryError } from '../pipeline/errors'
 
 import { useSigningRequest } from './useSigningRequest'
 
@@ -197,7 +198,20 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                             )
                         }
                     })
-                    await transport.respondWithResult(result)
+                    try {
+                        await transport.respondWithResult(result)
+                    } catch (err) {
+                        // Only a quantum-fee-adjusted request gets the
+                        // dApp-compat framing — an ordinary request's
+                        // delivery failure propagates unchanged.
+                        if (!feeAdjustments) {
+                            throw err
+                        }
+                        throw new QuantumFeeDeliveryError(
+                            'The dApp rejected or failed to accept the quantum-fee-adjusted response',
+                            { cause: toError(err) },
+                        )
+                    }
                 },
                 // Multisig sync-flow delivery: assembled msig bytes are
                 // already encoded with the original txn embedded verbatim
