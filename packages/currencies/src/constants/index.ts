@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+
 /**
  * Base currency all internal prices are denominated in before conversion.
  *
@@ -18,4 +20,4 @@
 export const USD_CURRENCY_ID = 'USD'
 
 /** Display/entry precision for fiat amounts. */
-export const FIAT_DECIMAL_PLACES = 2
+export const FIAT_DECIMAL_PLACES = DEFAULT_PRECISION
