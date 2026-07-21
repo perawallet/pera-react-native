@@ -127,6 +127,8 @@ export const PWWebView = (props: PWWebViewProps) => {
     // Re-evaluated on every navigation event below — the bridge must downgrade
     // to untrusted as soon as the WebView leaves the trusted base origin
     // (redirect, link click, JS-driven navigation, opened iframe top-nav).
+    // Also feeds the title bar's host label, so the displayed origin tracks
+    // the live page instead of freezing on the open-time url (PERA-4665).
     const [currentUrl, setCurrentUrl] = useState(url)
 
     const isSecure = useMemo(
@@ -378,7 +380,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                     onCloseRequested={onCloseRequested}
                     onReload={reload}
                     title={title}
-                    url={url}
+                    url={currentUrl}
                 />
             )}
 
