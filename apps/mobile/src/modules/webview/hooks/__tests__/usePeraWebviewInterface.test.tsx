@@ -1424,6 +1424,69 @@ describe('usePeraWebviewInterface', () => {
         })
     })
 
+    describe('URL scheme validation', () => {
+        const unsafeUrls: Array<[string, string]> = [
+            ['data:', 'data:text/html,<script>x</script>'],
+            ['file:', 'file:///etc/passwd'],
+            ['javascript:', 'javascript:alert(1)'],
+            ['blob:', 'blob:https://example.com/uuid'],
+            ['scheme-relative', '//evil.com/page'],
+        ]
+
+        it.each(unsafeUrls)(
+            'pushWebView rejects %s URLs with InvalidParams',
+            (_scheme, url) => {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'scheme-push',
+                        jsonrpc: '2.0',
+                        method: 'pushWebView',
+                        params: { url },
+                    })
+                })
+
+                expect(mockPushWebView).not.toHaveBeenCalled()
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('"code":-32602'),
+                )
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining(`Unsupported URL: ${url}`),
+                )
+            },
+        )
+
+        it.each(unsafeUrls)(
+            'openSystemBrowser rejects %s URLs before Linking',
+            (_scheme, url) => {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'scheme-osb',
+                        jsonrpc: '2.0',
+                        method: 'openSystemBrowser',
+                        params: { url },
+                    })
+                })
+
+                expect(Linking.canOpenURL).not.toHaveBeenCalled()
+                expect(Linking.openURL).not.toHaveBeenCalled()
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('"code":-32602'),
+                )
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining(`Unsupported URL: ${url}`),
+                )
+            },
+        )
+    })
+
     describe('missing parameter validation', () => {
         it('should send error for pushWebView with missing url', () => {
             const { result } = renderHook(() =>
