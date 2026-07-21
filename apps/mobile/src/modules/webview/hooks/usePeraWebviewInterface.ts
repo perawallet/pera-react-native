@@ -101,6 +101,12 @@ type WebviewAccountType =
     | 'RekeyedSignable'
     | 'RekeyedUnsignable'
 
+// Mirrors the peraConnectJS dedup window (injected-scripts.ts): at most one
+// page-initiated WC connect per window, so a hostile page can't storm the
+// approval sheet with fresh pairing URIs (PERA-4666). The sheet itself is
+// always shown for accepted connects.
+const WC_CONNECT_DEDUP_WINDOW_MS = 2000
+
 const BASE_WEBVIEW_TYPE: Record<
     WalletAccount['type'],
     Exclude<WebviewAccountType, 'RekeyedSignable' | 'RekeyedUnsignable'>
@@ -835,6 +841,8 @@ export const usePeraWebviewInterface = (
         [preferredCurrency, theme, network, webview],
     )
 
+    const lastWcConnectAtRef = useRef(0)
+
     const openWalletConnect = useCallback(
         (message: WebviewMessage) => {
             if (!hadRequiredParams(['uri'], message)) {
@@ -864,6 +872,19 @@ export const usePeraWebviewInterface = (
                 )
                 return
             }
+
+            const now = Date.now()
+            if (now - lastWcConnectAtRef.current < WC_CONNECT_DEDUP_WINDOW_MS) {
+                logger.warn('[webview/wc] connect throttled', { sourceUrl })
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InvalidRequest,
+                    'WalletConnect connection request throttled',
+                    webview,
+                )
+                return
+            }
+            lastWcConnectAtRef.current = now
 
             // Always surface the connection approval sheet — as if the user
             // had scanned the QR themselves. The bridge never auto-approves a
@@ -921,7 +942,7 @@ export const usePeraWebviewInterface = (
                 // page hears back through the session approve/reject path.
             })()
         },
-        [connect, hadRequiredParams, webview, hasInternet],
+        [connect, hadRequiredParams, webview, hasInternet, sourceUrl],
     )
 
     const onBackPressed = useCallback(() => {

@@ -12,7 +12,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Linking } from 'react-native'
 import { useWebViewNavigationGuard } from '../useWebViewNavigationGuard'
 
 const handleDeepLink = vi.fn()
@@ -22,20 +21,20 @@ vi.mock('@hooks/useDeepLink', () => ({
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const request = (url: string, isTopFrame = true): any => ({
-    url,
-    navigationType: 'click',
-    isTopFrame,
-})
+const request = (url: string): any => ({ url, navigationType: 'click' })
+
+const renderGuard = (isTrustedOrigin: boolean) =>
+    renderHook(() => useWebViewNavigationGuard({ isTrustedOrigin }))
+
+const RECEIVER = '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 describe('useWebViewNavigationGuard', () => {
     beforeEach(() => {
         handleDeepLink.mockReset()
-        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     })
 
     it('allows http/https navigation to load inside the WebView', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+        const { result } = renderGuard(false)
 
         expect(
             result.current.onShouldStartLoadWithRequest(
@@ -45,11 +44,10 @@ describe('useWebViewNavigationGuard', () => {
         expect(handleDeepLink).not.toHaveBeenCalled()
     })
 
-    it('routes a Pera universal link (applink) in-app', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+    it('routes a low-risk Pera universal link (applink) in-app from any origin', () => {
+        const { result } = renderGuard(false)
 
-        const url =
-            'https://perawallet.app/qr/perawallet/app/add-contact/?address=5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA&label=HELLO'
+        const url = `https://perawallet.app/qr/perawallet/app/add-contact/?address=${RECEIVER}&label=HELLO`
         expect(result.current.onShouldStartLoadWithRequest(request(url))).toBe(
             false,
         )
@@ -57,7 +55,7 @@ describe('useWebViewNavigationGuard', () => {
     })
 
     it('loads a non-Pera https /app/ route instead of hijacking it as a deeplink', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+        const { result } = renderGuard(false)
 
         // The applink parser keys off a permissive `/app/` match; a foreign
         // host must still load as a page, never route to Pera's swap screen.
@@ -69,39 +67,19 @@ describe('useWebViewNavigationGuard', () => {
         expect(handleDeepLink).not.toHaveBeenCalled()
     })
 
-    it('opens mailto/tel/sms through the OS and refuses the navigation (PERA-4717)', () => {
-        // `originWhitelist={['*']}` means react-native-webview no longer
-        // Linking.openURL's these itself, and the WebView cannot load a foreign
-        // scheme — returning true stranded the page on an error view.
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
-
-        for (const url of [
-            'mailto:support@example.com',
-            'tel:+15551234567',
-            'sms:+15551234567',
-        ]) {
-            expect(
-                result.current.onShouldStartLoadWithRequest(request(url)),
-            ).toBe(false)
-            expect(Linking.openURL).toHaveBeenCalledWith(url)
-        }
-        expect(handleDeepLink).not.toHaveBeenCalled()
-    })
-
-    it('refuses an unrecognised custom scheme without handing it to the OS', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+    it('lets non-deeplink custom schemes keep their default OS behaviour', () => {
+        const { result } = renderGuard(false)
 
         expect(
             result.current.onShouldStartLoadWithRequest(
-                request('fb-messenger://user/123'),
+                request('mailto:support@example.com'),
             ),
-        ).toBe(false)
-        expect(Linking.openURL).not.toHaveBeenCalled()
+        ).toBe(true)
         expect(handleDeepLink).not.toHaveBeenCalled()
     })
 
-    it('blocks and routes a recognised Pera deeplink in-app', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+    it('routes a WC pairing deeplink fired by the trusted Discover origin', () => {
+        const { result } = renderGuard(true)
 
         const uri = 'wc:topic@1?bridge=https%3A%2F%2Fbridge.example&key=abc'
         expect(result.current.onShouldStartLoadWithRequest(request(uri))).toBe(
@@ -110,8 +88,18 @@ describe('useWebViewNavigationGuard', () => {
         expect(handleDeepLink).toHaveBeenCalledWith(uri, false, 'deeplink')
     })
 
+    it('blocks a WC pairing deeplink fired by an untrusted origin without routing it', () => {
+        const { result } = renderGuard(false)
+
+        const uri = 'wc:topic@1?bridge=https%3A%2F%2Fbridge.example&key=abc'
+        expect(result.current.onShouldStartLoadWithRequest(request(uri))).toBe(
+            false,
+        )
+        expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
     it('blocks a WalletConnect wake link without routing it', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+        const { result } = renderGuard(false)
 
         // No bridge param → not an actionable deeplink, just a focus hint.
         expect(
@@ -122,34 +110,47 @@ describe('useWebViewNavigationGuard', () => {
         expect(handleDeepLink).not.toHaveBeenCalled()
     })
 
-    it('never dispatches a Pera universal link from an untrusted origin (PERA-4717)', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(false))
+    it('blocks an untrusted page firing an ALGO transfer deeplink', () => {
+        const { result } = renderGuard(false)
 
-        const url =
-            'https://perawallet.app/qr/perawallet/app/add-contact/?address=5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA&label=HELLO'
+        expect(
+            result.current.onShouldStartLoadWithRequest(
+                request(`algorand://${RECEIVER}?amount=1000000&note=pay`),
+            ),
+        ).toBe(false)
+        expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('routes the same ALGO transfer deeplink from the trusted Discover origin', () => {
+        const { result } = renderGuard(true)
+
+        const url = `algorand://${RECEIVER}?amount=1000000&note=pay`
         expect(result.current.onShouldStartLoadWithRequest(request(url))).toBe(
             false,
         )
-        expect(handleDeepLink).not.toHaveBeenCalled()
+        expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'deeplink')
     })
 
-    it('never dispatches a custom-scheme deeplink from an untrusted origin (PERA-4717)', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(false))
+    it('blocks an untrusted page firing an asset transfer deeplink', () => {
+        const { result } = renderGuard(false)
 
-        const uri = 'wc:topic@1?bridge=https%3A%2F%2Fbridge.example&key=abc'
-        expect(result.current.onShouldStartLoadWithRequest(request(uri))).toBe(
-            false,
-        )
-        expect(handleDeepLink).not.toHaveBeenCalled()
-    })
-
-    it('does not dispatch a subframe navigation even from a trusted origin (iOS iframe, PERA-4717)', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard(true))
-
-        const url =
-            'https://perawallet.app/qr/perawallet/app/add-contact/?address=5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA&label=HELLO'
         expect(
-            result.current.onShouldStartLoadWithRequest(request(url, false)),
+            result.current.onShouldStartLoadWithRequest(
+                request(`algorand://${RECEIVER}?amount=5&asset=31566704`),
+            ),
+        ).toBe(false)
+        expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('blocks an untrusted page firing a value-bearing Pera universal link', () => {
+        const { result } = renderGuard(false)
+
+        expect(
+            result.current.onShouldStartLoadWithRequest(
+                request(
+                    `https://perawallet.app/qr/perawallet/${RECEIVER}?amount=1000000`,
+                ),
+            ),
         ).toBe(false)
         expect(handleDeepLink).not.toHaveBeenCalled()
     })

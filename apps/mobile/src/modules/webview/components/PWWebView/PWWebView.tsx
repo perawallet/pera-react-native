@@ -176,9 +176,9 @@ export const PWWebView = (props: PWWebViewProps) => {
         onBack,
     )
 
-    // Only the trusted (Discover) origin may hand navigations to the deeplink
-    // dispatcher; arbitrary in-app-browser content must not (PERA-4717).
-    const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard(isSecure)
+    const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard({
+        isTrustedOrigin: isSecure,
+    })
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
