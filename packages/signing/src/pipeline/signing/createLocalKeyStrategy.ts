@@ -19,8 +19,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import {
-    AppError,
     encodeToBase64,
+    isRetryableError,
     toError,
 } from '@perawallet/wallet-core-shared'
 import type {
@@ -156,8 +156,7 @@ export const createLocalKeyStrategy = (
             } catch (error) {
                 const cause = toError(error)
                 const signingError = new SigningError(cause.message, cause, {
-                    retryable:
-                        (error as AppError)?.metadata?.retryable ?? false,
+                    retryable: isRetryableError(cause),
                 })
                 callbacks?.onError?.(signingError)
                 throw signingError

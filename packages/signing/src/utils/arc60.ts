@@ -24,7 +24,7 @@ import {
 } from './arc60-errors'
 import { parseSiwa } from './siwa'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // Re-export the ARC-60 error catalogue so existing `../utils/arc60` imports
 // keep working. The classes live in `./arc60-errors` to avoid an import cycle
@@ -150,9 +150,9 @@ export const validateArc60AuthRequest = (
 
     if (
         (siwa['issued-at'] && Date.parse(siwa['issued-at']) > Date.now()) ||
-        (siwa['not-before'] && Date.parse(siwa['not-before']) < Date.now()) ||
+        (siwa['not-before'] && Date.parse(siwa['not-before']) > Date.now()) ||
         (siwa['expiration-time'] &&
-            Date.parse(siwa['expiration-time']) >= Date.now())
+            Date.parse(siwa['expiration-time']) <= Date.now())
     ) {
         throw new Arc60InvalidDateError(
             `SIWA issued-at, not-before or expiration-date is invalid`,

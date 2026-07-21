@@ -14,12 +14,14 @@ import { describe, expect, it, test, vi } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     ARC60_SCOPE_AUTH,
     Arc60BadJsonError,
     Arc60DomainMismatchError,
     Arc60FailedDecodingError,
     Arc60FailedHdPathError,
+    Arc60InvalidDateError,
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
     Arc60MissingAuthDataError,
@@ -128,6 +130,17 @@ const mismatchedData = encodeToBase64(
     utf8(buildSiwa({ account_address: 'OTHER_ADDR' })),
 )
 
+const NO_ACCOUNTS: WalletAccount[] = []
+
+// SIWA asserts identity for REKEYED_ADDR, but the actual signing key is
+// SIGNER (HD_ADDR) — the auth-addr REKEYED_ADDR has been rekeyed to.
+const rekeyedData = encodeToBase64(
+    utf8(buildSiwa({ account_address: 'REKEYED_ADDR' })),
+)
+const REKEYED_ACCOUNTS = [
+    { address: 'REKEYED_ADDR', rekeyAddress: SIGNER },
+] as WalletAccount[]
+
 const makeAuthData = (domain: string): Uint8Array => {
     const hash = sha256(utf8(domain))
     return new Uint8Array([...hash, 0x05, 0x00, 0x00, 0x00, 0x00])
@@ -143,6 +156,7 @@ describe('validateArc60AuthRequest', () => {
                 authenticatorData: AUTH_DATA,
             },
             { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+            NO_ACCOUNTS,
         )
         expect(decodedData).toBeInstanceOf(Uint8Array)
         expect(Array.from(decodedData)).toEqual(Array.from(validSiwaPayload))
@@ -158,6 +172,7 @@ describe('validateArc60AuthRequest', () => {
                     authenticatorData: AUTH_DATA,
                 },
                 { scope: 2, encoding: 'base64' },
+                NO_ACCOUNTS,
             ),
         ).toThrow(Arc60InvalidScopeError)
     })
@@ -172,6 +187,7 @@ describe('validateArc60AuthRequest', () => {
                     authenticatorData: makeAuthData('evil.com'),
                 },
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
             ),
         ).toThrow(Arc60DomainMismatchError)
     })
@@ -186,6 +202,36 @@ describe('validateArc60AuthRequest', () => {
                     authenticatorData: AUTH_DATA,
                 },
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
+            ),
+        ).toThrow(Arc60InvalidSignerError)
+    })
+
+    test('does not throw when the SIWA signer is a rekeyed auth-addr for account_address', () => {
+        const { decodedData } = validateArc60AuthRequest(
+            {
+                data: rekeyedData,
+                signer: SIGNER,
+                domain: DOMAIN,
+                authenticatorData: AUTH_DATA,
+            },
+            { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+            REKEYED_ACCOUNTS,
+        )
+        expect(decodedData).toBeInstanceOf(Uint8Array)
+    })
+
+    test('throws Arc60InvalidSignerError when no known account rekeys to the signer', () => {
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data: rekeyedData,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
             ),
         ).toThrow(Arc60InvalidSignerError)
     })
@@ -203,6 +249,7 @@ describe('validateArc60AuthRequest', () => {
                     authenticatorData: AUTH_DATA,
                 },
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
             ),
         ).toThrow(Arc60BadJsonError)
     })
@@ -218,6 +265,7 @@ describe('validateArc60AuthRequest', () => {
                     authenticatorData: AUTH_DATA,
                 },
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
             ),
         ).toThrow(Arc60BadJsonError)
     })
@@ -234,8 +282,103 @@ describe('validateArc60AuthRequest', () => {
                     authenticatorData: AUTH_DATA,
                 },
                 { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
             ),
         ).toThrow(Arc60BadJsonError)
+    })
+
+    test('throws Arc60InvalidDateError when issued-at is in the future', () => {
+        const data = encodeToBase64(
+            utf8(
+                buildSiwa({
+                    'issued-at': new Date(Date.now() + 60_000).toISOString(),
+                }),
+            ),
+        )
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
+            ),
+        ).toThrow(Arc60InvalidDateError)
+    })
+
+    test('throws Arc60InvalidDateError when not-before is in the future', () => {
+        const data = encodeToBase64(
+            utf8(
+                buildSiwa({
+                    'not-before': new Date(Date.now() + 60_000).toISOString(),
+                }),
+            ),
+        )
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
+            ),
+        ).toThrow(Arc60InvalidDateError)
+    })
+
+    test('throws Arc60InvalidDateError when expiration-time is in the past', () => {
+        const data = encodeToBase64(
+            utf8(
+                buildSiwa({
+                    'expiration-time': new Date(
+                        Date.now() - 60_000,
+                    ).toISOString(),
+                }),
+            ),
+        )
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
+            ),
+        ).toThrow(Arc60InvalidDateError)
+    })
+
+    test('does not throw when issued-at, not-before and expiration-time are all currently valid', () => {
+        const data = encodeToBase64(
+            utf8(
+                buildSiwa({
+                    'issued-at': new Date(Date.now() - 60_000).toISOString(),
+                    'not-before': new Date(Date.now() - 60_000).toISOString(),
+                    'expiration-time': new Date(
+                        Date.now() + 60_000,
+                    ).toISOString(),
+                }),
+            ),
+        )
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
+            ),
+        ).not.toThrow()
     })
 })
 
@@ -314,6 +457,7 @@ describe('validateArc60AuthRequest — non-Error UTF-8 catch path', () => {
                         authenticatorData: AUTH_DATA,
                     },
                     { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                    NO_ACCOUNTS,
                 ),
             ).toThrow(Arc60BadJsonError)
         } finally {

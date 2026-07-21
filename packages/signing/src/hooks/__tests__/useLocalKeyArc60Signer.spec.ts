@@ -92,7 +92,7 @@ const buildSiwa = (overrides: Record<string, unknown> = {}): string =>
         uri: 'https://arc60.io/login',
         version: '1',
         nonce: 'abc123',
-        chain_id: 'algorand:mainent',
+        chain_id: 'algorand:mainnet',
         type: 'ed25519',
         ...overrides,
     })!

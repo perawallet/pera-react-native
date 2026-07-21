@@ -24,14 +24,10 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import {
-    ARC60_SCOPE_AUTH,
     Arc60FailedHdPathError,
-    Arc60InvalidScopeError,
     Arc60InvalidSignerError,
     buildArc60AuthSigningPayload,
-    decodeArc60Data,
     validateArc60AuthRequest,
-    verifyAuthenticatorDomain,
 } from '../utils/arc60'
 
 export type UseLocalKeyArc60SignerResult = {
@@ -60,10 +56,6 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
-            if (metadata.scope !== ARC60_SCOPE_AUTH) {
-                throw new Arc60InvalidScopeError(metadata.scope)
-            }
-
             // ARC-60 verifies signatures against the requested signer's
             // own pubkey. Rekey is NOT followed — sign with this account's
             // own keypair or reject.
@@ -74,18 +66,12 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
                 )
             }
 
-            // Domain binding — verify before doing any signing work.
-            verifyAuthenticatorDomain(
-                stdSigData.domain,
-                stdSigData.authenticatorData,
+            // Shared host-side validation (scope / domain / SIWA / signer).
+            const { decodedData } = validateArc60AuthRequest(
+                stdSigData,
+                metadata,
+                accounts,
             )
-
-            const decodedData = decodeArc60Data(
-                stdSigData.data,
-                metadata.encoding,
-            )
-
-            validateArc60AuthRequest(stdSigData, metadata, accounts)
 
             const payload = buildArc60AuthSigningPayload(
                 decodedData,
