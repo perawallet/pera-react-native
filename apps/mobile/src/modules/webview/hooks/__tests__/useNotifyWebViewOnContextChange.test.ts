@@ -37,17 +37,23 @@ describe('useNotifyWebViewOnContextChange', () => {
 
     it('does not send notification on first render (no previous fingerprints)', () => {
         renderHook(() =>
-            useNotifyWebViewOnContextChange(webviewRef, {
-                settings: 'light-USD-mainnet-en',
-                accounts: 'addr1',
-            }),
+            useNotifyWebViewOnContextChange(
+                webviewRef,
+                {
+                    settings: 'light-USD-mainnet-en',
+                    accounts: 'addr1',
+                },
+                true,
+            ),
         )
 
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
     })
 
     it('does nothing when contextFingerprints is undefined', () => {
-        renderHook(() => useNotifyWebViewOnContextChange(webviewRef, undefined))
+        renderHook(() =>
+            useNotifyWebViewOnContextChange(webviewRef, undefined, true),
+        )
 
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
     })
@@ -55,7 +61,7 @@ describe('useNotifyWebViewOnContextChange', () => {
     it('sends notification with settings context when settings fingerprint changes', () => {
         const { rerender } = renderHook(
             ({ fingerprints }) =>
-                useNotifyWebViewOnContextChange(webviewRef, fingerprints),
+                useNotifyWebViewOnContextChange(webviewRef, fingerprints, true),
             {
                 initialProps: {
                     fingerprints: {
@@ -82,7 +88,7 @@ describe('useNotifyWebViewOnContextChange', () => {
     it('sends notification with accounts context when accounts fingerprint changes', () => {
         const { rerender } = renderHook(
             ({ fingerprints }) =>
-                useNotifyWebViewOnContextChange(webviewRef, fingerprints),
+                useNotifyWebViewOnContextChange(webviewRef, fingerprints, true),
             {
                 initialProps: {
                     fingerprints: {
@@ -109,7 +115,7 @@ describe('useNotifyWebViewOnContextChange', () => {
     it('sends notification with both contexts when both fingerprints change', () => {
         const { rerender } = renderHook(
             ({ fingerprints }) =>
-                useNotifyWebViewOnContextChange(webviewRef, fingerprints),
+                useNotifyWebViewOnContextChange(webviewRef, fingerprints, true),
             {
                 initialProps: {
                     fingerprints: {
@@ -136,7 +142,7 @@ describe('useNotifyWebViewOnContextChange', () => {
     it('does not send notification when fingerprints are unchanged', () => {
         const { rerender } = renderHook(
             ({ fingerprints }) =>
-                useNotifyWebViewOnContextChange(webviewRef, fingerprints),
+                useNotifyWebViewOnContextChange(webviewRef, fingerprints, true),
             {
                 initialProps: {
                     fingerprints: {
@@ -160,7 +166,7 @@ describe('useNotifyWebViewOnContextChange', () => {
     it('sends a valid JSON-RPC notification format', () => {
         const { rerender } = renderHook(
             ({ fingerprints }) =>
-                useNotifyWebViewOnContextChange(webviewRef, fingerprints),
+                useNotifyWebViewOnContextChange(webviewRef, fingerprints, true),
             {
                 initialProps: {
                     fingerprints: {
@@ -191,8 +197,12 @@ describe('useNotifyWebViewOnContextChange', () => {
 
         const { rerender } = renderHook(
             ({ fingerprints }) =>
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                useNotifyWebViewOnContextChange(nullRef as any, fingerprints),
+                useNotifyWebViewOnContextChange(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    nullRef as any,
+                    fingerprints,
+                    true,
+                ),
             {
                 initialProps: {
                     fingerprints: {
@@ -217,7 +227,7 @@ describe('useNotifyWebViewOnContextChange', () => {
         // Only accounts is set initially — settings key is absent
         const { rerender } = renderHook(
             ({ fingerprints }) =>
-                useNotifyWebViewOnContextChange(webviewRef, fingerprints),
+                useNotifyWebViewOnContextChange(webviewRef, fingerprints, true),
             {
                 initialProps: {
                     fingerprints: { accounts: 'addr1' } as ContextFingerprints,
@@ -235,5 +245,119 @@ describe('useNotifyWebViewOnContextChange', () => {
 
         // settings had no prior value, so it should not trigger a notification
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
+    })
+
+    it('does not send notification when the current origin is untrusted', () => {
+        const { rerender } = renderHook(
+            ({ fingerprints, isSecure }) =>
+                useNotifyWebViewOnContextChange(
+                    webviewRef,
+                    fingerprints,
+                    isSecure,
+                ),
+            {
+                initialProps: {
+                    fingerprints: {
+                        settings: 'light-USD-mainnet-en',
+                        accounts: 'addr1',
+                    },
+                    isSecure: false,
+                },
+            },
+        )
+
+        rerender({
+            fingerprints: {
+                settings: 'dark-EUR-testnet-de',
+                accounts: 'addr1,addr2',
+            },
+            isSecure: false,
+        })
+
+        expect(mockInjectJavaScript).not.toHaveBeenCalled()
+    })
+
+    it('flushes changes withheld while untrusted once the origin becomes trusted again', () => {
+        const { rerender } = renderHook(
+            ({ fingerprints, isSecure }) =>
+                useNotifyWebViewOnContextChange(
+                    webviewRef,
+                    fingerprints,
+                    isSecure,
+                ),
+            {
+                initialProps: {
+                    fingerprints: {
+                        settings: 'light-USD-mainnet-en',
+                        accounts: 'addr1',
+                    },
+                    isSecure: true,
+                },
+            },
+        )
+
+        rerender({
+            fingerprints: {
+                settings: 'light-USD-mainnet-en',
+                accounts: 'addr2',
+            },
+            isSecure: false,
+        })
+        expect(mockInjectJavaScript).not.toHaveBeenCalled()
+
+        rerender({
+            fingerprints: {
+                settings: 'light-USD-mainnet-en',
+                accounts: 'addr2',
+            },
+            isSecure: true,
+        })
+
+        expect(mockInjectJavaScript).toHaveBeenCalledTimes(1)
+        expect(mockInjectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"contexts":["accounts"]'),
+        )
+    })
+
+    it('flushes each withheld context once', () => {
+        const { rerender } = renderHook(
+            ({ fingerprints, isSecure }) =>
+                useNotifyWebViewOnContextChange(
+                    webviewRef,
+                    fingerprints,
+                    isSecure,
+                ),
+            {
+                initialProps: {
+                    fingerprints: { settings: 'a', accounts: 'addr1' },
+                    isSecure: true,
+                },
+            },
+        )
+
+        rerender({
+            fingerprints: { settings: 'b', accounts: 'addr1' },
+            isSecure: false,
+        })
+        rerender({
+            fingerprints: { settings: 'b', accounts: 'addr2' },
+            isSecure: false,
+        })
+        rerender({
+            fingerprints: { settings: 'b', accounts: 'addr2' },
+            isSecure: true,
+        })
+
+        expect(mockInjectJavaScript).toHaveBeenCalledTimes(1)
+        const payload = mockInjectJavaScript.mock.calls[0][0] as string
+        expect(payload).toContain('settings')
+        expect(payload).toContain('accounts')
+
+        rerender({
+            fingerprints: { settings: 'b', accounts: 'addr2' },
+            isSecure: true,
+        })
+
+        expect(mockInjectJavaScript).toHaveBeenCalledTimes(1)
     })
 })

@@ -24,12 +24,20 @@ export type ContextFingerprints = {
 /**
  * Sends an `onHostContextChanged` notification to the webview
  * when the provided context fingerprints change.
+ *
+ * Withheld while the webview is on an untrusted origin (`!isSecure`): the
+ * changed context names are host-state metadata untrusted pages must not
+ * observe. They are queued, not dropped, and flushed on the way back to a
+ * trusted origin — otherwise a page that outlives the excursion would keep
+ * showing stale context.
  */
 export function useNotifyWebViewOnContextChange(
     webviewRef: React.RefObject<Nullable<WebView>>,
-    contextFingerprints?: ContextFingerprints,
+    contextFingerprints: ContextFingerprints | undefined,
+    isSecure: boolean,
 ) {
     const prevFingerprints = useRef<ContextFingerprints>({})
+    const withheldContexts = useRef(new Set<string>())
 
     useEffect(() => {
         if (!contextFingerprints) return
@@ -54,12 +62,24 @@ export function useNotifyWebViewOnContextChange(
 
         prevFingerprints.current = { ...contextFingerprints }
 
-        if (changedContexts.length > 0) {
+        if (!isSecure) {
+            changedContexts.forEach(context =>
+                withheldContexts.current.add(context),
+            )
+            return
+        }
+
+        const contexts = [
+            ...new Set([...withheldContexts.current, ...changedContexts]),
+        ]
+        withheldContexts.current.clear()
+
+        if (contexts.length > 0) {
             sendNotificationToWebview(
                 'onHostContextChanged',
-                { contexts: changedContexts },
+                { contexts },
                 webviewRef.current,
             )
         }
-    }, [contextFingerprints, webviewRef])
+    }, [contextFingerprints, isSecure, webviewRef])
 }

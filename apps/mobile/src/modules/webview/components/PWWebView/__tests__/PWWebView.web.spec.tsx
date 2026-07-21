@@ -279,6 +279,7 @@ describe('PWWebView.web', () => {
         expect(useNotifyWebViewOnContextChange).toHaveBeenLastCalledWith(
             expect.anything(),
             { settings: 's', accounts: 'a' },
+            true,
         )
 
         render(
@@ -290,6 +291,7 @@ describe('PWWebView.web', () => {
         expect(useNotifyWebViewOnContextChange).toHaveBeenLastCalledWith(
             expect.anything(),
             undefined,
+            true,
         )
     })
 

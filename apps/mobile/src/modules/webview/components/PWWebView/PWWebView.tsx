@@ -51,6 +51,8 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
 import { toLoadableUrl } from './toLoadableUrl'
+import { getWebViewUserAgent } from './getWebViewUserAgent'
+import { HARDENED_WEBVIEW_PROPS } from './hardenedWebViewProps'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebViewStore, type WebViewFavorite } from '../../hooks'
@@ -114,10 +116,6 @@ export const PWWebView = (props: PWWebViewProps) => {
     const isDarkMode = useIsDarkMode()
     const { t } = useLanguage()
     const contextFingerprints = useContextFingerprints()
-    useNotifyWebViewOnContextChange(
-        webview,
-        enablePeraConnect ? contextFingerprints : undefined,
-    )
 
     // Normalize before loading: a scheme-less url (e.g. a bare host typed into
     // the Discover URL bar) is otherwise resolved by WKWebView as a bundle-
@@ -148,16 +146,30 @@ export const PWWebView = (props: PWWebViewProps) => {
     const { trackNavigation, resolveMessageSecurity } =
         useWebViewMessageSecurity(loadableUrl)
 
+    useNotifyWebViewOnContextChange(
+        webview,
+        enablePeraConnect ? contextFingerprints : undefined,
+        isSecure,
+    )
+
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
 
     // Append the Pera identifier to the WebView's default browser UA rather
     // than replacing it: a bare non-browser UA (no Mozilla token) makes some
     // dApp CDNs/bot filters serve 404 (PERA-4566). The API User-Agent header
-    // (useAppBootstrap) is separate and unaffected.
+    // (useAppBootstrap) is separate and unaffected. Trust is decided once from
+    // the initial load target, not per navigation: WKWebView reads
+    // applicationNameForUserAgent only at WebView creation, so it cannot
+    // follow an in-place navigation across the trust boundary (dapps opened
+    // from Discover get their own PWWebView, so they load with the coarse UA).
     const applicationNameForUserAgent = useMemo(
-        () => deviceInfo.getUserAgent(),
-        [deviceInfo],
+        () =>
+            getWebViewUserAgent(
+                deviceInfo,
+                isTrustedWebviewOrigin(loadableUrl, [config.discoverBaseUrl]),
+            ),
+        [deviceInfo, loadableUrl],
     )
 
     const onCloseRequested = useCallback(() => {
@@ -332,6 +344,11 @@ export const PWWebView = (props: PWWebViewProps) => {
         return (
             <WebView
                 ref={webview}
+                // Safe defaults a caller may still override: third-party
+                // payment pages (Bidali, onramp) can need cookies or a mixed
+                // content mode to complete a redirect/3DS handoff.
+                thirdPartyCookiesEnabled={false}
+                mixedContentMode='never'
                 {...rest}
                 source={{
                     uri: loadableUrl,
@@ -374,6 +391,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 pullToRefreshEnabled={true}
                 injectedJavaScript={jsToLoad}
                 setSupportMultipleWindows={false}
+                {...HARDENED_WEBVIEW_PROPS}
                 applicationNameForUserAgent={applicationNameForUserAgent}
                 forceDarkOn={isDarkMode}
                 onLoadStart={verifyLoad}
