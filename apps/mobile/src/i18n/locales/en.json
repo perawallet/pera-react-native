@@ -2337,7 +2337,10 @@
         },
         "quantum_fee": {
             "title": "Quantum Network Fee",
-            "body": "Quantum accounts use larger signatures, so their transactions require a higher network fee than standard accounts."
+            "body": "Quantum accounts use larger signatures, so their transactions require a higher network fee than standard accounts.",
+            "adjusted_label": "Adjusted",
+            "adjusted_title": "Fee Adjusted for Quantum Signing",
+            "adjusted_body": "This app requested a fee of {{originalFee}} ALGO, which is below the minimum for Quantum accounts. Pera raised it to {{adjustedFee}} ALGO so the network will accept the transaction. The app will receive the adjusted transaction."
         },
         "unknown": {
             "title": "Unsupported Transaction Type",

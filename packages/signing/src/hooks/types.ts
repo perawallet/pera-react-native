@@ -32,6 +32,7 @@ import type {
     RequestStructure,
     TransactionListItem,
 } from '../utils/classification'
+import type { QuantumFeeAdjustment } from '../pipeline/sources'
 import type { parseArc60ForDisplay } from '../utils/parseArc60ForDisplay'
 
 /**
@@ -79,6 +80,14 @@ export type SigningPipeline = {
     warnings: TransactionWarning[]
     distinctWarnings: TransactionWarning[]
     requestStructure: RequestStructure
+
+    /**
+     * PQ-017: fees the pipeline raised to the post-quantum minimum for quantum
+     * signers, in µAlgo, indexed into the full group (`groupContext ?? txs`)
+     * space. Empty when nothing was adjusted; the sign-review UI renders the
+     * original → adjusted delta from these entries.
+     */
+    feeAdjustments: QuantumFeeAdjustment[]
 
     // -------------------------------------------------------------------------
     // Controls
