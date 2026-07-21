@@ -40,28 +40,44 @@
       "all_frames": false
     },
     {
-      "matches": ["https://*.perawallet.app/*"],
+      "matches": [
+        "https://discover-mobile.perawallet.app/*",
+        "https://discover-mobile-staging.perawallet.app/*"
+      ],
       "js": ["content-discover-main.js"],
       "run_at": "document_start",
       "world": "MAIN",
       "all_frames": true
     },
     {
-      "matches": ["https://*.perawallet.app/*"],
+      "matches": [
+        "https://discover-mobile.perawallet.app/*",
+        "https://discover-mobile-staging.perawallet.app/*"
+      ],
       "js": ["content-discover-relay.js"],
       "run_at": "document_start",
       "world": "ISOLATED",
       "all_frames": true
     },
     {
-      "matches": ["https://*.bidali.com/*"],
+      "matches": [
+        "https://commerce.bidali.com/*",
+        "https://commerce.staging.bidali.com/*",
+        "https://giftcards.bidali.com/*",
+        "https://giftcards.staging.bidali.com/*"
+      ],
       "js": ["content-bidali-main.js"],
       "run_at": "document_start",
       "world": "MAIN",
       "all_frames": true
     },
     {
-      "matches": ["https://*.bidali.com/*"],
+      "matches": [
+        "https://commerce.bidali.com/*",
+        "https://commerce.staging.bidali.com/*",
+        "https://giftcards.bidali.com/*",
+        "https://giftcards.staging.bidali.com/*"
+      ],
       "js": ["content-bidali-relay.js"],
       "run_at": "document_start",
       "world": "ISOLATED",
