@@ -13,13 +13,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
 
-const { mockScreenHook, mockRunMigrationHook, mockSnapshot } = vi.hoisted(
-    () => ({
-        mockScreenHook: vi.fn(),
-        mockRunMigrationHook: vi.fn(),
-        mockSnapshot: vi.fn(),
-    }),
-)
+const {
+    mockScreenHook,
+    mockRunMigrationHook,
+    mockSnapshot,
+    mockStepVersionsHook,
+} = vi.hoisted(() => ({
+    mockScreenHook: vi.fn(),
+    mockRunMigrationHook: vi.fn(),
+    mockSnapshot: vi.fn(),
+    mockStepVersionsHook: vi.fn(),
+}))
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
@@ -35,6 +39,10 @@ vi.mock('../useRunMigration', () => ({
 
 vi.mock('../useRNMigrationSnapshot', () => ({
     useRNMigrationSnapshot: mockSnapshot,
+}))
+
+vi.mock('../useMigrationStepVersions', () => ({
+    useMigrationStepVersions: mockStepVersionsHook,
 }))
 
 import { SettingsDeveloperMigrationViewerScreen } from '../SettingsDeveloperMigrationViewerScreen'
@@ -60,6 +68,15 @@ const idleRunMigration = (
     ...overrides,
 })
 
+const idleStepVersions = (
+    overrides: Partial<ReturnType<typeof mockStepVersionsHook>> = {},
+) => ({
+    steps: [],
+    isLoading: false,
+    refresh: vi.fn(),
+    ...overrides,
+})
+
 const emptySnapshot = () => ({
     preferences: {},
     auth: {},
@@ -75,8 +92,10 @@ beforeEach(() => {
     mockScreenHook.mockReset()
     mockRunMigrationHook.mockReset()
     mockSnapshot.mockReset()
+    mockStepVersionsHook.mockReset()
     mockRunMigrationHook.mockReturnValue(idleRunMigration())
     mockSnapshot.mockReturnValue(emptySnapshot())
+    mockStepVersionsHook.mockReturnValue(idleStepVersions())
 })
 
 describe('SettingsDeveloperMigrationViewerScreen', () => {

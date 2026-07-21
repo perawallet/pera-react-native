@@ -15,12 +15,14 @@ import {
     useCleanupDuplicateMultisigInvitations,
     useInboxQuery,
 } from '@perawallet/wallet-core-messages'
+import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
 import { useHandleInboxItemPress } from '@modules/messages/hooks'
 
 export type UseInboxScreenResult = {
     inboxItems: InboxItem[]
     isPending: boolean
     isRefetching: boolean
+    isAwaitingRegistration: boolean
     refetch: () => void
     keyExtractor: (item: InboxItem, index: number) => string
     handleInboxItemPress: (item: InboxItem) => void
@@ -49,11 +51,14 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     } = useInboxQuery()
     useCleanupDuplicateMultisigInvitations()
     const handleInboxItemPress = useHandleInboxItemPress()
+    const isAwaitingRegistration =
+        useIsDeviceRegistrationPending() && (inboxItems?.length ?? 0) === 0
 
     return {
         inboxItems: inboxItems ?? [],
         isPending,
         isRefetching,
+        isAwaitingRegistration,
         refetch: () => void refetch(),
         keyExtractor: getItemKey,
         handleInboxItemPress,

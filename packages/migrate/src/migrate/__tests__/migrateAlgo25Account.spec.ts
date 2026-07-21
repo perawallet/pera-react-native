@@ -35,6 +35,7 @@ const buildLegacyAccount = (
         hdWalletId: null,
         ledger: null,
         joint: null,
+        authAddress: null,
         ...overrides,
     }) as LegacyAccount
 

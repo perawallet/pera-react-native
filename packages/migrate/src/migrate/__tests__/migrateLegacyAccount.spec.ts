@@ -12,6 +12,21 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// Same stub as buildKeylessAccount.spec.ts. Without it, the importActual of
+// buildKeylessAccount below loads the real blockchain package (algosdk), which
+// under CI's coverage instrumentation takes ~5s — right at the test timeout.
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    generateMultisigAddress: vi.fn(
+        (version: number, threshold: number, addresses: string[]) =>
+            `MSIG:v${version}:t${threshold}:${addresses.join(',')}`,
+    ),
+    // The accounts barrel installs a network-switch subscription at load.
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+        subscribe: () => () => {},
+    },
+}))
+
 vi.mock('../accountStoreOps', () => ({
     addKeylessAccountToStore: vi.fn(account => account),
 }))
@@ -61,6 +76,7 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
         hdWalletId: null,
         ledger: null,
         joint: null,
+        authAddress: null,
         ...overrides,
     }) as LegacyAccount
 
@@ -305,5 +321,33 @@ describe('classifyLegacyAccountRoute', () => {
 
     it('returns "unroutable" when nothing identifies the account', () => {
         expect(classifyLegacyAccountRoute(buildAccount())).toBe('unroutable')
+    })
+})
+
+// Loaded at module scope: importActual pays the real module-chain load cost,
+// which must land in the file's import phase, not inside a 5s test budget.
+const { buildWatchAccount: realBuildWatchAccount } = await vi.importActual<
+    typeof import('../buildKeylessAccount')
+>('../buildKeylessAccount')
+
+describe('migrateLegacyAccount with authAddress', () => {
+    it('migrates a keyless account with authAddress as a rekeyed watch account', async () => {
+        vi.mocked(buildWatchAccount).mockImplementationOnce(
+            realBuildWatchAccount,
+        )
+
+        const account = buildAccount({
+            type: 'standard',
+            secretKey: null,
+            hdWalletId: null,
+            ledger: null,
+            joint: null,
+            authAddress: 'AUTHADDR',
+        })
+
+        const created = await migrateLegacyAccount(buildArgs(account))
+
+        expect(created.type).toBe('watch')
+        expect(created.rekeyAddress).toBe('AUTHADDR')
     })
 })

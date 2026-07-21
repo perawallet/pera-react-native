@@ -11,20 +11,21 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
 import {
-    FundingType,
-    useCardExternalWalletsQuery,
-    useCardStore,
-} from '@perawallet/wallet-core-card'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+    isLedgerAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useRequirePinVerification } from '@modules/security'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import {
     useAuthorizeCardDelegation,
+    useAutoDrawSwitch,
     useCardErrorToast,
-    useCardFundingDelegation,
 } from '../../hooks'
 
 export type UseSelectFundingTypeSheetResult = {
@@ -34,15 +35,18 @@ export type UseSelectFundingTypeSheetResult = {
     isAutoDisabled: boolean
     /** False when the auto-funding kill-switch is off — Auto is "coming soon". */
     isAutoFundingEnabled: boolean
+    /** True when the connected account is a Ledger — Auto is unsupported there. */
+    isLedgerAccount: boolean
     isPending: boolean
     onApply: () => void
     onClose: () => void
 }
 
 /**
- * Owns the funding-type switch: Auto signs + posts a new delegation, Manual
- * cancels it (allowance 0). The store is only updated after Baanx accepts, and
- * the sheet stays open on failure so the user can retry.
+ * Owns the funding-type switch on the real AB flow: Auto posts the AutoDraw
+ * LSig and submits the on-chain Killswitch `enable(card)`; Manual submits
+ * `kill()`. The store is only updated after the switch succeeds, and the sheet
+ * stays open on failure so the user can retry.
  */
 export const useSelectFundingTypeSheet =
     (): UseSelectFundingTypeSheetResult => {
@@ -50,11 +54,15 @@ export const useSelectFundingTypeSheet =
         const { successToast } = useToast()
         const { resolve, dismiss } = useBottomSheetResult<'applied'>()
         const showError = useCardErrorToast()
+        const { network } = useNetwork()
 
         const storedType = useCardStore(state => state.selectedFundingType)
         const connectedAddress = useCardStore(
             state => state.connectedFundingSourceAddress,
         )
+        const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
+        const escrowCardOwner = useCardStore(state => state.escrowCardOwner)
+        const escrowCardNetwork = useCardStore(state => state.escrowCardNetwork)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
             () =>
@@ -62,14 +70,20 @@ export const useSelectFundingTypeSheet =
             [accounts, connectedAddress],
         )
 
-        const { delegateTo, cancelDelegation, isPending, canDelegate } =
-            useCardFundingDelegation()
-        const { authorizeDelegation } = useAuthorizeCardDelegation()
-        const { hasActiveDelegation } = useCardExternalWalletsQuery({
-            address: connectedAddress,
-        })
+        // The switch acts on the card created for THIS account on THIS network
+        // (owner + network scoped, like the create mutation's reuse guard).
+        const cardAddress =
+            escrowCardOwner === connectedAddress &&
+            escrowCardNetwork === network
+                ? escrowCardAddress
+                : null
 
-        // Nothing stored means no delegation was ever signed — effectively
+        const { enableAutoDraw, disableAutoDraw, canSwitchToAuto, isPending } =
+            useAutoDrawSwitch()
+        const { authorizeDelegation } = useAuthorizeCardDelegation()
+        const { requirePinVerification } = useRequirePinVerification()
+
+        // Nothing stored means no delegation was ever authorized — effectively
         // Manual. Must match how the Card Details row labels the type.
         const [selectedType, setSelectedType] = useState<FundingType>(
             () => storedType ?? FundingType.Manual,
@@ -78,7 +92,11 @@ export const useSelectFundingTypeSheet =
         const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
         const isAutoDisabled =
             !isAutoFundingEnabled ||
-            (connectedAccount != null && !canDelegate(connectedAccount))
+            (connectedAccount != null && !canSwitchToAuto(connectedAccount))
+        // Ledger can never sign the AutoDraw LSig — surface a dedicated hint so
+        // the user knows to switch to a signing-capable account.
+        const isLedgerConnected =
+            connectedAccount != null && isLedgerAccount(connectedAccount)
 
         // A connected account that can't sign (e.g. Ledger) can't use Auto, so
         // move the selection to Manual. Otherwise Auto stays selected but
@@ -89,21 +107,18 @@ export const useSelectFundingTypeSheet =
             }
         }, [isAutoDisabled, selectedType])
 
-        // The consent + PIN gate opens before the mutation flips `isPending`,
-        // so `isPending` alone can't block a double-tap during that window.
+        // The consent + PIN gate opens before `isPending` flips, so `isPending`
+        // alone can't block a double-tap during that window.
         const isApplyingRef = useRef(false)
         const apply = useCallback(async () => {
             if (isPending || isApplyingRef.current) return
             const currentType =
                 useCardStore.getState().selectedFundingType ??
                 FundingType.Manual
-            // No change → nothing to sign or post. Auto only counts as
-            // unchanged while a delegation is live, so re-applying it can
-            // recover a failed redelegation.
-            const isUnchanged =
-                selectedType === currentType &&
-                (selectedType === FundingType.Manual || hasActiveDelegation)
-            if (isUnchanged) {
+            // No change → nothing to do. The store is written only after a
+            // successful switch, so a failed prior Auto leaves it Manual and
+            // re-selecting Auto is a real change (recovery).
+            if (selectedType === currentType) {
                 dismiss()
                 return
             }
@@ -114,16 +129,24 @@ export const useSelectFundingTypeSheet =
             isApplyingRef.current = true
             try {
                 if (selectedType === FundingType.Auto) {
-                    // Consent + live PIN/biometric before signing the grant.
+                    // Auto authorizes a delegation bound to the escrow card;
+                    // without one (never created for this account/network)
+                    // there is nothing to enable. (Manual's kill() acts on the
+                    // sender's own box, so it needs no card address.)
+                    if (!cardAddress) {
+                        await showError(null)
+                        return
+                    }
+                    // Consent + live PIN/biometric before authorizing the grant.
                     const authorized = await authorizeDelegation(
                         connectedAccount,
-                        delegateTo,
+                        account => enableAutoDraw(account, cardAddress),
                     )
                     if (!authorized) return
-                } else if (canDelegate(connectedAccount)) {
-                    // Manual: zero any live delegation. A non-signing account
-                    // (e.g. Ledger) can't hold one, so there's nothing to sign.
-                    await cancelDelegation(connectedAccount)
+                } else {
+                    // Manual revoke signs an on-chain kill() — gate on PIN.
+                    if (!(await requirePinVerification())) return
+                    await disableAutoDraw(connectedAccount)
                 }
                 useCardStore.getState().setSelectedFundingType(selectedType)
                 successToast(
@@ -140,11 +163,11 @@ export const useSelectFundingTypeSheet =
             isPending,
             selectedType,
             connectedAccount,
-            hasActiveDelegation,
-            canDelegate,
-            delegateTo,
+            cardAddress,
             authorizeDelegation,
-            cancelDelegation,
+            enableAutoDraw,
+            requirePinVerification,
+            disableAutoDraw,
             successToast,
             resolve,
             dismiss,
@@ -161,6 +184,7 @@ export const useSelectFundingTypeSheet =
             onSelectType: setSelectedType,
             isAutoDisabled,
             isAutoFundingEnabled,
+            isLedgerAccount: isLedgerConnected,
             isPending,
             onApply,
             onClose: dismiss,

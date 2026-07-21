@@ -324,3 +324,23 @@ describe('runExtrasMigration > passkeys step', () => {
         expect(vi.mocked(migrateStashed)).toHaveBeenCalled()
     })
 })
+
+describe('runExtrasMigration > step filtering', () => {
+    it('runs only the requested steps when a filter is provided', async () => {
+        const data = buildData()
+        const result = await runExtrasMigration(data, ['deviceIdentifiers'])
+
+        expect(migrateDeviceIdentifiers).toHaveBeenCalledOnce()
+        expect(migratePreferences).not.toHaveBeenCalled()
+        expect(migrateContacts).not.toHaveBeenCalled()
+        expect(result.deviceIdentifiers).toBe(true)
+        expect(result.preferences).toBe(false)
+    })
+
+    it('runs every step when no filter is provided (back-compat)', async () => {
+        const data = buildData()
+        await runExtrasMigration(data)
+        expect(migratePreferences).toHaveBeenCalledOnce()
+        expect(migrateDeviceIdentifiers).toHaveBeenCalledOnce()
+    })
+})

@@ -93,11 +93,18 @@ describe('useSettingsOptions', () => {
 
         // Account Section
         expect(settingsOptions[0].title).toBe('settings.main.account_section')
-        expect(settingsOptions[0].items).toHaveLength(4)
+        expect(settingsOptions[0].items).toHaveLength(5)
         expect(settingsOptions[0].items[0]).toEqual({
             route: 'SecuritySettings',
             icon: 'shield-check',
             title: 'settings.main.security_title',
+        })
+        // The wallet-wide rekeyed-account sweep is an action, not a
+        // settings sub-route (PERA-4619).
+        expect(settingsOptions[0].items[4]).toEqual({
+            action: 'scanRekeyed',
+            icon: 'magnifying-glass',
+            title: 'settings.main.scan_rekeyed_title',
         })
 
         // App Preferences Section
@@ -145,6 +152,7 @@ describe('useSettingsOptions', () => {
                 'NotificationsSettings',
                 'WalletConnectSettings',
                 'PasskeysSettings',
+                undefined,
             ])
             expect(settingsOptions[2].items).toHaveLength(4)
             expect(settingsOptions[2].items[0]).toEqual({
@@ -170,12 +178,18 @@ describe('useSettingsOptions', () => {
             const { result } = renderHook(() => useSettingsOptions())
             const { settingsOptions } = result.current
 
-            // Account section keeps only the (still-registered) Security item.
+            // Account section keeps the (still-registered) Security item and
+            // the ungated rekeyed-account sweep action.
             expect(settingsOptions[0].items).toEqual([
                 {
                     route: 'SecuritySettings',
                     icon: 'shield-check',
                     title: 'settings.main.security_title',
+                },
+                {
+                    action: 'scanRekeyed',
+                    icon: 'magnifying-glass',
+                    title: 'settings.main.scan_rekeyed_title',
                 },
             ])
 

@@ -17,6 +17,12 @@ type AutoFundingHintParams = {
     isAutoFundingEnabled: boolean
     /** True when Auto is disabled for a reason other than the flag (can't sign). */
     isAutoUnavailable: boolean
+    /**
+     * True when the connected account is a Ledger. Ledger can never sign the
+     * AutoDraw LSig, so it gets a dedicated "switch accounts" message instead of
+     * the generic can't-sign one.
+     */
+    isLedgerAccount?: boolean
     /** Shown when Auto is enabled and available (e.g. the per-tx limit hint). */
     fallback?: string
 }
@@ -30,6 +36,7 @@ export const resolveAutoFundingHint = (
     {
         isAutoFundingEnabled,
         isAutoUnavailable,
+        isLedgerAccount = false,
         fallback,
     }: AutoFundingHintParams,
 ): string | undefined => {
@@ -37,7 +44,9 @@ export const resolveAutoFundingHint = (
         return t('peraCard.account.funding_type_auto_coming_soon_hint')
     }
     if (isAutoUnavailable) {
-        return t('peraCard.account.funding_type_auto_unavailable_hint')
+        return isLedgerAccount
+            ? t('peraCard.account.funding_type_auto_ledger_hint')
+            : t('peraCard.account.funding_type_auto_unavailable_hint')
     }
     return fallback
 }

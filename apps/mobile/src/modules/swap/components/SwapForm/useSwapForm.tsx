@@ -27,10 +27,7 @@ import {
     type SwapQuote,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    ALGO_ASSET_NAME,
-    isAlgoAssetName,
     isDecimalEqual,
     uint64IdToNumber,
     type Nullable,
@@ -63,6 +60,7 @@ type UseSwapFormResult = {
     selectedQuote: Nullable<SwapQuote>
     providerSelectionMode: 'auto' | 'manual'
     canSwap: boolean
+    isLocalCurrencyInput: boolean
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
     handleSwapDirection: () => void
     handleMaxPress: () => void
@@ -78,12 +76,12 @@ export const useSwapForm = (): UseSwapFormResult => {
         fromAsset,
         toAsset,
         slippage,
+        isLocalCurrencyInput,
         setFromAsset,
         setToAsset,
         setSlippage,
+        setIsLocalCurrencyInput,
     } = useSwaps()
-    const { preferredCurrency, setPreferredCurrency, fallbackCurrency } =
-        useCurrency()
     const [payAmount, setPayAmount] = useState<Nullable<Decimal>>(null)
     const [receiveAmount, setReceiveAmount] = useState<Nullable<Decimal>>(null)
     const [selectedProviderName, setSelectedProviderName] =
@@ -103,7 +101,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
-    const { successToast, errorToast } = useToast()
+    const { successToast, errorToast, infoToast } = useToast()
     const { t } = useLanguage()
 
     const { data: payAssets } = useAssetsQuery([fromAsset])
@@ -124,6 +122,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         isQuoteFetching,
         isQuoteError,
         reset: resetQuotes,
+        refresh: refreshQuotes,
     } = useSwapQuotes({
         swapperAddress: selectedAccount?.address ?? null,
         fromAssetId: fromAsset,
@@ -331,6 +330,17 @@ export const useSwapForm = (): UseSwapFormResult => {
             },
         })
         if (!result || result.kind === 'cancelled') return
+        if (result.kind === 'stale-quote') {
+            // The quote outlived its TTL (e.g. the app sat offline between
+            // quote and confirm). Nothing executed — fetch a fresh rate and
+            // ask the user to review and confirm again.
+            refreshQuotes()
+            infoToast(
+                t('swap.quote.refreshed_title'),
+                t('swap.quote.refreshed_body'),
+            )
+            return
+        }
         if (result.kind === 'error') {
             errorToast(t('swap.execution.error_title'), result.message)
             return
@@ -373,6 +383,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         invalidateAccountBalances,
         successToast,
         errorToast,
+        infoToast,
+        refreshQuotes,
         t,
         resetQuotes,
     ])
@@ -390,12 +402,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
         setSlippage(result.slippageTolerance)
 
-        const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
-        if (result.useLocalCurrency && isAlgoPreferred) {
-            setPreferredCurrency(fallbackCurrency)
-        } else if (!result.useLocalCurrency && !isAlgoPreferred) {
-            setPreferredCurrency(ALGO_ASSET_NAME)
-        }
+        setIsLocalCurrencyInput(result.useLocalCurrency)
 
         if (result.balancePercentage !== null) {
             void applyPercentageAmount(result.balancePercentage)
@@ -403,9 +410,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     }, [
         requestBottomSheet,
         setSlippage,
-        preferredCurrency,
-        setPreferredCurrency,
-        fallbackCurrency,
+        setIsLocalCurrencyInput,
         applyPercentageAmount,
     ])
 
@@ -421,6 +426,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         selectedQuote,
         providerSelectionMode,
         canSwap,
+        isLocalCurrencyInput,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,

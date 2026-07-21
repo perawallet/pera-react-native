@@ -13,7 +13,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
-    accountsStoreMock: { accounts: [] as Array<{ address: string }> },
+    accountsStoreMock: {
+        accounts: [] as Array<{
+            address: string
+            type?: string
+            rekeyAddress?: string
+        }>,
+    },
     loggerMock: {
         error: vi.fn(),
         info: vi.fn(),
@@ -24,6 +30,14 @@ const { accountsStoreMock, loggerMock } = vi.hoisted(() => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: { getState: () => accountsStoreMock },
+    AccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+        quantum: 'quantum',
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -40,9 +54,12 @@ vi.mock('../migrateLegacyAccount', () => ({
 }))
 
 vi.mock('../accountStoreOps', () => ({
+    addKeylessAccountToStore: vi.fn(),
     applyAllLegacyMetadata: vi.fn(),
     applyLegacyAccountOrder: vi.fn(),
+    applyRekeyAddressToStoreAccount: vi.fn(),
     markLegacyBackedUpAccounts: vi.fn(),
+    removeAccountFromStore: vi.fn(),
 }))
 
 import type {
@@ -55,9 +72,12 @@ import {
     classifyLegacyAccountRoute,
 } from '../migrateLegacyAccount'
 import {
+    addKeylessAccountToStore,
     applyAllLegacyMetadata,
     applyLegacyAccountOrder,
+    applyRekeyAddressToStoreAccount,
     markLegacyBackedUpAccounts,
+    removeAccountFromStore,
 } from '../accountStoreOps'
 import type { MigrationDeps } from '../types'
 
@@ -72,8 +92,21 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
         hdWalletId: null,
         ledger: null,
         joint: null,
+        authAddress: null,
         ...overrides,
     }) as LegacyAccount
+
+const watchAccount = (
+    address: string,
+): { address: string; type: string; rekeyAddress?: string } => ({
+    address,
+    type: 'watch',
+})
+
+const algo25Account = (address: string): { address: string; type: string } => ({
+    address,
+    type: 'algo25',
+})
 
 const buildDeps = (): MigrationDeps => ({
     importAccount: vi.fn() as unknown as MigrationDeps['importAccount'],
@@ -91,6 +124,9 @@ beforeEach(() => {
     vi.mocked(applyAllLegacyMetadata).mockReset()
     vi.mocked(applyLegacyAccountOrder).mockReset()
     vi.mocked(markLegacyBackedUpAccounts).mockReset()
+    vi.mocked(addKeylessAccountToStore).mockReset()
+    vi.mocked(removeAccountFromStore).mockReset()
+    vi.mocked(applyRekeyAddressToStoreAccount).mockReset()
     loggerMock.error.mockReset()
     vi.mocked(classifyLegacyAccountRoute).mockReturnValue('algo25')
 })
@@ -341,5 +377,180 @@ describe('runMigrationLoop', () => {
 
         expect(result.failed).toEqual([])
         expect(result.skipped).toBe(1)
+    })
+
+    it('upgrades an existing watch account when the legacy payload now carries a key', async () => {
+        accountsStoreMock.accounts = [watchAccount('UPGRADEME')]
+        const legacy = buildAccount({
+            address: 'UPGRADEME',
+            type: 'standard',
+            secretKey: new Uint8Array(64),
+            authAddress: null,
+        })
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'UPGRADEME',
+        } as never)
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(migrateLegacyAccount).toHaveBeenCalledOnce()
+        expect(result.imported).toBe(1)
+        expect(removeAccountFromStore).toHaveBeenCalledWith('UPGRADEME')
+        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+        expect(
+            accountsStoreMock.accounts.filter(a => a.address === 'UPGRADEME'),
+        ).toHaveLength(1)
+    })
+
+    it('mirrors the legacy authAddress onto a key-bearing import that lacks it', async () => {
+        accountsStoreMock.accounts = [watchAccount('UPGRADEME')]
+        const legacy = buildAccount({
+            address: 'UPGRADEME',
+            type: 'standard',
+            secretKey: new Uint8Array(64).fill(3),
+            authAddress: 'AUTH',
+        })
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'UPGRADEME',
+        } as never)
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(result.imported).toBe(1)
+        expect(applyRekeyAddressToStoreAccount).toHaveBeenCalledWith(
+            'UPGRADEME',
+            'AUTH',
+        )
+    })
+
+    it('leaves rekeyAddress alone when the import already carries the mirror', async () => {
+        const legacy = buildAccount({
+            address: 'WATCHED',
+            type: 'watch',
+            secretKey: null,
+            authAddress: 'AUTH',
+        })
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'WATCHED',
+            rekeyAddress: 'AUTH',
+        } as never)
+
+        await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+    })
+
+    it('restores the removed watch account when the reconciling reimport throws', async () => {
+        const watch = watchAccount('RECONCILE')
+        accountsStoreMock.accounts = [watch]
+        const legacy = buildAccount({
+            address: 'RECONCILE',
+            type: 'standard',
+            secretKey: new Uint8Array(64).fill(2),
+            authAddress: null,
+        })
+        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(
+            new Error('kms exploded'),
+        )
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(removeAccountFromStore).toHaveBeenCalledWith('RECONCILE')
+        // The visible watch account must be re-added before the failure is
+        // recorded, so a transient import error never orphans the user's account.
+        expect(addKeylessAccountToStore).toHaveBeenCalledWith(watch)
+        expect(result.imported).toBe(0)
+        expect(result.failed).toEqual([
+            {
+                address: 'RECONCILE',
+                name: '',
+                reason: '[algo25] Error: kms exploded',
+            },
+        ])
+    })
+
+    it('does not re-add anything when a non-reconciling import throws', async () => {
+        const legacy = buildAccount({ address: 'FRESH', name: 'F' })
+        vi.mocked(migrateLegacyAccount).mockRejectedValueOnce(new Error('boom'))
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(addKeylessAccountToStore).not.toHaveBeenCalled()
+        expect(result.failed).toHaveLength(1)
+    })
+
+    it('skips applyLegacyAccountOrder on an accounts-v2 re-run to preserve user reordering', async () => {
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'X',
+        } as never)
+
+        await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [buildAccount({ address: 'A', preferredOrder: 0 })],
+            hdWallets: [],
+            isRerun: true,
+        })
+
+        expect(applyLegacyAccountOrder).not.toHaveBeenCalled()
+    })
+
+    it('backfills rekeyAddress on an existing watch account without reimporting', async () => {
+        accountsStoreMock.accounts = [watchAccount('REKEYED')]
+        const legacy = buildAccount({
+            address: 'REKEYED',
+            type: 'standard',
+            secretKey: null,
+            authAddress: 'AUTH',
+        })
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(migrateLegacyAccount).not.toHaveBeenCalled()
+        expect(result.skipped).toBe(1)
+        expect(removeAccountFromStore).not.toHaveBeenCalled()
+        expect(applyRekeyAddressToStoreAccount).toHaveBeenCalledWith(
+            'REKEYED',
+            'AUTH',
+        )
+    })
+
+    it('still plain-skips existing non-watch accounts', async () => {
+        accountsStoreMock.accounts = [algo25Account('KEEPME')]
+        const legacy = buildAccount({ address: 'KEEPME', type: 'standard' })
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(result.skipped).toBe(1)
+        expect(migrateLegacyAccount).not.toHaveBeenCalled()
+        expect(removeAccountFromStore).not.toHaveBeenCalled()
+        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
     })
 })

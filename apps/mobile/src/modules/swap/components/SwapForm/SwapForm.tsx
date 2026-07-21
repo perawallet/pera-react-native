@@ -18,6 +18,7 @@ import { SwapProviderRow } from '../SwapProviderRow'
 import { SwapTopPairs } from '../SwapTopPairs'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm } from './useSwapForm'
+import { useSwapLocalCurrency } from '../../hooks'
 import { useStyles } from './styles'
 
 export const SwapForm = () => {
@@ -35,6 +36,7 @@ export const SwapForm = () => {
         selectedQuote,
         providerSelectionMode,
         canSwap,
+        isLocalCurrencyInput,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
@@ -44,6 +46,9 @@ export const SwapForm = () => {
         handleOpenProvider,
         handleOpenConfirm,
     } = useSwapForm()
+
+    const { localCurrencySymbol, fiatToAsset, assetToFiat } =
+        useSwapLocalCurrency(payAssetId)
 
     return (
         <PWScrollView contentContainerStyle={styles.formContainer}>
@@ -55,6 +60,10 @@ export const SwapForm = () => {
                     amount={payAmount}
                     onAmountChange={handlePayAmountChange}
                     onAssetPress={handleOpenPayAssetSelection}
+                    isLocalCurrencyInput={isLocalCurrencyInput}
+                    localCurrencySymbol={localCurrencySymbol}
+                    fiatToAsset={fiatToAsset}
+                    assetToFiat={assetToFiat}
                 />
 
                 <SwapFormControls

@@ -499,6 +499,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
         "back_online": "Back online",
         "testnet_indicator": "TestNet",
         "yes": "Yes",
@@ -564,7 +565,9 @@
         "webview": {
             "failed_title": "Failed to load page",
             "reload": "Reload",
-            "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
+            "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
+            "offline_title": "You're offline",
+            "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online."
         },
         "done": "Done",
         "save": "Save",
@@ -793,17 +796,14 @@
             "funding_type_apply": "Apply",
             "funding_type_updated_title": "Funding type updated",
             "funding_type_updated_body": "Your card funding preference has been saved.",
+            "funding_change_requires_manual_title": "Switch to Manual funding first",
+            "funding_change_requires_manual_body": "Changing the connected account isn't available while Auto Funding is on. Switch to Manual, change the account, then re-enable Auto Funding.",
             "funding_type_auto_unavailable_hint": "Not available for this account — it can't sign an auto-funding authorization.",
+            "funding_type_auto_ledger_hint": "Not supported on Ledger accounts. Connect a different account to use Auto Funding.",
             "funding_type_auto_coming_soon_hint": "Auto Funding is coming soon.",
             "authorize_delegation_title": "Authorize Auto Funding",
             "authorize_delegation_body": "You're authorizing auto-funding of up to {{limit}} per transaction from {{account}}. Pera signs a standing authorization you can switch back to Manual anytime.",
             "authorize_delegation_confirm": "Authorize",
-            "funding_delegation_unsupported_title": "Auto Funding unavailable",
-            "funding_delegation_unsupported_body": "This account can't sign an auto-funding authorization. Choose another account or switch to Manual Funding.",
-            "funding_redelegate_failed_title": "Auto Funding not activated",
-            "funding_redelegate_failed_body": "Your account was linked, but Auto Funding couldn't be activated. Reapply it from Funding Type.",
-            "funding_cancel_old_failed_title": "Previous authorization still active",
-            "funding_cancel_old_failed_body": "We couldn't remove the auto-funding authorization from your previous account. You can retry from Funding Type.",
             "options": "Options",
             "accounts_details": "Accounts Details",
             "add_to_apple_wallet": "Add to Apple Wallet",
@@ -1802,6 +1802,9 @@
             "title": "Rekeyed Accounts",
             "subtitle": "Select the accounts you would like to import as rekeyed accounts.",
             "fetching": "Searching for rekeyed accounts…",
+            "sweep_fetching": "Scanning your keys ({{scanned}}/{{total}})…",
+            "partial_failure_notice_one": "1 key couldn't be scanned — results may be incomplete. Retry to scan it again.",
+            "partial_failure_notice_other": "{{count}} keys couldn't be scanned — results may be incomplete. Retry to scan them again.",
             "empty_title": "No Rekeyed Accounts Found",
             "empty_body": "We have scanned the blockchain and were not able to find any accounts that have not been imported.",
             "empty_cta": "Continue",
@@ -2050,6 +2053,7 @@
             "account_section": "Account",
             "security_title": "Security",
             "notifications_title": "Notifications",
+            "scan_rekeyed_title": "Scan for Rekeyed Accounts",
             "wallet_connect_title": "WalletConnect Sessions",
             "passkeys_title": "Passkeys",
             "connected_sites_title": "Connected Sites",
@@ -2086,9 +2090,7 @@
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet",
                 "enable_mainnet": "Enable MainNet",
-                "enable_testnet": "Enable TestNet",
-                "switch_error_title": "Network Switch Failed",
-                "switch_error_body": "Unable to switch networks. Please try again."
+                "enable_testnet": "Enable TestNet"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",
@@ -2488,6 +2490,9 @@
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
             "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request."
         },
+        "connection": {
+            "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
+        },
         "settings": {
             "empty_title": "No WalletConnect Sessions",
             "empty_body": "You don't have any active WalletConnect sessions.",
@@ -2585,6 +2590,8 @@
             "max": "MAX"
         },
         "quote": {
+            "refreshed_title": "Quote refreshed",
+            "refreshed_body": "That quote had expired, so we fetched a fresh rate. Review it and confirm again.",
             "rate": "Rate",
             "price_impact": "Price Impact",
             "slippage_tolerance": "Slippage Tolerance",
@@ -2849,7 +2856,8 @@
             "find_another_account": "Find another account",
             "rekeyed_label": "Rekeyed",
             "rekeyed_account_title": "Rekeyed account",
-            "scanning_rekeyed": "Scanning for rekeyed accounts…"
+            "scanning_rekeyed": "Scanning for rekeyed accounts…",
+            "watch_account_label": "Watch account"
         },
         "account_info": {
             "account_details": "Account details",
@@ -2866,7 +2874,12 @@
             "awaiting": "Awaiting Verification",
             "verified": "Account Verified",
             "add_accounts_one": "Add Verified Account",
-            "add_accounts_other": "Add Verified Accounts"
+            "add_accounts_other": "Add Verified Accounts",
+            "upgrade_watch_title_one": "Upgrade watch account?",
+            "upgrade_watch_title_other": "Upgrade watch accounts?",
+            "upgrade_watch_body_one": "This address is already in your wallet as a watch account. Importing it will upgrade it to a Ledger account that can sign transactions. Its name and settings will be kept.",
+            "upgrade_watch_body_other": "{{count}} of these addresses are already in your wallet as watch accounts. Importing them will upgrade them to Ledger accounts that can sign transactions. Their names and settings will be kept.",
+            "upgrade_watch_confirm": "Upgrade"
         },
         "signing": {
             "cancel": "Cancel",
@@ -2915,6 +2928,8 @@
             "app_outdated": "Your Ledger's Algorand app is too old to sign this request. Open Ledger Live and update the Algorand app, then try again.",
             "timeout": "Your Ledger device did not respond in time. Please try again.",
             "timeout_title": "Request timed out",
+            "interrupted_title": "Signing was interrupted",
+            "interrupted": "The app went to the background during signing, so the session was stopped for safety. Retry to reconnect to your Ledger and sign again.",
             "address_mismatch": "The address on your Ledger device does not match the expected address. Please verify you selected the correct account.",
             "address_mismatch_title": "Address Mismatch",
             "retry": "Try again",
@@ -2954,7 +2969,8 @@
         },
         "scan_header": {
             "having_issues": "Having issues?"
-        }
+        },
+        "default_account_name": "Ledger {{number}}"
     },
     "countries": {
         "AC": "Ascension Island",

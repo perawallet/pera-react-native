@@ -52,6 +52,7 @@ import {
 } from '@test-utils/database-setup'
 import {
     AccountTypes,
+    fetchAndPersistAccount,
     upsertAccountBalance,
     useAccountsStore,
     type WalletAccount,
@@ -229,6 +230,24 @@ describe('Flow: Undo rekey end-to-end', () => {
             >
             const body = await calls[0][0].request.arrayBuffer()
             expect(body.byteLength).toBeGreaterThan(50)
+
+            // LRK-022: the rekey badge reads the store's rekeyAddress mirror,
+            // which only a sync tick clears once algod stops reporting an
+            // auth-addr. Model the undo landing on chain, then drive the real
+            // sync path and assert the badge source clears.
+            server.use(
+                mockAlgodAccountInformation({
+                    address: REKEY_TARGET_ADDRESS,
+                    response: { amount: 5_000_000, 'min-balance': 100_000 },
+                }),
+            )
+            await fetchAndPersistAccount(REKEY_TARGET_ADDRESS, 'mainnet')
+
+            const synced = useAccountsStore
+                .getState()
+                .accounts.find(a => a.address === REKEY_TARGET_ADDRESS)
+            expect(synced?.rekeyAddress).toBeUndefined()
+            expect(synced?.rekeyAddressByNetwork?.mainnet).toBeUndefined()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

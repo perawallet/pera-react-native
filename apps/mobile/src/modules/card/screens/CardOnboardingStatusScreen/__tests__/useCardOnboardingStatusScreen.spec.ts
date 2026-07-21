@@ -24,6 +24,9 @@ const mockConnectAsync = vi.fn()
 const mockPickFundingSource = vi.fn()
 const mockCreateCard = vi.fn()
 const mockCanCreateCard = vi.fn()
+// Hoisted so the `@modules/card/hooks` mock factory (hoisted above imports) can
+// reference it without a temporal-dead-zone error.
+const { mockCanAutoFund } = vi.hoisted(() => ({ mockCanAutoFund: vi.fn() }))
 const mockRequirePin = vi.fn()
 let mockVerificationState: string | null = null
 let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
@@ -126,6 +129,7 @@ vi.mock('@modules/card/hooks', () => ({
     // The picker's account filter is exercised elsewhere; here it just needs
     // to be a function the screen can pass through.
     isSigningCapableFundingSource: () => true,
+    canAutoFund: mockCanAutoFund,
 }))
 
 vi.mock('@modules/security', () => ({
@@ -244,6 +248,7 @@ beforeEach(() => {
         }),
     )
     mockCanCreateCard.mockReturnValue(true)
+    mockCanAutoFund.mockReturnValue(true)
     mockRequirePin.mockResolvedValue(true)
     mockIsAutoFundingEnabled = true
     mockAuthorizeDelegation.mockImplementation(passThroughAuthorizeDelegation)
@@ -725,7 +730,7 @@ describe('useCardOnboardingStatusScreen', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         mockAccounts = [account('ADDR1', 'hardware')]
-        mockCanCreateCard.mockReturnValue(false)
+        mockCanAutoFund.mockReturnValue(false)
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.isAutoFundingUnavailable).toBe(true)
@@ -735,12 +740,32 @@ describe('useCardOnboardingStatusScreen', () => {
         mockOnboardingStep = OnboardingStep.Completed
         mockConnectedAddress = 'ADDR1'
         mockAccounts = [account('ADDR1', 'hardware')]
-        mockCanCreateCard.mockReturnValue(false)
+        mockCanAutoFund.mockReturnValue(false)
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         // Auto is impossible for a non-signing account, so the default Auto
         // selection migrates to Manual instead of staying stuck on the
         // disabled Auto option.
+        expect(result.current.selectedFundingType).toBe(FundingType.Manual)
+    })
+
+    it('disables Auto for a Ledger account even when it can create a card', () => {
+        // Auto availability is decoupled from card creation: once ARC-60 lets
+        // Ledger create a card (canCreateCard true), Auto must stay disabled
+        // because Ledger can never sign the AutoDraw LSig (canAutoFund false).
+        mockOnboardingStep = OnboardingStep.Completed
+        mockConnectedAddress = 'ADDR1'
+        mockAccounts = [
+            account('ADDR1', 'hardware', {
+                hardwareDetails: { manufacturer: 'ledger' },
+            } as Partial<WalletAccount>),
+        ]
+        mockCanCreateCard.mockReturnValue(true)
+        mockCanAutoFund.mockReturnValue(false)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.isLedgerAccount).toBe(true)
+        expect(result.current.isAutoFundingUnavailable).toBe(true)
         expect(result.current.selectedFundingType).toBe(FundingType.Manual)
     })
 

@@ -15,6 +15,7 @@ import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
+    AccountTypes,
     useAllAccounts,
     prefetchLedgerAccountPreview,
     useLedgerRekeyedScan,
@@ -61,6 +62,9 @@ type UseLedgerSelectAccountsScreenResult = {
     areAllImported: boolean
     canContinue: boolean
     alreadyImportedAddresses: Set<string>
+    /** Derived addresses held as watch accounts — selectable; importing them
+     * upgrades the watch entry to a signable hardware account. */
+    upgradeableAddresses: Set<string>
     isFetchingMore: boolean
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
@@ -163,9 +167,50 @@ export const useLedgerSelectAccountsScreen =
             return m
         }, [selectableAccounts])
 
-        const alreadyImportedAddresses = useMemo(() => {
-            return new Set(allAccounts.map(acc => acc.address))
+        const accountTypeByAddress = useMemo(() => {
+            const m = new Map<string, string>()
+            for (const acc of allAccounts) {
+                if (acc.address) m.set(acc.address, acc.type)
+            }
+            return m
         }, [allAccounts])
+
+        // Rows that stay disabled: the address is already in the wallet in a
+        // shape this import can't improve. A derived (signable) address held
+        // as a watch account is upgradeable, so its row stays enabled; a
+        // rekeyed candidate imports as a watch account, so any existing
+        // account already satisfies it.
+        const alreadyImportedAddresses = useMemo(() => {
+            const disabled = new Set<string>()
+            for (const s of selectableAccounts) {
+                const address =
+                    s.kind === 'derived' ? s.account.address : s.address
+                const existingType = accountTypeByAddress.get(address)
+                if (existingType === undefined) continue
+                if (
+                    s.kind === 'derived' &&
+                    existingType === AccountTypes.watch
+                ) {
+                    continue
+                }
+                disabled.add(address)
+            }
+            return disabled
+        }, [selectableAccounts, accountTypeByAddress])
+
+        const upgradeableAddresses = useMemo(() => {
+            const upgradeable = new Set<string>()
+            for (const s of selectableAccounts) {
+                if (s.kind !== 'derived') continue
+                if (
+                    accountTypeByAddress.get(s.account.address) ===
+                    AccountTypes.watch
+                ) {
+                    upgradeable.add(s.account.address)
+                }
+            }
+            return upgradeable
+        }, [selectableAccounts, accountTypeByAddress])
 
         const newAccounts = useMemo(() => {
             return selectableAccounts.filter(
@@ -349,6 +394,7 @@ export const useLedgerSelectAccountsScreen =
             areAllImported,
             canContinue,
             alreadyImportedAddresses,
+            upgradeableAddresses,
             isFetchingMore,
             toggleSelection,
             toggleSelectAll,

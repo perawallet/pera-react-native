@@ -29,3 +29,6 @@ export * from './useQuantumTransactionSigner'
 export * from './useHandoffResolver'
 export * from './useWalletConnectHandoffResolver'
 export * from './useMinFeeForSender'
+// Pure applier (not the hook) — the app layer owns the AppState subscription
+// and feeds it in, keeping this package free of react-native (PERA-4637).
+export { applyAppStateToHardwareSessions } from './useSigningActorLifecycle'

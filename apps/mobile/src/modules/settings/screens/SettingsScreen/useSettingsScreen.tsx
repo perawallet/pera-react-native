@@ -80,7 +80,17 @@ export const useSettingsScreen = () => {
         icon: string
         url?: string
         route?: keyof SettingsStackParamsList
+        action?: 'scanRekeyed'
     }) => {
+        if (page.action === 'scanRekeyed') {
+            // Root-level flow, not a settings sub-screen: no sourceAddress
+            // sweeps every signable key.
+            navigation.navigate('RescanRekeyed', {
+                screen: 'RescanRekeyedSelect',
+                params: {},
+            })
+            return
+        }
         if (page.route) {
             if (page.route === 'PasskeysSettings') {
                 trackEvent(SettingsEvent.PassKey)

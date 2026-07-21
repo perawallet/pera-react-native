@@ -41,6 +41,9 @@ export const useStyles = makeStyles(theme => ({
     amountInput: {
         paddingLeft: 0,
     },
+    currencyPrefix: {
+        marginRight: theme.spacing.xs,
+    },
     fiatValue: {
         color: theme.colors.textGray,
     },

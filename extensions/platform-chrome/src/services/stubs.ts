@@ -23,6 +23,7 @@ import {
     type LegacyMigrationSourcePlatform,
     type MigrationPlanSummary,
     type MigrationService,
+    type MigrationStepVersions,
     type SimulateLegacyDatabaseArgs,
     type NotificationOpenListener,
     type PushNotificationInitResult,
@@ -105,4 +106,10 @@ export class ChromeMigrationService implements MigrationService {
         throw new Error('simulatePreSixxAccounts is unavailable on web')
     }
     async resetLegacyData(): Promise<void> {}
+    async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
+        return null
+    }
+    async setCompletedStepVersions(
+        _versions: MigrationStepVersions,
+    ): Promise<void> {}
 }

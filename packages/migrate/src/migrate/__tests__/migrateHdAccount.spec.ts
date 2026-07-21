@@ -57,6 +57,7 @@ const buildAccount = (overrides: Partial<LegacyAccount> = {}): LegacyAccount =>
         hdWalletId: 'wallet-1',
         ledger: null,
         joint: null,
+        authAddress: null,
         ...overrides,
     }) as LegacyAccount
 

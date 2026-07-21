@@ -132,5 +132,8 @@ export const createQuotes = async (
             ? transformDexSwapAsset(quote.pera_fee_asset)
             : undefined,
         transactionFees: toNullableDecimal(quote.transaction_fees),
+        // Client-stamped: the wire schema has no expiry, and the
+        // confirm-time freshness guard needs a reference point.
+        fetchedAt: Date.now(),
     }))
 }

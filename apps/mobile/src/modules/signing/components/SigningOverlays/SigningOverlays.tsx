@@ -11,8 +11,10 @@
  */
 
 import React, { useEffect, useRef } from 'react'
+import { AppState } from 'react-native'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
+    applyAppStateToHardwareSessions,
     isInteractiveSource,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -131,12 +133,30 @@ const useLedgerConnectionIssueDriver = () => {
     ])
 }
 
+/**
+ * Owns the `AppState` subscription for the hardware-signing backgrounding
+ * policy (PERA-4637). The app layer subscribes here — where react-native
+ * legitimately lives — and forwards each change to the signing package's
+ * pure `applyAppStateToHardwareSessions`, so the logic package stays free of
+ * react-native (which would otherwise force every signing dependent to parse
+ * react-native in its tests). Mounted once via the app-root SigningOverlays.
+ */
+const useHardwareBackgroundPolicyDriver = () => {
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', nextState =>
+            applyAppStateToHardwareSessions(nextState),
+        )
+        return () => subscription.remove()
+    }, [])
+}
+
 export const SigningOverlays = () => {
     useSignRequestDriver()
     useSigningCompletedDriver()
     useTransactionRequestFAQDriver()
     useLedgerSigningDriver()
     useLedgerConnectionIssueDriver()
+    useHardwareBackgroundPolicyDriver()
 
     return null
 }

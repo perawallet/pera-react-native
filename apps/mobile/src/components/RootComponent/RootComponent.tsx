@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
+import { useReplayNotificationMutes } from '@perawallet/wallet-core-messages'
 import { useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
@@ -104,7 +105,10 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
 }
 
 const DeviceRegistrar = ({ addresses }: { addresses: string[] }) => {
-    useDeviceRegistration(addresses)
+    const replayNotificationMutes = useReplayNotificationMutes()
+    useDeviceRegistration(addresses, {
+        onDeviceCreated: replayNotificationMutes,
+    })
     return null
 }
 

@@ -18,8 +18,11 @@ import { useWalletConnectStore } from '../../store'
 import { useWalletConnectSessionRequests } from '../useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import WalletConnect from '@perawallet/walletconnect'
-import { PERA_CLIENT_META } from '../../constants'
-import { WalletConnectInvalidNetworkError } from '../../errors'
+import { PERA_CLIENT_META, SESSION_REQUEST_TTL_MS } from '../../constants'
+import {
+    WalletConnectInvalidNetworkError,
+    WalletConnectSessionRequestExpiredError,
+} from '../../errors'
 import { AlgorandChainId } from '../../models'
 import { Networks, logger } from '@perawallet/wallet-core-shared'
 
@@ -28,7 +31,12 @@ vi.mock('../../store', () => ({
     useWalletConnectStore: vi.fn(),
 }))
 
-vi.mock('../useWalletConnectSessionRequests', () => ({
+// Partial mock: the hook is stubbed per-test, but `isSessionRequestFresh`
+// stays real so approveSession's TTL gate is exercised for real.
+vi.mock('../useWalletConnectSessionRequests', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('../useWalletConnectSessionRequests')
+    >()),
     useWalletConnectSessionRequests: vi.fn(),
 }))
 
@@ -73,6 +81,10 @@ vi.mock('@perawallet/walletconnect', () => {
                 connected: false,
                 clientId: options?.clientId || 'mock-client-id',
                 session: {},
+                // The real client opens its socket in the constructor;
+                // ensureConnectorReady fast-paths on this. Failure tests
+                // flip it to false to simulate a dead socket.
+                _transport: { connected: true },
             }
         }),
     }
@@ -86,6 +98,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     Network: String,
     logger: {
         debug: vi.fn(),
+        warn: vi.fn(),
         error: vi.fn(),
     },
     registerStore: vi.fn(),
@@ -564,8 +577,8 @@ describe('useWalletConnect', () => {
             const request = { chainId: 4160, permissions: {} } as any
             const addresses = ['addr1']
 
-            act(() => {
-                result.current.approveSession(
+            await act(async () => {
+                await result.current.approveSession(
                     'client-approve',
                     request,
                     addresses,
@@ -587,6 +600,61 @@ describe('useWalletConnect', () => {
             expect(updatedConnections[0].clientId).toBe('client-approve')
             expect(updatedConnections[0].connected).toBe(false) // from mock default
             // verify existingSession merge
+        })
+
+        it('does not persist the session when the socket cannot be revived', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            const connection = { clientId: 'client-dead' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            // Dead socket + no stored peer: revival is impossible, the
+            // approval must fail instead of silently queueing into the void.
+            mockConnectorInstance._transport.connected = false
+
+            await expect(
+                result.current.approveSession(
+                    'client-dead',
+                    { chainId: 4160, permissions: {} } as any,
+                    ['addr1'],
+                ),
+            ).rejects.toThrow()
+
+            expect(mockConnectorInstance.approveSession).not.toHaveBeenCalled()
+            expect(mockSetConnections).not.toHaveBeenCalled()
+        })
+
+        it('refuses to approve an expired session request without touching the connector', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            const connection = { clientId: 'client-expired' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+
+            const staleRequest = {
+                chainId: 4160,
+                permissions: {},
+                createdAt: Date.now() - SESSION_REQUEST_TTL_MS - 1,
+            } as any
+
+            await expect(
+                result.current.approveSession('client-expired', staleRequest, [
+                    'addr1',
+                ]),
+            ).rejects.toThrow(WalletConnectSessionRequestExpiredError)
+
+            expect(mockConnectorInstance.approveSession).not.toHaveBeenCalled()
+            expect(mockSetConnections).not.toHaveBeenCalled()
         })
     })
 
@@ -611,11 +679,48 @@ describe('useWalletConnect', () => {
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
                 .value
 
-            act(() => {
-                result.current.rejectSession('client-reject')
+            await act(async () => {
+                await result.current.rejectSession('client-reject')
             })
 
             expect(mockConnectorInstance.rejectSession).toHaveBeenCalled()
+            expect(mockSetConnections).toHaveBeenCalled()
+            const updatedConnections =
+                mockSetConnections.mock.calls[
+                    mockSetConnections.mock.calls.length - 1
+                ][0]
+            expect(updatedConnections).toHaveLength(0)
+        })
+
+        it('drops the request locally and surfaces the failure when reject delivery cannot revive the socket', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            const connection = { clientId: 'client-reject-dead' } as any
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance._transport.connected = false
+
+            await act(async () => {
+                await result.current.rejectSession('client-reject-dead')
+            })
+
+            // The user explicitly declined — never trap them behind a dead
+            // socket: local state is cleaned, and the user is told the dApp
+            // may not have heard.
+            expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).toHaveBeenCalled()
             expect(mockSetConnections).toHaveBeenCalled()
             const updatedConnections =
                 mockSetConnections.mock.calls[
@@ -650,8 +755,8 @@ describe('useWalletConnect', () => {
                 (WalletConnect as any).mock.results.length - 2
             ].value
 
-            act(() => {
-                result.current.rejectSession('client-multi-1')
+            await act(async () => {
+                await result.current.rejectSession('client-multi-1')
             })
 
             expect(mockConnectorInstance1.rejectSession).toHaveBeenCalled()
@@ -870,22 +975,25 @@ describe('useWalletConnect', () => {
             errorCallback(new Error('test error'))
         })
 
-        it('should throw when approving invalid session', () => {
+        it('should reject when approving invalid session', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
             )
-            expect(() => {
-                result.current.approveSession('non-existent', {} as any, [])
-            }).toThrow() // WalletConnectInvalidSessionError
+            await expect(
+                result.current.approveSession('non-existent', {} as any, []),
+            ).rejects.toThrow() // WalletConnectInvalidSessionError
         })
 
-        it('should throw when rejecting invalid session', () => {
+        it('surfaces the failure instead of throwing when rejecting an invalid session', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
             )
-            expect(() => {
-                result.current.rejectSession('non-existent')
-            }).toThrow() // WalletConnectInvalidSessionError
+            // Rejection is user-initiated cleanup — it never traps the user,
+            // even when the connector is gone.
+            await expect(
+                result.current.rejectSession('non-existent'),
+            ).resolves.toBeUndefined()
+            expect(mockSetConnectionError).toHaveBeenCalled()
         })
 
         it('should handle session_request error', async () => {

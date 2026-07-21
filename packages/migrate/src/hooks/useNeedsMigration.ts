@@ -17,6 +17,7 @@ import {
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { getPendingSteps } from '../migrate/stepVersions'
 import { useMigrationGateStore } from '../store'
 
 export type UseNeedsMigrationResult = {
@@ -63,13 +64,10 @@ export const useNeedsMigration = (): UseNeedsMigrationResult => {
         }
 
         const migration = getProvider().migration
-        Promise.all([
-            migration.hasLegacyData(),
-            migration.isMigrationComplete(),
-        ])
-            .then(([hasLegacyData, isMigrationComplete]) => {
+        Promise.all([migration.hasLegacyData(), getPendingSteps(migration)])
+            .then(([hasLegacyData, pendingSteps]) => {
                 useMigrationGateStore.getState().setStatus({
-                    needsMigration: hasLegacyData && !isMigrationComplete,
+                    needsMigration: hasLegacyData && pendingSteps.length > 0,
                 })
             })
             .catch(error => {

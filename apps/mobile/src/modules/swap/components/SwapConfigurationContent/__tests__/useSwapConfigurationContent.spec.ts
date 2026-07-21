@@ -16,23 +16,22 @@ import { useSwapConfigurationContent } from '../useSwapConfigurationContent'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 let mockSlippage: Nullable<string> = null
-let mockPreferredCurrency: string = 'ALGO'
+let mockIsLocalCurrencyInput = false
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwaps: () => ({ slippage: mockSlippage }),
-}))
-
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({ preferredCurrency: mockPreferredCurrency }),
+    useSwaps: () => ({
+        slippage: mockSlippage,
+        isLocalCurrencyInput: mockIsLocalCurrencyInput,
+    }),
 }))
 
 describe('useSwapConfigurationContent', () => {
     beforeEach(() => {
         mockSlippage = null
-        mockPreferredCurrency = 'ALGO'
+        mockIsLocalCurrencyInput = false
     })
 
-    it('initializes with defaults when no persisted slippage and ALGO preferred', () => {
+    it('initializes with defaults when no persisted slippage and local currency off', () => {
         const onApply = vi.fn()
         const { result } = renderHook(() =>
             useSwapConfigurationContent({ onApply }),
@@ -54,8 +53,8 @@ describe('useSwapConfigurationContent', () => {
         expect(result.current.slippageText).toBe('1.5')
     })
 
-    it('initializes useLocalCurrency true when preferred currency is fiat', () => {
-        mockPreferredCurrency = 'USD'
+    it('initializes useLocalCurrency from the swap-scoped store flag', () => {
+        mockIsLocalCurrencyInput = true
         const onApply = vi.fn()
         const { result } = renderHook(() =>
             useSwapConfigurationContent({ onApply }),
@@ -168,7 +167,7 @@ describe('useSwapConfigurationContent', () => {
     })
 
     it('toggling local currency off updates the emitted result', () => {
-        mockPreferredCurrency = 'USD'
+        mockIsLocalCurrencyInput = true
         const onApply = vi.fn()
         const { result } = renderHook(() =>
             useSwapConfigurationContent({ onApply }),

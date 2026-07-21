@@ -120,11 +120,15 @@ overrides:
   "@grpc/grpc-js@<1.9.16": 1.9.16
   "@xmldom/xmldom": 0.8.13
   bn.js@4: 4.12.3
-  brace-expansion@1: 1.1.13
-  brace-expansion@2: 2.0.3
-  brace-expansion@3: 3.0.2
-  brace-expansion@4: 5.0.6
-  brace-expansion@5: 5.0.6
+  # GHSA-3jxr-9vmj-r5cp (DoS via exponential expansion of consecutive
+  # non-expanding {} groups). No patched 3.x/4.x exists — the fix landed in
+  # 5.0.7 for the whole >=3.0.0 <5.0.7 range, so 3.x/4.x/5.x all pin to 5.0.7
+  # (brace-expansion's expand() API is stable across majors).
+  brace-expansion@1: 1.1.16
+  brace-expansion@2: 2.1.2
+  brace-expansion@3: 5.0.7
+  brace-expansion@4: 5.0.7
+  brace-expansion@5: 5.0.7
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -144,9 +148,10 @@ overrides:
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   postcss@<8.5.10: ">=8.5.10"
-  # GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7 (DoS / property shadowing).
-  # Was 7.5.8, now vulnerable. Pinned exact to the verified lowest patched 7.x.
-  protobufjs@7: 7.6.3
+  # GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7 (DoS / property shadowing) and
+  # GHSA-j3f2-48v5-ccww (DoS via infinite loop in .proto option parsing).
+  # Pinned exact to the verified lowest patched 7.x.
+  protobufjs@7: 7.6.5
   # Pinned to react-native 0.86.0's bundled renderer (19.2.3); see catalog note.
   react: 19.2.3
   react-dom: 19.2.3
@@ -158,6 +163,10 @@ overrides:
   react-native-nitro-modules: 0.35.9
   react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^3.0.0
+  # GHSA-395f-4hp3-45gv (quadratic-complexity DoS in parse()). Pinned exact to
+  # the verified lowest patched 1.9.0, NOT ">=", which would pull the unvetted
+  # 1.10.0.
+  shell-quote@<1.9.0: 1.9.0
   uuid@<14: 14.0.0
   # GHSA-96hv-2xvq-fx4p (memory-exhaustion DoS); 7.5.10 is now vulnerable.
   # Pinned exact (NOT ">="), since 7.5.11 is the last 7.x and ">=" would jump to 8.x.

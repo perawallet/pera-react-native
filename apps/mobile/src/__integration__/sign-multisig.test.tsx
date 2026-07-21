@@ -50,6 +50,7 @@ import {
     useAccountsStore,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
@@ -115,6 +116,17 @@ describe('Flow: multisig signing review (propose)', () => {
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
+        // The review sheet renders the sender's balance; with no balance row in
+        // the fresh DB, useAccountBalancesQuery self-heals with a background
+        // algod account read. Unhandled, that request escapes to the live node
+        // and its logging races vitest's worker teardown ("Closing rpc while
+        // onUserConsoleLog was pending"), failing CI.
+        server.use(
+            mockAlgodAccountInformation({
+                address: MSIG_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+        )
         useAccountsStore.getState().setAccounts([])
         // Seed the participant's key, then register both it and the multisig
         // account so the wallet can sign for the multisig.

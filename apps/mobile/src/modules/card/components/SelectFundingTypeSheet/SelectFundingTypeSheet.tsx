@@ -35,6 +35,7 @@ export const SelectFundingTypeSheet = () => {
         onSelectType,
         isAutoDisabled,
         isAutoFundingEnabled,
+        isLedgerAccount,
         isPending,
         onApply,
         onClose,
@@ -45,6 +46,7 @@ export const SelectFundingTypeSheet = () => {
     const autoHint = resolveAutoFundingHint(t, {
         isAutoFundingEnabled,
         isAutoUnavailable: isAutoDisabled,
+        isLedgerAccount,
     })
 
     return (

@@ -29,6 +29,7 @@ const initialState = {
     fromAsset: ALGO_ASSET_ID,
     toAsset: '31566704', // USDC mainnet
     slippage: null as Nullable<string>,
+    isLocalCurrencyInput: false,
 }
 
 export const useSwapsStore: UseBoundStore<
@@ -40,10 +41,13 @@ export const useSwapsStore: UseBoundStore<
             setFromAsset: (fromAsset: string) => set({ fromAsset }),
             setToAsset: (toAsset: string) => set({ toAsset }),
             setSlippage: (slippage: Nullable<string>) => set({ slippage }),
+            setIsLocalCurrencyInput: (value: boolean) =>
+                set({ isLocalCurrencyInput: value }),
             resetState: () =>
                 set(state => ({
                     ...initialState,
                     slippage: state.slippage,
+                    isLocalCurrencyInput: state.isLocalCurrencyInput,
                 })),
         }),
         {
@@ -51,6 +55,7 @@ export const useSwapsStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             partialize: state => ({
                 slippage: state.slippage,
+                isLocalCurrencyInput: state.isLocalCurrencyInput,
             }),
         },
     ),

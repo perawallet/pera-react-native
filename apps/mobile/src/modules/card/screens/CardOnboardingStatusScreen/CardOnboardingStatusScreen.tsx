@@ -36,6 +36,7 @@ export const CardOnboardingStatusScreen = () => {
         handleSelectFundingType,
         isAutoFundingUnavailable,
         isAutoFundingEnabled,
+        isLedgerAccount,
         isCreatingCard,
         handleCreatePeraCard,
         handleEnterDetails,
@@ -87,6 +88,7 @@ export const CardOnboardingStatusScreen = () => {
                         onSelectFundingType={handleSelectFundingType}
                         isAutoFundingUnavailable={isAutoFundingUnavailable}
                         isAutoFundingEnabled={isAutoFundingEnabled}
+                        isLedgerAccount={isLedgerAccount}
                     />
                 </PWView>
             </PWView>

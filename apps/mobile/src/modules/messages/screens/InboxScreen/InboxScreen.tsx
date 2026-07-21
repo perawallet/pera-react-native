@@ -11,13 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { useTheme } from '@rneui/themed'
 import { type InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { RefreshControl } from 'react-native-gesture-handler'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
-import { PWFlatList, PWScreen } from '@components/core'
+import { PWFlatList, PWRefreshControl, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
 import { useStyles } from './styles'
@@ -25,13 +23,13 @@ import { useInboxScreen } from './useInboxScreen'
 
 export const InboxScreen = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
 
     const {
         inboxItems,
         isPending,
         isRefetching,
+        isAwaitingRegistration,
         refetch,
         keyExtractor,
         handleInboxItemPress,
@@ -59,7 +57,7 @@ export const InboxScreen = () => {
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
                     <EmptyView
-                        isLoading={isPending}
+                        isLoading={isPending || isAwaitingRegistration}
                         style={styles.emptyView}
                         icon='inbox'
                         title={t('messages.inbox.empty_title')}
@@ -68,11 +66,10 @@ export const InboxScreen = () => {
                     />
                 }
                 refreshControl={
-                    <RefreshControl
-                        refreshing={isRefetching}
+                    <PWRefreshControl
+                        isRefreshing={isRefetching}
                         onRefresh={refetch}
-                        colors={[theme.colors.primary]}
-                        progressBackgroundColor={theme.colors.background}
+                        testID='inbox-refresh'
                     />
                 }
             />

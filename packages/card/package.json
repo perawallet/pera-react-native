@@ -18,8 +18,10 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@algorandfoundation/algokit-utils": "catalog:",
     "@babel/runtime": "catalog:",
     "@noble/hashes": "catalog:",
+    "algosdk": "catalog:",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",

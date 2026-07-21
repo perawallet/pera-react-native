@@ -16,6 +16,7 @@ import {
     type LegacyMigrationSourcePlatform,
     type MigrationSentinelValue,
     type MigrationService,
+    type MigrationStepVersions,
 } from '../migration'
 
 export const createEmptyLegacyMigrationData = (
@@ -64,6 +65,7 @@ export const createEmptyLegacyMigrationData = (
         mainnetDeviceId: null,
         testnetDeviceId: null,
         lastSeenNotificationId: null,
+        legacyFallbackDeviceId: null,
     },
     dismissedBanners: {
         bannerIds: [],
@@ -89,6 +91,7 @@ export class StubMigrationService implements MigrationService {
     private data: LegacyMigrationData
     private hasData: boolean
     private sentinel: MigrationSentinelValue | null = null
+    private stepVersions: MigrationStepVersions | null = null
 
     constructor(
         options: {
@@ -101,7 +104,6 @@ export class StubMigrationService implements MigrationService {
     }
 
     async hasLegacyData(): Promise<boolean> {
-        if (this.sentinel !== null) return false
         return this.hasData
     }
 
@@ -121,6 +123,7 @@ export class StubMigrationService implements MigrationService {
 
     async clearMigrationComplete(): Promise<void> {
         this.sentinel = null
+        this.stepVersions = null
     }
 
     async getMigrationPlans() {
@@ -134,10 +137,25 @@ export class StubMigrationService implements MigrationService {
     async resetLegacyData() {
         this.hasData = false
         this.sentinel = null
+        this.stepVersions = null
+    }
+
+    async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
+        return this.stepVersions
+    }
+
+    async setCompletedStepVersions(
+        versions: MigrationStepVersions,
+    ): Promise<void> {
+        this.stepVersions = versions
     }
 
     get migrationSentinel(): MigrationSentinelValue | null {
         return this.sentinel
+    }
+
+    get migrationStepVersions(): MigrationStepVersions | null {
+        return this.stepVersions
     }
 }
 

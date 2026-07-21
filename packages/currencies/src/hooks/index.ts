@@ -13,4 +13,5 @@
 export * from './useAlgoUsdPriceQuery'
 export * from './useCurrenciesQuery'
 export * from './useCurrency'
+export * from './useLocalCurrency'
 export * from './usePreferredCurrencyPriceQuery'

@@ -22,5 +22,11 @@ export const useStyles = makeStyles(theme => {
             flexGrow: 1,
             backgroundColor: theme.colors.background,
         },
+        loadingContainer: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.background,
+        },
     }
 })
