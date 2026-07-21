@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
+import {
+    isQuantumSignedTransaction,
+    type PeraSignedTransaction,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '@perawallet/wallet-core-swaps'
@@ -87,7 +88,17 @@ export const requestSwapSignatures = (
             groupContext,
             sourceMetadata: source,
             approve: async signed => {
-                resolve(signed)
+                // Swap signers are never quantum accounts today (no routing
+                // path selects one for a swap), and this single full-group
+                // sign never pads null slots — both filters are defensive
+                // narrowing back to the swap module's plain-signature
+                // contract, not an expected runtime case.
+                resolve(
+                    signed.filter(
+                        (tx): tx is PeraSignedTransaction =>
+                            tx !== null && !isQuantumSignedTransaction(tx),
+                    ),
+                )
             },
             reject: async () => {
                 reject(new SwapUserRejectedError())

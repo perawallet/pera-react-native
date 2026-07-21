@@ -119,6 +119,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
         mapToDisplayableTransaction: (tx: {
             sender?: { toString?: () => string }
         }) => ({ sender: tx?.sender?.toString?.() ?? 'SENDER' }),
+        // Swap signers are never quantum accounts (see swapExecutionHelpers'
+        // approve filter) — the real predicate checks for `pqSignedBytes`,
+        // which none of this spec's plain signed-txn fixtures carry.
+        isQuantumSignedTransaction: (tx: unknown) =>
+            (tx as { pqSignedBytes?: unknown })?.pqSignedBytes instanceof
+            Uint8Array,
     }
 })
 

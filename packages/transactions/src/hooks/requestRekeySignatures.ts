@@ -15,7 +15,7 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { RekeyError } from '../errors'
 
 import type {
-    PeraSignedTransaction,
+    PeraSignedTxnResult,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
@@ -45,7 +45,7 @@ export const requestRekeySignatures = (
     addSignRequest: AddSignRequestFn,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
-): Promise<PeraSignedTransaction[]> =>
+): Promise<PeraSignedTxnResult[]> =>
     new Promise((resolve, reject) => {
         // Safety net: if the signing pipeline ever drops the request without
         // invoking approve / reject / error, the Promise would hang forever
@@ -79,7 +79,19 @@ export const requestRekeySignatures = (
             txs: unsignedTxs,
             sourceMetadata: source,
             approve: async signed => {
-                settle(() => resolve(signed))
+                // Rekey is a single full-group headless sign (no per-slot
+                // padding), so every entry is expected to be present — the
+                // null filter is defensive only. Quantum carriers are kept:
+                // undoing a rekey to a quantum auth signs via the quantum
+                // strategy, and submitAndAutoRefresh's carrier-aware encoder
+                // needs the `QuantumSignedTransaction` unchanged.
+                settle(() =>
+                    resolve(
+                        signed.filter(
+                            (tx): tx is PeraSignedTxnResult => tx !== null,
+                        ),
+                    ),
+                )
             },
             reject: async () => {
                 settle(() => reject(new RekeyError('user_rejected')))

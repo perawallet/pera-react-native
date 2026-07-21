@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import {
     type Arc0001ResolveResult,
-    type PeraSignedTransaction,
+    type PeraSignedTxnResult,
     type PeraTransaction,
     useAlgorandClient,
     useMinimumFeeConfig,
@@ -186,7 +186,7 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 signerOverrides:
                     signerOverrides.size > 0 ? signerOverrides : undefined,
                 feeAdjustments,
-                approve: async (signed: Nullable<PeraSignedTransaction>[]) => {
+                approve: async (signed: Nullable<PeraSignedTxnResult>[]) => {
                     const result: Nullable<string>[] = new Array(
                         totalLength,
                     ).fill(null)
