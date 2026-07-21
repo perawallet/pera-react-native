@@ -66,8 +66,11 @@ describe('createWalletConnectTransactionSource', () => {
 
 // PERA-4511: PQ-aware minimum fees were added to Pera-initiated sources
 // (createPaymentSource, createExpressSendSource) via resolveMinFeeForSender.
-// WalletConnect/deeplink fee handling is explicitly out of scope (owned by
-// PQ-017) — this pins that dApp-set fees keep flowing through untouched.
+// This legacy DataSource layer intentionally stays pass-through — PQ-017's
+// quantum fee override lives one level up, in the runtime enqueue path
+// (`useEnqueueArc0001SignRequest` → `applyQuantumFeeOverride`), where the
+// signer set and suggested params are available. This pins that the
+// DataSource still forwards dApp-set fees untouched.
 describe('createWalletConnectTransactionSource - fee pass-through regression', () => {
     test('passes dApp-set fees through unchanged (PQ fee resolution does not apply to external sources)', async () => {
         const source = createWalletConnectTransactionSource()

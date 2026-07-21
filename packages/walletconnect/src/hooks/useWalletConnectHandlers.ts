@@ -517,7 +517,13 @@ export const useWalletConnectHandlers = () => {
                 },
             )
 
-            enqueueSignRequest(resolved, {
+            // enqueueSignRequest is async (PQ-017 may fetch suggested params
+            // for a quantum signer), but this handler must stay synchronous:
+            // the WC listener wraps it in a sync try/catch and unit tests
+            // assert its validate/resolve throws propagate synchronously.
+            // The enqueue handles its own failures via `respondWithError`, so
+            // fire-and-forget is safe here.
+            void enqueueSignRequest(resolved, {
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
                 sourceMetadata: connector.session?.peerMeta ?? undefined,

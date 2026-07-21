@@ -14,16 +14,29 @@ import { useCallback } from 'react'
 import {
     type Arc0001ResolveResult,
     type PeraSignedTransaction,
+    type PeraTransaction,
+    useAlgorandClient,
+    useMinimumFeeConfig,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    getSignerFor,
+    isQuantumAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import {
     encodeToBase64,
     generateOrderedUniqueId,
+    toError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 import type { RejectReason, SourceType } from '../pipeline/types'
 import type { SignRequestSource, TransactionSignRequest } from '../models'
+import {
+    applyQuantumFeeOverride,
+    type QuantumFeeAdjustment,
+} from '../pipeline/sources'
 
 import { useSigningRequest } from './useSigningRequest'
 
@@ -50,19 +63,30 @@ export type ExternalSignTxnTransport = {
 export type EnqueueArc0001SignRequest = (
     resolved: Arc0001ResolveResult,
     transport: ExternalSignTxnTransport,
-) => void
+) => Promise<void>
 
 // Bridges an ARC-0001 resolver result to the signing pipeline. Transports
 // (WC, webview, future deeplinks) hand in the resolved subset plus a
 // response interface; this hook builds the TransactionSignRequest,
 // short-circuits when nothing is signable, and pads the eventual result
 // back to the original length per the spec's slot-order contract.
+//
+// PQ-017: when a quantum account is among the signers, dApp-set fees below
+// the post-quantum minimum are raised here (see applyQuantumFeeOverride)
+// and the group is re-derived so what the pipeline signs and algod verifies
+// agree. Non-quantum requests take a fast path that fetches no suggested
+// params and leaves every field byte-identical to what the resolver
+// produced.
 export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
     const { addSignRequest, removeSignRequest } = useSigningRequest()
-    const { encodeSignedTransaction } = useTransactionEncoder()
+    const { encodeSignedTransaction, encodeTransactionRaw } =
+        useTransactionEncoder()
+    const accounts = useAllAccounts()
+    const algokit = useAlgorandClient()
+    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     return useCallback(
-        (resolved, transport) => {
+        async (resolved, transport) => {
             const { allDecoded, toSign, signerOverrides } = resolved
             const totalLength = allDecoded.length
 
@@ -74,6 +98,75 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
             }
 
             const indicesToSign = toSign.map(t => t.index)
+
+            // Fast-path precheck: does any signable slot resolve to a quantum
+            // signer? Only then do we fetch suggested params or touch fees —
+            // non-quantum requests stay byte-identical and add no network
+            // traffic.
+            const hasQuantumSigner = toSign.some((t, i) => {
+                const authorizer =
+                    signerOverrides.get(i) ?? t.decoded.sender.toString()
+                const signer = getSignerFor(authorizer, accounts)
+                return signer !== null && isQuantumAccount(signer)
+            })
+
+            // Defaults reproduce today's exact field values (the fast path):
+            // full payload as groupContext, the signable subset as txs, and
+            // the dApp's original wire bytes passed through verbatim.
+            let groupContext: PeraTransaction[] = allDecoded
+            let txs: PeraTransaction[] = toSign.map(t => t.decoded)
+            let rawTransactionsBase64 = toSign.map(t => t.walletTxn.txn)
+            let feeAdjustments: QuantumFeeAdjustment[] | undefined
+
+            if (hasQuantumSigner) {
+                // Never block the request on a params fetch: offline falls
+                // back to 0, so only the remote-config base applies.
+                let suggestedMinFee = 0n
+                try {
+                    suggestedMinFee = BigInt(
+                        (await algokit.getSuggestedParams()).minFee,
+                    )
+                } catch {
+                    suggestedMinFee = 0n
+                }
+
+                let override: ReturnType<typeof applyQuantumFeeOverride>
+                try {
+                    override = applyQuantumFeeOverride({
+                        transactions: allDecoded,
+                        signableIndices: indicesToSign,
+                        signerOverrides:
+                            signerOverrides.size > 0
+                                ? signerOverrides
+                                : undefined,
+                        accounts,
+                        suggestedMinFee,
+                        configMinTxnFee: minTxnFee,
+                        pqMultiplier,
+                    })
+                } catch (err) {
+                    // Incoming group was invalid as received (stale/tampered
+                    // group ID). Surface it to the dApp; never enqueue.
+                    transport.respondWithError(toError(err))
+                    return
+                }
+
+                if (override.adjustments.length > 0) {
+                    groupContext = override.transactions
+                    txs = indicesToSign.map(i => override.transactions[i])
+                    // Re-encode the signable subset from the modified group so
+                    // the wire bytes carry the raised fees and recomputed grp.
+                    // encodeTransactionRaw round-trips the resolver's decode
+                    // (see the spec's round-trip assertion).
+                    rawTransactionsBase64 = indicesToSign.map(i =>
+                        encodeToBase64(
+                            encodeTransactionRaw(override.transactions[i]),
+                        ),
+                    )
+                    feeAdjustments = override.adjustments
+                }
+            }
+
             const signRequest: TransactionSignRequest = {
                 id: generateOrderedUniqueId(),
                 type: 'transactions',
@@ -81,17 +174,18 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 sourceType: transport.sourceType,
                 transportId: transport.transportId,
                 sourceMetadata: transport.sourceMetadata,
-                txs: toSign.map(t => t.decoded),
+                txs,
                 // Full payload so the pipeline can recompute the group hash;
                 // `txs` is just the signable subset.
-                groupContext: allDecoded,
+                groupContext,
                 // Index map back into `groupContext` so the signing UI can
                 // render the full atomic group while marking which slots
                 // the wallet will sign.
                 signableIndices: indicesToSign,
-                rawTransactionsBase64: toSign.map(t => t.walletTxn.txn),
+                rawTransactionsBase64,
                 signerOverrides:
                     signerOverrides.size > 0 ? signerOverrides : undefined,
+                feeAdjustments,
                 approve: async (signed: Nullable<PeraSignedTransaction>[]) => {
                     const result: Nullable<string>[] = new Array(
                         totalLength,
@@ -140,6 +234,15 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
 
             addSignRequest(signRequest)
         },
-        [addSignRequest, removeSignRequest, encodeSignedTransaction],
+        [
+            addSignRequest,
+            removeSignRequest,
+            encodeSignedTransaction,
+            encodeTransactionRaw,
+            accounts,
+            algokit,
+            minTxnFee,
+            pqMultiplier,
+        ],
     )
 }
