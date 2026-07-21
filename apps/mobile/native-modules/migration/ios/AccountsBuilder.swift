@@ -64,7 +64,12 @@ enum AccountsBuilder {
         m.putString("hdWalletId", info.hdWalletAddressDetail?.walletId)
         m.putRaw("ledger", composeLedger(info.ledgerDetail))
         m.putRaw("joint", composeJoint(info.jointAccountDetail))
-        m.putString("authAddress", info.rekeyDetail?.keys.first)
+        // Pera 6 accumulated one rekeyDetail entry per historical rekey
+        // target, so multi-entry maps exist — and Dictionary key order is
+        // nondeterministic, so `.first` could emit a different address on
+        // every read. Pick the smallest key for a stable value; the syncer
+        // overwrites it with the on-chain auth address on first tick.
+        m.putString("authAddress", info.rekeyDetail?.keys.min())
         return m.dict
     }
 

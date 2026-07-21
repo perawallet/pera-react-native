@@ -163,6 +163,8 @@ const runMigrationWithLegacyData = async (
     isRerun: boolean,
 ): Promise<MigrationRunResult> => {
     const accountsPending = pending.includes('accounts')
+    // Sound by construction: ExtrasMigrationStepName is defined as
+    // Exclude<MigrationStepName, 'accounts'>.
     const pendingExtras = pending.filter(
         (step): step is ExtrasMigrationStepName => step !== 'accounts',
     )
@@ -319,7 +321,7 @@ const recordSucceededSteps = async (
         await migration.setCompletedStepVersions(next)
     } catch (err) {
         logger.error('[Migration] failed to record step versions', {
-            error: err,
+            error: toError(err),
         })
     }
 }

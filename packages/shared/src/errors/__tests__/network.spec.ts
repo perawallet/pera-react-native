@@ -125,6 +125,22 @@ describe('PeraNetworkError.fromKyErrorWithBody', () => {
         expect(result.kind).toBe('server')
         expect(result.backendType).toBeUndefined()
     })
+
+    it('leaves backendType unset for a JSON body without a type field', async () => {
+        const error = await PeraNetworkError.fromKyErrorWithBody(
+            makeHttpErrorWithBody(400, { message: 'bad request' }),
+        )
+        expect(error.kind).toBe('client')
+        expect(error.backendType).toBeUndefined()
+    })
+
+    it('leaves backendType unset for a non-string type field', async () => {
+        const error = await PeraNetworkError.fromKyErrorWithBody(
+            makeHttpErrorWithBody(400, { type: 42 }),
+        )
+        expect(error.kind).toBe('client')
+        expect(error.backendType).toBeUndefined()
+    })
 })
 
 describe('getNetworkErrorMessageKeys', () => {

@@ -74,6 +74,7 @@ enum FixtureIdentities {
     static let mainnetDeviceId = "ios-sim-mainnet-device-id"
     static let testnetDeviceId = "ios-sim-testnet-device-id"
     static let notificationUserId = "ios-sim-notification-user-id"
+    static let legacyFallbackDeviceId = "ios-sim-legacy-fallback-device-id"
 
     // MARK: - Auth
 

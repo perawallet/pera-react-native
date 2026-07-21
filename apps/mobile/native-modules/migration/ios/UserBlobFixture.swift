@@ -23,6 +23,7 @@ enum UserBlobFixture {
             "deviceIDOnMainnet": FixtureIdentities.mainnetDeviceId,
             "deviceIDOnTestnet": FixtureIdentities.testnetDeviceId,
             "notificationUserId": FixtureIdentities.notificationUserId,
+            "deviceId": FixtureIdentities.legacyFallbackDeviceId,
         ]
         return try JSONSerialization.data(withJSONObject: user, options: [])
     }

@@ -84,7 +84,6 @@ export const runMigrationLoop = async (
                 removeAccountFromStore(account.address)
                 existingAddresses.delete(account.address)
                 removedForReconcile = existing
-                // fall through to the import path below
             } else {
                 if (
                     existing?.type === AccountTypes.watch &&
@@ -111,6 +110,21 @@ export const runMigrationLoop = async (
                 createHDWalletKey: args.createHDWalletKey,
                 hasSeedWithEntropy: args.hasSeedWithEntropy,
             })
+            if (
+                account.authAddress !== null &&
+                created.rekeyAddress === undefined
+            ) {
+                // Only buildWatchAccount carries the legacy authAddress →
+                // rekeyAddress mirror; key-bearing imports (incl. the
+                // watch-reconcile reimport above) come back without it. Apply
+                // it here so a rekeyed account is never presented as
+                // directly-signable in the window before the first sync
+                // writes the authoritative per-network value.
+                applyRekeyAddressToStoreAccount(
+                    created.address,
+                    account.authAddress,
+                )
+            }
             existingAddresses.add(created.address)
             pendingMetadata.push({ created, legacy: account })
             summary.imported += 1

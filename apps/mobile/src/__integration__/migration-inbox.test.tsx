@@ -204,7 +204,6 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
     it(
         'migrated accounts (incl. rekeyed) appear in the inbox request and ASA rows render',
         async () => {
-            // Arrange
             const inboxBodies: Array<{ addresses: string[] }> = []
             let putDeviceId: string | null = null
 
@@ -246,14 +245,14 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
                 }),
             })
 
-            // Act — mount the migration splash; it runs `runMigration`, which
+            // Mounting the migration splash runs `runMigration`, which
             // imports the algo25 key, adds the rekeyed watch account, and
             // writes the legacy device id. The harness then swaps to the
             // device registrar + inbox.
             renderWithNavigation(MigratedUserApp, 'MigratedUserApp')
 
-            // Assert — the device PUT carried the *legacy* id (the migrated
-            // device id was reused, not a freshly minted one).
+            // The device PUT carried the *legacy* id (the migrated device id
+            // was reused, not a freshly minted one).
             await waitFor(() => expect(putDeviceId).toBe(LEGACY_DEVICE_ID), {
                 timeout: INTEGRATION_TIMEOUT,
             })

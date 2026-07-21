@@ -406,6 +406,52 @@ describe('runMigrationLoop', () => {
         ).toHaveLength(1)
     })
 
+    it('mirrors the legacy authAddress onto a key-bearing import that lacks it', async () => {
+        accountsStoreMock.accounts = [watchAccount('UPGRADEME')]
+        const legacy = buildAccount({
+            address: 'UPGRADEME',
+            type: 'standard',
+            secretKey: new Uint8Array(64).fill(3),
+            authAddress: 'AUTH',
+        })
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'UPGRADEME',
+        } as never)
+
+        const result = await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(result.imported).toBe(1)
+        expect(applyRekeyAddressToStoreAccount).toHaveBeenCalledWith(
+            'UPGRADEME',
+            'AUTH',
+        )
+    })
+
+    it('leaves rekeyAddress alone when the import already carries the mirror', async () => {
+        const legacy = buildAccount({
+            address: 'WATCHED',
+            type: 'watch',
+            secretKey: null,
+            authAddress: 'AUTH',
+        })
+        vi.mocked(migrateLegacyAccount).mockResolvedValue({
+            address: 'WATCHED',
+            rekeyAddress: 'AUTH',
+        } as never)
+
+        await runMigrationLoop({
+            ...buildDeps(),
+            accounts: [legacy],
+            hdWallets: [],
+        })
+
+        expect(applyRekeyAddressToStoreAccount).not.toHaveBeenCalled()
+    })
+
     it('restores the removed watch account when the reconciling reimport throws', async () => {
         const watch = watchAccount('RECONCILE')
         accountsStoreMock.accounts = [watch]

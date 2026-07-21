@@ -11,7 +11,10 @@
  */
 
 import { logger } from '@perawallet/wallet-core-shared'
-import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
+import type {
+    LegacyMigrationData,
+    MigrationStepName,
+} from '@perawallet/wallet-extension-platform'
 import { migrateAuth, type AuthMigrationResult } from './migrateAuth'
 import { migrateContacts, type ContactMigrationResult } from './migrateContacts'
 import { migrateDeviceIdentifiers } from './migrateDevice'
@@ -49,16 +52,10 @@ export type ExtrasMigrationStepFailure = {
     reason: string
 }
 
-export type ExtrasMigrationStepName =
-    | 'preferences'
-    | 'swaps'
-    | 'deviceIdentifiers'
-    | 'contacts'
-    | 'notifications'
-    | 'auth'
-    | 'walletConnect'
-    | 'passkeys'
-    | 'stashed'
+// Defined as the complement of 'accounts' (rather than a hand-listed union)
+// so a step added to MigrationStepName can never silently fall outside the
+// pending-extras filter in runMigration.
+export type ExtrasMigrationStepName = Exclude<MigrationStepName, 'accounts'>
 
 export const EXTRAS_STEP_NAMES: ExtrasMigrationStepName[] = [
     'preferences',

@@ -196,6 +196,40 @@ describe('services/device/hooks', () => {
         expect(registrationResult).toEqual({ createdNew: true })
     })
 
+    test('useDevice rejects when the create response carries no id', async () => {
+        vi.resetModules()
+        mockCreateDevice.mockResolvedValue({})
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', null)
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+
+        // Rejecting (instead of storing a null id) keeps the registration on
+        // the pending/retry path rather than reporting a healed device.
+        await expect(
+            result.current.registerDevice(['account-1']),
+        ).rejects.toThrow('Device create response carried no id')
+        expect(store.current.deviceIDs.get('mainnet') ?? null).toBeNull()
+    })
+
     test('useDevice updates existing device if ID exists', async () => {
         vi.resetModules()
 

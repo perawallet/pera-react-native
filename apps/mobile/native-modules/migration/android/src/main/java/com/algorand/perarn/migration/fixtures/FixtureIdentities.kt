@@ -30,4 +30,8 @@ internal object FixtureIdentities {
     const val EXTERNAL_PARTICIPANT_ADDRESS = FixtureCrypto.EXTERNAL_PARTICIPANT_ADDRESS
 
     const val SEED_1_ID = 1
+
+    const val MAINNET_DEVICE_ID = "android-sim-mainnet-device-id"
+    const val TESTNET_DEVICE_ID = "android-sim-testnet-device-id"
+    const val NOTIFICATION_USER_ID = "android-sim-notification-user-id"
 }

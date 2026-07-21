@@ -311,13 +311,10 @@ describe('classifyLegacyAccountRoute', () => {
 
 describe('migrateLegacyAccount with authAddress', () => {
     it('migrates a keyless account with authAddress as a rekeyed watch account', async () => {
-        // Import the real implementation to test the actual behavior
         const { buildWatchAccount: realBuildWatchAccount } =
             await vi.importActual<typeof import('../buildKeylessAccount')>(
                 '../buildKeylessAccount',
             )
-
-        // Route the module mock to the real implementation for this test
         vi.mocked(buildWatchAccount).mockImplementationOnce(
             realBuildWatchAccount,
         )

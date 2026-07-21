@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { createElement, type ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -22,9 +24,12 @@ const { notificationsStoreMock, deviceStoreMock, updateNotificationEnabled } =
         updateNotificationEnabled: vi.fn(),
     }))
 
-vi.mock('@perawallet/wallet-core-messages', () => ({
-    useNotificationsStore: { getState: () => notificationsStoreMock },
+vi.mock('../../api/notifications', () => ({
     updateNotificationEnabled,
+}))
+
+vi.mock('../../store', () => ({
+    useNotificationsStore: { getState: () => notificationsStoreMock },
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -43,11 +48,27 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 import { useReplayNotificationMutes } from '../useReplayNotificationMutes'
 
 describe('useReplayNotificationMutes', () => {
+    let queryClient: QueryClient
+    let wrapper: ({
+        children,
+    }: {
+        children: ReactNode
+    }) => ReturnType<typeof createElement>
+
     beforeEach(() => {
         vi.clearAllMocks()
         notificationsStoreMock.notificationDisabledAccounts = []
         deviceStoreMock.deviceIDs = new Map()
         updateNotificationEnabled.mockResolvedValue({})
+        queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        wrapper = ({ children }) =>
+            createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
     })
 
     it('PATCHes receive_notifications=false for every locally muted account', async () => {
@@ -56,7 +77,9 @@ describe('useReplayNotificationMutes', () => {
             'MUTED2',
         ]
         deviceStoreMock.deviceIDs = new Map([['mainnet', 'DEV-2']])
-        const { result } = renderHook(() => useReplayNotificationMutes())
+        const { result } = renderHook(() => useReplayNotificationMutes(), {
+            wrapper,
+        })
 
         act(() => result.current('mainnet'))
 
@@ -76,9 +99,63 @@ describe('useReplayNotificationMutes', () => {
         })
     })
 
+    it('resets the badge and list caches once after a successful replay', async () => {
+        notificationsStoreMock.notificationDisabledAccounts = ['MUTED1']
+        deviceStoreMock.deviceIDs = new Map([['mainnet', 'DEV-2']])
+        const resetSpy = vi.spyOn(queryClient, 'resetQueries')
+        const { result } = renderHook(() => useReplayNotificationMutes(), {
+            wrapper,
+        })
+
+        act(() => result.current('mainnet'))
+
+        await waitFor(() => {
+            expect(resetSpy).toHaveBeenCalledWith({
+                queryKey: [
+                    'notifications',
+                    'message-status',
+                    { deviceID: 'DEV-2', network: 'mainnet' },
+                ],
+            })
+            expect(resetSpy).toHaveBeenCalledWith({
+                queryKey: [
+                    'notifications',
+                    'notification-status',
+                    { deviceID: 'DEV-2', network: 'mainnet' },
+                ],
+            })
+            expect(resetSpy).toHaveBeenCalledWith({
+                queryKey: [
+                    'notifications',
+                    'listv2',
+                    { deviceID: 'DEV-2', network: 'mainnet' },
+                ],
+            })
+        })
+    })
+
+    it('does not reset any caches when every replay call fails', async () => {
+        updateNotificationEnabled.mockRejectedValue(new Error('boom'))
+        notificationsStoreMock.notificationDisabledAccounts = ['MUTED1']
+        deviceStoreMock.deviceIDs = new Map([['mainnet', 'DEV-2']])
+        const resetSpy = vi.spyOn(queryClient, 'resetQueries')
+        const { result } = renderHook(() => useReplayNotificationMutes(), {
+            wrapper,
+        })
+
+        act(() => result.current('mainnet'))
+
+        await waitFor(() =>
+            expect(updateNotificationEnabled).toHaveBeenCalled(),
+        )
+        expect(resetSpy).not.toHaveBeenCalled()
+    })
+
     it('does nothing when nothing is muted', () => {
         notificationsStoreMock.notificationDisabledAccounts = []
-        const { result } = renderHook(() => useReplayNotificationMutes())
+        const { result } = renderHook(() => useReplayNotificationMutes(), {
+            wrapper,
+        })
 
         act(() => result.current('mainnet'))
 
@@ -88,7 +165,9 @@ describe('useReplayNotificationMutes', () => {
     it('does nothing when there is no device id for the network', () => {
         notificationsStoreMock.notificationDisabledAccounts = ['MUTED1']
         deviceStoreMock.deviceIDs = new Map()
-        const { result } = renderHook(() => useReplayNotificationMutes())
+        const { result } = renderHook(() => useReplayNotificationMutes(), {
+            wrapper,
+        })
 
         act(() => result.current('mainnet'))
 
@@ -100,7 +179,9 @@ describe('useReplayNotificationMutes', () => {
         updateNotificationEnabled.mockRejectedValueOnce(new Error('boom'))
         notificationsStoreMock.notificationDisabledAccounts = ['MUTED1']
         deviceStoreMock.deviceIDs = new Map([['mainnet', 'DEV-2']])
-        const { result } = renderHook(() => useReplayNotificationMutes())
+        const { result } = renderHook(() => useReplayNotificationMutes(), {
+            wrapper,
+        })
 
         act(() => result.current('mainnet'))
 

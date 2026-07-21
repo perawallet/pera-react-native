@@ -70,21 +70,27 @@ export const useDevice = () => {
             const result = await createDevice({
                 data: payload,
             })
+            if (!result.id) {
+                // Storing null would report this registration as healed
+                // (createdNew fires mute replay) while
+                // useIsDeviceRegistrationPending stays true forever. Fail the
+                // attempt instead so the reconnect/foreground retry re-runs it.
+                throw new Error('Device create response carried no id')
+            }
             if (inFlightIdRef.current === attemptId) {
-                setDeviceID(targetNetwork, result.id ?? null)
+                setDeviceID(targetNetwork, result.id)
             }
         },
         [buildPayload, createDevice, setDeviceID],
     )
 
-    // `createdNew` tells callers whether this attempt actually created a
-    // fresh device record (no prior id, or a recreate fallback) versus a
-    // clean PUT against an existing one. Consumers use it to know when a
-    // backend-side device record started from scratch — e.g. to replay
-    // locally-migrated notification mute preferences, which the backend
-    // otherwise defaults to "notifying" for a brand-new device row.
-
-    // Single-attempt registration. Transient retries (5xx, network errors) are
+    // Single-attempt registration. The returned `createdNew` tells callers
+    // whether this attempt created a fresh device record (no prior id, or a
+    // recreate fallback) versus a clean PUT against an existing one — e.g. to
+    // replay locally-migrated notification mute preferences, which the
+    // backend otherwise defaults to "notifying" for a brand-new device row.
+    //
+    // Transient retries (5xx, network errors) are
     // handled by ky inside the shared query-client; layering another retry
     // loop here would compound to up to 6 requests per call.
     //
