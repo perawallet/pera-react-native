@@ -203,14 +203,29 @@ export class ApprovalWindowBridge implements ApprovalOpener {
     // popup gets no ?requestId, so it discovers the pending approval via
     // get-current-approval; the window fallback carries the id on its URL.
     private async openViaPopupOrWindow(requestId: string): Promise<void> {
+        // At most one popup-surface approval may be in flight at a time —
+        // get-current-approval has no requestId to disambiguate by, so a
+        // second one would race the first for the popup. Route it straight
+        // to the window instead.
+        const popupInFlight = [...this.pending.values()].some(
+            e => e.surface === 'popup',
+        )
+        if (popupInFlight) {
+            await this.openApprovalWindow(requestId)
+            return
+        }
+        // Mark 'popup' before the await settles (not after) so a second
+        // request racing in while tryOpenActionPopup is still in flight
+        // also sees this one as occupying the popup, and so
+        // get-current-approval can find this entry the instant it's asked.
+        const entry = this.pending.get(requestId)
+        if (entry) entry.surface = 'popup'
         // Fall back to the dedicated window only if openPopup is unavailable
         // (older Chrome) or the browser refuses it (e.g. no user gesture).
         const usedPopup = await this.tryOpenActionPopup()
-        const entry = this.pending.get(requestId)
-        if (usedPopup) {
-            if (entry) entry.surface = 'popup'
-        } else {
-            if (entry) entry.surface = 'window'
+        if (!usedPopup) {
+            const e = this.pending.get(requestId)
+            if (e) e.surface = 'window'
             await this.openApprovalWindow(requestId)
         }
     }
@@ -282,13 +297,13 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         }
         if (msg.kind === 'get-current-approval') {
             // No requestId: the toolbar popup discovers whichever approval is
-            // pending — enable OR sign (both now open in the toolbar popup).
-            // Keep the most recently added if more than one is in flight (a
-            // sign always follows a resolved enable, so in practice there's
-            // exactly one).
+            // pending. openViaPopupOrWindow guarantees at most one
+            // popup-surface entry exists at a time, so this is unambiguous
+            // — a concurrent request that got routed to the window instead
+            // (surface: 'window') must be skipped here.
             let current: PendingApproval | null = null
             for (const e of this.pending.values()) {
-                current = e.approval
+                if (e.surface === 'popup') current = e.approval
             }
             sendResponse(current)
             return true

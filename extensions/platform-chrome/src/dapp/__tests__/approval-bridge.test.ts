@@ -769,6 +769,87 @@ describe('ApprovalWindowBridge', () => {
         expect(await decision).toEqual({ error: 'declined' })
     })
 
+    it('routes a second concurrent request to the window while a popup-surface approval is in flight, and clears once that approval settles', async () => {
+        const { chromeLike, created, openPopup, fireMessage } = makeChrome(
+            undefined,
+            'resolve',
+        )
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        // A opens via the popup path.
+        const decisionA = bridge.openEnable({
+            requestId: 'race-a',
+            origin: 'https://a.com',
+        })
+        await flush()
+        expect(openPopup).toHaveBeenCalledTimes(1)
+        expect(created.length).toBe(0)
+
+        // B arrives from a different origin while A is still pending — it
+        // must not contend for the popup.
+        const decisionB = bridge.openSignTransactions({
+            requestId: 'race-b',
+            origin: 'https://b.com',
+            txns: [{}],
+            approvedAddresses: ['B'],
+        })
+        await flush()
+        expect(openPopup).toHaveBeenCalledTimes(1)
+        expect(created.length).toBe(1)
+        expect(created[0].url).toContain('approval.html?requestId=race-b')
+
+        // get-current-approval (the popup's own lookup) must still resolve
+        // to A, not the window-bound B.
+        const current = await fireMessage(
+            { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+            trustedSender,
+        )
+        expect(current).toMatchObject({ kind: 'enable', requestId: 'race-a' })
+
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-approval',
+                requestId: 'race-a',
+                approvedAddresses: ['A'],
+            },
+            trustedSender,
+        )
+        expect(await decisionA).toEqual({ approvedAddresses: ['A'] })
+
+        // A has settled, so the popup path is free again for a new request.
+        const decisionC = bridge.openEnable({
+            requestId: 'race-c',
+            origin: 'https://c.com',
+        })
+        await flush()
+        expect(openPopup).toHaveBeenCalledTimes(2)
+        expect(created.length).toBe(1)
+
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-sign-transactions',
+                requestId: 'race-b',
+                stxns: ['SIGNED'],
+            },
+            trustedSender,
+        )
+        expect(await decisionB).toEqual({ stxns: ['SIGNED'] })
+
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-approval',
+                requestId: 'race-c',
+                approvedAddresses: ['C'],
+            },
+            trustedSender,
+        )
+        expect(await decisionC).toEqual({ approvedAddresses: ['C'] })
+    })
+
     it('finish() does not call windows.remove for a popup-surface enable resolved via resolve-approval', async () => {
         const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
         const bridge = new ApprovalWindowBridge(chromeLike)
