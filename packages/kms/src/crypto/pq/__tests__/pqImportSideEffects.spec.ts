@@ -17,10 +17,14 @@ import { describe, expect, test, vi } from 'vitest'
 // doesn't exist": falcon-1024's CJS entry is Emscripten glue that reads
 // `__filename` at module scope, which Hermes/Metro never define. The WASM
 // provider is only ever *selected* off-device, but a static (or eagerly
-// evaluated) import anywhere in the getPQProvider graph still evaluates that
+// evaluated) import anywhere in the pq barrel graph still evaluates that
 // glue on device at app startup. This mock throws on evaluation, simulating
 // the Hermes crash: if any module in the graph evaluates falcon-1024 at
 // import time, the dynamic import below rejects and this test fails.
+// Known blind spot: vi.mock intercepts ESM imports, not a bare CJS
+// `require('falcon-1024')` executed at module scope — that shape would load
+// the real CJS build (fine under node) and stay green here while still
+// crashing on device.
 vi.mock('falcon-1024', () => {
     throw new Error(
         'falcon-1024 was evaluated at import time — on device this crashes ' +
@@ -30,8 +34,8 @@ vi.mock('falcon-1024', () => {
 })
 
 describe('PQ provider import-time side effects', () => {
-    test('importing the getPQProvider graph does not evaluate falcon-1024', async () => {
-        const { getPQProvider } = await import('../getPQProvider')
+    test('importing the pq barrel graph does not evaluate falcon-1024', async () => {
+        const { getPQProvider } = await import('../index')
         expect(getPQProvider).toBeTypeOf('function')
     })
 })
