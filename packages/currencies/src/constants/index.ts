@@ -16,3 +16,6 @@
  * (ALGO as a selectable currency uses the shared `ALGO_ASSET_NAME`.)
  */
 export const USD_CURRENCY_ID = 'USD'
+
+/** Display/entry precision for fiat amounts. */
+export const FIAT_DECIMAL_PLACES = 2

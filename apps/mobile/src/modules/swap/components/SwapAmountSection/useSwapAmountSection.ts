@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { FIAT_DECIMAL_PLACES } from '@perawallet/wallet-core-currencies'
 import {
     formatCurrency,
     type Nullable,
@@ -20,8 +21,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, SwapEvent } from '@analytics'
-
-const FIAT_DECIMAL_PLACES = 2
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'

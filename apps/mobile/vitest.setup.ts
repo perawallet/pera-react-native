@@ -2934,6 +2934,7 @@ vi.mock('@perawallet/wallet-core-currencies', async () => {
     const { Decimal } = await import('decimal.js')
     return {
         USD_CURRENCY_ID: 'USD',
+        FIAT_DECIMAL_PLACES: 2,
         useCurrency: vi.fn(() => ({
             preferredCurrency: 'USD',
             fallbackCurrency: 'USD',

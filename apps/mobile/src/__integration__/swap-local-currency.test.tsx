@@ -23,19 +23,33 @@ const ALGO_ID = '0'
 const ALGO_DECIMALS = 6
 
 // ALGO = 0.20 USD, EUR rate = 1.0 → 1 ALGO = 0.20 EUR → 100 EUR = 500 ALGO.
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({
-        preferredCurrency: 'EUR',
-        fallbackCurrency: 'ALGO',
-        usdToPreferred: (usd: Decimal) => usd,
-    }),
-    useCurrenciesQuery: () => ({
-        data: [{ id: 'EUR', name: 'Euro', symbol: '€' }],
-    }),
-    usePreferredCurrencyPriceQuery: () => ({
-        data: { id: 'EUR', usdPrice: new Decimal(1) },
-    }),
-}))
+// The rate hooks are stubbed for determinism; the conversion utils stay real
+// via importOriginal so the flow exercises the actual fiat↔asset math.
+vi.mock('@perawallet/wallet-core-currencies', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-currencies')
+        >()
+    return {
+        ...original,
+        useCurrency: () => ({
+            preferredCurrency: 'EUR',
+            fallbackCurrency: 'ALGO',
+            usdToPreferred: (usd: Decimal) => usd,
+        }),
+        useCurrenciesQuery: () => ({
+            data: [{ id: 'EUR', name: 'Euro', symbol: '€' }],
+        }),
+        usePreferredCurrencyPriceQuery: () => ({
+            data: { id: 'EUR', usdPrice: new Decimal(1) },
+        }),
+        useLocalCurrency: () => ({
+            localCurrency: 'EUR',
+            localCurrencySymbol: '€',
+            localRate: new Decimal(1),
+        }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPricesQuery: () => ({
@@ -50,6 +64,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
                 { assetId: ALGO_ID, unitName: 'ALGO', decimals: ALGO_DECIMALS },
             ],
         ]),
+    }),
+    useAssetUsdRate: () => ({
+        assetUsdPrice: new Decimal('0.2'),
+        assetDecimals: ALGO_DECIMALS,
     }),
 }))
 
