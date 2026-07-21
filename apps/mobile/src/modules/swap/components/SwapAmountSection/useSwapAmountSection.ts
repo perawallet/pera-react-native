@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -21,16 +21,22 @@ import {
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, SwapEvent } from '@analytics'
 
+const FIAT_DECIMAL_PLACES = 2
+
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'
     assetId: string
     amount: Nullable<Decimal>
     onAmountChange?: (amount: Nullable<Decimal>) => void
+    isLocalCurrencyInput?: boolean
+    fiatToAsset?: (fiat: Nullable<Decimal>) => Nullable<Decimal>
+    assetToFiat?: (asset: Nullable<Decimal>) => Nullable<Decimal>
 }
 
 type UseSwapAmountSectionResult = {
     asset: Optional<PeraAsset>
     isPay: boolean
+    isFiatInput: boolean
     displayValue: string
     hasPositiveAmount: boolean
     handleTextChange: (text: string) => void
@@ -38,11 +44,42 @@ type UseSwapAmountSectionResult = {
     handleBlur: () => void
 }
 
+/**
+ * Normalizes a user-typed amount into a dot-decimal string that `Decimal` can
+ * parse. `decimal-pad` emits the device locale's decimal separator, so European
+ * keyboards produce a comma, and pasted values may carry grouping separators.
+ * The LAST separator is treated as the decimal point; every other separator
+ * (comma, dot, or whitespace) is dropped as grouping. Non-numeric input is left
+ * untouched so it still fails `Decimal` parsing downstream.
+ */
+const normalizeDecimalInput = (text: string): string => {
+    const withoutSpaces = text.replace(/\s/g, '')
+    const lastSeparator = Math.max(
+        withoutSpaces.lastIndexOf('.'),
+        withoutSpaces.lastIndexOf(','),
+    )
+    if (lastSeparator === -1) return withoutSpaces
+    const integerPart = withoutSpaces
+        .slice(0, lastSeparator)
+        .replace(/[.,]/g, '')
+    const fractionPart = withoutSpaces.slice(lastSeparator + 1)
+    return `${integerPart}.${fractionPart}`
+}
+
+const constrainDecimals = (text: string, maxDecimals: number): string => {
+    const dotIndex = text.indexOf('.')
+    if (dotIndex === -1) return text
+    return text.slice(0, dotIndex + 1 + maxDecimals)
+}
+
 export const useSwapAmountSection = ({
     variant,
     assetId,
     amount,
     onAmountChange,
+    isLocalCurrencyInput = false,
+    fiatToAsset,
+    assetToFiat,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
@@ -51,17 +88,30 @@ export const useSwapAmountSection = ({
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     const isPay = variant === 'pay'
+    const isFiatInput = isPay && isLocalCurrencyInput
 
     const [rawText, setRawText] = useState(amount ? amount.toString() : '')
     const [isFocused, setIsFocused] = useState(false)
+    const lastTypedAssetRef = useRef<Nullable<Decimal>>(null)
 
     useEffect(() => {
         if (amount === null) {
             setRawText('')
-        } else if (!isFocused) {
+            lastTypedAssetRef.current = null
+            return
+        }
+        if (isFocused) return
+        if (isFiatInput) {
+            const isUserTyped =
+                lastTypedAssetRef.current !== null &&
+                amount.equals(lastTypedAssetRef.current)
+            if (isUserTyped) return
+            const fiat = assetToFiat?.(amount)
+            setRawText(fiat ? fiat.toFixed(FIAT_DECIMAL_PLACES) : '')
+        } else {
             setRawText(amount.toString())
         }
-    }, [amount, isFocused])
+    }, [amount, isFocused, isFiatInput, assetToFiat])
 
     const displayValue = useMemo(() => {
         if (!isPay) {
@@ -76,7 +126,7 @@ export const useSwapAmountSection = ({
                 0,
             )
         }
-        if (isFocused || !amount) return rawText
+        if (isFocused || !amount || isFiatInput) return rawText
         return formatCurrency(
             amount,
             asset?.decimals ?? 0,
@@ -86,7 +136,7 @@ export const useSwapAmountSection = ({
             false,
             0,
         )
-    }, [isPay, isFocused, rawText, amount, asset, deviceInfo])
+    }, [isPay, isFiatInput, isFocused, rawText, amount, asset, deviceInfo])
 
     const hasPositiveAmount = amount !== null && amount.greaterThan(0)
 
@@ -102,7 +152,12 @@ export const useSwapAmountSection = ({
         (text: string) => {
             if (!isPay || !onAmountChange) return
 
-            const normalized = text.replace(',', '.')
+            const normalized = isFiatInput
+                ? constrainDecimals(
+                      normalizeDecimalInput(text),
+                      FIAT_DECIMAL_PLACES,
+                  )
+                : normalizeDecimalInput(text)
             setRawText(normalized)
 
             if (normalized === '' || normalized === '.') {
@@ -111,17 +166,23 @@ export const useSwapAmountSection = ({
             }
 
             try {
-                onAmountChange(new Decimal(normalized))
+                const typed = new Decimal(normalized)
+                const next = isFiatInput
+                    ? (fiatToAsset?.(typed) ?? null)
+                    : typed
+                if (isFiatInput) lastTypedAssetRef.current = next
+                onAmountChange(next)
             } catch {
                 // Ignore invalid input
             }
         },
-        [isPay, onAmountChange],
+        [isPay, onAmountChange, isFiatInput, fiatToAsset],
     )
 
     return {
         asset,
         isPay,
+        isFiatInput,
         displayValue,
         hasPositiveAmount,
         handleTextChange,

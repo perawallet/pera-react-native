@@ -27,10 +27,7 @@ import {
     type SwapQuote,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    ALGO_ASSET_NAME,
-    isAlgoAssetName,
     isDecimalEqual,
     uint64IdToNumber,
     type Nullable,
@@ -63,6 +60,7 @@ type UseSwapFormResult = {
     selectedQuote: Nullable<SwapQuote>
     providerSelectionMode: 'auto' | 'manual'
     canSwap: boolean
+    isLocalCurrencyInput: boolean
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
     handleSwapDirection: () => void
     handleMaxPress: () => void
@@ -78,12 +76,12 @@ export const useSwapForm = (): UseSwapFormResult => {
         fromAsset,
         toAsset,
         slippage,
+        isLocalCurrencyInput,
         setFromAsset,
         setToAsset,
         setSlippage,
+        setIsLocalCurrencyInput,
     } = useSwaps()
-    const { preferredCurrency, setPreferredCurrency, fallbackCurrency } =
-        useCurrency()
     const [payAmount, setPayAmount] = useState<Nullable<Decimal>>(null)
     const [receiveAmount, setReceiveAmount] = useState<Nullable<Decimal>>(null)
     const [selectedProviderName, setSelectedProviderName] =
@@ -404,12 +402,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
         setSlippage(result.slippageTolerance)
 
-        const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
-        if (result.useLocalCurrency && isAlgoPreferred) {
-            setPreferredCurrency(fallbackCurrency)
-        } else if (!result.useLocalCurrency && !isAlgoPreferred) {
-            setPreferredCurrency(ALGO_ASSET_NAME)
-        }
+        setIsLocalCurrencyInput(result.useLocalCurrency)
 
         if (result.balancePercentage !== null) {
             void applyPercentageAmount(result.balancePercentage)
@@ -417,9 +410,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     }, [
         requestBottomSheet,
         setSlippage,
-        preferredCurrency,
-        setPreferredCurrency,
-        fallbackCurrency,
+        setIsLocalCurrencyInput,
         applyPercentageAmount,
     ])
 
@@ -435,6 +426,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         selectedQuote,
         providerSelectionMode,
         canSwap,
+        isLocalCurrencyInput,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
