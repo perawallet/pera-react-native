@@ -21,7 +21,10 @@ export const RekeyToSharedSelectTargetScreen = () => {
     const { targets, handleSelect } = useRekeyToSharedSelectTargetScreen()
 
     return (
-        <PWScreen testID='rekey-to-shared-select-target-screen'>
+        <PWScreen
+            scroll='never'
+            testID='rekey-to-shared-select-target-screen'
+        >
             <ScreenHeader
                 title={t('rekey.to_shared.select.title')}
                 description={t('rekey.to_shared.select.subtitle')}

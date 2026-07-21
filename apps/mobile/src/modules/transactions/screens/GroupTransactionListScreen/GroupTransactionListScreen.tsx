@@ -79,7 +79,6 @@ export const GroupTransactionListScreen = () => {
                 ListHeaderComponent={
                     <GroupDetailHeader transactionCount={transactions.length} />
                 }
-                showsVerticalScrollIndicator={false}
             />
         </PWScreen>
     )
