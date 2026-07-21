@@ -61,9 +61,9 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
         ...initialState,
         request: <T>(req: BottomSheetRequest) => {
             if (get().hostCount === 0) {
-                // Fail loud (M2 final-review mandate): a request with no
-                // BottomSheetManager mounted previously returned a promise
-                // that never settled — import flows silently dead-ended.
+                // Fail loud: a request with no BottomSheetManager mounted
+                // previously returned a promise that never settled — import
+                // flows silently dead-ended.
                 return Promise.reject(
                     new Error(
                         'Bottom sheet requested but no BottomSheetManager is ' +

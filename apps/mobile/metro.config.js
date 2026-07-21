@@ -29,7 +29,6 @@ const webShimsRoot = path.resolve(projectRoot, '../extension/web-shims');
 
 const defaultConfig = getDefaultConfig(projectRoot);
 
-// Watch all files in the monorepo
 const watchFolders = [monorepoRoot];
 
 // Configure the resolver for monorepo and custom needs
@@ -45,7 +44,6 @@ const nodeModulesPaths = [
 // SVG transformer configuration
 const { assetExts, sourceExts } = defaultConfig.resolver;
 
-// Path alias map
 const aliasMap = {
     '@components': path.resolve(projectRoot, 'src/components'),
     '@providers': path.resolve(projectRoot, 'src/providers'),
@@ -59,7 +57,6 @@ const aliasMap = {
     '@utils': path.resolve(projectRoot, 'src/utils'),
 };
 
-// Crypto polyfill map
 const polyfillMap = {
     // Node.js core modules (including node: prefix variants)
     'node:crypto': path.resolve(projectRoot, 'node_modules/react-native-quick-crypto'),
@@ -113,8 +110,8 @@ const webStubs = {
     // manager and touches the legacy NativeModules bridge at import time
     // ("__fbBatchedBridgeConfig is not set" on web — no web build exists).
     // Was pulled in transitively by @modules/banners' barrel (BannerCarousel /
-    // SpotBannerCarousel) even when only HomeBannersStrip was imported — M3
-    // Task 8 split that barrel (modules/banners/index.ts) so the carousel
+    // SpotBannerCarousel) even when only HomeBannersStrip was imported — that
+    // barrel (modules/banners/index.ts) was later split so the carousel
     // pieces are no longer in the module's main entry; the shim stays because
     // MediaCarousel/FullScreenMediaViewer/BannerCarousel/SpotBannerCarousel/
     // OnrampScreen still import react-native-pager-view directly. The shim is
@@ -126,15 +123,14 @@ const webStubs = {
     // (Settings tab is mounted on web), even though storeRating is
     // capability-gated off on web (routes/capabilities.web.ts) — the "Rate the
     // app" option itself never renders, but the module import isn't gated.
-    // See M3 Task 8 report for why this wasn't converted to a lazy import.
     'react-native-rate-app': 'react-native-rate-app.js',
     // In-app webview: react-native-webview's own web-fallback module has a
     // broken interopRequireDefault dependency that throws "t is not a
-    // function" at eval time, killing the whole web bundle (M5 Task 4/5 —
-    // ModelViewerBottomSheet and PWWebView statically import it, and M5's
+    // function" at eval time, killing the whole web bundle
+    // (ModelViewerBottomSheet and PWWebView statically import it, and
     // widened static Swap/Onramp/Staking imports now pull that graph in
-    // unconditionally). PWWebView's surfaces are off-capability (M6/M8), and
-    // the collectible 3D-model viewer is gated off `inAppWebView` on web too,
+    // unconditionally). PWWebView's surfaces are off-capability, and the
+    // collectible 3D-model viewer is gated off `inAppWebView` on web too,
     // so the shim only needs to survive eval; it throws clearly if ever
     // rendered.
     'react-native-webview': 'react-native-webview.js',

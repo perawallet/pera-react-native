@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-// Shared ARC-0027 sign-approval wrapper (Task 5 generalizes Task 4's
+// Shared ARC-0027 sign-approval wrapper (generalizes an earlier
 // transaction-only wrapper): enqueues both `sign-transactions` and
 // `sign-message` approvals into the same shared signing pipeline, then lets
 // the existing SignRequestView/SigningRoutes pick the right screen off the
 // enqueued request's `type` (transactions vs arc60) — no signing UI is
 // authored here.
 //
-// - sign-transactions: unchanged from Task 4 — decodes the ARC-0001 group
-//   with the shared resolver and hands it to useEnqueueArc0001SignRequest.
+// - sign-transactions: decodes the ARC-0001 group with the shared resolver
+//   and hands it to useEnqueueArc0001SignRequest.
 // - sign-message: adapted from
 //   apps/mobile/src/modules/webview/hooks/usePeraWebviewInterface.ts
 //   (requestDataSigning's ARC-60 branch) — parses the ARC-60 wire payload

@@ -28,7 +28,7 @@ export type DiscoverBridgeHost = {
  * Ports are the only bidirectional channel that works from a popup surface
  * (no tab id → no chrome.tabs.sendMessage). `trustedOrigins` is a list (not a
  * single origin) because a mounted URL can 302-redirect to a different host
- * before the port connects (M8 Bidali → giftcards.* twin — see
+ * before the port connects (e.g. Bidali → giftcards.* twin — see
  * trusted-iframe-origins.web.ts); membership is exact-match only, never a
  * suffix/pattern check.
  */

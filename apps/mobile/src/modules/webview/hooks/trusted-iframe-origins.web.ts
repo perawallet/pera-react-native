@@ -14,7 +14,7 @@
 // host should trust its chrome.runtime port connections from. Two known
 // surfaces today:
 //   - Discover: single origin, config.discoverBaseUrl.
-//   - Bidali (M8 gift cards): packages/config's per-network bidaliBaseUrl
+//   - Bidali (gift cards): packages/config's per-network bidaliBaseUrl
 //     (`https://commerce.bidali.com/dapp` mainnet,
 //     `https://commerce.staging.bidali.com/dapp` testnet) 302-redirects to a
 //     `giftcards.`-prefixed twin host, query params preserved — verified live

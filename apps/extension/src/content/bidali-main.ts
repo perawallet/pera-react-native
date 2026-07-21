@@ -116,7 +116,7 @@ if (token) {
         },
     }
 
-    // Host → page direction: bidali-events.web.ts (Task 2) posts this exact,
+    // Host → page direction: bidali-events.web.ts posts this exact,
     // deliberately id-less fire-and-forget notification onto the same
     // window — never attempt request/response correlation on it.
     // NOTE the source check below only excludes OTHER frames — it does not

@@ -14,7 +14,7 @@
 // (react-native-webview's inject API doesn't exist there — see the web
 // shims layer), so the balances native embeds inline in the provider JS
 // (buildBidaliProviderJS in useBidaliTransport.ts) are stamped onto the URL
-// instead. Task 3's content script (bidali-main.ts) parses `peraBidaliBalances`
+// instead. The content script (bidali-main.ts) parses `peraBidaliBalances`
 // back out with URLSearchParams and installs it as
 // window.bidaliProvider.balances, so the shape here must match native's
 // balanceMap exactly.

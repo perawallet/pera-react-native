@@ -46,7 +46,7 @@ export class ChromePushNotificationService implements PushNotificationService {
     }
 }
 
-/** Real WebAuthn-backed implementation arrives with the vault in milestone 2. */
+/** Real WebAuthn-backed implementation lives in the keystore-chrome vault module. */
 export class ChromeBiometricsService implements BiometricsService {
     async getSupportedBiometricType(): Promise<BiometricType> {
         return null

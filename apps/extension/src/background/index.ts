@@ -55,8 +55,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
 })
 
-// ARC-0027 dapp relay (Tasks 2-5): permission store + approval bridge feed
-// the router, which answers discover/enable/disable over chrome.runtime
+// ARC-0027 dapp relay: permission store + approval bridge feed the router,
+// which answers discover/enable/disable over chrome.runtime
 // messaging from the content-script relay. discoverInfo() advertises the
 // single ACTIVE network (design decision: multi-network advertising is
 // deferred), read from the network store's own persisted zustand envelope
@@ -131,10 +131,10 @@ const dappRouter = new DappRequestRouter({
     discoverInfo,
     approvals,
 })
-// Task 5: intercepted navigator.credentials ceremonies (webauthn-relay.ts)
-// share the same ApprovalWindowBridge/approval surface as the ARC-0027 flow
-// above, routed by a dedicated handler since the two protocols (ARC-0027 vs.
-// raw WebAuthn create/get) don't share a request shape.
+// Intercepted navigator.credentials ceremonies (webauthn-relay.ts) share the
+// same ApprovalWindowBridge/approval surface as the ARC-0027 flow above,
+// routed by a dedicated handler since the two protocols (ARC-0027 vs. raw
+// WebAuthn create/get) don't share a request shape.
 const passkeyRouter = new PasskeyRouter(approvals)
 approvals.listen()
 dappRouter.listen()

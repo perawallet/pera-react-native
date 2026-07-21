@@ -16,7 +16,7 @@ import type { KeyValueStorageService } from '../storage/models'
 /**
  * Shared behavioral contract for every KeyValueStorageService driver.
  * Both the Chrome and RN drivers run this suite — any semantic divergence
- * (like the M1 getJSON corrupt-value mismatch) fails one of them.
+ * (like a getJSON corrupt-value mismatch) fails one of them.
  */
 export const runKeyValueStorageContract = (
     name: string,

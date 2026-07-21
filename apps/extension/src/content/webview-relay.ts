@@ -11,8 +11,8 @@
  */
 
 // Shared ISOLATED-world relay body for every MAIN/ISOLATED content-script
-// bridge pair (Discover iframe today, Bidali in Task 3): owns the
-// chrome.runtime Port to the hosting extension page and relays both ways.
+// bridge pair (Discover iframe, Bidali): owns the chrome.runtime Port to
+// the hosting extension page and relays both ways.
 // Page → host: CustomEvent channel handshaken with the pair's MAIN-world
 // script (first handshake wins, same anti-forgery rule as
 // relay-isolated.ts). Host → page: window.postMessage on the shared window —

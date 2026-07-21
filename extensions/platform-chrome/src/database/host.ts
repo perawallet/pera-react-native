@@ -83,7 +83,7 @@ export class DatabaseHost {
         sendResponse: (response?: unknown) => void,
     ): boolean | undefined => {
         if (!isDbMessage(message)) return undefined
-        // M4 threat model: content scripts share this onMessage listener with
+        // Threat model: content scripts share this onMessage listener with
         // every extension page. Trusted senders are our own popup/expanded/
         // approval/offscreen pages and the service worker itself (also
         // extension-origin) — refuse anyone else with no response at all

@@ -54,8 +54,8 @@ export const isWebauthnRelayMessage = (
 // decision, an unauthenticated sender, a bad RP ID, or the approval window
 // being closed with no answer), or a specific authenticator-level error name
 // (an `Error.name`-shaped string, e.g. 'InvalidStateError', 'SecurityError',
-// 'NotAllowedError' — see Task 2's authenticator.ts and
-// usePasskeyApproval.ts's catch handler, which is what actually produces
+// 'NotAllowedError' — see authenticator.ts and usePasskeyApproval.ts's
+// catch handler, which is what actually produces
 // these). The `{ error }` case matters precisely BECAUSE it must NOT fall
 // through: an `InvalidStateError` means the page's `excludeCredentials`
 // already matched a real Pera-minted credential, so falling through would

@@ -23,7 +23,7 @@ export const DAPP_APPROVAL_SCOPE = 'pera-dapp-approval' as const
 // Settled by resolve-passkey (a minted/asserted credential), reject-passkey
 // (an explicit reason — user decline or an authenticator error name, see
 // usePasskeyApproval) or a window close (null, same as every other kind).
-// The reason string (not just null) is what lets Task 5's content script
+// The reason string (not just null) is what lets the content script
 // translate a decline into the *specific* native WebAuthn error the page's
 // `navigator.credentials` promise should reject with, rather than a single
 // generic cancellation.
@@ -59,8 +59,8 @@ export type PendingApproval =
           kind: 'passkey-create'
           requestId: string
           // Browser-stamped frame origin (never page-asserted) — passed
-          // verbatim as SigningContext.origin to the Task 2 authenticator
-          // core by usePasskeyApproval.
+          // verbatim as SigningContext.origin to the authenticator core by
+          // usePasskeyApproval.
           origin: string
           rpId: string
           userName?: string

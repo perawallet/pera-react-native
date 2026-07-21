@@ -31,7 +31,7 @@ import { fetchSecret } from '../storage/state'
 import { generateKey } from '../store'
 
 /**
- * Implements the Task 2 `KeystoreSigner` port over keystore-chrome's real
+ * Implements the `KeystoreSigner` port over keystore-chrome's real
  * `key.store` surface. Every WebAuthn P-256 passkey this adapter creates is
  * an `hd-derived-p256` keystore entry, derived (via `@algorandfoundation/dp256`
  * inside the keystore lib) from a single persisted `hd-root-key` that in turn
@@ -132,7 +132,7 @@ export const createKeystoreSigner = (
     }) {
         const rootKeyId = await resolveRootKeyId(store)
 
-        // The core (Task 2) already lowercases `userHandle` into its
+        // The core already lowercases `userHandle` into its
         // derivation-input form before calling this method — see
         // `toDerivationUserHandle` in `authenticator.ts`. We lowercase again
         // here defensively before persisting it to `metadata.userHandle`:

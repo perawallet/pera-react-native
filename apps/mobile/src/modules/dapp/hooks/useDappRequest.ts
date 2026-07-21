@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Approval-window side of the dapp approval bridge (Task 4): reads the
+// Approval-window side of the dapp approval bridge: reads the
 // requestId the SW put on the popup's URL (ApprovalWindowBridge.openEnable),
 // fetches the pending approval over runtime messaging, and resolves it by
 // posting resolve-approval/reject-approval back to the same bridge. Goes

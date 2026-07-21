@@ -16,9 +16,8 @@
 // (TypeScript itself resolves it correctly — `pnpm build` passes).
 
 // Web tab registration (see capabilities.web.ts): Discover, Swap, and Fund are
-// registered as of M5 (2026-07-16 feature-completion spec). Discover is now
-// web-real as of M6 (2026-07-16 feature-completion spec) with the iframe/bridge
-// layer. Swap and Fund are pure RN screen graphs with native's layouts and age gates.
+// registered. Discover is web-real with the iframe/bridge layer. Swap and
+// Fund are pure RN screen graphs with native's layouts and age gates.
 import type React from 'react'
 import { withAgeGate } from '@components/AgeGated'
 import { TabbarEvent } from '@analytics'

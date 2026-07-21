@@ -14,8 +14,8 @@
 // calling frame's origin off chrome.runtime.MessageSender (never the
 // request's own `origin` field, which is page-adjacent content-script state,
 // not browser-stamped at this boundary) and resolves the effective RP ID via
-// Task 2's `resolveRpId` — the SAME function the authenticator core uses, so
-// there is exactly one registrable-suffix implementation in this codebase,
+// the same `resolveRpId` the authenticator core uses, so there is exactly
+// one registrable-suffix implementation in this codebase,
 // not two that could drift. A resolution failure (bad RP ID) collapses to a
 // decline rather than a distinct error: the content script then falls
 // through to the page's real `navigator.credentials`, which independently
@@ -118,8 +118,8 @@ export class PasskeyRouter {
         // outcome for "the user said no" or "they closed the window."
         //
         // Any OTHER `{ error }` reason is usePasskeyApproval.approve()'s
-        // catch handler forwarding a real `Error.name` from the Task 2
-        // authenticator core (InvalidStateError, SecurityError,
+        // catch handler forwarding a real `Error.name` from the authenticator
+        // core (InvalidStateError, SecurityError,
         // NotAllowedError, ...) — see its comment. That must NOT collapse to
         // decline: falling through would let the native/OS authenticator
         // mint a credential the RP never asked for (e.g. a duplicate past

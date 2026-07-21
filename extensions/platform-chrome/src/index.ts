@@ -12,7 +12,7 @@
 
 // This package's source uses the ambient `chrome` global directly (no local
 // imports) — its own tsconfig lists "chrome" in `types`, but downstream
-// consumers whose tsconfig does NOT (apps/mobile, since Task 12) still pull
+// consumers whose tsconfig does NOT (e.g. apps/mobile) still pull
 // this source into their tsc program via path-aliased imports. A `types`
 // list is program-wide, but an explicit triple-slash reference is honored
 // regardless of the consuming project's `types` list, so this keeps the

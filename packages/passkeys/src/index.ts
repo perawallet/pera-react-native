@@ -18,9 +18,9 @@ export * from './bootstrap'
 export * from './errors'
 export * from './authenticator/authenticator'
 export * from './authenticator/wire'
-// `splitP256PublicKey` is Task 1's XY-splitter; the authenticator core only
+// `splitP256PublicKey` is the XY-splitter; the authenticator core only
 // re-exports its own consumers of it (`p256XYToSpkiDer`, `deriveCredentialId`).
-// Task 3's keystore-chrome adapter needs the raw splitter itself to normalize
+// The keystore-chrome adapter needs the raw splitter itself to normalize
 // whatever the keystore hands back as `key.publicKey` into the flat XY form
 // the `KeystoreSigner` port returns.
 export {

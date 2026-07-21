@@ -22,9 +22,10 @@ type EventTargetLike = {
 }
 
 /**
- * Extends the auto-lock sliding window on user activity (M2 only re-armed on
- * surface open, so a long-lived expanded tab could lock mid-use). Throttled:
- * chrome.alarms.create is a cross-process call, once a minute is plenty.
+ * Extends the auto-lock sliding window on user activity (previously only
+ * re-armed on surface open, so a long-lived expanded tab could lock
+ * mid-use). Throttled: chrome.alarms.create is a cross-process call, once a
+ * minute is plenty.
  */
 export const useAutoLockActivity = (isUnlocked: boolean): void => {
     const lastArmAt = useRef(0)

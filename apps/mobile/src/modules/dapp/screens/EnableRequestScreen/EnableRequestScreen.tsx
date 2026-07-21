@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-// ARC-0027 enable-approval popup (Task 4's approval bridge opens this on
+// ARC-0027 enable-approval popup (the approval bridge opens this on
 // approval.html?requestId=…). Deliberately NOT WalletConnect's ConnectionView
 // — that's coupled to approveSession/WalletConnectSessionRequest/useWebView,
 // none of which exist here (no WC connector, no session store). This reuses
 // only the generic presentational pieces WC's view also uses
 // (useSigningAccounts + AccountDisplay + PWCheckbox rows) behind a lightweight
-// favicon+origin header. See useEnableRequestScreen.ts for the M5 follow-up
+// favicon+origin header. See useEnableRequestScreen.ts for the follow-up
 // note on factoring a shared ConnectionConsentView once WalletConnect lands
 // on web.
 import React from 'react'
