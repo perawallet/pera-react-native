@@ -15,9 +15,13 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import {
     isValidAlgorandAddress,
     useAlgorandClient,
+    useMinimumFeeConfig,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import {
+    resolveMinFeeForSender,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import {
     resolveAuthAccount,
     useAllAccounts,
@@ -101,6 +105,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
+    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     return useCallback(
         async (data: KeyregDeeplink) => {
@@ -145,9 +150,37 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // the error sheet instead of throwing uncaught out of the
                 // handler. An out-of-range fee is caught at review time by the
                 // signing pipeline's high-fee warning (see detectHighGroupFee).
-                const staticFee = data.fee
-                    ? microAlgo(BigInt(data.fee))
-                    : undefined
+                const dAppFee = data.fee ? BigInt(data.fee) : undefined
+
+                // Mirrors PQ-007's useTransactionSendFlow.buildNormalTxs: the
+                // dApp-set (or default) fee is honored verbatim unless the
+                // sender is PQ-signed, in which case `resolvedMin` exceeds
+                // algod's suggested minimum and the fee is floored up to it
+                // — never lowered — so a quantum sender's keyreg isn't
+                // rejected as underfunded.
+                const suggestedParams = await withTimeout(
+                    'keyregSuggestedParams',
+                    KEYREG_BUILD_TIMEOUT_MS,
+                    algorandClient.getSuggestedParams(),
+                )
+                const suggestedMinFee = BigInt(suggestedParams.minFee)
+                const resolvedMin = resolveMinFeeForSender({
+                    senderAddress: data.senderAddress,
+                    accounts: allAccounts,
+                    suggestedMinFee,
+                    configMinTxnFee: minTxnFee,
+                    pqMultiplier,
+                })
+                const staticFee =
+                    resolvedMin > suggestedMinFee
+                        ? microAlgo(
+                              dAppFee !== undefined && dAppFee > resolvedMin
+                                  ? dAppFee
+                                  : resolvedMin,
+                          )
+                        : dAppFee !== undefined
+                          ? microAlgo(dAppFee)
+                          : undefined
 
                 let tx
                 if (data.keyregType === 'offline') {
@@ -234,6 +267,8 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             allAccounts,
             decodeTransaction,
             encodeTransaction,
+            minTxnFee,
+            pqMultiplier,
             showError,
         ],
     )
