@@ -95,7 +95,22 @@ if (token) {
         version: '2',
         handleRequest: (request: string) => sendJsonRPCMessage(request),
         pushWebView: rpcCall('pushWebView'),
-        openSystemBrowser: rpcCall('openSystemBrowser'),
+        // Unlike the other rpcCall(...) entries, this one can't blindly
+        // forward the page's params: canOpenURL's real gate (OS-registered
+        // scheme handlers) is a no-op on react-native-web, so this content
+        // script is the only scheme check left standing on the web platform.
+        // Mirrors bidaliProvider.openUrl's string/{url} normalization.
+        openSystemBrowser: (params: unknown = {}) => {
+            const url =
+                typeof params === 'object' && params !== null
+                    ? (params as Record<string, unknown>).url
+                    : params
+            if (typeof url !== 'string') return
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                return
+            }
+            sendRNMessage('openSystemBrowser', { url })
+        },
         canOpenURI: rpcCall('canOpenURI'),
         openNativeURI: rpcCall('openNativeURI'),
         notifyUser: rpcCall('notifyUser'),

@@ -252,24 +252,34 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
-                    void Linking.canOpenURL(message.params!.url as string).then(
-                        supported => {
-                            if (supported) {
-                                void Linking.openURL(
-                                    message.params?.url as string,
-                                )
-                            } else {
-                                sendErrorToWebview(
-                                    message.id,
-                                    JsonRpcErrorCode.InvalidParams,
-                                    t('errors.webview.unsupported_url', {
-                                        url: message.params?.url,
-                                    }),
-                                    webview,
-                                )
-                            }
-                        },
-                    )
+                    const url = message.params!.url as string
+                    // canOpenURL is a no-op on web (react-native-web always
+                    // resolves true), so this scheme check — not that call —
+                    // is the only gate on the web platform.
+                    if (
+                        !url.startsWith('http://') &&
+                        !url.startsWith('https://')
+                    ) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            t('errors.webview.unsupported_url', { url }),
+                            webview,
+                        )
+                        return
+                    }
+                    void Linking.canOpenURL(url).then(supported => {
+                        if (supported) {
+                            void Linking.openURL(url)
+                        } else {
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InvalidParams,
+                                t('errors.webview.unsupported_url', { url }),
+                                webview,
+                            )
+                        }
+                    })
                 },
             )
         },

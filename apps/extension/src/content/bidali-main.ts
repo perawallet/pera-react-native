@@ -109,6 +109,9 @@ if (token) {
                     ? (urlOrObj as Record<string, unknown>).url
                     : urlOrObj
             if (typeof url !== 'string') return
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                return
+            }
             sendRPC('openUrl', { url })
         },
     }

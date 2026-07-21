@@ -238,6 +238,18 @@ describe('bidali-main content script', () => {
         expect(received).toHaveLength(0)
     })
 
+    it('openUrl drops non-http(s) schemes for both the string and object forms', async () => {
+        const captured = captureHandshake()
+        await loadScript()
+        const received = listenForRequests(captured)
+
+        window.bidaliProvider!.openUrl('javascript:alert(1)')
+        window.bidaliProvider!.openUrl({ url: 'javascript:alert(1)' })
+        window.bidaliProvider!.openUrl('chrome-extension://evil/page.html')
+
+        expect(received).toHaveLength(0)
+    })
+
     describe('host -> page bidaliEvent relay', () => {
         // jsdom's window.postMessage always delivers MessageEvent.source as
         // null, which would never exercise the production `event.source !==
