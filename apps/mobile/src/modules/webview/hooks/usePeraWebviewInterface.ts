@@ -252,13 +252,14 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
-                    const url = message.params!.url as string
+                    const url = message.params!.url
                     // canOpenURL is a no-op on web (react-native-web always
                     // resolves true), so this scheme check — not that call —
                     // is the only gate on the web platform.
                     if (
-                        !url.startsWith('http://') &&
-                        !url.startsWith('https://')
+                        typeof url !== 'string' ||
+                        (!url.startsWith('http://') &&
+                            !url.startsWith('https://'))
                     ) {
                         sendErrorToWebview(
                             message.id,

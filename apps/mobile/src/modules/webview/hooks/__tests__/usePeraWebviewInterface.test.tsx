@@ -418,6 +418,34 @@ describe('usePeraWebviewInterface', () => {
         )
     })
 
+    it('rejects a non-string url for openSystemBrowser without throwing', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            expect(() =>
+                result.current.handleMessage({
+                    id: 'osb-non-string',
+                    jsonrpc: '2.0',
+                    method: 'openSystemBrowser',
+                    params: { url: 123 },
+                }),
+            ).not.toThrow()
+        })
+
+        expect(Linking.canOpenURL).not.toHaveBeenCalled()
+        expect(Linking.openURL).not.toHaveBeenCalled()
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"osb-non-string"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining(
+                '"error":{"code":-32602,"message":"Unsupported URL: 123"}',
+            ),
+        )
+    })
+
     it('should handle canOpenURI action', async () => {
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true, null),
