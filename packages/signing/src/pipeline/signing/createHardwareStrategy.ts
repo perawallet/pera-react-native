@@ -14,7 +14,10 @@ import type {
     WalletAccount,
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isHardwareWalletAccount, useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    isHardwareWalletAccount,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletTransport,
     HardwareWalletRegistry,
@@ -361,7 +364,7 @@ const signArc60OnHardwareWallet = async (
     hwAccount: HardwareWalletAccount,
     stdSigData: Arc60StdSigData,
     metadata: Arc60Metadata,
-    options: SignArc60OnHardwareWalletOptions
+    options: SignArc60OnHardwareWalletOptions,
 ): Promise<Uint8Array> => {
     const { registry, callbacks } = options
 
