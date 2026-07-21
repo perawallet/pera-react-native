@@ -16,6 +16,13 @@ export {
     createFetchSource,
 } from './factories'
 
+export { applyQuantumFeeOverride } from './applyQuantumFeeOverride'
+export type {
+    ApplyQuantumFeeOverrideParams,
+    ApplyQuantumFeeOverrideResult,
+    QuantumFeeAdjustment,
+} from './applyQuantumFeeOverride'
+
 export { createMinFeeResolver, resolveMinFeeForSender } from './minFeeResolver'
 export type {
     MinFeeResolverDependencies,
