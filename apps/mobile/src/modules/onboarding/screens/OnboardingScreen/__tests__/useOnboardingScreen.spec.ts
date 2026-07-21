@@ -25,11 +25,15 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@hooks/useIsMounted', () => ({ useIsMounted: () => () => true }))
-vi.mock('@modules/webview', () => ({ useWebView: () => ({ pushWebView: vi.fn() }) }))
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({ pushWebView: vi.fn() }),
+}))
 vi.mock('@hooks/useModalState', () => ({
     useModalState: () => ({ isOpen: false, open: vi.fn(), close: vi.fn() }),
 }))
-vi.mock('@modules/bottom-sheet', () => ({ useBottomSheet: () => ({ request: vi.fn() }) }))
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: vi.fn() }),
+}))
 vi.mock('@modules/onboarding/hooks', () => ({
     useIsOnboarding: () => ({ setIsOnboarding: vi.fn() }),
 }))
@@ -41,7 +45,9 @@ vi.mock('../../../hooks/useTermsAcceptance', () => ({
 
 const mockBuildHdWalletAccount = vi.fn(async () => ({ address: 'ADDR' }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useCreateAccount: () => ({ buildHdWalletAccount: mockBuildHdWalletAccount }),
+    useCreateAccount: () => ({
+        buildHdWalletAccount: mockBuildHdWalletAccount,
+    }),
 }))
 
 vi.mock('@analytics', () => ({
@@ -76,7 +82,9 @@ vi.mock('../../../components/TermsAndConditionsSheet', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({ useToast: () => ({ showToast: vi.fn() }) }))
-vi.mock('@hooks/useLanguage', () => ({ useLanguage: () => ({ t: (k: string) => k }) }))
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (k: string) => k }),
+}))
 
 describe('useOnboardingScreen — double-tap guard', () => {
     beforeEach(() => {
