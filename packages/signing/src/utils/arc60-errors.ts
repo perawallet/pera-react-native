@@ -108,6 +108,22 @@ export class Arc60BadJsonError extends AppError {
     }
 }
 
+/** ERROR_INVALID_DATE — One of the dates in the payload is not valid / canonical SIWA JSON. */
+export class Arc60InvalidDateError extends AppError {
+    constructor(reason: string, originalError?: Error) {
+        super(
+            `ARC-60 date is not a valid for canonical SIWA JSON: ${reason}`,
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.VALIDATION,
+                recoverable: false,
+                params: { reason },
+            },
+            originalError,
+        )
+    }
+}
+
 /** ERROR_FAILED_DOMAIN_AUTH — `authenticatorData[0:32]` ≠ sha256(domain). */
 export class Arc60DomainMismatchError extends AppError {
     constructor(domain: string) {

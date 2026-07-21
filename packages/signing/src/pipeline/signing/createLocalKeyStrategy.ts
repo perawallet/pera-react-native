@@ -18,7 +18,7 @@ import {
     isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
-import { encodeToBase64, toError } from '@perawallet/wallet-core-shared'
+import { AppError, encodeToBase64, toError } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
@@ -151,7 +151,9 @@ export const createLocalKeyStrategy = (
                 }
             } catch (error) {
                 const cause = toError(error)
-                const signingError = new SigningError(cause.message, cause)
+                const signingError = new SigningError(cause.message, cause, {
+                    retryable: (error as AppError)?.metadata?.retryable ?? false
+                })
                 callbacks?.onError?.(signingError)
                 throw signingError
             }

@@ -38,6 +38,7 @@ import {
     useArc0001Resolver,
     useEnqueueArc0001SignRequest,
     useSigningRequest,
+    validateArc60AuthRequest,
 } from '@perawallet/wallet-core-signing'
 import type WalletConnect from '@perawallet/walletconnect'
 import { useCallback } from 'react'
@@ -286,7 +287,7 @@ const validateArc60Request = (
         )
     }
 
-    return {
+    const result = {
         stdSigData: {
             data,
             signer,
@@ -297,6 +298,10 @@ const validateArc60Request = (
         },
         metadata,
     }
+
+    validateArc60AuthRequest(result.stdSigData, result.metadata, accounts)
+
+    return result
 }
 
 export const useWalletConnectHandlers = () => {

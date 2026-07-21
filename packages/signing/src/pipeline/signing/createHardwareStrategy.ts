@@ -14,7 +14,7 @@ import type {
     WalletAccount,
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import { isHardwareWalletAccount, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletTransport,
     HardwareWalletRegistry,
@@ -361,7 +361,7 @@ const signArc60OnHardwareWallet = async (
     hwAccount: HardwareWalletAccount,
     stdSigData: Arc60StdSigData,
     metadata: Arc60Metadata,
-    options: SignArc60OnHardwareWalletOptions,
+    options: SignArc60OnHardwareWalletOptions
 ): Promise<Uint8Array> => {
     const { registry, callbacks } = options
 
@@ -407,7 +407,8 @@ const signArc60OnHardwareWallet = async (
         }
 
         // Shared host-side validation (scope / domain / SIWA / signer).
-        validateArc60AuthRequest(stdSigData, metadata)
+        const accounts = useAccountsStore().accounts
+        validateArc60AuthRequest(stdSigData, metadata, accounts)
 
         callbacks?.onSigningStart?.()
         callbacks?.onProgress?.(1, 1)
