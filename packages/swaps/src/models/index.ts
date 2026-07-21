@@ -23,9 +23,11 @@ export type SwapsState = BaseStoreState & {
     fromAsset: string
     toAsset: string
     slippage: Nullable<string>
+    isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string) => void
     setSlippage: (slippage: Nullable<string>) => void
+    setIsLocalCurrencyInput: (value: boolean) => void
 }
 
 export type SwapConfigurationResult = {

@@ -29,6 +29,7 @@ import { useSwapsStore } from '../store'
 describe('swaps/store', () => {
     beforeEach(() => {
         useSwapsStore.getState().resetState()
+        useSwapsStore.getState().setIsLocalCurrencyInput(false)
     })
 
     test('store initializes with defaults', () => {
@@ -82,6 +83,42 @@ describe('swaps/store', () => {
         })
 
         expect(result.current.slippage).toBeNull()
+    })
+
+    test('isLocalCurrencyInput defaults to false', () => {
+        const { result } = renderHook(() => useSwapsStore())
+
+        expect(result.current.isLocalCurrencyInput).toBe(false)
+    })
+
+    test('setIsLocalCurrencyInput toggles the swap-scoped preference', () => {
+        const { result } = renderHook(() => useSwapsStore())
+
+        act(() => {
+            result.current.setIsLocalCurrencyInput(true)
+        })
+
+        expect(result.current.isLocalCurrencyInput).toBe(true)
+
+        act(() => {
+            result.current.setIsLocalCurrencyInput(false)
+        })
+
+        expect(result.current.isLocalCurrencyInput).toBe(false)
+    })
+
+    test('resetState preserves isLocalCurrencyInput', () => {
+        const { result } = renderHook(() => useSwapsStore())
+
+        act(() => {
+            result.current.setIsLocalCurrencyInput(true)
+        })
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.isLocalCurrencyInput).toBe(true)
     })
 
     test('resetState resets assets but preserves slippage', async () => {

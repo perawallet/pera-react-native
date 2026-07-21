@@ -38,6 +38,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+// fiat × 2 = asset units; asset ÷ 2 = fiat.
+const fiatToAsset = (fiat: Decimal | null) =>
+    fiat ? fiat.mul(new Decimal(2)) : null
+const assetToFiat = (asset: Decimal | null) =>
+    asset ? asset.div(new Decimal(2)) : null
+
 describe('useSwapAmountSection', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -123,6 +129,115 @@ describe('useSwapAmountSection', () => {
         })
 
         expect(onAmountChange).toHaveBeenCalledWith(new Decimal('1.5'))
+    })
+
+    describe('decimal separator normalization', () => {
+        it('drops European grouping separators from a pasted value', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                }),
+            )
+
+            // "1.000,50" (de-DE) → 1000.5
+            act(() => {
+                result.current.handleTextChange('1.000,50')
+            })
+
+            expect(onAmountChange).toHaveBeenLastCalledWith(
+                new Decimal('1000.5'),
+            )
+        })
+
+        it('drops US grouping separators from a pasted value', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                }),
+            )
+
+            // "1,000.50" (en-US) → 1000.5
+            act(() => {
+                result.current.handleTextChange('1,000.50')
+            })
+
+            expect(onAmountChange).toHaveBeenLastCalledWith(
+                new Decimal('1000.5'),
+            )
+        })
+
+        it('strips whitespace grouping separators (fr-FR style)', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                }),
+            )
+
+            // "1 000,50" (fr-FR) → 1000.5
+            act(() => {
+                result.current.handleTextChange('1 000,50')
+            })
+
+            expect(onAmountChange).toHaveBeenLastCalledWith(
+                new Decimal('1000.5'),
+            )
+        })
+
+        it('treats the last separator as the decimal point with multiple commas', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                }),
+            )
+
+            // Only the final comma is the decimal separator: "1,2,3" → 12.3
+            act(() => {
+                result.current.handleTextChange('1,2,3')
+            })
+
+            expect(onAmountChange).toHaveBeenLastCalledWith(new Decimal('12.3'))
+        })
+
+        it('normalizes and constrains a comma-decimal entry in fiat mode', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                    isLocalCurrencyInput: true,
+                    fiatToAsset,
+                    assetToFiat,
+                }),
+            )
+
+            // "12,3456" → "12.3456" → constrained to 2 dp "12.34" → ×2 = 24.68
+            act(() => {
+                result.current.handleTextChange('12,3456')
+            })
+
+            expect(result.current.displayValue).toBe('12.34')
+            expect(onAmountChange).toHaveBeenLastCalledWith(
+                new Decimal('24.68'),
+            )
+        })
     })
 
     it('calls onAmountChange with null for empty input', () => {
@@ -219,5 +334,157 @@ describe('useSwapAmountSection', () => {
         // Should be formatted via formatCurrency, not raw toString
         expect(result.current.displayValue).not.toBe('')
         expect(result.current.displayValue).toBeDefined()
+    })
+
+    describe('local currency (fiat) input', () => {
+        it('converts the typed fiat amount to asset units before handing it up', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                    isLocalCurrencyInput: true,
+                    fiatToAsset,
+                    assetToFiat,
+                }),
+            )
+
+            act(() => {
+                result.current.handleTextChange('100')
+            })
+
+            // 100 fiat × 2 = 200 asset units
+            expect(onAmountChange).toHaveBeenLastCalledWith(new Decimal(200))
+            expect(result.current.isFiatInput).toBe(true)
+        })
+
+        it('constrains the fiat entry to two decimal places', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                    isLocalCurrencyInput: true,
+                    fiatToAsset,
+                    assetToFiat,
+                }),
+            )
+
+            act(() => {
+                result.current.handleTextChange('1.234')
+            })
+
+            // trimmed to 1.23 → ×2 = 2.46
+            expect(result.current.displayValue).toBe('1.23')
+            expect(onAmountChange).toHaveBeenLastCalledWith(new Decimal('2.46'))
+        })
+
+        it('hands up null when the fiat field is cleared', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: new Decimal(10),
+                    onAmountChange,
+                    isLocalCurrencyInput: true,
+                    fiatToAsset,
+                    assetToFiat,
+                }),
+            )
+
+            act(() => {
+                result.current.handleTextChange('')
+            })
+
+            expect(onAmountChange).toHaveBeenLastCalledWith(null)
+        })
+
+        it('displays the fiat equivalent of the asset amount when blurred', () => {
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: new Decimal(200),
+                    isLocalCurrencyInput: true,
+                    fiatToAsset,
+                    assetToFiat,
+                }),
+            )
+
+            // 200 asset ÷ 2 = 100.00 fiat
+            expect(result.current.displayValue).toBe('100.00')
+        })
+
+        it('preserves the typed fiat instead of a rounded round-trip value', () => {
+            const lossyFiatToAsset = (f: Decimal | null) =>
+                f
+                    ? f
+                          .div(new Decimal('0.21'))
+                          .toDecimalPlaces(6, Decimal.ROUND_DOWN)
+                    : null
+            const lossyAssetToFiat = (a: Decimal | null) =>
+                a
+                    ? a
+                          .mul(new Decimal('0.21'))
+                          .toDecimalPlaces(2, Decimal.ROUND_DOWN)
+                    : null
+
+            const onAmountChange = vi.fn()
+            const baseProps = {
+                variant: 'pay' as const,
+                assetId: '0',
+                onAmountChange,
+                isLocalCurrencyInput: true,
+                fiatToAsset: lossyFiatToAsset,
+                assetToFiat: lossyAssetToFiat,
+            }
+            const { result, rerender } = renderHook(
+                (props: Parameters<typeof useSwapAmountSection>[0]) =>
+                    useSwapAmountSection(props),
+                {
+                    initialProps: {
+                        ...baseProps,
+                        amount: null as Decimal | null,
+                    },
+                },
+            )
+
+            act(() => {
+                result.current.handleTextChange('3')
+            })
+            const emittedAsset = onAmountChange.mock.calls.at(
+                -1,
+            )?.[0] as Decimal
+
+            rerender({ ...baseProps, amount: emittedAsset })
+
+            expect(lossyAssetToFiat(emittedAsset)?.toString()).toBe('2.99')
+            expect(result.current.displayValue).toBe('3')
+        })
+
+        it('reports isFiatInput false and keeps asset behavior when toggle off', () => {
+            const onAmountChange = vi.fn()
+            const { result } = renderHook(() =>
+                useSwapAmountSection({
+                    variant: 'pay',
+                    assetId: '0',
+                    amount: null,
+                    onAmountChange,
+                    isLocalCurrencyInput: false,
+                }),
+            )
+
+            act(() => {
+                result.current.handleTextChange('5')
+            })
+
+            expect(result.current.isFiatInput).toBe(false)
+            expect(onAmountChange).toHaveBeenLastCalledWith(new Decimal(5))
+        })
     })
 })

@@ -54,6 +54,11 @@ export const SwapPairHistoryWidget = () => {
         [],
     )
 
+    const renderSeparator = useCallback(
+        () => <PWView style={styles.separator} />,
+        [styles.separator],
+    )
+
     if (!isEnabled) return null
 
     if (isLoading) {
@@ -118,6 +123,7 @@ export const SwapPairHistoryWidget = () => {
                 data={pairs}
                 renderItem={renderPair}
                 keyExtractor={keyExtractor}
+                ItemSeparatorComponent={renderSeparator}
                 style={styles.list}
                 contentContainerStyle={styles.listContent}
             />

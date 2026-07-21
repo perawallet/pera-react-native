@@ -17,3 +17,4 @@ export type {
     SwapExecutionError,
 } from './useSwapExecution'
 export { useSwapQuotes } from './useSwapQuotes'
+export { useSwapLocalCurrency } from './useSwapLocalCurrency'
