@@ -37,7 +37,10 @@ import {
     applyQuantumFeeOverride,
     type QuantumFeeAdjustment,
 } from '../pipeline/sources'
-import { QuantumFeeDeliveryError } from '../pipeline/errors'
+import {
+    QUANTUM_FEE_DELIVERY_MESSAGE_MARKER,
+    QuantumFeeDeliveryError,
+} from '../pipeline/errors'
 
 import { useSigningRequest } from './useSigningRequest'
 
@@ -208,7 +211,7 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                             throw err
                         }
                         throw new QuantumFeeDeliveryError(
-                            'The dApp rejected or failed to accept the quantum-fee-adjusted response',
+                            `The dApp rejected or failed to accept the ${QUANTUM_FEE_DELIVERY_MESSAGE_MARKER} response`,
                             { cause: toError(err) },
                         )
                     }

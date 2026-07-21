@@ -27,6 +27,7 @@ import {
 import type { Arc0001ResolveResult } from '@perawallet/wallet-core-blockchain'
 
 import { useEnqueueArc0001SignRequest } from '../useEnqueueArc0001SignRequest'
+import { QUANTUM_FEE_DELIVERY_MESSAGE_MARKER } from '../../pipeline/errors'
 
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
@@ -635,6 +636,9 @@ describe('useEnqueueArc0001SignRequest', () => {
             ).rejects.toMatchObject({
                 name: 'QuantumFeeDeliveryError',
                 originalError: deliveryFailure,
+                message: expect.stringContaining(
+                    QUANTUM_FEE_DELIVERY_MESSAGE_MARKER,
+                ),
             })
         })
 
