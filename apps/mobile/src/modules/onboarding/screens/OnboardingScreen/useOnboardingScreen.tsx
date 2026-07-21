@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useWebView } from '@modules/webview'
@@ -49,6 +50,19 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const { needsAcceptance } = useTermsAcceptance()
 
+    // Synchronous re-entrancy latch shared by create + import. The button's
+    // `disabled` prop is driven by React state (`isCreatingAccount`), which only
+    // updates a tick later and after an `await`, so a fast double-tap fires both
+    // handlers before the disable renders and pushes the next screen twice. A
+    // ref flips synchronously on the first tap, so the second bails in the same
+    // tick. Reset on focus so returning via back re-enables onboarding.
+    const isStartingRef = useRef(false)
+    useFocusEffect(
+        useCallback(() => {
+            isStartingRef.current = false
+        }, []),
+    )
+
     // Terms & Conditions gate. Deferred until the user actually starts onboarding
     // (create or import) rather than auto-popping on mount. Returns whether the
     // user may proceed. The sheet is blocking (no close, not dismissable) and
@@ -84,8 +98,13 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     }, [pushWebView])
 
     const handleCreateAccount = useCallback(() => {
+        if (isStartingRef.current) return
+        isStartingRef.current = true
         void (async () => {
-            if (!(await ensureTermsAccepted())) return
+            if (!(await ensureTermsAccepted())) {
+                isStartingRef.current = false
+                return
+            }
             trackEvent(OnboardingEvent.CreateNewWallet)
             setIsOnboarding(true)
             openCreatingAccount()
@@ -108,6 +127,8 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
                         type: 'error',
                     })
                     setIsOnboarding(false)
+                    // Nothing was pushed; release so the user can retry.
+                    isStartingRef.current = false
                 } finally {
                     if (isMounted()) closeCreatingAccount()
                 }
@@ -126,8 +147,13 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     ])
 
     const handleImportAccount = useCallback(() => {
+        if (isStartingRef.current) return
+        isStartingRef.current = true
         void (async () => {
-            if (!(await ensureTermsAccepted())) return
+            if (!(await ensureTermsAccepted())) {
+                isStartingRef.current = false
+                return
+            }
             trackEvent(OnboardingEvent.ImportAccount)
             setIsOnboarding(true)
             navigation.push('ImportAccountOptions')
