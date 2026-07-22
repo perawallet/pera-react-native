@@ -72,7 +72,7 @@ export const PaymentTransactionDisplay = ({
                 <KeyValueRow title={t('transactions.common.amount')}>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={Decimal(amount)}
+                        value={new Decimal(amount)}
                         showSymbol
                         style={amountStyle}
                         ignorePrivacyMode
