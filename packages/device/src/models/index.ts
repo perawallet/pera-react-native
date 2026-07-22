@@ -35,12 +35,23 @@ export interface DeviceResponse {
     locale?: string
 }
 
+/**
+ * Provenance of a network's device id: 'migrated' while the id written by
+ * migrateDeviceIdentifiers is still the active one, 'recreated' once the
+ * registration recreate-fallback replaced it (device-keyed server state such
+ * as Discover favorites is orphaned at that point). Absent = the id never
+ * came from migration.
+ */
+export type DeviceIdOrigin = 'migrated' | 'recreated'
+
 export type DeviceState = BaseStoreState & {
     pushToken: Nullable<string>
     deviceIDs: Map<Network, Nullable<string>>
     /** Networks whose last registration attempt failed and awaits a retry. */
     pendingRegistrationNetworks: Network[]
+    deviceIdOrigins: Partial<Record<Network, DeviceIdOrigin>>
     setPushToken: (token: Nullable<string>) => void
     setDeviceID: (network: Network, id: Nullable<string>) => void
     setRegistrationPending: (network: Network, isPending: boolean) => void
+    setDeviceIdOrigin: (network: Network, origin: DeviceIdOrigin) => void
 }

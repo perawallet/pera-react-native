@@ -13,7 +13,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const { deviceStoreMock, settingsStoreMock } = vi.hoisted(() => ({
-    deviceStoreMock: { setDeviceID: vi.fn() },
+    deviceStoreMock: {
+        setDeviceID: vi.fn(),
+        setDeviceIdOrigin: vi.fn(),
+        deviceIDs: new Map<string, string | null>(),
+    },
     settingsStoreMock: { setPreference: vi.fn() },
 }))
 
@@ -45,6 +49,8 @@ const buildIdentifiers = (
 
 beforeEach(() => {
     deviceStoreMock.setDeviceID.mockReset()
+    deviceStoreMock.setDeviceIdOrigin.mockReset()
+    deviceStoreMock.deviceIDs = new Map()
     settingsStoreMock.setPreference.mockReset()
 })
 
@@ -53,6 +59,7 @@ describe('migrateDeviceIdentifiers', () => {
         migrateDeviceIdentifiers(buildIdentifiers())
 
         expect(deviceStoreMock.setDeviceID).not.toHaveBeenCalled()
+        expect(deviceStoreMock.setDeviceIdOrigin).not.toHaveBeenCalled()
         expect(settingsStoreMock.setPreference).not.toHaveBeenCalled()
     })
 
@@ -150,6 +157,70 @@ describe('migrateDeviceIdentifiers', () => {
         expect(deviceStoreMock.setDeviceID).not.toHaveBeenCalledWith(
             'mainnet',
             'LEGACY-1',
+        )
+    })
+
+    it('marks every migrated device id as migrated per network', () => {
+        migrateDeviceIdentifiers(
+            buildIdentifiers({ mainnetDeviceId: 'M', testnetDeviceId: 'T' }),
+        )
+
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
+            'mainnet',
+            'migrated',
+        )
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
+            'testnet',
+            'migrated',
+        )
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not extend the legacy single-id fallback to testnet', () => {
+        // Device ids key per-network backend deployments (separate
+        // databases); the single legacy id is a mainnet record, so testnet
+        // must stay unset rather than reuse an id the testnet backend
+        // never minted.
+        migrateDeviceIdentifiers(
+            buildIdentifiers({ legacyFallbackDeviceId: 'LEGACY-1' }),
+        )
+
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
+            'mainnet',
+            'LEGACY-1',
+        )
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledTimes(1)
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
+            'mainnet',
+            'migrated',
+        )
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledTimes(1)
+    })
+
+    it('re-flags a superseded id as recreated instead of stomping the live id on re-run', () => {
+        deviceStoreMock.deviceIDs.set('mainnet', 'RECREATED-1')
+
+        migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
+
+        expect(deviceStoreMock.setDeviceID).not.toHaveBeenCalled()
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
+            'mainnet',
+            'recreated',
+        )
+    })
+
+    it('idempotently re-writes the migrated id when it is still the active one', () => {
+        deviceStoreMock.deviceIDs.set('mainnet', 'M1')
+
+        migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
+
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
+            'mainnet',
+            'M1',
+        )
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
+            'mainnet',
+            'migrated',
         )
     })
 })

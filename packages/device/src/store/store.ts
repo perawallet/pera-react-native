@@ -12,7 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { DeviceState } from '../models'
+import type { DeviceIdOrigin, DeviceState } from '../models'
 import {
     registerStore,
     type Network,
@@ -51,6 +51,7 @@ const initialState = {
     deviceIDs: new Map<Network, Nullable<string>>(),
     pushToken: null as Nullable<string>,
     pendingRegistrationNetworks: [] as Network[],
+    deviceIdOrigins: {} as Partial<Record<Network, DeviceIdOrigin>>,
 }
 
 export const useDeviceStore: UseBoundStore<
@@ -76,10 +77,19 @@ export const useDeviceStore: UseBoundStore<
                         : current.filter(pending => pending !== network),
                 })
             },
+            setDeviceIdOrigin: (network: Network, origin: DeviceIdOrigin) => {
+                set({
+                    deviceIdOrigins: {
+                        ...get().deviceIdOrigins,
+                        [network]: origin,
+                    },
+                })
+            },
             resetState: () =>
                 set({
                     ...initialState,
                     deviceIDs: new Map(),
+                    deviceIdOrigins: {},
                 }),
         }),
         {
@@ -93,6 +103,7 @@ export const useDeviceStore: UseBoundStore<
             partialize: state => ({
                 deviceIDs: Object.fromEntries(state.deviceIDs),
                 pushToken: state.pushToken,
+                deviceIdOrigins: state.deviceIdOrigins,
             }),
             onRehydrateStorage: () => state => {
                 if (state) {
