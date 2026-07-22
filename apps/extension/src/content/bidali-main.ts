@@ -17,15 +17,9 @@
 // install page-visible globals. Inert without the extension-stamped bridge
 // token: this script also matches regular *.bidali.com tabs (all_frames, no
 // iframe) where no bridge host exists on the other side. Reuses the exact
-// handshake dance discover-main.ts runs with bidali-relay.ts (see
-// webview-relay.ts's header for why sharing those Discover-named constants
-// across the two disjoint-origin pairs is safe).
-import type { DiscoverChannelHandshake } from '@perawallet/wallet-extension-platform-chrome'
-import {
-    DISCOVER_BRIDGE_TOKEN_PARAM,
-    DISCOVER_HANDSHAKE_EVENT,
-    DISCOVER_RELAY_READY_EVENT,
-} from '@perawallet/wallet-extension-platform-chrome'
+// handshake preamble discover-main.ts runs, via the shared
+// connectWebviewMainChannel helper (webview-main-channel.ts).
+import { connectWebviewMainChannel } from './webview-main-channel'
 
 // Mirrors SUPPORTED_CURRENCIES in useBidaliTransport.ts.
 const PAYMENT_CURRENCIES = ['algorand', 'usdcalgorand']
@@ -46,30 +40,10 @@ const parseBalances = (raw: string | null): Record<string, string> => {
 }
 
 const searchParams = new URLSearchParams(window.location.search)
-const token = searchParams.get(DISCOVER_BRIDGE_TOKEN_PARAM)
+const mainChannel = connectWebviewMainChannel('bidali')
 
-if (token) {
-    const rand = (): string => crypto.randomUUID().replace(/-/g, '')
-    const channel: DiscoverChannelHandshake = {
-        requestEventName: `__pera_bidali_req_${rand()}__`,
-        responseEventName: `__pera_bidali_res_${rand()}__`,
-    }
-
-    const dispatchHandshake = (): void => {
-        window.dispatchEvent(
-            new CustomEvent(DISCOVER_HANDSHAKE_EVENT, { detail: channel }),
-        )
-    }
-    // Re-dispatch if bidali-relay.ts loads after us (same recovery
-    // discover-main.ts/discover-relay.ts uses).
-    window.addEventListener(DISCOVER_RELAY_READY_EVENT, dispatchHandshake)
-    dispatchHandshake()
-
-    const relay = (message: Record<string, unknown>): void => {
-        window.dispatchEvent(
-            new CustomEvent(channel.requestEventName, { detail: message }),
-        )
-    }
+if (mainChannel) {
+    const { relay } = mainChannel
 
     // Mirrors native's sendRPC helper (buildBidaliProviderJS in
     // useBidaliTransport.ts) exactly, including the 'bidali-'-prefixed id:

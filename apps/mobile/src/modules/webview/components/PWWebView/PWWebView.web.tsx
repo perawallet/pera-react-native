@@ -65,7 +65,7 @@ import type { PWWebViewProps } from './PWWebView'
 
 export type { PWWebViewProps } from './PWWebView'
 
-const TOKEN_PARAM = 'peraBridgeToken' // = DISCOVER_BRIDGE_TOKEN_PARAM (bridge-wire.ts)
+const TOKEN_PARAM = 'peraBridgeToken' // = WEBVIEW_BRIDGE_TOKEN_PARAM (bridge-wire.ts)
 
 // Bounds the disconnect → regenerate-token → reconnect → disconnect… cycle a
 // crash-looping relay (or a permanently broken extension context) could

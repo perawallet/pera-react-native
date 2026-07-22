@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DISCOVER_BRIDGE_PORT_PREFIX } from './bridge-wire'
+import { WEBVIEW_BRIDGE_PORT_PREFIX } from './bridge-wire'
 
 export type DiscoverBridgeHost = {
     post: (data: unknown) => void
@@ -41,7 +41,7 @@ export const createDiscoverBridgeHost = (params: {
     let activePort: chrome.runtime.Port | null = null
 
     const handleConnect = (port: chrome.runtime.Port): void => {
-        if (port.name !== `${DISCOVER_BRIDGE_PORT_PREFIX}${params.token}`) {
+        if (port.name !== `${WEBVIEW_BRIDGE_PORT_PREFIX}${params.token}`) {
             return // another mount's port — leave it alone
         }
         if (!params.trustedOrigins.includes(port.sender?.origin ?? '')) {

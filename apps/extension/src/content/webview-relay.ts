@@ -20,32 +20,29 @@
 // listeners receive native-shaped envelopes unchanged. Inert without the
 // extension-stamped token param.
 //
-// The DISCOVER_BRIDGE_*/DISCOVER_HANDSHAKE_EVENT/DISCOVER_RELAY_READY_EVENT
-// constants are named for the Discover pair but are reused here
-// deliberately, not accidentally: the Port name is namespaced per-token
-// (`${DISCOVER_BRIDGE_PORT_PREFIX}${token}`), so two callers sharing the
-// prefix can't collide as long as tokens are unique, and the Discover and
-// Bidali script pairs are declared on disjoint origins in manifest.json
-// (`*.perawallet.app` vs `*.bidali.com`), so their handshake/ready events —
-// scoped to a single document via window CustomEvents — never cross paths
-// either. Renaming these constants to a neutral name is a larger,
-// out-of-scope refactor; the sharing is safe as-is.
+// The Port name is namespaced per-token
+// (`${WEBVIEW_BRIDGE_PORT_PREFIX}${token}`), so the Discover and Bidali
+// pairs sharing this relay body can't collide as long as tokens are unique,
+// and the two script pairs are declared on disjoint origins in
+// manifest.json (`*.perawallet.app` vs `*.bidali.com`), so their
+// handshake/ready events — scoped to a single document via window
+// CustomEvents — never cross paths either.
 import type { DiscoverChannelHandshake } from '@perawallet/wallet-extension-platform-chrome'
 import {
-    DISCOVER_BRIDGE_PORT_PREFIX,
-    DISCOVER_BRIDGE_TOKEN_PARAM,
-    DISCOVER_HANDSHAKE_EVENT,
-    DISCOVER_RELAY_READY_EVENT,
+    WEBVIEW_BRIDGE_PORT_PREFIX,
+    WEBVIEW_BRIDGE_TOKEN_PARAM,
+    WEBVIEW_BRIDGE_HANDSHAKE_EVENT,
+    WEBVIEW_BRIDGE_RELAY_READY_EVENT,
 } from '@perawallet/wallet-extension-platform-chrome'
 
 export const runWebviewRelay = (): void => {
     const token = new URLSearchParams(window.location.search).get(
-        DISCOVER_BRIDGE_TOKEN_PARAM,
+        WEBVIEW_BRIDGE_TOKEN_PARAM,
     )
 
     if (token) {
         const port = chrome.runtime.connect({
-            name: `${DISCOVER_BRIDGE_PORT_PREFIX}${token}`,
+            name: `${WEBVIEW_BRIDGE_PORT_PREFIX}${token}`,
         })
         let channel: DiscoverChannelHandshake | null = null
 
@@ -55,7 +52,7 @@ export const runWebviewRelay = (): void => {
             window.postMessage(data, window.location.origin)
         })
 
-        window.addEventListener(DISCOVER_HANDSHAKE_EVENT, event => {
+        window.addEventListener(WEBVIEW_BRIDGE_HANDSHAKE_EVENT, event => {
             if (channel) return // first handshake wins
             const detail = (event as CustomEvent<DiscoverChannelHandshake>)
                 .detail
@@ -68,6 +65,6 @@ export const runWebviewRelay = (): void => {
 
         // If the MAIN-world script loaded first, its handshake already
         // fired — ask again.
-        window.dispatchEvent(new CustomEvent(DISCOVER_RELAY_READY_EVENT))
+        window.dispatchEvent(new CustomEvent(WEBVIEW_BRIDGE_RELAY_READY_EVENT))
     }
 }
