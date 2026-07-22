@@ -20,6 +20,7 @@
     "@sqlite.org/sqlite-wasm": "catalog:"
   },
   "devDependencies": {
+    "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@playwright/test": "catalog:",
     "@testing-library/react": "catalog:",
