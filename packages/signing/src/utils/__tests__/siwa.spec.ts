@@ -12,9 +12,12 @@
 
 import { describe, expect, test } from 'vitest'
 import { canonify } from 'canonify'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { sha256 } from '@noble/hashes/sha2.js'
 import { Arc60BadJsonError } from '../arc60'
 import {
     parseSiwa,
+    buildSiwaAuthRequest,
     SIWA_CHAIN_ID,
     SIWA_MAX_PAYLOAD_BYTES,
     SIWA_MAX_RESOURCE_BYTES,
@@ -172,5 +175,59 @@ describe('parseSiwa — size limits (ARC-60 DoS hardening)', () => {
         for (let i = 0; i < 500; i++) nested = { a: nested }
         const json = JSON.stringify({ ...baseSiwa, statement: nested })
         expect(() => parseSiwa(json)).toThrow(Arc60BadJsonError)
+    })
+})
+
+describe('buildSiwaAuthRequest', () => {
+    const args = {
+        domain: 'perawallet.app',
+        accountAddress: 'ALGOADDRESS',
+        uri: 'https://perawallet.app',
+        nonce: 'nonce-123',
+        statement: 'Prove address ownership',
+        now: new Date('2026-07-17T00:00:00.000Z'),
+    }
+
+    test('produces a payload that round-trips through parseSiwa', () => {
+        const { data } = buildSiwaAuthRequest(args)
+        const canonicalJson = new TextDecoder().decode(decodeFromBase64(data))
+        const siwa = parseSiwa(canonicalJson)
+
+        expect(siwa.domain).toBe(args.domain)
+        expect(siwa.account_address).toBe(args.accountAddress)
+        expect(siwa.uri).toBe(args.uri)
+        expect(siwa.nonce).toBe(args.nonce)
+        expect(siwa.statement).toBe(args.statement)
+        expect(siwa.chain_id).toBe(SIWA_CHAIN_ID)
+        expect(siwa.type).toBe('ed25519')
+    })
+
+    test('sets a 30-minute expiry window by default', () => {
+        const { payload } = buildSiwaAuthRequest(args)
+
+        expect(payload['issued-at']).toBe('2026-07-17T00:00:00.000Z')
+        expect(payload['expiration-time']).toBe('2026-07-17T00:30:00.000Z')
+    })
+
+    test('omits statement when not provided', () => {
+        const { statement: _statement, ...rest } = args
+        const { payload } = buildSiwaAuthRequest(rest)
+
+        expect(payload.statement).toBeUndefined()
+        expect(Object.keys(payload)).not.toContain('statement')
+    })
+
+    test('authenticatorData is sha256(domain), matching the ARC-60 domain-binding invariant', () => {
+        const { authenticatorData } = buildSiwaAuthRequest(args)
+        const expected = sha256(new TextEncoder().encode(args.domain))
+
+        expect([...authenticatorData]).toEqual([...expected])
+    })
+
+    test('two calls with different nonces produce different data', () => {
+        const first = buildSiwaAuthRequest(args)
+        const second = buildSiwaAuthRequest({ ...args, nonce: 'nonce-456' })
+
+        expect(first.data).not.toBe(second.data)
     })
 })
