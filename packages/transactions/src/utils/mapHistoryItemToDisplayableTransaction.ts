@@ -74,6 +74,7 @@ export const mapHistoryItemToDisplayableTransaction = (
         case TransactionTypes.APPL: {
             return {
                 ...base,
+                innerTransactionCount: item.innerTransactionCount ?? undefined,
                 applicationTransaction: {
                     applicationId: BigInt(item.applicationId ?? '0'),
                 },

@@ -2385,7 +2385,8 @@
             "foreign_assets": "Foreign Assets",
             "boxes": "Box References",
             "inner_transactions_one": "{{count}} Inner Transaction",
-            "inner_transactions_other": "{{count}} Inner Transactions"
+            "inner_transactions_other": "{{count}} Inner Transactions",
+            "inner_transactions_unavailable": "Connect to the internet to view"
         },
         "group_transactions_one": "{{count}} Group Transaction",
         "group_transactions_other": "{{count}} Group Transactions",

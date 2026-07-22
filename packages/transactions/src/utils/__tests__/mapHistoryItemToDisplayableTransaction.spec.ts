@@ -118,6 +118,19 @@ describe('mapHistoryItemToDisplayableTransaction', () => {
         expect(result?.applicationTransaction?.applicationId).toBe(1002541853n)
         expect(result?.applicationTransaction?.onCompletion).toBeUndefined()
         expect(result?.innerTxns).toBeUndefined()
+        expect(result?.innerTransactionCount).toBeUndefined()
+    })
+
+    it('threads the stored inner transaction count for app calls', () => {
+        const result = mapHistoryItemToDisplayableTransaction({
+            ...baseItem,
+            txType: 'appl',
+            applicationId: '1002541853',
+            innerTransactionCount: 3,
+        })
+
+        expect(result?.innerTransactionCount).toBe(3)
+        expect(result?.innerTxns).toBeUndefined()
     })
 
     it('defaults a missing application id to 0 (app creation)', () => {

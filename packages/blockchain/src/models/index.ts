@@ -45,6 +45,12 @@ type PlainModel<T> = T extends Uint8Array
 export type PeraDisplayableTransaction = PlainModel<IndexerTransaction> & {
     roundTimeMillis?: number
     rawTransaction?: PeraTransaction
+    /**
+     * Count of inner transactions when only the local summary is available
+     * (mapped from the SQLite history row). Indexer-fetched transactions
+     * carry the full `innerTxns` array instead; prefer it when present.
+     */
+    innerTransactionCount?: number
 }
 
 export type AccountInformation = {
