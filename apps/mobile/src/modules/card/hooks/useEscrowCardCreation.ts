@@ -23,14 +23,13 @@ import {
 import {
     encodeDelegatedLsigAccount,
     ProgramSigningUnsupportedError,
-    useArbitraryDataSigner,
+    useLocalKeyArc60Signer,
     useProgramSigner,
 } from '@perawallet/wallet-core-signing'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 export type UseEscrowCardCreationResult = {
     /**
-     * Creates the Pera Card for `account`: signs the ARC-60/SIWA ownership
+     * Creates the Pera Card for `account`: signs the ARC-60 SIWA ownership
      * proof, and for Auto funding also signs + posts the AutoDraw delegation.
      * Auto degrades to Manual (in the result) if the LSig leg fails.
      */
@@ -40,20 +39,21 @@ export type UseEscrowCardCreationResult = {
     ) => Promise<CreateEscrowCardResult>
     isPending: boolean
     /**
-     * True only for local-key accounts (Algo25/HD). Ledger/watch/rekeyed
-     * accounts can produce neither the SIWA proof nor the delegated LSig, so
-     * they can't create a card.
+     * True only for local-key accounts (Algo25/HD). Ledger ARC-60 signing is
+     * not wired up for card creation yet (see useEscrowCardCreation's plan
+     * notes), and watch/rekeyed accounts can produce neither the ARC-60 proof
+     * nor the delegated LSig, so none of them can create a card.
      */
     canCreateCard: (account: WalletAccount) => boolean
 }
 
 /**
- * Composes the wallet's arbitrary-data + program signers with the AB card
- * creation mutation, keeping the card package signing-agnostic (the signers are
+ * Composes the wallet's ARC-60 + program signers with the card creation
+ * mutation, keeping the card package signing-agnostic (the signers are
  * injected per call).
  */
 export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
-    const { signArbitraryData } = useArbitraryDataSigner()
+    const { signArc60 } = useLocalKeyArc60Signer()
     const { signProgram } = useProgramSigner()
     const createMutation = useCreateEscrowCardMutation()
     const { mutateAsync: createEscrowCardAsync } = createMutation
@@ -73,17 +73,8 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
             return createEscrowCardAsync({
                 address: account.address,
                 fundingType,
-                // SIWA proof: sign "MX" || message (arbitrary-data semantics).
-                // TODO(card): temporary — switch to the wallet's standard ARC-60
-                // signer once AB adopt the standard schema (also unblocks Ledger,
-                // which can't do MX arbitrary-data signing). See api/escrow/siwa.ts.
-                signSiwaMessage: async message =>
-                    (
-                        await signArbitraryData(
-                            account,
-                            encodeToBase64(message),
-                        )
-                    )[0],
+                signArc60: (stdSigData, metadata) =>
+                    signArc60(account, stdSigData, metadata),
                 // AutoDraw LSig: sign "Program" || program, assemble the
                 // delegated LogicSigAccount, and return its msgpack bytes.
                 signLsigProgram: async program => {
@@ -96,7 +87,7 @@ export const useEscrowCardCreation = (): UseEscrowCardCreationResult => {
                 },
             })
         },
-        [canCreateCard, createEscrowCardAsync, signArbitraryData, signProgram],
+        [canCreateCard, createEscrowCardAsync, signArc60, signProgram],
     )
 
     return {
