@@ -85,18 +85,30 @@ export type CardUxState = BaseStoreState & {
      */
     selectedFundingType: Nullable<FundingType>
     /**
-     * Escrow card account address returned by the AB card-creation call, plus
-     * the funding account and network it was created for. Persisted (and left
-     * intact by `resetOnboardingProgress`) so a retry reuses the already-created
-     * card instead of creating a second one. Reuse is scoped to BOTH
-     * `escrowCardOwner` and `escrowCardNetwork` — a different funding account,
-     * or the same account on the other network, never reuses this card.
+     * Escrow card account address returned by the backend card-creation call,
+     * plus the transaction id of the on-chain `cardCreate`, the funding
+     * account, and the network it was created for. Persisted (and left
+     * intact by `resetOnboardingProgress`) so a retry reuses the
+     * already-created card instead of creating a second one. Reuse is scoped
+     * to BOTH `escrowCardOwner` and `escrowCardNetwork` — a different funding
+     * account, or the same account on the other network, never reuses this
+     * card.
      */
     escrowCardAddress: Nullable<string>
     /** Funding-source address that owns {@link escrowCardAddress}. */
     escrowCardOwner: Nullable<string>
     /** Network {@link escrowCardAddress} was created on. */
     escrowCardNetwork: Nullable<Network>
+    /** Transaction id of the on-chain `cardCreate` call. */
+    escrowCardTxId: Nullable<string>
+    /**
+     * Whether the AB approval call (which carries {@link escrowCardTxId})
+     * has succeeded for the current {@link escrowCardAddress}. False between
+     * a successful create and a successful approve — e.g. after an app
+     * restart mid-flow — so a retry knows to re-sign and call approval only,
+     * without re-triggering the on-chain create.
+     */
+    escrowCardApproved: boolean
     cardId: Nullable<string>
     lastKnownStatus: Nullable<CardStatus>
     /** PCI-safe render hint shown before the status query resolves. */
@@ -115,14 +127,17 @@ export type CardUxState = BaseStoreState & {
     setAllowSms: (allowSms: boolean) => void
     setConnectedFundingSourceAddress: (address: Nullable<string>) => void
     setSelectedFundingType: (type: Nullable<FundingType>) => void
-    /** Records (or clears, with null) the escrow card, its owner, and network. */
+    /** Records (or clears, with null) the escrow card, its owner, network, and txId. */
     setEscrowCard: (
         card: Nullable<{
             cardAddress: string
             ownerAddress: string
             network: Network
+            txId: string
         }>,
     ) => void
+    /** Marks the current escrow card as approved by AB. */
+    markEscrowCardApproved: () => void
     setCardSnapshot: (snapshot: {
         cardId: string
         status: CardStatus
