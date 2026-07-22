@@ -18,9 +18,18 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing.md,
     },
     container: {
+        // flex (not flexGrow) so the tab scene body always fills the account
+        // tab pager. With flexGrow the empty branch collapsed to zero height on
+        // native, blanking the whole History tab (PERA-4676).
         flex: 1,
         minHeight: 0,
         backgroundColor: theme.colors.background,
+    },
+    // Wraps the loading/empty branches (which render outside the SectionList)
+    // so their title aligns with the populated list's horizontal inset.
+    stateContainer: {
+        flex: 1,
+        paddingHorizontal: theme.spacing.xl,
     },
     rootContainer: {
         flexGrow: 1,
@@ -39,19 +48,11 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         paddingVertical: theme.spacing['3xl'],
     },
-    // Zero EmptyView's own gutter: the list content container already insets xl.
+    // Fills the space under the title so the empty message centers; the
+    // horizontal inset comes from stateContainer, so zero the view's own gutter.
     emptyView: {
+        flex: 1,
         paddingHorizontal: 0,
-    },
-    loadingOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: theme.colors.background,
     },
     loadingFooter: {
         paddingVertical: theme.spacing.lg,
