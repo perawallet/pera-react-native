@@ -47,12 +47,9 @@ export const isEligibleFundingSource = (account: WalletAccount): boolean =>
  * a delegated LSig) signature. Excludes Ledger, which is eligible as a funding
  * source but can't sign arbitrary data / programs.
  *
- * TODO(card): the Ledger exclusion is temporary. It exists only because we sign
- * the creation proof as MX arbitrary data (`useArbitraryDataSigner`), which is
- * local-key-only. Switching to the wallet's standard ARC-60 signer (once AB
- * adopt the standard schema — see api/escrow/siwa.ts) makes this on-device
- * signable, so Ledger could create a card and this filter could relax back to
- * `isEligibleFundingSource`.
+ * Card creation uses `useLocalKeyArc60Signer`, which is local-key only (Algo25/HD).
+ * Ledger ARC-60 signing is not yet wired up for card creation; once it is, this
+ * filter could relax to include Ledger accounts.
  */
 export const isSigningCapableFundingSource = (
     account: WalletAccount,
