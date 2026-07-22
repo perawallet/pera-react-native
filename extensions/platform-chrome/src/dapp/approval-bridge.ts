@@ -10,27 +10,17 @@
  limitations under the License
  */
 
-import {
-    type SerializedCreateOptions,
-    type SerializedGetOptions,
-    type SerializedCredential,
-} from '@perawallet/wallet-core-passkeys/webauthn'
+import { type SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
 import { isTrustedExtensionPageSender } from './../trusted-sender'
-import { type ApprovalOpener } from './router'
+import { type Arc0027ApprovalOpener } from './router'
+import {
+    type PasskeyDecision,
+    type PasskeyCreateApprovalContext,
+    type PasskeyGetApprovalContext,
+    type PasskeyApprovalOpener,
+} from './passkey-opener'
 
 export const DAPP_APPROVAL_SCOPE = 'pera-dapp-approval' as const
-
-// Settled by resolve-passkey (a minted/asserted credential), reject-passkey
-// (an explicit reason — user decline or an authenticator error name, see
-// usePasskeyApproval) or a window close (null, same as every other kind).
-// The reason string (not just null) is what lets the content script
-// translate a decline into the *specific* native WebAuthn error the page's
-// `navigator.credentials` promise should reject with, rather than a single
-// generic cancellation.
-export type PasskeyDecision =
-    | { credential: SerializedCredential }
-    | { error: string }
-    | null
 
 export type PendingApproval =
     | {
@@ -55,31 +45,18 @@ export type PendingApproval =
           message: Record<string, unknown>
           approvedAddresses: string[]
       }
-    | {
+    | ({
           kind: 'passkey-create'
-          requestId: string
-          // Browser-stamped frame origin (never page-asserted) — passed
-          // verbatim as SigningContext.origin to the authenticator core by
-          // usePasskeyApproval.
-          origin: string
-          rpId: string
-          userName?: string
-          options: SerializedCreateOptions
           // Optional on every kind (see 'enable' above) so code that reads
           // it generically off a `PendingApproval | null` (no per-kind
           // narrowing) — e.g. useEnableRequestScreen — keeps type-checking
           // without every call site branching on `kind` first.
           faviconUrl?: string
-      }
-    | {
+      } & PasskeyCreateApprovalContext)
+    | ({
           kind: 'passkey-get'
-          requestId: string
-          origin: string
-          rpId: string
-          userName?: string
-          options: SerializedGetOptions
           faviconUrl?: string
-      }
+      } & PasskeyGetApprovalContext)
 
 // Each open* method creates its own typed Promise and stores its `resolve`
 // here as this widened `Settle`; `finish()` stays generic over the decision
@@ -88,7 +65,9 @@ export type PendingApproval =
 // open* method's promise executor, not here.
 type Settle = (decision: unknown) => void
 
-export class ApprovalWindowBridge implements ApprovalOpener {
+export class ApprovalWindowBridge
+    implements Arc0027ApprovalOpener, PasskeyApprovalOpener
+{
     private readonly pending = new Map<
         string,
         {
@@ -153,13 +132,9 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         return decision
     }
 
-    async openPasskeyCreate(ctx: {
-        requestId: string
-        origin: string
-        rpId: string
-        userName?: string
-        options: SerializedCreateOptions
-    }): Promise<PasskeyDecision> {
+    async openPasskeyCreate(
+        ctx: PasskeyCreateApprovalContext,
+    ): Promise<PasskeyDecision> {
         const decision = this.awaitApproval<PasskeyDecision>({
             ...ctx,
             kind: 'passkey-create',
@@ -168,13 +143,9 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         return decision
     }
 
-    async openPasskeyGet(ctx: {
-        requestId: string
-        origin: string
-        rpId: string
-        userName?: string
-        options: SerializedGetOptions
-    }): Promise<PasskeyDecision> {
+    async openPasskeyGet(
+        ctx: PasskeyGetApprovalContext,
+    ): Promise<PasskeyDecision> {
         const decision = this.awaitApproval<PasskeyDecision>({
             ...ctx,
             kind: 'passkey-get',

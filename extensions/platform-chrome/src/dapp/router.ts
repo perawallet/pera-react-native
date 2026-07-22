@@ -14,12 +14,8 @@
 // chrome.runtime.MessageSender (never a page-asserted field), consults the
 // permission store, and answers discover/disable/already-approved-enable
 // directly. A fresh enable opens the approval window via an injectable
-// ApprovalOpener (implemented by the approval bridge in a later task) and
-// parks the request until the window resolves it.
-import {
-    type SerializedCreateOptions,
-    type SerializedGetOptions,
-} from '@perawallet/wallet-core-passkeys/webauthn'
+// Arc0027ApprovalOpener (implemented by the approval bridge in a later task)
+// and parks the request until the window resolves it.
 import {
     ARC0027_ERROR_CODES,
     type Arc0027RequestEnvelope,
@@ -31,14 +27,13 @@ import {
     isArc0027Request,
     parseReference,
 } from './arc0027-codec'
-import { type PasskeyDecision } from './approval-bridge'
 import { type DappPermissionStore } from './permissions'
 import { isDappRelayMessage, type DiscoverInfo } from './router-protocol'
 
 export { DAPP_RELAY_SCOPE, isDappRelayMessage } from './router-protocol'
 export type { DiscoverInfo } from './router-protocol'
 
-export interface ApprovalOpener {
+export interface Arc0027ApprovalOpener {
     openEnable(ctx: {
         requestId: string
         origin: string
@@ -58,26 +53,12 @@ export interface ApprovalOpener {
         message: Record<string, unknown>
         approvedAddresses: string[]
     }): Promise<{ signature: string } | null>
-    openPasskeyCreate(ctx: {
-        requestId: string
-        origin: string
-        rpId: string
-        userName?: string
-        options: SerializedCreateOptions
-    }): Promise<PasskeyDecision>
-    openPasskeyGet(ctx: {
-        requestId: string
-        origin: string
-        rpId: string
-        userName?: string
-        options: SerializedGetOptions
-    }): Promise<PasskeyDecision>
 }
 
 export interface RouterDeps {
     permissions: DappPermissionStore
     discoverInfo: () => Promise<DiscoverInfo>
-    approvals: ApprovalOpener
+    approvals: Arc0027ApprovalOpener
 }
 
 const err = (

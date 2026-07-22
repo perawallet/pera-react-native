@@ -21,7 +21,7 @@
 // through to the page's real `navigator.credentials`, which independently
 // rejects with its own spec-correct SecurityError.
 import { resolveRpId } from '@perawallet/wallet-core-passkeys/webauthn'
-import { type ApprovalOpener } from './router'
+import { type PasskeyApprovalOpener } from './passkey-opener'
 import {
     isWebauthnRelayMessage,
     type WebauthnCeremonyRequest,
@@ -41,7 +41,7 @@ const DECLINE: WebauthnCeremonyResponse = { decline: true }
 
 export class PasskeyRouter {
     constructor(
-        private readonly approvals: ApprovalOpener,
+        private readonly approvals: PasskeyApprovalOpener,
         // Optional (not defaulted) — tests never call listen(), so the
         // ambient `chrome` global is only touched when it's actually invoked.
         private readonly chromeLike?: typeof chrome,
