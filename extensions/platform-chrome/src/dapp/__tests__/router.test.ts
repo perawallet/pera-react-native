@@ -358,4 +358,15 @@ describe('ChromeDappRouter', () => {
         expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
         expect(res.requestId).toBe('abc')
     })
+
+    it('answers a shapeless request body from an untrusted origin without throwing (origin check wins)', async () => {
+        const { router } = setup(null)
+        const message = { scope: DAPP_RELAY_SCOPE, request: {} }
+        expect(() =>
+            router.handleMessage(message, senderFor('null'), vi.fn()),
+        ).not.toThrow()
+        const res = await call(router, message, 'null')
+        expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
+        expect(res.requestId).toBe('unknown')
+    })
 })
