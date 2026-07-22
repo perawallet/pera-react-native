@@ -155,6 +155,7 @@ export const useAssetTransactionList = ({
             } else {
                 navigation.navigate('TransactionDetails', {
                     transactionId: transaction.id,
+                    historyTransaction: transaction,
                 })
             }
         },

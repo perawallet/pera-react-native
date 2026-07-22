@@ -206,6 +206,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
             } else {
                 navigation.navigate('TransactionDetails', {
                     transactionId: transaction.id,
+                    historyTransaction: transaction,
                 })
             }
         },

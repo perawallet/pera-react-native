@@ -477,7 +477,8 @@ describe('useAccountHistory', () => {
             result.current.handleTransactionPress(mockTransaction as any)
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: 'TX_123',
+                transactionId: mockTransaction.id,
+                historyTransaction: mockTransaction,
             })
         })
 
@@ -506,7 +507,8 @@ describe('useAccountHistory', () => {
             result.current.handleTransactionPress(mockTransaction as any)
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: 'TX_456',
+                transactionId: mockTransaction.id,
+                historyTransaction: mockTransaction,
             })
         })
 
@@ -574,7 +576,8 @@ describe('useAccountHistory', () => {
             result.current.handleTransactionPress(mockTransaction as any)
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: 'TX_SWAP_NO_GROUP',
+                transactionId: mockTransaction.id,
+                historyTransaction: mockTransaction,
             })
         })
     })
