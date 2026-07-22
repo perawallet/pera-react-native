@@ -119,7 +119,13 @@ overrides:
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
-  fast-uri@<3.1.2: ">=3.1.2"
+  # Original <3.1.2 advisory plus GHSA-v2hh-gcrm-f6hx (host confusion via
+  # backslash authority; affects <=3.1.3 and 4.0.0-4.1.0) + GHSA-4c8g-83qw-93j6
+  # (IDN canonicalization; 4.0.0 only). Pinned exact INSIDE ajv's declared ^3
+  # range: the previous ">=3.1.2" form let the resolver escape to the affected
+  # 4.x major that no dependent asked for. 3.1.4 is the verified 3.x backport
+  # (same Fastify maintainers/publisher as 3.1.3; see freshness exclude note).
+  fast-uri@<4: 3.1.4
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: ">=10.5.0"
   happy-dom@<20.0.0: ">=20.0.0"
@@ -154,6 +160,10 @@ overrides:
   # the verified lowest patched 1.9.0, NOT ">=", which would pull the unvetted
   # 1.10.0.
   shell-quote@<1.9.0: 1.9.0
+  # GHSA-2p49-hgcm-8545 (removeScripts leaves executable scripts intact).
+  # Pinned exact: ">=3.3.4" would jump to svgo 4.x, outside
+  # @svgr/plugin-svgo@8's ^3 range. Dev-only path (svg transformer).
+  svgo@<3.3.4: 3.3.4
   uuid@<14: 14.0.0
   # GHSA-96hv-2xvq-fx4p (memory-exhaustion DoS); 7.5.10 is now vulnerable.
   # Pinned exact (NOT ">="), since 7.5.11 is the last 7.x and ">=" would jump to 8.x.
@@ -183,6 +193,12 @@ minimumReleaseAge: 10080
 #       falcon-1024 is early-stage (0.x) so only one version exists to date.
 #       @joe-p/react-native-falcon (the on-device native Falcon-1024 nitro
 #       module, PQ-020) is likewise exact-pinned to its single 0.x release.
+#   fast-uri
+#     — security backport 3.1.4 (GHSA-v2hh-gcrm-f6hx) published 2026-07-19,
+#       inside the window. Publisher/maintainers verified identical to 3.1.3
+#       (matteo.collina / Fastify org), no install scripts, and the overrides
+#       section pins fast-uri exactly to 3.1.4, so this exemption cannot admit
+#       any other version. Remove this entry after 2026-07-26.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
@@ -194,3 +210,4 @@ minimumReleaseAgeExclude:
   - "expo-*"
   - "@expo/*"
   - babel-preset-expo
+  - fast-uri
