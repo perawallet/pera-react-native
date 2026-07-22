@@ -145,6 +145,25 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
+    // Pre-dismiss the PromptContainer PIN-security nudge (modules/prompts):
+    // it fires LONG_PROMPT_DISPLAY_DELAY (3s wall-clock from account
+    // creation, not from anything a test controls) and can land mid-flow as
+    // a full-screen backdrop the reactive dismissPinPromptIfPresent/
+    // clickThroughPinPrompt helpers below don't always win the race against
+    // (e.g. a plain `expect(...).toBeVisible()` with no retry). Seeding
+    // security_pin_setup_prompt (constants/user-preferences.ts) true makes
+    // usePromptContainer's `!pref` check false on first render, so the
+    // prompt never mounts instead of racing it reactively. Same trick as
+    // pera-card.spec.ts's remote-config override seed.
+    await serviceWorker.evaluate(async () => {
+        await chrome.storage.local.set({
+            'kv:settings-store': JSON.stringify({
+                state: { preferences: { security_pin_setup_prompt: true } },
+                version: 1,
+            }),
+        })
+    })
+
     // Onboard exactly as onboarding.spec.ts: create password -> terms ->
     // create wallet -> name account -> home. Done once in beforeAll so the
     // three tests below can each assert on a stable, already-onboarded shell.
@@ -409,7 +428,11 @@ test('the receive address wraps instead of overflowing the sheet', async () => {
         popupPage.getByText('Select Account', { exact: true }),
     ).toBeVisible({ timeout: 20_000 })
     // Single-account fixture (onboarding.spec.ts shape): exactly one row.
-    await popupPage.locator('[data-testid^="account-row-"]').first().click()
+    // Prefix matches AccountSelectionScreen.tsx's rowTestIDPrefix='receive_account_row'.
+    await popupPage
+        .locator('[data-testid^="receive_account_row-"]')
+        .first()
+        .click()
 
     const addressBox = await popupPage.evaluate(() => {
         const all = Array.from(document.querySelectorAll('*'))

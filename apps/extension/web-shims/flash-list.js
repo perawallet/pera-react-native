@@ -30,6 +30,23 @@
 // sheet uses its own scroll view instead of the sheet's; revisit if that
 // causes gesture conflicts in a bottom-sheet list on web.
 //
+// `refreshControl` (PWRefreshControl, every list's pull-to-refresh) is also
+// dropped on web. react-native-web's ScrollView renders a `refreshControl`
+// element by `React.cloneElement(refreshControl, { style }, scrollView)` —
+// it hands the ENTIRE scrollable content to the control as `children` and
+// expects the control to render them (exports/ScrollView/index.js). But
+// PWRefreshControl wraps `RefreshControl` from `react-native-gesture-handler`,
+// whose web implementation is `createNativeWrapper(View)`
+// (GestureComponents.web.js) — a plain View that doesn't forward the
+// `children` it's given. The result: every list with a refreshControl
+// (any PWFlatList, not just bottom-sheet ones) renders nothing at all on
+// web — the whole ScrollView (rows, ListHeaderComponent, everything) is
+// swallowed silently, with no error. Confirmed by bisecting props one at a
+// time against a real failure (account-menu's list rendering zero rows in
+// the browser extension). Pull-to-refresh has no native-gesture equivalent
+// on web anyway, so dropping the prop (no replacement) is the correct web
+// behavior, not a workaround pending a follow-up.
+//
 // `onScrollToIndexFailed` gets a no-op default. FlashList tolerates
 // `scrollToIndex` on an arbitrary (unmeasured, no `getItemLayout`) index —
 // it estimates and corrects. RN's own FlatList/VirtualizedList does not: it
@@ -57,6 +74,7 @@ export const FlashList = forwardRef((props, ref) => {
         drawDistance: _drawDistance,
         masonry: _masonry,
         onLoad: _onLoad,
+        refreshControl: _refreshControl,
         ...flatListProps
     } = props
 

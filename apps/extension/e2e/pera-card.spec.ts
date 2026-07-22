@@ -162,6 +162,24 @@ test.beforeAll(async () => {
         })
     })
 
+    // Pre-dismiss the PromptContainer PIN-security nudge (modules/prompts):
+    // it fires LONG_PROMPT_DISPLAY_DELAY (3s, wall-clock from account
+    // creation, not from anything this test controls) after the account
+    // exists, and can land mid-flow as a full-screen backdrop that swallows
+    // the account-menu sheet this file's tests depend on. Seeding
+    // security_pin_setup_prompt (constants/user-preferences.ts) true —
+    // same trick as the remote-config override above — makes
+    // usePromptContainer's `!pref` check false on first render, so the
+    // prompt never mounts at all instead of racing it reactively.
+    await serviceWorker.evaluate(async () => {
+        await chrome.storage.local.set({
+            'kv:settings-store': JSON.stringify({
+                state: { preferences: { security_pin_setup_prompt: true } },
+                version: 1,
+            }),
+        })
+    })
+
     // Onboard exactly as onboarding.spec.ts / wallet-smoke.spec.ts.
     page = await context.newPage()
     pageErrors = trackPageErrors(page)

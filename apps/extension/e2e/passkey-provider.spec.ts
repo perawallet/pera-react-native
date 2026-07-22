@@ -302,6 +302,24 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
+    // Pre-dismiss the PromptContainer PIN-security nudge (modules/prompts):
+    // it fires LONG_PROMPT_DISPLAY_DELAY (3s wall-clock from account
+    // creation, not from anything a test controls) and can land mid-flow as
+    // a full-screen backdrop the reactive dismissPinPromptIfPresent helper
+    // below doesn't always win the race against. Seeding
+    // security_pin_setup_prompt (constants/user-preferences.ts) true makes
+    // usePromptContainer's `!pref` check false on first render, so the
+    // prompt never mounts instead of racing it reactively. Same trick as
+    // pera-card.spec.ts's remote-config override seed.
+    await serviceWorker.evaluate(async () => {
+        await chrome.storage.local.set({
+            'kv:settings-store': JSON.stringify({
+                state: { preferences: { security_pin_setup_prompt: true } },
+                version: 1,
+            }),
+        })
+    })
+
     // Onboard exactly as the other e2e specs: create password -> terms ->
     // create wallet -> name account -> home. An HD-wallet account must exist
     // for the passkey authenticator core's key derivation to have anything
