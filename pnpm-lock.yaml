@@ -1449,6 +1449,12 @@ importers:
       '@perawallet/wallet-extension-ledger-react-native-usb':
         specifier: workspace:*
         version: link:../ledger-react-native-usb
+      '@perawallet/wallet-extension-ledger-web-ble':
+        specifier: workspace:*
+        version: link:../ledger-web-ble
+      '@perawallet/wallet-extension-ledger-web-usb':
+        specifier: workspace:*
+        version: link:../ledger-web-usb
       '@perawallet/wallet-extension-passkey-autofill':
         specifier: workspace:*
         version: link:../passkey-autofill

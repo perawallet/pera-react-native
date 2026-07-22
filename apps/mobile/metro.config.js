@@ -73,13 +73,10 @@ const polyfillMap = {
 };
 
 // Native modules that leak into the web bundle through shared screens get
-// same-shaped no-op stubs (design spec: "ledger-react-native /
-// ledger-react-native-usb / passkey-autofill → same-shaped no-op stubs").
+// same-shaped no-op stubs. (Ledger's native transports are handled instead
+// by pera-provider.web.ts importing the real Web Bluetooth/WebHID packages
+// directly — see extensions/provider/src/pera-provider.web.ts.)
 const webStubs = {
-    // BLE transport: react-native-ble-plx calls NativeModules.BlePlx at eval time.
-    '@perawallet/wallet-extension-ledger-react-native': 'ledger-react-native.js',
-    // USB HID transport: @ledgerhq/react-native-hid requires the native bridge.
-    '@perawallet/wallet-extension-ledger-react-native-usb': 'ledger-react-native-usb.js',
     // Native credential provider: requireNativeModule('ReactNativePasskeyAutofill') throws on web.
     '@algorandfoundation/react-native-passkey-autofill': 'react-native-passkey-autofill.js',
     // Worklets runtime: installWorkletsSupport() calls react-native's NativeModules bridge at eval.

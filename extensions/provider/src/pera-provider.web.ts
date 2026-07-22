@@ -13,8 +13,8 @@
 import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
-import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
-import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
+import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
+import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
 import type {
     PeraExtensions,
@@ -25,16 +25,12 @@ import type {
 export type PeraProvider = PeraProviderShape
 
 /**
- * The Pera Wallet Provider with platform services, Ledger hardware wallet,
- * keystore, and passkey autofill. Instances include all platform service
- * properties (analytics, keyValueStorage, etc.) via the build-time resolved
- * platform driver extension, the Ledger extension for hardware wallet support,
- * the keystore extension for cryptographic key management, plus the passkey
- * autofill service exposed at `provider.passkeyAutofill`.
- *
- * Native/RN build — see `pera-provider.web.ts` for the web twin (Web
- * Bluetooth/WebHID Ledger transports instead of the RN ones), which Metro
- * resolves in its place for web bundles.
+ * The Pera Wallet Provider — web build. Metro's `.web.ts` platform-file
+ * resolution picks this file in place of `pera-provider.ts` for web
+ * bundles (the mobile web export and the browser extension it ships as),
+ * swapping the native Ledger BLE/USB transports for their Web
+ * Bluetooth/WebHID counterparts. Every other extension — platform services,
+ * keystore, passkey autofill — is composed identically to the native file.
  */
 export const PeraProvider: {
     new (
@@ -45,8 +41,8 @@ export const PeraProvider: {
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
     WithPlatformExtension,
-    WithLedgerExtension,
-    WithLedgerUsbExtension,
+    WithLedgerWebBleExtension,
+    WithLedgerWebUsbExtension,
     WithKeyStore,
     WithPasskeyAutofill,
 ] as const)
