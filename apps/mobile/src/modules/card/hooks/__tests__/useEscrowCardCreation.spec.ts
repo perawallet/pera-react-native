@@ -39,12 +39,12 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
     }),
 }))
 
-const mockSignArbitraryData = vi.fn()
+const mockSignArc60 = vi.fn()
 const mockSignProgram = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
-    useArbitraryDataSigner: () => ({
-        signArbitraryData: mockSignArbitraryData,
+    useLocalKeyArc60Signer: () => ({
+        signArc60: mockSignArc60,
     }),
     useProgramSigner: () => ({ signProgram: mockSignProgram }),
     encodeDelegatedLsigAccount: (
@@ -71,7 +71,7 @@ const ledgerAccount: WalletAccount = {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockSignArbitraryData.mockResolvedValue([new Uint8Array([1, 2, 3])])
+    mockSignArc60.mockResolvedValue(new Uint8Array([1, 2, 3]))
     mockSignProgram.mockResolvedValue(new Uint8Array([4, 5, 6]))
     mockCreateEscrowCardAsync.mockResolvedValue({
         cardAddress: 'CARD1',
@@ -88,7 +88,7 @@ describe('useEscrowCardCreation', () => {
         expect(result.current.canCreateCard(ledgerAccount)).toBe(false)
     })
 
-    it('injects a SIWA signer and a LSig signer into the mutation', async () => {
+    it('injects an ARC-60 signer and a LSig signer into the mutation', async () => {
         const { result } = renderHook(() => useEscrowCardCreation())
 
         await result.current.createCard(localKeyAccount, FundingType.Auto)
@@ -97,20 +97,28 @@ describe('useEscrowCardCreation', () => {
             expect.objectContaining({
                 address: 'FUNDINGADDR',
                 fundingType: FundingType.Auto,
-                signSiwaMessage: expect.any(Function),
+                signArc60: expect.any(Function),
                 signLsigProgram: expect.any(Function),
             }),
         )
 
-        // The injected SIWA signer signs the message via arbitrary-data signing.
-        const { signSiwaMessage, signLsigProgram } =
+        // The injected ARC-60 signer signs via the local-key KMS signer.
+        const { signArc60, signLsigProgram } =
             mockCreateEscrowCardAsync.mock.calls[0][0]
-        const siwaSig = await signSiwaMessage(new Uint8Array(64))
-        expect(mockSignArbitraryData).toHaveBeenCalledWith(
+        const stdSigData = {
+            data: 'data',
+            signer: 'FUNDINGADDR',
+            domain: 'd',
+            authenticatorData: new Uint8Array(32),
+        }
+        const metadata = { scope: 1, encoding: 'base64' }
+        const arc60Sig = await signArc60(stdSigData, metadata)
+        expect(mockSignArc60).toHaveBeenCalledWith(
             localKeyAccount,
-            expect.any(String),
+            stdSigData,
+            metadata,
         )
-        expect([...siwaSig]).toEqual([1, 2, 3])
+        expect([...arc60Sig]).toEqual([1, 2, 3])
 
         // The injected LSig signer signs the program and encodes the account.
         const lsigBytes = await signLsigProgram(new Uint8Array([6, 6, 6]))
