@@ -30,7 +30,11 @@ export const mockCreateCard = ({
 }: MockCreateCardParams = {}): HttpHandler => {
     const response = { cardAddress, txId }
     if (status < 400) {
-        validateMockResponse(createCardResponseSchema, response, 'mockCreateCard')
+        validateMockResponse(
+            createCardResponseSchema,
+            response,
+            'mockCreateCard',
+        )
     }
     return http.post('*/v3/baanx/escrow-card', async ({ request }) => {
         onRequest?.((await request.json()) as Record<string, unknown>)

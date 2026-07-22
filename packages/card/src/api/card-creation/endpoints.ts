@@ -48,8 +48,15 @@ export type CreateCardResult = {
 export const createCard = async (
     params: CreateCardParams,
 ): Promise<CreateCardResult> => {
-    const { network, address, currency, signData, signature, integrityToken, signal } =
-        params
+    const {
+        network,
+        address,
+        currency,
+        signData,
+        signature,
+        integrityToken,
+        signal,
+    } = params
 
     const response = await getCardTransport().request({
         network,

@@ -31,13 +31,17 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-const { createCard, approveEscrowCard, postDelegatorLsig, compileAutoDrawProgram } =
-    vi.hoisted(() => ({
-        createCard: vi.fn(),
-        approveEscrowCard: vi.fn(),
-        postDelegatorLsig: vi.fn(),
-        compileAutoDrawProgram: vi.fn(),
-    }))
+const {
+    createCard,
+    approveEscrowCard,
+    postDelegatorLsig,
+    compileAutoDrawProgram,
+} = vi.hoisted(() => ({
+    createCard: vi.fn(),
+    approveEscrowCard: vi.fn(),
+    postDelegatorLsig: vi.fn(),
+    compileAutoDrawProgram: vi.fn(),
+}))
 vi.mock('../../api/card-creation', async () => ({
     ...(await vi.importActual('../../api/card-creation')),
     createCard,
@@ -302,7 +306,10 @@ describe('useCreateEscrowCardMutation', () => {
             txId: 'TX_A',
         })
         useCardStore.getState().markEscrowCardApproved()
-        createCard.mockResolvedValue({ cardAddress: 'CARD_FOR_B', txId: 'TX_B' })
+        createCard.mockResolvedValue({
+            cardAddress: 'CARD_FOR_B',
+            txId: 'TX_B',
+        })
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
@@ -331,7 +338,10 @@ describe('useCreateEscrowCardMutation', () => {
             txId: 'TX_MAIN',
         })
         useCardStore.getState().markEscrowCardApproved()
-        createCard.mockResolvedValue({ cardAddress: 'TESTNET_CARD', txId: 'TX_TEST' })
+        createCard.mockResolvedValue({
+            cardAddress: 'TESTNET_CARD',
+            txId: 'TX_TEST',
+        })
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
