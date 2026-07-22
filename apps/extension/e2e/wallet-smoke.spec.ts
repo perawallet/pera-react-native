@@ -145,20 +145,32 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
-    // Pre-dismiss the PromptContainer PIN-security nudge (modules/prompts):
-    // it fires LONG_PROMPT_DISPLAY_DELAY (3s wall-clock from account
-    // creation, not from anything a test controls) and can land mid-flow as
-    // a full-screen backdrop the reactive dismissPinPromptIfPresent/
-    // clickThroughPinPrompt helpers below don't always win the race against
-    // (e.g. a plain `expect(...).toBeVisible()` with no retry). Seeding
-    // security_pin_setup_prompt (constants/user-preferences.ts) true makes
-    // usePromptContainer's `!pref` check false on first render, so the
-    // prompt never mounts instead of racing it reactively. Same trick as
-    // pera-card.spec.ts's remote-config override seed.
+    // Pre-dismiss two wall-clock-delayed, first-use-only nudges so they can
+    // never race a later test's actions or leak an open overlay into the
+    // next test in this serial file:
+    //  - PromptContainer's PIN-security nudge (modules/prompts) fires
+    //    LONG_PROMPT_DISPLAY_DELAY (3s) after the account exists.
+    //  - InputScreen's "Transacting Tips" interstitial (send-funds) fires
+    //    SHORT_PROMPT_DISPLAY_DELAY after mount, gated on the SAME
+    //    settings-store preferences the PIN nudge uses (getPreference(
+    //    UserPreferences.transactionInfoAgreed) = 'transaction-info-agreed').
+    // Both are reactively handled elsewhere too (dismissPinPromptIfPresent /
+    // clickThroughPinPrompt, the "I Understand" check in the Send-sheet
+    // test), but those only guard the click they wrap — a delay firing
+    // later (e.g. after the Send-sheet test's own checks finish) leaves the
+    // interstitial open and blocks the NEXT test's very first click. Seeding
+    // both preferences true makes each gate's `!pref` check false on first
+    // render, so neither ever mounts instead of racing them reactively. Same
+    // trick as pera-card.spec.ts's remote-config override seed.
     await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
             'kv:settings-store': JSON.stringify({
-                state: { preferences: { security_pin_setup_prompt: true } },
+                state: {
+                    preferences: {
+                        security_pin_setup_prompt: true,
+                        'transaction-info-agreed': true,
+                    },
+                },
                 version: 1,
             }),
         })
