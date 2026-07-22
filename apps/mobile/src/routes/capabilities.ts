@@ -35,4 +35,7 @@ export const routeCapabilities: RouteCapabilities = {
     // Native uses Developer → Node Settings.
     networkSettings: false,
     quantum: true,
+    // Native keeps the two separate WalletConnect/Connected Sites menu
+    // entries (dappConnections is off there anyway).
+    connectionsSettings: false,
 }

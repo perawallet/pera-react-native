@@ -44,4 +44,10 @@ export type RouteCapabilities = {
      * Node/test-only today and its Emscripten build doesn't bundle for the
      * browser extension (see useIsQuantumAccountsEnabled). */
     quantum: boolean
+    /** Unified settings screen merging WalletConnect sessions and ARC-0027
+     * dapp connections into one list (web only). When on, it supersedes the
+     * separate walletConnectSettings/dappConnections settings-menu entries —
+     * their routes/screens/capabilities stay untouched for direct
+     * navigation (e.g. WalletConnectSettingsDetails). */
+    connectionsSettings: boolean
 }

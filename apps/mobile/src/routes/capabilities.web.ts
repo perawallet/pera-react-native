@@ -36,4 +36,5 @@ export const routeCapabilities: RouteCapabilities = {
     // parse under Metro's web bundler, so quantum accounts have no working
     // signer path in the browser extension yet.
     quantum: false,
+    connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
 }

@@ -16,20 +16,25 @@ import { routeCapabilities as webCapabilities } from '../capabilities.web'
 
 describe('route capabilities', () => {
     it('native map keeps every current-behavior capability on', () => {
-        // vaultSecuritySettings, dappConnections, and networkSettings are new,
-        // web-only capabilities with no native equivalent (native has its own
-        // WalletConnect-based dapp connections, not the ARC-0027 injected
-        // provider; native uses Developer → Node Settings) — all are deliberately
-        // off for native, not a current-behavior regression.
+        // vaultSecuritySettings, dappConnections, networkSettings, and
+        // connectionsSettings are new, web-only capabilities with no native
+        // equivalent (native has its own WalletConnect-based dapp
+        // connections, not the ARC-0027 injected provider; native uses
+        // Developer → Node Settings; native keeps the two separate
+        // WalletConnect/Connected Sites menu entries instead of the unified
+        // screen) — all are deliberately off for native, not a
+        // current-behavior regression.
         const {
             vaultSecuritySettings,
             dappConnections,
             networkSettings,
+            connectionsSettings,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
         expect(dappConnections).toBe(false)
         expect(networkSettings).toBe(false)
+        expect(connectionsSettings).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
     })
 
@@ -56,6 +61,9 @@ describe('route capabilities', () => {
             vaultSecuritySettings: true,
             dappConnections: true,
             networkSettings: true,
+            // Task 11: unified Connections settings screen supersedes the
+            // separate WalletConnect/Connected Sites menu entries on web.
+            connectionsSettings: true,
         })
     })
 

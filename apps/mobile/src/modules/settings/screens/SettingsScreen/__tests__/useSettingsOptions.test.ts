@@ -50,6 +50,7 @@ const { mockCapabilities } = vi.hoisted(() => ({
         developerSettings: true,
         vaultSecuritySettings: false,
         dappConnections: false,
+        connectionsSettings: false,
     },
 }))
 
@@ -81,6 +82,7 @@ describe('useSettingsOptions', () => {
             developerSettings: true,
             vaultSecuritySettings: false,
             dappConnections: false,
+            connectionsSettings: false,
         })
     })
 
@@ -250,6 +252,46 @@ describe('useSettingsOptions', () => {
                 route: 'ConnectedSites',
                 icon: 'globe',
                 title: 'settings.main.connected_sites_title',
+            })
+        })
+
+        it('shows the two separate WalletConnect/Connected Sites items — not the unified one — when connectionsSettings is off (native, always today)', () => {
+            Object.assign(mockCapabilities, { dappConnections: true })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items.map(item => item.route)).toEqual([
+                'SecuritySettings',
+                'NotificationsSettings',
+                'WalletConnectSettings',
+                'PasskeysSettings',
+                'ConnectedSites',
+                undefined,
+            ])
+        })
+
+        it('shows a single unified Connections item instead of the two separate items when connectionsSettings is on (web)', () => {
+            Object.assign(mockCapabilities, {
+                walletConnectSettings: true,
+                dappConnections: true,
+                connectionsSettings: true,
+            })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items.map(item => item.route)).toEqual([
+                'SecuritySettings',
+                'NotificationsSettings',
+                'ConnectionsSettings',
+                'PasskeysSettings',
+                undefined,
+            ])
+            expect(settingsOptions[0].items).toContainEqual({
+                route: 'ConnectionsSettings',
+                icon: 'globe',
+                title: 'settings.main.connections_title',
             })
         })
     })
