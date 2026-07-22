@@ -47,13 +47,13 @@ vi.mock('@perawallet/wallet-core-config', async () => {
 })
 
 // The real signers need a provisioned KMS keystore; stub just the crypto so the
-// create + delegation flow stays real down to the wire. `signProgram` returns
-// junk bytes, so also stub `encodeDelegatedLsigAccount` (it would otherwise
-// reject the unverifiable signature).
+// create + approve + delegation flow stays real down to the wire. `signProgram`
+// returns junk bytes, so also stub `encodeDelegatedLsigAccount` (it would
+// otherwise reject the unverifiable signature).
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
-    useArbitraryDataSigner: () => ({
-        signArbitraryData: vi.fn(async () => [new Uint8Array([7, 7, 7])]),
+    useLocalKeyArc60Signer: () => ({
+        signArc60: vi.fn(async () => new Uint8Array([7, 7, 7])),
     }),
     useProgramSigner: () => ({
         signProgram: vi.fn(async () => new Uint8Array([8, 8, 8])),
@@ -103,10 +103,12 @@ import {
     useCardStore,
 } from '@perawallet/wallet-core-card'
 import {
-    mockCreateEscrowCard,
+    mockCreateCard,
+    mockApproveEscrowCard,
     mockPostDelegatorLsig,
 } from '@perawallet/wallet-core-card/test-handlers'
 import { mockAlgodTealCompile } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -153,10 +155,17 @@ describe('Flow: Card onboarding — select funding type', () => {
         useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
         mockOnboardingDetails('VERIFIED')
         autoFunding.enabled = true
+        useAppIntegrityStore.getState().setRegistration({
+            integrityToken: 'TEST_INTEGRITY_TOKEN',
+            expiresAt: new Date(Date.now() + 60_000).toISOString(),
+            keyId: 'key',
+            deviceId: 'device',
+        })
     })
     afterEach(() => {
         server.resetHandlers()
         useAccountsStore.getState().setAccounts([])
+        useAppIntegrityStore.getState().resetState()
     })
     afterAll(() => server.close())
 
@@ -176,10 +185,18 @@ describe('Flow: Card onboarding — select funding type', () => {
         ).toBeTruthy()
     })
 
-    it('Given Manual is picked, when Create Pera Card is pressed, then the card is created and Manual persists', async () => {
+    it('Given Manual is picked, when Create Pera Card is pressed, then the card is created, approved, and Manual persists', async () => {
+        let createBody: Record<string, unknown> | null = null
         let approvalBody: Record<string, unknown> | null = null
         server.use(
-            mockCreateEscrowCard({
+            mockCreateCard({
+                cardAddress: 'ESCROWCARD1',
+                txId: 'TX1',
+                onRequest: body => {
+                    createBody = body
+                },
+            }),
+            mockApproveEscrowCard({
                 cardAddress: 'ESCROWCARD1',
                 onRequest: body => {
                     approvalBody = body
@@ -199,11 +216,27 @@ describe('Flow: Card onboarding — select funding type', () => {
         )
 
         await waitFor(() => expect(approvalBody).not.toBeNull())
+        expect(createBody).toEqual(
+            expect.objectContaining({
+                address: FUNDING_ADDRESS,
+                currency: 'usdc',
+            }),
+        )
         expect(approvalBody).toEqual(
             expect.objectContaining({
                 address: FUNDING_ADDRESS,
                 blockchain: 'algorand',
                 amount: '0',
+                txId: 'TX1',
+            }),
+        )
+        // The same ARC-60 proof is reused for both calls.
+        expect(approvalBody).toEqual(
+            expect.objectContaining({
+                signData: (createBody as unknown as Record<string, unknown>)
+                    .signData,
+                signature: (createBody as unknown as Record<string, unknown>)
+                    .signature,
             }),
         )
         await waitFor(() =>
@@ -212,14 +245,17 @@ describe('Flow: Card onboarding — select funding type', () => {
             ),
         )
         expect(useCardStore.getState().escrowCardAddress).toBe('ESCROWCARD1')
+        expect(useCardStore.getState().escrowCardTxId).toBe('TX1')
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
     })
 
-    it('Given Auto is selected, when Create Pera Card is pressed, then creation and the LSig both post', async () => {
+    it('Given Auto is selected, when Create Pera Card is pressed, then creation, approval, and the LSig all post', async () => {
         let approvalBody: Record<string, unknown> | null = null
         let lsigBody: Record<string, unknown> | null = null
         server.use(
             mockAlgodTealCompile(),
-            mockCreateEscrowCard({
+            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockApproveEscrowCard({
                 cardAddress: 'ESCROWCARD1',
                 onRequest: body => {
                     approvalBody = body
@@ -241,6 +277,7 @@ describe('Flow: Card onboarding — select funding type', () => {
 
         await waitFor(() => expect(approvalBody).not.toBeNull())
         await waitFor(() => expect(lsigBody).not.toBeNull())
+        expect(approvalBody).toEqual(expect.objectContaining({ txId: 'TX1' }))
         expect(lsigBody).toEqual(
             expect.objectContaining({
                 delegatorAddress: FUNDING_ADDRESS,
@@ -257,10 +294,7 @@ describe('Flow: Card onboarding — select funding type', () => {
     })
 
     it('Given card creation fails, when Create Pera Card is pressed, then nothing is persisted', async () => {
-        server.use(
-            mockAlgodTealCompile(),
-            mockCreateEscrowCard({ status: 500 }),
-        )
+        server.use(mockAlgodTealCompile(), mockCreateCard({ status: 500 }))
 
         renderStatus()
 
@@ -278,10 +312,40 @@ describe('Flow: Card onboarding — select funding type', () => {
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
     })
 
-    it('Given the LSig leg fails after creation, then the card persists and Auto degrades to Manual', async () => {
+    it('Given the approval call fails after creation, then the card persists unapproved and no funding type is set', async () => {
         server.use(
             mockAlgodTealCompile(),
-            mockCreateEscrowCard({ cardAddress: 'ESCROWCARD1' }),
+            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockApproveEscrowCard({ status: 500 }),
+        )
+
+        renderStatus()
+
+        fireEvent.click(
+            await screen.findByTestId(
+                'card-onboarding-status-funding-type-manual',
+            ),
+        )
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-status-create-card'),
+        )
+
+        // The card was created (on-chain, via the backend) and persisted
+        // even though the AB approval call failed.
+        await waitFor(() =>
+            expect(useCardStore.getState().escrowCardAddress).toBe(
+                'ESCROWCARD1',
+            ),
+        )
+        expect(useCardStore.getState().escrowCardApproved).toBe(false)
+        expect(useCardStore.getState().selectedFundingType).toBeNull()
+    })
+
+    it('Given the LSig leg fails after creation, then the card persists approved and Auto degrades to Manual', async () => {
+        server.use(
+            mockAlgodTealCompile(),
+            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockApproveEscrowCard({ cardAddress: 'ESCROWCARD1' }),
             mockPostDelegatorLsig({ status: 500 }),
         )
 
@@ -291,12 +355,13 @@ describe('Flow: Card onboarding — select funding type', () => {
             await screen.findByTestId('card-onboarding-status-create-card'),
         )
 
-        // Card is created (persisted) but Auto downgraded to Manual.
+        // Card is created + approved (persisted) but Auto downgraded to Manual.
         await waitFor(() =>
             expect(useCardStore.getState().escrowCardAddress).toBe(
                 'ESCROWCARD1',
             ),
         )
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Manual,
@@ -306,7 +371,10 @@ describe('Flow: Card onboarding — select funding type', () => {
 
     it('Given the kill-switch is off, then Auto shows the coming-soon hint and Create persists Manual', async () => {
         autoFunding.enabled = false
-        server.use(mockCreateEscrowCard({ cardAddress: 'ESCROWCARD1' }))
+        server.use(
+            mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
+            mockApproveEscrowCard({ cardAddress: 'ESCROWCARD1' }),
+        )
 
         renderStatus()
 
