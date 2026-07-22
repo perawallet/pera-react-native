@@ -29,9 +29,7 @@ const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
 }
 
 const discoverBidaliEntries = manifest.content_scripts.filter(entry =>
-    entry.js.some(
-        js => js.includes('discover') || js.includes('bidali'),
-    ),
+    entry.js.some(js => js.includes('discover') || js.includes('bidali')),
 )
 
 // The exact hosts these two surfaces actually load, derived from
