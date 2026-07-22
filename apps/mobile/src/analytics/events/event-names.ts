@@ -29,6 +29,7 @@ import type { NotificationsEvent } from './contexts/notifications'
 import type { StakingEvent } from './contexts/staking'
 import type { AccountOptionsEvent } from './contexts/account-options'
 import type { ContactsEvent } from './contexts/contacts'
+import type { WebviewEvent } from './contexts/webview'
 
 /**
  * Every analytics event, as a union of the per-context enums. Each enum lives in
@@ -56,3 +57,4 @@ export type AnalyticsEventName =
     | StakingEvent
     | AccountOptionsEvent
     | ContactsEvent
+    | WebviewEvent

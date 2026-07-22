@@ -71,6 +71,7 @@ export enum AnalyticsMetadataKey {
     WcRequestError = 'wc_request_error',
     WcVersion = 'wc_version',
     WcV2SessionProposalId = 'wc_v2_proposal_id',
+    WebviewBridgeMethod = 'webview_bridge_method',
     ScriptMessageHandler = 'script_message_handler',
     ScriptMessage = 'script_message',
     ScreenName = 'screen',
