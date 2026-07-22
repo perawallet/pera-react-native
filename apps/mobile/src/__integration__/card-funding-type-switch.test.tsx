@@ -118,6 +118,7 @@ describe('Flow: Card funding type switch', () => {
             cardAddress: CARD_ADDRESS,
             ownerAddress: ACCOUNT.address,
             network: useNetworkStore.getState().network,
+            txId: 'CARD_TX_ID',
         })
         useCardSessionStore.getState().setAuthenticated(true)
         server.use(activeCardStatus)

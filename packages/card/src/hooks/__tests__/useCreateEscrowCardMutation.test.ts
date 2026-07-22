@@ -16,19 +16,35 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: mockUseNetwork,
-}))
+// `@perawallet/wallet-core-signing`'s barrel (needed below for buildSiwaAuthRequest
+// et al.) statically re-exports the whole `@perawallet/wallet-core-blockchain`
+// surface, so the mock must carry the real module through via `importActual`
+// rather than fully replacing it — a bare `{ useNetwork }` object leaves those
+// other named exports undefined and ESM import validation rejects it.
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-blockchain',
+    )
+    return {
+        ...actual,
+        useNetwork: mockUseNetwork,
+    }
+})
 
-const { createEscrowCard, postDelegatorLsig, compileAutoDrawProgram } =
+const { createCard, approveEscrowCard, postDelegatorLsig, compileAutoDrawProgram } =
     vi.hoisted(() => ({
-        createEscrowCard: vi.fn(),
+        createCard: vi.fn(),
+        approveEscrowCard: vi.fn(),
         postDelegatorLsig: vi.fn(),
         compileAutoDrawProgram: vi.fn(),
     }))
+vi.mock('../../api/card-creation', async () => ({
+    ...(await vi.importActual('../../api/card-creation')),
+    createCard,
+}))
 vi.mock('../../api/escrow', async () => ({
     ...(await vi.importActual('../../api/escrow')),
-    createEscrowCard,
+    approveEscrowCard,
     postDelegatorLsig,
     compileAutoDrawProgram,
 }))
@@ -36,6 +52,8 @@ vi.mock('../../api/escrow', async () => ({
 import { useCreateEscrowCardMutation } from '../useCreateEscrowCardMutation'
 import { FundingType } from '../../models'
 import { useCardStore } from '../../store'
+import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
+import { CardIntegrityAttestationRequiredError } from '../../api/card-creation'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -46,9 +64,17 @@ const PROGRAM = new Uint8Array([0x06, 0x81, 0x01])
 
 const baseVars = () => ({
     address: ADDRESS,
-    signSiwaMessage: vi.fn(async () => new Uint8Array(64).fill(1)),
+    signArc60: vi.fn(async () => new Uint8Array(64).fill(1)),
     signLsigProgram: vi.fn(async () => new Uint8Array([9, 9, 9])),
 })
+
+const setValidIntegrityToken = () =>
+    useAppIntegrityStore.getState().setRegistration({
+        integrityToken: 'TEST_INTEGRITY_TOKEN',
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        keyId: 'key',
+        deviceId: 'device',
+    })
 
 describe('useCreateEscrowCardMutation', () => {
     beforeEach(() => {
@@ -58,12 +84,15 @@ describe('useCreateEscrowCardMutation', () => {
         vi.clearAllMocks()
         mockUseNetwork.mockReturnValue({ network: 'testnet' })
         useCardStore.getState().resetState()
-        createEscrowCard.mockResolvedValue({ cardAddress: 'ESCROW1' })
+        useAppIntegrityStore.getState().resetState()
+        setValidIntegrityToken()
+        createCard.mockResolvedValue({ cardAddress: 'ESCROW1', txId: 'TX1' })
+        approveEscrowCard.mockResolvedValue({ cardAddress: 'ESCROW1' })
         compileAutoDrawProgram.mockResolvedValue(PROGRAM)
         postDelegatorLsig.mockResolvedValue({ delegatorAddress: ADDRESS })
     })
 
-    it('Manual: creates the card, persists it, and signs no LSig', async () => {
+    it('Manual: signs once, creates, approves, persists, and signs no LSig', async () => {
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
@@ -74,16 +103,33 @@ describe('useCreateEscrowCardMutation', () => {
             fundingType: FundingType.Manual,
         })
 
-        expect(vars.signSiwaMessage).toHaveBeenCalledTimes(1)
-        expect(createEscrowCard).toHaveBeenCalledWith(
+        expect(vars.signArc60).toHaveBeenCalledTimes(1)
+        expect(createCard).toHaveBeenCalledWith(
             expect.objectContaining({
                 network: 'testnet',
                 address: ADDRESS,
                 currency: 'usdc',
                 signData: expect.objectContaining({ data: expect.any(String) }),
                 signature: expect.any(String),
+                integrityToken: 'TEST_INTEGRITY_TOKEN',
             }),
         )
+        expect(approveEscrowCard).toHaveBeenCalledWith(
+            expect.objectContaining({
+                network: 'testnet',
+                address: ADDRESS,
+                currency: 'usdc',
+                txId: 'TX1',
+                signData: expect.objectContaining({ data: expect.any(String) }),
+                signature: expect.any(String),
+            }),
+        )
+        // The SAME signature is reused for both calls.
+        const createCall = createCard.mock.calls[0][0]
+        const approveCall = approveEscrowCard.mock.calls[0][0]
+        expect(approveCall.signData).toEqual(createCall.signData)
+        expect(approveCall.signature).toBe(createCall.signature)
+
         expect(compileAutoDrawProgram).not.toHaveBeenCalled()
         expect(postDelegatorLsig).not.toHaveBeenCalled()
         expect(vars.signLsigProgram).not.toHaveBeenCalled()
@@ -93,9 +139,11 @@ describe('useCreateEscrowCardMutation', () => {
             autoFundingDegraded: false,
         })
         expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
+        expect(useCardStore.getState().escrowCardTxId).toBe('TX1')
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
     })
 
-    it('Auto: creates the card, then compiles → signs → posts the LSig in order', async () => {
+    it('Auto: creates, approves, then compiles → signs → posts the LSig in order', async () => {
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
@@ -106,7 +154,8 @@ describe('useCreateEscrowCardMutation', () => {
             fundingType: FundingType.Auto,
         })
 
-        expect(createEscrowCard).toHaveBeenCalledTimes(1)
+        expect(createCard).toHaveBeenCalledTimes(1)
+        expect(approveEscrowCard).toHaveBeenCalledTimes(1)
         expect(compileAutoDrawProgram).toHaveBeenCalledTimes(1)
         expect(vars.signLsigProgram).toHaveBeenCalledWith(PROGRAM)
         expect(postDelegatorLsig).toHaveBeenCalledWith(
@@ -117,12 +166,13 @@ describe('useCreateEscrowCardMutation', () => {
                 lsigBytes: expect.any(String),
             }),
         )
-        // create → compile → sign → post.
-        const createOrder = createEscrowCard.mock.invocationCallOrder[0]
+        const createOrder = createCard.mock.invocationCallOrder[0]
+        const approveOrder = approveEscrowCard.mock.invocationCallOrder[0]
         const compileOrder = compileAutoDrawProgram.mock.invocationCallOrder[0]
         const signOrder = vars.signLsigProgram.mock.invocationCallOrder[0]
         const postOrder = postDelegatorLsig.mock.invocationCallOrder[0]
-        expect(createOrder).toBeLessThan(compileOrder)
+        expect(createOrder).toBeLessThan(approveOrder)
+        expect(approveOrder).toBeLessThan(compileOrder)
         expect(compileOrder).toBeLessThan(signOrder)
         expect(signOrder).toBeLessThan(postOrder)
 
@@ -133,8 +183,24 @@ describe('useCreateEscrowCardMutation', () => {
         })
     })
 
+    it('no valid integrity token: rejects before creating anything', async () => {
+        useAppIntegrityStore.getState().resetState()
+        const { result } = renderHook(() => useCreateEscrowCardMutation(), {
+            wrapper,
+        })
+
+        await expect(
+            result.current.mutateAsync({
+                ...baseVars(),
+                fundingType: FundingType.Manual,
+            }),
+        ).rejects.toThrow(CardIntegrityAttestationRequiredError)
+
+        expect(createCard).not.toHaveBeenCalled()
+    })
+
     it('create failure: rejects and leaves the store untouched', async () => {
-        createEscrowCard.mockRejectedValue(new Error('create boom'))
+        createCard.mockRejectedValue(new Error('create boom'))
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
@@ -147,10 +213,41 @@ describe('useCreateEscrowCardMutation', () => {
         ).rejects.toThrow('create boom')
 
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
+        expect(approveEscrowCard).not.toHaveBeenCalled()
         expect(postDelegatorLsig).not.toHaveBeenCalled()
     })
 
-    it('LSig failure: keeps the created card and degrades Auto → Manual', async () => {
+    it('approval failure after creation: card persists unapproved, and a retry only re-signs + approves', async () => {
+        approveEscrowCard.mockRejectedValueOnce(new Error('approval boom'))
+        const { result } = renderHook(() => useCreateEscrowCardMutation(), {
+            wrapper,
+        })
+        const vars = baseVars()
+
+        await expect(
+            result.current.mutateAsync({
+                ...vars,
+                fundingType: FundingType.Manual,
+            }),
+        ).rejects.toThrow('approval boom')
+
+        expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
+        expect(useCardStore.getState().escrowCardTxId).toBe('TX1')
+        expect(useCardStore.getState().escrowCardApproved).toBe(false)
+
+        const retryOutcome = await result.current.mutateAsync({
+            ...vars,
+            fundingType: FundingType.Manual,
+        })
+
+        expect(createCard).toHaveBeenCalledTimes(1)
+        expect(approveEscrowCard).toHaveBeenCalledTimes(2)
+        expect(vars.signArc60).toHaveBeenCalledTimes(2)
+        expect(retryOutcome.cardAddress).toBe('ESCROW1')
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
+    })
+
+    it('LSig failure: keeps the created + approved card and degrades Auto → Manual', async () => {
         postDelegatorLsig.mockRejectedValue(new Error('lsig boom'))
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
@@ -166,16 +263,18 @@ describe('useCreateEscrowCardMutation', () => {
             fundingType: FundingType.Manual,
             autoFundingDegraded: true,
         })
-        // The card is real and persisted despite the LSig failure.
         expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
+        expect(useCardStore.getState().escrowCardApproved).toBe(true)
     })
 
-    it('resume: reuses a stored escrow card for the SAME account + network and skips SIWA + create', async () => {
+    it('resume: reuses a stored, approved escrow card for the SAME account + network and skips signing + create + approve', async () => {
         useCardStore.getState().setEscrowCard({
             cardAddress: 'EXISTING_CARD',
             ownerAddress: ADDRESS,
             network: 'testnet',
+            txId: 'EXISTING_TX',
         })
+        useCardStore.getState().markEscrowCardApproved()
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
@@ -186,9 +285,9 @@ describe('useCreateEscrowCardMutation', () => {
             fundingType: FundingType.Auto,
         })
 
-        expect(vars.signSiwaMessage).not.toHaveBeenCalled()
-        expect(createEscrowCard).not.toHaveBeenCalled()
-        // But the Auto LSig leg still runs against the existing card.
+        expect(vars.signArc60).not.toHaveBeenCalled()
+        expect(createCard).not.toHaveBeenCalled()
+        expect(approveEscrowCard).not.toHaveBeenCalled()
         expect(postDelegatorLsig).toHaveBeenCalledWith(
             expect.objectContaining({ cardAddress: 'EXISTING_CARD' }),
         )
@@ -196,58 +295,55 @@ describe('useCreateEscrowCardMutation', () => {
     })
 
     it('does NOT reuse a card created for a DIFFERENT account', async () => {
-        // A card left over from account A must not be reused for account B —
-        // B has to prove ownership and get its own card.
         useCardStore.getState().setEscrowCard({
             cardAddress: 'CARD_FOR_A',
             ownerAddress: 'OTHER_ACCOUNT',
             network: 'testnet',
+            txId: 'TX_A',
         })
-        createEscrowCard.mockResolvedValue({ cardAddress: 'CARD_FOR_B' })
+        useCardStore.getState().markEscrowCardApproved()
+        createCard.mockResolvedValue({ cardAddress: 'CARD_FOR_B', txId: 'TX_B' })
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
-        const vars = baseVars() // address = ADDRESS ('FUNDINGADDR')
+        const vars = baseVars()
 
         const outcome = await result.current.mutateAsync({
             ...vars,
             fundingType: FundingType.Manual,
         })
 
-        // A fresh SIWA proof + create ran for the current account.
-        expect(vars.signSiwaMessage).toHaveBeenCalledTimes(1)
-        expect(createEscrowCard).toHaveBeenCalledWith(
+        expect(vars.signArc60).toHaveBeenCalled()
+        expect(createCard).toHaveBeenCalledWith(
             expect.objectContaining({ address: ADDRESS }),
         )
         expect(outcome.cardAddress).toBe('CARD_FOR_B')
-        // The store now binds the new card to the current account + network.
         expect(useCardStore.getState().escrowCardAddress).toBe('CARD_FOR_B')
         expect(useCardStore.getState().escrowCardOwner).toBe(ADDRESS)
         expect(useCardStore.getState().escrowCardNetwork).toBe('testnet')
     })
 
     it('does NOT reuse a card created on a DIFFERENT network', async () => {
-        // Same account, but the stored card lives on the other network —
-        // the escrow service, app ids, and the card itself don't exist there,
-        // so a fresh proof + create must run on the current network.
         useCardStore.getState().setEscrowCard({
             cardAddress: 'MAINNET_CARD',
             ownerAddress: ADDRESS,
             network: 'mainnet',
+            txId: 'TX_MAIN',
         })
-        createEscrowCard.mockResolvedValue({ cardAddress: 'TESTNET_CARD' })
+        useCardStore.getState().markEscrowCardApproved()
+        createCard.mockResolvedValue({ cardAddress: 'TESTNET_CARD', txId: 'TX_TEST' })
         const { result } = renderHook(() => useCreateEscrowCardMutation(), {
             wrapper,
         })
-        const vars = baseVars() // network mocked as 'testnet'
+        const vars = baseVars()
 
         const outcome = await result.current.mutateAsync({
             ...vars,
             fundingType: FundingType.Manual,
         })
 
-        expect(vars.signSiwaMessage).toHaveBeenCalledTimes(1)
-        expect(createEscrowCard).toHaveBeenCalledWith(
+        expect(vars.signArc60).toHaveBeenCalled()
+        expect(createCard).toHaveBeenCalledWith(
             expect.objectContaining({ network: 'testnet' }),
         )
         expect(outcome.cardAddress).toBe('TESTNET_CARD')

@@ -1864,6 +1864,9 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 1.8.0
+      '@perawallet/wallet-core-app-integrity':
+        specifier: workspace:*
+        version: link:../app-integrity
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
@@ -1876,6 +1879,9 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../signing
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
