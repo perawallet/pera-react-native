@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -13,7 +13,7 @@
 // Provenance: verbatim from packages/liquid-auth/src/arc0027/types.ts
 // (branch wjbeau/liquidauth). Keep byte-identical; dedupe into one shared
 // module when that branch merges. Wire-format-agnostic — the JSON browser
-// codec (arc0027-codec.ts) and the CBOR data-channel codec share these types.
+// codec (codec.ts) and the CBOR data-channel codec share these types.
 export const ARC0027_NAMESPACE = 'arc0027'
 
 export type Arc0027Method =

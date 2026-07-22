@@ -72,12 +72,13 @@ export {
     type StorageProxyResponse,
     type StorageChangedBroadcast,
 } from './storage-proxy'
-export * from './dapp/arc0027-types'
-export * from './dapp/arc0027-errors'
-export * from './dapp/arc0027-codec'
-export * from './dapp/permissions'
-export * from './dapp/router-protocol'
-export * from './dapp/router'
+// The ARC-0027 wire/permissions/core-router types+logic now live in
+// @perawallet/wallet-core-arc0027 (platform-agnostic). Re-exported here so
+// existing consumers of this barrel (e.g. apps/mobile's
+// useDappConnectionsStore, which reads DappPermissionStore) don't need to
+// depend on the new package directly.
+export * from '@perawallet/wallet-core-arc0027'
+export { ChromeDappRouter } from './dapp/router'
 export * from './dapp/passkey-opener'
 export * from './dapp/approval-bridge'
 export * from './dapp/approval-client'

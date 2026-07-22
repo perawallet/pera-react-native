@@ -11,8 +11,8 @@
  */
 
 import { type SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
+import { type Arc0027ApprovalOpener } from '@perawallet/wallet-core-arc0027'
 import { isTrustedExtensionPageSender } from './../trusted-sender'
-import { type Arc0027ApprovalOpener } from './router'
 import {
     type PasskeyDecision,
     type PasskeyCreateApprovalContext,

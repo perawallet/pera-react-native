@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -18,7 +18,12 @@ export default defineConfig({
     plugins: [
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/test-utils/**'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/{handlers,*-handlers}.ts',
+            ],
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(
@@ -30,24 +35,15 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                bootstrap: resolve(__dirname, 'src/bootstrap.ts'),
-            },
+            entry: resolve(__dirname, 'src/index.ts'),
             formats: ['es'],
+            fileName: 'index',
         },
         rollupOptions: {
-            external: [
-                '@perawallet/wallet-core-arc0027',
-                '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-passkeys/webauthn',
-                '@perawallet/wallet-extension-platform',
-                'drizzle-orm',
-                'drizzle-orm/sqlite-proxy',
-                'firebase/app',
-                'firebase/remote-config',
-                '@sentry/browser',
-            ],
+            // Zero runtime dependencies — this package has nothing to
+            // externalize. Every one of its 5 source modules only imports
+            // from its own sibling files.
+            external: [],
         },
     },
 })

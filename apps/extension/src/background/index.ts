@@ -13,9 +13,9 @@
 import { handleAutoLockAlarm } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
 import {
     ApprovalWindowBridge,
+    ChromeDappRouter,
     DB_CONTROL_SCOPE,
     DappPermissionStore,
-    DappRequestRouter,
     PasskeyRouter,
     ensureDeviceID,
     startStorageProxyHost,
@@ -126,7 +126,7 @@ const discoverInfo = async (): Promise<DiscoverInfo> => ({
 
 const permissions = new DappPermissionStore(chrome.storage.local)
 const approvals = new ApprovalWindowBridge()
-const dappRouter = new DappRequestRouter({
+const dappRouter = new ChromeDappRouter({
     permissions,
     discoverInfo,
     approvals,

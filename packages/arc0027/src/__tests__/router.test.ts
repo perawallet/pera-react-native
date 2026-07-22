@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,12 +10,15 @@
  limitations under the License
  */
 
+// Exercises the platform-agnostic core directly via its public `handle()`
+// entry point — no chrome.*, no relay-message envelope, no sender. The
+// chrome-transport wiring (isDappRelayMessage gate, sender-origin
+// extraction/validation) is a separate concern covered by
+// extensions/platform-chrome's ChromeDappRouter tests.
 import { describe, it, expect, vi } from 'vitest'
-import { ChromeDappRouter, DAPP_RELAY_SCOPE } from '../router'
-import {
-    DappPermissionStore,
-    ARC0027_ERROR_CODES,
-} from '@perawallet/wallet-core-arc0027'
+import { DappRequestRouter } from '../router'
+import { DappPermissionStore } from '../permissions'
+import { ARC0027_ERROR_CODES } from '../types'
 
 const A = 'ADDR_A'.padEnd(58, 'A')
 const GENESIS = 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8='
@@ -31,12 +34,10 @@ const makeArea = () => {
 }
 
 const req = (method: string, id = 'r1', params?: Record<string, unknown>) => ({
-    scope: DAPP_RELAY_SCOPE,
-    request: { id, reference: `arc0027:${method}:request`, params },
+    id,
+    reference: `arc0027:${method}:request`,
+    params,
 })
-
-const senderFor = (origin: string): chrome.runtime.MessageSender =>
-    ({ origin, url: `${origin}/app`, tab: { id: 7 } }) as never
 
 const setup = (
     approveWith: { approvedAddresses: string[] } | null,
@@ -47,7 +48,7 @@ const setup = (
     const openEnable = vi.fn(async () => approveWith)
     const openSignTransactions = vi.fn(async () => signWith)
     const openSignMessage = vi.fn(async () => messageWith)
-    const router = new ChromeDappRouter({
+    const router = new DappRequestRouter({
         permissions,
         discoverInfo: async () => ({
             providerId: 'pera-wallet',
@@ -70,37 +71,15 @@ const setup = (
     }
 }
 
-// Drives handleMessage and resolves with the response envelope the router sends.
-const call = (router: ChromeDappRouter, message: unknown, origin: string) =>
-    new Promise<any>(resolve => {
-        const kept = router.handleMessage(message, senderFor(origin), resolve)
-        expect(kept).toBe(true) // async response
-    })
-
-describe('ChromeDappRouter', () => {
-    it('ignores non-relay messages (returns false)', () => {
-        const { router } = setup(null)
-        const kept = router.handleMessage(
-            { scope: 'other' },
-            senderFor('https://x.com'),
-            vi.fn(),
-        )
-        expect(kept).toBe(false)
-    })
-
-    it('rejects a sender with no origin (opaque/file/extension) as InvalidInput', async () => {
-        const { router } = setup(null)
-        const res = await call(router, req('discover'), 'null')
-        // sender.origin 'null' → treated as untrusted origin
-        expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
-    })
-
+describe('DappRequestRouter (core)', () => {
     it('answers discover locally without consent', async () => {
         const { router, openEnable } = setup(null)
-        const res = await call(router, req('discover'), 'https://x.com')
+        const res = await router.handle(req('discover'), 'https://x.com')
         expect(res.reference).toBe('arc0027:discover:response')
-        expect(res.result.providerId).toBe('pera-wallet')
-        expect(res.result.networks[0].genesisHash).toBe(GENESIS)
+        expect(res.result!.providerId).toBe('pera-wallet')
+        expect(
+            (res.result!.networks as { genesisHash: string }[])[0].genesisHash,
+        ).toBe(GENESIS)
         expect(openEnable).not.toHaveBeenCalled()
     })
 
@@ -108,10 +87,10 @@ describe('ChromeDappRouter', () => {
         const { router, permissions, openEnable } = setup({
             approvedAddresses: [A],
         })
-        const res = await call(router, req('enable'), 'https://x.com')
+        const res = await router.handle(req('enable'), 'https://x.com')
         expect(openEnable).toHaveBeenCalledTimes(1)
-        expect(res.result.accounts).toEqual([{ address: A }])
-        expect(res.result.genesisHash).toBe(GENESIS)
+        expect(res.result!.accounts).toEqual([{ address: A }])
+        expect(res.result!.genesisHash).toBe(GENESIS)
         expect(await permissions.approvedAddresses('https://x.com')).toEqual([
             A,
         ])
@@ -119,17 +98,17 @@ describe('ChromeDappRouter', () => {
 
     it('returns MethodCanceledError when the user closes the approval window', async () => {
         const { router, permissions } = setup(null) // opener resolves null
-        const res = await call(router, req('enable'), 'https://x.com')
-        expect(res.error.code).toBe(ARC0027_ERROR_CODES.MethodCanceledError)
+        const res = await router.handle(req('enable'), 'https://x.com')
+        expect(res.error!.code).toBe(ARC0027_ERROR_CODES.MethodCanceledError)
         expect(await permissions.isConnected('https://x.com')).toBe(false)
     })
 
     it('answers an already-approved enable silently (no window)', async () => {
         const { router, permissions, openEnable } = setup(null)
         await permissions.grant('https://x.com', [A])
-        const res = await call(router, req('enable'), 'https://x.com')
+        const res = await router.handle(req('enable'), 'https://x.com')
         expect(openEnable).not.toHaveBeenCalled()
-        expect(res.result.accounts).toEqual([{ address: A }])
+        expect(res.result!.accounts).toEqual([{ address: A }])
     })
 
     it('is idempotent: a duplicate in-flight enable id reuses the same window promise', async () => {
@@ -143,7 +122,7 @@ describe('ChromeDappRouter', () => {
                 ),
         )
         const permissions = new DappPermissionStore(makeArea(), () => 1)
-        const router = new ChromeDappRouter({
+        const router = new DappRequestRouter({
             permissions,
             discoverInfo: async () => ({
                 providerId: 'p',
@@ -157,8 +136,8 @@ describe('ChromeDappRouter', () => {
                 openSignMessage: vi.fn(async () => null),
             },
         })
-        const first = call(router, req('enable', 'dup'), 'https://x.com')
-        const second = call(router, req('enable', 'dup'), 'https://x.com')
+        const first = router.handle(req('enable', 'dup'), 'https://x.com')
+        const second = router.handle(req('enable', 'dup'), 'https://x.com')
         // Let the permission-check microtasks (readMap → get → approvedAddresses)
         // drain before resolving the opener, so `resolveOpen` targets the real
         // resolver assigned by the (deduped, single) `openEnable` call rather
@@ -167,36 +146,38 @@ describe('ChromeDappRouter', () => {
         resolveOpen({ approvedAddresses: [A] })
         const [r1, r2] = await Promise.all([first, second])
         expect(openEnable).toHaveBeenCalledTimes(1)
-        expect(r1.result.accounts).toEqual([{ address: A }])
-        expect(r2.result.accounts).toEqual([{ address: A }])
+        expect(r1.result!.accounts).toEqual([{ address: A }])
+        expect(r2.result!.accounts).toEqual([{ address: A }])
     })
 
     it('disable revokes the origin', async () => {
         const { router, permissions } = setup(null)
         await permissions.grant('https://x.com', [A])
-        const res = await call(router, req('disable'), 'https://x.com')
+        const res = await router.handle(req('disable'), 'https://x.com')
         expect(res.result).toBeDefined()
         expect(await permissions.isConnected('https://x.com')).toBe(false)
     })
 
     it('returns MethodNotSupported for post_transactions (deferred)', async () => {
         const { router } = setup(null)
-        const res = await call(
-            router,
+        const res = await router.handle(
             req('post_transactions'),
             'https://x.com',
         )
-        expect(res.error.code).toBe(ARC0027_ERROR_CODES.MethodNotSupportedError)
+        expect(res.error!.code).toBe(
+            ARC0027_ERROR_CODES.MethodNotSupportedError,
+        )
     })
 
     it('returns MethodNotSupported for sign_and_post_transactions (deferred)', async () => {
         const { router } = setup(null)
-        const res = await call(
-            router,
+        const res = await router.handle(
             req('sign_and_post_transactions'),
             'https://x.com',
         )
-        expect(res.error.code).toBe(ARC0027_ERROR_CODES.MethodNotSupportedError)
+        expect(res.error!.code).toBe(
+            ARC0027_ERROR_CODES.MethodNotSupportedError,
+        )
     })
 
     describe('sign_transactions', () => {
@@ -207,26 +188,24 @@ describe('ChromeDappRouter', () => {
                 stxns: [TXN],
             })
             await permissions.grant('https://x.com', [A])
-            const res = await call(
-                router,
+            const res = await router.handle(
                 req('sign_transactions', 'r1', { txns: [{ txn: TXN }] }),
                 'https://x.com',
             )
             expect(openSignTransactions).toHaveBeenCalledTimes(1)
-            expect(res.result.providerId).toBe('pera-wallet')
-            expect(res.result.stxns).toEqual([TXN])
+            expect(res.result!.providerId).toBe('pera-wallet')
+            expect(res.result!.stxns).toEqual([TXN])
         })
 
         it('rejects a NOT-connected origin as UnauthorizedSignerError without opening a window', async () => {
             const { router, openSignTransactions } = setup(null, {
                 stxns: [TXN],
             })
-            const res = await call(
-                router,
+            const res = await router.handle(
                 req('sign_transactions', 'r1', { txns: [{ txn: TXN }] }),
                 'https://x.com',
             )
-            expect(res.error.code).toBe(
+            expect(res.error!.code).toBe(
                 ARC0027_ERROR_CODES.UnauthorizedSignerError,
             )
             expect(openSignTransactions).not.toHaveBeenCalled()
@@ -237,24 +216,24 @@ describe('ChromeDappRouter', () => {
                 stxns: [TXN],
             })
             await permissions.grant('https://x.com', [A])
-            const res = await call(
-                router,
+            const res = await router.handle(
                 req('sign_transactions', 'r1', {}),
                 'https://x.com',
             )
-            expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
+            expect(res.error!.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
             expect(openSignTransactions).not.toHaveBeenCalled()
         })
 
         it('returns MethodCanceledError when the opener resolves null', async () => {
             const { router, permissions } = setup(null, null)
             await permissions.grant('https://x.com', [A])
-            const res = await call(
-                router,
+            const res = await router.handle(
                 req('sign_transactions', 'r1', { txns: [{ txn: TXN }] }),
                 'https://x.com',
             )
-            expect(res.error.code).toBe(ARC0027_ERROR_CODES.MethodCanceledError)
+            expect(res.error!.code).toBe(
+                ARC0027_ERROR_CODES.MethodCanceledError,
+            )
         })
 
         it('is idempotent: a duplicate in-flight id reuses the same window promise', async () => {
@@ -269,7 +248,7 @@ describe('ChromeDappRouter', () => {
             )
             const permissions = new DappPermissionStore(makeArea(), () => 1)
             await permissions.grant('https://x.com', [A])
-            const router = new ChromeDappRouter({
+            const router = new DappRequestRouter({
                 permissions,
                 discoverInfo: async () => ({
                     providerId: 'p',
@@ -286,13 +265,11 @@ describe('ChromeDappRouter', () => {
                 },
             })
             const params = { txns: [{ txn: TXN }] }
-            const first = call(
-                router,
+            const first = router.handle(
                 req('sign_transactions', 'dup', params),
                 'https://x.com',
             )
-            const second = call(
-                router,
+            const second = router.handle(
                 req('sign_transactions', 'dup', params),
                 'https://x.com',
             )
@@ -300,8 +277,8 @@ describe('ChromeDappRouter', () => {
             resolveOpen({ stxns: [TXN] })
             const [r1, r2] = await Promise.all([first, second])
             expect(openSignTransactions).toHaveBeenCalledTimes(1)
-            expect(r1.result.stxns).toEqual([TXN])
-            expect(r2.result.stxns).toEqual([TXN])
+            expect(r1.result!.stxns).toEqual([TXN])
+            expect(r2.result!.stxns).toEqual([TXN])
         })
     })
 
@@ -311,26 +288,24 @@ describe('ChromeDappRouter', () => {
                 signature: 'sig-1',
             })
             await permissions.grant('https://x.com', [A])
-            const res = await call(
-                router,
+            const res = await router.handle(
                 req('sign_message', 'r1', { message: 'hello' }),
                 'https://x.com',
             )
             expect(openSignMessage).toHaveBeenCalledTimes(1)
-            expect(res.result.providerId).toBe('pera-wallet')
-            expect(res.result.signature).toBe('sig-1')
+            expect(res.result!.providerId).toBe('pera-wallet')
+            expect(res.result!.signature).toBe('sig-1')
         })
 
         it('rejects a NOT-connected origin as UnauthorizedSignerError without opening a window', async () => {
             const { router, openSignMessage } = setup(null, null, {
                 signature: 'sig-1',
             })
-            const res = await call(
-                router,
+            const res = await router.handle(
                 req('sign_message', 'r1', { message: 'hello' }),
                 'https://x.com',
             )
-            expect(res.error.code).toBe(
+            expect(res.error!.code).toBe(
                 ARC0027_ERROR_CODES.UnauthorizedSignerError,
             )
             expect(openSignMessage).not.toHaveBeenCalled()
@@ -339,23 +314,18 @@ describe('ChromeDappRouter', () => {
 
     it('answers a shapeless request body with InvalidInputError instead of throwing', async () => {
         const { router } = setup(null)
-        const message = { scope: DAPP_RELAY_SCOPE, request: {} }
-        expect(() =>
-            router.handleMessage(message, senderFor('https://x.com'), vi.fn()),
-        ).not.toThrow()
-        const res = await call(router, message, 'https://x.com')
-        expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
+        expect(() => router.handle({}, 'https://x.com')).not.toThrow()
+        const res = await router.handle({}, 'https://x.com')
+        expect(res.error!.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
         expect(res.requestId).toBe('unknown')
     })
 
     it('echoes requestId for a malformed request missing only the reference', async () => {
         const { router } = setup(null)
-        const message = { scope: DAPP_RELAY_SCOPE, request: { id: 'abc' } }
-        expect(() =>
-            router.handleMessage(message, senderFor('https://x.com'), vi.fn()),
-        ).not.toThrow()
-        const res = await call(router, message, 'https://x.com')
-        expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
+        const malformed = { id: 'abc' }
+        expect(() => router.handle(malformed, 'https://x.com')).not.toThrow()
+        const res = await router.handle(malformed, 'https://x.com')
+        expect(res.error!.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
         expect(res.requestId).toBe('abc')
     })
 })

@@ -21,6 +21,7 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@perawallet/wallet-core-arc0027": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-passkeys": "workspace:*",
