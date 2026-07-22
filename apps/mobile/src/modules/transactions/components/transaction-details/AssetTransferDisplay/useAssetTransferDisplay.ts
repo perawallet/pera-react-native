@@ -32,7 +32,8 @@ export const useAssetTransferDisplay = (
     const showWarnings = useMemo(() => !transaction.id, [transaction])
     const assetId = transaction.assetTransferTransaction?.assetId?.toString()
 
-    const { data: asset } = useSingleAssetDetailsQuery(assetId ?? '')
+    const { data: asset, isPending: isAssetPending } =
+        useSingleAssetDetailsQuery(assetId ?? '')
 
     const assetTransfer = transaction.assetTransferTransaction
 
@@ -72,6 +73,7 @@ export const useAssetTransferDisplay = (
         showWarnings,
         assetId,
         asset,
+        isAssetPending,
         assetTransfer,
         senderAddress,
         receiverAddress,

@@ -2266,6 +2266,7 @@
             "amount": "Amount",
             "asset": "Asset",
             "asset_id": "Asset ID",
+            "asset_unavailable": "Asset unavailable",
             "date": "Date",
             "note": "Transaction Note",
             "view_raw_transaction": "View JSON",
