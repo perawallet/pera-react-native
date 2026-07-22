@@ -30,7 +30,7 @@ export const usePaymentTransactionDisplay = (
     const amount = useMemo(() => {
         const algos = microAlgosToAlgos(payment?.amount ?? 0n)
         if (senderAddress === referenceAddress) {
-            return -algos
+            return algos.negated()
         }
         return algos
     }, [senderAddress, payment, referenceAddress])
