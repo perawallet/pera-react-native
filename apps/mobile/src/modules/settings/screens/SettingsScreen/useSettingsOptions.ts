@@ -91,14 +91,22 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
-                        {
-                            // Sweeps every signable key for on-chain accounts
-                            // rekeyed to it — the account-options action scans
-                            // one key; this is the wallet-wide entry (PERA-4619).
-                            action: 'scanRekeyed' as const,
-                            icon: 'magnifying-glass',
-                            title: t('settings.main.scan_rekeyed_title'),
-                        },
+                        ...(routeCapabilities.rekeyFlows
+                            ? [
+                                  {
+                                      // Sweeps every signable key for on-chain
+                                      // accounts rekeyed to it — the
+                                      // account-options action scans one key;
+                                      // this is the wallet-wide entry
+                                      // (PERA-4619).
+                                      action: 'scanRekeyed' as const,
+                                      icon: 'magnifying-glass',
+                                      title: t(
+                                          'settings.main.scan_rekeyed_title',
+                                      ),
+                                  },
+                              ]
+                            : []),
                     ],
                 },
                 {
@@ -114,15 +122,6 @@ export const useSettingsOptions = () => {
                             icon: 'moon',
                             title: t('settings.main.theme_title'),
                         },
-                        ...(routeCapabilities.networkSettings
-                            ? [
-                                  {
-                                      route: 'NetworkSettings' as keyof SettingsStackParamsList,
-                                      icon: 'code',
-                                      title: t('settings.main.network_title'),
-                                  },
-                              ]
-                            : []),
                     ],
                 },
                 {

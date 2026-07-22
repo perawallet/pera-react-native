@@ -55,10 +55,6 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTheme, getNavigationTheme } from '@theme/theme'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
-import {
-    getSurface,
-    openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
 import { WebMainRoutes } from '@routes/WebMainRoutes'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
@@ -130,52 +126,6 @@ const ApprovalPlaceholder = (): React.JSX.Element => {
     )
 }
 
-const useOnboardingTabPromptStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-        padding: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'center' as const,
-        marginBottom: theme.spacing.sm,
-    },
-    body: {
-        textAlign: 'center' as const,
-        marginBottom: theme.spacing.lg,
-    },
-}))
-
-// Blur-fragile onboarding must not run in the 360x600 popup (design spec):
-// the popup shows a CTA that opens the full tab instead of the real stack.
-const OnboardingTabPrompt = (): React.JSX.Element => {
-    const styles = useOnboardingTabPromptStyles()
-    const { t } = useLanguage()
-
-    return (
-        <PWView style={styles.container}>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('vault.expanded.onboarding_title')}
-            </PWText>
-            <PWText style={styles.body}>
-                {t('vault.expanded.onboarding_body')}
-            </PWText>
-            <PWButton
-                variant='primary'
-                title={t('vault.expanded.onboarding_cta')}
-                testID='open-onboarding-tab'
-                onPress={() => {
-                    void openExpandedTab()
-                }}
-            />
-        </PWView>
-    )
-}
-
 const ShellRouter = (): React.JSX.Element => {
     const { shellState } = useWebAppShell()
     const { t } = useLanguage()
@@ -202,9 +152,6 @@ const ShellRouter = (): React.JSX.Element => {
             )
         }
         case 'onboarding': {
-            if (getSurface() === 'popup') {
-                return <OnboardingTabPrompt />
-            }
             return (
                 // Theme the container so React Navigation's DefaultTheme grey
                 // background (rgb(242,242,242)) doesn't paint the onboarding

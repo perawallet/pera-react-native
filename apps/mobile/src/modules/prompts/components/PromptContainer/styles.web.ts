@@ -12,16 +12,24 @@
 
 import { makeStyles } from '@rneui/themed'
 import { type EdgeInsets } from 'react-native-safe-area-context'
+import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     modal: {
         flex: 1,
         backgroundColor: theme.colors.background,
     },
-    // No-op on native; styles.web.ts overrides this to cap the modal to the
-    // app's expanded-tab card width (see that file's comment).
+    // react-native-web's Modal portals straight to document.body with
+    // position: fixed; inset: 0 (see PWBottomSheet's styles.web.ts for the
+    // full explanation), which puts this prompt's DOM entirely outside
+    // AppShell.web.tsx's width-capped card — this re-applies that same cap
+    // so the prompt doesn't fill the whole expanded-tab width. No-op in the
+    // popup, which is already narrower than the cap.
     stage: {
         flex: 1,
+        width: '100%',
+        maxWidth: WEB_EXPANDED_CARD_MAX_WIDTH,
+        alignSelf: 'center' as const,
     },
     root: {
         flex: 1,

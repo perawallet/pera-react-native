@@ -11,10 +11,19 @@
  */
 
 import React from 'react'
-import { PWButton, PWInput, PWScreen, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWImage,
+    PWInput,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCreatePasswordScreen } from './useCreatePasswordScreen'
 import { useStyles } from './styles'
+
+import welcomeBackground from '@assets/images/welcome-background.webp'
 
 type CreatePasswordScreenProps = {
     onDone: () => void
@@ -48,65 +57,75 @@ export const CreatePasswordScreen = ({
             : undefined
 
     return (
-        <PWScreen scroll='auto'>
-            <PWView style={styles.container}>
-                <PWText
-                    variant='h2'
-                    style={styles.title}
-                >
-                    {t('vault.create_password.title')}
-                </PWText>
-                <PWText
-                    variant='body'
-                    style={styles.description}
-                >
-                    {t('vault.create_password.description')}
-                </PWText>
-                <PWInput
-                    testID='create-password-input'
-                    placeholder={t(
-                        'vault.create_password.password_placeholder',
-                    )}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    showVisibilityToggle
-                    errorMessage={passwordError}
-                    renderErrorMessage={validationError === 'too_short'}
-                    autoCapitalize='none'
-                    autoComplete='new-password'
-                />
-                <PWInput
-                    testID='create-password-confirm-input'
-                    placeholder={t('vault.create_password.confirm_placeholder')}
-                    value={confirmation}
-                    onChangeText={setConfirmation}
-                    secureTextEntry
-                    showVisibilityToggle
-                    errorMessage={confirmError}
-                    renderErrorMessage={validationError === 'mismatch'}
-                    autoCapitalize='none'
-                    autoComplete='new-password'
-                />
-                {hasError && (
-                    <PWText
-                        testID='create-password-error'
-                        variant='body'
-                        style={styles.errorText}
-                    >
-                        {t('vault.create_password.error')}
-                    </PWText>
-                )}
-                <PWButton
-                    testID='create-password-submit'
-                    variant='primary'
-                    title={t('vault.create_password.submit_button')}
-                    style={styles.submitButton}
-                    isDisabled={!canSubmit}
-                    isLoading={isSubmitting}
-                    onPress={() => void handleSubmit()}
+        <>
+            <PWView style={styles.imageContainer}>
+                <PWImage
+                    source={welcomeBackground}
+                    style={styles.headerImage}
                 />
             </PWView>
-        </PWScreen>
+            <PWScreen scroll='auto'>
+                <PWView style={styles.container}>
+                    <PWText
+                        variant='h2'
+                        style={styles.title}
+                    >
+                        {t('vault.create_password.title')}
+                    </PWText>
+                    <PWText
+                        variant='body'
+                        style={styles.description}
+                    >
+                        {t('vault.create_password.description')}
+                    </PWText>
+                    <PWInput
+                        testID='create-password-input'
+                        placeholder={t(
+                            'vault.create_password.password_placeholder',
+                        )}
+                        value={password}
+                        onChangeText={setPassword}
+                        secureTextEntry
+                        showVisibilityToggle
+                        errorMessage={passwordError}
+                        renderErrorMessage={validationError === 'too_short'}
+                        autoCapitalize='none'
+                        autoComplete='new-password'
+                    />
+                    <PWInput
+                        testID='create-password-confirm-input'
+                        placeholder={t(
+                            'vault.create_password.confirm_placeholder',
+                        )}
+                        value={confirmation}
+                        onChangeText={setConfirmation}
+                        secureTextEntry
+                        showVisibilityToggle
+                        errorMessage={confirmError}
+                        renderErrorMessage={validationError === 'mismatch'}
+                        autoCapitalize='none'
+                        autoComplete='new-password'
+                    />
+                    {hasError && (
+                        <PWText
+                            testID='create-password-error'
+                            variant='body'
+                            style={styles.errorText}
+                        >
+                            {t('vault.create_password.error')}
+                        </PWText>
+                    )}
+                    <PWButton
+                        testID='create-password-submit'
+                        variant='primary'
+                        title={t('vault.create_password.submit_button')}
+                        style={styles.submitButton}
+                        isDisabled={!canSubmit}
+                        isLoading={isSubmitting}
+                        onPress={() => void handleSubmit()}
+                    />
+                </PWView>
+            </PWScreen>
+        </>
     )
 }

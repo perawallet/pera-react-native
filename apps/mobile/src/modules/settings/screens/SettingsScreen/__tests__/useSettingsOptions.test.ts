@@ -50,6 +50,7 @@ const { mockCapabilities } = vi.hoisted(() => ({
         developerSettings: true,
         vaultSecuritySettings: false,
         dappConnections: false,
+        rekeyFlows: true,
         connectionsSettings: false,
     },
 }))
@@ -82,6 +83,7 @@ describe('useSettingsOptions', () => {
             developerSettings: true,
             vaultSecuritySettings: false,
             dappConnections: false,
+            rekeyFlows: true,
             connectionsSettings: false,
         })
     })
@@ -175,23 +177,20 @@ describe('useSettingsOptions', () => {
                 passkeysAutofillSettings: false,
                 storeRating: false,
                 developerSettings: false,
+                rekeyFlows: false,
             })
 
             const { result } = renderHook(() => useSettingsOptions())
             const { settingsOptions } = result.current
 
-            // Account section keeps the (still-registered) Security item and
-            // the ungated rekeyed-account sweep action.
+            // Account section keeps only the (still-registered) Security
+            // item — the rekeyed-account sweep is gated off on web (its
+            // stacks aren't registered in WebMainRoutes).
             expect(settingsOptions[0].items).toEqual([
                 {
                     route: 'SecuritySettings',
                     icon: 'shield-check',
                     title: 'settings.main.security_title',
-                },
-                {
-                    action: 'scanRekeyed',
-                    icon: 'magnifying-glass',
-                    title: 'settings.main.scan_rekeyed_title',
                 },
             ])
 
@@ -252,6 +251,30 @@ describe('useSettingsOptions', () => {
                 route: 'ConnectedSites',
                 icon: 'globe',
                 title: 'settings.main.connected_sites_title',
+            })
+        })
+
+        it('omits the scan-rekeyed action when rekeyFlows is off (web)', () => {
+            Object.assign(mockCapabilities, { rekeyFlows: false })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(
+                settingsOptions[0].items.some(
+                    item => 'action' in item && item.action === 'scanRekeyed',
+                ),
+            ).toBe(false)
+        })
+
+        it('includes the scan-rekeyed action when rekeyFlows is on (native)', () => {
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items).toContainEqual({
+                action: 'scanRekeyed',
+                icon: 'magnifying-glass',
+                title: 'settings.main.scan_rekeyed_title',
             })
         })
 

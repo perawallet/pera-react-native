@@ -32,9 +32,8 @@ export const routeCapabilities: RouteCapabilities = {
     // Native's WalletConnect covers dapp connections; the ARC-0027 injected
     // provider is browser-extension only.
     dappConnections: false,
-    // Native uses Developer → Node Settings.
-    networkSettings: false,
     quantum: true,
+    rekeyFlows: true,
     // Native keeps the two separate WalletConnect/Connected Sites menu
     // entries (dappConnections is off there anyway).
     connectionsSettings: false,

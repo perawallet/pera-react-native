@@ -212,7 +212,6 @@ export type SettingsStackParamsList = {
     ConnectionsSettings: undefined
     CurrencySettings: undefined
     ThemeSettings: undefined
-    NetworkSettings: undefined
     DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
 }
 
@@ -314,15 +313,6 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsThemeScreen}
             />
-            {routeCapabilities.networkSettings && (
-                <SettingsStack.Screen
-                    name='NetworkSettings'
-                    options={{
-                        title: 'screens.node_settings',
-                    }}
-                    component={SettingsDeveloperNodeSettingsScreen}
-                />
-            )}
             <SettingsStack.Screen
                 name='DeveloperSettings'
                 options={{
