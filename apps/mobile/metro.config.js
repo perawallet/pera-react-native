@@ -138,6 +138,13 @@ const webStubs = {
     // so the shim only needs to survive eval; it throws clearly if ever
     // rendered.
     'react-native-webview': 'react-native-webview.js',
+    // Quantum (PQ) signing: falcon-1024's Emscripten-generated dist/index.js
+    // fails to parse under Metro's web bundler at all (not just at eval
+    // time). Only reachable via wasmFalconProvider.ts (off-device provider),
+    // and quantum accounts are capability-gated off on web (routeCapabilities
+    // .quantum) since there is no working signer path here yet — the shim
+    // only needs to survive bundling; it throws clearly if ever invoked.
+    'falcon-1024': 'falcon-1024.js',
 };
 
 // Custom resolver function
@@ -220,13 +227,24 @@ const customResolveRequest = (context, moduleName, platform) => {
         }
     }
     if (moduleName.startsWith('@perawallet/wallet-core-') && !moduleName.includes('devtools')) {
-        const packageName = moduleName.replace('@perawallet/wallet-core-', '');
-        const sourcePath = path.resolve(monorepoRoot, 'packages', packageName, 'src', 'index.ts');
-        try {
-            require.resolve(sourcePath);
-            return context.resolveRequest(context, sourcePath, platform);
-        } catch {
-            // Fall through to default resolution
+        const rest = moduleName.replace('@perawallet/wallet-core-', '');
+        const [packageName, ...subpathParts] = rest.split('/');
+        const subpath = subpathParts.join('/');
+        // A subpath export can be backed by either a flat file (src/webauthn.ts)
+        // or a directory barrel (src/queue/index.ts) — try both shapes.
+        const candidatePaths = subpath
+            ? [
+                  path.resolve(monorepoRoot, 'packages', packageName, 'src', `${subpath}.ts`),
+                  path.resolve(monorepoRoot, 'packages', packageName, 'src', subpath, 'index.ts'),
+              ]
+            : [path.resolve(monorepoRoot, 'packages', packageName, 'src', 'index.ts')];
+        for (const sourcePath of candidatePaths) {
+            try {
+                require.resolve(sourcePath);
+                return context.resolveRequest(context, sourcePath, platform);
+            } catch {
+                // Try the next candidate shape / fall through to default resolution
+            }
         }
     }
     // Web builds swap the RN keystore for the chrome implementation with the

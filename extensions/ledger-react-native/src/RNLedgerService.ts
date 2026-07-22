@@ -10,30 +10,25 @@
  limitations under the License
  */
 
-import { Buffer } from 'buffer'
 import { requireOptionalNativeModule } from 'expo'
 import { Platform, PermissionsAndroid } from 'react-native'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import { type Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    HardwareWalletAdapterState,
-    HardwareWalletArbitrarySignRequest,
-} from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletAdapterState } from '@perawallet/wallet-core-hardware-wallet'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import type {
     LedgerTransportProvider,
     LedgerTransport,
     LedgerDevice,
-    LedgerAccount,
 } from './types'
 import {
     classifyLedgerError,
     LedgerBluetoothDisabledError,
     LedgerPermissionDeniedError,
-    LedgerSigningError,
 } from './errors'
-import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
+import { resolveDeviceModel } from './constants'
+import { createLedgerTransportWrapper } from './transport-wrapper'
 
 /**
  * Map the underlying ble-plx / CoreBluetooth state string emitted by
@@ -133,95 +128,6 @@ const hasBlePermissions = async (): Promise<boolean> => {
 }
 
 /**
- * Wraps a connected Ledger BLE transport + Algorand app instance
- * into the platform-agnostic LedgerTransport interface.
- */
-const createTransportWrapper = (
-    bleTransport: TransportBLE,
-    algorandApp: AlgorandApp,
-): LedgerTransport => ({
-    async getAddress(
-        accountIndex: number,
-        verify = false,
-    ): Promise<LedgerAccount> {
-        try {
-            const result = await algorandApp.getAddressAndPubKey(
-                accountIndex,
-                verify,
-            )
-            return {
-                address: result.address.toString(),
-                publicKey: Uint8Array.from(result.publicKey),
-                accountIndex,
-            }
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async signTransaction(
-        accountIndex: number,
-        txnBytes: Uint8Array,
-    ): Promise<Uint8Array> {
-        try {
-            // AlgorandApp.sign decodes a string message as UTF-8, so the
-            // msgpack bytes MUST be passed as a Buffer. The library strips the
-            // trailing status word, so the returned signature is already clean.
-            const result = await algorandApp.sign(
-                accountIndex,
-                Buffer.from(txnBytes),
-            )
-            const signature = Uint8Array.from(result.signature)
-            if (signature.length === 0) {
-                throw new LedgerSigningError('Empty signature returned')
-            }
-            return signature
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async getAppVersion() {
-        try {
-            const { major, minor, patch } = await algorandApp.getVersion()
-            return { major, minor, patch }
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async signData(
-        request: HardwareWalletArbitrarySignRequest,
-    ): Promise<Uint8Array> {
-        try {
-            const result = await algorandApp.signData(
-                {
-                    data: request.data,
-                    signer: request.signerPublicKey,
-                    domain: request.domain,
-                    // Library field is spelled `authenticationData`.
-                    authenticationData: request.authenticatorData,
-                    requestId: request.requestId,
-                    hdPath: buildLedgerAccountPath(request.accountIndex),
-                },
-                { scope: request.scope, encoding: request.encoding },
-            )
-            const signature = Uint8Array.from(result.signature)
-            if (signature.length === 0) {
-                throw new LedgerSigningError('Empty signature returned')
-            }
-            return signature
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async disconnect(): Promise<void> {
-        await bleTransport.close()
-    },
-})
-
-/**
  * React Native implementation of HardwareWalletService for Ledger BLE.
  * Uses @ledgerhq/react-native-hw-transport-ble for BLE communication
  * and @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
@@ -311,7 +217,10 @@ export class RNLedgerService implements HardwareWalletService {
                 try {
                     const bleTransport = await TransportBLE.open(deviceId)
                     const algorandApp = new AlgorandApp(bleTransport)
-                    return createTransportWrapper(bleTransport, algorandApp)
+                    return createLedgerTransportWrapper(
+                        bleTransport,
+                        algorandApp,
+                    )
                 } catch (error) {
                     throw classifyLedgerError(error)
                 }

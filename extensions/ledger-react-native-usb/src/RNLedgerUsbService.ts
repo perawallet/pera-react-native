@@ -10,108 +10,21 @@
  limitations under the License
  */
 
-import { Buffer } from 'buffer'
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
-    HardwareWalletArbitrarySignRequest,
 } from '@perawallet/wallet-core-hardware-wallet'
 import TransportHID from '@ledgerhq/react-native-hid'
 import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
-    LedgerSigningError,
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
-    buildLedgerAccountPath,
+    createLedgerTransportWrapper,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
-
-/**
- * Wraps a connected Ledger HID (USB) transport + Algorand app instance
- * into the platform-agnostic HardwareWalletTransport interface.
- * Uses @algorandfoundation/ledger-algorand-js for Algorand-specific APDU commands.
- */
-const createTransportWrapper = (
-    hidTransport: TransportHID,
-    algorandApp: AlgorandApp,
-): HardwareWalletTransport => ({
-    async getAddress(accountIndex, verify = false) {
-        try {
-            const result = await algorandApp.getAddressAndPubKey(
-                accountIndex,
-                verify,
-            )
-            return {
-                address: result.address.toString(),
-                publicKey: Uint8Array.from(result.publicKey),
-                accountIndex,
-            }
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async signTransaction(accountIndex, txnBytes) {
-        try {
-            // AlgorandApp.sign decodes a string message as UTF-8, so the
-            // msgpack bytes MUST be passed as a Buffer. The library strips the
-            // trailing status word, so the returned signature is already clean.
-            const result = await algorandApp.sign(
-                accountIndex,
-                Buffer.from(txnBytes),
-            )
-            const signature = Uint8Array.from(result.signature)
-            if (signature.length === 0) {
-                throw new LedgerSigningError('Empty signature returned')
-            }
-            return signature
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async getAppVersion() {
-        try {
-            const { major, minor, patch } = await algorandApp.getVersion()
-            return { major, minor, patch }
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async signData(
-        request: HardwareWalletArbitrarySignRequest,
-    ): Promise<Uint8Array> {
-        try {
-            const result = await algorandApp.signData(
-                {
-                    data: request.data,
-                    signer: request.signerPublicKey,
-                    domain: request.domain,
-                    // Library field is spelled `authenticationData`.
-                    authenticationData: request.authenticatorData,
-                    requestId: request.requestId,
-                    hdPath: buildLedgerAccountPath(request.accountIndex),
-                },
-                { scope: request.scope, encoding: request.encoding },
-            )
-            const signature = Uint8Array.from(result.signature)
-            if (signature.length === 0) {
-                throw new LedgerSigningError('Empty signature returned')
-            }
-            return signature
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-    },
-
-    async disconnect() {
-        await hidTransport.close()
-    },
-})
 
 type LedgerHIDDescriptor = {
     deviceId?: number | string
@@ -237,7 +150,10 @@ export class RNLedgerUsbService implements HardwareWalletService {
                 try {
                     const hidTransport = await TransportHID.open(descriptors[0])
                     const algorandApp = new AlgorandApp(hidTransport)
-                    return createTransportWrapper(hidTransport, algorandApp)
+                    return createLedgerTransportWrapper(
+                        hidTransport,
+                        algorandApp,
+                    )
                 } catch (error) {
                     throw classifyLedgerError(error)
                 }

@@ -52,6 +52,12 @@ describe('bytesToB64url / b64urlToBytes', () => {
         expect(Array.from(b64urlToBytes('_w'))).toEqual([0xff])
         expect(Array.from(b64urlToBytes('_-8'))).toEqual([0xff, 0xef])
     })
+
+    it('rejects a string whose length is not validly paddable (remainder 1 mod 4)', () => {
+        expect(() => b64urlToBytes('abcde')).toThrow(
+            'Invalid base64url length: 5',
+        )
+    })
 })
 
 describe('bufferSourceToBytes', () => {

@@ -46,6 +46,18 @@ describe('encodeCborInt', () => {
     it('encodes 256 with a 2-byte big-endian length extension', () => {
         expect(Array.from(encodeCborInt(256))).toEqual([0x19, 0x01, 0x00])
     })
+
+    it('encodes 65536 with a 4-byte big-endian length extension', () => {
+        expect(Array.from(encodeCborInt(65_536))).toEqual([
+            0x1a, 0x00, 0x01, 0x00, 0x00,
+        ])
+    })
+
+    it('encodes 4294967296 with an 8-byte big-endian length extension', () => {
+        expect(Array.from(encodeCborInt(4_294_967_296))).toEqual([
+            0x1b, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+        ])
+    })
 })
 
 describe('encodeCborText', () => {

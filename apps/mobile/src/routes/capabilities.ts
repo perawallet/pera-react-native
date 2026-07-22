@@ -34,4 +34,5 @@ export const routeCapabilities: RouteCapabilities = {
     dappConnections: false,
     // Native uses Developer → Node Settings.
     networkSettings: false,
+    quantum: true,
 }

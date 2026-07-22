@@ -112,6 +112,14 @@ describe('authenticatorData', () => {
         expect(Array.from(result.slice(33, 37))).toEqual([0, 0, 0, 0])
         expect(Array.from(result.slice(37))).toEqual(Array.from(attested))
     })
+
+    it('throws when attested is true but credentialId/publicKeyXY are omitted', async () => {
+        await expect(
+            authenticatorData({ rpId: 'webauthn.io', attested: true }),
+        ).rejects.toThrow(
+            'authenticatorData: credentialId and publicKeyXY are required when attested is true',
+        )
+    })
 })
 
 describe('attestationObjectNone', () => {

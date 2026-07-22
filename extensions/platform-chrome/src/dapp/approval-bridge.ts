@@ -115,20 +115,10 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         origin: string
         faviconUrl?: string
     }): Promise<{ approvedAddresses: string[] } | null> {
-        const approval: PendingApproval = { ...ctx, kind: 'enable' }
-        // `settle` is stored as the widened `Settle` above; `finish()` only
-        // ever gets called for this requestId with the `{ approvedAddresses }
-        // | null` shape (see handleMessage's 'resolve-approval'/
-        // 'reject-approval' cases and the window-close path), so this cast
-        // back to the method's own return type is safe.
-        const decision = new Promise<{ approvedAddresses: string[] } | null>(
-            resolve => {
-                this.pending.set(ctx.requestId, {
-                    approval,
-                    settle: resolve as Settle,
-                })
-            },
-        )
+        const decision = this.awaitApproval<{ approvedAddresses: string[] }>({
+            ...ctx,
+            kind: 'enable',
+        })
         await this.openViaPopupOrWindow(ctx.requestId)
         return decision
     }
@@ -140,19 +130,10 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         txns: unknown[]
         approvedAddresses: string[]
     }): Promise<{ stxns: (string | null)[] } | null> {
-        const approval: PendingApproval = { ...ctx, kind: 'sign-transactions' }
-        // See openEnable's comment: finish() for this requestId only ever
-        // passes a `{ stxns }` shape (handleMessage's
-        // 'resolve-sign-transactions' case) or null (window-close), so this
-        // cast is safe.
-        const decision = new Promise<{ stxns: (string | null)[] } | null>(
-            resolve => {
-                this.pending.set(ctx.requestId, {
-                    approval,
-                    settle: resolve as Settle,
-                })
-            },
-        )
+        const decision = this.awaitApproval<{ stxns: (string | null)[] }>({
+            ...ctx,
+            kind: 'sign-transactions',
+        })
         await this.openViaPopupOrWindow(ctx.requestId)
         return decision
     }
@@ -164,16 +145,9 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         message: Record<string, unknown>
         approvedAddresses: string[]
     }): Promise<{ signature: string } | null> {
-        const approval: PendingApproval = { ...ctx, kind: 'sign-message' }
-        // See openEnable's comment: finish() for this requestId only ever
-        // passes a `{ signature }` shape (handleMessage's
-        // 'resolve-sign-message' case) or null (window-close), so this cast
-        // is safe.
-        const decision = new Promise<{ signature: string } | null>(resolve => {
-            this.pending.set(ctx.requestId, {
-                approval,
-                settle: resolve as Settle,
-            })
+        const decision = this.awaitApproval<{ signature: string }>({
+            ...ctx,
+            kind: 'sign-message',
         })
         await this.openViaPopupOrWindow(ctx.requestId)
         return decision
@@ -186,16 +160,9 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         userName?: string
         options: SerializedCreateOptions
     }): Promise<PasskeyDecision> {
-        const approval: PendingApproval = { ...ctx, kind: 'passkey-create' }
-        // See openEnable's comment: finish() for this requestId only ever
-        // passes a PasskeyDecision (handleMessage's 'resolve-passkey' /
-        // 'reject-passkey' cases, or null on window-close), so this cast is
-        // safe.
-        const decision = new Promise<PasskeyDecision>(resolve => {
-            this.pending.set(ctx.requestId, {
-                approval,
-                settle: resolve as Settle,
-            })
+        const decision = this.awaitApproval<PasskeyDecision>({
+            ...ctx,
+            kind: 'passkey-create',
         })
         await this.openViaPopupOrWindow(ctx.requestId)
         return decision
@@ -208,16 +175,27 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         userName?: string
         options: SerializedGetOptions
     }): Promise<PasskeyDecision> {
-        const approval: PendingApproval = { ...ctx, kind: 'passkey-get' }
-        // See openPasskeyCreate's comment above.
-        const decision = new Promise<PasskeyDecision>(resolve => {
-            this.pending.set(ctx.requestId, {
+        const decision = this.awaitApproval<PasskeyDecision>({
+            ...ctx,
+            kind: 'passkey-get',
+        })
+        await this.openViaPopupOrWindow(ctx.requestId)
+        return decision
+    }
+
+    // Shared by every open* method above: stores the pending approval and
+    // returns the promise `finish()` settles. `finish()` is generic over the
+    // decision shape (see the `Settle` comment), and for a given requestId it
+    // is only ever called from the single handleMessage case (or window-close
+    // path) matching that approval's `kind` — with the exact `T | null` shape
+    // this method's caller declares — so the cast back to `T | null` is safe.
+    private awaitApproval<T>(approval: PendingApproval): Promise<T | null> {
+        return new Promise<T | null>(resolve => {
+            this.pending.set(approval.requestId, {
                 approval,
                 settle: resolve as Settle,
             })
         })
-        await this.openViaPopupOrWindow(ctx.requestId)
-        return decision
     }
 
     // Shared by every open* method: every approval kind prefers the toolbar

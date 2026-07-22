@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+// fallow-ignore-file re-export-cycle -- false positive: fallow's
+// platform-suffix resolver matches the `./PWWebView` re-export below back to
+// this same `.web.tsx` file instead of the intended `PWWebView.tsx` sibling
+// (TypeScript itself resolves it correctly — `pnpm build` passes).
+
 // Web replacement for PWWebView: react-native-webview does not exist on web
 // (metro webStubs shims it to a throwing stub). Renders the URL in an iframe
 // (PWStaticWebView.web.tsx cast precedent) and rebuilds the bridge transport:

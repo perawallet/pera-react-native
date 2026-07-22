@@ -40,4 +40,8 @@ export type RouteCapabilities = {
     dappConnections: boolean
     /** Web-only top-level network (mainnet/testnet) switch; native has this under Developer settings. */
     networkSettings: boolean
+    /** Quantum (PQ/Falcon-1024) accounts. Off on web: the WASM signer is
+     * Node/test-only today and its Emscripten build doesn't bundle for the
+     * browser extension (see useIsQuantumAccountsEnabled). */
+    quantum: boolean
 }

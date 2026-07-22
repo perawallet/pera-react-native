@@ -24,6 +24,19 @@ export type ChromeFake = {
     fireAlarm: (name: string) => void
 }
 
+// Shared by local/session `get`: resolves the chrome.storage `keys` param
+// (null/single key/array) against the backing map.
+const pickKeys = (
+    map: Map<string, unknown>,
+    keys?: null | string | string[],
+): Record<string, unknown> => {
+    if (keys == null) return Object.fromEntries(map)
+    const wanted = typeof keys === 'string' ? [keys] : keys
+    return Object.fromEntries(
+        wanted.filter(key => map.has(key)).map(key => [key, map.get(key)]),
+    )
+}
+
 export const createChromeFake = (): ChromeFake => {
     const data = new Map<string, unknown>()
     const sessionData = new Map<string, unknown>()
@@ -38,15 +51,7 @@ export const createChromeFake = (): ChromeFake => {
     const local = {
         get: async (
             keys?: null | string | string[],
-        ): Promise<Record<string, unknown>> => {
-            if (keys == null) return Object.fromEntries(data)
-            const wanted = typeof keys === 'string' ? [keys] : keys
-            return Object.fromEntries(
-                wanted
-                    .filter(key => data.has(key))
-                    .map(key => [key, data.get(key)]),
-            )
-        },
+        ): Promise<Record<string, unknown>> => pickKeys(data, keys),
         set: async (items: Record<string, unknown>): Promise<void> => {
             const changes: StorageChanges = {}
             for (const [key, value] of Object.entries(items)) {
@@ -68,15 +73,7 @@ export const createChromeFake = (): ChromeFake => {
     const session = {
         get: async (
             keys?: null | string | string[],
-        ): Promise<Record<string, unknown>> => {
-            if (keys == null) return Object.fromEntries(sessionData)
-            const wanted = typeof keys === 'string' ? [keys] : keys
-            return Object.fromEntries(
-                wanted
-                    .filter(key => sessionData.has(key))
-                    .map(key => [key, sessionData.get(key)]),
-            )
-        },
+        ): Promise<Record<string, unknown>> => pickKeys(sessionData, keys),
         set: async (items: Record<string, unknown>): Promise<void> => {
             const changes: StorageChanges = {}
             for (const [key, value] of Object.entries(items)) {

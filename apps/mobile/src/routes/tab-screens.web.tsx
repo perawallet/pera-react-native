@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+// fallow-ignore-file re-export-cycle -- false positive: fallow's
+// platform-suffix resolver matches the `./tab-screens` re-export below back to
+// this same `.web.tsx` file instead of the intended `tab-screens.tsx` sibling
+// (TypeScript itself resolves it correctly — `pnpm build` passes).
+
 // Web tab registration (see capabilities.web.ts): Discover, Swap, and Fund are
 // registered as of M5 (2026-07-16 feature-completion spec). Discover is now
 // web-real as of M6 (2026-07-16 feature-completion spec) with the iframe/bridge
