@@ -82,16 +82,29 @@ rmSync(dist, { recursive: true, force: true })
 // them. Metro (step 1 below) resolves @perawallet/wallet-core-* packages
 // straight from `src/` (see apps/mobile/metro.config.js), so generated-env.ts
 // just needs to exist on disk. The service-worker/content-script esbuild
-// bundles (step 2+) have no such source alias — they resolve
-// @perawallet/wallet-core-config through node_modules -> package.json "main"
-// -> dist/, so that package must be rebuilt here too or it ships whatever
-// was baked in the last time someone happened to run its build.
+// bundles (step 2+) have no such source alias — they resolve every
+// @perawallet/wallet-core-*/@perawallet/wallet-extension-* package through
+// node_modules -> package.json "main"/exports -> dist/, so each of those
+// packages must be built here too, or esbuild ships whatever `dist` happens
+// to already exist on disk (nothing, on a clean CI checkout — this job runs
+// on its own runner with no access to the separate "Build" job's output).
 const monorepoRoot = path.resolve(root, '../..')
 execSync('bash tools/generate-config.sh', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })
+// packages/config specifically must be rebuilt right after generate-config.sh
+// (not just picked up by the broader turbo build below) so the freshly
+// generated generated-env.ts is what's baked into its dist, not a stale
+// cache from a previous run with different secrets.
 execSync('pnpm --filter ./packages/config build', {
+    cwd: monorepoRoot,
+    stdio: 'inherit',
+})
+// Build every other workspace package/extension apps/extension depends on
+// (transitively), via turbo's own dependency graph — so esbuild's dist-based
+// resolution above always has something real to resolve to.
+execSync('pnpm exec turbo run build --filter=...extension', {
     cwd: monorepoRoot,
     stdio: 'inherit',
 })

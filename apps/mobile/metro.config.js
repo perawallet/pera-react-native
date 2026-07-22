@@ -311,15 +311,23 @@ const customResolveRequest = (context, moduleName, platform) => {
         return context.resolveRequest(context, sourcePath, platform);
     }
     if (moduleName.startsWith('@perawallet/wallet-extension-')) {
-        const packageName = moduleName.replace('@perawallet/wallet-extension-', '');
-        // Skip subpath imports — let Metro's default resolver handle them
-        if (!packageName.includes('/')) {
-            const sourcePath = path.resolve(monorepoRoot, 'extensions', packageName, 'src', 'index.ts');
+        const rest = moduleName.replace('@perawallet/wallet-extension-', '');
+        const [packageName, ...subpathParts] = rest.split('/');
+        const subpath = subpathParts.join('/');
+        // A subpath export can be backed by either a flat file (src/protocol.ts)
+        // or a directory barrel (src/subdir/index.ts) — try both shapes.
+        const candidatePaths = subpath
+            ? [
+                  path.resolve(monorepoRoot, 'extensions', packageName, 'src', `${subpath}.ts`),
+                  path.resolve(monorepoRoot, 'extensions', packageName, 'src', subpath, 'index.ts'),
+              ]
+            : [path.resolve(monorepoRoot, 'extensions', packageName, 'src', 'index.ts')];
+        for (const sourcePath of candidatePaths) {
             try {
                 require.resolve(sourcePath);
                 return context.resolveRequest(context, sourcePath, platform);
             } catch {
-                // Fall through to default resolution
+                // Try the next candidate shape / fall through to default resolution
             }
         }
     }

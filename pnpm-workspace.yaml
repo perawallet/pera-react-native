@@ -133,6 +133,11 @@ overrides:
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
   fast-uri@<3.1.2: ">=3.1.2"
+  # GHSA-v2hh-gcrm-f6hx (host confusion via failed IDN canonicalization) +
+  # GHSA-4c8g-83qw-93j6 (host confusion via literal backslash authority
+  # delimiter). Separate 4.x line pulled in via ajv (xhd-wallet-api), not
+  # covered by the <3.1.2 override above. Pinned to the lowest patched 4.x.
+  fast-uri@>=4.0.0 <4.1.1: ">=4.1.1"
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: ">=10.5.0"
   happy-dom@<20.0.0: ">=20.0.0"
@@ -167,6 +172,11 @@ overrides:
   # the verified lowest patched 1.9.0, NOT ">=", which would pull the unvetted
   # 1.10.0.
   shell-quote@<1.9.0: 1.9.0
+  # GHSA-2p49-hgcm-8545 (removeScripts plugin leaves some executable scripts
+  # intact). Pulled in via react-native-svg-transformer's @svgr/plugin-svgo,
+  # which depends on svgo@^3.0.2 — pinned exact to the lowest patched 3.x
+  # (NOT ">="), since svgo 4.x is outside plugin-svgo's declared range.
+  svgo@>=3.0.0 <3.3.4: 3.3.4
   uuid@<14: 14.0.0
   # GHSA-96hv-2xvq-fx4p (memory-exhaustion DoS); 7.5.10 is now vulnerable.
   # Pinned exact (NOT ">="), since 7.5.11 is the last 7.x and ">=" would jump to 8.x.
@@ -197,6 +207,7 @@ minimumReleaseAge: 10080
 #       @joe-p/react-native-falcon (the on-device native Falcon-1024 nitro
 #       module, PQ-020) is likewise exact-pinned to its single 0.x release.
 minimumReleaseAgeExclude:
+  - fast-uri
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
   - "@algorandfoundation/react-native-passkey-autofill"
