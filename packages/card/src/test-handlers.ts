@@ -81,6 +81,9 @@ export type {
     MockPostDelegatorLsigParams,
 } from './api/escrow/msw-handlers'
 
+export { mockCreateCard } from './api/card-creation/msw-handlers'
+export type { MockCreateCardParams } from './api/card-creation/msw-handlers'
+
 export {
     mockSendEmailVerification,
     mockVerifyEmail,
