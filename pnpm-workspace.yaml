@@ -41,12 +41,12 @@ catalog:
   drizzle-orm: ^0.45.2
   eslint: 9.39.5
   eslint-plugin-unused-imports: 4.4.1
-  expo: ^57.0.2
-  expo-application: ~57.0.0
-  expo-device: ~57.0.0
-  expo-local-authentication: ~57.0.0
-  expo-localization: ~57.0.0
-  expo-sqlite: ~57.0.0
+  expo: ^57.0.7
+  expo-application: ~57.0.2
+  expo-device: ~57.0.1
+  expo-local-authentication: ~57.0.1
+  expo-localization: ~57.0.1
+  expo-sqlite: ~57.0.1
   falcon-1024: ^0.2.0
   fast-glob: ^3.3.2
   jsdom: ^27.4.0
@@ -100,7 +100,7 @@ overrides:
   # at runtime. Its keystore dep is unused at runtime, so forcing it up is safe.
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.13
   "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4"
-  "@expo/dom-webview": ~57.0.0
+  "@expo/dom-webview": ~57.0.1
   # Security backport for GHSA-5375-pq7m-f5r2 + GHSA-99f4-grh7-6pcq (DoS).
   # Pinned exactly, NOT ">=", so it stays inside @firebase/firestore's
   # "~1.9.0" range — 1.10+ would break Firestore's resolution.
