@@ -42,6 +42,7 @@ import {
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
+import { useWebViewMessageSecurity } from './useWebViewMessageSecurity'
 import { usePWWebViewLoadState } from './usePWWebViewLoadState'
 import { EmptyView } from '@components/EmptyView'
 import { PWView, PWButton, PWScrollView } from '@components/core'
@@ -134,6 +135,9 @@ export const PWWebView = (props: PWWebViewProps) => {
         [currentUrl],
     )
 
+    const { trackNavigation, resolveMessageSecurity } =
+        useWebViewMessageSecurity(loadableUrl)
+
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
 
@@ -201,11 +205,21 @@ export const PWWebView = (props: PWWebViewProps) => {
             logger.debug('WebView: Received onMessage event', {
                 data,
             })
+            // Trust is decided against this message's own originating URL —
+            // never the React-state snapshot, which a message racing a
+            // navigation would beat to the update.
             mobileInterface.handleMessage(
                 data as Parameters<typeof mobileInterface.handleMessage>[0],
+                resolveMessageSecurity(event),
             )
         },
-        [onCustomMessage, enablePeraConnect, mobileInterface, bridgeToken],
+        [
+            onCustomMessage,
+            enablePeraConnect,
+            mobileInterface,
+            bridgeToken,
+            resolveMessageSecurity,
+        ],
     )
 
     const navigationStateChange = useCallback(
@@ -217,10 +231,11 @@ export const PWWebView = (props: PWWebViewProps) => {
             // off of that so a navigation away from a trusted origin
             // immediately downgrades the bridge to untrusted.
             if (navState.url) {
+                trackNavigation(navState.url)
                 setCurrentUrl(navState.url)
             }
         },
-        [],
+        [trackNavigation],
     )
 
     const reload = useCallback(() => {

@@ -68,6 +68,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             getAppPackage: vi.fn(() => 'com.algorand.perarn'),
             getAppVersion: vi.fn(() => '1.0.0'),
             getDevicePlatform: vi.fn(() => 'ios'),
+            getDeviceOSVersion: vi.fn(() => '17.4'),
             getDeviceModel: vi.fn(() => 'iPhone'),
             getDeviceCountry: vi.fn(() => 'US'),
             getDeviceLocale: vi.fn(() => 'en-US'),
@@ -576,6 +577,14 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"appPackageName":"com.algorand.perarn"'),
+        )
+        // deviceOSVersion must be the OS version, not the platform — the SDK
+        // Settings contract keeps clientType and deviceOSVersion distinct.
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"deviceOSVersion":"17.4"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"clientType":"ios"'),
         )
     })
 
@@ -1153,6 +1162,95 @@ describe('usePeraWebviewInterface', () => {
                 '"error":{"code":-32603,"message":"An error occurred during signing"}',
             ),
         )
+    })
+
+    describe('per-message origin trust', () => {
+        it('evaluates a message racing a navigation against the post-navigation origin, not the stale hook state', () => {
+            // Hook-level state still reflects the pre-navigation trusted
+            // origin A; the message event itself carries origin B.
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    true,
+                    'https://discover-mobile-staging.perawallet.app/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage(
+                    {
+                        id: 'race-1',
+                        jsonrpc: '2.0',
+                        method: 'getAddresses',
+                        params: {},
+                    },
+                    {
+                        securedConnection: false,
+                        sourceUrl: 'https://evil.com/',
+                    },
+                )
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
+            expect(mockWebview.injectJavaScript).not.toHaveBeenCalledWith(
+                expect.stringContaining('"address":"addr1"'),
+            )
+        })
+
+        it('trusts a message from the trusted origin even while hook state still says untrusted', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage(
+                    {
+                        id: 'race-2',
+                        jsonrpc: '2.0',
+                        method: 'getAddresses',
+                        params: {},
+                    },
+                    {
+                        securedConnection: true,
+                        sourceUrl:
+                            'https://discover-mobile-staging.perawallet.app/',
+                    },
+                )
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"address":"addr1"'),
+            )
+        })
+
+        it('falls back to the mount-level decision when no per-message security is given', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'no-security',
+                    jsonrpc: '2.0',
+                    method: 'getAddresses',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
+        })
     })
 
     describe('insecure connection handling', () => {
