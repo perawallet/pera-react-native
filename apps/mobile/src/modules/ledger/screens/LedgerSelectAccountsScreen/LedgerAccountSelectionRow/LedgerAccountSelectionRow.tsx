@@ -22,6 +22,8 @@ export type LedgerAccountSelectionRowProps = {
     variant?: 'derived' | 'rekeyed'
     isSelected: boolean
     isImported: boolean
+    /** Address held as a watch account — selecting it upgrades the entry. */
+    isUpgradeable?: boolean
     onToggle: () => void
     onInfoPress: (address: string, accountIndex: number) => void
     testID?: string
@@ -33,11 +35,19 @@ export const LedgerAccountSelectionRow = ({
     variant = 'derived',
     isSelected,
     isImported,
+    isUpgradeable = false,
     onToggle,
     onInfoPress,
     testID,
 }: LedgerAccountSelectionRowProps) => {
     const { t } = useLanguage()
+
+    const badgeTitle =
+        variant === 'rekeyed'
+            ? t('ledger.select_accounts.rekeyed_label')
+            : isUpgradeable
+              ? t('ledger.select_accounts.watch_account_label')
+              : null
 
     const handleInfoPress = useCallback(() => {
         onInfoPress(address, accountIndex)
@@ -56,9 +66,9 @@ export const LedgerAccountSelectionRow = ({
                 />
             }
             badge={
-                variant === 'rekeyed' ? (
+                badgeTitle ? (
                     <PWChip
-                        title={t('ledger.select_accounts.rekeyed_label')}
+                        title={badgeTitle}
                         variant='secondary'
                         textVariant='captionSmall'
                     />

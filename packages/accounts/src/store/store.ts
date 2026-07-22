@@ -17,6 +17,7 @@ import {
     AccountTypes,
     type AccountsState,
     type AccountSortMode,
+    type HardwareWalletDetails,
     type WalletAccount,
     type WatchAccount,
 } from '../models'
@@ -193,6 +194,57 @@ export const useAccountsStore: UseBoundStore<
 
                 get().setAccounts([...current, ...watchAccounts])
                 return watchAccounts.length
+            },
+            upgradeWatchAccountToHardware: (
+                address: string,
+                hardwareDetails: HardwareWalletDetails,
+            ) => {
+                const accounts = get().accounts
+                const idx = accounts.findIndex(a => a.address === address)
+                if (idx === -1) return false
+                const current = accounts[idx]
+                if (current.type !== AccountTypes.watch) return false
+
+                const next = [...accounts]
+                next[idx] = {
+                    ...current,
+                    type: AccountTypes.hardware,
+                    hardwareDetails,
+                }
+                set({ accounts: next })
+                return true
+            },
+            updateHardwareDetails: (
+                address: string,
+                hardwareDetails: HardwareWalletDetails,
+            ) => {
+                const accounts = get().accounts
+                const idx = accounts.findIndex(a => a.address === address)
+                if (idx === -1) return false
+                const current = accounts[idx]
+                if (current.type !== AccountTypes.hardware) return false
+
+                // Structural compare over the union of keys (all scalar) so a
+                // future HardwareWalletDetails field can't silently skip a
+                // re-bind by being omitted from a hand-listed equality check.
+                const currentDetails = current.hardwareDetails
+                const keys = new Set<keyof HardwareWalletDetails>([
+                    ...(Object.keys(
+                        currentDetails,
+                    ) as (keyof HardwareWalletDetails)[]),
+                    ...(Object.keys(
+                        hardwareDetails,
+                    ) as (keyof HardwareWalletDetails)[]),
+                ])
+                const unchanged = [...keys].every(
+                    key => currentDetails[key] === hardwareDetails[key],
+                )
+                if (unchanged) return false
+
+                const next = [...accounts]
+                next[idx] = { ...current, hardwareDetails }
+                set({ accounts: next })
+                return true
             },
             resetState: () => set(initialState),
         }),

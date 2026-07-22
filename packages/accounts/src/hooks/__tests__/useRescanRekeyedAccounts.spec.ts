@@ -75,6 +75,143 @@ describe('useRescanRekeyedAccounts — scan', () => {
     })
 })
 
+describe('useRescanRekeyedAccounts — scanAll', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        useAccountsStore.getState().resetState()
+    })
+
+    it('fans out one indexer scan per source key and merges classified results', async () => {
+        setAccounts([
+            {
+                type: 'algo25',
+                address: 'IN_WALLET',
+                keyPairId: 'k',
+            } as WalletAccount,
+        ])
+        mocks.fetchRekeyedAddresses.mockImplementation(async (source: string) =>
+            source === 'SOURCE_A' ? ['IN_WALLET', 'NEW_A'] : ['NEW_B'],
+        )
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const sweep = await result.current.scanAll(['SOURCE_A', 'SOURCE_B'])
+
+        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledTimes(2)
+        expect(sweep.importedAddresses).toEqual(['IN_WALLET'])
+        expect(sweep.candidates).toEqual([
+            { address: 'NEW_A', sourceAddress: 'SOURCE_A' },
+            { address: 'NEW_B', sourceAddress: 'SOURCE_B' },
+        ])
+        expect(sweep.failedSources).toEqual([])
+    })
+
+    it('lists a candidate found via two keys once', async () => {
+        // An account has a single auth-addr, so this shouldn't happen — but
+        // a duplicated indexer answer must not produce duplicate rows.
+        mocks.fetchRekeyedAddresses.mockResolvedValue(['NEW_SAME'])
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const sweep = await result.current.scanAll(['SOURCE_A', 'SOURCE_B'])
+
+        expect(sweep.candidates).toHaveLength(1)
+        expect(sweep.candidates[0].address).toBe('NEW_SAME')
+    })
+
+    it('keeps scanning the remaining keys when one source fails', async () => {
+        mocks.fetchRekeyedAddresses.mockImplementation(
+            async (source: string) => {
+                if (source === 'SOURCE_BAD') throw new Error('indexer down')
+                return ['NEW_OK']
+            },
+        )
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const sweep = await result.current.scanAll([
+            'SOURCE_BAD',
+            'SOURCE_GOOD',
+        ])
+
+        expect(sweep.failedSources).toEqual(['SOURCE_BAD'])
+        expect(sweep.candidates).toEqual([
+            { address: 'NEW_OK', sourceAddress: 'SOURCE_GOOD' },
+        ])
+    })
+
+    it('dedupes the source list before scanning', async () => {
+        mocks.fetchRekeyedAddresses.mockResolvedValue([])
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        await result.current.scanAll(['SOURCE', 'SOURCE'])
+
+        expect(mocks.fetchRekeyedAddresses).toHaveBeenCalledTimes(1)
+    })
+
+    it('classifies against the store as it is after all scans settle', async () => {
+        mocks.fetchRekeyedAddresses.mockImplementation(async () => {
+            // An import lands while the sweep is in flight — classification
+            // must see it as already-in-wallet.
+            setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'LANDS_MID_SCAN',
+                    keyPairId: 'k',
+                } as WalletAccount,
+            ])
+            return ['LANDS_MID_SCAN']
+        })
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        const sweep = await result.current.scanAll(['SOURCE'])
+
+        expect(sweep.importedAddresses).toEqual(['LANDS_MID_SCAN'])
+        expect(sweep.candidates).toEqual([])
+    })
+
+    it('reports progress as each key settles', async () => {
+        mocks.fetchRekeyedAddresses.mockResolvedValue([])
+        const progress: Array<[number, number]> = []
+
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+        await result.current.scanAll(['SOURCE_A', 'SOURCE_B'], {
+            onProgress: (scanned, total) => progress.push([scanned, total]),
+        })
+
+        expect(progress).toEqual([
+            [1, 2],
+            [2, 2],
+        ])
+    })
+})
+
+describe('useRescanRekeyedAccounts — importFromSweep', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        useAccountsStore.getState().resetState()
+    })
+
+    it('groups candidates by their source key and persists each group', async () => {
+        mocks.isValidAlgorandAddress.mockReturnValue(true)
+        const { result } = renderHook(() => useRescanRekeyedAccounts())
+
+        let count = -1
+        await act(async () => {
+            count = await result.current.importFromSweep([
+                { address: 'C1', sourceAddress: 'S1' },
+                { address: 'C2', sourceAddress: 'S2' },
+                { address: 'C3', sourceAddress: 'S1' },
+            ])
+        })
+
+        expect(count).toBe(3)
+        const persisted = useAccountsStore.getState().accounts
+        const bySource = Object.fromEntries(
+            persisted.map(a => [a.address, a.rekeyAddress]),
+        )
+        expect(bySource).toEqual({ C1: 'S1', C2: 'S2', C3: 'S1' })
+        persisted.forEach(account => expect(account.type).toBe('watch'))
+    })
+})
+
 describe('useRescanRekeyedAccounts — importSelected', () => {
     beforeEach(() => {
         vi.clearAllMocks()

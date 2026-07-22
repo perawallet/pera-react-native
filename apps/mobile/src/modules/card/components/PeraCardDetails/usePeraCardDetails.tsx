@@ -22,19 +22,13 @@ import {
     useIsCardUnfreezing,
     useSetCardPinMutation,
 } from '@perawallet/wallet-core-card'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
-import {
-    useAuthorizeCardDelegation,
-    useCardErrorToast,
-    useCardFundingDelegation,
-    useCardFundingSourcePicker,
-} from '../../hooks'
+import { useCardErrorToast, useCardFundingSourcePicker } from '../../hooks'
 // Imported directly (not via the hooks barrel) to avoid an import cycle: the
 // flow orchestrator pulls in report sheet components that import from that barrel.
 import { useReportSuspiciousFlow } from '../../hooks/useReportSuspiciousFlow'
@@ -328,97 +322,45 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         })
     }, [request, walletPlatform])
 
-    const accounts = useAllAccounts()
     const { pickFundingSource } = useCardFundingSourcePicker()
-    const { delegateTo, cancelDelegation, canDelegate } =
-        useCardFundingDelegation()
-    const { authorizeDelegation } = useAuthorizeCardDelegation()
     const { mutateAsync: connectFundingSourceAsync } =
         useConnectFundingSourceMutation()
 
-    // Change the linked account. With auto-funding on, the new account is
-    // delegated BEFORE the card is repointed to it, so a signing/post failure
-    // leaves the old (still-delegated) account connected and the card is never
-    // pointed at an un-delegated source. The old delegation is only zeroed
-    // once the new one is live — best-effort, since Baanx has no DELETE, so a
-    // failure there just leaves a stale allowance surfaced as a soft warning.
+    // Change the linked account. Blocked while Auto funding is on: the AutoDraw
+    // authorization (AB-registered LSig + on-chain Killswitch box) is
+    // per-account, so repointing the card would leave the OLD account's live
+    // authorization dangling and the new account without one. Until
+    // change-funding is unified onto the AB flow (kill old → enable new), the
+    // safe path is: switch to Manual → change account → re-enable Auto.
+    // TODO(card): unify change-funding onto useAutoDrawSwitch and lift this.
     const performChangeFunding = useCallback(async () => {
-        const previousAccount = accounts.find(
-            account => account.address === fundingAddress,
-        )
+        if (isAutoFunding) {
+            infoToast(
+                t('peraCard.account.funding_change_requires_manual_title'),
+                t('peraCard.account.funding_change_requires_manual_body'),
+            )
+            return
+        }
         const account = await pickFundingSource()
         if (!account || account.address === fundingAddress) return
-
-        // Manual funding: no delegation involved, just link the new account.
-        if (!isAutoFunding) {
-            try {
-                await connectFundingSourceAsync({ address: account.address })
-            } catch (error) {
-                await showError(error)
-            }
-            return
-        }
-
-        if (!canDelegate(account)) {
-            errorToast(
-                t('peraCard.account.funding_delegation_unsupported_title'),
-                t('peraCard.account.funding_delegation_unsupported_body'),
-            )
-            return
-        }
-        // Delegate the new account first — the card stays funded by the old
-        // account until this succeeds, so a failure changes nothing on Baanx.
-        try {
-            // Consent + live PIN/biometric before signing the grant.
-            const authorized = await authorizeDelegation(account, delegateTo)
-            if (!authorized) return
-        } catch {
-            // Recoverable: nothing was repointed; the old account is intact.
-            errorToast(
-                t('peraCard.account.funding_redelegate_failed_title'),
-                t('peraCard.account.funding_redelegate_failed_body'),
-            )
-            return
-        }
-        // New account is delegated; now repoint the card to it.
         try {
             await connectFundingSourceAsync({ address: account.address })
         } catch (error) {
-            // The new account is delegated but couldn't be linked; the card
-            // stays on the old (still connected + delegated) account, so the
-            // new allowance is harmless until a retry re-links it.
             await showError(error)
-            return
-        }
-        if (previousAccount && canDelegate(previousAccount)) {
-            try {
-                await cancelDelegation(previousAccount)
-            } catch {
-                infoToast(
-                    t('peraCard.account.funding_cancel_old_failed_title'),
-                    t('peraCard.account.funding_cancel_old_failed_body'),
-                )
-            }
         }
     }, [
-        accounts,
         fundingAddress,
         isAutoFunding,
         pickFundingSource,
-        canDelegate,
         connectFundingSourceAsync,
-        delegateTo,
-        authorizeDelegation,
-        cancelDelegation,
         showError,
-        errorToast,
         infoToast,
         t,
     ])
 
-    // Guard the whole picker → consent/PIN → delegate → repoint sequence so a
-    // double-tap can't run two concurrent changes (the consent gate opens
-    // before any mutation flips its own pending flag).
+    // Guard the whole picker → repoint sequence so a double-tap can't run two
+    // concurrent changes (the picker opens before any mutation flips its own
+    // pending flag).
     const isChangingFundingRef = useRef(false)
     const changeFunding = useCallback(async () => {
         if (isChangingFundingRef.current) return

@@ -29,6 +29,7 @@ internal class DeviceIdentifiersReader(private val prefs: SharedPreferences) {
             prefs.optLong("last_seen_notification_id"),
             sentinel = Long.MIN_VALUE,
         )
+        map.putStringOrNull("legacyFallbackDeviceId", prefs.optString("notification_user_id"))
         return map
     }
 }

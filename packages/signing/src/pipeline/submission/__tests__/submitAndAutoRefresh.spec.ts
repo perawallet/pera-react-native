@@ -199,31 +199,7 @@ describe('submitAndAutoRefreshCore', () => {
         expect(onConfirmed).not.toHaveBeenCalled()
     })
 
-    test('MOCK(quantum): uses a synthetic txid and does not call algod when isQuantumMock', async () => {
-        const algokit = makeAlgokit('TX1')
-        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
-        const onConfirmed = vi.fn()
-
-        const { txIds } = await submitAndAutoRefreshCore({
-            algokit,
-            encodeSignedTransactions: () => [new Uint8Array([1, 2, 3])],
-            waitForConfirmation,
-            walletAddresses: [WALLET],
-            network: 'mainnet',
-            onConfirmed,
-            signedTxns: [makeSigned(WALLET, EXTERNAL)],
-            isQuantumMock: true,
-        })
-
-        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
-        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
-        expect(waitForConfirmation).not.toHaveBeenCalled()
-        await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet'),
-        )
-    })
-
-    test('uses the real path and waits for confirmation when not a quantum mock', async () => {
+    test('submits via algod and waits for confirmation on the real path', async () => {
         const algokit = makeAlgokit('REALTXID')
         const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
         const onConfirmed = vi.fn()
@@ -236,7 +212,6 @@ describe('submitAndAutoRefreshCore', () => {
             network: 'mainnet',
             onConfirmed,
             signedTxns: [makeSigned(WALLET, EXTERNAL)],
-            // isQuantumMock omitted
         })
 
         expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
@@ -278,7 +253,7 @@ describe('submitAndAutoRefreshCore', () => {
     })
 })
 
-describe('submitAndAutoRefresh (public, self-detection)', () => {
+describe('submitAndAutoRefresh (public)', () => {
     const PUBLIC_WALLET = 'PUBLIC_WALLET'
     const PUBLIC_EXTERNAL = 'PUBLIC_EXTERNAL'
 
@@ -294,14 +269,6 @@ describe('submitAndAutoRefresh (public, self-detection)', () => {
     const encodeSignedTransactions = vi
         .fn()
         .mockReturnValue([new Uint8Array([1])])
-
-    const quantumAccount = (address: string): WalletAccount =>
-        ({
-            id: address,
-            address,
-            type: AccountTypes.quantum,
-            keyPairId: 'kp-quantum',
-        }) as WalletAccount
 
     const algo25Account = (address: string): WalletAccount =>
         ({
@@ -321,31 +288,7 @@ describe('submitAndAutoRefresh (public, self-detection)', () => {
         setOnConfirmedHandler(null)
     })
 
-    test('MOCK(quantum): self-detects a quantum sender with no flag passed — synthetic txid, algod not called, waitForConfirmation skipped, onConfirmed still fires', async () => {
-        useAccountsStore.getState().setAccounts([quantumAccount(PUBLIC_WALLET)])
-        const onConfirmed = vi.fn()
-        setOnConfirmedHandler(onConfirmed)
-
-        const algokit = makeAlgokit('TX1')
-
-        const txIds = await submitAndAutoRefresh(
-            algokit,
-            encodeSignedTransactions,
-            [makeSigned(PUBLIC_WALLET, PUBLIC_EXTERNAL)],
-        )
-
-        expect(txIds[0]).toMatch(/^[A-Z2-7]{52}$/)
-        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
-        expect(mockWaitForConfirmation).not.toHaveBeenCalled()
-        await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith(
-                [PUBLIC_WALLET],
-                expect.anything(),
-            ),
-        )
-    })
-
-    test('uses the real submission path for a non-quantum (algo25) sender — regression guard', async () => {
+    test('submits the group through the real path and confirms in the background', async () => {
         useAccountsStore.getState().setAccounts([algo25Account(PUBLIC_WALLET)])
         const onConfirmed = vi.fn()
         setOnConfirmedHandler(onConfirmed)

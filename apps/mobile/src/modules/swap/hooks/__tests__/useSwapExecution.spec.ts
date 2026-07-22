@@ -126,6 +126,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
 // behavior is covered by the swaps package's own unit tests. Default: passes
 // (no-op); a test opts into a rejection via `mockValidate.mockImplementationOnce`.
 vi.mock('@perawallet/wallet-core-swaps', () => ({
+    // Mirrors the real freshness contract (canonical spec:
+    // packages/swaps quoteFreshness.spec.ts) — unstamped means stale.
+    isQuoteFresh: (quote: { fetchedAt?: number }) =>
+        quote.fetchedAt !== undefined && Date.now() - quote.fetchedAt <= 60_000,
     usePrepareTransactionsMutation: () => ({
         mutateAsync: mockPrepareTransactions,
     }),
@@ -214,6 +218,9 @@ const makeQuote = (quoteIdStr: string): SwapQuote =>
         swapperAddress: 'SWAPPER',
         assetIn: { assetId: '0' },
         assetOut: { assetId: '999' },
+        // Freshly stamped: the confirm-time freshness guard refuses
+        // unstamped or expired quotes before prepare (PERA-4589).
+        fetchedAt: Date.now(),
     }) as unknown as SwapQuote
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
@@ -442,6 +449,63 @@ describe('useSwapExecution', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
         expect(mockDecodeSignedTransaction).toHaveBeenCalled()
         expect(mockSendRawTransaction).toHaveBeenCalled()
+    })
+
+    it('refuses a stale quote before prepare and reports stale-quote', async () => {
+        const { result } = renderHook(() => useSwapExecution())
+
+        const staleQuote = {
+            ...makeQuote('quote-stale'),
+            // Well past SWAP_QUOTE_TTL_MS — e.g. the confirm sheet sat
+            // behind an offline gap between quote and slide.
+            fetchedAt: Date.now() - 10 * 60 * 1000,
+        }
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(staleQuote)
+        })
+
+        expect(outcome).toEqual({ kind: 'stale-quote' })
+        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+        expect(result.current.status).toBe('idle')
+    })
+
+    it('abandons a cancelled execution after prepare settles, before signing', async () => {
+        let releasePrepare: (value: unknown) => void = () => {}
+        mockPrepareTransactions.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    releasePrepare = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcomePromise: Promise<SwapExecutionOutcome> | undefined
+        act(() => {
+            outcomePromise = result.current.execute(makeQuote('quote-cancel'))
+        })
+
+        // The user closes the sheet while prepare is still in flight; when
+        // the response lands, nothing may proceed to the signing pipeline.
+        act(() => {
+            result.current.cancel()
+        })
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            releasePrepare({
+                transactionGroups: [
+                    { transactions: ['AA=='], purpose: 'swap' },
+                ],
+            })
+            outcome = await outcomePromise
+        })
+
+        expect(outcome).toEqual({ kind: 'cancelled' })
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(result.current.status).toBe('idle')
     })
 
     it('sets error on prepare failure', async () => {

@@ -29,6 +29,10 @@ type SwapAmountSectionPayProps = {
     amount: Nullable<Decimal>
     onAmountChange: (amount: Nullable<Decimal>) => void
     onAssetPress: () => void
+    isLocalCurrencyInput?: boolean
+    localCurrencySymbol?: string
+    fiatToAsset?: (fiat: Nullable<Decimal>) => Nullable<Decimal>
+    assetToFiat?: (asset: Nullable<Decimal>) => Nullable<Decimal>
 }
 
 type SwapAmountSectionReceiveProps = {
@@ -46,22 +50,38 @@ export type SwapAmountSectionProps =
 
 export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { variant, assetId, balance, amount, onAssetPress } = props
-    const isLoading = variant === 'receive' ? props.isLoading : false
+    const payProps = variant === 'pay' ? props : undefined
+    const receiveProps = variant === 'receive' ? props : undefined
+
     const { t } = useLanguage()
     const { theme } = useTheme()
     const styles = useStyles()
 
     const isAlgo = isAlgoAssetId(assetId)
-    const onAmountChange = variant === 'pay' ? props.onAmountChange : undefined
+    const isLoading = receiveProps?.isLoading ?? false
+    const onAmountChange = payProps?.onAmountChange
+    const isLocalCurrencyInput = payProps?.isLocalCurrencyInput ?? false
+    const localCurrencySymbol = payProps?.localCurrencySymbol
+    const fiatToAsset = payProps?.fiatToAsset
+    const assetToFiat = payProps?.assetToFiat
     const {
         asset,
         isPay,
+        isFiatInput,
         displayValue,
         hasPositiveAmount,
         handleTextChange,
         handleFocus,
         handleBlur,
-    } = useSwapAmountSection({ variant, assetId, amount, onAmountChange })
+    } = useSwapAmountSection({
+        variant,
+        assetId,
+        amount,
+        onAmountChange,
+        isLocalCurrencyInput,
+        fiatToAsset,
+        assetToFiat,
+    })
 
     return (
         <AmountField
@@ -99,6 +119,16 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                         containerStyle={styles.amountInputContainer}
                         inputContainerStyle={styles.amountInputInnerContainer}
                         inputStyle={styles.amountInput}
+                        leftIcon={
+                            isFiatInput && localCurrencySymbol ? (
+                                <PWText
+                                    variant='h2'
+                                    style={styles.currencyPrefix}
+                                >
+                                    {localCurrencySymbol}
+                                </PWText>
+                            ) : undefined
+                        }
                         numberOfLines={1}
                         adjustsFontSizeToFit
                         testID='swap-pay-input'
@@ -137,13 +167,22 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                 />
             }
             fiat={
-                <PreferredAmount
-                    sourceAmount={amount ?? new Decimal(0)}
-                    sourceAssetId={assetId}
-                    showSymbol
-                    isLoading={isLoading}
-                    style={styles.fiatValue}
-                />
+                isFiatInput ? (
+                    <AssetAmount
+                        value={amount ?? new Decimal(0)}
+                        asset={asset}
+                        symbolPosition={isAlgo ? 'start' : 'end'}
+                        style={styles.fiatValue}
+                    />
+                ) : (
+                    <PreferredAmount
+                        sourceAmount={amount ?? new Decimal(0)}
+                        sourceAssetId={assetId}
+                        showSymbol
+                        isLoading={isLoading}
+                        style={styles.fiatValue}
+                    />
+                )
             }
         />
     )

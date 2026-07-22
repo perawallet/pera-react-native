@@ -52,6 +52,7 @@ import {
     type MultiSigAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
 
 import { REKEY_TARGET_ADDRESS } from './__fixtures__/onboarding'
 
@@ -127,6 +128,26 @@ describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
+        // The review sheet renders the sender's balance; with no balance row in
+        // the fresh DB, useAccountBalancesQuery self-heals with a background
+        // algod account read. Unhandled, that request escapes to the live node
+        // and its logging races vitest's worker teardown ("Closing rpc while
+        // onUserConsoleLog was pending"), failing CI. Cover both registered
+        // accounts — the rekeyed sender is displayed; the multisig is its auth.
+        server.use(
+            mockAlgodAccountInformation({
+                address: REKEY_TARGET_ADDRESS,
+                response: {
+                    amount: 5_000_000,
+                    'min-balance': 100_000,
+                    'auth-addr': MSIG_ADDRESS,
+                },
+            }),
+            mockAlgodAccountInformation({
+                address: MSIG_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+        )
         useAccountsStore.getState().setAccounts([])
         await seedAlgo25Signer()
         useAccountsStore

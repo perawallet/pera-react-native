@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     AccountTypes,
+    canSignArbitraryData,
     canSignArc60,
     canSignWith,
     isRekeyedAccount,
@@ -31,7 +32,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -61,11 +62,16 @@ import {
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+import {
+    useWalletConnect,
+    waitForSessionOutcome,
+} from '@perawallet/wallet-core-walletconnect'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
+import { withTimeout } from '@hooks/deeplink/handlers/timeout'
+import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type WebviewMessage = {
@@ -137,6 +143,7 @@ export const usePeraWebviewInterface = (
     const signingAccounts = useSigningAccounts()
     const allAccounts = useAllAccounts()
     const { network } = useNetwork()
+    const { hasInternet } = useNetworkStatus()
     const deviceID = useDeviceID(network)
     const darkmode = useIsDarkMode()
     const theme = darkmode ? 'dark' : 'light'
@@ -668,6 +675,24 @@ export const usePeraWebviewInterface = (
                         )
                         return
                     }
+                    // Preflight parity with the WC transport: a signer that
+                    // can't sign raw bytes (Ledger, watch) must be rejected
+                    // before the review sheet, not after the user slides.
+                    const signerAccount = allAccounts.find(
+                        account => account.address === signer,
+                    )
+                    if (
+                        !signerAccount ||
+                        !canSignArbitraryData(signerAccount)
+                    ) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            'Signer cannot sign arbitrary data',
+                            webview,
+                        )
+                        return
+                    }
                     const metadata = message.params![
                         'metadata'
                     ] as SignRequestSource
@@ -757,6 +782,30 @@ export const usePeraWebviewInterface = (
         [securedConnection, sourceUrl, deviceID, webview],
     )
 
+    // PERA-4564: The Discover web app reads the device id once (via
+    // getSettings) when it loads and only fetches the user's server-side
+    // favorites while it holds a non-null id. If the migrated device id lands
+    // *after* that first query — store hydration, migration finishing, or
+    // device re-registration — getSettings already returned null and the web
+    // app never retries. Push the id to the live web app whenever it changes
+    // so its device-id listener refires the favorites fetch. Skip the initial
+    // mount: getSettings already carries the mount-time value.
+    const previousDeviceIDRef = useRef<string | null | undefined>(undefined)
+    useEffect(() => {
+        const previous = previousDeviceIDRef.current
+        previousDeviceIDRef.current = deviceID
+        if (previous === undefined) {
+            return
+        }
+        if (previous === deviceID) {
+            return
+        }
+        if (!securedConnection || !deviceID || !webview) {
+            return
+        }
+        sendActionToWebview(GET_DEVICE_ID_ACTION, deviceID, webview)
+    }, [deviceID, securedConnection, webview])
+
     const getPublicSettings = useCallback(
         (message: WebviewMessage) => {
             const payload = {
@@ -788,25 +837,75 @@ export const usePeraWebviewInterface = (
                 return
             }
 
+            // Pairing needs a live bridge; fail the page fast instead of
+            // letting the handshake rot silently until its timeout.
+            if (!hasInternet) {
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InternalError,
+                    'Cannot open a WalletConnect session while offline',
+                    webview,
+                )
+                return
+            }
+
             // Always surface the connection approval sheet — as if the user
             // had scanned the QR themselves. The bridge never auto-approves a
             // WC session (which would expose account addresses with no UI),
             // regardless of origin trust.
-            // Fire-and-forget, but guarded: connect() constructs the WC client
-            // synchronously, which throws on a malformed URI. Without a catch
-            // that throw surfaces as an uncaught promise rejection.
-            connect({
-                connection: {
-                    uri: parsed.uri,
-                },
-            }).catch(error => {
-                logger.error('[webview/wc] connect failed', {
-                    error,
-                    uri: parsed.uri,
-                })
-            })
+            // Bounded like the deeplink path: wait for this pairing's
+            // session_request / connection error and answer the page with a
+            // readable error instead of staying silent forever.
+            void (async () => {
+                let pairingClientId: string
+                try {
+                    pairingClientId = await withTimeout(
+                        'walletConnect.connect',
+                        10_000,
+                        connect({ connection: { uri: parsed.uri } }),
+                    )
+                } catch (error) {
+                    logger.error('[webview/wc] connect failed', {
+                        error,
+                        uri: parsed.uri,
+                    })
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        'Could not start the WalletConnect session',
+                        webview,
+                    )
+                    return
+                }
+                const outcome = await waitForSessionOutcome(
+                    pairingClientId,
+                    8000,
+                )
+                if (outcome.type === 'error') {
+                    // Relay the surfaced reason (e.g. wrong network) —
+                    // passing the Error object would collapse it into the
+                    // generic signing-error copy.
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        outcome.error.message,
+                        webview,
+                    )
+                    return
+                }
+                if (outcome.type === 'timeout') {
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
+                        webview,
+                    )
+                }
+                // 'session': the approval sheet pops via the provider; the
+                // page hears back through the session approve/reject path.
+            })()
         },
-        [connect, hadRequiredParams, webview],
+        [connect, hadRequiredParams, webview, hasInternet],
     )
 
     const onBackPressed = useCallback(() => {

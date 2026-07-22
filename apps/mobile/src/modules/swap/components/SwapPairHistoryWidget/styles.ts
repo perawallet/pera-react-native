@@ -32,10 +32,13 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
     },
     list: {
-        width: '100%',
+        marginHorizontal: -theme.spacing.xl,
     },
     listContent: {
-        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xl,
+    },
+    separator: {
+        width: theme.spacing.sm,
     },
     chip: {
         flexDirection: 'row',

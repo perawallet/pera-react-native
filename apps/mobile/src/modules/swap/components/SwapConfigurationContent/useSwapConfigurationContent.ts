@@ -15,8 +15,6 @@ import {
     useSwaps,
     type SwapConfigurationResult,
 } from '@perawallet/wallet-core-swaps'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { isAlgoAssetName } from '@perawallet/wallet-core-shared'
 import { trackEvent, SwapEvent } from '@analytics'
 import {
     MAX_BALANCE_PERCENT,
@@ -63,14 +61,12 @@ const isSlippageInvalid = (text: string): boolean => {
 export const useSwapConfigurationContent = ({
     onApply,
 }: UseSwapConfigurationContentParams): UseSwapConfigurationContentResult => {
-    const { slippage } = useSwaps()
-    const { preferredCurrency } = useCurrency()
-    const isAlgoPreferred = isAlgoAssetName(preferredCurrency)
+    const { slippage, isLocalCurrencyInput } = useSwaps()
 
     const [balanceText, setBalanceTextState] = useState('')
     const [slippageText, setSlippageTextState] = useState(slippage ?? '')
     const [useLocalCurrency, setUseLocalCurrencyState] =
-        useState(!isAlgoPreferred)
+        useState(isLocalCurrencyInput)
 
     const setUseLocalCurrency = useCallback((value: boolean) => {
         trackEvent(

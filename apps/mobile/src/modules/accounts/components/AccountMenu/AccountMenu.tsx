@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { PWFlatList, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWFlatList,
+    PWRefreshControl,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -50,6 +55,8 @@ export const AccountMenu = (props: AccountMenuProps) => {
         isChartCollapsed,
         handleListScroll,
         handleExpandChart,
+        handleRefresh,
+        isRefreshing,
     } = useAccountMenu(props)
     const {
         onAddAccount,
@@ -112,6 +119,13 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     showsVerticalScrollIndicator={false}
                     onScroll={handleListScroll}
                     scrollEventThrottle={16}
+                    refreshControl={
+                        <PWRefreshControl
+                            isRefreshing={isRefreshing}
+                            onRefresh={handleRefresh}
+                            testID='account-menu-refresh'
+                        />
+                    }
                     inBottomSheet
                 />
             </PWView>

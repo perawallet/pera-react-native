@@ -74,6 +74,14 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
+                        {
+                            // Sweeps every signable key for on-chain accounts
+                            // rekeyed to it — the account-options action scans
+                            // one key; this is the wallet-wide entry (PERA-4619).
+                            action: 'scanRekeyed' as const,
+                            icon: 'magnifying-glass',
+                            title: t('settings.main.scan_rekeyed_title'),
+                        },
                     ],
                 },
                 {

@@ -14,12 +14,17 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useInboxScreen } from '../useInboxScreen'
 import { useInboxQuery, type InboxItem } from '@perawallet/wallet-core-messages'
+import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
 
 const mockHandleInboxItemPress = vi.fn()
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(),
     useCleanupDuplicateMultisigInvitations: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useIsDeviceRegistrationPending: vi.fn(),
 }))
 
 vi.mock('@modules/messages/hooks', () => ({
@@ -35,6 +40,7 @@ describe('useInboxScreen', () => {
             isRefetching: false,
             refetch: vi.fn(),
         } as unknown as ReturnType<typeof useInboxQuery>)
+        vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(false)
     })
 
     it('returns empty inbox array when data is undefined', () => {
@@ -75,5 +81,32 @@ describe('useInboxScreen', () => {
         })
 
         expect(mockHandleInboxItemPress).toHaveBeenCalledWith(signItem)
+    })
+
+    it('is awaiting registration when there are no items and registration is pending', () => {
+        vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(true)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isAwaitingRegistration).toBe(true)
+    })
+
+    it('is not awaiting registration when items are present, even if registration is pending', () => {
+        const signItem = {
+            type: 'multisig_sign' as const,
+            data: { id: 'sign-1', multisigAccount: { address: 'MSIG_ADDR' } },
+            createdAt: new Date(0),
+        }
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [signItem],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+        } as unknown as ReturnType<typeof useInboxQuery>)
+        vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(true)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isAwaitingRegistration).toBe(false)
     })
 })

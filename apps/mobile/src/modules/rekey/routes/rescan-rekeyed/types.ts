@@ -13,7 +13,8 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 
 export type RescanRekeyedStackParamList = {
-    RescanRekeyedSelect: { sourceAddress: string }
+    /** Omitting `sourceAddress` sweeps every signable wallet key. */
+    RescanRekeyedSelect: { sourceAddress?: string }
 }
 
 export type RescanRekeyedScreenProps<

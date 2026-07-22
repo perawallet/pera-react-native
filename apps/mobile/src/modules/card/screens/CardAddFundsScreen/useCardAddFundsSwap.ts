@@ -106,6 +106,12 @@ export const useCardAddFundsSwap = ({
             if (outcome.kind === 'pending-cosign') {
                 return { kind: 'pending-cosign' }
             }
+            if (outcome.kind === 'stale-quote') {
+                // The card flow re-quotes continuously; a stale quote here
+                // just means this attempt raced the TTL — treat as cancelled
+                // so the user re-taps with the already-refreshed rate.
+                return { kind: 'cancelled' }
+            }
             return { kind: 'error', message: outcome.message }
         }, [quote, execute])
 

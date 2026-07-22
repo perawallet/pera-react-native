@@ -39,6 +39,7 @@ export const LedgerSelectAccountsScreen = () => {
         areAllImported,
         canContinue,
         alreadyImportedAddresses,
+        upgradeableAddresses,
         isFetchingMore,
         toggleSelection,
         toggleSelectAll,
@@ -65,6 +66,7 @@ export const LedgerSelectAccountsScreen = () => {
                 variant={item.kind}
                 isSelected={isSelected}
                 isImported={isImported}
+                isUpgradeable={upgradeableAddresses.has(address)}
                 onToggle={() => toggleSelection(address)}
                 onInfoPress={handleInfoPress}
                 testID={`ledger_select_row_${address}`}

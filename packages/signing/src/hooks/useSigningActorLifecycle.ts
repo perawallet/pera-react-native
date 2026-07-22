@@ -28,6 +28,7 @@ import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
 import { useSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { type signingMachine } from '../machine/signingMachine'
+import { recordAppStateChange } from '../machine/children/appStateTracker'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import { approvalGate } from '../pipeline/approvalGate'
@@ -68,6 +69,40 @@ const getActorRegistryVersion = (): number => actorRegistryVersion
 // for, so we don't re-enter `waitFor` on every snapshot tick while the
 // machine sits in `awaiting_user`.
 const awaitingApprovalSet = new Set<string>()
+
+/**
+ * Applies the backgrounding policy (PERA-4637) to every running hardware
+ * signing session: past the grace window the session is aborted into the
+ * retryable `interrupted` state (the exchange's AbortController reaches
+ * the BLE layer when the invoked actor stops); within it, the substate
+ * backstop timers are re-armed so a timer that expired while suspended
+ * can't fire stale on resume.
+ *
+ * Exported (not a hook, no `react-native` import) so the app layer owns the
+ * `AppState` subscription and feeds this in — keeping the signing logic
+ * package free of react-native, which would otherwise force every dependent
+ * (swaps, transactions, walletconnect, …) to parse react-native in its tests.
+ * Operates on the module-global `actorRefsMap`, so a single app-level
+ * subscription reaches whatever sessions are running.
+ */
+export const applyAppStateToHardwareSessions = (nextState: string): void => {
+    const action = recordAppStateChange(nextState, Date.now())
+    if (action === 'none') return
+    for (const parent of actorRefsMap.values()) {
+        const child = (
+            parent.getSnapshot() as {
+                children?: Record<string, AnyActorRef | undefined>
+            }
+        ).children?.hardwareChild
+        if (!child) continue
+        child.send({
+            type:
+                action === 'interrupt'
+                    ? 'INTERRUPTED_BY_BACKGROUND'
+                    : 'REARM_TIMERS',
+        })
+    }
+}
 
 // Dedupe sets for bus publishes that should fire at most once per actor.
 const startedSet = new Set<string>()

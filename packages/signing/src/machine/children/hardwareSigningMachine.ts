@@ -22,6 +22,7 @@ import type {
     HardwareSigningOutput,
 } from './hardwareSigningMachine.context'
 import { hardwareSignActor } from './hardwareSignActor'
+import { appStateTracker } from './appStateTracker'
 
 /**
  * Margin added on top of the strategy's own `withTimeout` ceilings so the
@@ -57,6 +58,16 @@ export const hardwareSigningMachine = setup({
         SEARCHING_TIMEOUT:
             2 * LEDGER_CONNECTION_TIMEOUT_MS + BACKSTOP_MARGIN_MS,
         APPROVAL_TIMEOUT: LEDGER_CONFIRMATION_TIMEOUT_MS + BACKSTOP_MARGIN_MS,
+    },
+    guards: {
+        // iOS suspends JS timers while backgrounded, so a backstop that
+        // expired in the background fires the instant the app resumes —
+        // wall-clock elapsed that includes suspended time is not evidence
+        // of a hung step. The AppState listener writes `backgroundedAt`
+        // synchronously before suspension, so the guard swallows the stale
+        // firing regardless of whether the listener's resume handling has
+        // run yet; REARM_TIMERS then restores the backstop.
+        isBackstopTrustworthy: () => appStateTracker.backgroundedAt === null,
     },
     actions: {
         appendResult: assign({
@@ -102,6 +113,18 @@ export const hardwareSigningMachine = setup({
             error: () => ({
                 kind: 'timeout' as const,
                 cause: new Error('Hardware signing step timed out'),
+            }),
+        }),
+        // Fired when the app stayed backgrounded past the grace window.
+        // Routing into `error` (rather than `done`) keeps RETRY /
+        // ACKNOWLEDGE_ERROR semantics — a fresh attempt reconnects the
+        // device like any other retryable failure.
+        setInterruptedError: assign({
+            error: () => ({
+                kind: 'interrupted' as const,
+                cause: new Error(
+                    'Hardware signing was interrupted while the app was in the background',
+                ),
             }),
         }),
     },
@@ -157,9 +180,14 @@ export const hardwareSigningMachine = setup({
                             reenter: true,
                             actions: 'appendResult',
                         },
+                        REARM_TIMERS: {
+                            target: 'searching',
+                            reenter: true,
+                        },
                     },
                     after: {
                         SEARCHING_TIMEOUT: {
+                            guard: 'isBackstopTrustworthy',
                             target: '#hardwareSigningMachine.error',
                             actions: 'setTimeoutError',
                         },
@@ -186,9 +214,14 @@ export const hardwareSigningMachine = setup({
                             reenter: true,
                             actions: 'appendResult',
                         },
+                        REARM_TIMERS: {
+                            target: 'awaiting_approval',
+                            reenter: true,
+                        },
                     },
                     after: {
                         APPROVAL_TIMEOUT: {
+                            guard: 'isBackstopTrustworthy',
                             target: '#hardwareSigningMachine.error',
                             actions: 'setTimeoutError',
                         },
@@ -207,9 +240,14 @@ export const hardwareSigningMachine = setup({
                             reenter: true,
                             actions: 'appendResult',
                         },
+                        REARM_TIMERS: {
+                            target: 'signing',
+                            reenter: true,
+                        },
                     },
                     after: {
                         APPROVAL_TIMEOUT: {
+                            guard: 'isBackstopTrustworthy',
                             target: '#hardwareSigningMachine.error',
                             actions: 'setTimeoutError',
                         },
@@ -218,6 +256,10 @@ export const hardwareSigningMachine = setup({
             },
             on: {
                 STRATEGY_ERROR: { target: 'error', actions: 'setError' },
+                INTERRUPTED_BY_BACKGROUND: {
+                    target: 'error',
+                    actions: 'setInterruptedError',
+                },
                 // Non-device errors (e.g. ARC-60 validation) bypass the
                 // BLE-class teardown gate — go straight to done with kind:
                 // 'error' so the inline failure sheet surfaces immediately

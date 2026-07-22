@@ -30,6 +30,7 @@ import { AuthSection } from './sections/AuthSection'
 import { ContactsSection } from './sections/ContactsSection'
 import { DeviceIdentifiersSection } from './sections/DeviceIdentifiersSection'
 import { HDWalletsSection } from './sections/HDWalletsSection'
+import { MigrationStepsSection } from './sections/MigrationStepsSection'
 import { NotificationFiltersSection } from './sections/NotificationFiltersSection'
 import { PasskeysSection } from './sections/PasskeysSection'
 import { PreferencesSection } from './sections/PreferencesSection'
@@ -43,6 +44,7 @@ import { useStyles } from './styles'
 import { useSettingsDeveloperMigrationViewerScreen } from './useSettingsDeveloperMigrationViewerScreen'
 import { useRunMigration } from './useRunMigration'
 import { useRNMigrationSnapshot } from './useRNMigrationSnapshot'
+import { useMigrationStepVersions } from './useMigrationStepVersions'
 
 export const SettingsDeveloperMigrationViewerScreen = () => {
     const styles = useStyles()
@@ -55,6 +57,8 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
         error: runError,
     } = useRunMigration()
     const rn = useRNMigrationSnapshot()
+    const { steps: migrationSteps, refresh: refreshMigrationSteps } =
+        useMigrationStepVersions()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const skipped = useMigrationGateStore(state => state.skipped)
     const clearSkipped = useMigrationGateStore(state => state.clearSkipped)
@@ -103,7 +107,10 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                 <PWButton
                     variant='secondary'
                     title='Refresh'
-                    onPress={refresh}
+                    onPress={() => {
+                        refresh()
+                        refreshMigrationSteps()
+                    }}
                     isDisabled={isAnyMigrationRunning}
                 />
                 <PWButton
@@ -123,6 +130,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                         void (async () => {
                             await runMigrationFlow()
                             refresh()
+                            refreshMigrationSteps()
                         })()
                     }}
                     isDisabled={isAnyMigrationRunning}
@@ -134,6 +142,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                         void (async () => {
                             await getProvider().migration.clearMigrationComplete()
                             refresh()
+                            refreshMigrationSteps()
                         })()
                     }}
                     isDisabled={isAnyMigrationRunning || !isMigrationComplete}
@@ -206,6 +215,7 @@ export const SettingsDeveloperMigrationViewerScreen = () => {
                     deviceIdentifiers={data.deviceIdentifiers}
                     rn={rn}
                 />
+                <MigrationStepsSection steps={migrationSteps} />
                 <RawFlagsSection rawFlags={data.preferences.rawFlags} />
             </ExpandAllContext.Provider>
         </PWScrollView>

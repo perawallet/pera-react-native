@@ -26,6 +26,11 @@ internal object FixturesSharedPrefs {
             Context.MODE_PRIVATE,
         )
         val editor = prefs.edit()
+        // Device identifiers, incl. notification_user_id — the source of both
+        // the notificationUserId and legacyFallbackDeviceId bridge fields.
+        editor.putString("mainnet_device_id", FixtureIdentities.MAINNET_DEVICE_ID)
+        editor.putString("testnet_device_id", FixtureIdentities.TESTNET_DEVICE_ID)
+        editor.putString("notification_user_id", FixtureIdentities.NOTIFICATION_USER_ID)
         if (includeAuthState) {
             editor.putString("lock_password", PIN_DIGITS)
             editor.putBoolean("use_biometric", true)

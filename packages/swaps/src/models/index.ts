@@ -23,9 +23,11 @@ export type SwapsState = BaseStoreState & {
     fromAsset: string
     toAsset: string
     slippage: Nullable<string>
+    isLocalCurrencyInput: boolean
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string) => void
     setSlippage: (slippage: Nullable<string>) => void
+    setIsLocalCurrencyInput: (value: boolean) => void
 }
 
 export type SwapConfigurationResult = {
@@ -114,6 +116,12 @@ export interface SwapQuote {
     peraFeeAmount?: Decimal
     peraFeeAsset?: DexSwapAsset
     transactionFees?: Nullable<Decimal>
+    /**
+     * Epoch ms when the quote was received (client-stamped in the
+     * transformer). Quotes older than `SWAP_QUOTE_TTL_MS` are refused at
+     * confirm time — see `isQuoteFresh`.
+     */
+    fetchedAt?: number
 }
 
 export interface TransactionGroup {

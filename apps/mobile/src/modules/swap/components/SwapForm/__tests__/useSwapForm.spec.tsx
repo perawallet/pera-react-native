@@ -22,7 +22,7 @@ const mockSetSlippage = vi.fn()
 const mockResetQuoteMutation = vi.fn()
 const mockCreateQuotes = vi.fn()
 const mockCalculateSwapAmount = vi.fn()
-const mockSetPreferredCurrency = vi.fn()
+const mockSetIsLocalCurrencyInput = vi.fn()
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
@@ -31,16 +31,17 @@ const { mockRequestBottomSheet } = vi.hoisted(() => ({
 let mockFromAsset = '0'
 let mockToAsset = '31566704'
 let mockSlippage: Nullable<string> = null
-let mockPreferredCurrency = 'ALGO'
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwaps: () => ({
         fromAsset: mockFromAsset,
         toAsset: mockToAsset,
         slippage: mockSlippage,
+        isLocalCurrencyInput: false,
         setFromAsset: mockSetFromAsset,
         setToAsset: mockSetToAsset,
         setSlippage: mockSetSlippage,
+        setIsLocalCurrencyInput: mockSetIsLocalCurrencyInput,
     }),
     useCreateQuotesMutation: () => ({
         mutateAsync: mockCreateQuotes,
@@ -124,14 +125,6 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'test-device-id',
 }))
 
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({
-        preferredCurrency: mockPreferredCurrency,
-        setPreferredCurrency: mockSetPreferredCurrency,
-        fallbackCurrency: 'USD',
-    }),
-}))
-
 vi.mock('@hooks/useModalState', () => ({
     useModalState: () => ({
         isOpen: false,
@@ -183,7 +176,6 @@ describe('useSwapForm', () => {
         mockFromAsset = '0'
         mockToAsset = '31566704'
         mockSlippage = null
-        mockPreferredCurrency = 'ALGO'
     })
 
     it('initializes with null amounts and canSwap false', () => {
@@ -372,8 +364,7 @@ describe('useSwapForm', () => {
         expect(mockSetSlippage).toHaveBeenCalledWith(null)
     })
 
-    it('handleOpenConfig switches to local currency when useLocalCurrency is true and ALGO preferred', async () => {
-        mockPreferredCurrency = 'ALGO'
+    it('handleOpenConfig enables the swap-scoped local currency input when the toggle is on', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             slippageTolerance: null,
             balancePercentage: null,
@@ -385,11 +376,10 @@ describe('useSwapForm', () => {
             await result.current.handleOpenConfig()
         })
 
-        expect(mockSetPreferredCurrency).toHaveBeenCalledWith('USD')
+        expect(mockSetIsLocalCurrencyInput).toHaveBeenCalledWith(true)
     })
 
-    it('handleOpenConfig switches to ALGO when useLocalCurrency is false and fiat preferred', async () => {
-        mockPreferredCurrency = 'USD'
+    it('handleOpenConfig disables the swap-scoped local currency input when the toggle is off', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce({
             slippageTolerance: null,
             balancePercentage: null,
@@ -401,7 +391,7 @@ describe('useSwapForm', () => {
             await result.current.handleOpenConfig()
         })
 
-        expect(mockSetPreferredCurrency).toHaveBeenCalledWith('ALGO')
+        expect(mockSetIsLocalCurrencyInput).toHaveBeenCalledWith(false)
     })
 
     it('handleOpenConfig no-ops when the config sheet is dismissed', async () => {
@@ -413,7 +403,7 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetSlippage).not.toHaveBeenCalled()
-        expect(mockSetPreferredCurrency).not.toHaveBeenCalled()
+        expect(mockSetIsLocalCurrencyInput).not.toHaveBeenCalled()
     })
 
     it('converts stored slippage percent to decimal fraction', async () => {

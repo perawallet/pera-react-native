@@ -14,6 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import {
     LEGACY_MIGRATION_SCHEMA_VERSION,
     MIGRATION_SENTINEL_KEY,
+    MIGRATION_STEPS_KEY,
     type KeyValueStorageService,
     type LegacyMigrationData,
     type MigrationSentinelValue,
@@ -156,7 +157,7 @@ describe('RNMigrationService', () => {
     })
 
     describe('hasLegacyData', () => {
-        test('returns false when the sentinel is already set', async () => {
+        test('reports the native probe result even when the sentinel is already set (the "already done" gate lives upstream in getPendingSteps)', async () => {
             storage.setItem(
                 MIGRATION_SENTINEL_KEY,
                 JSON.stringify({
@@ -164,8 +165,14 @@ describe('RNMigrationService', () => {
                     sourcePlatform: 'ios',
                 }),
             )
+            await service.markMigrationComplete('ios')
+            const module = createNativeModule({
+                hasLegacyData: vi.fn().mockResolvedValue(true),
+            })
+            nativeModulesMock.LegacyMigration = module
 
-            expect(await service.hasLegacyData()).toBe(false)
+            expect(await service.hasLegacyData()).toBe(true)
+            expect(module.hasLegacyData).toHaveBeenCalledOnce()
         })
 
         test('returns false when the native module is not registered', async () => {
@@ -413,6 +420,30 @@ describe('RNMigrationService', () => {
             )
         })
 
+        test('decodes legacyFallbackDeviceId and defaults it to null when absent', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(
+                    buildRawPayload({
+                        deviceIdentifiers: {
+                            notificationUserId: null,
+                            mainnetDeviceId: null,
+                            testnetDeviceId: null,
+                            lastSeenNotificationId: null,
+                            legacyFallbackDeviceId: '12345',
+                        },
+                    }),
+                ),
+            })
+            const data = await service.getLegacyData()
+            expect(data.deviceIdentifiers.legacyFallbackDeviceId).toBe('12345')
+
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(buildRawPayload()),
+            })
+            const legacy = await service.getLegacyData()
+            expect(legacy.deviceIdentifiers.legacyFallbackDeviceId).toBeNull()
+        })
+
         test('decodeLongString returns null for non-numeric and empty strings', async () => {
             const raw = buildRawPayload({
                 preferences: {
@@ -539,6 +570,59 @@ describe('RNMigrationService', () => {
             expect(summary.accountsWithHDWallet).toBe(1)
             expect(summary.accountsWithLedger).toBe(1)
             expect(summary.accountsWithJoint).toBe(1)
+        })
+
+        test('decodes authAddress on an account', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(
+                    buildRawPayload({
+                        accounts: [
+                            {
+                                address: 'REKEYEDADDR',
+                                name: 'Rekeyed',
+                                type: 'standard',
+                                preferredOrder: 0,
+                                isBackedUp: false,
+                                secretKey: null,
+                                hdWalletId: null,
+                                ledger: null,
+                                joint: null,
+                                authAddress: 'AUTHADDR',
+                            },
+                        ],
+                    }),
+                ),
+            })
+
+            const data = await service.getLegacyData()
+
+            expect(data.accounts[0].authAddress).toBe('AUTHADDR')
+        })
+
+        test('defaults authAddress to null when the native payload omits it (old natives)', async () => {
+            nativeModulesMock.LegacyMigration = createNativeModule({
+                getLegacyData: vi.fn().mockResolvedValue(
+                    buildRawPayload({
+                        accounts: [
+                            {
+                                address: 'PLAINADDR',
+                                name: 'Plain',
+                                type: 'watch',
+                                preferredOrder: 0,
+                                isBackedUp: false,
+                                secretKey: null,
+                                hdWalletId: null,
+                                ledger: null,
+                                joint: null,
+                            },
+                        ],
+                    }),
+                ),
+            })
+
+            const data = await service.getLegacyData()
+
+            expect(data.accounts[0].authAddress).toBeNull()
         })
 
         describe('corrupt-blob resilience', () => {
@@ -822,6 +906,36 @@ describe('RNMigrationService', () => {
 
             await expect(service.resetLegacyData()).rejects.toThrow('boom')
             expect(storage.getItem(MIGRATION_SENTINEL_KEY)).toBe('x')
+        })
+    })
+
+    describe('step versions', () => {
+        test('returns null when no step record exists', async () => {
+            await expect(service.getCompletedStepVersions()).resolves.toBeNull()
+        })
+
+        test('round-trips a step-version record through key-value storage', async () => {
+            await service.setCompletedStepVersions({
+                accounts: 1,
+                passkeys: 2,
+            })
+            await expect(service.getCompletedStepVersions()).resolves.toEqual({
+                accounts: 1,
+                passkeys: 2,
+            })
+        })
+
+        test('ignores a malformed step record instead of throwing', async () => {
+            storage.setItem(MIGRATION_STEPS_KEY, 'not-json{')
+            await expect(service.getCompletedStepVersions()).resolves.toBeNull()
+        })
+
+        test('ignores a JSON array record (arrays are objects but not a version map)', async () => {
+            storage.setItem(
+                MIGRATION_STEPS_KEY,
+                JSON.stringify(['accounts', 2]),
+            )
+            await expect(service.getCompletedStepVersions()).resolves.toBeNull()
         })
     })
 })

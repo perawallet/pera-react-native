@@ -12,6 +12,7 @@
 
 export * from './useAssetsQuery'
 export * from './useAssetPricesQuery'
+export * from './useAssetUsdRate'
 export * from './useAssetPriceHistoryQuery'
 export * from './useSingleAssetDetailsQuery'
 export * from './useInvalidateAssetPrices'

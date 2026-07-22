@@ -41,6 +41,7 @@ const mockSchedule = vi.fn((callback: () => void, _delayMs: number) => {
 })
 const mockFlush = vi.fn()
 const mockCancel = vi.fn()
+const mockExecutionCancel = vi.fn()
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: () => ({
@@ -60,6 +61,7 @@ vi.mock('@hooks/useRunAfterDelay', () => ({
 vi.mock('../../../hooks/useSwapExecution', () => ({
     useSwapExecution: () => ({
         execute: mockExecute,
+        cancel: mockExecutionCancel,
         reset: mockReset,
         status: 'idle',
         error: null,
@@ -171,28 +173,59 @@ describe('useSwapConfirmationActions', () => {
         expect(mockResolve).toHaveBeenCalledWith({ kind: 'confirm' })
     })
 
-    it('handleClose dismisses when not processing', () => {
+    it('resolves with stale-quote when the quote outlived its TTL', async () => {
+        mockExecute.mockResolvedValueOnce({ kind: 'stale-quote' })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-8') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockResolve).toHaveBeenCalledWith({ kind: 'stale-quote' })
+        expect(mockSchedule).not.toHaveBeenCalled()
+    })
+
+    it('handleClose dismisses when idle', () => {
         const { result } = renderHook(() =>
             useSwapConfirmationActions({ quote: makeQuote('quote-5') }),
         )
 
         act(() => {
-            result.current.handleClose(false)
+            result.current.handleClose(false, false)
         })
 
         expect(mockFlush).toHaveBeenCalledTimes(1)
         expect(mockDismiss).toHaveBeenCalledTimes(1)
     })
 
-    it('handleClose is a no-op while processing', () => {
+    it('handleClose cancels the in-flight execution while preparing instead of trapping', () => {
         const { result } = renderHook(() =>
             useSwapConfirmationActions({ quote: makeQuote('quote-6') }),
         )
 
         act(() => {
-            result.current.handleClose(true)
+            result.current.handleClose(false, true)
         })
 
+        // The execute() in flight observes the cancel and resolves the
+        // sheet as cancelled — no direct dismiss from here.
+        expect(mockExecutionCancel).toHaveBeenCalledTimes(1)
+        expect(mockDismiss).not.toHaveBeenCalled()
+    })
+
+    it('handleClose stays blocked once the swap has committed (signing onward)', () => {
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-6') }),
+        )
+
+        act(() => {
+            result.current.handleClose(true, false)
+        })
+
+        expect(mockExecutionCancel).not.toHaveBeenCalled()
         expect(mockFlush).not.toHaveBeenCalled()
         expect(mockDismiss).not.toHaveBeenCalled()
     })

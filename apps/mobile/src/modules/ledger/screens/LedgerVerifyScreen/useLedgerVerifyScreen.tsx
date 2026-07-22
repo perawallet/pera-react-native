@@ -18,6 +18,7 @@ import {
     useSetAccounts,
     useSelectedAccountAddress,
     AccountTypes,
+    type HardwareWalletDetails,
     type LedgerSelectableAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -29,6 +30,7 @@ import {
     verifyLedgerAddress,
     withLedgerConfirmationTimeout,
     withLedgerConnectionTimeout,
+    LedgerAddressMismatchError,
     LedgerProviderNotFoundError,
     classifyLedgerError,
 } from '@perawallet/wallet-core-ledger'
@@ -40,6 +42,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import {
     useExitAccountFlow,
@@ -50,6 +53,7 @@ import {
     getLedgerErrorPreset,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
+import { WatchAccountUpgradeSheet } from '@modules/ledger/components/WatchAccountUpgradeSheet'
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 
@@ -90,6 +94,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { exitAccountFlow } = useExitAccountFlow()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
+    const { request: requestBottomSheet } = useBottomSheet()
     const navigation = useAppNavigation()
 
     const verifyTargets = useMemo<HardwareWalletDerivedAccount[]>(() => {
@@ -148,13 +153,23 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 // A silent BLE drop mid-verify otherwise leaves the screen
                 // in `verifying` forever — the confirmation ceiling turns it
                 // into a retryable error.
-                await withLedgerConfirmationTimeout(
+                const verified = await withLedgerConfirmationTimeout(
                     verifyLedgerAddress(
                         transport,
                         verifyTargets[i].accountIndex,
                     ),
                     'Verify Ledger address',
                 )
+                // A seed swapped between fetch and verify derives a different
+                // address at the same index; sign-time would reject it anyway
+                // (createHardwareStrategy), so fail here before an unsignable
+                // account can be written.
+                if (verified.address !== verifyTargets[i].address) {
+                    throw new LedgerAddressMismatchError(
+                        verifyTargets[i].address,
+                        verified.address,
+                    )
+                }
                 setVerifiedIndices(prev => {
                     const next = new Set(prev)
                     next.add(i)
@@ -185,27 +200,77 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
-    const handleAdd = useCallback(() => {
+    const runAdd = useCallback(async () => {
         const current = useAccountsStore.getState().accounts
-        const existing = new Set(current.map(a => a.address))
+        const byAddress = new Map(current.map(a => [a.address, a]))
         const added = new Set<string>()
         const batch: WalletAccount[] = []
+        const upgrades: Array<{
+            address: string
+            details: HardwareWalletDetails
+        }> = []
+        const rebinds: Array<{
+            address: string
+            details: HardwareWalletDetails
+        }> = []
+
+        // Default names number on from the ledger accounts already in the
+        // wallet ("Ledger 3" after two prior imports) — count-based, so
+        // renames/removals can repeat a number; names are not unique.
+        let nextDefaultNameNumber =
+            current.filter(
+                a =>
+                    a.type === AccountTypes.hardware &&
+                    a.hardwareDetails.manufacturer === 'ledger',
+            ).length + 1
+
+        const detailsFor = (
+            acc: HardwareWalletDerivedAccount,
+        ): HardwareWalletDetails => ({
+            manufacturer: 'ledger' as const,
+            deviceId,
+            deviceName,
+            accountIndex: acc.accountIndex,
+            transportType,
+        })
 
         const addHardware = (acc: HardwareWalletDerivedAccount) => {
             if (!isValidAlgorandAddress(acc.address)) return
-            if (existing.has(acc.address) || added.has(acc.address)) return
+            if (added.has(acc.address)) return
+            const collision = byAddress.get(acc.address)
+            if (collision) {
+                if (collision.type === AccountTypes.watch) {
+                    if (!upgrades.some(u => u.address === acc.address)) {
+                        upgrades.push({
+                            address: acc.address,
+                            details: detailsFor(acc),
+                        })
+                    }
+                } else if (
+                    collision.type === AccountTypes.hardware &&
+                    (collision.hardwareDetails.deviceId !== deviceId ||
+                        collision.hardwareDetails.transportType !==
+                            transportType)
+                ) {
+                    // Same address under a different stored device id — the
+                    // OS forgot/re-paired or the device was replaced from the
+                    // same seed. The address match proves the same key.
+                    rebinds.push({
+                        address: acc.address,
+                        details: detailsFor(acc),
+                    })
+                }
+                return
+            }
             added.add(acc.address)
             batch.push({
                 id: generateOrderedUniqueId(),
+                name: t('ledger.default_account_name', {
+                    number: nextDefaultNameNumber++,
+                }),
                 type: AccountTypes.hardware,
                 address: acc.address,
-                hardwareDetails: {
-                    manufacturer: 'ledger' as const,
-                    deviceId,
-                    deviceName,
-                    accountIndex: acc.accountIndex,
-                    transportType,
-                },
+                hardwareDetails: detailsFor(acc),
             })
         }
 
@@ -214,13 +279,21 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 addHardware(sel.account)
             } else {
                 addHardware(sel.authAccount)
+                // Signable once this import lands: newly added, queued for
+                // watch→hardware upgrade, or already present as a non-watch
+                // account. A watch auth always queues an upgrade above, so a
+                // present-but-watch auth can no longer slip through into an
+                // unsignable pair.
+                const authAddress = sel.authAccount.address
                 const authPresent =
-                    added.has(sel.authAccount.address) ||
-                    existing.has(sel.authAccount.address)
+                    added.has(authAddress) ||
+                    upgrades.some(u => u.address === authAddress) ||
+                    (byAddress.has(authAddress) &&
+                        byAddress.get(authAddress)?.type !== AccountTypes.watch)
                 if (
                     authPresent &&
                     isValidAlgorandAddress(sel.address) &&
-                    !existing.has(sel.address) &&
+                    !byAddress.has(sel.address) &&
                     !added.has(sel.address)
                 ) {
                     added.add(sel.address)
@@ -237,18 +310,54 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             }
         }
 
-        if (batch.length === 0) {
+        if (
+            batch.length === 0 &&
+            upgrades.length === 0 &&
+            rebinds.length === 0
+        ) {
             exitAccountFlow()
             return
         }
 
-        setAccounts([...current, ...batch])
+        if (upgrades.length > 0) {
+            const confirmed = await requestBottomSheet<boolean>({
+                contents: <WatchAccountUpgradeSheet count={upgrades.length} />,
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            // Declining aborts the whole add (batch included): the batch may
+            // contain rekeyed pairs that are only signable via the declined
+            // upgrades, and a partial import would surprise more than a no-op.
+            if (!confirmed) return
+        }
+
+        const store = useAccountsStore.getState()
+        for (const upgrade of upgrades) {
+            store.upgradeWatchAccountToHardware(
+                upgrade.address,
+                upgrade.details,
+            )
+        }
+        for (const rebind of rebinds) {
+            store.updateHardwareDetails(rebind.address, rebind.details)
+        }
+        if (batch.length > 0) {
+            setAccounts([...useAccountsStore.getState().accounts, ...batch])
+        }
+
+        if (batch.length === 0 && upgrades.length === 0) {
+            // Re-bind only: metadata refresh, not an import.
+            exitAccountFlow()
+            return
+        }
 
         const firstDerived = selectedAccounts.find(s => s.kind === 'derived')
-        const selectedAddress = firstDerived
-            ? firstDerived.account.address
-            : batch[0].address
-        setSelectedAccountAddress(selectedAddress)
+        const selectedAddress =
+            firstDerived?.account.address ??
+            batch[0]?.address ??
+            upgrades[0]?.address
+        if (selectedAddress) {
+            setSelectedAccountAddress(selectedAddress)
+        }
         setShouldPlayConfetti(true)
         exitAccountFlow()
     }, [
@@ -256,11 +365,23 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         deviceName,
         transportType,
         selectedAccounts,
+        requestBottomSheet,
         setAccounts,
         setSelectedAccountAddress,
         setShouldPlayConfetti,
         exitAccountFlow,
+        t,
     ])
+
+    // Guards double-taps while the upgrade confirmation sheet is open.
+    const isAddingRef = useRef(false)
+    const handleAdd = useCallback(() => {
+        if (isAddingRef.current) return
+        isAddingRef.current = true
+        void runAdd().finally(() => {
+            isAddingRef.current = false
+        })
+    }, [runAdd])
 
     const handleRetry = useCallback(() => {
         void verify()
