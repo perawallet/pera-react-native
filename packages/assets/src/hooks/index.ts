@@ -27,4 +27,5 @@ export {
     isAssetQuery,
     getAssetsQueryKey,
     getAssetByIdQueryKey,
+    isAssetPriceHistoryQuery,
 } from './querykeys'
