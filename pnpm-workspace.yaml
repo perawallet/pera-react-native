@@ -119,6 +119,11 @@ overrides:
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
+  # expo@57.0.7 pulls expo-modules-core ~57.0.6 → expo-modules-jsi ~57.0.3, and jsi 57.0.3 fails
+  # to compile under Xcode 26.2 (Swift ambiguity in JavaScriptCodable+Date.swift → the
+  # ExpoModulesJSI xcframework build phase).
+  expo-modules-core: ~57.0.7
+  expo-modules-jsi: ~57.0.4
   # GHSA-v2hh-gcrm-f6hx (host confusion via literal backslash authority delimiter)
   # + GHSA-4c8g-83qw-93j6 (host confusion via failed IDN canonicalization). Patched in
   # 4.1.1. The prior `<3.1.2: ">=3.1.2"` backport floated to the now-vulnerable 4.0.0;
