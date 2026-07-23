@@ -11,12 +11,14 @@
  */
 
 import { useCallback } from 'react'
+import { useTheme } from '@rneui/themed'
 import { type PeraNotification } from '@perawallet/wallet-core-messages'
+import { RefreshControl } from 'react-native-gesture-handler'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { LoadingView } from '@components/LoadingView'
-import { PWFlatList, PWRefreshControl, PWScreen } from '@components/core'
+import { PWFlatList, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
 import { useStyles } from './styles'
@@ -24,6 +26,7 @@ import { useNotificationsScreen } from './useNotificationsScreen'
 
 export const NotificationsScreen = () => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
 
     const {
@@ -74,10 +77,11 @@ export const NotificationsScreen = () => {
                     isFetchingNextPage ? <LoadingView variant='circle' /> : null
                 }
                 refreshControl={
-                    <PWRefreshControl
-                        isRefreshing={isRefetching}
+                    <RefreshControl
+                        refreshing={isRefetching}
                         onRefresh={refetch}
-                        testID='notifications-refresh'
+                        colors={[theme.colors.primary]}
+                        progressBackgroundColor={theme.colors.background}
                     />
                 }
             />
