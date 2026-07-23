@@ -45,6 +45,7 @@ const OptionRow = ({
 
     return (
         <PWTouchableOpacity
+            testID={`account_option_${option.id}`}
             style={styles.optionRow}
             onPress={option.onPress}
         >
