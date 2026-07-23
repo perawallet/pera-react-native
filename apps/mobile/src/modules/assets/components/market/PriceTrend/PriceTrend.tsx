@@ -17,15 +17,10 @@ import {
     type HistoryPeriod,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { percentChange } from '@perawallet/wallet-core-blockchain'
-import { Decimal } from 'decimal.js'
-import { useMemo } from 'react'
-import {
-    type AssetPriceHistoryItem,
-    useAssetPriceHistoryQuery,
-} from '@perawallet/wallet-core-assets'
+import { type AssetPriceHistoryItem } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { TrendIndicator } from '@components/TrendIndicator'
+import { usePriceTrend } from './usePriceTrend'
 
 export type PriceTrendProps = {
     assetId: string
@@ -43,22 +38,12 @@ export const PriceTrend = ({
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
 
-    const { data: chartData } = useAssetPriceHistoryQuery(
-        assetId,
-        period ?? 'one-week',
-    )
+    const { changePercentage, changeValue, isPositive, isHidden } =
+        usePriceTrend({ assetId, period, selectedDataPoint })
 
-    const [changePercentage, changeValue] = useMemo(() => {
-        const dataPoints = chartData?.map(p => p.usdPrice) ?? []
-
-        const firstDp = dataPoints.at(0) ?? new Decimal(0)
-        const lastDp =
-            selectedDataPoint?.usdPrice ?? dataPoints.at(-1) ?? new Decimal(0)
-
-        return [percentChange(firstDp, lastDp), lastDp.minus(firstDp)]
-    }, [chartData, selectedDataPoint])
-
-    const isPositive = changePercentage.greaterThanOrEqualTo(new Decimal(0))
+    if (isHidden) {
+        return null
+    }
 
     return (
         <PWView style={styles.container}>
