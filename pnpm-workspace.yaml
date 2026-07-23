@@ -91,11 +91,6 @@ onlyBuiltDependencies:
 
 patchedDependencies:
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.22": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.22.patch
-  # TEMPORARY (PERA-4677): the EXConstants "Generate app.config" script phase fails only
-  # on the Bitrise archive; its stderr goes to gym's detail log, not the build console, so
-  # CI reports a bare nonzero PhaseScriptExecution with no cause. This patch echoes the real
-  # getAppConfig output + the pre-run bundle-dir state so one build reveals it. Revert once diagnosed.
-  "expo-constants@57.0.6": patches/expo-constants@57.0.6.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);

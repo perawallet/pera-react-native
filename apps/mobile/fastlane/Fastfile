@@ -81,23 +81,6 @@ platform :ios do
     end
   end
 
-  # [PERA-4677] TEMPORARY: gym pipes xcodebuild through a formatter that hides run-script
-  # phase stdout, so a failed script phase (e.g. EXConstants "Generate app.config") surfaces
-  # in the console as only a bare PhaseScriptExecution error with no cause. On failure, dump
-  # the raw gym build log — which DOES capture script stdout/stderr — filtered to the
-  # relevant lines, into the (unfiltered) fastlane step log. Remove once the archive is green.
-  error do |lane, exception|
-    Dir[File.expand_path("~/Library/Logs/gym/*.log")].each do |path|
-      lines = (File.readlines(path) rescue [])
-      next if lines.empty?
-      hits = lines.select { |l| l =~ /PERA-DIAG|ENOENT|EXConstants|Generate app\.config|error:|Command PhaseScriptExecution/i }
-      UI.message("===== [PERA-4677 DIAG] #{path} — matched lines =====")
-      UI.message(hits.last(200).join)
-      UI.message("===== [PERA-4677 DIAG] #{path} — last 60 lines =====")
-      UI.message(lines.last(60).join)
-    end
-  end
-
   desc "Build iOS Staging"
   lane :build_staging do
     build_ios(
