@@ -29,8 +29,14 @@ import { useBottomSheetStore } from './src/modules/bottom-sheet'
 // Reset it after each integration test so flows that count requests, or
 // assert sheet visibility from a known clean slate, aren't poisoned by
 // the previous case.
-afterEach(() => {
+afterEach(async () => {
     useBottomSheetStore.getState().resetState()
+    // Drain the macrotask queue so any background async that settles just after a flow test
+    // finishes (a late query resolve / logger.warn from polling code — see the
+    // waitForConfirmation note below) forwards its console DURING the test window rather than at
+    // worker teardown, where a pending forward crashes as
+    // `EnvironmentTeardownError: Closing rpc while "onUserConsoleLog" was pending` and fails CI.
+    await new Promise(resolve => setTimeout(resolve, 0))
 })
 
 // jsdom installs its own `Uint8Array` constructor on `globalThis`. Node's

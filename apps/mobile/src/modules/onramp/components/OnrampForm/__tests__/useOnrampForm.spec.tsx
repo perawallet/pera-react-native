@@ -108,6 +108,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
+    // Analytics (packages/analytics/src/log.ts) reads useNetworkStore.getState().network on every
+    // trackEvent. Without it, each analytics call logs "No useNetworkStore export on the mock", and
+    // that pending console forwarding intermittently crashes the vitest worker at teardown
+    // (EnvironmentTeardownError, blamed on messages.test.tsx in the same worker).
+    useNetworkStore: Object.assign(() => 'mainnet', {
+        getState: () => ({ network: 'mainnet' }),
+    }),
 }))
 
 vi.mock('@hooks/useToast', () => ({
