@@ -1,21 +1,25 @@
 diff --git a/scripts/get-app-config-ios.sh b/scripts/get-app-config-ios.sh
-index b612e095ea509f92dac967540f50353507a8ff51..5cd5955844655eb37e48c727a4468d78e5b4761f 100755
+index b612e095ea509f92dac967540f50353507a8ff51..0eb1db7f3845aba9f7591beaec65abadac61b7ed 100755
 --- a/scripts/get-app-config-ios.sh
 +++ b/scripts/get-app-config-ios.sh
-@@ -32,4 +32,18 @@ else
+@@ -32,4 +32,22 @@ else
    exit 1
  fi
  
 -"${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/with-node.sh" "${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/getAppConfig.js" "$PROJECT_ROOT" "$RESOURCE_DEST"
-+# [PERA-DIAG] Temporary CI diagnostic (PERA-4677): the getAppConfig failure's stderr
-+# lands only in gym's detail log, not the xcodebuild console, so CI just reports a bare
-+# nonzero PhaseScriptExecution. Surface the real output and the pre-run state of the
-+# output dir so a single build reveals the cause. REMOVE once diagnosed.
++# [PERA-4677] Fix + temporary diagnostic. The shallow-bundle branch above (device builds)
++# never creates RESOURCE_DEST — only the deep branch does. Under the full parallel archive,
++# if Xcode hasn't materialized EXConstants.bundle in $CONFIGURATION_BUILD_DIR by the time
++# this phase runs, getAppConfig's writeFileSync throws ENOENT and the archive fails with a
++# bare PhaseScriptExecution error. `mkdir -p` makes the phase order-independent (idempotent,
++# same dir Xcode uses). The [PERA-DIAG] echoes (incl. the pre-mkdir `ls`) land in the raw
++# gym log, surfaced by the Fastfile error handler; drop the diagnostics once CI is green.
 +echo "[PERA-DIAG] BUNDLE_FORMAT=$BUNDLE_FORMAT"
 +echo "[PERA-DIAG] CONFIGURATION_BUILD_DIR=$CONFIGURATION_BUILD_DIR"
 +echo "[PERA-DIAG] PROJECT_DIR=$PROJECT_DIR PROJECT_ROOT=$PROJECT_ROOT"
 +echo "[PERA-DIAG] RESOURCE_DEST=$RESOURCE_DEST"
-+ls -la "$RESOURCE_DEST" 2>&1 | sed 's/^/[PERA-DIAG] ls: /' || true
++ls -la "$RESOURCE_DEST" 2>&1 | sed 's/^/[PERA-DIAG] ls-before: /' || true
++mkdir -p "$RESOURCE_DEST"
 +set +e
 +"${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/with-node.sh" "${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/getAppConfig.js" "$PROJECT_ROOT" "$RESOURCE_DEST" 2>&1
 +PERA_GEN_EXIT=$?
