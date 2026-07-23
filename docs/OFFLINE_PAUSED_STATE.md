@@ -41,6 +41,20 @@ useQuery({
 > (e.g. balance history, price history, asset search) must keep pausing until
 > their own surface tickets give them explicit offline UX. Flipping the global
 > default would make them throw offline instead.
+>
+> **PERA-4581 adopts this for charts.** `useAccountBalancesHistoryQuery`,
+> `useAccountsAssetsBalanceHistoryQuery`, and `useAssetPriceHistoryQuery` stay
+> pure-network — `networkMode` is untouched, so they still pause offline.
+> `BalanceLineChart` (shared by `WealthChart`, `AssetPriceChart`, and
+> `AssetWealthChart`) now renders the pause via a colocated
+> `useBalanceLineChart` hook: data → offline → error → loading → empty, with a
+> retry that reads `hasInternet` at press time and skips the network call
+> while offline instead of dispatching a doomed request. `PriceTrend` follows
+> the same contract via `usePriceTrend`, hiding itself when paused with no
+> cached data. Note the chart surface deliberately deviates from §2's
+> `isError → isPaused` precedence: it collapses an errored query on a
+> known-offline device into the offline surface, since a retry can't act on
+> the error until connectivity returns.
 
 ### Guarding the network segment
 
@@ -59,6 +73,34 @@ so they must not reject the whole `queryFn`:
 
 > `onlineManager.isOnline` is a **method** — call `onlineManager.isOnline()`, not
 > `onlineManager.isOnline`.
+
+### Persisting network-only chart snapshots (the exception to the exclusion rule)
+
+The intro rule excludes DB-backed queries from persistence because SQLite is
+already the cache. Chart-history queries are the opposite case: they are
+network-only (no SQLite table backs them) and carry no PII, so the last
+successful snapshot is exactly what lets a chart show last-known data on a
+cold, offline launch. `apps/mobile/src/providers/query-persistence.ts`
+allowlists two query-key predicates into `shouldDehydrateQuery`, dehydrated
+only when the query last resolved with `status === 'success'`:
+
+- `isAccountBalancesHistoryQuery` — `['accounts', 'balance-history', …]`
+- `isAssetPriceHistoryQuery` — `['assets', 'prices', 'history', …]`
+
+The per-account asset-history key (`['accounts', 'assets', 'balance-history',
+…]`, used by `AssetWealthChart`) is deliberately **not** allowlisted —
+PERA-4581 scoped persistence to exactly those two keys.
+
+### `CHART_QUERY_TIMEOUT_MS` stays at 30 s
+
+`CHART_QUERY_TIMEOUT_MS` (`packages/shared/src/models/constants.ts`) was
+reconsidered as part of PERA-4581 and kept at 30 000 ms. No production
+latency measurements were available to justify lowering it; the constant's
+own doc comment records that these aggregation endpoints routinely exceed
+ky's 10 s default; and the offline retry short-circuit above removes the
+doomed-30 s-wait UX that motivated reconsidering the value in the first
+place — a retry pressed while offline never dispatches the request. Revisit
+with real latency metrics if they become available.
 
 ---
 
