@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-// M7 milestone smoke: the WalletConnect settings graph (SettingsWalletConnectScreen
-// + SigningOverlays' ConnectionView, newly mounted in WebMainRoutes) plus the
-// Discover hand-off, on web for the first time in this bundle. Reuses the
+// M7 milestone smoke: the WalletConnect settings graph (now the unified
+// ConnectionsSettingsScreen, see EXTENSION_REVIEW_FOLLOWUPS.md 4.4 —
+// originally SettingsWalletConnectScreen) + SigningOverlays' ConnectionView,
+// newly mounted in WebMainRoutes) plus the Discover hand-off, on web for the
+// first time in this bundle. Reuses the
 // feature-tabs.spec.ts fixture shape: fresh profile, serial, onboard once in
 // beforeAll. Network access is not assumed — a real WC v1 pairing needs a live
 // bridge, so every WalletConnect assertion here targets a *networkless*
@@ -173,13 +175,14 @@ test.afterAll(async () => {
     await context.close()
 })
 
-// Settings row + screen: proves the WC settings graph (Task 4's gated route +
-// SettingsWalletConnectScreen) boots on web with no eval-time crash — this
-// bundle is the first to contain it. testID scheme settings_item_${title...}
-// (SettingsScreen.tsx) — 'WalletConnect Sessions' (settings.main.wallet_connect_title)
-// → settings_item_walletconnect_sessions, verified against SettingsScreen.tsx
-// and useSettingsOptions.ts.
-test('walletconnect settings row renders and the screen shows its empty state', async () => {
+// Settings row + screen: proves the WC settings graph (now the unified
+// ConnectionsSettingsScreen — connectionsSettings capability, see
+// EXTENSION_REVIEW_FOLLOWUPS.md 4.4) boots on web with no eval-time crash —
+// this bundle is the first to contain it. testID scheme
+// settings_item_${title...} (SettingsScreen.tsx) — 'Connections'
+// (settings.main.connections_title) → settings_item_connections, verified
+// against SettingsScreen.tsx and useSettingsOptions.ts.
+test('connections settings row renders and the screen shows its empty state', async () => {
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))
     await expect(page.getByTestId('menu_screen')).toBeVisible({
@@ -190,29 +193,28 @@ test('walletconnect settings row renders and the screen shows its empty state', 
         timeout: 20_000,
     })
 
-    const walletConnectRow = page.getByTestId(
-        'settings_item_walletconnect_sessions',
-    )
-    await walletConnectRow.scrollIntoViewIfNeeded()
-    await expect(walletConnectRow).toBeVisible()
-    await clickThroughPinPrompt(page, walletConnectRow)
+    const connectionsRow = page.getByTestId('settings_item_connections')
+    await connectionsRow.scrollIntoViewIfNeeded()
+    await expect(connectionsRow).toBeVisible()
+    await clickThroughPinPrompt(page, connectionsRow)
 
-    await expect(page.getByTestId('wallet_connect_screen')).toBeVisible({
+    await expect(page.getByTestId('connections_settings_screen')).toBeVisible({
         timeout: 20_000,
     })
-    // A fresh wallet has no sessions — SettingsWalletConnectScreen's
-    // PWFlatList renders ListEmptyComponent (walletconnect.settings.empty_title
-    // / empty_body, en.json), which has no testID — the rendered copy itself
-    // is the verified proxy that the screen reached its empty-state terminal
-    // render rather than crashing mid-mount.
-    await expect(
-        page.getByText('No WalletConnect Sessions', { exact: true }),
-    ).toBeVisible({ timeout: 20_000 })
+    // A fresh wallet has no sessions or dapp connections —
+    // ConnectionsSettingsScreen's PWFlatList renders ListEmptyComponent
+    // (settings.connections.empty_title / empty_body, en.json), which has no
+    // testID on the EmptyView itself — the rendered copy is the verified
+    // proxy that the screen reached its empty-state terminal render rather
+    // than crashing mid-mount.
+    await expect(page.getByText('No connections', { exact: true })).toBeVisible(
+        { timeout: 20_000 },
+    )
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
 // Paste-flow terminal state: the empty-state's connect button
-// (testID='wallet_connect_connect_button', SettingsWalletConnectScreen.tsx)
+// (testID='connections_settings_connect_button', ConnectionsSettingsScreen.tsx)
 // opens QRScannerView, a PWBottomSheet (testID='qr-scanner-sheet',
 // QRScannerView.web.tsx) hosting QRScannerContent.web's paste field
 // (testID='qr-paste-input') and submit button (testID='qr-paste-submit').
@@ -232,7 +234,7 @@ test('pasting an unreachable-bridge WC URI reaches a bounded terminal state', as
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(
         page,
-        page.getByTestId('wallet_connect_connect_button'),
+        page.getByTestId('connections_settings_connect_button'),
     )
 
     const scannerSheet = page.getByTestId('qr-scanner-sheet')

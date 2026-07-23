@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { useConnectionsSettingsScreen } from '../useConnectionsSettingsScreen'
 import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
 import {
@@ -192,5 +192,17 @@ describe('useConnectionsSettingsScreen', () => {
         )
         expect(mockRevoke).not.toHaveBeenCalled()
         expect(mockDisconnect).not.toHaveBeenCalled()
+    })
+
+    it('exposes scannerState for the WalletConnect QR-pairing flow', () => {
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+
+        expect(result.current.scannerState.isOpen).toBe(false)
+
+        act(() => {
+            result.current.scannerState.open()
+        })
+
+        expect(result.current.scannerState.isOpen).toBe(true)
     })
 })

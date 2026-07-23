@@ -3308,6 +3308,9 @@
             "placeholder": "Approval surface — coming in M4."
         },
         "expanded": {
+            "onboarding_title": "Set up in a full tab",
+            "onboarding_body": "Wallet setup opens in a full browser tab so you can back up your recovery phrase safely.",
+            "onboarding_cta": "Continue in a new tab",
             "redirecting": "Continuing in a new tab…"
         }
     }

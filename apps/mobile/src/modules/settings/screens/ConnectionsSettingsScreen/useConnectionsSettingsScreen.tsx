@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
+import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -46,6 +47,10 @@ export type UseConnectionsSettingsScreenResult = {
     isLoading: boolean
     handleRevoke: (connection: UnifiedConnection) => void
     keyExtractor: (item: UnifiedConnection) => string
+    /** Drives the QR-paste flow for pairing a new WalletConnect session —
+     * the only connection kind here that's user-initiated (dapp connections
+     * come from the injected provider's enable() flow instead). */
+    scannerState: ModalState
 }
 
 const toUnifiedWalletConnectConnection = (
@@ -91,6 +96,7 @@ export const useConnectionsSettingsScreen =
             useWalletConnect(network)
         const { sites, isLoading, revoke } = useDappConnectionsStore()
         const { request: requestBottomSheet } = useBottomSheet()
+        const scannerState = useModalState()
 
         const connections = useMemo(() => {
             const unified: UnifiedConnection[] = [
@@ -161,5 +167,11 @@ export const useConnectionsSettingsScreen =
             [],
         )
 
-        return { connections, isLoading, handleRevoke, keyExtractor }
+        return {
+            connections,
+            isLoading,
+            handleRevoke,
+            keyExtractor,
+            scannerState,
+        }
     }

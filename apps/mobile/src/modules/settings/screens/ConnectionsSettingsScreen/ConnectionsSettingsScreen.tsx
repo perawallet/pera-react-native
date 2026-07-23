@@ -12,6 +12,7 @@
 
 import {
     PWBadge,
+    PWButton,
     PWFlatList,
     PWIcon,
     PWImage,
@@ -21,7 +22,9 @@ import {
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import {
     useConnectionsSettingsScreen,
     type UnifiedConnection,
@@ -93,8 +96,23 @@ const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
 export const ConnectionsSettingsScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { connections, isLoading, handleRevoke, keyExtractor } =
+    const { connections, isLoading, handleRevoke, keyExtractor, scannerState } =
         useConnectionsSettingsScreen()
+
+    // Mirrors SettingsWalletConnectScreen's split entry point: the header
+    // icon covers "add another connection" once the list is non-empty, and
+    // the empty state's own button covers the first one — never both at once.
+    useNavigationHeader({
+        right:
+            connections.length > 0 ? (
+                <PWView testID='connections_settings_scan_button'>
+                    <PWIcon
+                        name='camera'
+                        onPress={scannerState.open}
+                    />
+                </PWView>
+            ) : null,
+    })
 
     const renderItem = ({ item }: { item: UnifiedConnection }) => (
         <ConnectionRow
@@ -120,8 +138,22 @@ export const ConnectionsSettingsScreen = () => {
                         isLoading={isLoading}
                         title={t('settings.connections.empty_title')}
                         body={t('settings.connections.empty_body')}
+                        button={
+                            <PWButton
+                                title={t('walletconnect.settings.empty_button')}
+                                variant='primary'
+                                onPress={scannerState.open}
+                                testID='connections_settings_connect_button'
+                            />
+                        }
                     />
                 }
+            />
+            <QRScannerView
+                isVisible={scannerState.isOpen}
+                onSuccess={scannerState.close}
+                onClose={scannerState.close}
+                animationType='slide'
             />
         </PWScreen>
     )
