@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
+// Ensure i18n is initialised so t() resolves real strings in this test's module graph.
+import '../../../i18n'
 import { WealthChart } from '../WealthChart'
 import {
     useAccountBalancesHistoryQuery,
@@ -128,5 +130,24 @@ describe('WealthChart', () => {
             />,
         )
         expect(container).toBeTruthy()
+    })
+
+    it('renders the offline state instead of the spinner when the history query is paused', () => {
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: undefined,
+            isPending: true,
+            isError: false,
+            isPaused: true,
+            refetch: vi.fn(),
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        render(
+            <WealthChart
+                period='one-week'
+                onSelectionChanged={vi.fn()}
+            />,
+        )
+
+        expect(screen.getByText('Offline Mode')).toBeTruthy()
     })
 })
