@@ -25,16 +25,26 @@ import { bytesToHex } from '@perawallet/wallet-core-shared'
 
 import { validateTransactionGroupIntegrity } from '../../utils/validateTransactionGroupIntegrity'
 
-export type QuantumFeeAdjustment = {
+/**
+ * Why a fee was raised. Today the only rule is the post-quantum minimum for
+ * quantum signers; future protocol rules (per-resource surcharges, a node
+ * `simulate()`-derived requirement — see PQ-022) add members here without
+ * changing the record shape.
+ */
+export type FeeAdjustmentReason = 'quantum-minimum'
+
+export type FeeAdjustment = {
     /** Index into the FULL group array (groupContext space) */
     index: number
     /** µAlgo, as received from the dApp */
     originalFee: bigint
-    /** µAlgo, after raising to the PQ minimum */
+    /** µAlgo, after raising to the required minimum */
     adjustedFee: bigint
+    /** Which rule required the raise */
+    reason: FeeAdjustmentReason
 }
 
-export type ApplyQuantumFeeOverrideParams = {
+export type AssignMinimumFeesToGroupParams = {
     /** Full atomic payload as received (groupContext), NOT the signable subset */
     transactions: PeraTransaction[]
     /** Indices into `transactions` the wallet will sign */
@@ -50,19 +60,55 @@ export type ApplyQuantumFeeOverrideParams = {
     pqMultiplier: bigint
 }
 
-export type ApplyQuantumFeeOverrideResult = {
+export type AssignMinimumFeesToGroupResult = {
     /** Same array reference as input when nothing was adjusted */
     transactions: PeraTransaction[]
     /** Empty when nothing was adjusted */
-    adjustments: QuantumFeeAdjustment[]
+    adjustments: FeeAdjustment[]
 }
 
+/** Effective authorizer for the signable slot at `subsetIndex`. */
+const resolveAuthorizer = (
+    transactions: PeraTransaction[],
+    signableIndices: number[],
+    signerOverrides: Map<number, string> | undefined,
+    subsetIndex: number,
+): string =>
+    signerOverrides?.get(subsetIndex) ??
+    transactions[signableIndices[subsetIndex]].sender.toString()
+
 /**
- * Raises dApp-set transaction fees to the post-quantum minimum on the
- * transactions a quantum account will sign in an external (WalletConnect)
- * request. Fees are only ever raised, never lowered, and non-quantum
- * transactions are returned byte-identical with their original object
- * references.
+ * Cheap local precheck: does any signable slot resolve to a quantum signer?
+ * Lets callers (see `useMinimumFeeCalculator`) skip the suggested-params
+ * fetch entirely for non-quantum groups — the fee rules below only ever act
+ * on quantum signers today.
+ */
+export const groupHasQuantumSigner = ({
+    transactions,
+    signableIndices,
+    signerOverrides,
+    accounts,
+}: Pick<
+    AssignMinimumFeesToGroupParams,
+    'transactions' | 'signableIndices' | 'signerOverrides' | 'accounts'
+>): boolean =>
+    signableIndices.some((_, subsetIndex) => {
+        const authorizer = resolveAuthorizer(
+            transactions,
+            signableIndices,
+            signerOverrides,
+            subsetIndex,
+        )
+        const signer = getSignerFor(authorizer, accounts)
+        return signer !== null && isQuantumAccount(signer)
+    })
+
+/**
+ * Raises transaction fees to the minimum the signer type requires, on the
+ * transactions the wallet will sign in an externally-received group. The
+ * only rule today is the post-quantum minimum for quantum signers; fees are
+ * only ever raised, never lowered, and transactions whose signer needs no
+ * raise are returned byte-identical with their original object references.
  *
  * Integrity model — validate as received, then modify, then re-group:
  * when at least one fee must be raised, the FULL incoming payload is first
@@ -84,7 +130,7 @@ export type ApplyQuantumFeeOverrideResult = {
  * array replaces the original payload for everything downstream (display,
  * signing, submission).
  */
-export const applyQuantumFeeOverride = ({
+export const assignMinimumFeesToGroup = ({
     transactions,
     signableIndices,
     signerOverrides,
@@ -92,7 +138,7 @@ export const applyQuantumFeeOverride = ({
     suggestedMinFee,
     configMinTxnFee,
     pqMultiplier,
-}: ApplyQuantumFeeOverrideParams): ApplyQuantumFeeOverrideResult => {
+}: AssignMinimumFeesToGroupParams): AssignMinimumFeesToGroupResult => {
     // Congestion guard (same as resolveMinFeeForSender): multiply the max of
     // algod's suggested minimum and the configured base, at most once.
     const baseMinFee =
@@ -107,11 +153,16 @@ export const applyQuantumFeeOverride = ({
     // resolves to a quantum signer, and only when the fee is below the PQ
     // minimum (never lower a fee). Non-quantum senders are NEVER touched,
     // even if their fee is below the plain minimum.
-    const adjustments: QuantumFeeAdjustment[] = []
+    const adjustments: FeeAdjustment[] = []
     for (let i = 0; i < signableIndices.length; i++) {
         const groupIndex = signableIndices[i]
         const tx = transactions[groupIndex]
-        const authorizer = signerOverrides?.get(i) ?? tx.sender.toString()
+        const authorizer = resolveAuthorizer(
+            transactions,
+            signableIndices,
+            signerOverrides,
+            i,
+        )
         const signer = getSignerFor(authorizer, accounts)
         if (signer === null || !isQuantumAccount(signer)) continue
         if (tx.fee >= minFee) continue
@@ -119,6 +170,7 @@ export const applyQuantumFeeOverride = ({
             index: groupIndex,
             originalFee: tx.fee,
             adjustedFee: minFee,
+            reason: 'quantum-minimum',
         })
     }
 

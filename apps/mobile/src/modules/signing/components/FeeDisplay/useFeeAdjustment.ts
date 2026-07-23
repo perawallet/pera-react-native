@@ -19,27 +19,28 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     useSigningPipeline,
-    type QuantumFeeAdjustment,
+    type FeeAdjustment,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 
-export type UseQuantumFeeAdjustmentResult = {
+export type UseFeeAdjustmentResult = {
     isAdjusted: boolean
     /** ALGO display units; Decimal(0) when not adjusted */
     originalFee: Decimal
     adjustedFee: Decimal
 }
 
-const NOT_ADJUSTED: UseQuantumFeeAdjustmentResult = {
+const NOT_ADJUSTED: UseFeeAdjustmentResult = {
     isAdjusted: false,
     originalFee: new Decimal(0),
     adjustedFee: new Decimal(0),
 }
 
 /**
- * Surfaces the post-quantum fee bump the signing pipeline applied to a dApp's
- * transactions (PQ-017). Fees are stored in µAlgo on the sign request and
- * exposed here as ALGO `Decimal`s ready for display.
+ * Surfaces the fee raises the signing pipeline applied to a dApp's
+ * transactions (today's only rule: the post-quantum minimum, PQ-017). Fees
+ * are stored in µAlgo on the sign request and exposed here as ALGO
+ * `Decimal`s ready for display.
  *
  * - Group-total mode (no `transaction`): sums every adjustment so the footer
  *   can show the aggregate original → adjusted delta.
@@ -49,9 +50,9 @@ const NOT_ADJUSTED: UseQuantumFeeAdjustmentResult = {
  *   as `rawTransaction`, so matching is by object identity; if that field is
  *   ever absent it falls back to the transaction ID string.
  */
-export const useQuantumFeeAdjustment = (
+export const useFeeAdjustment = (
     transaction?: PeraDisplayableTransaction,
-): UseQuantumFeeAdjustmentResult => {
+): UseFeeAdjustmentResult => {
     const { feeAdjustments, currentRequest } = useSigningPipeline()
 
     return useMemo(() => {
@@ -84,7 +85,7 @@ export const useQuantumFeeAdjustment = (
                   [])
                 : []
 
-        const match = feeAdjustments.find((adjustment: QuantumFeeAdjustment) =>
+        const match = feeAdjustments.find((adjustment: FeeAdjustment) =>
             matchesTransaction(source[adjustment.index], transaction),
         )
 

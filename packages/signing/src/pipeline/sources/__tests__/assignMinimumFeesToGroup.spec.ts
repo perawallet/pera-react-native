@@ -30,7 +30,7 @@ import {
 } from '../../../test-utils/transactions'
 import { validateTransactionGroupIntegrity } from '../../../utils/validateTransactionGroupIntegrity'
 import { InvalidSignableDataError } from '../../errors'
-import { applyQuantumFeeOverride } from '../applyQuantumFeeOverride'
+import { assignMinimumFeesToGroup } from '../assignMinimumFeesToGroup'
 
 const quantumAddress = makeTestAddress(1)
 const algoAddress = makeTestAddress(2)
@@ -74,11 +74,11 @@ const baseParams = {
 const encode = (tx: PeraTransaction): string =>
     encodeToBase64(encodeTransactionRaw(tx))
 
-describe('applyQuantumFeeOverride', () => {
+describe('assignMinimumFeesToGroup', () => {
     test('raises a quantum-signed fee below the PQ minimum', () => {
         const tx = makePayment(quantumAddress, 1000n)
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: [tx],
             signableIndices: [0],
@@ -87,7 +87,12 @@ describe('applyQuantumFeeOverride', () => {
 
         expect(result.transactions[0].fee).toBe(3000n)
         expect(result.adjustments).toEqual([
-            { index: 0, originalFee: 1000n, adjustedFee: 3000n },
+            {
+                index: 0,
+                originalFee: 1000n,
+                adjustedFee: 3000n,
+                reason: 'quantum-minimum',
+            },
         ])
         // the original transaction is never mutated
         expect(tx.fee).toBe(1000n)
@@ -96,7 +101,7 @@ describe('applyQuantumFeeOverride', () => {
     test('leaves a fee exactly at the PQ minimum untouched (same array reference)', () => {
         const transactions = [makePayment(quantumAddress, 3000n)]
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [0],
@@ -110,7 +115,7 @@ describe('applyQuantumFeeOverride', () => {
     test('never lowers a fee above the PQ minimum', () => {
         const transactions = [makePayment(quantumAddress, 5000n)]
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [0],
@@ -126,7 +131,7 @@ describe('applyQuantumFeeOverride', () => {
         const transactions = [makePayment(algoAddress, 500n)]
         const before = transactions.map(encode)
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [0],
@@ -148,7 +153,7 @@ describe('applyQuantumFeeOverride', () => {
         ])
         const originalGroup = grouped[0].group as Uint8Array
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: grouped,
             signableIndices: [0],
@@ -177,7 +182,7 @@ describe('applyQuantumFeeOverride', () => {
             makePayment(externalAddress, 1000n),
         ])
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: grouped,
             signableIndices: [0],
@@ -198,7 +203,7 @@ describe('applyQuantumFeeOverride', () => {
         ;(grouped[1].group as Uint8Array)[0] ^= 0xff
 
         expect(() =>
-            applyQuantumFeeOverride({
+            assignMinimumFeesToGroup({
                 ...baseParams,
                 transactions: grouped,
                 signableIndices: [0],
@@ -214,7 +219,7 @@ describe('applyQuantumFeeOverride', () => {
         ])
         ;(grouped[1].group as Uint8Array)[0] ^= 0xff
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: grouped,
             signableIndices: [0],
@@ -237,7 +242,7 @@ describe('applyQuantumFeeOverride', () => {
         const transactions = [...groupA, ...groupB]
         const groupBBytesBefore = groupB.map(encode)
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [0, 2, 3],
@@ -247,7 +252,12 @@ describe('applyQuantumFeeOverride', () => {
         // group A re-grouped with the raised fee
         expect(result.transactions[0].fee).toBe(3000n)
         expect(result.adjustments).toEqual([
-            { index: 0, originalFee: 1000n, adjustedFee: 3000n },
+            {
+                index: 0,
+                originalFee: 1000n,
+                adjustedFee: 3000n,
+                reason: 'quantum-minimum',
+            },
         ])
         expect(
             bytesEqual(
@@ -270,7 +280,7 @@ describe('applyQuantumFeeOverride', () => {
     test('ungrouped quantum txn gets only the fee change, group stays undefined', () => {
         const tx = makePayment(quantumAddress, 1000n)
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: [tx],
             signableIndices: [0],
@@ -284,7 +294,7 @@ describe('applyQuantumFeeOverride', () => {
     test('follows the rekey: ed25519 sender rekeyed to quantum auth is raised', () => {
         const tx = makePayment(algoAddress, 1000n)
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: [tx],
             signableIndices: [0],
@@ -296,14 +306,19 @@ describe('applyQuantumFeeOverride', () => {
 
         expect(result.transactions[0].fee).toBe(3000n)
         expect(result.adjustments).toEqual([
-            { index: 0, originalFee: 1000n, adjustedFee: 3000n },
+            {
+                index: 0,
+                originalFee: 1000n,
+                adjustedFee: 3000n,
+                reason: 'quantum-minimum',
+            },
         ])
     })
 
     test('follows the rekey: quantum sender rekeyed to ed25519 auth is untouched', () => {
         const transactions = [makePayment(quantumAddress, 1000n)]
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [0],
@@ -325,7 +340,7 @@ describe('applyQuantumFeeOverride', () => {
             makePayment(externalAddress, 1000n),
         ]
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [1],
@@ -335,14 +350,19 @@ describe('applyQuantumFeeOverride', () => {
 
         expect(result.transactions[1].fee).toBe(3000n)
         expect(result.adjustments).toEqual([
-            { index: 1, originalFee: 1000n, adjustedFee: 3000n },
+            {
+                index: 1,
+                originalFee: 1000n,
+                adjustedFee: 3000n,
+                reason: 'quantum-minimum',
+            },
         ])
         // untouched txn keeps its original reference
         expect(result.transactions[0]).toBe(transactions[0])
     })
 
     test('congestion guard: multiplies the max of suggested and config base, once', () => {
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             transactions: [makePayment(quantumAddress, 1000n)],
             signableIndices: [0],
             accounts: [quantum()],
@@ -353,7 +373,12 @@ describe('applyQuantumFeeOverride', () => {
 
         expect(result.transactions[0].fee).toBe(6000n)
         expect(result.adjustments).toEqual([
-            { index: 0, originalFee: 1000n, adjustedFee: 6000n },
+            {
+                index: 0,
+                originalFee: 1000n,
+                adjustedFee: 6000n,
+                reason: 'quantum-minimum',
+            },
         ])
     })
 
@@ -364,7 +389,7 @@ describe('applyQuantumFeeOverride', () => {
             makePayment(quantumAddress, 1500n),
         ])
 
-        const result = applyQuantumFeeOverride({
+        const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions: grouped,
             signableIndices: [2],
@@ -372,7 +397,12 @@ describe('applyQuantumFeeOverride', () => {
         })
 
         expect(result.adjustments).toEqual([
-            { index: 2, originalFee: 1500n, adjustedFee: 3000n },
+            {
+                index: 2,
+                originalFee: 1500n,
+                adjustedFee: 3000n,
+                reason: 'quantum-minimum',
+            },
         ])
         expect(result.transactions[2].fee).toBe(3000n)
     })

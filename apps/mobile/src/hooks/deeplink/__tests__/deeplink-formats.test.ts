@@ -198,12 +198,17 @@ vi.mock('@modules/onboarding/hooks', () => ({
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
-    // Non-quantum in every fixture here — resolved fee equals the suggested
-    // minimum so the PQ-007-style floor never overrides the deeplink's own
-    // fee. Real resolver behavior is covered by
-    // packages/signing/src/pipeline/sources/__tests__/minFeeResolver.spec.ts
+    // Non-quantum in every fixture here — the calculator's real fast path
+    // is a passthrough no-op. Real fee behavior is covered by
+    // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
     // and apps/mobile/src/hooks/deeplink/handlers/__tests__/useKeyregDeeplink.test.ts.
-    resolveMinFeeForSender: () => 1000n,
+    useMinimumFeeCalculator: () => ({
+        assignFeeToGroup: async ({
+            transactions,
+        }: {
+            transactions: unknown[]
+        }) => ({ transactions, adjustments: [] }),
+    }),
 }))
 
 // The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so
@@ -262,13 +267,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             onlineKeyRegistration: mockOnlineKeyRegistration,
             offlineKeyRegistration: mockOfflineKeyRegistration,
         },
-        getSuggestedParams: async () => ({ minFee: 1000 }),
     }),
     useTransactionEncoder: () => ({
         encodeTransaction: (tx: unknown) => tx,
         decodeTransaction: (tx: unknown) => tx,
     }),
-    useMinimumFeeConfig: () => ({ minTxnFee: 1000n, pqMultiplier: 3n }),
 }))
 
 vi.mock('../../useToast', () => ({

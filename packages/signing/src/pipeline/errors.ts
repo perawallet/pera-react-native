@@ -199,12 +199,12 @@ export class TransactionRoundTripError extends PipelineError {
 }
 
 /**
- * A dApp accepted a fee-adjusted ARC-0001 response (a quantum signer meant
- * fees were raised to the post-quantum minimum — see
- * `applyQuantumFeeOverride`) but failed to deliver or accept it: the
- * transport's `respondWithResult` rejected. Distinguishes "this dApp may not
- * support Quantum-account fees" from an ordinary transport failure so the UI
- * can show a targeted message instead of the raw delivery error. Extends
+ * A fee-adjusted ARC-0001 response (fees raised to a required minimum — see
+ * `assignMinimumFeesToGroup`; today's only rule is the post-quantum minimum
+ * for quantum signers) failed to deliver: the transport's
+ * `respondWithResult` rejected. Distinguishes "this dApp may not support
+ * the adjusted fees" from an ordinary transport failure so the UI can show
+ * a targeted message instead of the raw delivery error. Extends
  * `TransportError` (rather than wrapping it) so its `retryable` semantics —
  * WC delivery retry — are unchanged.
  *
@@ -212,15 +212,15 @@ export class TransactionRoundTripError extends PipelineError {
  * `WalletConnectSignRequestError` from only the thrown error's `.message`
  * before it reaches `connectionError`
  * (packages/walletconnect/src/hooks/useWalletConnectHandlers.ts) — `.name`
- * does not survive that hop. `QUANTUM_FEE_DELIVERY_MESSAGE_MARKER` is a
+ * does not survive that hop. `FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER` is a
  * substring of every message this error is constructed with, so consumers
  * reading `connectionError` after that rewrap can still recognize it by
  * matching the message; `.name` remains the correct check for callers that
  * see the error directly.
  */
-export const QUANTUM_FEE_DELIVERY_MESSAGE_MARKER = 'quantum-fee-adjusted'
+export const FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER = 'fee-adjusted'
 
-export class QuantumFeeDeliveryError extends TransportError {
+export class FeeAdjustmentDeliveryError extends TransportError {
     constructor(message: string, options?: { cause?: Error }) {
         super(message, options?.cause)
     }

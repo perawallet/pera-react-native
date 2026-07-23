@@ -20,8 +20,8 @@ For an external (WC / webview) ARC-0001 sign request:
 - **When to raise**: the resolved signer for a signable txn is a quantum
   account AND its dApp-set fee is below
   `max(algod suggestedParams.minFee, remote-config fee_min_txn_fee) × remote-config fee_pq_multiplier`
-  (defaults 1000 × 3 = 3000 µAlgo). See `applyQuantumFeeOverride`
-  (`packages/signing/src/pipeline/sources/applyQuantumFeeOverride.ts`) and the
+  (defaults 1000 × 3 = 3000 µAlgo). See `assignMinimumFeesToGroup`
+  (`packages/signing/src/pipeline/sources/assignMinimumFeesToGroup.ts`) and the
   shared base-fee logic in `resolveMinFeeForSender`
   (`packages/signing/src/pipeline/sources/minFeeResolver.ts`).
 - **Regroup scope**: raising any txn's fee re-groups its **entire** group
@@ -42,7 +42,7 @@ For an external (WC / webview) ARC-0001 sign request:
 - **Pooled-fee limitation**: each quantum txn is raised to its **own**
   minimum only. Another txn's fee surplus in the same group does **not**
   exempt a quantum txn from being raised (documented as PQ-017 implementation
-  note 3 in `applyQuantumFeeOverride.ts`).
+  note 3 in `assignMinimumFeesToGroup.ts`).
 - **Delivery failure**: if the transport can't deliver the adjusted response,
   the pipeline surfaces `walletconnect.request.quantum_fee_delivery_failed`
   (`apps/mobile/src/i18n/locales/en.json`) instead of a generic error.
@@ -57,7 +57,7 @@ For an external (WC / webview) ARC-0001 sign request:
 - On delivery failure, the WC error banner reads the
   `quantum_fee_delivery_failed` string, not a generic connection error.
 - Reference automated coverage before re-deriving these mechanics manually:
-  `packages/signing/src/pipeline/sources/__tests__/applyQuantumFeeOverride.spec.ts`
+  `packages/signing/src/pipeline/sources/__tests__/assignMinimumFeesToGroup.spec.ts`
   and `apps/mobile/src/__integration__/wc-sign-quantum-fee.test.tsx` already
   exercise the raise/regroup/response contract end to end against a stubbed
   WC v1 connector.

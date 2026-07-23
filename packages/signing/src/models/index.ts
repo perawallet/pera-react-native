@@ -28,7 +28,7 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import type { ResolvedSignerType } from '../machine/context'
-import type { QuantumFeeAdjustment } from '../pipeline/sources/applyQuantumFeeOverride'
+import type { FeeAdjustment } from '../pipeline/sources/assignMinimumFeesToGroup'
 
 export type SignRequestSource = {
     name?: string
@@ -95,8 +95,8 @@ export type TransactionSignRequest = {
      */
     signableIndices?: number[]
     rawTransactionsBase64?: string[]
-    /** PQ-017: fees raised to the PQ minimum for quantum signers; indices in groupContext space. UI shows original → adjusted; absent when nothing was modified. */
-    feeAdjustments?: QuantumFeeAdjustment[]
+    /** Fees the pipeline raised to a required minimum (each record carries its reason — today only the PQ minimum for quantum signers); indices in groupContext space. UI shows original → adjusted; absent when nothing was modified. */
+    feeAdjustments?: FeeAdjustment[]
     /**
      * Delivers the signed group back to the requester. `PeraSignedTxnResult`
      * covers both a plain `PeraSignedTransaction` and — for quantum signers —

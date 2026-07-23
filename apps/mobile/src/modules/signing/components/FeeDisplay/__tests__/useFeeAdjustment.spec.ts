@@ -17,7 +17,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
-import { useQuantumFeeAdjustment } from '../useQuantumFeeAdjustment'
+import { useFeeAdjustment } from '../useFeeAdjustment'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningPipeline: vi.fn(),
@@ -42,7 +42,7 @@ const mockPipeline = (overrides: Record<string, unknown>): void => {
     })
 }
 
-describe('useQuantumFeeAdjustment', () => {
+describe('useFeeAdjustment', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockPipeline({})
@@ -51,7 +51,7 @@ describe('useQuantumFeeAdjustment', () => {
     it('is not adjusted when the pipeline has no fee adjustments', () => {
         mockPipeline({ feeAdjustments: [] })
 
-        const { result } = renderHook(() => useQuantumFeeAdjustment())
+        const { result } = renderHook(() => useFeeAdjustment())
 
         expect(result.current.isAdjusted).toBe(false)
         expect(result.current.originalFee.toString()).toBe('0')
@@ -61,12 +61,22 @@ describe('useQuantumFeeAdjustment', () => {
     it('sums adjustments (µAlgo → ALGO) in group-total mode', () => {
         mockPipeline({
             feeAdjustments: [
-                { index: 0, originalFee: 1000n, adjustedFee: 3000n },
-                { index: 1, originalFee: 1000n, adjustedFee: 3000n },
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+                {
+                    index: 1,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
             ],
         })
 
-        const { result } = renderHook(() => useQuantumFeeAdjustment())
+        const { result } = renderHook(() => useFeeAdjustment())
 
         expect(result.current.isAdjusted).toBe(true)
         expect(result.current.originalFee.toString()).toBe('0.002')
@@ -77,7 +87,12 @@ describe('useQuantumFeeAdjustment', () => {
         const groupContext = [rawTx0, rawTx1]
         mockPipeline({
             feeAdjustments: [
-                { index: 1, originalFee: 1000n, adjustedFee: 3000n },
+                {
+                    index: 1,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
             ],
             currentRequest: {
                 type: 'transactions',
@@ -87,10 +102,10 @@ describe('useQuantumFeeAdjustment', () => {
         })
 
         const first = renderHook(() =>
-            useQuantumFeeAdjustment(buildDisplayable(rawTx0)),
+            useFeeAdjustment(buildDisplayable(rawTx0)),
         )
         const second = renderHook(() =>
-            useQuantumFeeAdjustment(buildDisplayable(rawTx1)),
+            useFeeAdjustment(buildDisplayable(rawTx1)),
         )
 
         expect(first.result.current.isAdjusted).toBe(false)

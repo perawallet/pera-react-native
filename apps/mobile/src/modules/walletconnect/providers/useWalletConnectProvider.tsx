@@ -20,8 +20,8 @@ import {
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import {
-    QUANTUM_FEE_DELIVERY_MESSAGE_MARKER,
-    QuantumFeeDeliveryError,
+    FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
+    FeeAdjustmentDeliveryError,
 } from '@perawallet/wallet-core-signing'
 import { useEffect, useRef, useState } from 'react'
 import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'
@@ -36,14 +36,14 @@ import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent
 // `WalletConnectSignRequestError` from only the original error's `.message`
 // before it reaches `connectionError` (see
 // packages/walletconnect/src/hooks/useWalletConnectHandlers.ts), so a
-// `QuantumFeeDeliveryError`'s `.name` doesn't survive that hop for the WC
-// transaction-signing flow. Match on `.name` for callers that see the error
-// directly, and fall back to the message marker every
-// `QuantumFeeDeliveryError` is constructed with (see
+// `FeeAdjustmentDeliveryError`'s `.name` doesn't survive that hop for the
+// WC transaction-signing flow. Match on `.name` for callers that see the
+// error directly, and fall back to the message marker every
+// `FeeAdjustmentDeliveryError` is constructed with (see
 // packages/signing/src/pipeline/errors.ts) for the rewrapped case.
-const isQuantumFeeDeliveryError = (error: Error): boolean =>
-    error.name === QuantumFeeDeliveryError.name ||
-    error.message.includes(QUANTUM_FEE_DELIVERY_MESSAGE_MARKER)
+const isFeeAdjustmentDeliveryError = (error: Error): boolean =>
+    error.name === FeeAdjustmentDeliveryError.name ||
+    error.message.includes(FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER)
 
 export const useWalletConnectProvider = () => {
     // Revives dead bridge sockets on foreground return and on network
@@ -150,7 +150,7 @@ export const useWalletConnectProvider = () => {
         showToast(
             {
                 title: t('walletconnect.request.error_sheet_title'),
-                body: isQuantumFeeDeliveryError(connectionError)
+                body: isFeeAdjustmentDeliveryError(connectionError)
                     ? t('walletconnect.request.quantum_fee_delivery_failed')
                     : connectionError.message,
                 type: 'error',

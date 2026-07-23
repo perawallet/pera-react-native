@@ -15,11 +15,10 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import {
     isValidAlgorandAddress,
     useAlgorandClient,
-    useMinimumFeeConfig,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    resolveMinFeeForSender,
+    useMinimumFeeCalculator,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -105,7 +104,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
-    const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
+    const { assignFeeToGroup } = useMinimumFeeCalculator()
 
     return useCallback(
         async (data: KeyregDeeplink) => {
@@ -151,36 +150,8 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // handler. An out-of-range fee is caught at review time by the
                 // signing pipeline's high-fee warning (see detectHighGroupFee).
                 const dAppFee = data.fee ? BigInt(data.fee) : undefined
-
-                // Mirrors PQ-007's useTransactionSendFlow.buildNormalTxs: the
-                // dApp-set (or default) fee is honored verbatim unless the
-                // sender is PQ-signed, in which case `resolvedMin` exceeds
-                // algod's suggested minimum and the fee is floored up to it
-                // — never lowered — so a quantum sender's keyreg isn't
-                // rejected as underfunded.
-                const suggestedParams = await withTimeout(
-                    'keyregSuggestedParams',
-                    KEYREG_BUILD_TIMEOUT_MS,
-                    algorandClient.getSuggestedParams(),
-                )
-                const suggestedMinFee = BigInt(suggestedParams.minFee)
-                const resolvedMin = resolveMinFeeForSender({
-                    senderAddress: data.senderAddress,
-                    accounts: allAccounts,
-                    suggestedMinFee,
-                    configMinTxnFee: minTxnFee,
-                    pqMultiplier,
-                })
                 const staticFee =
-                    resolvedMin > suggestedMinFee
-                        ? microAlgo(
-                              dAppFee !== undefined && dAppFee > resolvedMin
-                                  ? dAppFee
-                                  : resolvedMin,
-                          )
-                        : dAppFee !== undefined
-                          ? microAlgo(dAppFee)
-                          : undefined
+                    dAppFee !== undefined ? microAlgo(dAppFee) : undefined
 
                 let tx
                 if (data.keyregType === 'offline') {
@@ -238,6 +209,12 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // `Buffer.from(...) received type object`. Encode then
                 // decode to normalize.
                 const normalizedTx = decodeTransaction(encodeTransaction(tx))
+                // Floors a quantum sender's fee to the PQ minimum (mirrors
+                // the WC/webview enqueue path); a non-quantum sender is a
+                // free no-op — same reference, no network traffic.
+                const { transactions, adjustments } = await assignFeeToGroup({
+                    transactions: [normalizedTx],
+                })
                 // sourceType MUST be 'deeplink' (not 'local') so
                 // SigningOverlays' interactive-source filter picks the
                 // request up and shows the review sheet. 'local' is
@@ -249,7 +226,15 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     type: 'transactions',
                     transport: 'algod',
                     sourceType: 'deeplink',
-                    txs: [normalizedTx],
+                    txs: transactions,
+                    // An explicit dApp fee we raised is surfaced as an
+                    // adjustment (original → new, matching the WC path); a
+                    // fee we filled in ourselves when the deeplink omitted
+                    // one is Pera-set, not an override — no delta to show.
+                    feeAdjustments:
+                        dAppFee !== undefined && adjustments.length > 0
+                            ? adjustments
+                            : undefined,
                 })
             } catch (error) {
                 logger.error('[deeplink/keyreg] failed', { error })
@@ -265,10 +250,9 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             addSignRequest,
             algorandClient,
             allAccounts,
+            assignFeeToGroup,
             decodeTransaction,
             encodeTransaction,
-            minTxnFee,
-            pqMultiplier,
             showError,
         ],
     )

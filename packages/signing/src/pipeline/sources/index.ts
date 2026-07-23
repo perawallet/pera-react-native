@@ -16,25 +16,19 @@ export {
     createFetchSource,
 } from './factories'
 
-export { applyQuantumFeeOverride } from './applyQuantumFeeOverride'
+export {
+    assignMinimumFeesToGroup,
+    groupHasQuantumSigner,
+} from './assignMinimumFeesToGroup'
 export type {
-    ApplyQuantumFeeOverrideParams,
-    ApplyQuantumFeeOverrideResult,
-    QuantumFeeAdjustment,
-} from './applyQuantumFeeOverride'
+    AssignMinimumFeesToGroupParams,
+    AssignMinimumFeesToGroupResult,
+    FeeAdjustment,
+    FeeAdjustmentReason,
+} from './assignMinimumFeesToGroup'
 
 export { createMinFeeResolver, resolveMinFeeForSender } from './minFeeResolver'
 export type {
     MinFeeResolverDependencies,
     ResolveMinFeeForSenderParams,
 } from './minFeeResolver'
-
-export {
-    createWalletConnectTransactionSource,
-    createWalletConnectDataSource,
-} from './createWalletConnectSource'
-export type {
-    WalletConnectTransactionRequest,
-    WalletConnectDataRequest,
-    WalletConnectRequest,
-} from './createWalletConnectSource'

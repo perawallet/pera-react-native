@@ -27,7 +27,7 @@ import {
 import type { Arc0001ResolveResult } from '@perawallet/wallet-core-blockchain'
 
 import { useEnqueueArc0001SignRequest } from '../useEnqueueArc0001SignRequest'
-import { QUANTUM_FEE_DELIVERY_MESSAGE_MARKER } from '../../pipeline/errors'
+import { FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER } from '../../pipeline/errors'
 
 const mockAddSignRequest = vi.fn()
 const mockRemoveSignRequest = vi.fn()
@@ -74,10 +74,11 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-// Spread the real module so `applyQuantumFeeOverride`'s dependencies
+// Spread the real module so `assignMinimumFeesToGroup`'s dependencies
 // (`calculateMinTxnFee`, `groupTransactions`) stay real; inject only the
-// hooks this hook consumes. `encodeTransactionRaw` is wired to algosdk's
-// canonical encoder — the same implementation the real encoder uses.
+// hooks this hook (via useMinimumFeeCalculator) consumes.
+// `encodeTransactionRaw` is wired to algosdk's canonical encoder — the same
+// implementation the real encoder uses.
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<Record<string, unknown>>(
         '@perawallet/wallet-core-blockchain',
@@ -111,20 +112,38 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const makeResolved = (
-    toSignCount: number,
+// The resolver invariant `allDecoded[toSign[i].index] === toSign[i].decoded`
+// must hold in fixtures too — the fee calculator resolves signers from the
+// full-group array, not the subset.
+const resolvedWithSlots = (
     totalCount: number,
-): Arc0001ResolveResult => ({
-    allDecoded: Array.from({ length: totalCount }, () => ({}) as any),
-    toSign: Array.from({ length: toSignCount }, (_, i) => ({
+    signableIndices: number[],
+): Arc0001ResolveResult => {
+    const toSign = signableIndices.map(i => ({
         index: i,
         walletTxn: { txn: `txn-${i}` },
         decoded: { sender: { toString: () => `sender-${i}` } } as any,
         sender: `sender-${i}`,
         signer: { kind: 'single' as const, address: `sender-${i}` },
-    })),
-    signerOverrides: new Map(),
-})
+    }))
+    return {
+        allDecoded: Array.from(
+            { length: totalCount },
+            (_, i) => toSign.find(t => t.index === i)?.decoded ?? ({} as any),
+        ),
+        toSign,
+        signerOverrides: new Map(),
+    }
+}
+
+const makeResolved = (
+    toSignCount: number,
+    totalCount: number,
+): Arc0001ResolveResult =>
+    resolvedWithSlots(
+        totalCount,
+        Array.from({ length: toSignCount }, (_, i) => i),
+    )
 
 const makeTransport = () => ({
     sourceType: 'walletconnect' as const,
@@ -241,17 +260,7 @@ describe('useEnqueueArc0001SignRequest', () => {
         const { result } = renderHook(() => useEnqueueArc0001SignRequest())
         const transport = makeTransport()
         // 5-tx payload, wallet signs indices 0, 2, 4 (skipping 1 and 3)
-        const resolved = {
-            allDecoded: Array.from({ length: 5 }, () => ({}) as any),
-            toSign: [0, 2, 4].map(i => ({
-                index: i,
-                walletTxn: { txn: `txn-${i}` },
-                decoded: { sender: { toString: () => `s${i}` } } as any,
-                sender: `s${i}`,
-                signer: { kind: 'single' as const, address: `s${i}` },
-            })),
-            signerOverrides: new Map(),
-        }
+        const resolved = resolvedWithSlots(5, [0, 2, 4])
 
         await result.current(resolved, transport)
 
@@ -291,26 +300,7 @@ describe('useEnqueueArc0001SignRequest', () => {
         const { result } = renderHook(() => useEnqueueArc0001SignRequest())
         const transport = makeTransport()
         // index 0 signable, index 1 skipped, index 2 signable
-        const resolved: Arc0001ResolveResult = {
-            allDecoded: [{}, {}, {}] as any[],
-            toSign: [
-                {
-                    index: 0,
-                    walletTxn: { txn: 'A' },
-                    decoded: { sender: { toString: () => 's0' } } as any,
-                    sender: 's0',
-                    signer: { kind: 'single', address: 's0' },
-                },
-                {
-                    index: 2,
-                    walletTxn: { txn: 'C' },
-                    decoded: { sender: { toString: () => 's2' } } as any,
-                    sender: 's2',
-                    signer: { kind: 'single', address: 's2' },
-                },
-            ],
-            signerOverrides: new Map(),
-        }
+        const resolved = resolvedWithSlots(3, [0, 2])
 
         await result.current(resolved, transport)
         const signRequest = mockAddSignRequest.mock.calls[0][0]
@@ -340,26 +330,7 @@ describe('useEnqueueArc0001SignRequest', () => {
         const { result } = renderHook(() => useEnqueueArc0001SignRequest())
         const transport = makeTransport()
         // 4-slot payload; wallet signs indices 0 and 2 only.
-        const resolved: Arc0001ResolveResult = {
-            allDecoded: [{}, {}, {}, {}] as any[],
-            toSign: [
-                {
-                    index: 0,
-                    walletTxn: { txn: 'A' },
-                    decoded: { sender: { toString: () => 's0' } } as any,
-                    sender: 's0',
-                    signer: { kind: 'single', address: 's0' },
-                },
-                {
-                    index: 2,
-                    walletTxn: { txn: 'C' },
-                    decoded: { sender: { toString: () => 's2' } } as any,
-                    sender: 's2',
-                    signer: { kind: 'single', address: 's2' },
-                },
-            ],
-            signerOverrides: new Map(),
-        }
+        const resolved = resolvedWithSlots(4, [0, 2])
 
         await result.current(resolved, transport)
         const signRequest = mockAddSignRequest.mock.calls[0][0]
@@ -382,19 +353,7 @@ describe('useEnqueueArc0001SignRequest', () => {
         // slot), the hook must not crash or write a wrong slot.
         const { result } = renderHook(() => useEnqueueArc0001SignRequest())
         const transport = makeTransport()
-        const resolved: Arc0001ResolveResult = {
-            allDecoded: [{}, {}] as any[],
-            toSign: [
-                {
-                    index: 0,
-                    walletTxn: { txn: 'A' },
-                    decoded: { sender: { toString: () => 's0' } } as any,
-                    sender: 's0',
-                    signer: { kind: 'single', address: 's0' },
-                },
-            ],
-            signerOverrides: new Map(),
-        }
+        const resolved = resolvedWithSlots(2, [0])
 
         await result.current(resolved, transport)
         const signRequest = mockAddSignRequest.mock.calls[0][0]
@@ -501,7 +460,12 @@ describe('useEnqueueArc0001SignRequest', () => {
             expect(req.txs[0].fee).toBe(3000n)
             expect(req.groupContext[0].fee).toBe(3000n)
             expect(req.feeAdjustments).toEqual([
-                { index: 0, originalFee: 1000n, adjustedFee: 3000n },
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
             ])
             expect(decodeStub(req.rawTransactionsBase64[0]).fee).toBe(3000n)
         })
@@ -521,7 +485,12 @@ describe('useEnqueueArc0001SignRequest', () => {
             const req = mockAddSignRequest.mock.calls[0][0]
             // Only the underfunded txn is reported as adjusted.
             expect(req.feeAdjustments).toEqual([
-                { index: 0, originalFee: 1000n, adjustedFee: 3000n },
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
             ])
             const g0 = req.txs[0].group
             const g1 = req.txs[1].group
@@ -565,7 +534,12 @@ describe('useEnqueueArc0001SignRequest', () => {
             const req = mockAddSignRequest.mock.calls[0][0]
             // config base 1000 * pqMultiplier 3 = 3000
             expect(req.feeAdjustments).toEqual([
-                { index: 0, originalFee: 1000n, adjustedFee: 3000n },
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
             ])
             expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         })
@@ -615,10 +589,10 @@ describe('useEnqueueArc0001SignRequest', () => {
         })
     })
 
-    // --- PQ-017: quantum fee delivery failure ---
+    // --- PQ-017: fee-adjustment delivery failure ---
 
-    describe('quantum fee delivery failure', () => {
-        it('wraps a respondWithResult rejection in QuantumFeeDeliveryError when the request carries feeAdjustments', async () => {
+    describe('fee-adjustment delivery failure', () => {
+        it('wraps a respondWithResult rejection in FeeAdjustmentDeliveryError when the request carries feeAdjustments', async () => {
             mockUseAllAccounts.mockReturnValue([quantumAccount()])
             const txn = makePayment(QUANTUM_ADDRESS, { fee: 1000n })
             const resolved = resolvedFor([txn], [0])
@@ -634,10 +608,10 @@ describe('useEnqueueArc0001SignRequest', () => {
             await expect(
                 req.approve([{ sig: 1 } as any]),
             ).rejects.toMatchObject({
-                name: 'QuantumFeeDeliveryError',
+                name: 'FeeAdjustmentDeliveryError',
                 originalError: deliveryFailure,
                 message: expect.stringContaining(
-                    QUANTUM_FEE_DELIVERY_MESSAGE_MARKER,
+                    FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
                 ),
             })
         })

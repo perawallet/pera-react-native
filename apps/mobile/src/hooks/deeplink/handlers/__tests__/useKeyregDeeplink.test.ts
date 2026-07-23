@@ -24,9 +24,7 @@ const {
     mockDecodeTransaction,
     mockAllAccounts,
     mockResolveAuthAccount,
-    mockGetSuggestedParams,
-    mockUseMinimumFeeConfig,
-    mockResolveMinFeeForSender,
+    mockAssignFeeToGroup,
 } = vi.hoisted(() => ({
     mockAddSignRequest: vi.fn(),
     mockShowError: vi.fn(),
@@ -36,9 +34,7 @@ const {
     mockDecodeTransaction: vi.fn((tx: unknown) => tx),
     mockAllAccounts: { current: [] as { address: string; id: string }[] },
     mockResolveAuthAccount: vi.fn((account: unknown) => account),
-    mockGetSuggestedParams: vi.fn(),
-    mockUseMinimumFeeConfig: vi.fn(),
-    mockResolveMinFeeForSender: vi.fn(),
+    mockAssignFeeToGroup: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -51,19 +47,18 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             onlineKeyRegistration: mockOnlineKeyRegistration,
             offlineKeyRegistration: mockOfflineKeyRegistration,
         },
-        getSuggestedParams: mockGetSuggestedParams,
     }),
     useTransactionEncoder: () => ({
         encodeTransaction: mockEncodeTransaction,
         decodeTransaction: mockDecodeTransaction,
     }),
-    useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
-    resolveMinFeeForSender: (...args: unknown[]) =>
-        mockResolveMinFeeForSender(...args),
+    useMinimumFeeCalculator: () => ({
+        assignFeeToGroup: mockAssignFeeToGroup,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -138,18 +133,16 @@ describe('useKeyregDeeplink', () => {
         mockOnlineKeyRegistration.mockResolvedValue({ kind: 'online-tx' })
         mockOfflineKeyRegistration.mockResolvedValue({ kind: 'offline-tx' })
 
-        // Default: network minFee 1000, non-quantum sender (resolved ==
-        // suggested, so the PQ override never kicks in unless a test
-        // overrides mockResolveMinFeeForSender to return a higher value).
-        mockGetSuggestedParams.mockReset()
-        mockGetSuggestedParams.mockResolvedValue({ minFee: 1000 })
-        mockUseMinimumFeeConfig.mockReset()
-        mockUseMinimumFeeConfig.mockReturnValue({
-            minTxnFee: 1000n,
-            pqMultiplier: 3n,
-        })
-        mockResolveMinFeeForSender.mockReset()
-        mockResolveMinFeeForSender.mockReturnValue(1000n)
+        // Default: non-quantum sender — the calculator is a passthrough
+        // no-op (same reference, no adjustments), matching its real fast
+        // path. Quantum tests override the implementation per case.
+        mockAssignFeeToGroup.mockReset()
+        mockAssignFeeToGroup.mockImplementation(
+            async ({ transactions }: { transactions: unknown[] }) => ({
+                transactions,
+                adjustments: [],
+            }),
+        )
     })
 
     afterEach(() => {
@@ -321,15 +314,32 @@ describe('useKeyregDeeplink', () => {
     })
 
     describe('PQ fee floor', () => {
-        // resolveMinFeeForSender is mocked directly (its own rekey-chain/PQ
-        // logic is covered by
-        // packages/signing/src/pipeline/sources/__tests__/minFeeResolver.spec.ts).
-        // These tests only verify this hook wires the resolver's inputs and
-        // applies the override guard on its output, mirroring PQ-007's
-        // useTransactionSendFlow.buildNormalTxs pattern.
-        it("floors a quantum sender's dApp-set fee up to the resolved PQ minimum", async () => {
+        // assignFeeToGroup is mocked at the signing-package boundary (its
+        // own quantum/rekey/congestion logic is covered by
+        // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+        // and .../sources/__tests__/assignMinimumFeesToGroup.spec.ts). These
+        // tests only verify this hook builds with the dApp fee verbatim,
+        // runs the built txn through the calculator, and surfaces the delta
+        // only for an explicit dApp fee.
+        const adjustedTx = { kind: 'offline-tx', fee: 3000n }
+        const quantumRaise = (adjustments: unknown[]) => {
+            mockAssignFeeToGroup.mockImplementation(async () => ({
+                transactions: [adjustedTx],
+                adjustments,
+            }))
+        }
+
+        it("builds with the dApp fee verbatim, then enqueues the calculator's raised txn with the adjustment surfaced", async () => {
             seedSenderInWallet()
-            mockResolveMinFeeForSender.mockReturnValue(3000n)
+            const adjustments = [
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ]
+            quantumRaise(adjustments)
 
             const { result } = renderHook(() => useKeyregDeeplink())
 
@@ -337,23 +347,32 @@ describe('useKeyregDeeplink', () => {
                 await result.current(baseOfflineDeeplink({ fee: '1000' }))
             })
 
+            // The dApp fee reaches the builder untouched; the raise happens
+            // after build, on the normalized txn.
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ staticFee: { microAlgos: 3000n } }),
+                expect.objectContaining({ staticFee: { microAlgos: 1000n } }),
             )
-            expect(mockResolveMinFeeForSender).toHaveBeenCalledExactlyOnceWith(
+            expect(mockAssignFeeToGroup).toHaveBeenCalledExactlyOnceWith({
+                transactions: [{ kind: 'offline-tx' }],
+            })
+            expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({
-                    senderAddress: VALID_ADDRESS,
-                    accounts: mockAllAccounts.current,
-                    suggestedMinFee: 1000n,
-                    configMinTxnFee: 1000n,
-                    pqMultiplier: 3n,
+                    txs: [adjustedTx],
+                    feeAdjustments: adjustments,
                 }),
             )
         })
 
-        it('floors a quantum sender with no dApp fee up to the resolved PQ minimum', async () => {
+        it('omits the adjustment delta when the deeplink set no explicit fee (Pera-set, not an override)', async () => {
             seedSenderInWallet()
-            mockResolveMinFeeForSender.mockReturnValue(3000n)
+            quantumRaise([
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ])
 
             const { result } = renderHook(() => useKeyregDeeplink())
 
@@ -362,28 +381,20 @@ describe('useKeyregDeeplink', () => {
             })
 
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ staticFee: { microAlgos: 3000n } }),
+                expect.objectContaining({ staticFee: undefined }),
+            )
+            // The raised txn is still what gets signed…
+            expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    txs: [adjustedTx],
+                    // …but no original → adjusted delta is shown.
+                    feeAdjustments: undefined,
+                }),
             )
         })
 
-        it("never lowers a quantum sender's dApp fee that already exceeds the resolved PQ minimum", async () => {
+        it("passes a non-quantum sender's dApp fee through with no adjustments", async () => {
             seedSenderInWallet()
-            mockResolveMinFeeForSender.mockReturnValue(3000n)
-
-            const { result } = renderHook(() => useKeyregDeeplink())
-
-            await act(async () => {
-                await result.current(baseOfflineDeeplink({ fee: '5000' }))
-            })
-
-            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
-                expect.objectContaining({ staticFee: { microAlgos: 5000n } }),
-            )
-        })
-
-        it("leaves an algo25 sender's dApp-set fee unchanged", async () => {
-            seedSenderInWallet()
-            mockResolveMinFeeForSender.mockReturnValue(1000n)
 
             const { result } = renderHook(() => useKeyregDeeplink())
 
@@ -394,11 +405,16 @@ describe('useKeyregDeeplink', () => {
             expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
                 expect.objectContaining({ staticFee: { microAlgos: 1000n } }),
             )
+            expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    txs: [{ kind: 'offline-tx' }],
+                    feeAdjustments: undefined,
+                }),
+            )
         })
 
-        it('leaves staticFee undefined for an algo25 sender with no dApp fee', async () => {
+        it('leaves staticFee undefined for a non-quantum sender with no dApp fee', async () => {
             seedSenderInWallet()
-            mockResolveMinFeeForSender.mockReturnValue(1000n)
 
             const { result } = renderHook(() => useKeyregDeeplink())
 

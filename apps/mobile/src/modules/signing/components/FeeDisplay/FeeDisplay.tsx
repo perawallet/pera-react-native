@@ -18,7 +18,7 @@ import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFee
 import { useStyles } from './styles'
 import { useFeeWarning } from './useFeeWarning'
 import { useQuantumFeeExplainer } from './useQuantumFeeExplainer'
-import { useQuantumFeeAdjustment } from './useQuantumFeeAdjustment'
+import { useFeeAdjustment } from './useFeeAdjustment'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
@@ -38,7 +38,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
     const { showWarning, fee } = useFeeWarning()
     const { isQuantumFee } = useQuantumFeeExplainer(transaction)
     const { isAdjusted, originalFee, adjustedFee } =
-        useQuantumFeeAdjustment(transaction)
+        useFeeAdjustment(transaction)
 
     const handleViewDetails = () => {
         if (!transaction) {
