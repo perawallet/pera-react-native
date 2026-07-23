@@ -1,0 +1,24 @@
+diff --git a/scripts/get-app-config-ios.sh b/scripts/get-app-config-ios.sh
+index b612e095ea509f92dac967540f50353507a8ff51..5cd5955844655eb37e48c727a4468d78e5b4761f 100755
+--- a/scripts/get-app-config-ios.sh
++++ b/scripts/get-app-config-ios.sh
+@@ -32,4 +32,18 @@ else
+   exit 1
+ fi
+ 
+-"${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/with-node.sh" "${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/getAppConfig.js" "$PROJECT_ROOT" "$RESOURCE_DEST"
++# [PERA-DIAG] Temporary CI diagnostic (PERA-4677): the getAppConfig failure's stderr
++# lands only in gym's detail log, not the xcodebuild console, so CI just reports a bare
++# nonzero PhaseScriptExecution. Surface the real output and the pre-run state of the
++# output dir so a single build reveals the cause. REMOVE once diagnosed.
++echo "[PERA-DIAG] BUNDLE_FORMAT=$BUNDLE_FORMAT"
++echo "[PERA-DIAG] CONFIGURATION_BUILD_DIR=$CONFIGURATION_BUILD_DIR"
++echo "[PERA-DIAG] PROJECT_DIR=$PROJECT_DIR PROJECT_ROOT=$PROJECT_ROOT"
++echo "[PERA-DIAG] RESOURCE_DEST=$RESOURCE_DEST"
++ls -la "$RESOURCE_DEST" 2>&1 | sed 's/^/[PERA-DIAG] ls: /' || true
++set +e
++"${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/with-node.sh" "${EXPO_CONSTANTS_PACKAGE_DIR}/scripts/getAppConfig.js" "$PROJECT_ROOT" "$RESOURCE_DEST" 2>&1
++PERA_GEN_EXIT=$?
++set -e
++echo "[PERA-DIAG] getAppConfig exit=$PERA_GEN_EXIT"
++exit $PERA_GEN_EXIT
