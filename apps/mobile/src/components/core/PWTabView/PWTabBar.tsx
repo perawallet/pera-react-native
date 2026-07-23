@@ -118,6 +118,7 @@ export const PWTabBar = ({
                     return (
                         <PWTouchableOpacity
                             key={route.key}
+                            testID={`tab_${route.name.toLowerCase()}`}
                             onPress={onPress}
                             style={styles.tab}
                             activeOpacity={1}

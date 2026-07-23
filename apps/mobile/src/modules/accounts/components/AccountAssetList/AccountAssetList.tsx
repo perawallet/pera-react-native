@@ -130,6 +130,7 @@ export const AccountAssetList = ({
                         </PWView>
                         <PWView style={styles.titleBarButtonContainer}>
                             <PWButton
+                                testID='manage_assets_button'
                                 icon='sliders'
                                 variant='helper'
                                 paddingStyle='none'
@@ -138,6 +139,7 @@ export const AccountAssetList = ({
                             />
                             {!isReadOnly && (
                                 <PWButton
+                                    testID='add_asset_button'
                                     icon='plus'
                                     title={t(
                                         'account_details.assets.add_asset',

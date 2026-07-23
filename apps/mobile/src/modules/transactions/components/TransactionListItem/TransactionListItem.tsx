@@ -52,6 +52,7 @@ export const TransactionListItem = ({
 
     return (
         <PWListItemLayout
+            testID={`transaction_row_${transaction.id}`}
             style={styles.container}
             align='top'
             onPress={handlePress}
