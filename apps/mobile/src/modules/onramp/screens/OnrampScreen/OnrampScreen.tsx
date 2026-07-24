@@ -23,7 +23,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
-import { PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import {
@@ -56,6 +56,7 @@ export const OnrampScreen = () => {
     )
     const {
         isReady,
+        pairsState,
         sourceToken,
         destinationToken,
         selectedPair,
@@ -63,6 +64,7 @@ export const OnrampScreen = () => {
         activeTab,
         handleTabChange,
         handleRegionInfoPress,
+        handleRetryPairs,
     } = useOnrampScreen()
 
     const pagerRef = useRef<PagerView>(null)
@@ -164,6 +166,32 @@ export const OnrampScreen = () => {
                             destinationToken={destinationToken}
                             selectedPair={selectedPair}
                             onNavigateToHistory={handleNavigateToHistory}
+                        />
+                    ) : pairsState === 'offline' ? (
+                        <EmptyView
+                            icon='globe'
+                            title={t('common.offline_mode')}
+                            body={t('common.offline_refresh_body')}
+                            button={
+                                <PWButton
+                                    variant='link'
+                                    title={t('common.retry.label')}
+                                    onPress={handleRetryPairs}
+                                />
+                            }
+                        />
+                    ) : pairsState === 'error' ? (
+                        <EmptyView
+                            icon='info'
+                            title={t('common.error.title')}
+                            body={t('common.error.body')}
+                            button={
+                                <PWButton
+                                    variant='link'
+                                    title={t('common.retry.label')}
+                                    onPress={handleRetryPairs}
+                                />
+                            }
                         />
                     ) : (
                         <PWView style={styles.loadingWrapper}>
