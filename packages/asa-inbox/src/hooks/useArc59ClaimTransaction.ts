@@ -11,14 +11,16 @@
  */
 
 import { useCallback } from 'react'
+import { decodeAddress } from 'algosdk'
 import {
     useAlgorandClient,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ARC59Client } from '../clients'
-import { buildPopulatedGroup } from '../utils'
+import { buildGroup, buildPopulatedGroup } from '../utils'
 import {
     BASE_CLAIM_TX_COUNT,
     BASE_REJECT_TX_COUNT,
@@ -29,12 +31,26 @@ type ClaimParams = {
     sender: string
     assetId: bigint
     shouldClaimAlgo: boolean
+    /**
+     * The receiver's ARC-59 inbox account address. When a non-empty string,
+     * the group is built with explicit resource references (no simulate). When
+     * null/undefined, the flow falls back to simulate-based resource
+     * population.
+     */
+    inboxAddress: Nullable<string>
 }
 
 type RejectParams = {
     sender: string
     assetId: bigint
     shouldClaimAlgo: boolean
+    /** See {@link ClaimParams.inboxAddress}. */
+    inboxAddress: Nullable<string>
+    /**
+     * The ASA creator address. ARC-59 reject closes the asset out to its
+     * creator, so the creator MUST be referenced on the reject call.
+     */
+    assetCreator: string
 }
 
 type UseArc59ClaimTransactionResult = {
@@ -64,7 +80,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
 
     const buildClaimAssetTxs = useCallback(
         async (params: ClaimParams): Promise<PeraTransaction[]> => {
-            const { sender, assetId, shouldClaimAlgo } = params
+            const { sender, assetId, shouldClaimAlgo, inboxAddress } = params
             const arc59Config = isMainnet
                 ? config.arc59.mainnet
                 : config.arc59.testnet
@@ -88,11 +104,33 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
             if (!optedIn) claimFee += minFee
 
+            // When the inbox address is known, attach the ARC-59 resource
+            // references explicitly so the group builds without a live
+            // simulate. The router box is keyed by the receiver's public key.
+            const receiverBox = {
+                appId: arc59Config.appId,
+                name: decodeAddress(sender).publicKey,
+            }
+            const claimAlgoRefs = inboxAddress
+                ? {
+                      accountReferences: [inboxAddress],
+                      boxReferences: [receiverBox],
+                  }
+                : {}
+            const claimRefs = inboxAddress
+                ? {
+                      accountReferences: [inboxAddress],
+                      assetReferences: [assetId],
+                      boxReferences: [receiverBox],
+                  }
+                : {}
+
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
                     await appClient.params.arc59_claimAlgo({
                         args: [],
                         staticFee: 0n.microAlgo(),
+                        ...claimAlgoRefs,
                     }),
                 )
             }
@@ -109,17 +147,26 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 await appClient.params.arc59_claim({
                     args: [assetId],
                     staticFee: claimFee.microAlgo(),
+                    ...claimRefs,
                 }),
             )
 
-            return buildPopulatedGroup(composer, algokit)
+            return inboxAddress
+                ? buildGroup(composer)
+                : buildPopulatedGroup(composer, algokit)
         },
         [algokit, isMainnet, isOptedInToAsset],
     )
 
     const buildRejectAssetTxs = useCallback(
         async (params: RejectParams): Promise<PeraTransaction[]> => {
-            const { sender, assetId, shouldClaimAlgo } = params
+            const {
+                sender,
+                assetId,
+                shouldClaimAlgo,
+                inboxAddress,
+                assetCreator,
+            } = params
             const arc59Config = isMainnet
                 ? config.arc59.mainnet
                 : config.arc59.testnet
@@ -141,11 +188,32 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
             if (shouldClaimAlgo)
                 rejectFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
 
+            // See buildClaimAssetTxs. Reject additionally references the ASA
+            // creator, since the router closes the asset out to it.
+            const receiverBox = {
+                appId: arc59Config.appId,
+                name: decodeAddress(sender).publicKey,
+            }
+            const claimAlgoRefs = inboxAddress
+                ? {
+                      accountReferences: [inboxAddress],
+                      boxReferences: [receiverBox],
+                  }
+                : {}
+            const rejectRefs = inboxAddress
+                ? {
+                      accountReferences: [inboxAddress, assetCreator],
+                      assetReferences: [assetId],
+                      boxReferences: [receiverBox],
+                  }
+                : {}
+
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
                     await appClient.params.arc59_claimAlgo({
                         args: [],
                         staticFee: 0n.microAlgo(),
+                        ...claimAlgoRefs,
                     }),
                 )
             }
@@ -154,10 +222,13 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 await appClient.params.arc59_reject({
                     args: [assetId],
                     staticFee: rejectFee.microAlgo(),
+                    ...rejectRefs,
                 }),
             )
 
-            return buildPopulatedGroup(composer, algokit)
+            return inboxAddress
+                ? buildGroup(composer)
+                : buildPopulatedGroup(composer, algokit)
         },
         [algokit, isMainnet],
     )

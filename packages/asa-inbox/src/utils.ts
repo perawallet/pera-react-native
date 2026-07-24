@@ -38,3 +38,16 @@ export const buildPopulatedGroup = async (
     )
     return populatedAtc.buildGroup().map(t => t.txn)
 }
+
+/**
+ * Build a composed group into signable transactions WITHOUT resource
+ * population — for groups whose account/asset/box references were attached
+ * explicitly on the method calls. This keeps the hot path off the live
+ * `POST /v2/transactions/simulate` that `buildPopulatedGroup` relies on.
+ */
+export const buildGroup = async (
+    composer: TransactionComposer,
+): Promise<PeraTransaction[]> => {
+    const { atc } = await composer.build()
+    return atc.buildGroup().map(t => t.txn)
+}

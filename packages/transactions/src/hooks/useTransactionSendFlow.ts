@@ -67,6 +67,13 @@ type SendClaimParams = BaseSendParams & {
      * rely on the post-confirmation refresh instead.
      */
     amount?: Decimal
+    /**
+     * The receiver's ARC-59 inbox account address. When present, the claim/
+     * reject group is built with explicit resource references instead of a
+     * live simulate. When absent, the builders fall back to simulate-based
+     * resource population.
+     */
+    inboxAddress?: Nullable<string>
 }
 
 type SendParams = SendTransactionParams | SendClaimParams
@@ -345,6 +352,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
+                    inboxAddress: params.inboxAddress ?? null,
                 })
                 const result = await submit({
                     unsignedTxs,
@@ -386,6 +394,8 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
+                    inboxAddress: params.inboxAddress ?? null,
+                    assetCreator: params.asset.creator.address,
                 })
                 const result = await submit({
                     unsignedTxs,
