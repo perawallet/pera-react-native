@@ -12,7 +12,11 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    PeraNetworkError,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { useErrorToast } from '../useErrorToast'
@@ -152,6 +156,25 @@ describe('useErrorToast', () => {
                 type: 'error',
             },
             undefined,
+        )
+    })
+
+    it('logs the raw message when falling back to the generic banner', () => {
+        const raw = new Error(
+            'Network request error. Received status 403 (Forbidden): invalid token',
+        )
+
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(raw)
+        })
+
+        expect(logger.error).toHaveBeenCalledWith(
+            'Unrecognized node error shown as generic banner',
+            expect.objectContaining({
+                message: expect.stringContaining('403'),
+            }),
         )
     })
 
