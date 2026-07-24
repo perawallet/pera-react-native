@@ -3190,5 +3190,13 @@
         "ZM": "Zambia",
         "ZR": "Congo - Kinshasa",
         "ZW": "Zimbabwe"
+    },
+    "migration": {
+        "splash": {
+            "failure_message_one": "Failed to migrate {{count}} account",
+            "failure_message_other": "Failed to migrate {{count}} accounts",
+            "continue": "Continue",
+            "do_not_show_again": "Do not show again"
+        }
     }
 }
