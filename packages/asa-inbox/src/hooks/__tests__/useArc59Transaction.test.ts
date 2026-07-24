@@ -12,11 +12,13 @@
 
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { decodeAddress } from 'algosdk'
 
 import { useArc59SendTransaction } from '../useArc59SendTransaction'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
+import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: vi.fn(),
@@ -65,6 +67,16 @@ vi.mock('../../clients', () => {
 
 const STUB_TXN = { sender: 'SENDER_ADDRESS' }
 
+// Real, valid 58-char Algorand addresses so `decodeAddress` works.
+const SENDER_ADDRESS =
+    'EZRVNZFJGOUZC67FUMEC7ZMVP232TPICFTQCVZ6EQEIRRT3TIHSKZULRNI'
+const RECEIVER_ADDRESS =
+    'AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU'
+const INBOX_ADDRESS =
+    'OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24'
+// Matches the mocked testnet ARC59 appId (default network is testnet).
+const ARC59_TESTNET_APP_ID = 643020148n
+
 const baseSummary = {
     is_arc59_opted_in: true,
     minimum_balance_requirement: 100000,
@@ -76,8 +88,8 @@ const baseSummary = {
 }
 
 const baseParams = {
-    sender: 'SENDER_ADDRESS',
-    receiver: 'RECEIVER_ADDRESS',
+    sender: SENDER_ADDRESS,
+    receiver: RECEIVER_ADDRESS,
     assetId: 12345n,
     amount: 1000n,
     summary: baseSummary,
@@ -219,7 +231,7 @@ describe('useArc59SendTransaction', () => {
 
         expect(mockComposer.addPayment).toHaveBeenCalledWith(
             expect.objectContaining({
-                sender: 'SENDER_ADDRESS',
+                sender: SENDER_ADDRESS,
                 receiver: 'TESTNET_APP_ADDRESS',
                 amount: BigInt(300000).microAlgo(),
             }),
@@ -282,7 +294,7 @@ describe('useArc59SendTransaction', () => {
             mockAlgokit.createTransaction.assetTransfer,
         ).toHaveBeenCalledWith(
             expect.objectContaining({
-                sender: 'SENDER_ADDRESS',
+                sender: SENDER_ADDRESS,
                 receiver: 'TESTNET_APP_ADDRESS',
                 amount: 1000n,
                 assetId: 12345n,
@@ -358,5 +370,91 @@ describe('useArc59SendTransaction', () => {
         })
 
         expect(mockComposer.build).toHaveBeenCalledTimes(1)
+    })
+
+    test('passes explicit refs to arc59_sendAsset and never simulates when inbox_address is set', async () => {
+        const params = {
+            ...baseParams,
+            sender: SENDER_ADDRESS,
+            receiver: RECEIVER_ADDRESS,
+            summary: {
+                ...baseSummary,
+                is_arc59_opted_in: true,
+                inbox_address: INBOX_ADDRESS,
+            },
+        }
+
+        const { result } = renderHook(() => useArc59SendTransaction())
+
+        await act(async () => {
+            await result.current.buildSendViaInboxTxs(params)
+        })
+
+        expect(mockParamsSendAsset).toHaveBeenCalledWith(
+            expect.objectContaining({
+                accountReferences: [RECEIVER_ADDRESS, INBOX_ADDRESS],
+                assetReferences: [params.assetId],
+                boxReferences: [
+                    {
+                        appId: ARC59_TESTNET_APP_ID,
+                        name: decodeAddress(RECEIVER_ADDRESS).publicKey,
+                    },
+                ],
+            }),
+        )
+        expect(populateAppCallResources).not.toHaveBeenCalled()
+    })
+
+    test('passes explicit refs to arc59_optRouterIn when router not opted in and inbox_address is set', async () => {
+        const params = {
+            ...baseParams,
+            sender: SENDER_ADDRESS,
+            receiver: RECEIVER_ADDRESS,
+            summary: {
+                ...baseSummary,
+                is_arc59_opted_in: false,
+                inbox_address: INBOX_ADDRESS,
+            },
+        }
+
+        const { result } = renderHook(() => useArc59SendTransaction())
+
+        await act(async () => {
+            await result.current.buildSendViaInboxTxs(params)
+        })
+
+        expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetReferences: [params.assetId],
+            }),
+        )
+        expect(mockParamsSendAsset).toHaveBeenCalledWith(
+            expect.objectContaining({
+                accountReferences: [RECEIVER_ADDRESS, INBOX_ADDRESS],
+                assetReferences: [params.assetId],
+                boxReferences: [
+                    {
+                        appId: ARC59_TESTNET_APP_ID,
+                        name: decodeAddress(RECEIVER_ADDRESS).publicKey,
+                    },
+                ],
+            }),
+        )
+        expect(populateAppCallResources).not.toHaveBeenCalled()
+    })
+
+    test('falls back to simulate population when inbox_address is null', async () => {
+        const params = {
+            ...baseParams,
+            summary: { ...baseSummary, inbox_address: null },
+        }
+
+        const { result } = renderHook(() => useArc59SendTransaction())
+
+        await act(async () => {
+            await result.current.buildSendViaInboxTxs(params)
+        })
+
+        expect(populateAppCallResources).toHaveBeenCalledTimes(1)
     })
 })
