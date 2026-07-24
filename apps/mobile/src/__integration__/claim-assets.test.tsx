@@ -98,6 +98,9 @@ import { modelsv2, encodeMsgpack, decodeMsgpack } from 'algosdk'
 const SENDER_ADDRESS =
     'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
 
+const INBOX_ADDRESS =
+    'OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24'
+
 const ASSET_ID = '741234567'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
@@ -109,6 +112,7 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 // entry in vitest.config.ts / tsconfig.json), so we register the handler with a
 // plain `http.get` instead.
 const rawAssetRequestsResponse = {
+    inbox_address: INBOX_ADDRESS,
     results: [
         {
             total_amount: '250',
@@ -170,6 +174,7 @@ const buildAssetRequest = (
     overrides: Partial<Arc59AssetRequest> = {},
 ): Arc59AssetRequest => ({
     id: ASSET_ID,
+    inboxAddress: INBOX_ADDRESS,
     totalAmount: new Decimal(250),
     asset: CLAIMED_ASSET,
     usdValue: new Decimal('1.5'),
