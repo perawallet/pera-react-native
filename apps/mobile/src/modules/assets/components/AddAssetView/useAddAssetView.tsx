@@ -20,6 +20,7 @@ import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useNetworkStatus } from '@modules/network'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -37,6 +38,7 @@ type UseAddAssetViewResult = {
     results: DisplayableAsset[]
     isLoading: boolean
     isError: boolean
+    isOffline: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: Nullable<() => void>
@@ -74,6 +76,8 @@ export const useAddAssetView = (
         setValue: setSearchQuery,
         results: searchResults,
         isLoading,
+        isRemoteError,
+        isRemotePaused,
         hasNextRemotePage: hasNextPage,
         isFetchingNextRemotePage: isFetchingNextPage,
         fetchNextRemotePage: fetchNextPage,
@@ -83,7 +87,9 @@ export const useAddAssetView = (
         remoteAssets: { hasCollectible, showOnEmptyQuery: true },
     })
     const results = searchResults.remoteAssets
-    const isError = false
+    const { hasInternet } = useNetworkStatus()
+    const isError = isRemoteError
+    const isOffline = isRemotePaused || (isRemoteError && !hasInternet)
 
     const optedInAssetIds = useMemo(() => {
         const ids = new Set<string>()
@@ -180,6 +186,7 @@ export const useAddAssetView = (
         results,
         isLoading,
         isError,
+        isOffline,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,

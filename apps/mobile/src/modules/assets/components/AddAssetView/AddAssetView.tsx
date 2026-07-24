@@ -35,6 +35,8 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
         handleSearchChange,
         results,
         isLoading,
+        isError,
+        isOffline,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
@@ -100,11 +102,25 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
                 ListHeaderComponent={collectibleNote}
                 ItemSeparatorComponent={NoSeparator}
                 ListEmptyComponent={
-                    <EmptyView
-                        title={t('add_asset.no_results')}
-                        body=''
-                        icon='magnifying-glass'
-                    />
+                    isOffline ? (
+                        <EmptyView
+                            title={t('common.offline_mode')}
+                            body={t('common.offline_refresh_body')}
+                            icon='globe'
+                        />
+                    ) : isError ? (
+                        <EmptyView
+                            title={t('common.error.title')}
+                            body={t('common.error.body')}
+                            icon='info'
+                        />
+                    ) : (
+                        <EmptyView
+                            title={t('add_asset.no_results')}
+                            body=''
+                            icon='magnifying-glass'
+                        />
+                    )
                 }
             />
         </PWView>
