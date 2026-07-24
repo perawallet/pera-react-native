@@ -80,6 +80,10 @@ export const PanelButton = (props: PanelButtonProps) => {
                             <PWText
                                 style={themeStyle.textStyle}
                                 variant={titleWeight}
+                                // Keep the title on one line when a badge sits
+                                // beside it — on higher-density devices the
+                                // scaled title + badge would otherwise wrap.
+                                truncate={!!badge}
                                 {...getTestProps(testID, 'text')}
                             >
                                 {title}
@@ -109,7 +113,14 @@ export const PanelButton = (props: PanelButtonProps) => {
                             }}
                             {...getTestProps(testID, 'learn_more')}
                         >
-                            <PWText variant='link'>{learnMore.label}</PWText>
+                            {/*
+                              linkPositive keeps the teal link tone in both
+                              themes (link's dark tone is the brand yellow),
+                              per the Quantum "Learn more" design.
+                            */}
+                            <PWText variant='linkPositive'>
+                                {learnMore.label}
+                            </PWText>
                         </PWTouchableOpacity>
                     )}
                 </PWView>

@@ -676,6 +676,15 @@ registerPreview({
                         />
                     ),
                 },
+                {
+                    label: 'new',
+                    node: (
+                        <PWBadge
+                            value='NEW'
+                            variant='new'
+                        />
+                    ),
+                },
             ]}
         />
     ),
