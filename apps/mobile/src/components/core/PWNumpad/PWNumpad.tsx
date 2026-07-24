@@ -79,6 +79,7 @@ export const PWNumpad = ({
         return (
             <PWTouchableOpacity
                 key={index}
+                testID={isDeleteKey ? 'numpad_key_delete' : `numpad_key_${key}`}
                 style={[styles.key, isDisabled && styles.keyDisabled]}
                 onPress={() => handleKeyPress(key)}
                 disabled={isDisabled}
