@@ -11,8 +11,8 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient } from '@tanstack/react-query'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { QueryClient, onlineManager } from '@tanstack/react-query'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useAssetSearchQuery } from '../useAssetSearchQuery'
 import { createWrapper } from './test-utils'
 
@@ -64,6 +64,27 @@ describe('useAssetSearchQuery', () => {
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })
+    })
+
+    afterEach(() => {
+        // onlineManager is a global singleton — restore connectivity so an
+        // offline test can't leak into the next one.
+        onlineManager.setOnline(true)
+    })
+
+    it('reports isPaused when offline (true-offline regime)', async () => {
+        onlineManager.setOnline(false)
+
+        const { result } = renderHook(() => useAssetSearchQuery('algo'), {
+            wrapper: createWrapper(queryClient),
+        })
+
+        await waitFor(() => expect(result.current.isPaused).toBe(true))
+        // isLoading passes through TanStack's own definition (isPending &&
+        // isFetching); while paused there is no active fetch, so isLoading
+        // is false here — isPaused is the flag callers should branch on.
+        expect(result.current.isLoading).toBe(false)
+        expect(mocks.searchAssets).not.toHaveBeenCalled()
     })
 
     it('fetches and transforms results from the API', async () => {

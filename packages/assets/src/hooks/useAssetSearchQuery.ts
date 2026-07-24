@@ -28,6 +28,9 @@ type UseAssetSearchQueryResult = {
     results: DisplayableAsset[]
     isLoading: boolean
     isError: boolean
+    /** True when the query is paused because the device is offline
+     *  (`fetchStatus === 'paused'`), instead of actively pending. */
+    isPaused: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
@@ -70,7 +73,12 @@ export const useAssetSearchQuery = (
             }),
         enabled,
         initialPageParam: undefined as Optional<string>,
-        getNextPageParam: lastPage => extractCursor(lastPage.next),
+        // Defensive: a resumed-from-pause fetch (e.g. connectivity restored
+        // after a test/teardown has already torn down its mock) can land
+        // here with an undefined page — treat it as "no next page" rather
+        // than throwing.
+        getNextPageParam: lastPage =>
+            lastPage ? extractCursor(lastPage.next) : undefined,
     })
 
     const results =
@@ -82,6 +90,7 @@ export const useAssetSearchQuery = (
         results,
         isLoading: infiniteQuery.isLoading,
         isError: infiniteQuery.isError,
+        isPaused: infiniteQuery.fetchStatus === 'paused',
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,
         fetchNextPage: () => void infiniteQuery.fetchNextPage(),
