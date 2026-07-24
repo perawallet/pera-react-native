@@ -17,6 +17,7 @@ import { Decimal } from 'decimal.js'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { useNetworkStatusStore } from '@modules/network'
 import { useTransactionDetailsScreen } from '../useTransactionDetailsScreen'
 
 const mockPush = vi.fn()
@@ -85,6 +86,7 @@ describe('useTransactionDetailsScreen', () => {
         })
         mockUseTransactionDetailQuery.mockReturnValue(queryResult({}))
         routeParams.current = {}
+        useNetworkStatusStore.getState().setHasInternet(true)
     })
 
     it('renders content from the threaded history row while the fetch is paused offline', () => {
@@ -135,6 +137,23 @@ describe('useTransactionDetailsScreen', () => {
             titleKey: 'errors.network.timeout.title',
             bodyKey: 'errors.network.timeout.body',
         })
+    })
+
+    it('prefers the offline state over a stale error when the device is offline', () => {
+        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        // The query carries a prior non-offline error (e.g. a timeout from
+        // before connectivity dropped); offline must win so the Retry isn't dead.
+        mockUseTransactionDetailQuery.mockReturnValue(
+            queryResult({
+                isError: true,
+                error: new PeraNetworkError('timeout'),
+            }),
+        )
+        useNetworkStatusStore.getState().setHasInternet(false)
+
+        const { result } = renderHook(() => useTransactionDetailsScreen())
+
+        expect(result.current.renderState).toEqual({ kind: 'offline' })
     })
 
     it('falls back to generic error copy for untyped errors', () => {
@@ -205,10 +224,10 @@ describe('useTransactionDetailsScreen', () => {
         )
     })
 
-    it('retries via the query refetch', () => {
+    it('retries via the query refetch when online', () => {
         routeParams.current = { transactionId: 'TX_UNKNOWN' }
         mockUseTransactionDetailQuery.mockReturnValue(
-            queryResult({ isPaused: true }),
+            queryResult({ isError: true, error: new Error('boom') }),
         )
 
         const { result } = renderHook(() => useTransactionDetailsScreen())
@@ -217,6 +236,21 @@ describe('useTransactionDetailsScreen', () => {
         })
 
         expect(mockRefetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('short-circuits retry while offline instead of firing a doomed refetch', () => {
+        routeParams.current = { transactionId: 'TX_UNKNOWN' }
+        mockUseTransactionDetailQuery.mockReturnValue(
+            queryResult({ isPaused: true }),
+        )
+        useNetworkStatusStore.getState().setHasInternet(false)
+
+        const { result } = renderHook(() => useTransactionDetailsScreen())
+        act(() => {
+            result.current.handleRetry()
+        })
+
+        expect(mockRefetch).not.toHaveBeenCalled()
     })
 
     it('pushes a new details screen for inner transactions', () => {

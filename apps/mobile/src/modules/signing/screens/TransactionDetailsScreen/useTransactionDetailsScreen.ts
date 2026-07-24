@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { getNetworkErrorMessageKeys } from '@perawallet/wallet-core-shared'
 import { mapHistoryItemToDisplayableTransaction } from '@perawallet/wallet-core-transactions'
+import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<
@@ -73,6 +74,8 @@ export const useTransactionDetailsScreen =
 
         const { groupTransactions } = useGroupTransactionsQuery({ groupId })
 
+        const { hasInternet } = useNetworkStatus()
+
         // The signing flow's in-memory object is authoritative (unsigned txns
         // have no on-chain id). The indexer fetch enriches the history row
         // (note, inner txns), so prefer it once it lands; until then the
@@ -91,14 +94,18 @@ export const useTransactionDetailsScreen =
             if (transaction) {
                 return { kind: 'content', transaction }
             }
+            // Offline wins over a stale error: a device that goes offline
+            // carrying a prior error (e.g. `timeout`) must show the offline
+            // surface, not a dead Retry that just re-pauses. Mirrors the
+            // PERA-4581 charts contract (`isPaused || (isError && !online)`).
+            if (detailQuery.isPaused || (detailQuery.isError && !hasInternet)) {
+                return { kind: 'offline' }
+            }
             if (detailQuery.isError) {
                 const { titleKey, bodyKey } = getNetworkErrorMessageKeys(
                     detailQuery.error,
                 )
                 return { kind: 'error', titleKey, bodyKey }
-            }
-            if (detailQuery.isPaused) {
-                return { kind: 'offline' }
             }
             if (detailQuery.isLoading) {
                 return { kind: 'loading' }
@@ -111,6 +118,7 @@ export const useTransactionDetailsScreen =
             detailQuery.error,
             detailQuery.isPaused,
             detailQuery.isLoading,
+            hasInternet,
         ])
 
         const handleTransactionPress = useCallback(
@@ -124,6 +132,12 @@ export const useTransactionDetailsScreen =
         )
 
         const handleRetry = useCallback(() => {
+            // Offline: skip the doomed request (30 s timeout) — the offline
+            // copy on screen already promises a refresh on reconnect. Matches
+            // the PERA-4581 charts retry so both offline surfaces behave alike.
+            if (!useNetworkStatusStore.getState().hasInternet) {
+                return
+            }
             void detailQuery.refetch()
         }, [detailQuery])
 
