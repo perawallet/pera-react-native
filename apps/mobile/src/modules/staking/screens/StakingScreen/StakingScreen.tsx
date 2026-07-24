@@ -42,6 +42,7 @@ export const StakingScreen = () => {
         projects,
         isLoading,
         isError,
+        isOffline,
         handleRetry,
         handleProjectPress,
         handleHelpOpen,
@@ -87,7 +88,23 @@ export const StakingScreen = () => {
                     {t('staking.subtitle')}
                 </PWText>
 
-                {isLoading && (
+                {isOffline && (
+                    <EmptyView
+                        icon='globe'
+                        title={t('common.offline_mode')}
+                        body={t('common.offline_refresh_body')}
+                        button={
+                            <PWButton
+                                variant='link'
+                                title={t('staking.retry')}
+                                onPress={handleRetry}
+                            />
+                        }
+                        testID='staking-offline-view'
+                    />
+                )}
+
+                {!isOffline && isLoading && (
                     <LoadingView
                         variant='skeleton'
                         count={SKELETON_COUNT}
@@ -114,7 +131,7 @@ export const StakingScreen = () => {
                     />
                 )}
 
-                {!isLoading && isError && (
+                {!isOffline && !isLoading && isError && (
                     <PWView
                         style={styles.errorContainer}
                         testID='staking-error-container'
@@ -141,28 +158,34 @@ export const StakingScreen = () => {
                     </PWView>
                 )}
 
-                {!isLoading && !isError && projects.length === 0 && (
-                    <EmptyView
-                        title={t('staking.empty_title')}
-                        body={t('staking.empty_body')}
-                        testID='staking-empty-view'
-                    />
-                )}
-
-                {!isLoading && !isError && projects.length > 0 && (
-                    <PWView
-                        testID='staking-projects-list'
-                        style={styles.list}
-                    >
-                        <PWFlatList
-                            data={projects}
-                            renderItem={renderProject}
-                            ItemSeparatorComponent={null}
-                            keyExtractor={keyExtractor}
-                            style={styles.list}
+                {!isOffline &&
+                    !isLoading &&
+                    !isError &&
+                    projects.length === 0 && (
+                        <EmptyView
+                            title={t('staking.empty_title')}
+                            body={t('staking.empty_body')}
+                            testID='staking-empty-view'
                         />
-                    </PWView>
-                )}
+                    )}
+
+                {!isOffline &&
+                    !isLoading &&
+                    !isError &&
+                    projects.length > 0 && (
+                        <PWView
+                            testID='staking-projects-list'
+                            style={styles.list}
+                        >
+                            <PWFlatList
+                                data={projects}
+                                renderItem={renderProject}
+                                ItemSeparatorComponent={null}
+                                keyExtractor={keyExtractor}
+                                style={styles.list}
+                            />
+                        </PWView>
+                    )}
             </StakingErrorBoundary>
         </PWScreen>
     )
