@@ -26,6 +26,11 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
     } else if (variant === 'positive') {
         textColor = theme.colors.positive
         backgroundColor = theme.colors.buttonSquareBg
+    } else if (variant === 'new') {
+        // Solid "NEW feature" highlight pill (e.g. Quantum accounts) — mint
+        // fill with dark text, per the Wallet/4 design tokens.
+        textColor = theme.colors.wallet4Icon
+        backgroundColor = theme.colors.wallet4
     } else if (variant === 'alert') {
         textColor = theme.colors.textWhite
         backgroundColor = theme.colors.alertNegative

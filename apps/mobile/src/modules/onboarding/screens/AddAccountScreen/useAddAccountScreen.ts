@@ -237,7 +237,7 @@ export const useAddAccountScreen = () => {
                     badge: {
                         labelKey:
                             'onboarding.add_account.quantum_account_option_badge',
-                        variant: 'positive',
+                        variant: 'new',
                     },
                     learnMore: {
                         labelKey:
