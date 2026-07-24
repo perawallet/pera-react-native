@@ -211,6 +211,19 @@ describe('useErrorToast', () => {
         expect(mockShowToast).toHaveBeenCalledWith(expect.any(Object), options)
     })
 
+    it('logs the raw value when falling back to the generic banner for a non-Error input', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(null)
+        })
+
+        expect(logger.error).toHaveBeenCalledWith(
+            'Unrecognized node error shown as generic banner',
+            { message: 'null' },
+        )
+    })
+
     it('uses generic copy for non-Error inputs', () => {
         const { result } = renderHook(() => useErrorToast())
 

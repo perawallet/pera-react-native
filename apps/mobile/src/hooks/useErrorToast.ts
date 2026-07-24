@@ -124,6 +124,9 @@ const resolveMessage = (
         }
     }
 
+    logger.error('Unrecognized node error shown as generic banner', {
+        message: String(error),
+    })
     return {
         title: fallbackTitle ?? t('errors.general.title'),
         body: t('errors.general.body'),
