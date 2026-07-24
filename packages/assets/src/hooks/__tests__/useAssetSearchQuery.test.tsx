@@ -75,9 +75,10 @@ describe('useAssetSearchQuery', () => {
     it('reports isPaused when offline (true-offline regime)', async () => {
         onlineManager.setOnline(false)
 
-        const { result } = renderHook(() => useAssetSearchQuery('algo'), {
-            wrapper: createWrapper(queryClient),
-        })
+        const { result, unmount } = renderHook(
+            () => useAssetSearchQuery('algo'),
+            { wrapper: createWrapper(queryClient) },
+        )
 
         await waitFor(() => expect(result.current.isPaused).toBe(true))
         // isLoading passes through TanStack's own definition (isPending &&
@@ -85,6 +86,14 @@ describe('useAssetSearchQuery', () => {
         // is false here — isPaused is the flag callers should branch on.
         expect(result.current.isLoading).toBe(false)
         expect(mocks.searchAssets).not.toHaveBeenCalled()
+
+        // The query is still paused (never fetched) at this point. Tear it
+        // down before `afterEach` restores connectivity — otherwise
+        // restoring `onlineManager` resumes this now-orphaned query, which
+        // re-invokes the (by-then unconfigured) mock in the background and
+        // can surface as an unhandled rejection in a later test.
+        unmount()
+        queryClient.clear()
     })
 
     it('fetches and transforms results from the API', async () => {

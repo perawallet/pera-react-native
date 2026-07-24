@@ -73,12 +73,7 @@ export const useAssetSearchQuery = (
             }),
         enabled,
         initialPageParam: undefined as Optional<string>,
-        // Defensive: a resumed-from-pause fetch (e.g. connectivity restored
-        // after a test/teardown has already torn down its mock) can land
-        // here with an undefined page — treat it as "no next page" rather
-        // than throwing.
-        getNextPageParam: lastPage =>
-            lastPage ? extractCursor(lastPage.next) : undefined,
+        getNextPageParam: lastPage => extractCursor(lastPage.next),
     })
 
     const results =
