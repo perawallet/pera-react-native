@@ -53,8 +53,6 @@ export type UseAssetTransactionListResult = {
     isEmpty: boolean
     handleLoadMore: () => void
     handleRefresh: () => void
-    /** True while a pull-triggered refetch is in flight */
-    isRefreshing: boolean
     handleExportCsv: () => void
     isExportingCsv: boolean
     isCsvExportVisible: boolean
@@ -89,7 +87,6 @@ export const useAssetTransactionList = ({
         transactions,
         isLoading,
         isFetchingNextPage,
-        isRefetching,
         isError,
         error,
         hasNextPage,
@@ -197,7 +194,6 @@ export const useAssetTransactionList = ({
         isEmpty,
         handleLoadMore,
         handleRefresh,
-        isRefreshing: isRefetching,
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,

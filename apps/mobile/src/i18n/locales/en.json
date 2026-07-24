@@ -462,7 +462,6 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
-        "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
         "back_online": "Back online",
         "yes": "Yes",
         "no": "No",
@@ -2232,7 +2231,7 @@
             "warning": "All transactions are irreversible. As these requests are outside Pera Wallet's control, never approve transactions from a dApp you don't know."
         },
         "arc60_view": {
-            "title": "Sign-in Request",
+            "title": "Authentication Request",
             "description": "Sign in to {{domain}} using your wallet. The signature proves you control this account but does not authorise any on-chain action.",
             "domain": "Domain",
             "scope": "Scope",
