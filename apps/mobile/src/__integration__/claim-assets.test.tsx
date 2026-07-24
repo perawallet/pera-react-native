@@ -221,11 +221,19 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
     return account
 }
 
+// Counts invocations of the simulate handler below so tests can assert on
+// it directly: the ARC-59 claim/reject builders (Tasks 4-6) attach explicit
+// resource refs and call `buildGroup` (no simulate) whenever the inbox
+// address is known, falling back to `buildPopulatedGroup` (one simulate
+// call) only when it is null. Reset per test in `beforeEach`.
+let simulateCallCount = 0
+
 // Echoes a successful, resource-free simulate result for every transaction in
 // the request group, so AlgoKit's `composer.build()` resource-population step
 // resolves and the group proceeds to signing + submission.
 const mockAlgodSimulate = () =>
     http.post('*/v2/transactions/simulate', async ({ request }) => {
+        simulateCallCount += 1
         const reqBytes = new Uint8Array(await request.arrayBuffer())
         const decoded = decodeMsgpack(reqBytes, modelsv2.SimulateRequest)
         const response = new modelsv2.SimulateResponse({
@@ -345,6 +353,7 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         useAccountsStore.getState().setAccounts([])
         useClaimAssetsStore.getState().reset()
         vi.mocked(Notifier.showNotification).mockClear()
+        simulateCallCount = 0
 
         // Algod surface for the ARC-59 claim/reject build + sign + submit
         // pipeline. `buildClaimAssetTxs` calls getSuggestedParams (params) and
@@ -436,6 +445,79 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             // A real signed app-call group is well over a few bytes.
             expect(body.byteLength).toBeGreaterThan(50)
             expect(account.address).toBe(ALGO25_TEST_ADDRESS)
+
+            // Core Task 4-6 guarantee: with an inbox address on record, the
+            // claim group is built via explicit resource refs (`buildGroup`)
+            // and never falls back to a live `/v2/transactions/simulate`
+            // call.
+            expect(simulateCallCount).toBe(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an inbound request with no inbox address on record, when the user confirms the claim, then the claim group is populated via a live simulate call and the success screen still renders',
+        async () => {
+            await seedClaimingAccount()
+
+            // Same requests endpoint as the happy path, but the router
+            // reports no known inbox address for this receiver yet — the
+            // builders must fall back to `buildPopulatedGroup`, which calls
+            // simulate exactly once to populate resources.
+            server.use(
+                http.get(
+                    `*/v1/asa-inboxes/requests/${ALGO25_TEST_ADDRESS}/`,
+                    () =>
+                        HttpResponse.json(
+                            {
+                                ...rawAssetRequestsResponse,
+                                inbox_address: null,
+                            },
+                            { status: 200 },
+                        ),
+                ),
+            )
+
+            const sendSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        txId: 'FALLBACKTXID00000000000000000000000000000000000000000',
+                    },
+                    { status: 200 },
+                ),
+            )
+            server.use(http.post('*/v2/transactions', sendSpy))
+
+            renderClaimFlow('AssetTransferRequests')
+
+            await waitFor(
+                () => {
+                    expect(screen.getByText('Test Asset')).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            fireEvent.click(screen.getByText('Test Asset'))
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('arc59_claim_confirm_slide'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            fireEvent.click(screen.getByTestId('arc59_claim_confirm_slide'))
+
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+
+            expect(sendSpy).toHaveBeenCalled()
+            // Fallback path: exactly one simulate call to populate resources.
+            expect(simulateCallCount).toBe(1)
         },
         SLOW_TEST_TIMEOUT_MS,
     )
