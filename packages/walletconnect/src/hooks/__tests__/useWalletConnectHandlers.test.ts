@@ -246,6 +246,10 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     ARC60_MAX_REQUEST_BYTES: 64 * 1024,
     arc60WireSchema,
     assertArc60RequestWithinLimits,
+    // Real semantic validation (SIWA parsing, scope, signer/date checks) is
+    // covered by arc60.spec.ts in the signing package — these tests only
+    // exercise WC-layer routing/session checks, so stub it as a no-op.
+    validateArc60AuthRequest: vi.fn(),
     useArc0001Resolver:
         () =>
         (request: any, options: any = {}) =>
