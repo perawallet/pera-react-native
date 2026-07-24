@@ -1124,7 +1124,7 @@
             "body": "To create your Pera Card, you need to sign three groups of transactions, please follow these steps:",
             "step_sign_label": "Sign an arbitrary data message to verify the connection of your Card Account",
             "step_create_label": "Sign the following transactions to create your new Pera Card Account",
-            "step_authorize_label": "Sign the following transactions to finalize and create your Pera Card",
+            "step_authorize_label": "Create and finalize your Pera Card",
             "proceed_button": "Proceed"
         },
         "auto_funding_signing": {

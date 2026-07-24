@@ -211,4 +211,29 @@ describe('useCardCreateSigningScreen', () => {
         expect(stepStatus(result.current.steps, 'sign')).toBe('done')
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, false)
     })
+
+    it('Auto: retrying after the create step fails does not fake-advance to authorize', async () => {
+        routeState.fundingType = FundingType.Auto
+        mockCreateAndApprove.mockRejectedValueOnce(new Error('create boom'))
+        const { result } = renderHook(() => useCardCreateSigningScreen())
+
+        await proceed(result)
+
+        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
+        expect(stepStatus(result.current.steps, 'create')).toBe('active')
+        expect(stepStatus(result.current.steps, 'authorize')).toBe('pending')
+        expect(mockShowCardError).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).not.toHaveBeenCalled()
+
+        mockCreateAndApprove.mockRejectedValueOnce(
+            new Error('create boom again'),
+        )
+        await proceed(result)
+
+        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
+        expect(stepStatus(result.current.steps, 'create')).toBe('active')
+        expect(stepStatus(result.current.steps, 'authorize')).toBe('pending')
+        expect(mockShowCardError).toHaveBeenCalledTimes(2)
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
 })

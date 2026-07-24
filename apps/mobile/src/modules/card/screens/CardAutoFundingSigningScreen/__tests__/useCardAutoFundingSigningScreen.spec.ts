@@ -111,6 +111,21 @@ describe('useCardAutoFundingSigningScreen', () => {
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Auto, false)
     })
 
+    it('surfaces an error and resets pending state when required data is missing, instead of silently doing nothing', async () => {
+        cardStoreState.escrowCardAddress = null
+        const { result } = renderHook(() => useCardAutoFundingSigningScreen())
+
+        act(() => {
+            result.current.handleApprove()
+        })
+
+        await waitFor(() => expect(result.current.error).not.toBeNull())
+        expect(result.current.isPending).toBe(false)
+        expect(mockShowCardError).toHaveBeenCalled()
+        expect(mockEnableAutoDraw).not.toHaveBeenCalled()
+        expect(mockFinish).not.toHaveBeenCalled()
+    })
+
     it('rejects: degrades to Manual funding without calling enableAutoDraw', () => {
         const { result } = renderHook(() => useCardAutoFundingSigningScreen())
 

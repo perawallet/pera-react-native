@@ -61,12 +61,17 @@ export const useCardAutoFundingSigningScreen =
         const [error, setError] = useState<Nullable<Error>>(null)
 
         const handleApprove = useCallback(() => {
-            if (!connectedAccount || !escrowCardAddress || isPending) return
+            if (isPending) return
 
             const run = async () => {
                 setIsPending(true)
                 setError(null)
                 try {
+                    if (!connectedAccount || !escrowCardAddress) {
+                        throw new Error(
+                            'Missing connected account or escrow card address',
+                        )
+                    }
                     await enableAutoDraw(connectedAccount, escrowCardAddress)
                     finish(FundingType.Auto, false)
                 } catch (err) {
@@ -74,6 +79,7 @@ export const useCardAutoFundingSigningScreen =
                         err instanceof Error ? err : new Error(String(err))
                     setError(normalizedError)
                     await showError(err)
+                } finally {
                     setIsPending(false)
                 }
             }

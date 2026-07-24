@@ -117,7 +117,10 @@ export const useCardCreateSigningScreen =
                     return
                 }
                 const proof = await signOwnership(account)
-                setCurrentStepIndex(index => index + 1)
+                // Only advance past 'sign' the first time — a retry of a
+                // failed create step re-signs but must not fake-advance an
+                // already-current later step.
+                setCurrentStepIndex(index => (index === 0 ? index + 1 : index))
                 await runCreateStep(account, proof)
             },
             [requirePinVerification, navigation, signOwnership, runCreateStep],
