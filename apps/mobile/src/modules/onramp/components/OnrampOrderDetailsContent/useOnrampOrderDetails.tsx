@@ -21,7 +21,11 @@ import {
     type OnrampStatus,
     type RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
-import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatDatetime,
+    isConnectivityError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
@@ -138,7 +142,14 @@ export const useOnrampOrderDetails = (
             dismiss()
             successToast('', t('onramp.order_review.cancel_success'))
         } catch (error) {
-            errorToast('', toOnrampUserMessage(error))
+            if (isConnectivityError(error)) {
+                errorToast(
+                    t('errors.network.no_connection.title'),
+                    t('errors.network.no_connection.body'),
+                )
+            } else {
+                errorToast('', toOnrampUserMessage(error))
+            }
         }
     }, [
         item.swapOrderId,

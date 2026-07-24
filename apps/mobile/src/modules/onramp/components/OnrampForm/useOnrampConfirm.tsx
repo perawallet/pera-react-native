@@ -27,7 +27,11 @@ import {
     type RampPair,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
-import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isConnectivityError,
+    ZERO_DECIMAL,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { trackEvent, OnrampEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -193,7 +197,14 @@ export const useOnrampConfirm = ({
                 onNavigateToHistory?.()
             }
         } catch (error) {
-            errorToast('', toOnrampUserMessage(error))
+            if (isConnectivityError(error)) {
+                errorToast(
+                    t('errors.network.no_connection.title'),
+                    t('errors.network.no_connection.body'),
+                )
+            } else {
+                errorToast('', toOnrampUserMessage(error))
+            }
         } finally {
             setIsConfirming(false)
         }
