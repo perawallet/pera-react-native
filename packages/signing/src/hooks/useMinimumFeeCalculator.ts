@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import {
-    useAlgorandClient,
+    useFetchSuggestedParameters,
     useMinimumFeeConfig,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -55,9 +55,12 @@ export type UseMinimumFeeCalculatorResult = {
  *
  * Network behavior: suggested params are fetched only when a quantum signer
  * is actually present (a cheap local account check), so non-quantum groups
- * add zero network traffic and return byte-identical. The fetch itself
- * never blocks the flow — on failure it falls back to 0, leaving only the
- * remote-config base in effect.
+ * add zero network traffic and return byte-identical. The fetch goes
+ * through the shared suggested-params query cache
+ * (`useFetchSuggestedParameters`), so it obeys the same ~10s staleness
+ * contract as every other consumer — congestion-driven `minFee` changes
+ * propagate — and it never blocks the flow: on failure it falls back to 0,
+ * leaving only the remote-config base in effect.
  *
  * Throws `InvalidSignableDataError` when a fee must be raised but the group
  * is invalid as received (stale/tampered group ID) — see the integrity
@@ -65,7 +68,7 @@ export type UseMinimumFeeCalculatorResult = {
  */
 export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
     const accounts = useAllAccounts()
-    const algokit = useAlgorandClient()
+    const fetchSuggestedParams = useFetchSuggestedParameters()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     const assignFeeToGroup = useCallback<AssignFeeToGroup>(
@@ -86,9 +89,7 @@ export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
 
             let suggestedMinFee = 0n
             try {
-                suggestedMinFee = BigInt(
-                    (await algokit.getSuggestedParams()).minFee,
-                )
+                suggestedMinFee = BigInt((await fetchSuggestedParams()).minFee)
             } catch {
                 suggestedMinFee = 0n
             }
@@ -103,7 +104,7 @@ export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
                 pqMultiplier,
             })
         },
-        [accounts, algokit, minTxnFee, pqMultiplier],
+        [accounts, fetchSuggestedParams, minTxnFee, pqMultiplier],
     )
 
     return { assignFeeToGroup }

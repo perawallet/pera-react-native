@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    compactSignedResults,
     useAlgorandClient,
     useNetwork,
     useTransactionEncoder,
@@ -115,11 +116,7 @@ const requestSignatures = (
                 // every entry is expected to be present — the null filter is
                 // defensive only. Quantum carriers are kept unchanged so the
                 // carrier-aware submitAndAutoRefresh can broadcast them.
-                resolve(
-                    signed.filter(
-                        (tx): tx is PeraSignedTxnResult => tx !== null,
-                    ),
-                )
+                resolve(compactSignedResults(signed))
             },
             reject: async () => {
                 reject(new Error('User rejected fee-delegated signing'))

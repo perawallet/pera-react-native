@@ -90,9 +90,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             encodeTransactionRaw: (tx: Transaction) =>
                 encodeUnsignedTransaction(tx),
         }),
-        useAlgorandClient: () => ({
-            getSuggestedParams: mockGetSuggestedParams,
-        }),
+        useFetchSuggestedParameters: () => mockGetSuggestedParams,
         useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     }
 })

@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useCallback } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { SuggestedParams } from 'algosdk'
 import { useAlgorandClient } from './useAlgorandClient'
 import { useNetwork } from './useNetwork'
 import { getSuggestedParametersQueryKey } from './querykeys'
@@ -33,4 +35,33 @@ export const useSuggestedParametersQuery = () => {
         // whole Send input screen on a spinner (PERA-4579).
         networkMode: 'always',
     })
+}
+
+export type FetchSuggestedParameters = () => Promise<SuggestedParams>
+
+/**
+ * Imperative fetch-through-cache companion to
+ * {@link useSuggestedParametersQuery} for on-demand consumers that must not
+ * fetch eagerly on mount (e.g. the minimum-fee calculator, which only needs
+ * params when a quantum signer is actually present). Shares the eager
+ * hook's query key and staleness contract: a cached copy fresher than the
+ * shared stale time is returned as-is, anything older is refetched — so
+ * congestion-driven `minFee` changes propagate within the same bound as
+ * every other consumer, and concurrent callers dedupe onto one request.
+ */
+export const useFetchSuggestedParameters = (): FetchSuggestedParameters => {
+    const algokit = useAlgorandClient()
+    const { network } = useNetwork()
+    const queryClient = useQueryClient()
+
+    return useCallback(
+        () =>
+            queryClient.fetchQuery({
+                queryKey: getSuggestedParametersQueryKey(network),
+                queryFn: async () => await algokit.getSuggestedParams(),
+                staleTime: SUGGESTED_PARAMS_STALE_TIME_MS,
+                networkMode: 'always',
+            }),
+        [algokit, network, queryClient],
+    )
 }

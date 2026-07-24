@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    compactSignedResults,
     useAlgorandClient,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
@@ -98,9 +99,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             // filters slots (unlike the ARC-0001 enqueue
                             // path), so every entry is expected to be
                             // present — the null guard is defensive only.
-                            const signedTxns = signed.filter(
-                                (tx): tx is PeraSignedTxnResult => tx !== null,
-                            )
+                            const signedTxns = compactSignedResults(signed)
                             const txIds = await submitAndAutoRefresh(
                                 algokit,
                                 encodeSignedTransactions,

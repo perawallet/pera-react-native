@@ -14,6 +14,7 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 import { RekeyError } from '../errors'
 
+import { compactSignedResults } from '@perawallet/wallet-core-blockchain'
 import type {
     PeraSignedTxnResult,
     PeraTransaction,
@@ -85,13 +86,7 @@ export const requestRekeySignatures = (
                 // undoing a rekey to a quantum auth signs via the quantum
                 // strategy, and submitAndAutoRefresh's carrier-aware encoder
                 // needs the `QuantumSignedTransaction` unchanged.
-                settle(() =>
-                    resolve(
-                        signed.filter(
-                            (tx): tx is PeraSignedTxnResult => tx !== null,
-                        ),
-                    ),
-                )
+                settle(() => resolve(compactSignedResults(signed)))
             },
             reject: async () => {
                 settle(() => reject(new RekeyError('user_rejected')))

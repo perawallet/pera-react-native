@@ -128,6 +128,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
         isQuantumSignedTransaction: (tx: unknown) =>
             (tx as { pqSignedBytes?: unknown })?.pqSignedBytes instanceof
             Uint8Array,
+        compactSignedResults: (signed: unknown[]) =>
+            signed.filter(tx => tx !== null),
     }
 })
 
