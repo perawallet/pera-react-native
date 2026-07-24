@@ -28,6 +28,9 @@ type CardOptionsSectionProps = {
     /** iOS shows Apple Wallet, Android shows Google Pay — only one provisioning row. */
     walletPlatform: WalletPlatform
     isSettingPin: boolean
+    /** Disables the set-PIN and freeze rows (offline-unsafe); report rows stay
+     * active since they're pure navigation. */
+    isOffline?: boolean
     onAccountsDetails: () => void
     onAddToWallet: () => void
     onSetPin: () => void
@@ -43,6 +46,7 @@ export const CardOptionsSection = ({
     canToggleFreeze,
     walletPlatform,
     isSettingPin,
+    isOffline = false,
     onAccountsDetails,
     onAddToWallet,
     onSetPin,
@@ -107,6 +111,7 @@ export const CardOptionsSection = ({
                     label={t('peraCard.account.set_pin')}
                     onPress={onSetPin}
                     isLoading={isSettingPin}
+                    isDisabled={isOffline}
                     testID='pera_card_set_pin_row'
                 />
                 {canToggleFreeze ? (
@@ -115,6 +120,7 @@ export const CardOptionsSection = ({
                         label={freezeLabel}
                         onPress={onToggleFreeze}
                         isLoading={isFreezing}
+                        isDisabled={isOffline}
                         testID='pera_card_freeze_row'
                     />
                 ) : null}

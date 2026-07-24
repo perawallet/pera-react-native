@@ -19,6 +19,8 @@ type RevealCardDetailsButtonProps = {
     isLoading: boolean
     /** True once the secure details are showing — flips the label to "Hide". */
     isRevealed: boolean
+    /** Disables the button without a spinner (e.g. offline-unsafe actions). */
+    isDisabled?: boolean
     onPress: () => void
 }
 
@@ -27,6 +29,7 @@ type RevealCardDetailsButtonProps = {
 export const RevealCardDetailsButton = ({
     isLoading,
     isRevealed,
+    isDisabled = false,
     onPress,
 }: RevealCardDetailsButtonProps) => {
     const { t } = useLanguage()
@@ -34,9 +37,9 @@ export const RevealCardDetailsButton = ({
 
     return (
         <PWTouchableOpacity
-            style={styles.revealPill}
+            style={[styles.revealPill, isDisabled && styles.disabled]}
             onPress={onPress}
-            disabled={isLoading}
+            disabled={isLoading || isDisabled}
             testID='pera_card_reveal_button'
         >
             {isLoading ? (

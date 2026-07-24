@@ -26,6 +26,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
+import { useNetworkStatus } from '@modules/network'
 import { useRequirePinVerification } from '@modules/security'
 import { useCardErrorToast, useCardFundingSourcePicker } from '../../hooks'
 // Imported directly (not via the hooks barrel) to avoid an import cycle: the
@@ -88,6 +89,10 @@ type UsePeraCardDetailsResult = {
     fundingTypeLabel: string
     /** Opens the Select Funding Type sheet. */
     onChangeFundingType: () => void
+    /** True when there is no connectivity (device offline, or the status query
+     * is paused pending reconnect) — drives disabling the offline-unsafe card
+     * actions (set PIN, freeze/unfreeze, reveal). */
+    isOffline: boolean
     isFrozen: boolean
     freezeLabel: string
     /** True while an unfreeze request is in flight (freezing's pending state
@@ -124,10 +129,16 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         ? t('peraCard.setup_status.funding_type_auto_title')
         : t('peraCard.setup_status.funding_type_manual_title')
 
-    const { data: card } = useCardStatusQuery()
+    const { hasInternet } = useNetworkStatus()
+    const statusQuery = useCardStatusQuery()
+    const card = statusQuery.data
     const isFrozen = card?.status === CardStatus.Frozen
     // Freeze/unfreeze only applies to a live card; a BLOCKED card can't toggle.
     const canToggleFreeze = card?.status !== CardStatus.Blocked
+    // Offline whenever the device has no connectivity, or the status query is
+    // sitting paused waiting for it to return (fail-fast mutations reject
+    // instead, but the query can still be mid-pause on mount).
+    const isOffline = !hasInternet || statusQuery.fetchStatus === 'paused'
 
     // iOS provisions to Apple Wallet, Android to Google Pay — show one row.
     const walletPlatform = Platform.OS === 'ios' ? 'apple' : 'google'
@@ -404,6 +415,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         onChangeFunding,
         fundingTypeLabel,
         onChangeFundingType,
+        isOffline,
         isFrozen,
         freezeLabel: isFrozen
             ? t('peraCard.account.unfreeze_card')
