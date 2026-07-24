@@ -15,6 +15,7 @@ import {
     getCardApiError,
     type CardApiError,
 } from '@perawallet/wallet-core-card'
+import { isConnectivityError } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
@@ -44,6 +45,13 @@ export const useCardErrorToast = ({
 
     return useCallback(
         async (error: unknown, resolvedApiError?: CardApiError) => {
+            if (isConnectivityError(error)) {
+                errorToast(
+                    t('errors.network.no_connection.title'),
+                    t('errors.network.no_connection.body'),
+                )
+                return
+            }
             const apiError = resolvedApiError ?? (await getCardApiError(error))
             errorToast(t(titleKey), apiError.message ?? t(bodyKey))
         },

@@ -13,6 +13,10 @@
 import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+    NoConnectionError,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
@@ -77,6 +81,32 @@ describe('useCardErrorToast', () => {
         expect(mocks.errorToast).toHaveBeenCalledWith(
             'peraCard.verification.error_title',
             'peraCard.verification.error_body',
+        )
+    })
+
+    it('shows localized offline copy for connectivity errors', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new NoConnectionError())
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.no_connection.title',
+            'errors.network.no_connection.body',
+        )
+    })
+
+    it('shows localized offline copy for a proxy-route offline failure (PeraNetworkError)', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new PeraNetworkError('offline'))
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.no_connection.title',
+            'errors.network.no_connection.body',
         )
     })
 

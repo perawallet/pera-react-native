@@ -70,6 +70,23 @@ describe('sensitive mutation hooks', () => {
         expect(queryClient.getQueryCache().getAll()).toHaveLength(0)
     })
 
+    it('useCardPinViewMutation exposes isPaused from the underlying mutation', async () => {
+        api.fetchCardPinToken.mockResolvedValue({
+            token: 'tok',
+            imageUrl: 'https://host/pin-image?token=tok',
+        })
+
+        const { result } = renderHook(() => useCardPinViewMutation(), {
+            wrapper,
+        })
+
+        expect(result.current.isPaused).toBe(false)
+
+        result.current.mutate()
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(result.current.isPaused).toBe(false)
+    })
+
     it('useSetCardPinMutation returns the hosted page session', async () => {
         api.createSetPinSession.mockResolvedValue({
             token: 'tok',
