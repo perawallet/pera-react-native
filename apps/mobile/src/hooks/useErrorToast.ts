@@ -17,6 +17,7 @@ import {
     AppError,
     getNetworkErrorMessageKeys,
     isPeraNetworkError,
+    logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -114,12 +115,18 @@ const resolveMessage = (
             return getMessage(algodError)
         }
 
+        logger.error('Unrecognized error shown as generic banner', {
+            message: error.message,
+        })
         return {
             title: fallbackTitle ?? t('errors.general.title'),
             body: t('errors.general.body'),
         }
     }
 
+    logger.error('Unrecognized error shown as generic banner', {
+        message: String(error),
+    })
     return {
         title: fallbackTitle ?? t('errors.general.title'),
         body: t('errors.general.body'),

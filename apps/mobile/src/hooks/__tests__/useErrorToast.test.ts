@@ -12,7 +12,11 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    PeraNetworkError,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import { useErrorToast } from '../useErrorToast'
@@ -155,6 +159,25 @@ describe('useErrorToast', () => {
         )
     })
 
+    it('logs the raw message when falling back to the generic banner', () => {
+        const raw = new Error(
+            'Network request error. Received status 403 (Forbidden): invalid token',
+        )
+
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(raw)
+        })
+
+        expect(logger.error).toHaveBeenCalledWith(
+            'Unrecognized error shown as generic banner',
+            expect.objectContaining({
+                message: expect.stringContaining('403'),
+            }),
+        )
+    })
+
     it('appends raw error detail to the body when debug is enabled', () => {
         ;(config as { debugEnabled: boolean }).debugEnabled = true
         const appError = new TestAppError('user-facing copy')
@@ -186,6 +209,19 @@ describe('useErrorToast', () => {
         })
 
         expect(mockShowToast).toHaveBeenCalledWith(expect.any(Object), options)
+    })
+
+    it('logs the raw value when falling back to the generic banner for a non-Error input', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(null)
+        })
+
+        expect(logger.error).toHaveBeenCalledWith(
+            'Unrecognized error shown as generic banner',
+            { message: 'null' },
+        )
     })
 
     it('uses generic copy for non-Error inputs', () => {

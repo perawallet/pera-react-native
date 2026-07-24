@@ -466,10 +466,14 @@ describe('useTransactionSendFlow', () => {
                     sender: { address: 'A' } as any,
                     asset: { assetId: 99n, decimals: 0 } as any,
                     shouldClaimAlgo: false,
+                    inboxAddress: 'INBOX',
                 },
             })
         })
         expect(mockBuildClaimAsset).toHaveBeenCalledTimes(1)
+        expect(mockBuildClaimAsset).toHaveBeenCalledWith(
+            expect.objectContaining({ inboxAddress: 'INBOX' }),
+        )
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
@@ -550,13 +554,24 @@ describe('useTransactionSendFlow', () => {
                 params: {
                     sendMode: 'rejectArc59',
                     sender: { address: 'A' } as any,
-                    asset: { assetId: 99n, decimals: 0 } as any,
+                    asset: {
+                        assetId: 99n,
+                        decimals: 0,
+                        creator: { address: 'CREATOR' },
+                    } as any,
                     shouldClaimAlgo: false,
                     amount: new Decimal(250),
+                    inboxAddress: 'INBOX',
                 },
             })
         })
         expect(mockBuildRejectAsset).toHaveBeenCalledTimes(1)
+        expect(mockBuildRejectAsset).toHaveBeenCalledWith(
+            expect.objectContaining({
+                inboxAddress: 'INBOX',
+                assetCreator: 'CREATOR',
+            }),
+        )
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],

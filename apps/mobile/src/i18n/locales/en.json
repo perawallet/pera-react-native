@@ -613,6 +613,18 @@
                 "title": "Smart contract rejected the transaction",
                 "body": "The contract returned: {{msg}}"
             },
+            "logic_eval_error": {
+                "title": "Transaction rejected",
+                "body": "The transaction was rejected by the smart contract ({{detail}}). Please try again and contact support if the issue persists."
+            },
+            "unavailable_resource": {
+                "title": "Transaction rejected",
+                "body": "The transaction referenced a resource the network could not access ({{resourceType}} {{resource}}). Please try again and contact support if the issue persists."
+            },
+            "group_fee_too_small": {
+                "title": "Network fee too low",
+                "body": "This transaction group paid {{paid}} µALGO in fees but the network requires {{required}} µALGO. Please try again."
+            },
             "unknown_node_error": {
                 "title": "Transaction failed",
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."

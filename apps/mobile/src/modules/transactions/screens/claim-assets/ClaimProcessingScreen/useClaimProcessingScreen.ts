@@ -77,6 +77,9 @@ export const useClaimProcessingScreen = () => {
             // Claimed amount in base units — lets the send flow credit the
             // balance optimistically right after submission.
             amount: asset.totalAmount,
+            // Drives the explicit-resource-reference build path in the claim/
+            // reject builders; falls back to simulate when absent.
+            inboxAddress: asset.inboxAddress,
         }
 
         execute({

@@ -131,9 +131,70 @@ const matchExpiredTxn: Matcher = message => {
     }
 }
 
+// "unavailable Account ADDR" / "unavailable Asset N" / "unavailable App N"
+const UNAVAILABLE_RESOURCE_RE =
+    /unavailable (Account|Asset|App) ([A-Z2-7]{58}|\d+)/
+
+const matchUnavailableResource: Matcher = message => {
+    const m = UNAVAILABLE_RESOURCE_RE.exec(message)
+    if (!m) return null
+    return {
+        code: AlgodErrorCode.UNAVAILABLE_RESOURCE,
+        params: {
+            resourceType: m[1] as 'Account' | 'Asset' | 'App',
+            resource: m[2],
+        },
+    }
+}
+
+// "invalid Box reference 0x…" — the box-flavored unavailable-resource error
+const INVALID_BOX_RE = /invalid Box reference (\S+?)\.?(?:\s|$)/
+
+const matchInvalidBox: Matcher = message => {
+    const m = INVALID_BOX_RE.exec(message)
+    if (!m) return null
+    return {
+        code: AlgodErrorCode.UNAVAILABLE_RESOURCE,
+        params: { resourceType: 'Box', resource: m[1] },
+    }
+}
+
+// "logic eval error: REASON[. Details: app=N, pc=…]"
+const LOGIC_EVAL_RE = /logic eval error:\s*(.+?)(?:\.\s*Details:|$)/s
+const LOGIC_EVAL_APP_RE = /Details:.*?\bapp=(\d+)/s
+
+const matchLogicEval: Matcher = message => {
+    const m = LOGIC_EVAL_RE.exec(message)
+    if (!m) return null
+    const app = LOGIC_EVAL_APP_RE.exec(message)
+    return {
+        code: AlgodErrorCode.LOGIC_EVAL_ERROR,
+        params: {
+            appId: app ? BigInt(app[1]) : undefined,
+            detail: m[1].trim(),
+        },
+    }
+}
+
+// "txgroup had N in fees, which is less than the minimum … M[)]"
+const GROUP_FEE_RE =
+    /had (\d+) in fees, which is less than the minimum.*?(\d+)\)?\s*$/s
+
+const matchGroupFeeTooSmall: Matcher = message => {
+    const m = GROUP_FEE_RE.exec(message)
+    if (!m) return null
+    return {
+        code: AlgodErrorCode.GROUP_FEE_TOO_SMALL,
+        params: { paid: BigInt(m[1]), required: BigInt(m[2]) },
+    }
+}
+
 // Order matters only in the sense that each matcher is independent and
 // returns on first hit — overspend must come before below_min_balance since
-// overspend messages contain the address pattern too.
+// overspend messages contain the address pattern too. unavailable/box must
+// come before logic-eval since "unavailable ..." and "invalid Box ..."
+// messages are themselves prefixed with "logic eval error:"; logic-eval is
+// last because it is the broadest match.
 const MATCHERS: readonly Matcher[] = [
     matchOverspend,
     matchBelowMinBalance,
@@ -141,6 +202,10 @@ const MATCHERS: readonly Matcher[] = [
     matchDuplicateTxn,
     matchExpiredTxn,
     matchNotAuthorized,
+    matchUnavailableResource,
+    matchInvalidBox,
+    matchGroupFeeTooSmall,
+    matchLogicEval,
 ]
 
 /**
