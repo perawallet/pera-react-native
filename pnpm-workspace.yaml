@@ -119,7 +119,14 @@ overrides:
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
-  fast-uri@<3.1.2: ">=3.1.2"
+  # GHSA-4c8g-83qw-93j6 + GHSA-v2hh-gcrm-f6hx (host confusion via failed IDN
+  # canonicalization / literal backslash authority delimiter). Both flagged
+  # >=4.0.0 only, but upstream shipped 3.x backports under the same advisory
+  # ids (3.1.3 and 3.1.4) — 3.1.4 carries both fixes. Exact pin INSIDE ajv's
+  # declared ^3.0.1 range: the previous unbounded ">=3.1.2" target let the
+  # resolver escape to the 4.x line (4.0.0), which is exactly where both
+  # advisories landed.
+  fast-uri@<3.1.4: 3.1.4
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: ">=10.5.0"
   happy-dom@<20.0.0: ">=20.0.0"
@@ -154,6 +161,10 @@ overrides:
   # the verified lowest patched 1.9.0, NOT ">=", which would pull the unvetted
   # 1.10.0.
   shell-quote@<1.9.0: 1.9.0
+  # GHSA-2p49-hgcm-8545 (removeScripts plugin leaves executable scripts
+  # intact). Dev-only (react-native-svg-transformer > @svgr/plugin-svgo).
+  # Exact pin inside @svgr/plugin-svgo's declared ^3.0.2 range.
+  svgo@>=3.0.0 <3.3.4: 3.3.4
   uuid@<14: 14.0.0
   # GHSA-96hv-2xvq-fx4p (memory-exhaustion DoS); 7.5.10 is now vulnerable.
   # Pinned exact (NOT ">="), since 7.5.11 is the last 7.x and ">=" would jump to 8.x.
@@ -183,6 +194,12 @@ minimumReleaseAge: 10080
 #       falcon-1024 is early-stage (0.x) so only one version exists to date.
 #       @joe-p/react-native-falcon (the on-device native Falcon-1024 nitro
 #       module, PQ-020) is likewise exact-pinned to its single 0.x release.
+#   fast-uri
+#     — TEMPORARY: 3.1.4 (published 2026-07-19) is the security-patch pin for
+#       GHSA-4c8g-83qw-93j6 / GHSA-v2hh-gcrm-f6hx and is exact-pinned via the
+#       override above; maintainer continuity verified (same 11 maintainers as
+#       3.1.2/4.x, no install scripts). REMOVE this entry after 2026-07-26,
+#       when 3.1.4 clears the 7-day window on its own.
 minimumReleaseAgeExclude:
   - "@algorandfoundation/keystore"
   - "@algorandfoundation/react-native-keystore"
@@ -190,6 +207,7 @@ minimumReleaseAgeExclude:
   - "@joe-p/algosdk"
   - "@joe-p/react-native-falcon"
   - falcon-1024
+  - fast-uri
   - expo
   - "expo-*"
   - "@expo/*"
