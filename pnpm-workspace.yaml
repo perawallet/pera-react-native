@@ -154,9 +154,6 @@ overrides:
   yaml@1: 1.10.3
   yaml@2: 2.8.3
 
-patchedDependencies:
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.22': patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.22.patch
-
 supportedArchitectures:
   cpu: [x64, arm64]
   os: [win32, darwin, current]
