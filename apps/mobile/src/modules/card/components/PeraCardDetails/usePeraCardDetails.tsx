@@ -84,6 +84,10 @@ type UsePeraCardDetailsResult = {
     /** Connected funding-source address, or `null` if none is stored. */
     fundingAddress: string | null
     onChangeFunding: () => void
+    /** True once a card has actually been created (the status query returns
+     * one). Funding TYPE is per-card, so its selector only makes sense once
+     * a card exists — the funding source picker itself has no such gate. */
+    hasCard: boolean
     /** Localised Auto/Manual funding label for the Funding Type row. */
     fundingTypeLabel: string
     /** Opens the Select Funding Type sheet. */
@@ -402,6 +406,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         onSecureImageError,
         fundingAddress,
         onChangeFunding,
+        hasCard: card != null,
         fundingTypeLabel,
         onChangeFundingType,
         isFrozen,

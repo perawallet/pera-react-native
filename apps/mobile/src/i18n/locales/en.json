@@ -1101,8 +1101,6 @@
             "connect_funds_title": "Connect Funds",
             "connect_funds_body": "Connect one of your Pera accounts as a funding source to start using your Pera Card.",
             "connect_funds_button": "Connect a Pera Account",
-            "connect_error_title": "Something went wrong",
-            "connect_error_body": "We couldn't connect your account. Please try again.",
             "funding_type_title": "Select Funding Type",
             "funding_type_info_title": "Funding types",
             "funding_type_auto_title": "Auto Funding",
@@ -1120,6 +1118,19 @@
             "create_card_account_error_body": "Card creation needs a signature this account type can't provide. Connect a standard Pera account as your funding source.",
             "auto_funding_degraded_title": "Card created",
             "auto_funding_degraded_body": "Auto Funding couldn't be enabled right now, so your card starts on Manual Funding. You can switch later in card settings."
+        },
+        "signing": {
+            "title": "Let's Get Started",
+            "body": "To create your Pera Card, you need to sign three groups of transactions, please follow these steps:",
+            "step_sign_label": "Sign an arbitrary data message to verify the connection of your Card Account",
+            "step_create_label": "Sign the following transactions to create your new Pera Card Account",
+            "step_authorize_label": "Sign the following transactions to finalize and create your Pera Card",
+            "proceed_button": "Proceed"
+        },
+        "auto_funding_signing": {
+            "title": "Auto-signing Approval Request",
+            "body": "This lets your card automatically draw funds when needed, so you won't have to approve every top-up yourself. You're signing a logic sig — a pre-authorized signature — that allows this automatic drawing from your connected account.",
+            "cancel_button": "Cancel"
         },
         "connect_account": {
             "title": "Choose Card account",

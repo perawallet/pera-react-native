@@ -43,6 +43,8 @@ export {
 export {
     compileAutoDrawProgram,
     postDelegatorLsig,
+    resolveEscrowChainConfig,
+    type EscrowChainConfig,
     type PostDelegatorLsigParams,
 } from './api/escrow'
 

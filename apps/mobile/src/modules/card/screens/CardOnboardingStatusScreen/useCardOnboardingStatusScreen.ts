@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     useNavigation,
     useRoute,
@@ -18,12 +18,10 @@ import {
 } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    type CreateEscrowCardResult,
     FundingType,
     isKycSubmitted as isKycStateSubmitted,
     OnboardingStep,
     useCardStore,
-    useConnectFundingSourceMutation,
     useOnboardingKycPoll,
     VerificationState,
 } from '@perawallet/wallet-core-card'
@@ -38,14 +36,11 @@ import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import {
     canAutoFund,
-    useAuthorizeCardDelegation,
-    useCardErrorToast,
     useCardFundingSourcePicker,
     useCardOnboardingLogout,
     useEscrowCardCreation,
     isSigningCapableFundingSource,
 } from '@modules/card/hooks'
-import { useRequirePinVerification } from '@modules/security'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCardAutoFundingEnabled } from '@hooks/useIsCardAutoFundingEnabled'
 import { useLanguage } from '@hooks/useLanguage'
@@ -71,12 +66,18 @@ export type DocumentsState =
  * pending row (no actionable CTA) so a cold entry can't flash "verify" at an
  * already-decided user. Only a submitted-but-unconfirmed review (PENDING) that
  * the poll gave up on escalates to the retry 'error' row; UNVERIFIED and
- * unmodelled/unfetched states surface the actionable 'unverified' row.
+ * unmodelled/unfetched states surface the actionable 'unverified' row —
+ * UNLESS registration has already completed. The KYC verification step is
+ * only reachable before Personal Details/Address, so `Completed` is itself
+ * proof documents were already submitted and decided; this makes the screen
+ * re-entrant when the poll has no data (e.g. `onboardingId` was lost on a
+ * cold resume) instead of wrongly asking an already-approved user to redo it.
  */
 const resolveDocumentsState = (
     isLoading: boolean,
     verificationState: Nullable<VerificationState>,
     hasPollTimedOut: boolean,
+    isRegistrationComplete: boolean,
 ): DocumentsState => {
     if (isLoading) return 'pending'
     switch (verificationState) {
@@ -90,7 +91,7 @@ const resolveDocumentsState = (
             return hasPollTimedOut ? 'error' : 'pending'
         }
         default: {
-            return 'unverified'
+            return isRegistrationComplete ? 'verified' : 'unverified'
         }
     }
 }
@@ -111,8 +112,6 @@ export type UseCardOnboardingStatusScreenResult = {
     connectedAccount: Optional<WalletAccount>
     /** Persisted funding-source address; the display fallback when no account. */
     connectedAddress: Nullable<string>
-    /** True while the connect-funding-source request is in flight. */
-    isConnecting: boolean
     /** The funding type chosen on the final step (defaults to Auto). */
     selectedFundingType: FundingType
     /** Selects a funding type — local state until "Create Pera Card" commits it. */
@@ -123,9 +122,7 @@ export type UseCardOnboardingStatusScreenResult = {
     isAutoFundingEnabled: boolean
     /** True when the connected account is a Ledger — Auto is unsupported there. */
     isLedgerAccount: boolean
-    /** True while the auto-funding delegation is being signed and submitted. */
-    isCreatingCard: boolean
-    /** Persists the funding type and finishes onboarding (card creation deferred). */
+    /** Navigates to the signing screen, which runs the actual create sequence. */
     handleCreatePeraCard: () => void
     /** Continues to the personal-details step (allowed while Baanx reviews). */
     handleEnterDetails: () => void
@@ -143,7 +140,7 @@ export const useCardOnboardingStatusScreen =
     (): UseCardOnboardingStatusScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const { successToast, errorToast, infoToast } = useToast()
+        const { errorToast } = useToast()
         const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
 
@@ -158,10 +155,18 @@ export const useCardOnboardingStatusScreen =
             restartPolling,
         } = useOnboardingKycPoll()
 
+        // The address step sets Completed, so it doubles as the "details done"
+        // signal that unlocks the Connect Funds step — and as proof documents
+        // were already submitted (see resolveDocumentsState).
+        const isRegistrationComplete = useCardStore(
+            state => state.onboardingStep === OnboardingStep.Completed,
+        )
+
         const documentsState = resolveDocumentsState(
             isLoading,
             verificationState,
             hasPollTimedOut,
+            isRegistrationComplete,
         )
 
         // Submitted (PENDING/VERIFIED) gates the later steps — the shared
@@ -182,11 +187,6 @@ export const useCardOnboardingStatusScreen =
             restartPolling()
         }, [restartPolling])
 
-        // The address step sets Completed, so it doubles as the "details done"
-        // signal that unlocks the Connect Funds step.
-        const isRegistrationComplete = useCardStore(
-            state => state.onboardingStep === OnboardingStep.Completed,
-        )
         const connectedAddress = useCardStore(
             state => state.connectedFundingSourceAddress,
         )
@@ -199,12 +199,7 @@ export const useCardOnboardingStatusScreen =
             [accounts, connectedAddress],
         )
 
-        const {
-            mutateAsync: connectFundingSourceAsync,
-            isPending: isConnecting,
-        } = useConnectFundingSourceMutation()
-
-        // Funding type is chosen locally and committed by "Create Pera Card".
+        // Funding type is chosen locally and committed by the creation of an lsig.
         // Seed from the persisted choice (so a prior selection survives a
         // re-entry/cold resume); default to Auto to match the design.
         const [selectedFundingType, setSelectedFundingType] =
@@ -245,25 +240,15 @@ export const useCardOnboardingStatusScreen =
             }
             // Consume the one-shot flag so it can't re-fire on later focuses.
             setParams({ autoConnectSelected: undefined })
-            const address = selectedAccountAddress
-            void (async () => {
-                try {
-                    await connectFundingSourceAsync({ address })
-                } catch {
-                    errorToast(
-                        t('peraCard.setup_status.connect_error_title'),
-                        t('peraCard.setup_status.connect_error_body'),
-                    )
-                }
-            })()
+            // Purely local, the card gets created and linked to this account by the Pera backend
+            useCardStore
+                .getState()
+                .setConnectedFundingSourceAddress(selectedAccountAddress)
         }, [
             autoConnectSelected,
             selectedAccountAddress,
             connectedAddress,
             setParams,
-            connectFundingSourceAsync,
-            errorToast,
-            t,
         ])
 
         // Once KYC is approved this screen becomes the card hub, so a back
@@ -301,27 +286,16 @@ export const useCardOnboardingStatusScreen =
             void (async () => {
                 const account = await pickFundingSource()
                 if (!account) return
-                try {
-                    await connectFundingSourceAsync({
-                        address: account.address,
-                    })
-                } catch {
-                    errorToast(
-                        t('peraCard.setup_status.connect_error_title'),
-                        t('peraCard.setup_status.connect_error_body'),
-                    )
-                }
+                // Purely local, the card gets created and linked to this account by the Pera backend
+                useCardStore
+                    .getState()
+                    .setConnectedFundingSourceAddress(account.address)
             })()
-        }, [pickFundingSource, connectFundingSourceAsync, errorToast, t])
+        }, [pickFundingSource])
 
-        const {
-            createCard,
-            canCreateCard,
-            isPending: isCreatingCard,
-        } = useEscrowCardCreation()
-        const { authorizeDelegation } = useAuthorizeCardDelegation()
-        const { requirePinVerification } = useRequirePinVerification()
-        const showError = useCardErrorToast()
+        // Only `canCreateCard` is needed here — the actual creation sequence
+        // (sign → create → optional LSig) now runs on CardCreateSigningScreen.
+        const { canCreateCard } = useEscrowCardCreation()
         const isAutoFundingEnabled = useIsCardAutoFundingEnabled()
         // Auto availability keys off the auto-funding capability (LSig signing),
         // NOT card creation: Ledger will create cards once ARC-60 lands but can
@@ -332,7 +306,7 @@ export const useCardOnboardingStatusScreen =
             !isAutoFundingEnabled ||
             (connectedAccount != null && !canAutoFund(connectedAccount))
 
-        // A connected account that can't sign (e.g. Ledger) can't use Auto, so
+        // A connected account that can't sign an LSig (e.g. Ledger) can't use Auto, so
         // fall back to Manual. Without this the Auto option stays selected but
         // disabled, and "Create Pera Card" dead-ends trying to sign a
         // delegation the account can't produce.
@@ -345,101 +319,28 @@ export const useCardOnboardingStatusScreen =
             }
         }, [isAutoFundingUnavailable, selectedFundingType])
 
-        // One-shot guard so a fast double-tap can't fire creation twice before
-        // the screen unmounts; reset on failure so retry works.
-        const hasCreatedRef = useRef(false)
-        const createPeraCard = useCallback(async () => {
-            if (hasCreatedRef.current) return
-            hasCreatedRef.current = true
-
-            // Both paths sign (ARC-60 for creation; +LSig for Auto), so a
-            // signing-capable connected account is required.
+        // Both paths sign (ARC-60 for creation; +LSig for Auto), so a
+        // signing-capable connected account is required before handing off to
+        // the signing screen, which runs the actual create sequence.
+        const handleCreatePeraCard = useCallback(() => {
             if (!connectedAccount || !canCreateCard(connectedAccount)) {
-                hasCreatedRef.current = false
                 errorToast(
                     t('peraCard.setup_status.create_card_account_error_title'),
                     t('peraCard.setup_status.create_card_account_error_body'),
                 )
                 return
             }
-
-            // Set inside the try; the Auto path routes creation through the
-            // consent sheet's delegate callback, whose return value it swallows.
-            let outcome: Nullable<CreateEscrowCardResult> = null
-            try {
-                // Auto grants a spending delegation → consent + live PIN.
-                // Manual signs only the ownership proof → PIN gate alone.
-                if (selectedFundingType === FundingType.Auto) {
-                    const authorized = await authorizeDelegation(
-                        connectedAccount,
-                        async account => {
-                            outcome = await createCard(
-                                account,
-                                FundingType.Auto,
-                            )
-                        },
-                    )
-                    if (!authorized) {
-                        hasCreatedRef.current = false
-                        return
-                    }
-                } else {
-                    if (!(await requirePinVerification())) {
-                        hasCreatedRef.current = false
-                        return
-                    }
-                    outcome = await createCard(
-                        connectedAccount,
-                        FundingType.Manual,
-                    )
-                }
-            } catch (error) {
-                hasCreatedRef.current = false
-                await showError(error)
-                return
-            }
-
-            // Defensive: creation succeeded but produced no result.
-            if (!outcome) {
-                hasCreatedRef.current = false
-                return
-            }
-
-            // Persist the EFFECTIVE funding type — Auto is downgraded to Manual
-            // when the (optional) LSig leg failed after the card was created.
-            useCardStore.getState().setSelectedFundingType(outcome.fundingType)
-
-            if (outcome.autoFundingDegraded) {
-                infoToast(
-                    t('peraCard.setup_status.auto_funding_degraded_title'),
-                    t('peraCard.setup_status.auto_funding_degraded_body'),
-                )
-            } else {
-                successToast(
-                    t('peraCard.setup_status.create_card_success_title'),
-                    t('peraCard.setup_status.create_card_success_body'),
-                )
-            }
-            // TODO(card): route to the card dashboard once card-status reflects
-            // freshly-created escrow cards; for now Home is the terminus.
-            navigation.navigate('TabBar', { screen: 'Home' })
+            navigation.navigate('CardOnboardingSigning', {
+                fundingType: selectedFundingType,
+            })
         }, [
-            selectedFundingType,
             connectedAccount,
             canCreateCard,
-            createCard,
-            authorizeDelegation,
-            requirePinVerification,
-            showError,
-            successToast,
-            infoToast,
             errorToast,
             navigation,
+            selectedFundingType,
             t,
         ])
-        const handleCreatePeraCard = useCallback(() => {
-            void createPeraCard()
-        }, [createPeraCard])
 
         const handleOpenSupport = useCallback(() => {
             pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
@@ -452,13 +353,11 @@ export const useCardOnboardingStatusScreen =
             isFundsConnected,
             connectedAccount,
             connectedAddress,
-            isConnecting,
             selectedFundingType,
             handleSelectFundingType,
             isAutoFundingUnavailable,
             isAutoFundingEnabled,
             isLedgerAccount: isConnectedLedger,
-            isCreatingCard,
             handleCreatePeraCard,
             handleEnterDetails,
             handleVerifyIdentity,

@@ -11,6 +11,7 @@
  */
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { FundingType } from '@perawallet/wallet-core-card'
 
 // The flow's data (email, country, verification code, ids) lives in the card
 // store, so screens don't thread it through navigation params.
@@ -26,6 +27,12 @@ export type CardOnboardingStackParamList = {
     CardOnboardingStatus: { autoConnectSelected?: boolean }
     CardOnboardingPersonalDetails: undefined
     CardOnboardingAddress: undefined
+    // The funding type chosen on the status screen; the signing screen reads
+    // the connected account itself from the card store.
+    CardOnboardingSigning: { fundingType: FundingType }
+    // Step 3 (Auto funding only) — reads the connected account and the
+    // just-created card address from the card store.
+    CardOnboardingAutoFundingSigning: undefined
 }
 
 export type CardOnboardingScreenProps<
