@@ -205,7 +205,11 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     // PERA-4581 paused-state contract (docs/OFFLINE_PAUSED_STATE.md): a paused
     // query reports isPending forever, so offline must be resolved before the
     // spinner, and cached/stale data (isReady) always wins over either.
-    const pairsState = useMemo((): 'ready' | 'loading' | 'offline' | 'error' => {
+    const pairsState = useMemo(():
+        | 'ready'
+        | 'loading'
+        | 'offline'
+        | 'error' => {
         if (isReady) return 'ready'
         const isPaused = pairsQuery.fetchStatus === 'paused'
         if (isPaused || (pairsQuery.isError && !hasInternet)) return 'offline'
