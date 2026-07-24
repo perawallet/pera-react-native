@@ -160,7 +160,10 @@ describe('BalanceLineChart', () => {
         expect(screen.getByTestId('balance-chart-retry')).toBeTruthy()
     })
 
-    it('short-circuits retry while the device is offline', () => {
+    it('does not dispatch a doomed request when retry is pressed while offline', () => {
+        // Offline, the press opens an explanatory sheet (asserted in the hook
+        // test) rather than firing onRetry — the manager host is not mounted
+        // here, so we only assert the request is short-circuited.
         useNetworkStatusStore.getState().setHasInternet(false)
         const onRetry = vi.fn()
         renderChart({ series: undefined, isPaused: true, onRetry })

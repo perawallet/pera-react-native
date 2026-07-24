@@ -11,7 +11,10 @@
  */
 
 import { useMemo } from 'react'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
+import { useLanguage } from '@hooks/useLanguage'
 
 /** Which of the chart container's mutually exclusive surfaces to render. */
 export type BalanceLineChartRenderState =
@@ -50,6 +53,8 @@ export const useBalanceLineChart = ({
     onRetry,
 }: UseBalanceLineChartParams): UseBalanceLineChartResult => {
     const { hasInternet } = useNetworkStatus()
+    const { request: requestBottomSheet } = useBottomSheet()
+    const { t } = useLanguage()
 
     const renderState = useMemo<BalanceLineChartRenderState>(() => {
         if (hasData) {
@@ -72,14 +77,28 @@ export const useBalanceLineChart = ({
             return undefined
         }
         return () => {
-            // Offline: skip the doomed request (30 s timeout) — the offline
-            // copy on screen already promises a refresh on reconnect.
+            // Offline: firing the request would just hang for the 30 s timeout,
+            // so instead of that (or a button that silently does nothing) explain
+            // the situation and let the auto-refresh-on-reconnect wiring take over.
             if (!useNetworkStatusStore.getState().hasInternet) {
+                void requestBottomSheet({
+                    contents: (
+                        <ConfirmActionContent
+                            icon='globe'
+                            iconVariant='warning'
+                            title={t('common.offline_mode')}
+                            message={t('common.offline_refresh_body')}
+                            confirmLabel={t('common.ok.label')}
+                            testID='balance-chart-offline-sheet'
+                        />
+                    ),
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
                 return
             }
             onRetry()
         }
-    }, [onRetry])
+    }, [onRetry, requestBottomSheet, t])
 
     return { renderState, handleRetry }
 }

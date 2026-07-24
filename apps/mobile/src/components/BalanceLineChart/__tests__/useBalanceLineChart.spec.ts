@@ -15,6 +15,17 @@ import { renderHook } from '@testing-library/react'
 import { useNetworkStatusStore } from '@modules/network'
 import { useBalanceLineChart } from '../useBalanceLineChart'
 
+const mocks = vi.hoisted(() => ({
+    request: vi.fn(),
+}))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mocks.request }),
+}))
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+
 const defaultParams = {
     hasData: false,
     isPaused: false,
@@ -24,6 +35,7 @@ const defaultParams = {
 
 describe('useBalanceLineChart', () => {
     beforeEach(() => {
+        vi.clearAllMocks()
         useNetworkStatusStore.getState().setHasInternet(true)
     })
 
@@ -86,7 +98,7 @@ describe('useBalanceLineChart', () => {
         expect(result.current.renderState).toBe('empty')
     })
 
-    it('dispatches retry while online', () => {
+    it('dispatches retry while online without opening the offline sheet', () => {
         const onRetry = vi.fn()
         const { result } = renderHook(() =>
             useBalanceLineChart({ ...defaultParams, isError: true, onRetry }),
@@ -95,9 +107,10 @@ describe('useBalanceLineChart', () => {
         result.current.handleRetry?.()
 
         expect(onRetry).toHaveBeenCalledTimes(1)
+        expect(mocks.request).not.toHaveBeenCalled()
     })
 
-    it('short-circuits retry while offline instead of dispatching a doomed request', () => {
+    it('explains the situation via a bottom sheet instead of a doomed request while offline', () => {
         useNetworkStatusStore.getState().setHasInternet(false)
         const onRetry = vi.fn()
         const { result } = renderHook(() =>
@@ -107,6 +120,7 @@ describe('useBalanceLineChart', () => {
         result.current.handleRetry?.()
 
         expect(onRetry).not.toHaveBeenCalled()
+        expect(mocks.request).toHaveBeenCalledTimes(1)
     })
 
     it('returns no retry handler when onRetry is not provided', () => {
