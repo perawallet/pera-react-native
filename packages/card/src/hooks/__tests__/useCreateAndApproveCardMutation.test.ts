@@ -36,6 +36,22 @@ vi.mock('../../api/escrow', async () => ({
     approveEscrowCard,
 }))
 
+const { configFlags } = vi.hoisted(() => ({
+    configFlags: { isDev: false, isStaging: false },
+}))
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        get isDev() {
+            return configFlags.isDev
+        },
+        get isStaging() {
+            return configFlags.isStaging
+        },
+    }
+})
+
 import { useCreateAndApproveCardMutation } from '../useCreateAndApproveCardMutation'
 import { useCardStore } from '../../store'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
@@ -69,6 +85,8 @@ describe('useCreateAndApproveCardMutation', () => {
         useCardStore.getState().resetState()
         useAppIntegrityStore.getState().resetState()
         setValidIntegrityToken()
+        configFlags.isDev = false
+        configFlags.isStaging = false
         createCard.mockResolvedValue({ cardAddress: 'ESCROW1', txId: 'TX1' })
         approveEscrowCard.mockResolvedValue({ cardAddress: 'ESCROW1' })
     })
@@ -119,6 +137,42 @@ describe('useCreateAndApproveCardMutation', () => {
             result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
         ).rejects.toThrow(CardIntegrityAttestationRequiredError)
         expect(createCard).not.toHaveBeenCalled()
+    })
+
+    it('no valid integrity token on a development build: proceeds without one', async () => {
+        useAppIntegrityStore.getState().resetState()
+        configFlags.isDev = true
+        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
+            wrapper,
+        })
+
+        const outcome = await result.current.mutateAsync({
+            address: ADDRESS,
+            proof: PROOF,
+        })
+
+        expect(createCard).toHaveBeenCalledWith(
+            expect.objectContaining({ integrityToken: '' }),
+        )
+        expect(outcome).toEqual({ cardAddress: 'ESCROW1' })
+    })
+
+    it('no valid integrity token on a staging build: proceeds without one', async () => {
+        useAppIntegrityStore.getState().resetState()
+        configFlags.isStaging = true
+        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
+            wrapper,
+        })
+
+        const outcome = await result.current.mutateAsync({
+            address: ADDRESS,
+            proof: PROOF,
+        })
+
+        expect(createCard).toHaveBeenCalledWith(
+            expect.objectContaining({ integrityToken: '' }),
+        )
+        expect(outcome).toEqual({ cardAddress: 'ESCROW1' })
     })
 
     it('create failure: rejects and leaves the store untouched', async () => {

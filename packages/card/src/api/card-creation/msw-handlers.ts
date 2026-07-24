@@ -36,7 +36,7 @@ export const mockCreateCard = ({
             'mockCreateCard',
         )
     }
-    return http.post('*/v3/baanx/escrow-card', async ({ request }) => {
+    return http.post('*/api/v3/baanx/escrow-card', async ({ request }) => {
         onRequest?.((await request.json()) as Record<string, unknown>)
         return HttpResponse.json(response, { status })
     })

@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
+import { isDev, isStaging } from '@perawallet/wallet-core-config'
 import {
     decodeFromBase64,
     encodeToBase64,
@@ -128,7 +129,9 @@ const requestSignatures = (
  *
  * 1. Requires a valid app-integrity attestation token (the route sits behind
  *    the integrity guard) — throws `FeeDelegationAttestationRequiredError`
- *    when none is available.
+ *    when none is available. Dev/staging builds are exempt: `requestFeeDelegation`
+ *    sends a backend-recognized bypass header there instead (dev builds never
+ *    register an attestation at all — see registerAppIntegrity.ts).
  * 2. Sends the unsigned group; the backend adds a sponsor fee/MBR-paying
  *    transaction and RE-GROUPS it (changing the group id); only AFTER
  *    receiving the re-grouped txns are the wallet slots signed.
@@ -156,7 +159,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
             sourceMetadata,
         }: FeeDelegatedSubmitParams): Promise<void> => {
             const integrityToken = getValidIntegrityToken()
-            if (!integrityToken) {
+            if (!integrityToken && !(isDev || isStaging)) {
                 throw new FeeDelegationAttestationRequiredError()
             }
 
@@ -169,7 +172,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                     includeMbr,
                     optInAssetIds: optInAssetIds.map(id => id.toString()),
                 },
-                integrityToken,
+                integrityToken ?? '',
                 network,
             )
 

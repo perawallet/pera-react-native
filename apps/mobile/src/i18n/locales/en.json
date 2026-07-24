@@ -1122,9 +1122,9 @@
         "signing": {
             "title": "Let's Get Started",
             "body": "To create your Pera Card, you need to sign three groups of transactions, please follow these steps:",
-            "step_sign_label": "Sign an arbitrary data message to verify the connection of your Card Account",
-            "step_create_label": "Sign the following transactions to create your new Pera Card Account",
-            "step_authorize_label": "Create and finalize your Pera Card",
+            "step_sign_label": "Sign an authentication request to prove you own the linked account",
+            "step_create_label": "Create and finalize your new Pera Card Account",
+            "step_authorize_label": "Sign the auto funding program to allow Pera Card to spend from your linked account",
             "proceed_button": "Proceed"
         },
         "auto_funding_signing": {
@@ -2243,8 +2243,8 @@
             "warning": "All transactions are irreversible. As these requests are outside Pera Wallet's control, never approve transactions from a dApp you don't know."
         },
         "arc60_view": {
-            "title": "Sign-in Request",
-            "description": "Sign in to {{domain}} using your wallet. The signature proves you control this account but does not authorise any on-chain action.",
+            "title": "Authentication Request",
+            "description": "The signature proves you control this account but does not authorise any on-chain action.",
             "domain": "Domain",
             "scope": "Scope",
             "scope_auth": "Authentication",
@@ -2259,11 +2259,11 @@
             "siwa_expiration": "Expires",
             "siwa_not_before": "Not Before",
             "siwa_resources": "Resources",
-            "siwa_invalid": "This sign-in request is malformed and cannot be signed.",
+            "siwa_invalid": "This authentication request is malformed and cannot be signed.",
             "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Only continue if you trust it.",
             "show_details": "Show Details",
-            "details_title": "Sign-in Request Details",
-            "details_description": "Review the full metadata of this sign-in request before approving."
+            "details_title": "Athentication Request Details",
+            "details_description": "Review the full metadata of this authentication request before approving."
         }
     },
     "transactions": {

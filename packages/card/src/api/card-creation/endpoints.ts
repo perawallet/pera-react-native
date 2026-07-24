@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import {
+    addDeviceIntegrityHeader,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
 import { createCardResponseSchema } from './schema'
 
@@ -62,9 +65,11 @@ export const createCard = async (
         network,
         route: 'proxy',
         method: 'POST',
-        path: '/v3/baanx/escrow-card',
+        path: '/api/v3/baanx/escrow-card',
         data: { address, currency, signData, signature },
-        headers: { 'x-app-integrity-token': integrityToken },
+        headers: addDeviceIntegrityHeader({
+            'x-app-integrity-token': integrityToken,
+        }),
         signal,
     })
 

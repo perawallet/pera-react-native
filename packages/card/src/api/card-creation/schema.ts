@@ -12,7 +12,7 @@
 
 import { z } from 'zod'
 
-// POST /v3/baanx/escrow-card (Pera backend) → the created escrow card's
+// POST /api/v3/baanx/escrow-card (Pera backend) → the created escrow card's
 // account address and the on-chain `cardCreate` transaction id.
 export const createCardResponseSchema = z.object({
     cardAddress: z.string(),

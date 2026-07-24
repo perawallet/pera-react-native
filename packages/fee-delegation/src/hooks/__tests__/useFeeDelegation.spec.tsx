@@ -27,12 +27,27 @@ const {
     submitAndAutoRefreshMock,
     getAppIntegrityStateMock,
     requestFeeDelegationMock,
+    configFlags,
 } = vi.hoisted(() => ({
     addSignRequestMock: vi.fn(),
     submitAndAutoRefreshMock: vi.fn(),
     getAppIntegrityStateMock: vi.fn(),
     requestFeeDelegationMock: vi.fn(),
+    configFlags: { isDev: false, isStaging: false },
 }))
+
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        get isDev() {
+            return configFlags.isDev
+        },
+        get isStaging() {
+            return configFlags.isStaging
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({ kind: 'algokit-client' }),
@@ -111,6 +126,8 @@ function renderDelegation() {
 beforeEach(() => {
     vi.clearAllMocks()
     getAppIntegrityStateMock.mockReturnValue(validAttestation())
+    configFlags.isDev = false
+    configFlags.isStaging = false
 })
 
 describe('fee-delegation/useFeeDelegation', () => {
@@ -140,6 +157,66 @@ describe('fee-delegation/useFeeDelegation', () => {
             result.current.submitWithFeeDelegation(baseParams),
         ).rejects.toBeInstanceOf(FeeDelegationAttestationRequiredError)
         expect(requestFeeDelegationMock).not.toHaveBeenCalled()
+    })
+
+    test('proceeds without a token on a development build, since attestation is skipped there', async () => {
+        configFlags.isDev = true
+        getAppIntegrityStateMock.mockReturnValue({
+            integrityToken: null,
+            expiresAt: null,
+        })
+        requestFeeDelegationMock.mockResolvedValue({
+            txnGroup: [
+                {
+                    txn: toBase64('sponsor'),
+                    signers: [],
+                    stxn: toBase64('sponsor'),
+                },
+                { txn: toBase64('optin'), signers: [ACCOUNT] },
+            ],
+        })
+        addSignRequestMock.mockImplementation(request => {
+            void request.approve([{ kind: 'signed', txn: { id: 'optin' } }])
+        })
+
+        const result = renderDelegation()
+        await result.current.submitWithFeeDelegation(baseParams)
+
+        expect(requestFeeDelegationMock).toHaveBeenCalledWith(
+            expect.any(Object),
+            '',
+            'mainnet',
+        )
+    })
+
+    test('proceeds without a token on a staging build, since attestation may not be ready yet', async () => {
+        configFlags.isStaging = true
+        getAppIntegrityStateMock.mockReturnValue({
+            integrityToken: null,
+            expiresAt: null,
+        })
+        requestFeeDelegationMock.mockResolvedValue({
+            txnGroup: [
+                {
+                    txn: toBase64('sponsor'),
+                    signers: [],
+                    stxn: toBase64('sponsor'),
+                },
+                { txn: toBase64('optin'), signers: [ACCOUNT] },
+            ],
+        })
+        addSignRequestMock.mockImplementation(request => {
+            void request.approve([{ kind: 'signed', txn: { id: 'optin' } }])
+        })
+
+        const result = renderDelegation()
+        await result.current.submitWithFeeDelegation(baseParams)
+
+        expect(requestFeeDelegationMock).toHaveBeenCalledWith(
+            expect.any(Object),
+            '',
+            'mainnet',
+        )
     })
 
     test('sends the encoded group with the token, signs the wallet slot, and submits in order', async () => {

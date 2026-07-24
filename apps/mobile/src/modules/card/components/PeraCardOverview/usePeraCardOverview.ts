@@ -18,7 +18,6 @@ import {
     AUTO_FUNDING_PER_TX_LIMIT_USD,
     DEFAULT_CARD_CURRENCY,
     FundingType,
-    OnboardingStep,
     useCardExternalWalletsQuery,
     useCardInternalWalletsQuery,
     useCardStore,
@@ -56,8 +55,6 @@ type UsePeraCardOverviewResult = {
     onShowAllTransactions: () => void
     onPressTransaction: (transactionId: string) => void
     onCreditPress: () => void
-    /** Dev-only shortcut back to the setup checklist, for testing onboarding. */
-    onDebugGoToOnboarding: () => void
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
@@ -125,23 +122,6 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         [navigation],
     )
 
-    // Dev-only: the account-menu routes straight to this dashboard whenever a
-    // Baanx session exists, regardless of whether onboarding actually
-    // finished (PERA card TODO — see CardFundingAccountSection). This
-    // shortcut lets a developer get back to the setup checklist to test the
-    // connect/create-card flow without clearing app state.
-    const onDebugGoToOnboarding = useCallback(() => {
-        // DEBUG ONLY: force past registration locally so Connect Funds/Create
-        // Card show up regardless of whatever the local onboarding state is —
-        // there's no real reconciliation path for an already-approved Baanx
-        // account whose local state was lost, so this stands in for one.
-        useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
-        navigation.navigate('CardOnboarding', {
-            screen: 'CardOnboardingStatus',
-            params: {},
-        })
-    }, [navigation])
-
     return {
         isAutoFunding,
         currency: DEFAULT_CARD_CURRENCY,
@@ -158,6 +138,5 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress: showComingSoon,
-        onDebugGoToOnboarding,
     }
 }

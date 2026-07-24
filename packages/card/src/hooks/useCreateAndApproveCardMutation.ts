@@ -13,6 +13,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
+import { isDev, isStaging } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CardIntegrityAttestationRequiredError,
@@ -96,7 +97,7 @@ export const useCreateAndApproveCardMutation =
 
                 if (!cardAddress || !txId) {
                     const integrityToken = getValidIntegrityToken()
-                    if (!integrityToken) {
+                    if (!integrityToken && !(isDev || isStaging)) {
                         throw new CardIntegrityAttestationRequiredError()
                     }
 
@@ -106,7 +107,7 @@ export const useCreateAndApproveCardMutation =
                         currency,
                         signData: proof.signData,
                         signature: proof.signature,
-                        integrityToken,
+                        integrityToken: integrityToken ?? '',
                     })
                     cardAddress = created.cardAddress
                     txId = created.txId

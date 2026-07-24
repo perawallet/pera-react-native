@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWScrollView } from '@components/core'
+import { PWScrollView } from '@components/core'
 import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardBalanceSection } from './PeraCardBalanceSection'
 import { PeraCardActionButtons } from './PeraCardActionButtons'
@@ -36,20 +36,10 @@ export const PeraCardOverview = () => {
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress,
-        onDebugGoToOnboarding,
     } = usePeraCardOverview()
 
     return (
         <PWScrollView contentContainerStyle={styles.content}>
-            {__DEV__ && (
-                <PWButton
-                    variant='secondary'
-                    title='DEBUG: Go to card onboarding'
-                    onPress={onDebugGoToOnboarding}
-                    testID='pera_card_debug_go_to_onboarding'
-                />
-            )}
-
             <CardFrozenBanner />
 
             <PeraCardBalanceSection
