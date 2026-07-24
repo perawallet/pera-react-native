@@ -19,11 +19,8 @@ import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { hasSecret, withSecret } from '@perawallet/wallet-core-kms'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { ACCESS_TOKEN_SECRET_ID } from '../../session/secret-ids'
-import type {
-    CardResponseType,
-    CardTransportRequest,
-    CardTransportResponse,
-} from './types'
+import type { CardTransportRequest, CardTransportResponse } from './types'
+import { parseResponse, toKyPath } from './http-helpers'
 
 // One ky instance per Algorand network (mainnet → Baanx prod, testnet →
 // Baanx sandbox). Only the static `x-client-key` is attached at the client
@@ -52,36 +49,6 @@ const getClient = (network: Network): KyInstance => {
     })
     clients.set(network, client)
     return client
-}
-
-// ky's prefix join rejects a leading slash on the path.
-const toKyPath = (path: string): string =>
-    path.startsWith('/') ? path.slice(1) : path
-
-const parseResponse = async <TData>(
-    response: Response,
-    responseType?: CardResponseType,
-): Promise<CardTransportResponse<TData>> => {
-    let data: TData
-    switch (responseType ?? 'json') {
-        case 'text': {
-            data = (await response.text()) as unknown as TData
-            break
-        }
-        case 'blob': {
-            data = (await response.blob()) as unknown as TData
-            break
-        }
-        case 'arraybuffer': {
-            data = (await response.arrayBuffer()) as unknown as TData
-            break
-        }
-        default: {
-            const text = await response.text()
-            data = (text.trim() ? JSON.parse(text) : undefined) as TData
-        }
-    }
-    return { data, status: response.status, statusText: response.statusText }
 }
 
 /**
