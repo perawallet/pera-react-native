@@ -18,6 +18,7 @@ import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFee
 import { useStyles } from './styles'
 import { useFeeWarning } from './useFeeWarning'
 import { useQuantumFeeExplainer } from './useQuantumFeeExplainer'
+import { useFeeAdjustment } from './useFeeAdjustment'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
@@ -36,6 +37,8 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
     const navigation = useNavigation<NavigationProp>()
     const { showWarning, fee } = useFeeWarning()
     const { isQuantumFee } = useQuantumFeeExplainer(transaction)
+    const { isAdjusted, originalFee, adjustedFee } =
+        useFeeAdjustment(transaction)
 
     const handleViewDetails = () => {
         if (!transaction) {
@@ -58,7 +61,20 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
                         ignorePrivacyMode
                         style={fee.greaterThan(0) ? styles.value : undefined}
                     />
-                    {isQuantumFee && <QuantumFeeExplainer />}
+                    {isAdjusted && (
+                        <PWText style={styles.adjustedLabel}>
+                            {t('transactions.quantum_fee.adjusted_label')}
+                        </PWText>
+                    )}
+                    {(isQuantumFee || isAdjusted) && (
+                        <QuantumFeeExplainer
+                            adjustment={
+                                isAdjusted
+                                    ? { originalFee, adjustedFee }
+                                    : undefined
+                            }
+                        />
+                    )}
                     {showWarning && (
                         <InfoButton
                             variant='error'

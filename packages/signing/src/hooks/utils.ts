@@ -24,6 +24,7 @@ import type {
     TransactionWarning,
 } from '../models'
 import type { TransactionListItem } from '../utils/classification'
+import type { FeeAdjustment } from '../pipeline/sources'
 import type { MachineSnapshot } from './types'
 
 // =============================================================================
@@ -35,6 +36,9 @@ export const EMPTY_LIST_ITEMS: TransactionListItem[] = []
 export const EMPTY_WARNINGS: TransactionWarning[] = []
 export const EMPTY_SIGNABLE_ADDRESSES = new Set<string>()
 export const EMPTY_SIGNABLE_INDICES = new Set<number>()
+export const EMPTY_FEE_ADJUSTMENTS: FeeAdjustment[] = Object.freeze(
+    [] as FeeAdjustment[],
+) as FeeAdjustment[]
 export const ZERO_FEE = new Decimal(0)
 
 // =============================================================================

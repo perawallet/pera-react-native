@@ -198,6 +198,17 @@ vi.mock('@modules/onboarding/hooks', () => ({
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
     UserRejectedSigningError: class UserRejectedSigningError extends Error {},
+    // Non-quantum in every fixture here — the calculator's real fast path
+    // is a passthrough no-op. Real fee behavior is covered by
+    // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+    // and apps/mobile/src/hooks/deeplink/handlers/__tests__/useKeyregDeeplink.test.ts.
+    useMinimumFeeCalculator: () => ({
+        assignFeeToGroup: async ({
+            transactions,
+        }: {
+            transactions: unknown[]
+        }) => ({ transactions, adjustments: [] }),
+    }),
 }))
 
 // The asset-opt-in deeplink handler pulls in useAssetOptInMutation; mock it so

@@ -17,7 +17,10 @@ import {
     useAlgorandClient,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import {
+    useMinimumFeeCalculator,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import {
     resolveAuthAccount,
     useAllAccounts,
@@ -101,6 +104,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
     const { addSignRequest } = useSigningRequest()
     const allAccounts = useAllAccounts()
     const showError = useDeeplinkErrorHandler()
+    const { assignFeeToGroup } = useMinimumFeeCalculator()
 
     return useCallback(
         async (data: KeyregDeeplink) => {
@@ -145,9 +149,9 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // the error sheet instead of throwing uncaught out of the
                 // handler. An out-of-range fee is caught at review time by the
                 // signing pipeline's high-fee warning (see detectHighGroupFee).
-                const staticFee = data.fee
-                    ? microAlgo(BigInt(data.fee))
-                    : undefined
+                const dAppFee = data.fee ? BigInt(data.fee) : undefined
+                const staticFee =
+                    dAppFee !== undefined ? microAlgo(dAppFee) : undefined
 
                 let tx
                 if (data.keyregType === 'offline') {
@@ -205,6 +209,12 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // `Buffer.from(...) received type object`. Encode then
                 // decode to normalize.
                 const normalizedTx = decodeTransaction(encodeTransaction(tx))
+                // Floors a quantum sender's fee to the PQ minimum (mirrors
+                // the WC/webview enqueue path); a non-quantum sender is a
+                // free no-op — same reference, no network traffic.
+                const { transactions, adjustments } = await assignFeeToGroup({
+                    transactions: [normalizedTx],
+                })
                 // sourceType MUST be 'deeplink' (not 'local') so
                 // SigningOverlays' interactive-source filter picks the
                 // request up and shows the review sheet. 'local' is
@@ -216,7 +226,15 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     type: 'transactions',
                     transport: 'algod',
                     sourceType: 'deeplink',
-                    txs: [normalizedTx],
+                    txs: transactions,
+                    // An explicit dApp fee we raised is surfaced as an
+                    // adjustment (original → new, matching the WC path); a
+                    // fee we filled in ourselves when the deeplink omitted
+                    // one is Pera-set, not an override — no delta to show.
+                    feeAdjustments:
+                        dAppFee !== undefined && adjustments.length > 0
+                            ? adjustments
+                            : undefined,
                 })
             } catch (error) {
                 logger.error('[deeplink/keyreg] failed', { error })
@@ -232,6 +250,7 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             addSignRequest,
             algorandClient,
             allAccounts,
+            assignFeeToGroup,
             decodeTransaction,
             encodeTransaction,
             showError,

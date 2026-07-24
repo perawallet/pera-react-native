@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { decodeAddress } from 'algosdk'
 import {
     useAlgorandClient,
     useNetwork,
@@ -19,7 +20,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import type { Arc59SendSummaryResponse } from '../api'
 import { ARC59Client } from '../clients'
-import { buildPopulatedGroup } from '../utils'
+import { buildGroup, buildPopulatedGroup } from '../utils'
 
 type SendViaInboxParams = {
     sender: string
@@ -70,12 +71,33 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 })
             }
 
+            // When the inbox address is known, attach the ARC-59 resource
+            // references explicitly so the group builds without a live
+            // simulate. The router box is keyed by the receiver's (recipient's)
+            // public key.
+            const inboxAddress = summary.inbox_address
+            const receiverBox = {
+                appId: arc59Config.appId,
+                name: decodeAddress(receiver).publicKey,
+            }
+            const optRouterInRefs = inboxAddress
+                ? { assetReferences: [assetId] }
+                : {}
+            const sendAssetRefs = inboxAddress
+                ? {
+                      accountReferences: [receiver, inboxAddress],
+                      assetReferences: [assetId],
+                      boxReferences: [receiverBox],
+                  }
+                : {}
+
             // If router is not opted into the asset, include opt-in in the atomic group
             if (!summary.is_arc59_opted_in) {
                 composer.addAppCallMethodCall(
                     await appClient.params.arc59_optRouterIn({
                         args: [assetId],
                         extraFee: minFee.microAlgo(),
+                        ...optRouterInRefs,
                     }),
                 )
             }
@@ -97,10 +119,13 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                     extraFee: (
                         minFee * BigInt(summary.inner_tx_count)
                     ).microAlgo(),
+                    ...sendAssetRefs,
                 }),
             )
 
-            return buildPopulatedGroup(composer, algokit)
+            return inboxAddress
+                ? buildGroup(composer)
+                : buildPopulatedGroup(composer, algokit)
         },
         [algokit, isMainnet],
     )

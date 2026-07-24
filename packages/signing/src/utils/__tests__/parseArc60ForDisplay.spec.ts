@@ -14,7 +14,6 @@ import { describe, expect, test } from 'vitest'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { parseArc60ForDisplay } from '../parseArc60ForDisplay'
-import { SIWA_CHAIN_ID } from '../siwa'
 
 const encodeJsonToBase64 = (value: unknown): string =>
     encodeToBase64(new TextEncoder().encode(canonify(value)!))
@@ -25,7 +24,7 @@ const baseSiwa = {
     uri: 'https://arc60.io/login',
     version: '1',
     nonce: 'abc123',
-    chain_id: SIWA_CHAIN_ID,
+    chain_id: 'algorand:mainnet',
     type: 'ed25519',
 } as const
 
@@ -39,7 +38,7 @@ describe('parseArc60ForDisplay', () => {
         expect(result.type).toBe('siwa')
         if (result.type !== 'siwa') return
         expect(result.siwa.domain).toBe('arc60.io')
-        expect(result.siwa.chain_id).toBe(SIWA_CHAIN_ID)
+        expect(result.siwa.chain_id).toBe('algorand:mainnet')
     })
 
     test('returns error when encoding is not supported', () => {

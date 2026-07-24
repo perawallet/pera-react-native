@@ -54,5 +54,6 @@ export const fetchArc59AssetRequests = async (
     })
 
     const parsed = arc59AssetRequestsResponseSchema.parse(response.data)
-    return parsed.results.map(mapArc59AssetRequest)
+    const inboxAddress = parsed.inbox_address ?? null
+    return parsed.results.map(raw => mapArc59AssetRequest(raw, inboxAddress))
 }

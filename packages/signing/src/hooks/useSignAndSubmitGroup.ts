@@ -12,14 +12,18 @@
 
 import { useCallback } from 'react'
 import {
+    compactSignedResults,
     useAlgorandClient,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import type {
-    PeraSignedTransaction,
+    PeraSignedTxnResult,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { submitAndAutoRefresh } from '../pipeline/submission/submitAndAutoRefresh'
 import type { TransactionSignRequest } from '../models'
 import { useSigningRequest } from './useSigningRequest'
@@ -87,12 +91,19 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     sourceType: 'local',
                     txs: unsignedTxs,
                     sourceMetadata: source,
-                    approve: async (signed: PeraSignedTransaction[]) => {
+                    approve: async (
+                        signed: Nullable<PeraSignedTxnResult>[],
+                    ) => {
                         try {
+                            // This headless local-submit request never
+                            // filters slots (unlike the ARC-0001 enqueue
+                            // path), so every entry is expected to be
+                            // present — the null guard is defensive only.
+                            const signedTxns = compactSignedResults(signed)
                             const txIds = await submitAndAutoRefresh(
                                 algokit,
                                 encodeSignedTransactions,
-                                signed,
+                                signedTxns,
                             )
                             resolve({ txIds })
                         } catch (err) {

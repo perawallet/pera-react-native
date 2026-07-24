@@ -38,6 +38,12 @@ export const AlgodErrorCode = {
     NOT_AUTHORIZED: 'not_authorized',
     /** Smart-contract TEAL assertion failure. Delegated from algokit's LogicError. */
     LOGIC_ERROR: 'logic_error',
+    /** App-call TEAL rejection reported by the node (assert/err/opcode failures). */
+    LOGIC_EVAL_ERROR: 'logic_eval_error',
+    /** App call referenced an account/asset/app/box that was not made available. */
+    UNAVAILABLE_RESOURCE: 'unavailable_resource',
+    /** Atomic group's pooled fees fall short of the required minimum. */
+    GROUP_FEE_TOO_SMALL: 'group_fee_too_small',
     /** Network/transport error — node unreachable, 5xx, fetch failed, timeout. */
     NETWORK_UNAVAILABLE: 'network_unavailable',
     /** Fallback: node returned an error we don't have a translation for yet. */
@@ -91,6 +97,20 @@ export interface AlgodErrorParamsByCode {
         pc?: number
         msg: string
         tealLine?: number
+    }
+    logic_eval_error: {
+        /** Failing app id when the node includes `Details: app=N`. */
+        appId?: bigint
+        /** The eval failure reason, e.g. "assert failed pc=1234". */
+        detail: string
+    }
+    unavailable_resource: {
+        resourceType: 'Account' | 'Asset' | 'App' | 'Box'
+        resource: string
+    }
+    group_fee_too_small: {
+        paid: bigint
+        required: bigint
     }
     network_unavailable: {
         status?: number

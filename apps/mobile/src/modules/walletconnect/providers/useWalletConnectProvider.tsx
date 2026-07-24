@@ -19,6 +19,10 @@ import {
     useWalletConnectStore,
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
+import {
+    FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
+    FeeAdjustmentDeliveryError,
+} from '@perawallet/wallet-core-signing'
 import { useEffect, useRef, useState } from 'react'
 import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -27,6 +31,19 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
+
+// WalletConnect's `respondWithError` rebuilds a fresh
+// `WalletConnectSignRequestError` from only the original error's `.message`
+// before it reaches `connectionError` (see
+// packages/walletconnect/src/hooks/useWalletConnectHandlers.ts), so a
+// `FeeAdjustmentDeliveryError`'s `.name` doesn't survive that hop for the
+// WC transaction-signing flow. Match on `.name` for callers that see the
+// error directly, and fall back to the message marker every
+// `FeeAdjustmentDeliveryError` is constructed with (see
+// packages/signing/src/pipeline/errors.ts) for the rewrapped case.
+const isFeeAdjustmentDeliveryError = (error: Error): boolean =>
+    error.name === FeeAdjustmentDeliveryError.name ||
+    error.message.includes(FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER)
 
 export const useWalletConnectProvider = () => {
     // Revives dead bridge sockets on foreground return and on network
@@ -133,7 +150,9 @@ export const useWalletConnectProvider = () => {
         showToast(
             {
                 title: t('walletconnect.request.error_sheet_title'),
-                body: connectionError.message,
+                body: isFeeAdjustmentDeliveryError(connectionError)
+                    ? t('walletconnect.request.quantum_fee_delivery_failed')
+                    : connectionError.message,
                 type: 'error',
             },
             { notifier: scannerNotifier.current ?? undefined },
