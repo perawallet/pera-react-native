@@ -83,6 +83,16 @@ describe('usePriceTrend', () => {
         expect(result.current.isHidden).toBe(true)
     })
 
+    it('hides the trend when offline-paused with an empty series', () => {
+        mockQuery([], true)
+
+        const { result } = renderHook(() =>
+            usePriceTrend({ assetId: '123', period: 'one-week' }),
+        )
+
+        expect(result.current.isHidden).toBe(true)
+    })
+
     it('keeps showing the last-known trend when paused with stale data', () => {
         mockQuery([point(100), point(150)], true)
 

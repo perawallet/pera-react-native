@@ -47,7 +47,7 @@ export const usePriceTrend = ({
 }: UsePriceTrendParams): UsePriceTrendResult => {
     const { data: chartData, isPaused } = useAssetPriceHistoryQuery(
         assetId,
-        period ?? 'one-week',
+        period,
     )
 
     const [changePercentage, changeValue] = useMemo(() => {
@@ -61,7 +61,7 @@ export const usePriceTrend = ({
     }, [chartData, selectedDataPoint])
 
     const isPositive = changePercentage.greaterThanOrEqualTo(new Decimal(0))
-    const isHidden = isPaused && !chartData
+    const isHidden = isPaused && !chartData?.length
 
     return { changePercentage, changeValue, isPositive, isHidden }
 }
