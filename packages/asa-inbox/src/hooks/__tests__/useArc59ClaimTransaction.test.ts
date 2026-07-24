@@ -532,5 +532,24 @@ describe('useArc59ClaimTransaction', () => {
 
             expect(populateAppCallResources).toHaveBeenCalledTimes(1)
         })
+
+        test('falls back to simulate population when inboxAddress is set but assetCreator is empty', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildRejectAssetTxs({
+                    ...baseClaimParams,
+                    inboxAddress: INBOX_ADDRESS,
+                    assetCreator: '',
+                })
+            })
+
+            expect(populateAppCallResources).toHaveBeenCalledTimes(1)
+            expect(mockParamsReject).not.toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountReferences: expect.arrayContaining(['']),
+                }),
+            )
+        })
     })
 })

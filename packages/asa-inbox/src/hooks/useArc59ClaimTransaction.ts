@@ -200,13 +200,20 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                       boxReferences: [receiverBox],
                   }
                 : {}
-            const rejectRefs = inboxAddress
-                ? {
-                      accountReferences: [inboxAddress, assetCreator],
-                      assetReferences: [assetId],
-                      boxReferences: [receiverBox],
-                  }
-                : {}
+            // Only take the explicit-ref (no-simulate) path when both the
+            // inbox and the creator are known non-empty addresses. The ARC-59
+            // asset schema types `creator.address` as `z.string()`, so a
+            // degenerate backend value (empty string) is possible; attaching
+            // it as an account reference would make algokit reject the group
+            // at build time. Fall back to the simulate path instead.
+            const rejectRefs =
+                inboxAddress && assetCreator
+                    ? {
+                          accountReferences: [inboxAddress, assetCreator],
+                          assetReferences: [assetId],
+                          boxReferences: [receiverBox],
+                      }
+                    : {}
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
@@ -226,7 +233,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 }),
             )
 
-            return inboxAddress
+            return inboxAddress && assetCreator
                 ? buildGroup(composer)
                 : buildPopulatedGroup(composer, algokit)
         },

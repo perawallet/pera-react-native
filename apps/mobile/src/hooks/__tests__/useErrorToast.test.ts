@@ -171,7 +171,7 @@ describe('useErrorToast', () => {
         })
 
         expect(logger.error).toHaveBeenCalledWith(
-            'Unrecognized node error shown as generic banner',
+            'Unrecognized error shown as generic banner',
             expect.objectContaining({
                 message: expect.stringContaining('403'),
             }),
@@ -219,7 +219,7 @@ describe('useErrorToast', () => {
         })
 
         expect(logger.error).toHaveBeenCalledWith(
-            'Unrecognized node error shown as generic banner',
+            'Unrecognized error shown as generic banner',
             { message: 'null' },
         )
     })

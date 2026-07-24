@@ -115,7 +115,7 @@ const resolveMessage = (
             return getMessage(algodError)
         }
 
-        logger.error('Unrecognized node error shown as generic banner', {
+        logger.error('Unrecognized error shown as generic banner', {
             message: error.message,
         })
         return {
@@ -124,7 +124,7 @@ const resolveMessage = (
         }
     }
 
-    logger.error('Unrecognized node error shown as generic banner', {
+    logger.error('Unrecognized error shown as generic banner', {
         message: String(error),
     })
     return {
