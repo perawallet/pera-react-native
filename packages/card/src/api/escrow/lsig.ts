@@ -90,7 +90,10 @@ export const renderAutoDrawTeal = ({
     genesisHashBase64,
 }: RenderAutoDrawTealArgs): string => {
     const genesisHashHex = `0x${bytesToHex(decodeFromBase64(genesisHashBase64))}`
-    return AUTODRAW_TEAL_TEMPLATE.replaceAll(TMPL_KILLSWITCH_APP, killswitchAppId)
+    return AUTODRAW_TEAL_TEMPLATE.replaceAll(
+        TMPL_KILLSWITCH_APP,
+        killswitchAppId,
+    )
         .replaceAll(TMPL_MAIN_APP, mainAppId)
         .replaceAll(TMPL_GENESIS_HASH, genesisHashHex)
 }

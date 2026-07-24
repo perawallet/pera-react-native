@@ -48,7 +48,8 @@ export const useCardAutoFundingSigningScreen =
         const escrowCardAddress = useCardStore(state => state.escrowCardAddress)
         const accounts = useAllAccounts()
         const connectedAccount = useMemo(
-            () => accounts.find(account => account.address === connectedAddress),
+            () =>
+                accounts.find(account => account.address === connectedAddress),
             [accounts, connectedAddress],
         )
 
