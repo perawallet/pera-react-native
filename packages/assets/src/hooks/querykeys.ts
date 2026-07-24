@@ -37,6 +37,16 @@ export const getAssetPriceHistoryQueryKey = (
     return [MODULE_PREFIX, 'prices', 'history', { assetID, period, network }]
 }
 
+/**
+ * Chart-history key guard. Allowlisted into query persistence (PERA-4581):
+ * price history is network-only (no SQLite table backs it) and carries no
+ * PII, so the last successful snapshot is safe and cheap to persist.
+ */
+export const isAssetPriceHistoryQuery = (queryKey: QueryKey): boolean =>
+    queryKey[0] === MODULE_PREFIX &&
+    queryKey[1] === 'prices' &&
+    queryKey[2] === 'history'
+
 export const getAssetsQueryKey = (assetIDs: string[], network: Network) => {
     return [MODULE_PREFIX, { assetIDs, network }]
 }

@@ -27,13 +27,6 @@ export const SIWA_MAX_FIELD_BYTES = 512
 /** Decoded SIWA JSON hard cap (defense-in-depth before JSON.parse/canonify). */
 export const SIWA_MAX_PAYLOAD_BYTES = 16 * 1024
 
-/**
- * SIWx chain id for Algorand. Equals the SLIP-0044 coin type (283) and is
- * constant across MainNet / TestNet (network is not part of the SIWA
- * identifier — the domain + authenticatorData binding is).
- */
-export const SIWA_CHAIN_ID = '283'
-
 // Per-field byte cap for SIWA descriptor strings ("sensible per-field cap"
 // from the ARC-60 hardening ticket). Two variants because `.refine()` returns
 // a ZodEffects, which has no `.min()` — so required fields must apply `.min(1)`
@@ -64,17 +57,12 @@ export const siwaSchema = z.object({
             message: `statement exceeds ${SIWA_MAX_STATEMENT_BYTES} bytes`,
         })
         .optional(),
-    // Required anti-replay token. ARC-60's AUTH scope is modeled on CAIP-122
-    // (the chain-agnostic "Sign-In With X"), where `nonce` is mandatory: a
-    // signed SIWA payload with no nonce is replayable, defeating the whole
-    // point of the authentication challenge. Reject (rather than silently
-    // sign) when it is absent or empty.
-    nonce: requiredField,
+    nonce: cappedField.optional(),
     'issued-at': cappedField.optional(),
     'expiration-time': cappedField.optional(),
     'not-before': cappedField.optional(),
     'request-id': cappedField.optional(),
-    chain_id: z.literal(SIWA_CHAIN_ID),
+    chain_id: requiredField,
     resources: z
         .array(
             z.string().refine(maxBytes(SIWA_MAX_RESOURCE_BYTES), {

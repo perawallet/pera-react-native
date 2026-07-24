@@ -119,6 +119,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
         mapToDisplayableTransaction: (tx: {
             sender?: { toString?: () => string }
         }) => ({ sender: tx?.sender?.toString?.() ?? 'SENDER' }),
+        // Quantum accounts are only feature-flag-gated out of swap today —
+        // there's no structural guard in this module. `swapExecutionHelpers`'
+        // approve callback fails loudly if one ever shows up here (see the
+        // dedicated quantum test below); the real predicate checks for
+        // `pqSignedBytes`, which none of this spec's plain signed-txn
+        // fixtures carry.
+        isQuantumSignedTransaction: (tx: unknown) =>
+            (tx as { pqSignedBytes?: unknown })?.pqSignedBytes instanceof
+            Uint8Array,
+        compactSignedResults: (signed: unknown[]) =>
+            signed.filter(tx => tx !== null),
     }
 })
 
@@ -632,6 +643,67 @@ describe('useSwapExecution', () => {
                 reason: 'blockchain_error',
             }),
         })
+    })
+
+    it('fails loudly instead of silently dropping a quantum-signed transaction', async () => {
+        // Quantum accounts are only feature-flag-gated out of swap today —
+        // there is no structural guard in this module preventing one from
+        // routing into this flow. If a quantum-signed carrier ever comes
+        // back from the pipeline, the approve callback must reject instead
+        // of silently filtering it out, which would vanish signed slots and
+        // corrupt the group downstream into an opaque submission crash.
+        const quantumSigned = {
+            txn: { txID: () => 'quantum-1' },
+            pqSignedBytes: new Uint8Array([9, 9]),
+        } as unknown as PeraSignedTransaction
+
+        autoApproveWith([quantumSigned])
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-quantum'))
+        })
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'signing',
+            message: 'Quantum accounts are not supported in swap flows yet',
+        })
+        expect(result.current.status).toBe('error')
+        expect(result.current.error?.message).toBe(
+            'Quantum accounts are not supported in swap flows yet',
+        )
+
+        // Not a user cancellation, so the backend must still be told.
+        expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
+            swapId: '12345',
+            data: expect.objectContaining({
+                status: 'failed',
+                reason: 'blockchain_error',
+            }),
+        })
+    })
+
+    it('drops null slots before resolving without treating them as quantum', async () => {
+        // Defensive narrowing: a null slot mixed in with real signed txns
+        // must still be filtered out and must not trip the quantum guard.
+        autoApproveWith([
+            makeSignedTxn('tx-id-1'),
+            null,
+            makeSignedTxn('tx-id-2'),
+        ] as unknown as PeraSignedTransaction[])
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-null-slot'))
+        })
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(result.current.status).toBe('success')
     })
 
     it('sets error on submission failure and reports failed status', async () => {

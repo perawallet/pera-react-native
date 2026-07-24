@@ -19,7 +19,11 @@ import {
 } from '@tanstack/react-query'
 import React from 'react'
 
-import { useSuggestedParametersQuery } from '../useSuggestedParametersQuery'
+import {
+    useFetchSuggestedMinFee,
+    useFetchSuggestedParameters,
+    useSuggestedParametersQuery,
+} from '../useSuggestedParametersQuery'
 import { useAlgorandClient } from '../useAlgorandClient'
 
 // Mock the useAlgorandClient hook
@@ -160,6 +164,130 @@ describe('useSuggestedParametersQuery', () => {
             } finally {
                 vi.useRealTimers()
             }
+        })
+    })
+
+    describe('useFetchSuggestedParameters', () => {
+        test('fetches on demand only — nothing on mount', async () => {
+            const getSuggestedParams = vi
+                .fn()
+                .mockResolvedValue(mockSuggestedParams)
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams,
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedParameters(), {
+                wrapper,
+            })
+            expect(getSuggestedParams).not.toHaveBeenCalled()
+
+            await expect(result.current()).resolves.toEqual(mockSuggestedParams)
+            expect(getSuggestedParams).toHaveBeenCalledTimes(1)
+        })
+
+        test('shares the eager query cache: fresh within the TTL, refetch once stale', async () => {
+            vi.useFakeTimers()
+            try {
+                const getSuggestedParams = vi
+                    .fn()
+                    .mockResolvedValue(mockSuggestedParams)
+                ;(useAlgorandClient as Mock).mockReturnValue({
+                    getSuggestedParams,
+                })
+
+                // Seed the cache through the EAGER hook — the fetcher must
+                // read the very same entry, not a parallel one.
+                const eager = renderHook(() => useSuggestedParametersQuery(), {
+                    wrapper,
+                })
+                await vi.waitFor(() =>
+                    expect(eager.result.current.isSuccess).toBe(true),
+                )
+                eager.unmount()
+                expect(getSuggestedParams).toHaveBeenCalledTimes(1)
+
+                const { result } = renderHook(
+                    () => useFetchSuggestedParameters(),
+                    { wrapper },
+                )
+
+                // Within the TTL: served from the shared cache, no refetch.
+                await expect(result.current()).resolves.toEqual(
+                    mockSuggestedParams,
+                )
+                expect(getSuggestedParams).toHaveBeenCalledTimes(1)
+
+                // Past the TTL: stale — congestion-driven minFee changes
+                // must propagate, so the fetcher refetches.
+                vi.advanceTimersByTime(10_001)
+                await expect(result.current()).resolves.toEqual(
+                    mockSuggestedParams,
+                )
+                expect(getSuggestedParams).toHaveBeenCalledTimes(2)
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        test('propagates the transport rejection to the caller', async () => {
+            const mockError = new Error('Network request failed')
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams: vi.fn().mockRejectedValue(mockError),
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedParameters(), {
+                wrapper,
+            })
+
+            await expect(result.current()).rejects.toBe(mockError)
+        })
+    })
+
+    describe('useFetchSuggestedMinFee', () => {
+        test('returns the network minFee as bigint through the shared cache', async () => {
+            const getSuggestedParams = vi
+                .fn()
+                .mockResolvedValue(mockSuggestedParams)
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams,
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedMinFee(), {
+                wrapper,
+            })
+            expect(getSuggestedParams).not.toHaveBeenCalled()
+
+            await expect(result.current()).resolves.toBe(1000n)
+            // Second call inside the TTL: served from the shared entry.
+            await expect(result.current()).resolves.toBe(1000n)
+            expect(getSuggestedParams).toHaveBeenCalledTimes(1)
+        })
+
+        test('returns the fallback instead of throwing when one is provided', async () => {
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams: vi
+                    .fn()
+                    .mockRejectedValue(new Error('offline')),
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedMinFee(), {
+                wrapper,
+            })
+
+            await expect(result.current({ fallback: 0n })).resolves.toBe(0n)
+        })
+
+        test('propagates the failure when no fallback is provided', async () => {
+            const mockError = new Error('Network request failed')
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams: vi.fn().mockRejectedValue(mockError),
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedMinFee(), {
+                wrapper,
+            })
+
+            await expect(result.current()).rejects.toBe(mockError)
         })
     })
 })

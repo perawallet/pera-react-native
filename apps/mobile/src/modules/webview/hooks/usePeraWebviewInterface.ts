@@ -500,7 +500,14 @@ export const usePeraWebviewInterface = (
                             opts,
                         })
 
-                        enqueueSignRequest(resolved, {
+                        // enqueueSignRequest is async (PQ-017 may fetch
+                        // suggested params for a quantum signer), but this
+                        // handler stays synchronous: `requireSecure` expects a
+                        // void-returning callback, resolveArc0001's throw must
+                        // surface synchronously into the catch below, and the
+                        // enqueue handles its own failures via respondWithError
+                        // — so fire-and-forget is safe.
+                        void enqueueSignRequest(resolved, {
                             sourceType: 'webview',
                             transportId: message.id,
                             sourceMetadata: metadata,

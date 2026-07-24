@@ -147,6 +147,78 @@ describe('parseAlgodMessage', () => {
         })
     })
 
+    describe('logic eval error', () => {
+        test('parses an app-call logic eval rejection', () => {
+            const msg =
+                'TransactionPool.Remember: transaction ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQR23: logic eval error: assert failed pc=1234. Details: app=2449590623, pc=1234, opcodes=intc_1; assert'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'logic_eval_error',
+                params: { appId: 2449590623n, detail: 'assert failed pc=1234' },
+            })
+        })
+
+        test('parses a logic eval error without Details suffix', () => {
+            const msg = 'logic eval error: err opcode executed'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'logic_eval_error',
+                params: { appId: undefined, detail: 'err opcode executed' },
+            })
+        })
+    })
+
+    describe('unavailable resource', () => {
+        test('parses unavailable Account', () => {
+            const msg =
+                'logic eval error: unavailable Account OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24. Details: app=2449590623, pc=100'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'unavailable_resource',
+                params: {
+                    resourceType: 'Account',
+                    resource:
+                        'OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24',
+                },
+            })
+        })
+
+        test('parses unavailable Asset', () => {
+            const msg =
+                'logic eval error: unavailable Asset 31566704. Details: pc=42'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'unavailable_resource',
+                params: { resourceType: 'Asset', resource: '31566704' },
+            })
+        })
+
+        test('parses invalid Box reference', () => {
+            const msg =
+                'logic eval error: invalid Box reference 0x00000000000026b7. Details: pc=55'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'unavailable_resource',
+                params: { resourceType: 'Box', resource: '0x00000000000026b7' },
+            })
+        })
+    })
+
+    describe('group fee too small', () => {
+        test('parses a pooled-fee shortfall', () => {
+            const msg =
+                'TransactionPool.Remember: txgroup had 4000 in fees, which is less than the minimum number of transactions per group * minFee (6 * 1000 = 6000)'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'group_fee_too_small',
+                params: { paid: 4000n, required: 6000n },
+            })
+        })
+
+        test('parses a required amount even without the arithmetic suffix', () => {
+            const msg =
+                'txgroup had 2000 in fees, which is less than the minimum 5000'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'group_fee_too_small',
+                params: { paid: 2000n, required: 5000n },
+            })
+        })
+    })
+
     describe('unknown', () => {
         test('returns null for a message that matches nothing', () => {
             expect(

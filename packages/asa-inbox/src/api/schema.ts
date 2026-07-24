@@ -103,6 +103,7 @@ export const arc59AssetRequestSchema = z.object({
 
 export const arc59AssetRequestsResponseSchema = z.object({
     results: z.array(arc59AssetRequestSchema),
+    inbox_address: z.string().nullable().optional(),
 })
 
 export type Arc59AssetRequestResponse = z.infer<typeof arc59AssetRequestSchema>
@@ -112,6 +113,8 @@ export type Arc59AssetRequestsResponse = z.infer<
 
 export type Arc59AssetRequest = {
     id?: string
+    /** The receiver's ARC-59 inbox account address, or null if none exists yet. */
+    inboxAddress: Nullable<string>
     /** Total amount across all senders, in base units */
     totalAmount: Decimal
     asset: PeraAsset
@@ -136,8 +139,10 @@ export type Arc59AssetRequest = {
 
 export const mapArc59AssetRequest = (
     raw: Arc59AssetRequestResponse,
+    inboxAddress: Nullable<string> = null,
 ): Arc59AssetRequest => ({
     id: raw.asset.asset_id,
+    inboxAddress,
     totalAmount: new Decimal(raw.total_amount),
     asset: {
         assetId: raw.asset.asset_id,

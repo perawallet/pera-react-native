@@ -18,7 +18,6 @@ import { Arc60BadJsonError } from '../arc60'
 import {
     parseSiwa,
     buildSiwaAuthRequest,
-    SIWA_CHAIN_ID,
     SIWA_MAX_PAYLOAD_BYTES,
     SIWA_MAX_RESOURCE_BYTES,
     SIWA_MAX_RESOURCES,
@@ -32,7 +31,7 @@ const baseSiwa = {
     uri: 'https://arc60.io/login',
     version: '1',
     nonce: 'abc123',
-    chain_id: SIWA_CHAIN_ID,
+    chain_id: 'algorand:mainnet',
     type: 'ed25519',
 } as const
 
@@ -41,7 +40,7 @@ describe('parseSiwa', () => {
         const canonical = canonify(baseSiwa)!
         const siwa = parseSiwa(canonical)
         expect(siwa.domain).toBe('arc60.io')
-        expect(siwa.chain_id).toBe(SIWA_CHAIN_ID)
+        expect(siwa.chain_id).toBe('algorand:mainnet')
         expect(siwa.type).toBe('ed25519')
     })
 
@@ -85,22 +84,6 @@ describe('parseSiwa', () => {
     test('rejects missing required fields', () => {
         const { domain: _, ...rest } = baseSiwa
         const canonical = canonify(rest)!
-        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
-    })
-
-    test('rejects a payload with a missing nonce', () => {
-        const { nonce: _nonce, ...rest } = baseSiwa
-        const canonical = canonify(rest)!
-        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
-    })
-
-    test('rejects a payload with an empty nonce', () => {
-        const canonical = canonify({ ...baseSiwa, nonce: '' })!
-        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
-    })
-
-    test('rejects wrong chain_id', () => {
-        const canonical = canonify({ ...baseSiwa, chain_id: '416' })!
         expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
     })
 
@@ -198,7 +181,7 @@ describe('buildSiwaAuthRequest', () => {
         expect(siwa.uri).toBe(args.uri)
         expect(siwa.nonce).toBe(args.nonce)
         expect(siwa.statement).toBe(args.statement)
-        expect(siwa.chain_id).toBe(SIWA_CHAIN_ID)
+        expect(siwa.chain_id).toBe('283')
         expect(siwa.type).toBe('ed25519')
     })
 

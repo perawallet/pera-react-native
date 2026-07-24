@@ -58,6 +58,7 @@ export {
     invalidateAccountQueriesForAddresses,
     removeAccountQueriesForAddresses,
     isAccountQuery,
+    isAccountBalancesHistoryQuery,
 } from './querykeys'
 export * from './useAccountSummaryQuery'
 export * from './useAccountAssetsQuery'

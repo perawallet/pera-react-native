@@ -52,6 +52,8 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({ kind: 'algokit-client' }),
     useNetwork: () => ({ network: 'mainnet' }),
+    compactSignedResults: (signed: unknown[]) =>
+        signed.filter(tx => tx !== null),
     // Order-sensitive byte match; with deterministic base64 inputs, comparing
     // the encoded strings is equivalent to the real decode-and-compare.
     rawTransactionsMatch: (expected: string[], polled: string[]) =>

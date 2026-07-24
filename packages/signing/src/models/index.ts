@@ -11,7 +11,7 @@
  */
 
 import type {
-    PeraSignedTransaction,
+    PeraSignedTxnResult,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -28,6 +28,7 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import type { ResolvedSignerType } from '../machine/context'
+import type { FeeAdjustment } from '../pipeline/sources/assignMinimumFeesToGroup'
 
 export type SignRequestSource = {
     name?: string
@@ -94,7 +95,18 @@ export type TransactionSignRequest = {
      */
     signableIndices?: number[]
     rawTransactionsBase64?: string[]
-    approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
+    /** Fees the pipeline raised to a required minimum (each record carries its reason — today only the PQ minimum for quantum signers); indices in groupContext space. UI shows original → adjusted; absent when nothing was modified. */
+    feeAdjustments?: FeeAdjustment[]
+    /**
+     * Delivers the signed group back to the requester. `PeraSignedTxnResult`
+     * covers both a plain `PeraSignedTransaction` and — for quantum signers —
+     * the `QuantumSignedTransaction` pqsig byte carrier; both flow through
+     * unchanged (see `buildSourceMetadata` in `machine/actions.ts`). Entries
+     * are `Nullable` because the enqueue implementation pads unsignable
+     * slots (contract-signed / unresolved signer) with `null` to preserve
+     * the original ARC-0001 slot order.
+     */
+    approve?: (signedTxs: Nullable<PeraSignedTxnResult>[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
     /**

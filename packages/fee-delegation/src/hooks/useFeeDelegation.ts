@@ -12,12 +12,14 @@
 
 import { useCallback } from 'react'
 import {
+    compactSignedResults,
     useAlgorandClient,
     useNetwork,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import type {
     PeraSignedTransaction,
+    PeraSignedTxnResult,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -99,7 +101,7 @@ const requestSignatures = (
     groupContext: PeraTransaction[],
     signableIndices: number[],
     sourceMetadata: TransactionSignRequest['sourceMetadata'],
-): Promise<PeraSignedTransaction[]> =>
+): Promise<PeraSignedTxnResult[]> =>
     new Promise((resolve, reject) => {
         const request: TransactionSignRequest = {
             id: generateOrderedUniqueId(),
@@ -111,7 +113,11 @@ const requestSignatures = (
             signableIndices,
             sourceMetadata,
             approve: async signed => {
-                resolve(signed)
+                // Single full-group headless sign (no per-slot padding), so
+                // every entry is expected to be present — the null filter is
+                // defensive only. Quantum carriers are kept unchanged so the
+                // carrier-aware submitAndAutoRefresh can broadcast them.
+                resolve(compactSignedResults(signed))
             },
             reject: async () => {
                 reject(new Error('User rejected fee-delegated signing'))

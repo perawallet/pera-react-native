@@ -65,6 +65,13 @@ const EXCLUDED_PREFIXES = [
     'rekey.',
 ];
 
+// Path fragments excluded from the (advisory) hardcoded-string scan below.
+// Developer-only surfaces — the in-app dev menu, migration viewer/simulator, and
+// the component gallery catalog — are never shipped to users or localized, so
+// English literals there are intentional, not i18n gaps. Real user-facing screens
+// (e.g. modules/migration/screens/MigrationSplashScreen) are NOT excluded.
+const HARDCODED_STRING_IGNORE = ['modules/settings/screens/developer/'];
+
 // Colors for console output
 const colors = {
     reset: '\x1b[0m',
@@ -322,6 +329,12 @@ function main() {
     srcFiles.forEach(file => {
         const content = fs.readFileSync(file, 'utf8');
         const relativePath = path.relative(process.cwd(), file);
+        const normalizedPath = relativePath.split(path.sep).join('/');
+
+        // Skip developer-only screens (intentional English, never localized).
+        if (HARDCODED_STRING_IGNORE.some(frag => normalizedPath.includes(frag))) {
+            return;
+        }
 
         patterns.forEach(pattern => {
             let match;

@@ -15,12 +15,14 @@
 // producing a `QuantumSignedTransaction` carrier. The second test below drives a
 // real quantum payment through the machine and proves the carrier is produced.
 //
-// Actual submission stays GATED/synthetic (out of scope, PQ-019): the local
-// send self-submits via the callback transport, whose delivery step
-// (`assertNoQuantumSignedTransactions`) deliberately refuses a Falcon pqsig
-// carrier — no node accepts it yet. So the machine SIGNS the payment (carrier
-// produced) but delivery is gated and NO algod `/v2/transactions` broadcast ever
-// happens, which is exactly what the test asserts.
+// PERA-4490 (PQ-017 task 3): the callback transport used to throw
+// (`assertNoQuantumSignedTransactions`) rather than deliver a Falcon pqsig
+// carrier to a peer. That gate is gone — the carrier-aware `encodeSignedTransaction`
+// means callback delivery hands the pqsig bytes straight through. The local send
+// still self-submits via the callback transport (not algod), so this test asserts
+// the carrier reaches the request's `approve` callback and that NO algod
+// `/v2/transactions` broadcast ever happens (submission itself stays
+// GATED/synthetic — out of scope here, see PQ-019).
 
 import {
     afterAll,
@@ -209,7 +211,7 @@ describe('send from quantum account (PQ-015)', () => {
     )
 
     it(
-        'Given a real quantum sender, when a local payment is signed, then the machine routes it through the quantum strategy to a QuantumSignedTransaction carrier and delivery is gated with no algod broadcast',
+        'Given a real quantum sender, when a local payment is signed, then the machine routes it through the quantum strategy to a QuantumSignedTransaction carrier and delivers it via the callback transport with no algod broadcast',
         async () => {
             await enableQuantumFlag()
             await seedQuantumSender()
@@ -224,13 +226,18 @@ describe('send from quantum account (PQ-015)', () => {
                 amount: 1_000_000n,
                 fee: 1000n,
             })
-            const { request, error: errorSpy } = buildTransactionSignRequest({
+            const {
+                request,
+                approve: approveSpy,
+                error: errorSpy,
+            } = buildTransactionSignRequest({
                 sourceType: 'local',
                 txs: [payment],
             })
 
             // Any algod broadcast is a failure: a Falcon-signed group must
-            // never be POSTed to a node that cannot verify it.
+            // never be POSTed to a node that cannot verify it — delivery here
+            // is via the callback transport's approve(), not submission.
             const sendSpy = vi.fn(() =>
                 HttpResponse.json(
                     {
@@ -245,28 +252,31 @@ describe('send from quantum account (PQ-015)', () => {
 
             // The machine dispatches the group to quantumSignerActor, the
             // dedicated strategy produces a QuantumSignedTransaction carrier,
-            // and the callback delivery step then refuses to hand a Falcon
-            // carrier to an external consumer — surfacing the gate error.
+            // and the callback delivery step now hands it straight to the
+            // request's approve() (PERA-4490 removed the gate that used to
+            // throw here).
             await waitFor(
                 () => {
-                    expect(errorSpy).toHaveBeenCalled()
+                    expect(approveSpy).toHaveBeenCalled()
                 },
                 { timeout: 10_000 },
             )
 
-            // The callback-delivery gate only fires AFTER signing produced a
-            // pqsig carrier — its presence is the load-bearing proof that the
-            // quantum account signed the payment end-to-end through the machine.
-            // Matching the delivery-specific message (not just any "quantum"
-            // error) rules out an earlier signing rejection — e.g. a stale
-            // "Unsupported account type: quantum" — masquerading as this
-            // outcome.
-            const gateError = errorSpy.mock.calls[0]?.[0] as Error
-            expect(String(gateError?.message)).toMatch(
-                /cannot be delivered via the callback transport/i,
-            )
+            expect(errorSpy).not.toHaveBeenCalled()
 
-            // No node ever saw the Falcon-signed group.
+            // The pqsig carrier's presence in the delivered array is the
+            // load-bearing proof that the quantum account signed the payment
+            // end-to-end through the machine — not just that some result was
+            // delivered.
+            const delivered = approveSpy.mock.calls[0]?.[0] as {
+                pqSignedBytes?: Uint8Array
+            }[]
+            expect(
+                delivered.some(tx => tx?.pqSignedBytes instanceof Uint8Array),
+            ).toBe(true)
+
+            // No node ever saw the Falcon-signed group: callback delivery,
+            // never algod submission.
             expect(sendSpy).not.toHaveBeenCalled()
         },
         SLOW_TEST_TIMEOUT_MS,

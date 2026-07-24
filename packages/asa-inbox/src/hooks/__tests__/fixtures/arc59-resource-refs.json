@@ -1,0 +1,172 @@
+{
+    "claim": {
+        "receiver": "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+        "inbox": "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI",
+        "assetId": "3025901754",
+        "txns": [
+            {
+                "type": "axfer",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            },
+            {
+                "type": "appl",
+                "accounts": [
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI",
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI"
+                ],
+                "foreignAssets": [
+                    "3025901754"
+                ],
+                "foreignApps": [],
+                "boxes": [
+                    "000000000003f08a9bdf2be23305cbf495538961e5e86ce1138aa9de34f9a004"
+                ]
+            }
+        ]
+    },
+    "claimWithAlgo": {
+        "receiver": "AAAAAAAAAATLOVN6WSNYBWSCZGEO4PS5BKS7KGB4PPJXA6WCTIII35HJZE",
+        "inbox": "OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24",
+        "assetId": "3408537337",
+        "notes": "inbox held 503000 spare microAlgos above its MBR",
+        "txns": [
+            {
+                "type": "appl",
+                "accounts": [
+                    "OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24",
+                    "OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24"
+                ],
+                "foreignAssets": [
+                    "3408537337"
+                ],
+                "foreignApps": [],
+                "boxes": [
+                    "00000000000026b755beb49b80da42c988ee3e5d0aa5f5183c7bd3707ac29a10"
+                ]
+            },
+            {
+                "type": "axfer",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            },
+            {
+                "type": "appl",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            }
+        ]
+    },
+    "reject": {
+        "receiver": "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+        "inbox": "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI",
+        "assetId": "3025901754",
+        "txns": [
+            {
+                "type": "appl",
+                "accounts": [
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI",
+                    "PERAIS5VIL6XK5GFUMDO6WASEPIOV54TINIWVDLJ65Y2Z4NA65GX42YUSA",
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI",
+                    "PERAIS5VIL6XK5GFUMDO6WASEPIOV54TINIWVDLJ65Y2Z4NA65GX42YUSA"
+                ],
+                "foreignAssets": [
+                    "3025901754"
+                ],
+                "foreignApps": [],
+                "boxes": [
+                    "000000000003f08a9bdf2be23305cbf495538961e5e86ce1138aa9de34f9a004"
+                ]
+            }
+        ]
+    },
+    "send": {
+        "sender": "PERAIS5VIL6XK5GFUMDO6WASEPIOV54TINIWVDLJ65Y2Z4NA65GX42YUSA",
+        "receiver": "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+        "assetId": "3025901754",
+        "notes": "summary.minimum_balance_requirement/inner_tx_count/algo_fund_amount are synthesized (no backend API key available to this tool) using this repo’s own unit-test baseline (100000 / 2 / 0); is_arc59_opted_in reflects the real router account state for this asset.",
+        "txns": [
+            {
+                "type": "pay",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            },
+            {
+                "type": "axfer",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            },
+            {
+                "type": "appl",
+                "accounts": [
+                    "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI",
+                    "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI"
+                ],
+                "foreignAssets": [
+                    "3025901754"
+                ],
+                "foreignApps": [],
+                "boxes": [
+                    "000000000003f08a9bdf2be23305cbf495538961e5e86ce1138aa9de34f9a004"
+                ]
+            }
+        ]
+    },
+    "sendWithRouterOptIn": {
+        "sender": "TUDVESZE2E6CLNVS4KCDXWEI355GVMEBH5MDMNFXFZW4BGRZOVPYQU77VQ",
+        "receiver": "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+        "assetId": "3637700983",
+        "notes": "summary synthesized as in \"send\"; is_arc59_opted_in forced false because the router account was confirmed (live accountInformation) not opted into this asset.",
+        "txns": [
+            {
+                "type": "pay",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            },
+            {
+                "type": "appl",
+                "accounts": [
+                    "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI",
+                    "AAAAAAAAAPYIVG67FPRDGBOL6SKVHCLB4XUGZYITRKU54NHZUACJHFA4CU",
+                    "GFRMHDXETGTQBK34LQOP5GYR6IVYOGVD2XEEN3QNXVCSXVWQJEMXWQEZSI"
+                ],
+                "foreignAssets": [
+                    "3637700983"
+                ],
+                "foreignApps": [],
+                "boxes": [
+                    "000000000003f08a9bdf2be23305cbf495538961e5e86ce1138aa9de34f9a004"
+                ]
+            },
+            {
+                "type": "axfer",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            },
+            {
+                "type": "appl",
+                "accounts": [],
+                "foreignAssets": [],
+                "foreignApps": [],
+                "boxes": []
+            }
+        ]
+    }
+}

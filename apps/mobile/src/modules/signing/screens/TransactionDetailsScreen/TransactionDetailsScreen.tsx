@@ -10,44 +10,21 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useEffect } from 'react'
 
-import {
-    useNavigation,
-    useRoute,
-    type RouteProp,
-} from '@react-navigation/native'
 import { trackScreen, AnalyticsScreenName } from '@analytics'
-import type { StackNavigationProp } from '@react-navigation/stack'
 
-import { PWScreen } from '@components/core'
+import { PWButton, PWScreen } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    useTransactionDetailQuery,
-    useGroupTransactionsQuery,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
 import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
 import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
 import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
-import type { SigningStackParamList } from '@modules/signing/routes'
-
-type NavigationProp = StackNavigationProp<
-    SigningStackParamList,
-    'TransactionDetails'
->
-
-type TransactionDetailsRouteProp = RouteProp<
-    SigningStackParamList,
-    'TransactionDetails'
->
+import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
 
 export const TransactionDetailsScreen = () => {
-    const navigation = useNavigation<NavigationProp>()
     const { t } = useLanguage()
-    const route = useRoute<TransactionDetailsRouteProp>()
 
     // Tracked in-screen rather than via the navigator's screenListeners: this
     // screen is also mounted inside the signing flow's own NavigationContainer
@@ -58,44 +35,26 @@ export const TransactionDetailsScreen = () => {
     }, [])
 
     const {
-        transaction: paramTransaction,
-        transactionId,
-        groupId,
+        renderState,
+        groupTransactions,
+        currentTransactionId,
         isExternal,
-    } = route.params
+        handleTransactionPress,
+        handleRetry,
+    } = useTransactionDetailsScreen()
 
-    const { data: fetchedTransaction, isLoading } = useTransactionDetailQuery({
-        transactionId: transactionId || paramTransaction?.id || '',
-        isEnabled: !paramTransaction && !!transactionId,
-    })
-
-    const { groupTransactions } = useGroupTransactionsQuery({
-        groupId,
-    })
-
-    const transaction = paramTransaction || fetchedTransaction || null
-
-    const handleTransactionPress = useCallback(
-        (tx: PeraDisplayableTransaction) => {
-            navigation.push('TransactionDetails', { transaction: tx, groupId })
-        },
-        [navigation, groupId],
-    )
-
-    if (transaction) {
+    if (renderState.kind === 'content') {
         return (
             <PWScreen testID='transaction_details_screen'>
                 <TransactionDisplay
-                    transaction={transaction}
+                    transaction={renderState.transaction}
                     onInnerTransactionsPress={handleTransactionPress}
                 />
                 {isExternal && <ExternalTransactionCallout />}
                 {groupTransactions.length > 1 && (
                     <GroupTransactionsPanel
                         groupTransactions={groupTransactions}
-                        currentTransactionId={
-                            transaction.id ?? transactionId ?? ''
-                        }
+                        currentTransactionId={currentTransactionId}
                         onGroupTransactionPress={handleTransactionPress}
                     />
                 )}
@@ -103,7 +62,7 @@ export const TransactionDetailsScreen = () => {
         )
     }
 
-    if (isLoading) {
+    if (renderState.kind === 'loading') {
         return (
             <LoadingView
                 variant='circle'
@@ -112,10 +71,35 @@ export const TransactionDetailsScreen = () => {
         )
     }
 
+    if (renderState.kind === 'offline') {
+        return (
+            <EmptyView
+                testID='transaction_details_offline_view'
+                title={t('errors.network.no_connection.title')}
+                body={t('errors.network.no_connection.body')}
+                button={
+                    <PWButton
+                        variant='primary'
+                        title={t('common.retry.label')}
+                        onPress={handleRetry}
+                    />
+                }
+            />
+        )
+    }
+
     return (
         <EmptyView
-            title={t('errors.general.title')}
-            body={t('errors.general.body')}
+            testID='transaction_details_error_view'
+            title={t(renderState.titleKey)}
+            body={t(renderState.bodyKey)}
+            button={
+                <PWButton
+                    variant='primary'
+                    title={t('common.retry.label')}
+                    onPress={handleRetry}
+                />
+            }
         />
     )
 }

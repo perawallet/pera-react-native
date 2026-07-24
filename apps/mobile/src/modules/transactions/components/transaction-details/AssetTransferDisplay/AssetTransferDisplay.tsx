@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWView } from '@components/core'
+import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
@@ -47,6 +47,7 @@ export const AssetTransferDisplay = ({
 
     const {
         asset,
+        isAssetPending,
         transferType,
         senderAddress,
         receiverAddress,
@@ -102,19 +103,23 @@ export const AssetTransferDisplay = ({
                                 nameVariant='body'
                                 showId
                             />
-                        ) : (
+                        ) : isAssetPending ? (
                             <LoadingView
                                 size='sm'
                                 variant='circle'
                             />
+                        ) : (
+                            <PWText variant='body'>
+                                {t('transactions.common.asset_unavailable')}
+                            </PWText>
                         )}
                     </PWView>
                 </KeyValueRow>
 
-                {transferType !== 'opt-in' && (
+                {transferType !== 'opt-in' && (asset || isAssetPending) && (
                     <KeyValueRow title={t('transactions.common.amount')}>
                         <AssetAmount
-                            isLoading={!asset}
+                            isLoading={isAssetPending}
                             asset={asset}
                             value={amount}
                             showSymbol

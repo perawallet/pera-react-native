@@ -54,7 +54,7 @@ export const WealthChart = ({
         [account, accounts],
     )
 
-    const { data, isPending, isError, refetch } =
+    const { data, isPending, isError, isPaused, refetch } =
         useAccountBalancesHistoryQuery(addresses, period, enabled)
 
     return (
@@ -64,6 +64,7 @@ export const WealthChart = ({
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
+            isPaused={isPaused}
             onRetry={() => void refetch()}
             emptyBody={t('common.wealth_chart.empty_body')}
             style={themeStyle.container}

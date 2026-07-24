@@ -4,58 +4,55 @@ packages:
   - extensions/*
 
 catalog:
-  "@algorandfoundation/algokit-utils": 9.2.0
-  "@algorandfoundation/keystore": 1.0.0-canary.17
-  "@algorandfoundation/ledger-algorand-js": ^1.4.3
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.13
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.22
-  "@algorandfoundation/wallet-provider": 1.0.0-canary.5
-  "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@babel/runtime": ^7.29.2
-  "@expo/app-integrity": ~57.0.0
-  "@joe-p/algosdk": 3.7.0-beta.1
-  "@joe-p/react-native-falcon": 0.1.0
-  "@ledgerhq/errors": ^6.35.0
-  "@ledgerhq/react-native-hid": ^6.39.1
-  "@noble/hashes": ^1.8.0
-  "@notifee/react-native": ^9.1.8
-  "@react-native-firebase/analytics": ^25.1.0
-  "@react-native-firebase/app": ^25.1.0
-  "@react-native-firebase/crashlytics": ^25.1.0
-  "@react-native-firebase/messaging": ^25.1.0
-  "@react-native-firebase/remote-config": ^25.1.0
-  "@scure/bip39": ^2.2.0
-  "@tanstack/query-async-storage-persister": ^5.99.0
-  "@tanstack/react-query": ^5.99.0
-  "@tanstack/react-query-persist-client": ^5.99.0
-  "@tanstack/store": ^0.11.0
-  "@testing-library/react": 16.3.2
-  "@types/node": ^20.19.39
-  "@types/react": ~19.2.14
-  "@vitejs/plugin-react": 6.0.3
-  "@vitest/coverage-v8": ^4.1.9
-  "@xstate/react": ^6.1.0
+  '@algorandfoundation/algokit-utils': 9.2.0
+  '@algorandfoundation/keystore': 1.0.0-canary.17
+  '@algorandfoundation/ledger-algorand-js': ^1.4.3
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.13
+  '@algorandfoundation/react-native-passkey-autofill': 1.0.0-canary.22
+  '@algorandfoundation/wallet-provider': 1.0.0-canary.5
+  '@algorandfoundation/xhd-wallet-api': ^2.0.0-canary.1
+  '@babel/runtime': ^7.29.2
+  '@expo/app-integrity': ~57.0.0
+  '@joe-p/algosdk': 3.7.0-beta.1
+  '@joe-p/react-native-falcon': 0.1.0
+  '@ledgerhq/errors': ^6.35.0
+  '@ledgerhq/react-native-hid': ^6.39.1
+  '@noble/hashes': ^1.8.0
+  '@notifee/react-native': ^9.1.8
+  '@react-native-firebase/analytics': ^25.1.0
+  '@react-native-firebase/app': ^25.1.0
+  '@react-native-firebase/crashlytics': ^25.1.0
+  '@react-native-firebase/messaging': ^25.1.0
+  '@react-native-firebase/remote-config': ^25.1.0
+  '@scure/bip39': ^2.2.0
+  '@tanstack/query-async-storage-persister': ^5.99.0
+  '@tanstack/react-query': ^5.99.0
+  '@tanstack/react-query-persist-client': ^5.99.0
+  '@tanstack/store': ^0.11.0
+  '@testing-library/react': 16.3.2
+  '@types/node': ^20.19.39
+  '@types/react': ~19.2.14
+  '@vitejs/plugin-react': 6.0.3
+  '@vitest/coverage-v8': ^4.1.9
+  '@xstate/react': ^6.1.0
   algosdk: ^3.5.2
   before-after-hook: ^4.0.0
   decimal.js: ^10.6.0
   drizzle-orm: ^0.45.2
   eslint: 9.39.5
   eslint-plugin-unused-imports: 4.4.1
-  expo: ^57.0.2
-  expo-application: ~57.0.0
-  expo-device: ~57.0.0
-  expo-local-authentication: ~57.0.0
-  expo-localization: ~57.0.0
-  expo-sqlite: ~57.0.0
+  expo: ^57.0.7
+  expo-application: ~57.0.2
+  expo-device: ~57.0.1
+  expo-local-authentication: ~57.0.1
+  expo-localization: ~57.0.1
+  expo-sqlite: ~57.0.1
   falcon-1024: ^0.2.0
   fast-glob: ^3.3.2
   jsdom: ^27.4.0
   ky: ^2.0.2
+  msw: ^2.14.6
   oxfmt: ^0.58.0
-  # Must equal react-native 0.86.0's bundled renderer version. RN does an exact
-  # React.version match at runtime, so a looser bump (e.g. 19.2.7) → red-screen
-  # "Incompatible React versions". Keep in lockstep with the override below.
-  # Expo SDK 57 / RN 0.86 still bundle 19.2.3, so this stays put.
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.0
@@ -67,7 +64,6 @@ catalog:
   typescript: ^5.9.3
   util: ^0.12.5
   uuid: 14.0.1
-  msw: ^2.14.6
   vite: ^8.0.8
   vite-plugin-dts: ^5.0.0
   vitest: ^4.1.9
@@ -75,9 +71,24 @@ catalog:
   zod: ^4.4.3
   zustand: ^5.0.12
 
+minimumReleaseAge: 10080
+
+minimumReleaseAgeExclude:
+  - '@algorandfoundation/keystore'
+  - '@algorandfoundation/react-native-keystore'
+  - '@algorandfoundation/react-native-passkey-autofill'
+  - '@joe-p/algosdk'
+  - '@joe-p/react-native-falcon'
+  - falcon-1024
+  - fast-uri
+  - expo
+  - expo-*
+  - '@expo/*'
+  - babel-preset-expo
+
 onlyBuiltDependencies:
-  - "@firebase/util"
-  - "@tailwindcss/oxide"
+  - '@firebase/util'
+  - '@tailwindcss/oxide'
   - better-sqlite3
   - electron
   - electron-winstaller
@@ -91,106 +102,58 @@ onlyBuiltDependencies:
 
 patchedDependencies:
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.22": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.22.patch
+  # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
+  # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
+  # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
+  # qualify to Swift.abs to disambiguate. Drop once Expo ships a toolchain-compatible release.
+  "expo-modules-jsi@57.0.3": patches/expo-modules-jsi@57.0.3.patch
 
 overrides:
-  "@algorandfoundation/keystore": 1.0.0-canary.17
-  # Force a single react-native-keystore across the tree. react-native-passkey-autofill
-  # transitively pins canary.12 (which still exports the old get-or-create getMasterKey);
-  # without this the app resolves two versions and the readMasterKey call is undefined
-  # at runtime. Its keystore dep is unused at runtime, so forcing it up is safe.
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.13
-  "@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4": ">=7.29.4"
-  "@expo/dom-webview": ~57.0.0
-  # Security backport for GHSA-5375-pq7m-f5r2 + GHSA-99f4-grh7-6pcq (DoS).
-  # Pinned exactly, NOT ">=", so it stays inside @firebase/firestore's
-  # "~1.9.0" range — 1.10+ would break Firestore's resolution.
-  "@grpc/grpc-js@<1.9.16": 1.9.16
-  "@xmldom/xmldom": 0.8.13
+  '@algorandfoundation/keystore': 1.0.0-canary.17
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.13
+  '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
+  '@expo/dom-webview': ~57.0.1
+  '@grpc/grpc-js@<1.9.16': 1.9.16
+  '@react-native/metro-config': 0.86.0
+  '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
-  # GHSA-3jxr-9vmj-r5cp (DoS via exponential expansion of consecutive
-  # non-expanding {} groups). No patched 3.x/4.x exists — the fix landed in
-  # 5.0.7 for the whole >=3.0.0 <5.0.7 range, so 3.x/4.x/5.x all pin to 5.0.7
-  # (brace-expansion's expand() API is stable across majors).
   brace-expansion@1: 1.1.16
   brace-expansion@2: 2.1.2
   brace-expansion@3: 5.0.7
   brace-expansion@4: 5.0.7
   brace-expansion@5: 5.0.7
-  esbuild@<0.25.0: ">=0.25.0"
-  # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
-  esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
-  fast-uri@<3.1.2: ">=3.1.2"
+  esbuild@<0.25.0: '>=0.25.0'
+  esbuild@>=0.27.3 <0.28.1: '>=0.28.1'
+  fast-uri@<4.1.1: '>=4.1.1'
   flatted@3: 3.4.2
-  glob@>=10.2.0 <10.5.0: ">=10.5.0"
-  happy-dom@<20.0.0: ">=20.0.0"
-  happy-dom@>=19.0.0 <20.0.2: ">=20.0.2"
-  js-yaml@<3.14.2: ">=3.14.2"
-  # GHSA-h67p-54hq-rp68 (quadratic-complexity DoS); 4.1.1 is now vulnerable too.
-  js-yaml@>=4.0.0 <4.2.0: ">=4.2.0"
+  glob@>=10.2.0 <10.5.0: '>=10.5.0'
+  happy-dom@<20.0.0: '>=20.0.0'
+  happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
+  js-yaml@<3.14.2: '>=3.14.2'
+  js-yaml@>=4.0.0 <4.2.0: '>=4.2.0'
   lodash@4: 4.18.1
-  nanoid@<3.3.8: ">=3.3.8"
-  node-fetch@<2.6.7: ">=2.6.7"
+  nanoid@<3.3.8: '>=3.3.8'
+  node-fetch@<2.6.7: '>=2.6.7'
   node-forge@1: 1.4.0
   picomatch@2: 2.3.2
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
-  postcss@<8.5.10: ">=8.5.10"
-  # GHSA-wcpc-wj8m-hjx6 + GHSA-f38q-mgvj-vph7 (DoS / property shadowing) and
-  # GHSA-j3f2-48v5-ccww (DoS via infinite loop in .proto option parsing).
-  # Pinned exact to the verified lowest patched 7.x.
+  postcss@<8.5.10: '>=8.5.10'
   protobufjs@7: 7.6.5
-  # Pinned to react-native 0.86.0's bundled renderer (19.2.3); see catalog note.
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.0
-  "@react-native/metro-config": 0.86.0
-  # Pin every nitro consumer (mmkv keystore, quick-crypto, reanimated, vision-camera +
-  # its nitro-image peer) to one native ABI version — leaving it at 0.35.7 splits the
-  # tree into 0.35.7 + 0.35.9. nitro-image 0.15.1 is built against 0.35.9.
   react-native-nitro-modules: 0.35.9
-  react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^3.0.0
-  # GHSA-395f-4hp3-45gv (quadratic-complexity DoS in parse()). Pinned exact to
-  # the verified lowest patched 1.9.0, NOT ">=", which would pull the unvetted
-  # 1.10.0.
+  react-native-quick-crypto: ^1.0.17
   shell-quote@<1.9.0: 1.9.0
+  svgo@>=3.0.0 <3.3.4: '>=3.3.4'
   uuid@<14: 14.0.0
-  # GHSA-96hv-2xvq-fx4p (memory-exhaustion DoS); 7.5.10 is now vulnerable.
-  # Pinned exact (NOT ">="), since 7.5.11 is the last 7.x and ">=" would jump to 8.x.
   ws@>=7.0.0 <7.5.11: 7.5.11
-  ws@>=8.0.0 <8.20.1: ">=8.20.1"
+  ws@>=8.0.0 <8.20.1: '>=8.20.1'
   yaml@1: 1.10.3
   yaml@2: 2.8.3
 
 supportedArchitectures:
   cpu: [x64, arm64]
   os: [win32, darwin, current]
-
-# Supply-chain hardening: wait 7 days before a new version is allowed.
-# Catches compromised/malicious packages that typically get yanked quickly.
-minimumReleaseAge: 10080
-# Packages exempt from the freshness window, and why:
-#   @algorandfoundation/keystore, react-native-keystore, react-native-passkey-autofill
-#     — in-progress first-party canaries pinned to specific versions.
-#   expo / expo-* / @expo/* / babel-preset-expo
-#     — active SDK 57 line: Expo ships frequent same-SDK patch releases (57.0.x)
-#       that we want to adopt immediately rather than wait out the window.
-#       Revisit once SDK 57 patch cadence settles.
-#   @joe-p/algosdk, falcon-1024, @joe-p/react-native-falcon
-#     — beta forks (single maintainer: Joe Polny, an Algorand Foundation
-#       tooling contributor) used for the PQ/Falcon-1024 integration spike
-#       (PERA-4642). @joe-p/algosdk is exact-pinned (no floating range);
-#       falcon-1024 is early-stage (0.x) so only one version exists to date.
-#       @joe-p/react-native-falcon (the on-device native Falcon-1024 nitro
-#       module, PQ-020) is likewise exact-pinned to its single 0.x release.
-minimumReleaseAgeExclude:
-  - "@algorandfoundation/keystore"
-  - "@algorandfoundation/react-native-keystore"
-  - "@algorandfoundation/react-native-passkey-autofill"
-  - "@joe-p/algosdk"
-  - "@joe-p/react-native-falcon"
-  - falcon-1024
-  - expo
-  - "expo-*"
-  - "@expo/*"
-  - babel-preset-expo

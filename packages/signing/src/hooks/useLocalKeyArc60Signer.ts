@@ -17,22 +17,18 @@ import {
     InvalidBip44PathError,
     isAlgo25Account,
     isHDWalletAccount,
+    useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import {
-    ARC60_SCOPE_AUTH,
-    Arc60BadJsonError,
     Arc60FailedHdPathError,
-    Arc60InvalidScopeError,
     Arc60InvalidSignerError,
     buildArc60AuthSigningPayload,
-    decodeArc60Data,
-    verifyAuthenticatorDomain,
+    validateArc60AuthRequest,
 } from '../utils/arc60'
-import { parseSiwa } from '../utils/siwa'
 
 export type UseLocalKeyArc60SignerResult = {
     /**
@@ -52,6 +48,7 @@ export type UseLocalKeyArc60SignerResult = {
 // signArc60OnHardwareWallet, so it never hits this hook.
 export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
     const { signDataWithKey } = useKMS()
+    const accounts = useAllAccounts()
 
     const signArc60 = useCallback(
         async (
@@ -59,10 +56,6 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
-            if (metadata.scope !== ARC60_SCOPE_AUTH) {
-                throw new Arc60InvalidScopeError(metadata.scope)
-            }
-
             // ARC-60 verifies signatures against the requested signer's
             // own pubkey. Rekey is NOT followed — sign with this account's
             // own keypair or reject.
@@ -73,43 +66,12 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
                 )
             }
 
-            // Domain binding — verify before doing any signing work.
-            verifyAuthenticatorDomain(
-                stdSigData.domain,
-                stdSigData.authenticatorData,
+            // Shared host-side validation (scope / domain / SIWA / signer).
+            const { decodedData } = validateArc60AuthRequest(
+                stdSigData,
+                metadata,
+                accounts,
             )
-
-            const decodedData = decodeArc60Data(
-                stdSigData.data,
-                metadata.encoding,
-            )
-
-            // AUTH scope is strict SIWA: parse + canonicalize before signing
-            // so the dApp can't slip arbitrary bytes through the AUTH path.
-            let jsonString: string
-            try {
-                jsonString = new TextDecoder('utf-8', { fatal: true }).decode(
-                    decodedData,
-                )
-            } catch (caught) {
-                throw new Arc60BadJsonError(
-                    'decoded payload is not valid UTF-8',
-                    caught instanceof Error ? caught : undefined,
-                )
-            }
-            const siwa = parseSiwa(jsonString)
-
-            if (siwa.domain !== stdSigData.domain) {
-                throw new Arc60BadJsonError(
-                    `SIWA domain "${siwa.domain}" does not match request domain "${stdSigData.domain}"`,
-                )
-            }
-            if (siwa.account_address !== stdSigData.signer) {
-                throw new Arc60InvalidSignerError(
-                    stdSigData.signer,
-                    `SIWA account_address "${siwa.account_address}" does not match request signer`,
-                )
-            }
 
             const payload = buildArc60AuthSigningPayload(
                 decodedData,

@@ -16,6 +16,7 @@ import {
     Arc60BadJsonError,
     Arc60DomainMismatchError,
     Arc60FailedDecodingError,
+    Arc60InvalidDateError,
     Arc60InvalidScopeError,
     Arc60InvalidSignerError,
     Arc60MissingAuthDataError,
@@ -23,6 +24,7 @@ import {
 } from './arc60-errors'
 import { parseSiwa } from './siwa'
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // Re-export the ARC-60 error catalogue so existing `../utils/arc60` imports
 // keep working. The classes live in `./arc60-errors` to avoid an import cycle
@@ -122,6 +124,7 @@ export const buildArc60AuthSigningPayload = (
 export const validateArc60AuthRequest = (
     stdSigData: Arc60StdSigData,
     metadata: Arc60Metadata,
+    accounts: WalletAccount[],
 ): { decodedData: Uint8Array } => {
     if (metadata.scope !== ARC60_SCOPE_AUTH) {
         throw new Arc60InvalidScopeError(metadata.scope)
@@ -145,16 +148,35 @@ export const validateArc60AuthRequest = (
 
     const siwa = parseSiwa(jsonString)
 
+    if (
+        (siwa['issued-at'] && Date.parse(siwa['issued-at']) > Date.now()) ||
+        (siwa['not-before'] && Date.parse(siwa['not-before']) > Date.now()) ||
+        (siwa['expiration-time'] &&
+            Date.parse(siwa['expiration-time']) <= Date.now())
+    ) {
+        throw new Arc60InvalidDateError(
+            `SIWA issued-at, not-before or expiration-date is invalid`,
+        )
+    }
+
     if (siwa.domain !== stdSigData.domain) {
         throw new Arc60BadJsonError(
             `SIWA domain "${siwa.domain}" does not match request domain "${stdSigData.domain}"`,
         )
     }
     if (siwa.account_address !== stdSigData.signer) {
-        throw new Arc60InvalidSignerError(
-            stdSigData.signer,
-            `SIWA account_address "${siwa.account_address}" does not match request signer`,
-        )
+        if (
+            !accounts.find(
+                a =>
+                    a.address === siwa.account_address &&
+                    a.rekeyAddress === stdSigData.signer,
+            )
+        ) {
+            throw new Arc60InvalidSignerError(
+                stdSigData.signer,
+                `SIWA signer is not a valid signer for "${siwa.account_address}"`,
+            )
+        }
     }
 
     return { decodedData }

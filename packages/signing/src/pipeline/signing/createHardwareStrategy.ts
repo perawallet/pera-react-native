@@ -14,7 +14,10 @@ import type {
     WalletAccount,
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isHardwareWalletAccount,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletTransport,
     HardwareWalletRegistry,
@@ -406,8 +409,13 @@ const signArc60OnHardwareWallet = async (
             throw new LedgerAppOutdatedError()
         }
 
-        // Shared host-side validation (scope / domain / SIWA / signer).
-        validateArc60AuthRequest(stdSigData, metadata)
+        // Shared host-side validation (scope / domain / SIWA / signer). Reads
+        // a fresh snapshot rather than subscribing — this is a plain async
+        // function, not a component/hook render, so the `useAccountsStore()`
+        // hook form can't be called here (see useUpdateAccount for the same
+        // pattern).
+        const accounts = useAccountsStore.getState().accounts
+        validateArc60AuthRequest(stdSigData, metadata, accounts)
 
         callbacks?.onSigningStart?.()
         callbacks?.onProgress?.(1, 1)

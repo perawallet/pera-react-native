@@ -12,6 +12,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent, screen } from '@test-utils/render'
+// Ensure i18n is initialised so t() resolves real strings in this test's module graph.
+import '../../../i18n'
+import { useNetworkStatusStore } from '@modules/network'
 import { BalanceLineChart } from '../BalanceLineChart'
 
 const { lineChartProps } = vi.hoisted(() => ({
@@ -46,6 +49,7 @@ const renderChart = (
 describe('BalanceLineChart', () => {
     beforeEach(() => {
         lineChartProps.current = null
+        useNetworkStatusStore.getState().setHasInternet(true)
     })
 
     it('maps the series through getValue into chart points', () => {
@@ -118,5 +122,70 @@ describe('BalanceLineChart', () => {
         renderChart({ isError: true })
 
         expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
+    })
+
+    it('renders the offline state instead of the spinner when paused with no data', () => {
+        renderChart({ series: undefined, isPending: true, isPaused: true })
+
+        expect(screen.getByText('Offline Mode')).toBeTruthy()
+        expect(
+            screen.getByText(
+                "You're offline — this will refresh automatically once you're back online.",
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByText(EMPTY_BODY)).toBeNull()
+        expect(screen.queryByTestId('line-chart')).toBeNull()
+    })
+
+    it('keeps rendering the last-known chart when paused with stale data', () => {
+        renderChart({
+            series: [{ balance: 1 }, { balance: 2 }],
+            isPaused: true,
+        })
+
+        expect(screen.getByTestId('line-chart')).toBeTruthy()
+        expect(screen.queryByText('Offline Mode')).toBeNull()
+    })
+
+    it('keeps rendering the last-known chart when a background refetch errors', () => {
+        renderChart({ series: [{ balance: 1 }, { balance: 2 }], isError: true })
+
+        expect(screen.getByTestId('line-chart')).toBeTruthy()
+    })
+
+    it('shows a reachable retry in the offline state', () => {
+        const onRetry = vi.fn()
+        renderChart({ series: undefined, isPaused: true, onRetry })
+
+        expect(screen.getByTestId('balance-chart-retry')).toBeTruthy()
+    })
+
+    it('does not dispatch a doomed request when retry is pressed while offline', () => {
+        // Offline, the press opens an explanatory sheet (asserted in the hook
+        // test) rather than firing onRetry — the manager host is not mounted
+        // here, so we only assert the request is short-circuited.
+        useNetworkStatusStore.getState().setHasInternet(false)
+        const onRetry = vi.fn()
+        renderChart({ series: undefined, isPaused: true, onRetry })
+
+        fireEvent.click(screen.getByTestId('balance-chart-retry'))
+
+        expect(onRetry).not.toHaveBeenCalled()
+    })
+
+    it('shows the offline state for an errored query while the device is offline', () => {
+        useNetworkStatusStore.getState().setHasInternet(false)
+        renderChart({ isError: true, errorBody: 'could not load chart' })
+
+        expect(screen.getByText('Offline Mode')).toBeTruthy()
+        expect(screen.queryByText('could not load chart')).toBeNull()
+    })
+
+    it('renders the loading spinner during a first online fetch', () => {
+        renderChart({ series: undefined, isPending: true })
+
+        expect(screen.queryByText(EMPTY_BODY)).toBeNull()
+        expect(screen.queryByTestId('line-chart')).toBeNull()
+        expect(screen.queryByText('Offline Mode')).toBeNull()
     })
 })

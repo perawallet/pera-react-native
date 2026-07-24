@@ -72,6 +72,9 @@ const SEVERITY: Record<AlgodErrorCode, ErrorSeverity> = {
     expired_txn: ErrorSeverity.MEDIUM,
     not_authorized: ErrorSeverity.MEDIUM,
     logic_error: ErrorSeverity.HIGH,
+    logic_eval_error: ErrorSeverity.HIGH,
+    unavailable_resource: ErrorSeverity.HIGH,
+    group_fee_too_small: ErrorSeverity.MEDIUM,
     network_unavailable: ErrorSeverity.MEDIUM,
     unknown_node_error: ErrorSeverity.HIGH,
 }
@@ -84,6 +87,9 @@ const RETRYABLE: Record<AlgodErrorCode, boolean> = {
     expired_txn: true,
     not_authorized: false,
     logic_error: false,
+    logic_eval_error: false,
+    unavailable_resource: false,
+    group_fee_too_small: false,
     network_unavailable: true,
     unknown_node_error: false,
 }

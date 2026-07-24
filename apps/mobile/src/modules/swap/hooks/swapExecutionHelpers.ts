@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import type {
-    PeraSignedTransaction,
-    PeraTransaction,
+import {
+    compactSignedResults,
+    isQuantumSignedTransaction,
+    type PeraSignedTransaction,
+    type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '@perawallet/wallet-core-swaps'
@@ -87,7 +89,29 @@ export const requestSwapSignatures = (
             groupContext,
             sourceMetadata: source,
             approve: async signed => {
-                resolve(signed)
+                // Quantum accounts are kept out of swap only by a feature
+                // flag today — there is no structural guard in this module
+                // stopping a quantum account from routing into a swap
+                // (PQ-024 / PERA-4705 adds real support). The null-filter is
+                // defensive narrowing back to the swap module's
+                // plain-signature contract (this single full-group sign
+                // never pads null slots), but a quantum-signed carrier is
+                // not something we can silently drop: doing so would vanish
+                // signed slots and corrupt the group downstream into an
+                // opaque submission crash. Fail loudly instead — this
+                // mirrors the fail-loud contract of
+                // `assertNoQuantumSignedTransactions`, the callback-transport
+                // gate PQ-017 removed from the signing machine.
+                const nonNull = compactSignedResults(signed)
+                if (nonNull.some(isQuantumSignedTransaction)) {
+                    reject(
+                        new Error(
+                            'Quantum accounts are not supported in swap flows yet',
+                        ),
+                    )
+                    return
+                }
+                resolve(nonNull as PeraSignedTransaction[])
             },
             reject: async () => {
                 reject(new SwapUserRejectedError())

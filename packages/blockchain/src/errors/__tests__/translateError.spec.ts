@@ -69,6 +69,49 @@ describe('toAlgodError', () => {
         expect(e.originalError).toBe(raw)
     })
 
+    test('parses a logic eval error rejection from a thrown Error', () => {
+        const raw = new Error(
+            `TransactionPool.Remember: transaction ${TXID}: ` +
+                'logic eval error: assert failed pc=1234. Details: app=2449590623, pc=1234, opcodes=intc_1; assert',
+        )
+        const e = toAlgodError(raw)
+
+        expect(e).toBeInstanceOf(AlgodError)
+        expect(e.code).toBe(AlgodErrorCode.LOGIC_EVAL_ERROR)
+        expect(e.params).toEqual({
+            appId: 2449590623n,
+            detail: 'assert failed pc=1234',
+        })
+        expect(e.originalError).toBe(raw)
+    })
+
+    test('parses an unavailable-resource rejection from a thrown Error', () => {
+        const raw = new Error(
+            `logic eval error: unavailable Asset 31566704. Details: pc=42`,
+        )
+        const e = toAlgodError(raw)
+
+        expect(e).toBeInstanceOf(AlgodError)
+        expect(e.code).toBe(AlgodErrorCode.UNAVAILABLE_RESOURCE)
+        expect(e.params).toEqual({
+            resourceType: 'Asset',
+            resource: '31566704',
+        })
+        expect(e.originalError).toBe(raw)
+    })
+
+    test('parses a group-fee-too-small rejection from a thrown Error', () => {
+        const raw = new Error(
+            'TransactionPool.Remember: txgroup had 4000 in fees, which is less than the minimum number of transactions per group * minFee (6 * 1000 = 6000)',
+        )
+        const e = toAlgodError(raw)
+
+        expect(e).toBeInstanceOf(AlgodError)
+        expect(e.code).toBe(AlgodErrorCode.GROUP_FEE_TOO_SMALL)
+        expect(e.params).toEqual({ paid: 4000n, required: 6000n })
+        expect(e.originalError).toBe(raw)
+    })
+
     test('is idempotent — AlgodError in, same AlgodError out', () => {
         const original = new AlgodError('duplicate_txn', { txId: TXID })
         expect(toAlgodError(original)).toBe(original)

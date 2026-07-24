@@ -12,10 +12,12 @@
 
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { decodeAddress } from 'algosdk'
 
 import { useArc59ClaimTransaction } from '../useArc59ClaimTransaction'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: vi.fn(),
@@ -65,14 +67,26 @@ vi.mock('../../clients', () => {
     }
 })
 
-const STUB_TXN = { sender: 'SENDER_ADDRESS' }
+// Real, valid 58-char Algorand addresses so `decodeAddress` works.
+const SENDER_ADDRESS =
+    'EZRVNZFJGOUZC67FUMEC7ZMVP232TPICFTQCVZ6EQEIRRT3TIHSKZULRNI'
+const INBOX_ADDRESS =
+    'OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24'
+const CREATOR_ADDRESS =
+    'PERAIS5VIL6XK5GFUMDO6WASEPIOV54TINIWVDLJ65Y2Z4NA65GX42YUSA'
+// Matches the mocked testnet ARC59 appId (default network is testnet).
+const ARC59_TESTNET_APP_ID = 643020148n
+
+const STUB_TXN = { sender: SENDER_ADDRESS }
 
 const MIN_FEE = 1000n
 
 const baseClaimParams = {
-    sender: 'SENDER_ADDRESS',
+    sender: SENDER_ADDRESS,
     assetId: 12345n,
     shouldClaimAlgo: false,
+    inboxAddress: null,
+    assetCreator: CREATOR_ADDRESS,
 }
 
 describe('useArc59ClaimTransaction', () => {
@@ -192,7 +206,7 @@ describe('useArc59ClaimTransaction', () => {
             })
 
             expect(mockComposer.addAssetOptIn).toHaveBeenCalledWith({
-                sender: 'SENDER_ADDRESS',
+                sender: SENDER_ADDRESS,
                 assetId: 12345n,
                 staticFee: 0n.microAlgo(),
             })
@@ -208,7 +222,7 @@ describe('useArc59ClaimTransaction', () => {
             })
 
             expect(mockComposer.addAssetOptIn).toHaveBeenCalledWith({
-                sender: 'SENDER_ADDRESS',
+                sender: SENDER_ADDRESS,
                 assetId: 12345n,
                 staticFee: 0n.microAlgo(),
             })
@@ -310,6 +324,66 @@ describe('useArc59ClaimTransaction', () => {
             })
 
             expect(mockParamsClaim).toHaveBeenCalled()
+        })
+
+        test('passes explicit refs to arc59_claim and never simulates when inboxAddress is set', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildClaimAssetTxs({
+                    ...baseClaimParams,
+                    inboxAddress: INBOX_ADDRESS,
+                })
+            })
+
+            expect(mockParamsClaim).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountReferences: [INBOX_ADDRESS],
+                    assetReferences: [12345n],
+                    boxReferences: [
+                        {
+                            appId: ARC59_TESTNET_APP_ID,
+                            name: decodeAddress(SENDER_ADDRESS).publicKey,
+                        },
+                    ],
+                }),
+            )
+            expect(populateAppCallResources).not.toHaveBeenCalled()
+        })
+
+        test('passes explicit refs to arc59_claimAlgo when shouldClaimAlgo and inboxAddress are set', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildClaimAssetTxs({
+                    ...baseClaimParams,
+                    shouldClaimAlgo: true,
+                    inboxAddress: INBOX_ADDRESS,
+                })
+            })
+
+            expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountReferences: [INBOX_ADDRESS],
+                    boxReferences: [
+                        {
+                            appId: ARC59_TESTNET_APP_ID,
+                            name: decodeAddress(SENDER_ADDRESS).publicKey,
+                        },
+                    ],
+                }),
+            )
+            expect(populateAppCallResources).not.toHaveBeenCalled()
+        })
+
+        test('falls back to simulate population when inboxAddress is null', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildClaimAssetTxs(baseClaimParams)
+            })
+
+            expect(populateAppCallResources).toHaveBeenCalledTimes(1)
         })
     })
 
@@ -422,6 +496,60 @@ describe('useArc59ClaimTransaction', () => {
             })
 
             expect(mockParamsReject).toHaveBeenCalled()
+        })
+
+        test('passes explicit refs (inbox + creator) to arc59_reject and never simulates when inboxAddress is set', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildRejectAssetTxs({
+                    ...baseClaimParams,
+                    inboxAddress: INBOX_ADDRESS,
+                })
+            })
+
+            expect(mockParamsReject).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountReferences: [INBOX_ADDRESS, CREATOR_ADDRESS],
+                    assetReferences: [12345n],
+                    boxReferences: [
+                        {
+                            appId: ARC59_TESTNET_APP_ID,
+                            name: decodeAddress(SENDER_ADDRESS).publicKey,
+                        },
+                    ],
+                }),
+            )
+            expect(populateAppCallResources).not.toHaveBeenCalled()
+        })
+
+        test('falls back to simulate population when inboxAddress is null', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildRejectAssetTxs(baseClaimParams)
+            })
+
+            expect(populateAppCallResources).toHaveBeenCalledTimes(1)
+        })
+
+        test('falls back to simulate population when inboxAddress is set but assetCreator is empty', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildRejectAssetTxs({
+                    ...baseClaimParams,
+                    inboxAddress: INBOX_ADDRESS,
+                    assetCreator: '',
+                })
+            })
+
+            expect(populateAppCallResources).toHaveBeenCalledTimes(1)
+            expect(mockParamsReject).not.toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountReferences: expect.arrayContaining(['']),
+                }),
+            )
         })
     })
 })

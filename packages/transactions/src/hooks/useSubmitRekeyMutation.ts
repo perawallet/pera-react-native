@@ -15,6 +15,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     useAlgorandClient,
+    useFetchSuggestedMinFee,
     useMinimumFeeConfig,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
@@ -83,6 +84,7 @@ export const useSubmitRekeyMutation = ({
     const { encodeSignedTransactions } = useTransactionEncoder()
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee()
 
     const mutation = useMutation({
         // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
@@ -103,8 +105,10 @@ export const useSubmitRekeyMutation = ({
                 // (no Ledger prompt / no biometric on a request that can't be
                 // submitted). Surfaces through the existing build_failed path.
                 assertOnline()
-                const suggestedParams = await algokit.getSuggestedParams()
-                const suggestedMinFee = BigInt(suggestedParams.minFee)
+                // Shared min-fee source (same query cache as the
+                // useRekeyTransactionFeeQuery display) — the fee submitted
+                // and the fee shown read the same entry.
+                const suggestedMinFee = await fetchSuggestedMinFee()
                 // The rekey txn is signed by sourceAddress's CURRENT auth
                 // (pre-rekey) — resolveMinFeeForSender resolves the
                 // effective signer via getSignerFor, so this is the correct
