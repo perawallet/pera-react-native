@@ -20,6 +20,7 @@ import {
 import React from 'react'
 
 import {
+    useFetchSuggestedMinFee,
     useFetchSuggestedParameters,
     useSuggestedParametersQuery,
 } from '../useSuggestedParametersQuery'
@@ -235,6 +236,54 @@ describe('useSuggestedParametersQuery', () => {
             })
 
             const { result } = renderHook(() => useFetchSuggestedParameters(), {
+                wrapper,
+            })
+
+            await expect(result.current()).rejects.toBe(mockError)
+        })
+    })
+
+    describe('useFetchSuggestedMinFee', () => {
+        test('returns the network minFee as bigint through the shared cache', async () => {
+            const getSuggestedParams = vi
+                .fn()
+                .mockResolvedValue(mockSuggestedParams)
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams,
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedMinFee(), {
+                wrapper,
+            })
+            expect(getSuggestedParams).not.toHaveBeenCalled()
+
+            await expect(result.current()).resolves.toBe(1000n)
+            // Second call inside the TTL: served from the shared entry.
+            await expect(result.current()).resolves.toBe(1000n)
+            expect(getSuggestedParams).toHaveBeenCalledTimes(1)
+        })
+
+        test('returns the fallback instead of throwing when one is provided', async () => {
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams: vi
+                    .fn()
+                    .mockRejectedValue(new Error('offline')),
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedMinFee(), {
+                wrapper,
+            })
+
+            await expect(result.current({ fallback: 0n })).resolves.toBe(0n)
+        })
+
+        test('propagates the failure when no fallback is provided', async () => {
+            const mockError = new Error('Network request failed')
+            ;(useAlgorandClient as Mock).mockReturnValue({
+                getSuggestedParams: vi.fn().mockRejectedValue(mockError),
+            })
+
+            const { result } = renderHook(() => useFetchSuggestedMinFee(), {
                 wrapper,
             })
 

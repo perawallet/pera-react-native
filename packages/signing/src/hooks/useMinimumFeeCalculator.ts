@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import {
-    useFetchSuggestedParameters,
+    useFetchSuggestedMinFee,
     useMinimumFeeConfig,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -53,13 +53,13 @@ export type UseMinimumFeeCalculatorResult = {
  * seam where future rules land — per-resource surcharges or a node
  * `simulate()`-based requirement (PQ-022) — without call sites changing.
  *
- * Network behavior: suggested params are fetched only when a quantum signer
- * is actually present (a cheap local account check), so non-quantum groups
- * add zero network traffic and return byte-identical. The fetch goes
- * through the shared suggested-params query cache
- * (`useFetchSuggestedParameters`), so it obeys the same ~10s staleness
- * contract as every other consumer — congestion-driven `minFee` changes
- * propagate — and it never blocks the flow: on failure it falls back to 0,
+ * Network behavior: the suggested minimum fee is fetched only when a
+ * quantum signer is actually present (a cheap local account check), so
+ * non-quantum groups add zero network traffic and return byte-identical.
+ * The fetch goes through `useFetchSuggestedMinFee` — the shared
+ * suggested-params query cache — so it obeys the same ~10s staleness
+ * contract as every other consumer (congestion-driven `minFee` changes
+ * propagate) and it never blocks the flow: on failure it falls back to 0,
  * leaving only the remote-config base in effect.
  *
  * Throws `InvalidSignableDataError` when a fee must be raised but the group
@@ -68,7 +68,7 @@ export type UseMinimumFeeCalculatorResult = {
  */
 export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
     const accounts = useAllAccounts()
-    const fetchSuggestedParams = useFetchSuggestedParameters()
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
     const assignFeeToGroup = useCallback<AssignFeeToGroup>(
@@ -87,12 +87,11 @@ export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
                 return { transactions, adjustments: [] }
             }
 
-            let suggestedMinFee = 0n
-            try {
-                suggestedMinFee = BigInt((await fetchSuggestedParams()).minFee)
-            } catch {
-                suggestedMinFee = 0n
-            }
+            // Never block the flow on a params failure: fall back to 0 so
+            // only the remote-config base applies.
+            const suggestedMinFee = await fetchSuggestedMinFee({
+                fallback: 0n,
+            })
 
             return assignMinimumFeesToGroup({
                 transactions,
@@ -104,7 +103,7 @@ export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
                 pqMultiplier,
             })
         },
-        [accounts, fetchSuggestedParams, minTxnFee, pqMultiplier],
+        [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier],
     )
 
     return { assignFeeToGroup }

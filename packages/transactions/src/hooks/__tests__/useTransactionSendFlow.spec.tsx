@@ -98,6 +98,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     displayUnitsToBaseUnits: (val: Decimal, _decimals: number) => val,
     useNetwork: () => ({ network: 'mainnet' }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
+    useFetchSuggestedMinFee: () => async () =>
+        BigInt((await mockGetSuggestedParams()).minFee),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({

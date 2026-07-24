@@ -90,7 +90,18 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             encodeTransactionRaw: (tx: Transaction) =>
                 encodeUnsignedTransaction(tx),
         }),
-        useFetchSuggestedParameters: () => mockGetSuggestedParams,
+        useFetchSuggestedMinFee:
+            () =>
+            async (options?: { fallback?: bigint }): Promise<bigint> => {
+                try {
+                    return BigInt((await mockGetSuggestedParams()).minFee)
+                } catch (err) {
+                    if (options?.fallback !== undefined) {
+                        return options.fallback
+                    }
+                    throw err
+                }
+            },
         useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     }
 })

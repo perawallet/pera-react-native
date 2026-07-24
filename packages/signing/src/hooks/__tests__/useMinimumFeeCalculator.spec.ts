@@ -45,8 +45,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 
 // Spread the real module so `assignMinimumFeesToGroup`'s dependencies
 // (`calculateMinTxnFee`, `groupTransactions`) stay real; inject only the
-// hooks the calculator consumes. The suggested-params fetcher is stubbed at
-// the hook boundary — its fetch-through-cache semantics are covered by
+// hooks the calculator consumes. The min-fee fetcher is stubbed at the hook
+// boundary with its real contract (BigInt minFee; fallback on failure) —
+// the fetch-through-cache semantics themselves are covered by
 // packages/blockchain/src/hooks/__tests__/useSuggestedParametersQuery.test.ts.
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<Record<string, unknown>>(
@@ -54,7 +55,18 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     )
     return {
         ...actual,
-        useFetchSuggestedParameters: () => mockGetSuggestedParams,
+        useFetchSuggestedMinFee:
+            () =>
+            async (options?: { fallback?: bigint }): Promise<bigint> => {
+                try {
+                    return BigInt((await mockGetSuggestedParams()).minFee)
+                } catch (err) {
+                    if (options?.fallback !== undefined) {
+                        return options.fallback
+                    }
+                    throw err
+                }
+            },
         useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
     }
 })

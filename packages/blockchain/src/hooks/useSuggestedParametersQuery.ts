@@ -65,3 +65,43 @@ export const useFetchSuggestedParameters = (): FetchSuggestedParameters => {
         [algokit, network, queryClient],
     )
 }
+
+export type FetchSuggestedMinFeeOptions = {
+    /**
+     * Returned instead of throwing when the params fetch fails (e.g.
+     * offline). Omit to let the failure propagate to the caller's own
+     * error path.
+     */
+    fallback?: bigint
+}
+
+export type FetchSuggestedMinFee = (
+    options?: FetchSuggestedMinFeeOptions,
+) => Promise<bigint>
+
+/**
+ * The one reusable way to read the network's suggested minimum fee (µAlgo,
+ * as `bigint`) imperatively — for transaction builders and fee calculators
+ * that need it mid-flow rather than at render time (render-time consumers
+ * use {@link useSuggestedParametersQuery} directly). Thin wrapper over
+ * {@link useFetchSuggestedParameters}, so every consumer shares the same
+ * query cache, staleness bound, and offline semantics: the fee a builder
+ * applies and the fee a display query renders come from the same entry.
+ */
+export const useFetchSuggestedMinFee = (): FetchSuggestedMinFee => {
+    const fetchSuggestedParameters = useFetchSuggestedParameters()
+
+    return useCallback(
+        async options => {
+            try {
+                return BigInt((await fetchSuggestedParameters()).minFee)
+            } catch (err) {
+                if (options?.fallback !== undefined) {
+                    return options.fallback
+                }
+                throw err
+            }
+        },
+        [fetchSuggestedParameters],
+    )
+}
