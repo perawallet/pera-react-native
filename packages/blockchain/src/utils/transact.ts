@@ -29,7 +29,11 @@ import {
     assignGroupID,
     type TransactionSigner,
 } from 'algosdk'
-import { isQuantumSignedTransaction, type PeraSignedTxnResult } from '../models'
+import {
+    compactSignedResults,
+    isQuantumSignedTransaction,
+    type PeraSignedTxnResult,
+} from '../models'
 
 const TX_TAG = new Uint8Array([0x54, 0x58]) // "TX"
 
@@ -87,6 +91,7 @@ export {
     OnApplicationComplete,
     SignedTransaction,
     type TransactionSigner,
+    compactSignedResults,
     isQuantumSignedTransaction,
     type PeraSignedTxnResult,
 }

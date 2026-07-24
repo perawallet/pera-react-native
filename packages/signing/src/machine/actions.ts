@@ -17,11 +17,6 @@ import {
     isMultisigAccount,
     isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    isQuantumSignedTransaction,
-    type PeraSignedTransaction,
-    type PeraSignedTxnResult,
-} from '@perawallet/wallet-core-blockchain'
 import type {
     SignableGroup,
     SigningResult,
@@ -137,29 +132,6 @@ export const buildGroupSignerTypeMap = (
     return map
 }
 
-/**
- * Narrows a signing result's `PeraSignedTxnResult[]` down to plain
- * `PeraSignedTransaction[]` for delivery to a `TransactionSignRequest.approve`
- * callback (WalletConnect / webview / deeplink / local-callback peers).
- *
- * Unlike the algod transport — which routes a quantum-signed group through
- * `submitAndAutoRefresh`'s synthetic MOCK(quantum) submission — callback
- * delivery hands signed bytes straight to an external peer with no node to
- * accept a Falcon signature yet. Throw a clear error instead of silently
- * mis-encoding the pqsig byte carrier as a plain signed transaction.
- */
-export const assertNoQuantumSignedTransactions = (
-    signed: PeraSignedTxnResult[],
-): PeraSignedTransaction[] => {
-    const quantumItem = signed.find(isQuantumSignedTransaction)
-    if (quantumItem) {
-        throw new SigningError(
-            'Quantum-signed transactions cannot be delivered via the callback transport yet',
-        )
-    }
-    return signed as PeraSignedTransaction[]
-}
-
 // =============================================================================
 // SignableGroup construction
 // =============================================================================
@@ -179,6 +151,14 @@ export const assertNoQuantumSignedTransactions = (
  * Dispatch here is on the tagged fields (`sourceType`, `transport`) — not on
  * the runtime presence of an `approve` callback — so the selector stays
  * predictable as new caller shapes are added.
+ *
+ * Callback delivery is carrier-aware: a quantum-signed group's `signed`
+ * array may contain `QuantumSignedTransaction` (pqsig byte carrier) entries
+ * alongside plain `PeraSignedTransaction`s, and both flow through to the
+ * request's `approve` callback unchanged. The dApp receives node-ready pqsig
+ * bytes verbatim (via the carrier-aware `encodeSignedTransaction`); whether
+ * its own node accepts a Falcon signature is network-gated, not a wallet
+ * concern (cf. PQ-019/PQ-021).
  */
 const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
@@ -210,9 +190,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
         const txApprove = request.approve
         approveCallback = async (result: SigningResult) => {
             if (result.signedData.type === 'transactions') {
-                await txApprove(
-                    assertNoQuantumSignedTransactions(result.signedData.signed),
-                )
+                await txApprove(result.signedData.signed)
             }
         }
     } else if (

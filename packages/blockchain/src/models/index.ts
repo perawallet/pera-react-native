@@ -11,7 +11,10 @@
  */
 
 import type { SignedTransaction, Transaction, indexerModels } from 'algosdk'
-import { type BaseStoreState } from '@perawallet/wallet-core-shared'
+import {
+    type BaseStoreState,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { type Address } from 'algosdk'
 
 type IndexerTransaction = indexerModels.Transaction
@@ -96,6 +99,19 @@ export const isQuantumSignedTransaction = (
     t: PeraSignedTxnResult,
 ): t is QuantumSignedTransaction =>
     (t as QuantumSignedTransaction).pqSignedBytes instanceof Uint8Array
+
+/**
+ * Drops the `null` padding slots a signing result may carry (the ARC-0001
+ * slot-order contract pads unsignable positions with `null`) and narrows
+ * the rest to `PeraSignedTxnResult`. The single narrowing seam for
+ * `TransactionSignRequest.approve` consumers — when the quantum byte
+ * carrier collapses into the signed-transaction model (PQ-023/PERA-4653),
+ * this is the one place left to update.
+ */
+export const compactSignedResults = (
+    signed: Nullable<PeraSignedTxnResult>[],
+): PeraSignedTxnResult[] =>
+    signed.filter((tx): tx is PeraSignedTxnResult => tx !== null)
 
 export type PeraTransactionType =
     | 'payment'

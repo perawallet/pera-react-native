@@ -14,3 +14,4 @@ export {
     QuantumFeeExplainer,
     QUANTUM_FEE_EXPLAINER_TEST_ID,
 } from './QuantumFeeExplainer'
+export type { QuantumFeeExplainerProps } from './QuantumFeeExplainer'

@@ -23,6 +23,7 @@ import {
 import {
     displayUnitsToBaseUnits,
     useAlgorandClient,
+    useFetchSuggestedMinFee,
     useMinimumFeeConfig,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
@@ -107,6 +108,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
         useArc59ClaimTransaction()
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier, assetMbr } = useMinimumFeeConfig()
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee()
 
     /**
      * Express send has two distinct signers, each with its own PQ-aware
@@ -132,8 +134,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             const { amount: currentBalance, minBalance: currentMbr } =
                 await algokit.client.algod.accountInformation(receiver).do()
 
-            const suggestedParams = await algokit.getSuggestedParams()
-            const suggestedMinFee = BigInt(suggestedParams.minFee)
+            const suggestedMinFee = await fetchSuggestedMinFee()
             const senderFee = resolveMinFeeForSender({
                 senderAddress: sender,
                 accounts,
@@ -195,7 +196,14 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             const { transactions } = await composer.build()
             return transactions.map(t => t.txn)
         },
-        [algokit, accounts, minTxnFee, pqMultiplier, assetMbr],
+        [
+            algokit,
+            accounts,
+            fetchSuggestedMinFee,
+            minTxnFee,
+            pqMultiplier,
+            assetMbr,
+        ],
     )
 
     /**
@@ -228,8 +236,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 ).toString(),
             )
 
-            const suggestedParams = await algokit.getSuggestedParams()
-            const suggestedMinFee = BigInt(suggestedParams.minFee)
+            const suggestedMinFee = await fetchSuggestedMinFee()
             const resolvedFee = resolveMinFeeForSender({
                 senderAddress: params.sender.address,
                 accounts,
@@ -269,7 +276,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             const { transactions } = await composer.build()
             return transactions.map(t => t.txn)
         },
-        [algokit, accounts, minTxnFee, pqMultiplier],
+        [algokit, accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier],
     )
 
     const executeSend = useCallback(

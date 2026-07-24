@@ -11,7 +11,12 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { isQuantumSignedTransaction, encodeSignedTransaction } from '..'
+import {
+    compactSignedResults,
+    isQuantumSignedTransaction,
+    encodeSignedTransaction,
+} from '..'
+import type { PeraSignedTransaction } from '..'
 
 describe('utils/transact — QuantumSignedTransaction carrier', () => {
     describe('isQuantumSignedTransaction', () => {
@@ -28,6 +33,26 @@ describe('utils/transact — QuantumSignedTransaction carrier', () => {
             const notACarrier = { txn: {} as never } as never
 
             expect(isQuantumSignedTransaction(notACarrier)).toBe(false)
+        })
+    })
+
+    describe('compactSignedResults', () => {
+        it('drops null padding slots and keeps plain and carrier entries by reference', () => {
+            const plain = { sig: new Uint8Array([1]) } as never
+            const carrier = {
+                txn: {} as never,
+                pqSignedBytes: new Uint8Array([9, 9]),
+            }
+
+            const compacted = compactSignedResults([plain, null, carrier, null])
+
+            expect(compacted).toHaveLength(2)
+            expect(compacted[0]).toBe(plain as PeraSignedTransaction)
+            expect(compacted[1]).toBe(carrier)
+        })
+
+        it('returns an empty array for all-null input', () => {
+            expect(compactSignedResults([null, null])).toEqual([])
         })
     })
 

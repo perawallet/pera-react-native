@@ -39,6 +39,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             arr.map(() => new Uint8Array([1])),
         ),
     }),
+    compactSignedResults: (signed: unknown[]) =>
+        signed.filter(tx => tx !== null),
 }))
 
 vi.mock('../../pipeline/submission/submitAndAutoRefresh', () => ({

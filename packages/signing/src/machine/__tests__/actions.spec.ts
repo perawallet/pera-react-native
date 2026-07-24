@@ -10,18 +10,21 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     PeraSignedTransaction,
+    PeraSignedTxnResult,
     QuantumSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { SignableGroup } from '../../pipeline/types'
-import { SigningError } from '../../pipeline/errors'
+import { buildGroupSignerTypeMap, resolveInitialContext } from '../actions'
+import type { SigningMachineInput } from '../context'
+import type { TransactionSignRequest } from '../../models'
 import {
-    assertNoQuantumSignedTransactions,
-    buildGroupSignerTypeMap,
-} from '../actions'
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../test-utils/transactions'
 
 const PARTICIPANT = 'PARTICIPANT'
 const AUTH = 'AUTH'
@@ -338,7 +341,7 @@ describe('buildGroupSignerTypeMap', () => {
     })
 })
 
-describe('assertNoQuantumSignedTransactions', () => {
+describe('quantum-signed transactions over the callback transport (PQ-017 / PERA-4490)', () => {
     const plainSigned = (id: string): PeraSignedTransaction =>
         ({ txn: { sender: id } }) as unknown as PeraSignedTransaction
 
@@ -347,29 +350,61 @@ describe('assertNoQuantumSignedTransactions', () => {
         pqSignedBytes: new Uint8Array([1, 2, 3]),
     })
 
-    it('returns the same plain signed transactions unchanged when no quantum carrier is present', () => {
-        // The callback-approve path (WalletConnect / webview / deeplink /
-        // local-callback) hands these straight to an external peer, so the
-        // guard must pass them through untouched.
-        const signed = [plainSigned('A'), plainSigned('B')]
+    const userAddr = makeTestAddress(11)
+    const dappAddr = makeTestAddress(12)
+    const userAccount = {
+        type: 'algo25',
+        address: userAddr.toString(),
+        keyPairId: 'key-quantum-cb',
+    } as unknown as WalletAccount
 
-        const result = assertNoQuantumSignedTransactions(signed)
+    const baseInput = (request: TransactionSignRequest): SigningMachineInput =>
+        ({
+            request,
+            allAccounts: [userAccount],
+            signTransactions: vi.fn(),
+            signQuantumTransactions: vi.fn(),
+            signArbitraryData: vi.fn(),
+            signArc60: vi.fn(),
+            createTransport: vi.fn(),
+            network: 'mainnet' as never,
+            encodeTransaction: vi.fn(),
+        }) as unknown as SigningMachineInput
 
-        expect(result).toBe(signed)
-        expect(result).toEqual(signed)
-    })
+    it('forwards a mixed signed array containing a QuantumSignedTransaction carrier to the approve callback unchanged', async () => {
+        // The callback transport (WalletConnect / webview / deeplink /
+        // local-callback) used to throw here (assertNoQuantumSignedTransactions).
+        // Now that the byte-encoding path is carrier-aware, the gate is gone —
+        // the dApp receives the pqsig carrier verbatim, unchanged from what
+        // the signing strategy produced.
+        const txApprove = vi.fn(async () => undefined)
+        const request: TransactionSignRequest = {
+            id: 'req-quantum-cb',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'walletconnect',
+            txs: [
+                makeTestPaymentTx(userAddr, {
+                    receiver: dappAddr,
+                    amount: 1n,
+                }),
+            ],
+            approve: txApprove,
+        }
 
-    it('throws a SigningError when a quantum signed-transaction carrier is present', () => {
-        // No peer can consume a Falcon pqsig byte carrier via callback
-        // delivery yet — fail loudly instead of silently mis-encoding it as
-        // a plain signed transaction.
-        const signed = [plainSigned('A'), quantumCarrier()]
+        const context = resolveInitialContext(baseInput(request))
+        const { callbacks } = context.signableGroups![0].source
 
-        expect(() => assertNoQuantumSignedTransactions(signed)).toThrow(
-            SigningError,
-        )
-        expect(() => assertNoQuantumSignedTransactions(signed)).toThrow(
-            /quantum/i,
-        )
+        const signed: PeraSignedTxnResult[] = [
+            plainSigned('A'),
+            quantumCarrier(),
+        ]
+
+        await callbacks?.approve?.({
+            signedData: { type: 'transactions', signed },
+            signers: [{ address: userAccount.address }],
+        } as never)
+
+        expect(txApprove).toHaveBeenCalledWith(signed)
     })
 })
