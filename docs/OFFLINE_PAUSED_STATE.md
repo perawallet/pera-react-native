@@ -48,8 +48,10 @@ useQuery({
 > `BalanceLineChart` (shared by `WealthChart`, `AssetPriceChart`, and
 > `AssetWealthChart`) now renders the pause via a colocated
 > `useBalanceLineChart` hook: data → offline → error → loading → empty, with a
-> retry that reads `hasInternet` at press time and skips the network call
-> while offline instead of dispatching a doomed request. `PriceTrend` follows
+> retry that reads `hasInternet` at press time and, while offline, opens the
+> standard informational bottom sheet (`ConfirmActionContent`) explaining the
+> situation instead of dispatching a doomed request or silently doing nothing.
+> `PriceTrend` follows
 > the same contract via `usePriceTrend`, hiding itself when paused with no
 > cached data. Note the chart surface deliberately deviates from §2's
 > `isError → isPaused` precedence: it collapses an errored query on a
