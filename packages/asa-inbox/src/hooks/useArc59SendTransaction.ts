@@ -20,7 +20,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import type { Arc59SendSummaryResponse } from '../api'
 import { ARC59Client } from '../clients'
-import { buildGroup, buildPopulatedGroup } from '../utils'
+import { buildGroup } from '../utils'
 
 type SendViaInboxParams = {
     sender: string
@@ -71,25 +71,34 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 })
             }
 
-            // When the inbox address is known, attach the ARC-59 resource
-            // references explicitly so the group builds without a live
-            // simulate. The router box is keyed by the receiver's (recipient's)
-            // public key.
+            // Attach the ARC-59 resource references explicitly so the group
+            // always builds WITHOUT a live simulate (`populateAppCallResources`),
+            // which the production algod proxy rejects. Everything the router
+            // touches is derivable client-side: the router box is keyed by the
+            // receiver's (recipient's) public key, and the asset is known.
+            //
+            // The receiver's inbox account is referenced ONLY when it already
+            // exists (`summary.inbox_address`): the router reads the existing
+            // inbox's state, so it must be available. On a first send the inbox
+            // does not exist yet and is created inside `arc59_sendAsset` (inner
+            // txn) — an account created in-call is available without being
+            // pre-referenced, so it must be omitted (referencing the
+            // zero/unknown address would fail). `receiver` alone is enough
+            // there. Verified on-chain against a simulate-blocked node for both
+            // the fresh-receiver and existing-inbox cases.
             const inboxAddress = summary.inbox_address
             const receiverBox = {
                 appId: arc59Config.appId,
                 name: decodeAddress(receiver).publicKey,
             }
-            const optRouterInRefs = inboxAddress
-                ? { assetReferences: [assetId] }
-                : {}
-            const sendAssetRefs = inboxAddress
-                ? {
-                      accountReferences: [receiver, inboxAddress],
-                      assetReferences: [assetId],
-                      boxReferences: [receiverBox],
-                  }
-                : {}
+            const optRouterInRefs = { assetReferences: [assetId] }
+            const sendAssetRefs = {
+                accountReferences: inboxAddress
+                    ? [receiver, inboxAddress]
+                    : [receiver],
+                assetReferences: [assetId],
+                boxReferences: [receiverBox],
+            }
 
             // If router is not opted into the asset, include opt-in in the atomic group
             if (!summary.is_arc59_opted_in) {
@@ -123,9 +132,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 }),
             )
 
-            return inboxAddress
-                ? buildGroup(composer)
-                : buildPopulatedGroup(composer, algokit)
+            return buildGroup(composer)
         },
         [algokit, isMainnet],
     )
