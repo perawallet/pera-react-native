@@ -38,10 +38,18 @@ export type RouteCapabilities = {
      * not the native app's WalletConnect, tracked separately by
      * walletConnectSettings). */
     dappConnections: boolean
-    /** Web-only top-level network (mainnet/testnet) switch; native has this under Developer settings. */
-    networkSettings: boolean
     /** Quantum (PQ/Falcon-1024) accounts. Off on web: the WASM signer is
      * Node/test-only today and its Emscripten build doesn't bundle for the
      * browser extension (see useIsQuantumAccountsEnabled). */
     quantum: boolean
+    /** Rekey feature area (wallet-wide scan-for-rekeyed sweep, rekey-to-
+     * standard/shared/ledger flows) — native-only; these stacks aren't
+     * registered in WebMainRoutes. */
+    rekeyFlows: boolean
+    /** Unified settings screen merging WalletConnect sessions and ARC-0027
+     * dapp connections into one list (web only). When on, it supersedes the
+     * separate walletConnectSettings/dappConnections settings-menu entries —
+     * their routes/screens/capabilities stay untouched for direct
+     * navigation (e.g. WalletConnectSettingsDetails). */
+    connectionsSettings: boolean
 }

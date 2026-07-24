@@ -12,7 +12,7 @@
 
 // This package's source uses the ambient `chrome` global directly (no local
 // imports) — its own tsconfig lists "chrome" in `types`, but downstream
-// consumers whose tsconfig does NOT (apps/mobile, since Task 12) still pull
+// consumers whose tsconfig does NOT (e.g. apps/mobile) still pull
 // this source into their tsc program via path-aliased imports. A `types`
 // list is program-wide, but an explicit triple-slash reference is honored
 // regardless of the consuming project's `types` list, so this keeps the
@@ -72,12 +72,14 @@ export {
     type StorageProxyResponse,
     type StorageChangedBroadcast,
 } from './storage-proxy'
-export * from './dapp/arc0027-types'
-export * from './dapp/arc0027-errors'
-export * from './dapp/arc0027-codec'
-export * from './dapp/permissions'
-export * from './dapp/router-protocol'
-export * from './dapp/router'
+// The ARC-0027 wire/permissions/core-router types+logic now live in
+// @perawallet/wallet-core-arc0027 (platform-agnostic). Re-exported here so
+// existing consumers of this barrel (e.g. apps/mobile's
+// useDappConnectionsStore, which reads DappPermissionStore) don't need to
+// depend on the new package directly.
+export * from '@perawallet/wallet-core-arc0027'
+export { ChromeDappRouter } from './dapp/router'
+export * from './dapp/passkey-opener'
 export * from './dapp/approval-bridge'
 export * from './dapp/approval-client'
 export * from './dapp/webauthn-router-protocol'

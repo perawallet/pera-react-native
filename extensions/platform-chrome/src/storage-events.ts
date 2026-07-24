@@ -12,8 +12,8 @@
 
 /**
  * Typed subscription to chrome.storage.local key changes, for mobile-side
- * web code: apps/mobile compiles without chrome ambient types (they leaked
- * repo-wide pre-M3), so chrome.* access stays behind this package.
+ * web code: apps/mobile compiles without chrome ambient types (they used to
+ * leak repo-wide), so chrome.* access stays behind this package.
  */
 export const onLocalStorageKeyChanged = (
     keys: string[],

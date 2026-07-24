@@ -50,6 +50,8 @@ const { mockCapabilities } = vi.hoisted(() => ({
         developerSettings: true,
         vaultSecuritySettings: false,
         dappConnections: false,
+        rekeyFlows: true,
+        connectionsSettings: false,
     },
 }))
 
@@ -81,6 +83,8 @@ describe('useSettingsOptions', () => {
             developerSettings: true,
             vaultSecuritySettings: false,
             dappConnections: false,
+            rekeyFlows: true,
+            connectionsSettings: false,
         })
     })
 
@@ -173,23 +177,20 @@ describe('useSettingsOptions', () => {
                 passkeysAutofillSettings: false,
                 storeRating: false,
                 developerSettings: false,
+                rekeyFlows: false,
             })
 
             const { result } = renderHook(() => useSettingsOptions())
             const { settingsOptions } = result.current
 
-            // Account section keeps the (still-registered) Security item and
-            // the ungated rekeyed-account sweep action.
+            // Account section keeps only the (still-registered) Security
+            // item — the rekeyed-account sweep is gated off on web (its
+            // stacks aren't registered in WebMainRoutes).
             expect(settingsOptions[0].items).toEqual([
                 {
                     route: 'SecuritySettings',
                     icon: 'shield-check',
                     title: 'settings.main.security_title',
-                },
-                {
-                    action: 'scanRekeyed',
-                    icon: 'magnifying-glass',
-                    title: 'settings.main.scan_rekeyed_title',
                 },
             ])
 
@@ -250,6 +251,70 @@ describe('useSettingsOptions', () => {
                 route: 'ConnectedSites',
                 icon: 'globe',
                 title: 'settings.main.connected_sites_title',
+            })
+        })
+
+        it('omits the scan-rekeyed action when rekeyFlows is off (web)', () => {
+            Object.assign(mockCapabilities, { rekeyFlows: false })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(
+                settingsOptions[0].items.some(
+                    item => 'action' in item && item.action === 'scanRekeyed',
+                ),
+            ).toBe(false)
+        })
+
+        it('includes the scan-rekeyed action when rekeyFlows is on (native)', () => {
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items).toContainEqual({
+                action: 'scanRekeyed',
+                icon: 'magnifying-glass',
+                title: 'settings.main.scan_rekeyed_title',
+            })
+        })
+
+        it('shows the two separate WalletConnect/Connected Sites items — not the unified one — when connectionsSettings is off (native, always today)', () => {
+            Object.assign(mockCapabilities, { dappConnections: true })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items.map(item => item.route)).toEqual([
+                'SecuritySettings',
+                'NotificationsSettings',
+                'WalletConnectSettings',
+                'PasskeysSettings',
+                'ConnectedSites',
+                undefined,
+            ])
+        })
+
+        it('shows a single unified Connections item instead of the two separate items when connectionsSettings is on (web)', () => {
+            Object.assign(mockCapabilities, {
+                walletConnectSettings: true,
+                dappConnections: true,
+                connectionsSettings: true,
+            })
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            expect(settingsOptions[0].items.map(item => item.route)).toEqual([
+                'SecuritySettings',
+                'NotificationsSettings',
+                'ConnectionsSettings',
+                'PasskeysSettings',
+                undefined,
+            ])
+            expect(settingsOptions[0].items).toContainEqual({
+                route: 'ConnectionsSettings',
+                icon: 'globe',
+                title: 'settings.main.connections_title',
             })
         })
     })

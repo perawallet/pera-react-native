@@ -31,7 +31,7 @@ import {
 /**
  * Platform-agnostic WebAuthn authenticator core: builds create/get
  * ceremonies over an injected {@link KeystoreSigner}. This module depends
- * only on Task 1's CBOR/attestation structures, `@noble/hashes`, and
+ * only on the CBOR/attestation structures, `@noble/hashes`, and
  * `@algorandfoundation/dp256` (for `rawToDER`) — never on keystore-chrome or
  * any `chrome.*` API, so it can run (and be tested) outside the extension.
  *
@@ -42,7 +42,7 @@ import {
  */
 
 /**
- * Injected keystore port. Task 3 implements this over keystore-chrome; tests
+ * Injected keystore port. keystore-chrome implements this; tests
  * use a fake. Every method takes/lists by `rpId` (the bare, validated
  * effective domain resolved by {@link resolveRpId}) — NEVER the full
  * scheme-qualified page origin. Naming it `rpId` (not `origin`) here is
@@ -116,7 +116,7 @@ export type SigningContext = {
      * itself. `resolveRpId`'s registrable-suffix check below is the only
      * thing standing between a malicious page and registering/asserting a
      * credential under an `rp.id` it doesn't own; that check is only as
-     * trustworthy as this field. Task 5's transport must guarantee this.
+     * trustworthy as this field, which the transport layer must guarantee.
      */
     origin: string
 }
@@ -247,7 +247,7 @@ const P256_SPKI_PREFIX = Uint8Array.from([
 /**
  * Wraps a P-256 public key in X.509/SPKI DER — the exact bytes CryptoKit's
  * `derRepresentation` produces. Accepts either the raw 64-byte `X || Y` form
- * or the 65-byte `0x04`-prefixed form (normalized via Task 1's
+ * or the 65-byte `0x04`-prefixed form (normalized via
  * `splitP256PublicKey`, rather than assuming the `KeystoreSigner` always
  * hands back exactly 64 bytes).
  */

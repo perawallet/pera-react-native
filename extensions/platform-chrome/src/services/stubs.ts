@@ -46,7 +46,12 @@ export class ChromePushNotificationService implements PushNotificationService {
     }
 }
 
-/** Real WebAuthn-backed implementation arrives with the vault in milestone 2. */
+/**
+ * Chrome has no OS-level biometric API, so this stub always reports
+ * biometrics as unavailable. Separately, keystore-chrome's WebAuthn passkey
+ * vault-unlock (`vault/passkey.ts`) does real PRF work, but it implements a
+ * different mechanism, not this interface.
+ */
 export class ChromeBiometricsService implements BiometricsService {
     async getSupportedBiometricType(): Promise<BiometricType> {
         return null

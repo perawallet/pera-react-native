@@ -45,14 +45,16 @@ export const PromptContainer = () => {
             statusBarTranslucent
             style={styles.modal}
         >
-            <GestureHandlerRootView style={styles.root}>
-                <PWView style={styles.container}>
-                    <PromptComponent
-                        onDismiss={handleDismiss}
-                        onHide={handleHide}
-                    />
-                </PWView>
-            </GestureHandlerRootView>
+            <PWView style={styles.stage}>
+                <GestureHandlerRootView style={styles.root}>
+                    <PWView style={styles.container}>
+                        <PromptComponent
+                            onDismiss={handleDismiss}
+                            onHide={handleHide}
+                        />
+                    </PWView>
+                </GestureHandlerRootView>
+            </PWView>
         </Modal>
     )
 }

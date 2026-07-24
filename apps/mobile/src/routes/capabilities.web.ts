@@ -30,10 +30,11 @@ export const routeCapabilities: RouteCapabilities = {
     developerSettings: true, // internal builds need network/debug toggles
     vaultSecuritySettings: true,
     dappConnections: true,
-    networkSettings: true,
     // Off: the WASM Falcon-1024 signer is Node/test-only (see
     // getPQProvider/wasmFalconProvider) and its Emscripten build fails to
     // parse under Metro's web bundler, so quantum accounts have no working
     // signer path in the browser extension yet.
     quantum: false,
+    rekeyFlows: false, // RescanRekeyed/RekeyToStandard/RekeyToShared stacks aren't registered in WebMainRoutes
+    connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
 }

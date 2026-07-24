@@ -18,12 +18,13 @@
 // have no chrome.* usage and no side effects, so the content-script build
 // alias (apps/extension/scripts/build.mjs) can point here instead of the
 // barrel and stay small.
-export { isArc0027Request, buildErrorResponse } from './arc0027-codec'
 export {
+    isArc0027Request,
+    buildErrorResponse,
     ARC0027_ERROR_CODES,
+    DAPP_RELAY_SCOPE,
     type Arc0027ResponseEnvelope,
-} from './arc0027-types'
-export { DAPP_RELAY_SCOPE } from './router-protocol'
+} from '@perawallet/wallet-core-arc0027'
 export * from '../webview/bridge-wire'
 export {
     WEBAUTHN_RELAY_SCOPE,

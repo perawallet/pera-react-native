@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DISCOVER_BRIDGE_PORT_PREFIX } from './bridge-wire'
+import { WEBVIEW_BRIDGE_PORT_PREFIX } from './bridge-wire'
 
 export type DiscoverBridgeHost = {
     post: (data: unknown) => void
@@ -28,7 +28,7 @@ export type DiscoverBridgeHost = {
  * Ports are the only bidirectional channel that works from a popup surface
  * (no tab id → no chrome.tabs.sendMessage). `trustedOrigins` is a list (not a
  * single origin) because a mounted URL can 302-redirect to a different host
- * before the port connects (M8 Bidali → giftcards.* twin — see
+ * before the port connects (e.g. Bidali → giftcards.* twin — see
  * trusted-iframe-origins.web.ts); membership is exact-match only, never a
  * suffix/pattern check.
  */
@@ -41,7 +41,7 @@ export const createDiscoverBridgeHost = (params: {
     let activePort: chrome.runtime.Port | null = null
 
     const handleConnect = (port: chrome.runtime.Port): void => {
-        if (port.name !== `${DISCOVER_BRIDGE_PORT_PREFIX}${params.token}`) {
+        if (port.name !== `${WEBVIEW_BRIDGE_PORT_PREFIX}${params.token}`) {
             return // another mount's port — leave it alone
         }
         if (!params.trustedOrigins.includes(port.sender?.origin ?? '')) {

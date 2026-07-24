@@ -106,6 +106,81 @@ describe('discover-main content script', () => {
         ])
     })
 
+    describe('openSystemBrowser scheme validation', () => {
+        it('forwards a valid http(s) url given as a bare string', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received: Array<{ method: string; params: unknown }> = []
+            window.addEventListener(
+                captured.handshake!.requestEventName,
+                event => received.push((event as CustomEvent).detail as never),
+            )
+            ;(
+                window.peraMobileInterface!.openSystemBrowser as (
+                    p: unknown,
+                ) => void
+            )('https://dapp.example/checkout')
+            expect(received).toHaveLength(1)
+            expect(received[0]?.method).toBe('openSystemBrowser')
+            expect(received[0]?.params).toEqual({
+                url: 'https://dapp.example/checkout',
+            })
+        })
+
+        it('forwards a valid http(s) url given as the object form', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received: Array<{ method: string; params: unknown }> = []
+            window.addEventListener(
+                captured.handshake!.requestEventName,
+                event => received.push((event as CustomEvent).detail as never),
+            )
+            ;(
+                window.peraMobileInterface!.openSystemBrowser as (
+                    p: unknown,
+                ) => void
+            )({ url: 'https://dapp.example/checkout' })
+            expect(received).toHaveLength(1)
+            expect(received[0]?.params).toEqual({
+                url: 'https://dapp.example/checkout',
+            })
+        })
+
+        it('drops non-http(s) schemes', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received: Array<{ method: string; params: unknown }> = []
+            window.addEventListener(
+                captured.handshake!.requestEventName,
+                event => received.push((event as CustomEvent).detail as never),
+            )
+            const openSystemBrowser = window.peraMobileInterface!
+                .openSystemBrowser as (p: unknown) => void
+            openSystemBrowser('javascript:alert(1)')
+            openSystemBrowser({ url: 'javascript:alert(1)' })
+            openSystemBrowser('chrome-extension://evil/page.html')
+
+            expect(received).toHaveLength(0)
+        })
+
+        it('drops a missing/non-string url', async () => {
+            const captured = captureHandshake()
+            await loadScript()
+            const received: Array<{ method: string; params: unknown }> = []
+            window.addEventListener(
+                captured.handshake!.requestEventName,
+                event => received.push((event as CustomEvent).detail as never),
+            )
+            const openSystemBrowser = window.peraMobileInterface!
+                .openSystemBrowser as (p: unknown) => void
+            openSystemBrowser({})
+            openSystemBrowser({ url: 42 })
+            openSystemBrowser(undefined)
+
+            expect(received).toHaveLength(0)
+        })
+    })
+
     it('pushDappViewerScreen aliases to a pushWebView message', async () => {
         const captured = captureHandshake()
         await loadScript()

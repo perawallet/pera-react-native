@@ -26,7 +26,7 @@ export const UserPreferences = {
     onrampIntroductionSeen: 'onramp-introduction-seen',
     onrampXoTermsAccepted: 'onramp-xo-terms-accepted',
 
-    // Web-only master toggle for WebAuthn interception (M9). Deliberately
+    // Web-only master toggle for WebAuthn interception. Deliberately
     // camelCase (breaking this map's kebab-case convention) — it must match
     // WEBAUTHN_TOGGLE_PREFERENCE_KEY in
     // apps/extension/src/content/webauthn-toggle.ts verbatim, since the

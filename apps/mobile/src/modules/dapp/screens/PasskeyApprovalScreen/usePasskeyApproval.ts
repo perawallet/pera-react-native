@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Runs the Task 2 authenticator core (createCredential/assertCredential) for
+// Runs the authenticator core (createCredential/assertCredential) for
 // the passkey-create / passkey-get approval kinds. Unlike
 // useEnableRequestScreen/useSignRequestApprovalScreen, the "resolve" here
 // isn't a plain user decision — it's the *output of a real WebAuthn
@@ -88,7 +88,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
         setIsBusy(true)
         setError(null)
         // CRITICAL: `current.origin` is the browser-stamped frame origin the
-        // service worker read off `chrome.runtime.MessageSender` (Task 5) —
+        // service worker read off `chrome.runtime.MessageSender` —
         // never a value asserted by the intercepted page itself. Passing
         // anything else here would let a malicious page register/assert a
         // credential under an `rp.id` it doesn't own (see SigningContext's
@@ -114,7 +114,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
             // Never leave the dapp's request unsettled: an authenticator
             // failure (SecurityError, InvalidStateError, NotAllowedError, …)
             // still gets a terminal reject, carrying the error's name so
-            // Task 5's content script can reject the page's
+            // the content script can reject the page's
             // navigator.credentials promise with the matching native
             // DOMException instead of a generic cancellation.
             const reason = e instanceof Error ? e.name : 'UnknownError'

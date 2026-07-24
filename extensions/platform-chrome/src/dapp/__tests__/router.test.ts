@@ -11,9 +11,11 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { DappRequestRouter, DAPP_RELAY_SCOPE } from '../router'
-import { DappPermissionStore } from '../permissions'
-import { ARC0027_ERROR_CODES } from '../arc0027-types'
+import { ChromeDappRouter, DAPP_RELAY_SCOPE } from '../router'
+import {
+    DappPermissionStore,
+    ARC0027_ERROR_CODES,
+} from '@perawallet/wallet-core-arc0027'
 
 const A = 'ADDR_A'.padEnd(58, 'A')
 const GENESIS = 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8='
@@ -45,7 +47,7 @@ const setup = (
     const openEnable = vi.fn(async () => approveWith)
     const openSignTransactions = vi.fn(async () => signWith)
     const openSignMessage = vi.fn(async () => messageWith)
-    const router = new DappRequestRouter({
+    const router = new ChromeDappRouter({
         permissions,
         discoverInfo: async () => ({
             providerId: 'pera-wallet',
@@ -57,8 +59,6 @@ const setup = (
             openEnable,
             openSignTransactions,
             openSignMessage,
-            openPasskeyCreate: vi.fn(async () => null),
-            openPasskeyGet: vi.fn(async () => null),
         },
     })
     return {
@@ -71,13 +71,13 @@ const setup = (
 }
 
 // Drives handleMessage and resolves with the response envelope the router sends.
-const call = (router: DappRequestRouter, message: unknown, origin: string) =>
+const call = (router: ChromeDappRouter, message: unknown, origin: string) =>
     new Promise<any>(resolve => {
         const kept = router.handleMessage(message, senderFor(origin), resolve)
         expect(kept).toBe(true) // async response
     })
 
-describe('DappRequestRouter', () => {
+describe('ChromeDappRouter', () => {
     it('ignores non-relay messages (returns false)', () => {
         const { router } = setup(null)
         const kept = router.handleMessage(
@@ -143,7 +143,7 @@ describe('DappRequestRouter', () => {
                 ),
         )
         const permissions = new DappPermissionStore(makeArea(), () => 1)
-        const router = new DappRequestRouter({
+        const router = new ChromeDappRouter({
             permissions,
             discoverInfo: async () => ({
                 providerId: 'p',
@@ -155,8 +155,6 @@ describe('DappRequestRouter', () => {
                 openEnable,
                 openSignTransactions: vi.fn(async () => null),
                 openSignMessage: vi.fn(async () => null),
-                openPasskeyCreate: vi.fn(async () => null),
-                openPasskeyGet: vi.fn(async () => null),
             },
         })
         const first = call(router, req('enable', 'dup'), 'https://x.com')
@@ -271,7 +269,7 @@ describe('DappRequestRouter', () => {
             )
             const permissions = new DappPermissionStore(makeArea(), () => 1)
             await permissions.grant('https://x.com', [A])
-            const router = new DappRequestRouter({
+            const router = new ChromeDappRouter({
                 permissions,
                 discoverInfo: async () => ({
                     providerId: 'p',
@@ -285,8 +283,6 @@ describe('DappRequestRouter', () => {
                     openEnable: vi.fn(async () => null),
                     openSignTransactions,
                     openSignMessage: vi.fn(async () => null),
-                    openPasskeyCreate: vi.fn(async () => null),
-                    openPasskeyGet: vi.fn(async () => null),
                 },
             })
             const params = { txns: [{ txn: TXN }] }
@@ -361,5 +357,16 @@ describe('DappRequestRouter', () => {
         const res = await call(router, message, 'https://x.com')
         expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
         expect(res.requestId).toBe('abc')
+    })
+
+    it('answers a shapeless request body from an untrusted origin without throwing (origin check wins)', async () => {
+        const { router } = setup(null)
+        const message = { scope: DAPP_RELAY_SCOPE, request: {} }
+        expect(() =>
+            router.handleMessage(message, senderFor('null'), vi.fn()),
+        ).not.toThrow()
+        const res = await call(router, message, 'null')
+        expect(res.error.code).toBe(ARC0027_ERROR_CODES.InvalidInputError)
+        expect(res.requestId).toBe('unknown')
     })
 })

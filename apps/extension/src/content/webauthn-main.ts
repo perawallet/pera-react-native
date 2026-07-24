@@ -27,7 +27,7 @@
 // payload) — resolves/rejects the page's promise with the STASHED
 // ORIGINAL's own outcome. The one deliberate exception is a `{ error: name }`
 // response: that's a REAL authenticator-level failure (InvalidStateError,
-// SecurityError, ...) surfaced by Task 2's authenticator core, and it must
+// SecurityError, ...) surfaced by Pera's authenticator core, and it must
 // reject with that exact native DOMException rather than fall through —
 // falling through past e.g. InvalidStateError would let the platform
 // authenticator mint a duplicate credential the RP explicitly tried to
@@ -47,8 +47,8 @@
 // `@perawallet/wallet-core-shared`'s full barrel (react-query, zod, ky,
 // decimal.js, ...) transitively, ballooning this script from ~2KB to
 // ~900KB — a cost paid on EVERY http/https page at document_start
-// (all_frames), unlike Task 2-4's SW/approval-window contexts where that
-// weight is a non-issue. The base64url codec + serialize functions below are
+// (all_frames), unlike the SW/approval-window contexts where that weight is
+// a non-issue. The base64url codec + serialize functions below are
 // therefore a deliberate, minimal duplication of
 // packages/passkeys/src/authenticator/wire.ts, kept byte-for-byte
 // wire-compatible with it (see __tests__/webauthn-main.test.ts's round-trip

@@ -43,17 +43,33 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
-                        ...(routeCapabilities.walletConnectSettings
+                        // The unified Connections screen (web only) supersedes
+                        // the two separate WalletConnect/Connected Sites menu
+                        // entries below — when it's on, both are suppressed
+                        // regardless of their own capability flags. The
+                        // underlying routes/screens are untouched for direct
+                        // navigation elsewhere (e.g. a WC pairing flow).
+                        ...(routeCapabilities.connectionsSettings
                             ? [
                                   {
-                                      route: 'WalletConnectSettings' as keyof SettingsStackParamsList,
-                                      icon: 'wallet-connect',
+                                      route: 'ConnectionsSettings' as keyof SettingsStackParamsList,
+                                      icon: 'globe',
                                       title: t(
-                                          'settings.main.wallet_connect_title',
+                                          'settings.main.connections_title',
                                       ),
                                   },
                               ]
-                            : []),
+                            : routeCapabilities.walletConnectSettings
+                              ? [
+                                    {
+                                        route: 'WalletConnectSettings' as keyof SettingsStackParamsList,
+                                        icon: 'wallet-connect',
+                                        title: t(
+                                            'settings.main.wallet_connect_title',
+                                        ),
+                                    },
+                                ]
+                              : []),
                         ...(routeCapabilities.passkeysAutofillSettings
                             ? [
                                   {
@@ -63,7 +79,8 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
-                        ...(routeCapabilities.dappConnections
+                        ...(!routeCapabilities.connectionsSettings &&
+                        routeCapabilities.dappConnections
                             ? [
                                   {
                                       route: 'ConnectedSites' as keyof SettingsStackParamsList,
@@ -74,14 +91,22 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
-                        {
-                            // Sweeps every signable key for on-chain accounts
-                            // rekeyed to it — the account-options action scans
-                            // one key; this is the wallet-wide entry (PERA-4619).
-                            action: 'scanRekeyed' as const,
-                            icon: 'magnifying-glass',
-                            title: t('settings.main.scan_rekeyed_title'),
-                        },
+                        ...(routeCapabilities.rekeyFlows
+                            ? [
+                                  {
+                                      // Sweeps every signable key for on-chain
+                                      // accounts rekeyed to it — the
+                                      // account-options action scans one key;
+                                      // this is the wallet-wide entry
+                                      // (PERA-4619).
+                                      action: 'scanRekeyed' as const,
+                                      icon: 'magnifying-glass',
+                                      title: t(
+                                          'settings.main.scan_rekeyed_title',
+                                      ),
+                                  },
+                              ]
+                            : []),
                     ],
                 },
                 {
@@ -97,15 +122,6 @@ export const useSettingsOptions = () => {
                             icon: 'moon',
                             title: t('settings.main.theme_title'),
                         },
-                        ...(routeCapabilities.networkSettings
-                            ? [
-                                  {
-                                      route: 'NetworkSettings' as keyof SettingsStackParamsList,
-                                      icon: 'code',
-                                      title: t('settings.main.network_title'),
-                                  },
-                              ]
-                            : []),
                     ],
                 },
                 {

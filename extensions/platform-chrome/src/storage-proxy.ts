@@ -65,7 +65,7 @@ export const startStorageProxyHost = (
             if (msg?.scope !== STORAGE_PROXY_SCOPE) return undefined
             // The storage proxy has exactly one legitimate client: the
             // offscreen document (the only context without native
-            // chrome.storage). M4 will land content scripts sharing this
+            // chrome.storage). Content scripts will eventually share this
             // onMessage listener with every extension page — refuse anyone
             // else before touching chrome.storage.local on their behalf.
             if (

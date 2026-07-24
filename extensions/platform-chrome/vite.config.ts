@@ -38,6 +38,7 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
+                '@perawallet/wallet-core-arc0027',
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-passkeys/webauthn',
                 '@perawallet/wallet-extension-platform',

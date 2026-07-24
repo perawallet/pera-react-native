@@ -26,7 +26,7 @@
 // op unchanged (its senders resolve to handlers.web.ts on web); only one op
 // is intercepted here: pushWebView (dapps open in real tabs — the injected
 // ARC-0027 provider supplies connect/sign, no nested viewer). walletConnect
-// falls through to the registry's openWalletConnect (M7): it validates
+// falls through to the registry's openWalletConnect: it validates
 // { uri }, parses it, and calls connect() — the mounted WalletConnectProvider
 // then surfaces ConnectionView for the real pairing flow.
 import React, { useEffect, useMemo, useRef, useState } from 'react'
@@ -65,7 +65,7 @@ import type { PWWebViewProps } from './PWWebView'
 
 export type { PWWebViewProps } from './PWWebView'
 
-const TOKEN_PARAM = 'peraBridgeToken' // = DISCOVER_BRIDGE_TOKEN_PARAM (bridge-wire.ts)
+const TOKEN_PARAM = 'peraBridgeToken' // = WEBVIEW_BRIDGE_TOKEN_PARAM (bridge-wire.ts)
 
 // Bounds the disconnect → regenerate-token → reconnect → disconnect… cycle a
 // crash-looping relay (or a permanently broken extension context) could
@@ -129,7 +129,7 @@ export const PWWebView = ({
     }, [url, bridgeToken])
 
     // Structural trust: the bridge content scripts only run on a known,
-    // configured mount origin (Discover or, from M8, Bidali), and
+    // configured mount origin (Discover or Bidali), and
     // createDiscoverBridgeHost verifies the browser-stamped
     // port.sender.origin — an off-origin navigation inside the iframe kills
     // the bridge rather than reaching the handlers. This flag mirrors

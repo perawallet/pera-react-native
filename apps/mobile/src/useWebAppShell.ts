@@ -114,7 +114,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
     }, [isBootstrapped, isUnlocked, hasAccounts])
 
     if (getSurface() === 'approval') {
-        // The SW's approval bridge (Task 4) opens this popup at
+        // The SW's approval bridge opens this popup at
         // approval.html?requestId=…; a requestId in the query string means
         // there's a real ARC-0027 enable request to render. Any other
         // navigation into the approval surface (e.g. opened by hand) falls

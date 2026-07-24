@@ -72,7 +72,7 @@ const getCurrencyInfo = (
 
 // Selects the balances object the Bidali provider surface embeds: the
 // selected account's ALGO/USDC amounts, keyed by Bidali's currency protocol
-// names. Exported so bidali-url.web.ts (Task 4) can stamp the identical
+// names. Exported so bidali-url.web.ts can stamp the identical
 // shape onto the web iframe URL instead of duplicating this math.
 export const computeBidaliBalances = (
     account: Optional<WalletAccount>,

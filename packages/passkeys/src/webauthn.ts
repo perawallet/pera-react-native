@@ -13,7 +13,7 @@
 /**
  * Narrow, React-Native-free surface for implementing the `KeystoreSigner`
  * port (see `authenticator.ts`) against a concrete keystore backend, e.g.
- * `@perawallet/wallet-extension-keystore-chrome`'s Task 3 adapter.
+ * `@perawallet/wallet-extension-keystore-chrome`'s adapter.
  *
  * Deliberately does NOT re-export `./bootstrap` or `./hooks` (what the
  * package root `.` entry point exports): those pull in

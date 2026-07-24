@@ -63,7 +63,7 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     // user's own gift-card payment triggers) would otherwise change the url
     // string and re-navigate the iframe mid/post-checkout, resetting
     // Bidali's page and the paymentSent/paymentCancelled callbacks it
-    // assigned. Adjudicated M8 design: balances stamped at mount, staleness
+    // assigned. By design, balances are stamped at mount and staleness is
     // accepted within the session. Native is unaffected either way — its
     // builder ignores this value, so freezing it is provably harmless there.
     const [frozenBalances] = useState(() =>

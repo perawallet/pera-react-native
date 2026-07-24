@@ -12,7 +12,7 @@
 
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DISCOVER_BRIDGE_PORT_PREFIX } from '@perawallet/wallet-extension-platform-chrome'
+import { WEBVIEW_BRIDGE_PORT_PREFIX } from '@perawallet/wallet-extension-platform-chrome'
 
 const TOKEN = 'relay-token-1'
 
@@ -71,7 +71,7 @@ describe('discover-relay content script', () => {
 
     it('connects a port named with the token and relays page → port', async () => {
         await loadScript()
-        expect(ports[0]?.name).toBe(`${DISCOVER_BRIDGE_PORT_PREFIX}${TOKEN}`)
+        expect(ports[0]?.name).toBe(`${WEBVIEW_BRIDGE_PORT_PREFIX}${TOKEN}`)
 
         handshake('req-evt', 'res-evt')
         window.dispatchEvent(

@@ -1,0 +1,48 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { Provider } from '@algorandfoundation/wallet-provider'
+import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
+import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
+import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
+import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
+import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import type {
+    PeraExtensions,
+    PeraProvider as PeraProviderShape,
+    ProviderOptions,
+} from './pera-provider-extensions'
+
+export type PeraProvider = PeraProviderShape
+
+/**
+ * The Pera Wallet Provider — web build. Metro's `.web.ts` platform-file
+ * resolution picks this file in place of `pera-provider.ts` for web
+ * bundles (the mobile web export and the browser extension it ships as),
+ * swapping the native Ledger BLE/USB transports for their Web
+ * Bluetooth/WebHID counterparts. Every other extension — platform services,
+ * keystore, passkey autofill — is composed identically to the native file.
+ */
+export const PeraProvider: {
+    new (
+        config: ProviderOptions,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        options?: any,
+    ): PeraProviderShape
+    EXTENSIONS: PeraExtensions
+} & typeof Provider = Provider.withExtensions([
+    WithPlatformExtension,
+    WithLedgerWebBleExtension,
+    WithLedgerWebUsbExtension,
+    WithKeyStore,
+    WithPasskeyAutofill,
+] as const)

@@ -344,7 +344,7 @@ test('a second enable from the same page resolves silently with no new approval 
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
 
-test('Connected Sites settings lists the localhost origin and can revoke it', async () => {
+test('Connections settings lists the localhost origin and can revoke it', async () => {
     await dismissPinPromptIfPresent(page)
     await page.getByTestId('tab_menu_button').click()
     await expect(page.getByTestId('menu_screen')).toBeVisible({
@@ -355,20 +355,24 @@ test('Connected Sites settings lists the localhost origin and can revoke it', as
         timeout: 20_000,
     })
 
-    await page.getByTestId('settings_item_connected_sites').click()
-    await expect(page.getByTestId('connected_sites_screen')).toBeVisible({
+    // The unified Connections screen (connectionsSettings capability, web
+    // only) supersedes the old standalone Connected Sites menu entry —
+    // settings_item_${title...} (SettingsScreen.tsx) on 'Connections'
+    // (settings.main.connections_title) → settings_item_connections.
+    await page.getByTestId('settings_item_connections').click()
+    await expect(page.getByTestId('connections_settings_screen')).toBeVisible({
         timeout: 20_000,
     })
 
-    const row = page.getByTestId(`connected_site_row_${dappOrigin}`)
+    const row = page.getByTestId(`connection_row_dapp-${dappOrigin}`)
     await expect(row).toBeVisible({ timeout: 20_000 })
     await expect(row).toContainText(dappOrigin)
 
-    await page.getByTestId(`connected_site_revoke_${dappOrigin}`).click()
+    await page.getByTestId(`connection_revoke_dapp-${dappOrigin}`).click()
     await expect(
-        page.getByTestId('connected_sites_revoke_confirm_bottom_sheet'),
+        page.getByTestId('connections_settings_revoke_confirm_bottom_sheet'),
     ).toBeVisible({ timeout: 10_000 })
-    await page.getByTestId('connected_sites_revoke_confirm_button').click()
+    await page.getByTestId('connections_settings_revoke_confirm_button').click()
 
     await expect(row).toHaveCount(0, { timeout: 10_000 })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])

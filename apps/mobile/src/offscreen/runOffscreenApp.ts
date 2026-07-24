@@ -86,7 +86,7 @@ export const runOffscreenApp = async (): Promise<void> => {
     // NOTE: in the offscreen document chrome.storage is the SW-proxied shim
     // (installOffscreenStorageShim in App.web.tsx) — offscreen docs have no
     // native chrome.storage; onChanged events arrive relayed from the SW.
-    // apps/mobile compiles without chrome ambient types (Task 12), so the raw
+    // apps/mobile compiles without chrome ambient types, so the raw
     // chrome.storage.onChanged listener lives behind this platform-chrome helper.
     onLocalStorageKeyChanged(
         Object.keys(REHYDRATE_BY_KEY),

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-// Approval-window (popup UI) side of the approval bridge (Task 4's
-// ApprovalWindowBridge.handleMessage): a typed chrome.runtime.sendMessage
+// Approval-window (popup UI) side of the approval bridge
+// (ApprovalWindowBridge.handleMessage): a typed chrome.runtime.sendMessage
 // wrapper so apps/mobile — which is barred by oxlint's
 // no-restricted-globals rule from touching the ambient `chrome` global
 // directly — has a package-level accessor to go through instead, same as

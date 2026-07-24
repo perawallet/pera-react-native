@@ -404,8 +404,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // navToBidaliNavigation). Open the same Bidali sheet
                     // the Menu's "Buy Gift Card" panel button opens so we
                     // inherit the bidaliProvider JS bridge wiring.
-                    // Same capability gate as that Menu button: the Bidali
-                    // webview has no host on web (giftCards lands M8).
+                    // Same capability gate as that Menu button.
                     if (!routeCapabilities.giftCards) {
                         onError?.()
                         return

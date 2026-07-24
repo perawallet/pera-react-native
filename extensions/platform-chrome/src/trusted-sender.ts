@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// M4 threat model: content scripts land in every user tab and share
+// Threat model: content scripts land in every user tab and share
 // chrome.runtime.onMessage with the rest of the extension (popup, expanded
 // tab, approval window, offscreen document, service worker). A content
 // script's sender.url is the WEB PAGE it was injected into (e.g.

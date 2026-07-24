@@ -10,30 +10,19 @@
  limitations under the License
  */
 
-import {
-    Provider,
-    type ProviderOptions,
-} from '@algorandfoundation/wallet-provider'
+import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
-import type { KeyStoreExtension } from '@algorandfoundation/keystore'
-import {
-    WithPlatformExtension,
-    type PlatformExtension,
-} from '@perawallet/wallet-extension-platform-driver'
+import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
 import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
 import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
-import {
-    WithPasskeyAutofill,
-    type PasskeyAutofillExtension,
-} from '@perawallet/wallet-extension-passkey-autofill'
+import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import type {
+    PeraExtensions,
+    PeraProvider as PeraProviderShape,
+    ProviderOptions,
+} from './pera-provider-extensions'
 
-type PeraExtensions = readonly [
-    typeof WithPlatformExtension,
-    typeof WithLedgerExtension,
-    typeof WithLedgerUsbExtension,
-    typeof WithKeyStore,
-    typeof WithPasskeyAutofill,
-]
+export type PeraProvider = PeraProviderShape
 
 /**
  * The Pera Wallet Provider with platform services, Ledger hardware wallet,
@@ -42,16 +31,17 @@ type PeraExtensions = readonly [
  * platform driver extension, the Ledger extension for hardware wallet support,
  * the keystore extension for cryptographic key management, plus the passkey
  * autofill service exposed at `provider.passkeyAutofill`.
+ *
+ * Native/RN build — see `pera-provider.web.ts` for the web twin (Web
+ * Bluetooth/WebHID Ledger transports instead of the RN ones), which Metro
+ * resolves in its place for web bundles.
  */
 export const PeraProvider: {
     new (
         config: ProviderOptions,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         options?: any,
-    ): Provider<PeraExtensions> &
-        PlatformExtension &
-        KeyStoreExtension &
-        PasskeyAutofillExtension
+    ): PeraProviderShape
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
     WithPlatformExtension,
@@ -60,8 +50,3 @@ export const PeraProvider: {
     WithKeyStore,
     WithPasskeyAutofill,
 ] as const)
-
-export type PeraProvider = Provider<PeraExtensions> &
-    PlatformExtension &
-    KeyStoreExtension &
-    PasskeyAutofillExtension

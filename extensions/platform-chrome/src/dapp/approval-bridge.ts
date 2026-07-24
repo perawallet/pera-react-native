@@ -10,27 +10,17 @@
  limitations under the License
  */
 
-import {
-    type SerializedCreateOptions,
-    type SerializedGetOptions,
-    type SerializedCredential,
-} from '@perawallet/wallet-core-passkeys/webauthn'
+import { type SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
+import { type Arc0027ApprovalOpener } from '@perawallet/wallet-core-arc0027'
 import { isTrustedExtensionPageSender } from './../trusted-sender'
-import { type ApprovalOpener } from './router'
+import {
+    type PasskeyDecision,
+    type PasskeyCreateApprovalContext,
+    type PasskeyGetApprovalContext,
+    type PasskeyApprovalOpener,
+} from './passkey-opener'
 
 export const DAPP_APPROVAL_SCOPE = 'pera-dapp-approval' as const
-
-// Settled by resolve-passkey (a minted/asserted credential), reject-passkey
-// (an explicit reason — user decline or an authenticator error name, see
-// usePasskeyApproval) or a window close (null, same as every other kind).
-// The reason string (not just null) is what lets Task 5's content script
-// translate a decline into the *specific* native WebAuthn error the page's
-// `navigator.credentials` promise should reject with, rather than a single
-// generic cancellation.
-export type PasskeyDecision =
-    | { credential: SerializedCredential }
-    | { error: string }
-    | null
 
 export type PendingApproval =
     | {
@@ -55,31 +45,18 @@ export type PendingApproval =
           message: Record<string, unknown>
           approvedAddresses: string[]
       }
-    | {
+    | ({
           kind: 'passkey-create'
-          requestId: string
-          // Browser-stamped frame origin (never page-asserted) — passed
-          // verbatim as SigningContext.origin to the Task 2 authenticator
-          // core by usePasskeyApproval.
-          origin: string
-          rpId: string
-          userName?: string
-          options: SerializedCreateOptions
           // Optional on every kind (see 'enable' above) so code that reads
           // it generically off a `PendingApproval | null` (no per-kind
           // narrowing) — e.g. useEnableRequestScreen — keeps type-checking
           // without every call site branching on `kind` first.
           faviconUrl?: string
-      }
-    | {
+      } & PasskeyCreateApprovalContext)
+    | ({
           kind: 'passkey-get'
-          requestId: string
-          origin: string
-          rpId: string
-          userName?: string
-          options: SerializedGetOptions
           faviconUrl?: string
-      }
+      } & PasskeyGetApprovalContext)
 
 // Each open* method creates its own typed Promise and stores its `resolve`
 // here as this widened `Settle`; `finish()` stays generic over the decision
@@ -88,7 +65,9 @@ export type PendingApproval =
 // open* method's promise executor, not here.
 type Settle = (decision: unknown) => void
 
-export class ApprovalWindowBridge implements ApprovalOpener {
+export class ApprovalWindowBridge
+    implements Arc0027ApprovalOpener, PasskeyApprovalOpener
+{
     private readonly pending = new Map<
         string,
         {
@@ -153,13 +132,9 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         return decision
     }
 
-    async openPasskeyCreate(ctx: {
-        requestId: string
-        origin: string
-        rpId: string
-        userName?: string
-        options: SerializedCreateOptions
-    }): Promise<PasskeyDecision> {
+    async openPasskeyCreate(
+        ctx: PasskeyCreateApprovalContext,
+    ): Promise<PasskeyDecision> {
         const decision = this.awaitApproval<PasskeyDecision>({
             ...ctx,
             kind: 'passkey-create',
@@ -168,13 +143,9 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         return decision
     }
 
-    async openPasskeyGet(ctx: {
-        requestId: string
-        origin: string
-        rpId: string
-        userName?: string
-        options: SerializedGetOptions
-    }): Promise<PasskeyDecision> {
+    async openPasskeyGet(
+        ctx: PasskeyGetApprovalContext,
+    ): Promise<PasskeyDecision> {
         const decision = this.awaitApproval<PasskeyDecision>({
             ...ctx,
             kind: 'passkey-get',
@@ -203,14 +174,29 @@ export class ApprovalWindowBridge implements ApprovalOpener {
     // popup gets no ?requestId, so it discovers the pending approval via
     // get-current-approval; the window fallback carries the id on its URL.
     private async openViaPopupOrWindow(requestId: string): Promise<void> {
+        // At most one popup-surface approval may be in flight at a time —
+        // get-current-approval has no requestId to disambiguate by, so a
+        // second one would race the first for the popup. Route it straight
+        // to the window instead.
+        const popupInFlight = [...this.pending.values()].some(
+            e => e.surface === 'popup',
+        )
+        if (popupInFlight) {
+            await this.openApprovalWindow(requestId)
+            return
+        }
+        // Mark 'popup' before the await settles (not after) so a second
+        // request racing in while tryOpenActionPopup is still in flight
+        // also sees this one as occupying the popup, and so
+        // get-current-approval can find this entry the instant it's asked.
+        const entry = this.pending.get(requestId)
+        if (entry) entry.surface = 'popup'
         // Fall back to the dedicated window only if openPopup is unavailable
         // (older Chrome) or the browser refuses it (e.g. no user gesture).
         const usedPopup = await this.tryOpenActionPopup()
-        const entry = this.pending.get(requestId)
-        if (usedPopup) {
-            if (entry) entry.surface = 'popup'
-        } else {
-            if (entry) entry.surface = 'window'
+        if (!usedPopup) {
+            const e = this.pending.get(requestId)
+            if (e) e.surface = 'window'
             await this.openApprovalWindow(requestId)
         }
     }
@@ -282,13 +268,13 @@ export class ApprovalWindowBridge implements ApprovalOpener {
         }
         if (msg.kind === 'get-current-approval') {
             // No requestId: the toolbar popup discovers whichever approval is
-            // pending — enable OR sign (both now open in the toolbar popup).
-            // Keep the most recently added if more than one is in flight (a
-            // sign always follows a resolved enable, so in practice there's
-            // exactly one).
+            // pending. openViaPopupOrWindow guarantees at most one
+            // popup-surface entry exists at a time, so this is unambiguous
+            // — a concurrent request that got routed to the window instead
+            // (surface: 'window') must be skipped here.
             let current: PendingApproval | null = null
             for (const e of this.pending.values()) {
-                current = e.approval
+                if (e.surface === 'popup') current = e.approval
             }
             sendResponse(current)
             return true

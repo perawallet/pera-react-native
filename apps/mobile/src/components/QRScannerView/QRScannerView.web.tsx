@@ -11,7 +11,7 @@
  */
 
 // Web replacement for the react-native-vision-camera-backed QRScannerView:
-// vision-camera has no web implementation (M3 T8's nitro shim makes its
+// vision-camera has no web implementation (a nitro shim makes its
 // module-scope factory reject gracefully, leaving the native path dead but
 // non-crashing on web). This gives web a real capability: `getUserMedia` +
 // the browser's built-in `BarcodeDetector` for camera decoding, with a

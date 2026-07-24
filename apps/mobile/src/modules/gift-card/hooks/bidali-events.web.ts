@@ -15,7 +15,7 @@
 // cross-origin iframe. Here the "webview" a caller holds is the transport-
 // backed bridge-webview object PWWebView.web populates webviewRef with, so
 // asBridgeTransport recovers the underlying transport and posts a structured
-// notification instead. Task 3's content-script listener (bidali-main.ts)
+// notification instead. The content-script listener (bidali-main.ts)
 // re-dispatches this exact envelope onto window.bidaliProvider[event]().
 import type WebView from 'react-native-webview'
 import type { Nullable } from '@perawallet/wallet-core-shared'

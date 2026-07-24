@@ -12,7 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDiscoverBridgeHost } from '../bridge-host'
-import { DISCOVER_BRIDGE_PORT_PREFIX } from '../bridge-wire'
+import { WEBVIEW_BRIDGE_PORT_PREFIX } from '../bridge-wire'
 
 type Listener = (port: FakePort) => void
 
@@ -68,7 +68,7 @@ describe('createDiscoverBridgeHost', () => {
             trustedOrigins: [TRUSTED],
             onMessage,
         })
-        const port = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
+        const port = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
         connectListeners.forEach(cb => cb(port))
 
         expect(host.isConnected()).toBe(true)
@@ -88,7 +88,7 @@ describe('createDiscoverBridgeHost', () => {
             onMessage: vi.fn(),
         })
         const evil = makePort(
-            `${DISCOVER_BRIDGE_PORT_PREFIX}tok1`,
+            `${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`,
             'https://evil.example',
         )
         connectListeners.forEach(cb => cb(evil))
@@ -102,7 +102,7 @@ describe('createDiscoverBridgeHost', () => {
             trustedOrigins: [TRUSTED],
             onMessage: vi.fn(),
         })
-        const other = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok2`, TRUSTED)
+        const other = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok2`, TRUSTED)
         connectListeners.forEach(cb => cb(other))
         expect(host.isConnected()).toBe(false)
         expect(other.disconnect).not.toHaveBeenCalled()
@@ -118,7 +118,7 @@ describe('createDiscoverBridgeHost', () => {
             trustedOrigins: ['https://commerce.bidali.com', TWIN],
             onMessage,
         })
-        const port = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TWIN)
+        const port = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`, TWIN)
         connectListeners.forEach(cb => cb(port))
 
         expect(host.isConnected()).toBe(true)
@@ -136,7 +136,7 @@ describe('createDiscoverBridgeHost', () => {
             onMessage: vi.fn(),
         })
         const evil = makePort(
-            `${DISCOVER_BRIDGE_PORT_PREFIX}tok1`,
+            `${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`,
             'https://evil.example',
         )
         connectListeners.forEach(cb => cb(evil))
@@ -156,9 +156,9 @@ describe('createDiscoverBridgeHost', () => {
             onMessage: vi.fn(),
             onDisconnect,
         })
-        const oldPort = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
+        const oldPort = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
         connectListeners.forEach(cb => cb(oldPort))
-        const newPort = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
+        const newPort = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
         connectListeners.forEach(cb => cb(newPort))
 
         expect(host.isConnected()).toBe(true)
@@ -183,9 +183,9 @@ describe('createDiscoverBridgeHost', () => {
             trustedOrigins: [TRUSTED],
             onMessage,
         })
-        const oldPort = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
+        const oldPort = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
         connectListeners.forEach(cb => cb(oldPort))
-        const newPort = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
+        const newPort = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
         connectListeners.forEach(cb => cb(newPort))
 
         oldPort.emitMessage({ method: 'stale' })
@@ -202,7 +202,7 @@ describe('createDiscoverBridgeHost', () => {
             trustedOrigins: [TRUSTED],
             onMessage: vi.fn(),
         })
-        const port = makePort(`${DISCOVER_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
+        const port = makePort(`${WEBVIEW_BRIDGE_PORT_PREFIX}tok1`, TRUSTED)
         connectListeners.forEach(cb => cb(port))
         port.emitDisconnect()
         expect(host.isConnected()).toBe(false)

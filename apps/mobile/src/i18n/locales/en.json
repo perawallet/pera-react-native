@@ -1874,6 +1874,7 @@
         "wallet_connect_details": "Connection Details",
         "passkeys": "Passkeys",
         "connected_sites": "Connected Sites",
+        "connections": "Connections",
         "currency": "Currency",
         "theme": "Theme",
         "developer_settings": "Developer Settings",
@@ -2057,10 +2058,10 @@
             "wallet_connect_title": "WalletConnect Sessions",
             "passkeys_title": "Passkeys",
             "connected_sites_title": "Connected Sites",
+            "connections_title": "Connections",
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
-            "network_title": "Network",
             "support_section": "Support",
             "rate_title": "Rate Pera Wallet",
             "terms_title": "Terms and Services",
@@ -2204,6 +2205,12 @@
             "revoke_body": "{{origin}} will no longer have access to your connected accounts. You can reconnect any time from the site.",
             "revoke_confirm": "Disconnect",
             "revoke_cancel": "Cancel"
+        },
+        "connections": {
+            "empty_title": "No connections",
+            "empty_body": "Your WalletConnect sessions and connected sites will appear here.",
+            "badge_wallet_connect": "WalletConnect",
+            "badge_dapp": "Dapp"
         }
     },
     "signing": {

@@ -16,39 +16,12 @@
 // page-visible globals. Inert without the extension-stamped URL token: this
 // script also matches regular *.perawallet.app tabs (all_frames, no iframe),
 // where no bridge host exists on the other side.
-import type { DiscoverChannelHandshake } from '@perawallet/wallet-extension-platform-chrome'
-import {
-    DISCOVER_BRIDGE_TOKEN_PARAM,
-    DISCOVER_HANDSHAKE_EVENT,
-    DISCOVER_RELAY_READY_EVENT,
-} from '@perawallet/wallet-extension-platform-chrome'
+import { connectWebviewMainChannel } from './webview-main-channel'
 
-const token = new URLSearchParams(window.location.search).get(
-    DISCOVER_BRIDGE_TOKEN_PARAM,
-)
+const mainChannel = connectWebviewMainChannel('disc')
 
-if (token) {
-    const rand = (): string => crypto.randomUUID().replace(/-/g, '')
-    const channel: DiscoverChannelHandshake = {
-        requestEventName: `__pera_disc_req_${rand()}__`,
-        responseEventName: `__pera_disc_res_${rand()}__`,
-    }
-
-    const dispatchHandshake = (): void => {
-        window.dispatchEvent(
-            new CustomEvent(DISCOVER_HANDSHAKE_EVENT, { detail: channel }),
-        )
-    }
-    // Re-dispatch if the ISOLATED relay loads after us (same recovery the
-    // ARC-0027 pair uses in inject-main.ts/relay-isolated.ts).
-    window.addEventListener(DISCOVER_RELAY_READY_EVENT, dispatchHandshake)
-    dispatchHandshake()
-
-    const relay = (message: Record<string, unknown>): void => {
-        window.dispatchEvent(
-            new CustomEvent(channel.requestEventName, { detail: message }),
-        )
-    }
+if (mainChannel) {
+    const { token, relay } = mainChannel
 
     // Mirrors native's __stampToken (injected-scripts.ts): stamps every
     // element of a JSON-RPC batch, or the single request object.
@@ -95,7 +68,22 @@ if (token) {
         version: '2',
         handleRequest: (request: string) => sendJsonRPCMessage(request),
         pushWebView: rpcCall('pushWebView'),
-        openSystemBrowser: rpcCall('openSystemBrowser'),
+        // Unlike the other rpcCall(...) entries, this one can't blindly
+        // forward the page's params: canOpenURL's real gate (OS-registered
+        // scheme handlers) is a no-op on react-native-web, so this content
+        // script is the only scheme check left standing on the web platform.
+        // Mirrors bidaliProvider.openUrl's string/{url} normalization.
+        openSystemBrowser: (params: unknown = {}) => {
+            const url =
+                typeof params === 'object' && params !== null
+                    ? (params as Record<string, unknown>).url
+                    : params
+            if (typeof url !== 'string') return
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                return
+            }
+            sendRNMessage('openSystemBrowser', { url })
+        },
         canOpenURI: rpcCall('canOpenURI'),
         openNativeURI: rpcCall('openNativeURI'),
         notifyUser: rpcCall('notifyUser'),

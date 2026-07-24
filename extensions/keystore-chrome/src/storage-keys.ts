@@ -11,8 +11,8 @@
  */
 
 // Single source of truth for every chrome.storage key the keystore owns.
-// Extracted per the M2 Task 14 review: passkey/vault key literals were
-// duplicated inline (vault.ts createVault) to dodge a circular import.
+// Extracted because passkey/vault key literals were duplicated inline
+// (vault.ts createVault) to dodge a circular import.
 
 /** chrome.storage.local — password-wrapped master key blob. */
 export const VAULT_STORAGE_KEY = 'vault:wrapped-master-key'
