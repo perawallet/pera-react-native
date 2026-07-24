@@ -355,6 +355,62 @@ describe('RNLedgerService', () => {
             expect(Array.from(sig)).toEqual([1, 2, 3])
         })
 
+        test('signTransaction primes the device via getAddressAndPubKey before every sign call', async () => {
+            algorandGetAddressMock.mockResolvedValue({
+                address: Buffer.from('ALGO_ADDR'),
+                publicKey: Buffer.alloc(32),
+            })
+            algorandSignMock.mockResolvedValue({
+                signature: Buffer.from([1, 2, 3]),
+            })
+            const transport = await mountTransport()
+
+            await transport.signTransaction(0, new Uint8Array([10, 20]))
+
+            expect(algorandGetAddressMock).toHaveBeenCalledWith(0, false)
+            expect(
+                algorandGetAddressMock.mock.invocationCallOrder[0],
+            ).toBeLessThan(algorandSignMock.mock.invocationCallOrder[0])
+        })
+
+        test('signTransaction re-primes on every call for the same account index — no caching', async () => {
+            algorandGetAddressMock.mockResolvedValue({
+                address: Buffer.from('ALGO_ADDR'),
+                publicKey: Buffer.alloc(32),
+            })
+            algorandSignMock.mockResolvedValue({
+                signature: Buffer.from([1, 2, 3]),
+            })
+            const transport = await mountTransport()
+
+            await transport.signTransaction(0, new Uint8Array([10]))
+            await transport.signTransaction(0, new Uint8Array([20]))
+            await transport.signTransaction(0, new Uint8Array([30]))
+
+            // One getAddressAndPubKey call per signTransaction call — never skipped,
+            // even though every call targets the same account index on the same
+            // transport. This is the load-bearing behavior: see the "Why NOT
+            // memoize" note in this plan's Background section.
+            expect(algorandGetAddressMock).toHaveBeenCalledTimes(3)
+            expect(algorandSignMock).toHaveBeenCalledTimes(3)
+        })
+
+        test('signTransaction primes the requested account index, not a hardcoded one', async () => {
+            algorandGetAddressMock.mockResolvedValue({
+                address: Buffer.from('ALGO_ADDR'),
+                publicKey: Buffer.alloc(32),
+            })
+            algorandSignMock.mockResolvedValue({
+                signature: Buffer.from([1, 2, 3]),
+            })
+            const transport = await mountTransport()
+
+            await transport.signTransaction(7, new Uint8Array([10]))
+
+            expect(algorandGetAddressMock).toHaveBeenCalledWith(7, false)
+            expect(algorandSignMock).toHaveBeenCalledWith(7, Buffer.from([10]))
+        })
+
         test('signTransaction throws LedgerSigningError on empty signature', async () => {
             algorandSignMock.mockResolvedValue({ signature: Buffer.alloc(0) })
             const transport = await mountTransport()
