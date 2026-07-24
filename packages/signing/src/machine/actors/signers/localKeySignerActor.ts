@@ -23,7 +23,7 @@ import {
     type LocalArc60SigningFunction,
 } from '../../../pipeline/signing/createLocalKeyStrategy'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
-import { CannotSignError } from '../../../pipeline/errors'
+import { signGroupsBySignerAccount } from './signGroupsBySignerAccount'
 
 export type LocalKeySignerActorInput = {
     groups: AnalyzedSignableGroup[]
@@ -56,17 +56,10 @@ export const localKeySignerActor = fromPromise<
         signArc60,
     })
 
-    return Promise.all(
-        groups.map(group => {
-            const signerAccount = allAccounts.find(
-                a => a.address === group.signerAddress,
-            )
-            if (!signerAccount) {
-                throw new CannotSignError(
-                    group.signerAddress,
-                    'Account not found in allAccounts',
-                )
-            }
+    return signGroupsBySignerAccount(
+        groups,
+        allAccounts,
+        (group, signerAccount) => {
             // Rekey vs. multisig-cosign handling lives in
             // {@link resolveSigningAccount}. This call is defense-in-depth:
             // the upstream dispatcher (`buildGroupSignerTypeMap`) already
@@ -80,6 +73,6 @@ export const localKeySignerActor = fromPromise<
                 allAccounts,
             )
             return strategy.sign(group, accountForSigning)
-        }),
+        },
     )
 })

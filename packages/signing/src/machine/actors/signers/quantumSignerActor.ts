@@ -25,7 +25,7 @@ import type {
     LocalArc60SigningFunction,
 } from '../../../pipeline/signing/createLocalKeyStrategy'
 import { resolveSigningAccount } from '../../utils/resolveSigningAccount'
-import { CannotSignError } from '../../../pipeline/errors'
+import { signGroupsBySignerAccount } from './signGroupsBySignerAccount'
 
 export type QuantumSignerActorInput = {
     groups: AnalyzedSignableGroup[]
@@ -61,17 +61,10 @@ export const quantumSignerActor = fromPromise<
         signArc60,
     })
 
-    return Promise.all(
-        groups.map(group => {
-            const signerAccount = allAccounts.find(
-                a => a.address === group.signerAddress,
-            )
-            if (!signerAccount) {
-                throw new CannotSignError(
-                    group.signerAddress,
-                    'Account not found in allAccounts',
-                )
-            }
+    return signGroupsBySignerAccount(
+        groups,
+        allAccounts,
+        (group, signerAccount) => {
             // Delegate rekey resolution to the same canonical helper the
             // local-key actor uses so the dispatcher's classification and the
             // account actually signed stay in lockstep.
@@ -82,6 +75,6 @@ export const quantumSignerActor = fromPromise<
                 allAccounts,
             )
             return strategy.sign(group, accountForSigning)
-        }),
+        },
     )
 })

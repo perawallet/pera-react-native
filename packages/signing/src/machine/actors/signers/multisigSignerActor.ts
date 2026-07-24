@@ -31,7 +31,7 @@ import type {
 } from '../../../pipeline/signing/createLocalKeyStrategy'
 import type { QuantumSigningFunction } from '../../../pipeline/signing/createQuantumStrategy'
 import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
-import { CannotSignError } from '../../../pipeline/errors'
+import { signGroupsBySignerAccount } from './signGroupsBySignerAccount'
 
 export type MultisigSignerActorInput = {
     groups: AnalyzedSignableGroup[]
@@ -100,22 +100,15 @@ export const multisigSignerActor = fromPromise<
         getAllAccounts: () => allAccounts,
     })
 
-    return Promise.all(
-        groups.map(group => {
-            const signerAccount = allAccounts.find(
-                a => a.address === group.signerAddress,
-            )
-            if (!signerAccount) {
-                throw new CannotSignError(
-                    group.signerAddress,
-                    'Account not found in allAccounts',
-                )
-            }
+    return signGroupsBySignerAccount(
+        groups,
+        allAccounts,
+        (group, signerAccount) => {
             if (shouldDeferPropose(signerAccount, allAccounts)) {
                 return buildDeferredProposeSigningResult(group)
             }
             const strategy = selectStrategy(signerAccount, allAccounts)
             return strategy.sign(group, signerAccount, signingCallbacks)
-        }),
+        },
     )
 })
