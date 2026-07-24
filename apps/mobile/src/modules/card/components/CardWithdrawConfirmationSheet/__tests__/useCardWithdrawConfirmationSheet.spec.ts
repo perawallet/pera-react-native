@@ -47,6 +47,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isPending: mocks.withdrawPending,
             isError: false,
             isSuccess: false,
+            isPaused: false,
             error: null,
             data: null,
             reset: vi.fn(),

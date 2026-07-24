@@ -110,6 +110,31 @@ describe('useCardErrorToast', () => {
         )
     })
 
+    it('shows localized offline copy for a raw ky NetworkError (direct Baanx path)', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        // ky wraps a fetch `TypeError('Network request failed')` into its own
+        // `NetworkError` (name: 'NetworkError') before it escapes the client —
+        // the shape direct (non-proxied) Baanx calls actually throw. `ky` isn't
+        // a direct dependency of apps/mobile, so this constructs that shape
+        // structurally instead of importing the real class (see
+        // vitest.setup.ts's isConnectivityError stand-in, which matches on
+        // `error.name === 'NetworkError'` for the same reason).
+        const networkError = new Error(
+            'Request failed due to a network error: GET /card',
+        )
+        networkError.name = 'NetworkError'
+
+        await act(async () => {
+            await result.current(networkError)
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.no_connection.title',
+            'errors.network.no_connection.body',
+        )
+    })
+
     it('prefers the backend message over the provided body key', async () => {
         const { result } = renderHook(() =>
             useCardErrorToast({
