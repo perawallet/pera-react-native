@@ -163,7 +163,7 @@ export const buildSiwaAuthRequest = ({
         nonce,
         'issued-at': now.toISOString(),
         'expiration-time': new Date(now.getTime() + ttlMs).toISOString(),
-        chain_id: 'algorand',
+        chain_id: '283',
         type: 'ed25519',
     }
 
