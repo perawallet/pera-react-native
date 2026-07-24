@@ -20,6 +20,7 @@ import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { useLanguage } from '@hooks/useLanguage'
 import { CHART_ANIMATION_DURATION, CHART_HEIGHT } from '@constants/ui'
 import { getChartYAxisRange } from '@utils/chart'
+import { useBalanceLineChart } from './useBalanceLineChart'
 
 import type { StyleProp, ViewStyle } from 'react-native'
 
@@ -38,6 +39,8 @@ type BalanceLineChartProps<T> = {
     emptyBody: string
     /** When true, render an error state (with retry) instead of the empty copy. */
     isError?: boolean
+    /** True while the query's fetch is offline-paused (fetchStatus 'paused'). */
+    isPaused?: boolean
     /** Error-state body; falls back to a generic message when omitted. */
     errorBody?: string
     /** Triggers a refetch from the error state's retry button. */
@@ -52,6 +55,7 @@ export const BalanceLineChart = <T,>({
     isPending,
     emptyBody,
     isError = false,
+    isPaused = false,
     errorBody,
     onRetry,
     style,
@@ -68,71 +72,103 @@ export const BalanceLineChart = <T,>({
         [dataPoints],
     )
 
-    return (
-        <PWView style={style}>
-            {isPending ? (
-                <LoadingView
-                    variant='circle'
-                    size='lg'
-                />
-            ) : isError ? (
-                // A failed request must not masquerade as "no history" — show a
-                // distinct error state so the user can retry rather than assume
-                // there's nothing to display.
-                <EmptyView
-                    title={t('common.error.title')}
-                    body={errorBody ?? t('common.error.body')}
-                    button={
-                        onRetry ? (
-                            <PWButton
-                                variant='link'
-                                title={t('common.retry.label')}
-                                onPress={onRetry}
-                                testID='balance-chart-retry'
-                            />
-                        ) : undefined
-                    }
-                />
-            ) : !dataPoints?.length ? (
-                <EmptyView
-                    title=''
-                    body={emptyBody}
-                />
-            ) : (
-                <LineChart
-                    data={dataPoints}
-                    hideAxesAndRules
-                    height={CHART_HEIGHT}
-                    color={theme.colors.positive}
-                    startFillColor='#28A79B'
-                    endFillColor='#28A79B'
-                    startOpacity={0.3}
-                    endOpacity={0.0}
-                    areaChart
-                    yAxisLabelWidth={1}
-                    hideYAxisText
-                    yAxisOffset={yAxisRange.yAxisOffset}
-                    maxValue={yAxisRange.maxValue}
-                    initialSpacing={0}
-                    endSpacing={0}
-                    showStripOnFocus
-                    showDataPointOnFocus
-                    animateOnDataChange
-                    animationDuration={CHART_ANIMATION_DURATION}
-                    onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
-                    pointerConfig={{
-                        showPointerStrip: true,
-                        pointerStripColor: theme.colors.textGrayLighter,
-                        pointerStripWidth: 1,
-                        pointerStripHeight: CHART_HEIGHT,
-                        pointerColor: theme.colors.positive,
-                        strokeDashArray: [6, 2],
-                    }}
-                    getPointerProps={getPointerProps}
-                    disableScroll
-                    adjustToWidth
-                />
-            )}
-        </PWView>
-    )
+    const { renderState, handleRetry } = useBalanceLineChart({
+        hasData: dataPoints.length > 0,
+        isPaused,
+        isError,
+        isPending,
+        onRetry,
+    })
+
+    const retryButton = handleRetry ? (
+        <PWButton
+            variant='link'
+            title={t('common.retry.label')}
+            onPress={handleRetry}
+            testID='balance-chart-retry'
+        />
+    ) : undefined
+
+    const renderContent = () => {
+        switch (renderState) {
+            case 'chart': {
+                return (
+                    <LineChart
+                        data={dataPoints}
+                        hideAxesAndRules
+                        height={CHART_HEIGHT}
+                        color={theme.colors.positive}
+                        startFillColor='#28A79B'
+                        endFillColor='#28A79B'
+                        startOpacity={0.3}
+                        endOpacity={0.0}
+                        areaChart
+                        yAxisLabelWidth={1}
+                        hideYAxisText
+                        yAxisOffset={yAxisRange.yAxisOffset}
+                        maxValue={yAxisRange.maxValue}
+                        initialSpacing={0}
+                        endSpacing={0}
+                        showStripOnFocus
+                        showDataPointOnFocus
+                        animateOnDataChange
+                        animationDuration={CHART_ANIMATION_DURATION}
+                        onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
+                        pointerConfig={{
+                            showPointerStrip: true,
+                            pointerStripColor: theme.colors.textGrayLighter,
+                            pointerStripWidth: 1,
+                            pointerStripHeight: CHART_HEIGHT,
+                            pointerColor: theme.colors.positive,
+                            strokeDashArray: [6, 2],
+                        }}
+                        getPointerProps={getPointerProps}
+                        disableScroll
+                        adjustToWidth
+                    />
+                )
+            }
+            // Offline must not masquerade as loading: a paused query reports
+            // isPending forever, so it needs its own surface or the spinner
+            // never yields and retry is unreachable (PERA-4581).
+            case 'offline': {
+                return (
+                    <EmptyView
+                        title={t('common.offline_mode')}
+                        body={t('common.offline_refresh_body')}
+                        button={retryButton}
+                    />
+                )
+            }
+            // A failed request must not masquerade as "no history" — show a
+            // distinct error state so the user can retry.
+            case 'error': {
+                return (
+                    <EmptyView
+                        title={t('common.error.title')}
+                        body={errorBody ?? t('common.error.body')}
+                        button={retryButton}
+                    />
+                )
+            }
+            case 'loading': {
+                return (
+                    <LoadingView
+                        variant='circle'
+                        size='lg'
+                    />
+                )
+            }
+            case 'empty': {
+                return (
+                    <EmptyView
+                        title=''
+                        body={emptyBody}
+                    />
+                )
+            }
+        }
+    }
+
+    return <PWView style={style}>{renderContent()}</PWView>
 }

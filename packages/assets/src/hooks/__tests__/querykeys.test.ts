@@ -21,6 +21,8 @@ import {
     getAssetDetailsQueryKey,
     getPublicAssetDetailsQueryKey,
     getIndexerAssetDetailsQueryKey,
+    isAssetPriceHistoryQuery,
+    getAssetsQueryKey,
 } from '../querykeys'
 
 describe('isAssetQuery', () => {
@@ -87,5 +89,28 @@ describe('detail query keys', () => {
             'history',
             { assetID: '123', period: '7d', network: 'mainnet' },
         ])
+    })
+})
+
+describe('isAssetPriceHistoryQuery', () => {
+    test('matches the asset price-history key', () => {
+        const key = getAssetPriceHistoryQueryKey('123', 'one-week', 'mainnet')
+
+        expect(isAssetPriceHistoryQuery(key)).toBe(true)
+    })
+
+    test('rejects the sibling prices key and other asset keys', () => {
+        // ['assets','prices','usd',…] shares two segments — the third must gate it.
+        expect(
+            isAssetPriceHistoryQuery(
+                getAssetPricesQueryKey(['123'], 'mainnet'),
+            ),
+        ).toBe(false)
+        expect(
+            isAssetPriceHistoryQuery(getAssetsQueryKey(['123'], 'mainnet')),
+        ).toBe(false)
+        expect(isAssetPriceHistoryQuery(['accounts', 'balance-history'])).toBe(
+            false,
+        )
     })
 })
