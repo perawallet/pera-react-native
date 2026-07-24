@@ -690,7 +690,8 @@ describe('useAssetTransactionList', () => {
             result.current.handleTransactionPress(mockTransaction as any)
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: 'TX_ASSET_123',
+                transactionId: mockTransaction.id,
+                historyTransaction: mockTransaction,
             })
         })
 
@@ -724,7 +725,8 @@ describe('useAssetTransactionList', () => {
             result.current.handleTransactionPress(mockTransaction as any)
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
-                transactionId: 'TX_ASSET_456',
+                transactionId: mockTransaction.id,
+                historyTransaction: mockTransaction,
             })
             expect(mockNavigate).not.toHaveBeenCalledWith(
                 'TransactionDetails',

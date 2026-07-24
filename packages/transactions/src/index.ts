@@ -14,6 +14,7 @@ export const name = '@perawallet/wallet-core-transactions'
 
 export * from './models'
 export * from './hooks'
+export * from './utils'
 
 // Export DB functions for sync service and other consumers
 export {

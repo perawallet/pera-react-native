@@ -11,6 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import type { StackScreenProps } from '@react-navigation/stack'
 
@@ -25,9 +26,19 @@ export type SigningStackParamList = {
          * linking — doing so would silently drop/corrupt the txn. Passing the
          * object is intentional: an unsigned txn under review has no on-chain
          * id, so it can't be re-fetched by id (indexer queries are history-only).
+         *
+         * TransactionHistoryItem is also non-serializable (holds Decimal fields),
+         * so the same constraint applies.
          */
         transaction?: PeraDisplayableTransaction
         transactionId?: string
+        /**
+         * The SQLite history row the user tapped. Lets the screen render
+         * offline from local data while the indexer fetch (enrichment)
+         * is paused or in flight. Carries Decimal fields, so it shares the
+         * non-serializability constraint described above.
+         */
+        historyTransaction?: TransactionHistoryItem
         groupId?: string
         /**
          * Set by the signing-list / group-detail navigation when the wallet won't
