@@ -516,6 +516,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             await screen.findByTestId('card-create-signing-proceed'),
         )
+        await confirmArc60Signing()
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Manual,

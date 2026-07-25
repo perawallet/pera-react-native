@@ -119,8 +119,12 @@ describe('useCardAutoFundingSigningScreen', () => {
             result.current.handleApprove()
         })
 
-        await waitFor(() => expect(result.current.error).not.toBeNull())
-        expect(result.current.isPending).toBe(false)
+        // Wait on isPending (the terminal condition, set in `finally` after
+        // the awaited showError call) rather than error — asserting on error
+        // alone races the `finally` block and can catch an intermediate
+        // render where isPending is still true.
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.error).not.toBeNull()
         expect(mockShowCardError).toHaveBeenCalled()
         expect(mockEnableAutoDraw).not.toHaveBeenCalled()
         expect(mockFinish).not.toHaveBeenCalled()
