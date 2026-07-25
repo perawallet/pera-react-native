@@ -20,14 +20,23 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
 // The escrow config is empty in the test env — mock a FULLY configured build:
 // a non-empty base URL (any host; the MSW globs match any origin) so requests
 // reach MSW instead of throwing CardEscrowNotConfiguredError, plus the chain
 // app ids (a configured base URL with missing ids now throws by design, which
-// would degrade every Auto run to Manual).
+// would degrade every Auto run to Manual). `cardKillswitchAppId: '0'` is the
+// documented dev-mock placeholder — satisfies the "all ids present" config
+// check while `isKillswitchConfigured` treats it as NOT configured, so
+// `enableAutoDraw` only registers the LSig (the leg this test covers) and
+// skips the real on-chain Killswitch enable, which has no MSW mocks here.
 vi.mock('@perawallet/wallet-core-config', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-config')
@@ -41,20 +50,23 @@ vi.mock('@perawallet/wallet-core-config', async () => {
             cardEscrowBaseUrl: 'https://escrow.test',
             cardEscrowAuthToken: 'TEST_ESCROW_TOKEN',
             cardW3CardAppId: '111',
-            cardKillswitchAppId: '222',
+            cardKillswitchAppId: '0',
         }),
     }
 })
 
-// The real signers need a provisioned KMS keystore; stub just the crypto so the
-// create + approve + delegation flow stays real down to the wire. `signProgram`
-// returns junk bytes, so also stub `encodeDelegatedLsigAccount` (it would
-// otherwise reject the unverifiable signature).
+// The ARC-60 ownership-proof signer (Step 1) is left REAL and driven through
+// the actual interactive review overlay — `useLocalKeyArc60Signer` is
+// imported by a relative path inside packages/signing's own actor lifecycle,
+// so a `@perawallet/wallet-core-signing` barrel mock never reaches it; it
+// needs a genuinely KMS-backed key (seeded below via seedFundingSigner),
+// exactly like sign-arc60.test.tsx. The LSig delegation signer (Step 3,
+// `useProgramSigner`) IS consumed via the barrel by `useAutoDrawSwitch`
+// directly, so stubbing it here is both valid and necessary — its junk
+// bytes would otherwise fail `encodeDelegatedLsigAccount`'s signature check,
+// so that's stubbed too.
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
-    useLocalKeyArc60Signer: () => ({
-        signArc60: vi.fn(async () => new Uint8Array([7, 7, 7])),
-    }),
     useProgramSigner: () => ({
         signProgram: vi.fn(async () => new Uint8Array([8, 8, 8])),
         signDelegatedLsig: vi.fn(),
@@ -109,28 +121,84 @@ import {
 } from '@perawallet/wallet-core-card/test-handlers'
 import { mockAlgodTealCompile } from '@perawallet/wallet-core-blockchain/test-handlers'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
+import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { CardOnboardingStatusScreen } from '@modules/card/screens/CardOnboardingStatusScreen'
+import { CardCreateSigningScreen } from '@modules/card/screens/CardCreateSigningScreen'
+import { CardAutoFundingSigningScreen } from '@modules/card/screens/CardAutoFundingSigningScreen'
+import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import {
+    ALGO25_TEST_ADDRESS,
+    ALGO25_TEST_MNEMONIC,
+} from './__fixtures__/onboarding'
 
-const FUNDING_ADDRESS =
-    'GD64YIY3TWGDMCNPP553DZPPR6LDUSFQOIJVFDPPXWEG3FVOJCCDBBHU5A'
+const FUNDING_ADDRESS = ALGO25_TEST_ADDRESS
 
-const FUNDING_ACCOUNT: WalletAccount = {
+let FUNDING_ACCOUNT: WalletAccount = {
     id: 'funding-account',
     type: AccountTypes.algo25,
     address: FUNDING_ADDRESS,
-    keyPairId: 'funding-account-key',
+    keyPairId: '',
     name: 'Main Account',
 }
 
-// The setup checklist with a stub Home tab so the "Create Pera Card" terminus
-// (navigate to TabBar → Home) resolves without a registered tab navigator.
-const renderStatus = () =>
-    renderWithNavigation(CardOnboardingStatusScreen, 'CardOnboardingStatus', {
-        additionalScreens: [{ name: 'TabBar', component: () => null }],
+// The ARC-60 ownership proof (Step 1) is signed for real through the
+// interactive review overlay, so the account needs a KMS-backed key —
+// mints one from the pinned test mnemonic, mirroring sign-arc60.test.tsx.
+const seedFundingSigner = async (): Promise<void> => {
+    resetTestKeystore()
+    const { result: kms } = renderHook(() => useKMS())
+    let keyResult: Algo25KeyResult | null = null
+    await waitFor(async () => {
+        keyResult = await kms.current.createAlgo25Key({
+            mnemonic: ALGO25_TEST_MNEMONIC,
+        })
+        expect(keyResult).not.toBeNull()
     })
+    FUNDING_ACCOUNT = {
+        ...FUNDING_ACCOUNT,
+        keyPairId: keyResult!.seedKey.id ?? '',
+    }
+}
+
+// The setup checklist, plus the real downstream signing screens the create
+// sequence now runs on (CardOnboardingSigning → CardCreateSigningScreen, and
+// for Auto, CardOnboardingAutoFundingSigning → CardAutoFundingSigningScreen),
+// and a stub Home tab so the terminal `finish()` (navigate to TabBar → Home)
+// resolves without a registered tab navigator.
+//
+// `signOwnership`'s ARC-60 request is an INTERACTIVE_SOURCES source, so it
+// only resolves once `SigningOverlays` (mounted here in a second, sibling
+// render tree sharing the same global signing store — the established
+// pattern, e.g. wc-sign-quantum-fee.test.tsx) renders the review sheet and
+// its slide-to-confirm is tapped.
+const renderStatus = () => {
+    renderWithNavigation(() => <SigningOverlays />, 'CardSigningOverlaysHost')
+    return renderWithNavigation(
+        CardOnboardingStatusScreen,
+        'CardOnboardingStatus',
+        {
+            additionalScreens: [
+                { name: 'TabBar', component: () => null },
+                {
+                    name: 'CardOnboardingSigning',
+                    component: CardCreateSigningScreen,
+                },
+                {
+                    name: 'CardOnboardingAutoFundingSigning',
+                    component: CardAutoFundingSigningScreen,
+                },
+            ],
+        },
+    )
+}
+
+const confirmArc60Signing = async () => {
+    fireEvent.click(await screen.findByTestId('arc60-confirm-slide'))
+}
 
 const mockOnboardingDetails = (verificationState: string) =>
     server.use(
@@ -144,7 +212,8 @@ const mockOnboardingDetails = (verificationState: string) =>
 
 describe('Flow: Card onboarding — select funding type', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    beforeEach(() => {
+    beforeEach(async () => {
+        await seedFundingSigner()
         const store = useCardStore.getState()
         store.resetState()
         store.setOnboardingId('mock-onboarding-id')
@@ -214,6 +283,10 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             screen.getByTestId('card-onboarding-status-create-card'),
         )
+        fireEvent.click(
+            await screen.findByTestId('card-create-signing-proceed'),
+        )
+        await confirmArc60Signing()
 
         await waitFor(() => expect(approvalBody).not.toBeNull())
         expect(createBody).toEqual(
@@ -274,8 +347,22 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             await screen.findByTestId('card-onboarding-status-create-card'),
         )
+        fireEvent.click(
+            await screen.findByTestId('card-create-signing-proceed'),
+        )
+        await confirmArc60Signing()
 
+        // Sign + create + approve land on the 'authorize' step; a second
+        // Proceed tap navigates to the LSig approval screen.
         await waitFor(() => expect(approvalBody).not.toBeNull())
+        await waitFor(() => {
+            fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
+            expect(
+                screen.queryByTestId('card-auto-funding-signing-confirm'),
+            ).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId('card-auto-funding-signing-confirm'))
+
         await waitFor(() => expect(lsigBody).not.toBeNull())
         expect(approvalBody).toEqual(expect.objectContaining({ txId: 'TX1' }))
         expect(lsigBody).toEqual(
@@ -301,12 +388,15 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             await screen.findByTestId('card-onboarding-status-create-card'),
         )
+        fireEvent.click(
+            await screen.findByTestId('card-create-signing-proceed'),
+        )
+        await confirmArc60Signing()
 
-        // The Create button is still there (no navigation) and no persistence.
+        // The error is shown and the flow stays on the same step so Proceed
+        // can retry — no navigation past it, no persistence.
         await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-status-create-card'),
-            ).toBeTruthy(),
+            expect(screen.getByTestId('card-create-signing')).toBeTruthy(),
         )
         expect(useCardStore.getState().selectedFundingType).toBeNull()
         expect(useCardStore.getState().escrowCardAddress).toBeNull()
@@ -329,6 +419,10 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             screen.getByTestId('card-onboarding-status-create-card'),
         )
+        fireEvent.click(
+            await screen.findByTestId('card-create-signing-proceed'),
+        )
+        await confirmArc60Signing()
 
         // The card was created (on-chain, via the backend) and persisted
         // even though the AB approval call failed.
@@ -341,7 +435,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         expect(useCardStore.getState().selectedFundingType).toBeNull()
     })
 
-    it('Given the LSig leg fails after creation, then the card persists approved and Auto degrades to Manual', async () => {
+    it('Given the LSig leg fails after creation, when the user cancels, then the card persists approved and Auto degrades to Manual', async () => {
         server.use(
             mockAlgodTealCompile(),
             mockCreateCard({ cardAddress: 'ESCROWCARD1', txId: 'TX1' }),
@@ -354,14 +448,42 @@ describe('Flow: Card onboarding — select funding type', () => {
         fireEvent.click(
             await screen.findByTestId('card-onboarding-status-create-card'),
         )
+        fireEvent.click(
+            await screen.findByTestId('card-create-signing-proceed'),
+        )
+        await confirmArc60Signing()
 
-        // Card is created + approved (persisted) but Auto downgraded to Manual.
+        // Card is created + approved (persisted) before the authorize step.
         await waitFor(() =>
             expect(useCardStore.getState().escrowCardAddress).toBe(
                 'ESCROWCARD1',
             ),
         )
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
+
+        await waitFor(() => {
+            fireEvent.click(screen.getByTestId('card-create-signing-proceed'))
+            expect(
+                screen.queryByTestId('card-auto-funding-signing-confirm'),
+            ).toBeTruthy()
+        })
+        fireEvent.click(screen.getByTestId('card-auto-funding-signing-confirm'))
+
+        // The LSig POST fails; the screen surfaces the error and lets the
+        // user retry rather than auto-degrading — Manual only persists once
+        // the user explicitly cancels.
+        await waitFor(() =>
+            expect(
+                (
+                    screen.getByTestId(
+                        'card-auto-funding-signing-cancel',
+                    ) as HTMLButtonElement
+                ).disabled,
+            ).toBe(false),
+        )
+        expect(useCardStore.getState().selectedFundingType).toBeNull()
+
+        fireEvent.click(screen.getByTestId('card-auto-funding-signing-cancel'))
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(
                 FundingType.Manual,
@@ -390,6 +512,9 @@ describe('Flow: Card onboarding — select funding type', () => {
         // Manual (create-only) path and persists Manual.
         fireEvent.click(
             screen.getByTestId('card-onboarding-status-create-card'),
+        )
+        fireEvent.click(
+            await screen.findByTestId('card-create-signing-proceed'),
         )
         await waitFor(() =>
             expect(useCardStore.getState().selectedFundingType).toBe(

@@ -147,7 +147,11 @@ overrides:
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
   shell-quote@<1.9.0: 1.9.0
-  svgo@>=3.0.0 <3.3.4: '>=3.3.4'
+  # Stay on the v3 line: @svgr/plugin-svgo declares svgo ^3.0.2 and configures
+  # `removeViewBox`, which svgo v4 dropped from preset-default. An open
+  # `>=3.3.4` here resolved to 4.x and made every SVG import log a
+  # "trying to configure removeViewBox" warning during bundling.
+  svgo@>=3.0.0 <3.3.4: ^3.3.4
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'
