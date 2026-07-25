@@ -20,12 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import {
-    fireEvent,
-    renderHook,
-    screen,
-    waitFor,
-} from '@testing-library/react'
+import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 
 // The escrow config is empty in the test env — mock a FULLY configured build:
