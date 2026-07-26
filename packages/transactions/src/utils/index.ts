@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { PWRefreshControl } from './PWRefreshControl'
-export type { PWRefreshControlProps } from './PWRefreshControl'
+export { mapHistoryItemToDisplayableTransaction } from './mapHistoryItemToDisplayableTransaction'

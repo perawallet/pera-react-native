@@ -19,6 +19,9 @@ export const useStyles = makeStyles(theme => ({
     value: {
         color: theme.colors.negative,
     },
+    adjustedLabel: {
+        color: theme.colors.textGray,
+    },
     transactionDetails: {
         alignSelf: 'flex-start',
         marginVertical: theme.spacing.sm,

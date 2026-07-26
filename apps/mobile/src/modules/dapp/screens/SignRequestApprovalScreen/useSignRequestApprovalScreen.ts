@@ -125,7 +125,11 @@ export const useSignRequestApprovalScreen =
                             ),
                         },
                     )
-                    enqueue(resolved, {
+                    // enqueue is async (fee assignment may hit the network),
+                    // but it handles its own failures via respondWithError —
+                    // fire-and-forget is safe here, matching the other
+                    // transports (webview, WC).
+                    void enqueue(resolved, {
                         sourceType: 'injected',
                         transportId: requestId,
                         verifiedOrigin: approval.origin,

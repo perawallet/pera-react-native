@@ -41,6 +41,7 @@ import {
     EMPTY_WARNINGS,
     EMPTY_SIGNABLE_ADDRESSES,
     EMPTY_SIGNABLE_INDICES,
+    EMPTY_FEE_ADJUSTMENTS,
     ZERO_FEE,
     deriveStage,
     isRetryableError,
@@ -485,6 +486,7 @@ export const useSigningPipeline = (
             ? displayData.distinctWarnings
             : EMPTY_WARNINGS,
         requestStructure: txRequest ? displayData.requestStructure : 'single',
+        feeAdjustments: txRequest?.feeAdjustments ?? EMPTY_FEE_ADJUSTMENTS,
         next,
         fail,
         retry,

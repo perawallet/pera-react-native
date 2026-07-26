@@ -652,6 +652,18 @@
                 "title": "Smart contract rejected the transaction",
                 "body": "The contract returned: {{msg}}"
             },
+            "logic_eval_error": {
+                "title": "Transaction rejected",
+                "body": "The transaction was rejected by the smart contract ({{detail}}). Please try again and contact support if the issue persists."
+            },
+            "unavailable_resource": {
+                "title": "Transaction rejected",
+                "body": "The transaction referenced a resource the network could not access ({{resourceType}} {{resource}}). Please try again and contact support if the issue persists."
+            },
+            "group_fee_too_small": {
+                "title": "Network fee too low",
+                "body": "This transaction group paid {{paid}} µALGO in fees but the network requires {{required}} µALGO. Please try again."
+            },
             "unknown_node_error": {
                 "title": "Transaction failed",
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
@@ -2293,7 +2305,7 @@
             "warning": "All transactions are irreversible. As these requests are outside Pera Wallet's control, never approve transactions from a dApp you don't know."
         },
         "arc60_view": {
-            "title": "Sign-in Request",
+            "title": "Authentication Request",
             "description": "Sign in to {{domain}} using your wallet. The signature proves you control this account but does not authorise any on-chain action.",
             "domain": "Domain",
             "scope": "Scope",
@@ -2327,6 +2339,7 @@
             "amount": "Amount",
             "asset": "Asset",
             "asset_id": "Asset ID",
+            "asset_unavailable": "Asset unavailable",
             "date": "Date",
             "note": "Transaction Note",
             "view_raw_transaction": "View JSON",
@@ -2398,7 +2411,10 @@
         },
         "quantum_fee": {
             "title": "Quantum Network Fee",
-            "body": "Quantum accounts use larger signatures, so their transactions require a higher network fee than standard accounts."
+            "body": "Quantum accounts use larger signatures, so their transactions require a higher network fee than standard accounts.",
+            "adjusted_label": "Adjusted",
+            "adjusted_title": "Fee Adjusted for Quantum Signing",
+            "adjusted_body": "This app requested a fee of {{originalFee}} ALGO, which is below the minimum for Quantum accounts. Pera raised it to {{adjustedFee}} ALGO so the network will accept the transaction. The app will receive the adjusted transaction."
         },
         "unknown": {
             "title": "Unsupported Transaction Type",
@@ -2445,7 +2461,8 @@
             "foreign_assets": "Foreign Assets",
             "boxes": "Box References",
             "inner_transactions_one": "{{count}} Inner Transaction",
-            "inner_transactions_other": "{{count}} Inner Transactions"
+            "inner_transactions_other": "{{count}} Inner Transactions",
+            "inner_transactions_unavailable": "Connect to the internet to view"
         },
         "group_transactions_one": "{{count}} Group Transaction",
         "group_transactions_other": "{{count}} Group Transactions",
@@ -2495,7 +2512,8 @@
             "networks_testnet": "Testnet",
             "error_sheet_title": "Error",
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
-            "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request."
+            "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request.",
+            "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts."
         },
         "connection": {
             "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
@@ -3312,6 +3330,14 @@
             "onboarding_body": "Wallet setup opens in a full browser tab so you can back up your recovery phrase safely.",
             "onboarding_cta": "Continue in a new tab",
             "redirecting": "Continuing in a new tab…"
+        }
+    },
+    "migration": {
+        "splash": {
+            "failure_message_one": "Failed to migrate {{count}} account",
+            "failure_message_other": "Failed to migrate {{count}} accounts",
+            "continue": "Continue",
+            "do_not_show_again": "Do not show again"
         }
     }
 }

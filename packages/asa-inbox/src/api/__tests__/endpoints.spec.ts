@@ -220,6 +220,37 @@ describe('fetchArc59AssetRequests', () => {
         ])
     })
 
+    test('maps the top-level inbox_address onto every request', async () => {
+        const inboxAddress =
+            'OJVMSUIFJXMRWFSFG2CPPWMFTWXRXN3J42PZATE24FVKU4Q43DPCZXEA24'
+
+        ;(queryClient as Mock).mockResolvedValue({
+            data: {
+                results: [
+                    validAssetRequest,
+                    { ...validAssetRequest, total_amount: '2000' },
+                ],
+                inbox_address: inboxAddress,
+            },
+        })
+
+        const result = await fetchArc59AssetRequests('mainnet', 'ADDR1')
+
+        expect(result).toHaveLength(2)
+        expect(result[0].inboxAddress).toBe(inboxAddress)
+        expect(result[1].inboxAddress).toBe(inboxAddress)
+    })
+
+    test('defaults inboxAddress to null when the response omits inbox_address', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { results: [validAssetRequest] },
+        })
+
+        const result = await fetchArc59AssetRequests('mainnet', 'ADDR1')
+
+        expect(result[0].inboxAddress).toBeNull()
+    })
+
     test('maps collectible with null primary_image to undefined', async () => {
         ;(queryClient as Mock).mockResolvedValue({
             data: {

@@ -24,6 +24,7 @@ const {
     mockDecodeTransaction,
     mockAllAccounts,
     mockResolveAuthAccount,
+    mockAssignFeeToGroup,
 } = vi.hoisted(() => ({
     mockAddSignRequest: vi.fn(),
     mockShowError: vi.fn(),
@@ -33,6 +34,7 @@ const {
     mockDecodeTransaction: vi.fn((tx: unknown) => tx),
     mockAllAccounts: { current: [] as { address: string; id: string }[] },
     mockResolveAuthAccount: vi.fn((account: unknown) => account),
+    mockAssignFeeToGroup: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -54,6 +56,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
+    useMinimumFeeCalculator: () => ({
+        assignFeeToGroup: mockAssignFeeToGroup,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -127,6 +132,17 @@ describe('useKeyregDeeplink', () => {
 
         mockOnlineKeyRegistration.mockResolvedValue({ kind: 'online-tx' })
         mockOfflineKeyRegistration.mockResolvedValue({ kind: 'offline-tx' })
+
+        // Default: non-quantum sender — the calculator is a passthrough
+        // no-op (same reference, no adjustments), matching its real fast
+        // path. Quantum tests override the implementation per case.
+        mockAssignFeeToGroup.mockReset()
+        mockAssignFeeToGroup.mockImplementation(
+            async ({ transactions }: { transactions: unknown[] }) => ({
+                transactions,
+                adjustments: [],
+            }),
+        )
     })
 
     afterEach(() => {
@@ -294,6 +310,121 @@ describe('useKeyregDeeplink', () => {
             // unreliable — assert on the decoded contents instead.
             expect(buildArgs.note).toBeDefined()
             expect(new TextDecoder().decode(buildArgs.note)).toBe('locked')
+        })
+    })
+
+    describe('PQ fee floor', () => {
+        // assignFeeToGroup is mocked at the signing-package boundary (its
+        // own quantum/rekey/congestion logic is covered by
+        // packages/signing/src/hooks/__tests__/useMinimumFeeCalculator.spec.ts
+        // and .../sources/__tests__/assignMinimumFeesToGroup.spec.ts). These
+        // tests only verify this hook builds with the dApp fee verbatim,
+        // runs the built txn through the calculator, and surfaces the delta
+        // only for an explicit dApp fee.
+        const adjustedTx = { kind: 'offline-tx', fee: 3000n }
+        const quantumRaise = (adjustments: unknown[]) => {
+            mockAssignFeeToGroup.mockImplementation(async () => ({
+                transactions: [adjustedTx],
+                adjustments,
+            }))
+        }
+
+        it("builds with the dApp fee verbatim, then enqueues the calculator's raised txn with the adjustment surfaced", async () => {
+            seedSenderInWallet()
+            const adjustments = [
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ]
+            quantumRaise(adjustments)
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(baseOfflineDeeplink({ fee: '1000' }))
+            })
+
+            // The dApp fee reaches the builder untouched; the raise happens
+            // after build, on the normalized txn.
+            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ staticFee: { microAlgos: 1000n } }),
+            )
+            expect(mockAssignFeeToGroup).toHaveBeenCalledExactlyOnceWith({
+                transactions: [{ kind: 'offline-tx' }],
+            })
+            expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    txs: [adjustedTx],
+                    feeAdjustments: adjustments,
+                }),
+            )
+        })
+
+        it('omits the adjustment delta when the deeplink set no explicit fee (Pera-set, not an override)', async () => {
+            seedSenderInWallet()
+            quantumRaise([
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ])
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(baseOfflineDeeplink())
+            })
+
+            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ staticFee: undefined }),
+            )
+            // The raised txn is still what gets signed…
+            expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    txs: [adjustedTx],
+                    // …but no original → adjusted delta is shown.
+                    feeAdjustments: undefined,
+                }),
+            )
+        })
+
+        it("passes a non-quantum sender's dApp fee through with no adjustments", async () => {
+            seedSenderInWallet()
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(baseOfflineDeeplink({ fee: '1000' }))
+            })
+
+            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ staticFee: { microAlgos: 1000n } }),
+            )
+            expect(mockAddSignRequest).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({
+                    txs: [{ kind: 'offline-tx' }],
+                    feeAdjustments: undefined,
+                }),
+            )
+        })
+
+        it('leaves staticFee undefined for a non-quantum sender with no dApp fee', async () => {
+            seedSenderInWallet()
+
+            const { result } = renderHook(() => useKeyregDeeplink())
+
+            await act(async () => {
+                await result.current(baseOfflineDeeplink())
+            })
+
+            expect(mockOfflineKeyRegistration).toHaveBeenCalledExactlyOnceWith(
+                expect.objectContaining({ staticFee: undefined }),
+            )
         })
     })
 

@@ -43,7 +43,7 @@ export const AssetWealthChart = ({
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
-    const { data, isPending, isError, refetch } =
+    const { data, isPending, isError, isPaused, refetch } =
         useAccountsAssetsBalanceHistoryQuery(account, asset.assetId, period)
 
     return (
@@ -53,6 +53,7 @@ export const AssetWealthChart = ({
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
+            isPaused={isPaused}
             onRetry={() => void refetch()}
             emptyBody={t('common.wealth_chart.asset_empty_body')}
             style={themeStyle.container}

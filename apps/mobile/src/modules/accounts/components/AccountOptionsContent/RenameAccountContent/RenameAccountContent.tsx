@@ -49,6 +49,7 @@ export const RenameAccountContent = ({
         >
             <PWView style={styles.inputContainer}>
                 <PWInput
+                    testID='rename_account_input'
                     value={name}
                     onChangeText={setName}
                     placeholder={t('account_options.rename_label')}
@@ -59,6 +60,7 @@ export const RenameAccountContent = ({
             </PWView>
             <PWView style={styles.buttonContainer}>
                 <PWButton
+                    testID='rename_account_save_button'
                     variant='primary'
                     title={t('account_options.rename_save')}
                     onPress={handleSave}

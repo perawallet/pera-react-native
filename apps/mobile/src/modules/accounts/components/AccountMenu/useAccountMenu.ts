@@ -19,7 +19,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
-import { getSyncService } from '@perawallet/wallet-core-background'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 import type { AccountMenuProps } from './AccountMenu'
@@ -59,9 +58,6 @@ type UseAccountMenuResult = {
     isChartCollapsed: boolean
     handleListScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     handleExpandChart: () => void
-    handleRefresh: () => void
-    /** True while the pull-triggered balance refetch is in flight */
-    isRefreshing: boolean
 }
 
 export const useAccountMenu = (
@@ -70,22 +66,7 @@ export const useAccountMenu = (
     const accounts = useAllAccounts()
     const { selectedAccountAddress, setSelectedAccountAddress } =
         useSelectedAccountAddress()
-    const { accountBalances, isRefetching } = useAccountBalancesQuery(
-        accounts,
-        true,
-    )
-
-    const handleRefresh = useCallback(() => {
-        // One gesture refreshes balances + prices + history coherently —
-        // the same invalidate/restart path the sync service itself uses.
-        try {
-            const syncService = getSyncService()
-            syncService.invalidateQueries()
-            syncService.restart()
-        } catch {
-            // SyncService not yet initialized — nothing to refresh through.
-        }
-    }, [])
+    const { accountBalances } = useAccountBalancesQuery(accounts, true)
 
     // Controlled mode: when `selectedAddress` is passed (even `null`), the caller
     // owns the highlight and tapping won't mutate the global account.
@@ -185,7 +166,5 @@ export const useAccountMenu = (
         isChartCollapsed,
         handleListScroll,
         handleExpandChart,
-        handleRefresh,
-        isRefreshing: isRefetching,
     }
 }

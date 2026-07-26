@@ -71,8 +71,6 @@ export type UseTransactionHistoryQueryResult = {
     isLoading: boolean
     /** Whether more data is being fetched */
     isFetchingNextPage: boolean
-    /** Whether a full refetch (e.g. pull-to-refresh) is in flight */
-    isRefetching: boolean
     /** Whether there was an error */
     isError: boolean
     /**
@@ -289,7 +287,6 @@ export const useTransactionHistoryQuery = (
         transactions,
         isLoading: query.isLoading,
         isFetchingNextPage: query.isFetchingNextPage,
-        isRefetching: query.isRefetching,
         isError: query.isError,
         isPaused: query.isPaused,
         error: query.error,

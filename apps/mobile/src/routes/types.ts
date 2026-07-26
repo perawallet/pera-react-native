@@ -20,6 +20,7 @@ import { type SettingsStackParamsList } from '@modules/settings/routes'
 import { type ContactsStackParamsList } from '@modules/contacts/routes'
 import { type AccountStackParamsList } from '@modules/accounts/routes/types'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { type MessagesStackParamList } from '@modules/messages/routes'
 import { type MultisigStackParamList } from '@modules/multisig'
 import {
@@ -60,6 +61,14 @@ export type RootStackParamList = {
     TransactionDetails: {
         transactionId?: string
         transaction?: PeraDisplayableTransaction
+        /**
+         * The SQLite history row the user tapped. Lets the screen render
+         * offline from local data while the indexer fetch (enrichment)
+         * is paused or in flight. Carries Decimal fields, so it must not be
+         * persisted or deep-linked — see the same param on
+         * `SigningStackParamList['TransactionDetails']`.
+         */
+        historyTransaction?: TransactionHistoryItem
         groupId?: string
     }
 }

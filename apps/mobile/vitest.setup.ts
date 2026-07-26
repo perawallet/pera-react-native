@@ -714,7 +714,6 @@ vi.mock('@components/core', () => {
                 : null,
         PWPinCircles: createMockComponent('PWPinCircles'),
         PWRadioButton: createMockComponent('PWRadioButton'),
-        PWRefreshControl: createMockComponent('PWRefreshControl'),
         PWRoundIcon: vi.fn(({ icon, size, testID, ...props }: any) =>
             React.createElement('div', {
                 ...props,
@@ -3011,6 +3010,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         const { Decimal } = require('decimal.js')
         return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
     }),
+    toBigInt: vi.fn((decimal: { toFixed: (dp: number) => string }) =>
+        BigInt(decimal.toFixed(0)),
+    ),
     baseUnitsToDisplayUnits: vi.fn(
         (baseUnits: bigint | number | string, decimals: number) => {
             // eslint-disable-next-line @typescript-eslint/no-require-imports

@@ -51,6 +51,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         encodeSignedTransactions: mockEncodeSignedTransactions,
     }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
+    useFetchSuggestedMinFee: () => async () =>
+        BigInt((await mockGetSuggestedParams()).minFee),
+    compactSignedResults: (signed: unknown[]) =>
+        signed.filter(tx => tx !== null),
 }))
 
 // Full replacement (not importActual): the real barrels pull in

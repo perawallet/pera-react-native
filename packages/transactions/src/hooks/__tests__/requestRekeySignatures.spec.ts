@@ -21,6 +21,14 @@ import type {
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
+// The module under test only needs `compactSignedResults` at runtime;
+// loading the real blockchain package would drag react-native-mmkv into
+// this node test. The stub mirrors the real one-line implementation.
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    compactSignedResults: (signed: unknown[]) =>
+        signed.filter(tx => tx !== null),
+}))
+
 describe('requestRekeySignatures', () => {
     const source = { name: 'src-name', description: 'src-description' }
     const unsignedTxs = [

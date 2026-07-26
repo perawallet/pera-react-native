@@ -52,6 +52,12 @@ export const AppCallTransactionDisplay = ({
     const appId = appCall.applicationId.toString()
     const showWarnings = !transaction?.id
 
+    const innerTransactions = transaction.innerTxns ?? []
+    const offlineInnerTransactionCount =
+        innerTransactions.length === 0
+            ? (transaction.innerTransactionCount ?? 0)
+            : 0
+
     return (
         <PWView style={styles.container}>
             <TransactionHeader
@@ -81,9 +87,13 @@ export const AppCallTransactionDisplay = ({
                     </KeyValueRow>
                 )}
 
-                <KeyValueRow title={t('transactions.app_call.on_completion')}>
-                    <PWText truncate>{appCall.onCompletion}</PWText>
-                </KeyValueRow>
+                {!!appCall.onCompletion && (
+                    <KeyValueRow
+                        title={t('transactions.app_call.on_completion')}
+                    >
+                        <PWText truncate>{appCall.onCompletion}</PWText>
+                    </KeyValueRow>
+                )}
 
                 <TransactionFeeRow transaction={transaction} />
 
@@ -94,10 +104,24 @@ export const AppCallTransactionDisplay = ({
                     color={theme.colors.layerGray}
                 />
 
-                <InnerTransactionsPanel
-                    innerTransactions={transaction.innerTxns ?? []}
-                    onInnerTransactionPress={onInnerTransactionsPress}
-                />
+                {offlineInnerTransactionCount > 0 ? (
+                    <KeyValueRow
+                        title={t('transactions.app_call.inner_transactions', {
+                            count: offlineInnerTransactionCount,
+                        })}
+                    >
+                        <PWText truncate>
+                            {t(
+                                'transactions.app_call.inner_transactions_unavailable',
+                            )}
+                        </PWText>
+                    </KeyValueRow>
+                ) : (
+                    <InnerTransactionsPanel
+                        innerTransactions={innerTransactions}
+                        onInnerTransactionPress={onInnerTransactionsPress}
+                    />
+                )}
 
                 <PWDivider
                     style={styles.divider}

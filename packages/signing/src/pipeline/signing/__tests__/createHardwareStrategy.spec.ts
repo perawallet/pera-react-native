@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { canonify } from 'canonify'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import { SIWA_CHAIN_ID } from '../../../utils/siwa'
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-blockchain')
@@ -761,7 +760,7 @@ describe('createHardwareStrategy', () => {
             uri: 'https://arc60.io/login',
             version: '1',
             nonce: 'abc123',
-            chain_id: SIWA_CHAIN_ID,
+            chain_id: 'algorand:mainnet',
             type: 'ed25519',
             ...overrides,
         })!
@@ -1043,7 +1042,9 @@ describe('createHardwareStrategy', () => {
             const signPromise = strategy.sign(
                 makeArc60Group(),
                 makeLedgerAccount(),
-                { signal: controller.signal },
+                {
+                    signal: controller.signal,
+                },
             )
             const rejection = expect(signPromise).rejects.toThrow(
                 'DisconnectedDeviceDuringOperation',

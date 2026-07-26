@@ -40,10 +40,8 @@ export const AssetPriceChart = ({
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
-    const { data, isPending, isError, refetch } = useAssetPriceHistoryQuery(
-        asset.assetId,
-        period,
-    )
+    const { data, isPending, isError, isPaused, refetch } =
+        useAssetPriceHistoryQuery(asset.assetId, period)
 
     return (
         <BalanceLineChart
@@ -52,6 +50,7 @@ export const AssetPriceChart = ({
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}
+            isPaused={isPaused}
             onRetry={() => void refetch()}
             emptyBody={t('asset_details.markets.chart_empty_body')}
             errorBody={t('asset_details.markets.something_went_wrong_body')}

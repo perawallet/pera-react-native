@@ -67,8 +67,6 @@ export type UseAccountHistoryResult = {
     handleLoadMore: () => void
     /** Function to refresh the list */
     handleRefresh: () => void
-    /** True while a pull-triggered refetch is in flight */
-    isRefreshing: boolean
     /** Whether data is empty */
     isEmpty: boolean
     /** Function to export transaction history to CSV */
@@ -133,7 +131,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         transactions,
         isLoading,
         isFetchingNextPage,
-        isRefetching,
         isError,
         error,
         hasNextPage,
@@ -206,6 +203,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
             } else {
                 navigation.navigate('TransactionDetails', {
                     transactionId: transaction.id,
+                    historyTransaction: transaction,
                 })
             }
         },
@@ -230,7 +228,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         hasNextPage,
         handleLoadMore,
         handleRefresh,
-        isRefreshing: isRefetching,
         isEmpty,
         handleExportCsv,
         isExportingCsv,

@@ -13,7 +13,6 @@
 import { PWDivider, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -72,7 +71,7 @@ export const PaymentTransactionDisplay = ({
                 <KeyValueRow title={t('transactions.common.amount')}>
                     <AssetAmount
                         asset={ALGO_ASSET}
-                        value={Decimal(amount)}
+                        value={amount}
                         showSymbol
                         style={amountStyle}
                         ignorePrivacyMode

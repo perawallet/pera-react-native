@@ -30,4 +30,14 @@ describe('PWBadge', () => {
         )
         expect(screen.getByText('3')).toBeTruthy()
     })
+
+    it('renders new variant value correctly', () => {
+        render(
+            <PWBadge
+                variant='new'
+                value='NEW'
+            />,
+        )
+        expect(screen.getByText('NEW')).toBeTruthy()
+    })
 })

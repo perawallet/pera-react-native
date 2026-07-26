@@ -80,4 +80,28 @@ describe('useAssetTransferDisplay', () => {
 
         expect(result.current.metadataHash).toBeUndefined()
     })
+
+    it('reports pending state while the asset query is in flight', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: undefined,
+            isPending: true,
+        } as UseQueryResult<PeraAsset, Error>)
+
+        const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
+
+        expect(result.current.isAssetPending).toBe(true)
+        expect(result.current.asset).toBeUndefined()
+    })
+
+    it('reports a settled miss (not pending) so the UI can show a bounded placeholder', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: undefined,
+            isPending: false,
+        } as UseQueryResult<PeraAsset, Error>)
+
+        const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
+
+        expect(result.current.isAssetPending).toBe(false)
+        expect(result.current.asset).toBeUndefined()
+    })
 })

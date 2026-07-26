@@ -97,6 +97,7 @@ export const AssetItemView = ({
 
     return (
         <PWTouchableOpacity
+            testID={`asset_row_${asset.assetId}`}
             activeOpacity={onPress ? undefined : 1}
             onPress={onPress}
             {...rest}

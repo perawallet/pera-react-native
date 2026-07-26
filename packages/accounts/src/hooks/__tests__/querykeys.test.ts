@@ -18,6 +18,7 @@ import {
     getAccountAssetBalanceHistoryQueryKey,
     getAccountBalancesHistoryQueryKey,
     getOwnedAssetIdsQueryKey,
+    isAccountBalancesHistoryQuery,
 } from '../querykeys'
 
 describe('removeAccountQueriesForAddresses', () => {
@@ -115,5 +116,38 @@ describe('removeAccountQueriesForAddresses', () => {
                 getAccountBalancesQueryKey('ADDR1', 'mainnet'),
             ),
         ).toEqual({ value: 1 })
+    })
+})
+
+describe('isAccountBalancesHistoryQuery', () => {
+    test('matches the wealth balance-history key', () => {
+        const key = getAccountBalancesHistoryQueryKey(
+            ['ADDR1'],
+            'one-week',
+            'mainnet',
+        )
+
+        expect(isAccountBalancesHistoryQuery(key)).toBe(true)
+    })
+
+    test('rejects the per-account asset balance-history key and other account keys', () => {
+        // ['accounts','assets','balance-history',…] must NOT match — the
+        // ticket allowlists only the aggregate wealth key.
+        expect(
+            isAccountBalancesHistoryQuery(
+                getAccountAssetBalanceHistoryQueryKey(
+                    'mainnet',
+                    'ADDR1',
+                    '123',
+                    'one-day',
+                    'USD',
+                ),
+            ),
+        ).toBe(false)
+        expect(
+            isAccountBalancesHistoryQuery(
+                getAccountBalancesQueryKey('ADDR1', 'mainnet'),
+            ),
+        ).toBe(false)
     })
 })
