@@ -587,6 +587,30 @@ export default defineConfig({
         },
         globals: true,
         environment: 'jsdom',
+        // Known-noise warnings (react-native-web props reaching DOM
+        // elements, list keys, act() nudges, i18next init) generate
+        // thousands of worker→main onUserConsoleLog RPCs. Under a CI
+        // coverage run the busy main process only drains that queue at run
+        // end, where the stragglers race environment teardown and fail an
+        // all-green run with EnvironmentTeardownError: 'Closing rpc while
+        // "onUserConsoleLog" was pending'. onConsoleLog runs in the worker,
+        // so dropping the noise here means those RPCs never exist. Real
+        // logs and failures are unaffected.
+        onConsoleLog(log: string): boolean | undefined {
+            if (
+                /React does not recognize the `\w+` prop on a DOM element/.test(
+                    log,
+                ) ||
+                log.includes(
+                    'Each child in a list should have a unique "key" prop',
+                ) ||
+                log.includes('not wrapped in act(') ||
+                log.includes('You will need to pass in an i18next instance')
+            ) {
+                return false
+            }
+            return undefined
+        },
         server: {
             deps: {
                 inline: [/@react-navigation/, /react-native-ratings/],

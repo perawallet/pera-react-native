@@ -110,6 +110,7 @@ export type SourceType =
     | 'multisig-cosign'
     | 'arc60'
     | 'gift-card'
+    | 'injected' // browser-extension injected ARC-0027 dapp provider (M4b)
 
 /**
  * Source types that the in-app standard review flow gates on. A request
@@ -130,6 +131,7 @@ export const INTERACTIVE_SOURCES = [
     'multisig-cosign',
     'arc60',
     'gift-card',
+    'injected',
 ] as const satisfies readonly SourceType[]
 
 export const isInteractiveSource = (
@@ -152,6 +154,7 @@ export const EXTERNAL_CALLBACK_SOURCES = [
     'walletconnect',
     'webview',
     'deeplink',
+    'injected',
 ] as const satisfies readonly SourceType[]
 
 export const isExternalCallbackSource = (

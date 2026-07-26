@@ -1,0 +1,423 @@
+<!--
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+-->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>WebAuthn E2E test RP</title>
+    </head>
+    <body>
+        <h1>WebAuthn E2E test RP</h1>
+        <!-- Real navigator.credentials.create()/.get() calls need a trusted
+             user gesture (transient activation) — Playwright's page.click()
+             on these buttons provides one; page.evaluate() would not, so the
+             spec drives every ceremony through a click, never evaluate. -->
+        <button
+            id="create-button"
+            onclick="window.doCreate()"
+        >
+            Create passkey
+        </button>
+        <button
+            id="get-button"
+            onclick="window.doGet()"
+        >
+            Get passkey
+        </button>
+        <pre
+            id="create-credential-id"
+            data-testid="create-credential-id"
+        ></pre>
+        <pre
+            id="create-error"
+            data-testid="create-error"
+        ></pre>
+        <pre
+            id="get-credential-id"
+            data-testid="get-credential-id"
+        ></pre>
+        <pre
+            id="get-error"
+            data-testid="get-error"
+        ></pre>
+        <!-- MATCH / MISMATCH / NONE — proves the opaque random user.id this
+             page picks for create() round-trips back as response.userHandle
+             on a discoverable/allow-listed assertion. -->
+        <pre
+            id="user-handle-match"
+            data-testid="user-handle-match"
+        ></pre>
+        <!-- PASS / FAIL / SKIPPED — the byte-correctness proof: a real
+             WebCrypto ECDSA-P256-SHA256 verify of the assertion signature
+             against the public key this page itself extracted from the
+             create() attestation object. SKIPPED only when create() never
+             produced a usable public key (e.g. this page's own parsing
+             failed against a non-Pera attestation shape) — get()'s own
+             success/failure is still reported independently above. -->
+        <pre
+            id="verify-result"
+            data-testid="verify-result"
+        ></pre>
+
+        <script>
+            // ---- base64url (RFC 4648 §5) — only needed for the page's own
+            // user.id <-> userHandle round-trip comparison; every WebAuthn
+            // field on the credential/response objects is already a real
+            // ArrayBuffer per spec, no separate decode step needed for those.
+            function bytesToB64url(bytes) {
+                var binary = ''
+                for (var i = 0; i < bytes.length; i++) {
+                    binary += String.fromCharCode(bytes[i])
+                }
+                return btoa(binary)
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '')
+            }
+
+            function toBytes(bufferSource) {
+                return bufferSource instanceof Uint8Array
+                    ? bufferSource
+                    : new Uint8Array(bufferSource)
+            }
+
+            function concatBytes() {
+                var total = 0
+                for (var i = 0; i < arguments.length; i++) {
+                    total += arguments[i].length
+                }
+                var out = new Uint8Array(total)
+                var offset = 0
+                for (var j = 0; j < arguments.length; j++) {
+                    out.set(arguments[j], offset)
+                    offset += arguments[j].length
+                }
+                return out
+            }
+
+            // ---- Minimal CBOR decoder (RFC 7049): only the major types a
+            // WebAuthn "none"-format attestationObject and its embedded COSE
+            // key ever use — unsigned/negative int (0/1), byte string (2),
+            // text string (3), and definite-length map (5). Mirrors exactly
+            // what packages/passkeys/src/authenticator/cbor.ts encodes; this
+            // is the RP-side reader for those same bytes, written
+            // independently (not imported) since this fixture is a
+            // plain, self-contained HTML page like dapp-test-page.html.
+            function decodeCbor(bytes, offset) {
+                var first = bytes[offset]
+                offset += 1
+                var majorType = first >> 5
+                var info = first & 0x1f
+                var length
+                if (info < 24) {
+                    length = info
+                } else if (info === 24) {
+                    length = bytes[offset]
+                    offset += 1
+                } else if (info === 25) {
+                    length = (bytes[offset] << 8) | bytes[offset + 1]
+                    offset += 2
+                } else if (info === 26) {
+                    length =
+                        (bytes[offset] << 24) |
+                        (bytes[offset + 1] << 16) |
+                        (bytes[offset + 2] << 8) |
+                        bytes[offset + 3]
+                    length = length >>> 0
+                    offset += 4
+                } else {
+                    throw new Error(
+                        'decodeCbor: unsupported length encoding ' + info,
+                    )
+                }
+                if (majorType === 0) {
+                    return { value: length, offset: offset }
+                }
+                if (majorType === 1) {
+                    return { value: -1 - length, offset: offset }
+                }
+                if (majorType === 2) {
+                    var byteValue = bytes.slice(offset, offset + length)
+                    return { value: byteValue, offset: offset + length }
+                }
+                if (majorType === 3) {
+                    var textBytes = bytes.slice(offset, offset + length)
+                    return {
+                        value: new TextDecoder().decode(textBytes),
+                        offset: offset + length,
+                    }
+                }
+                if (majorType === 5) {
+                    var map = new Map()
+                    for (var i = 0; i < length; i++) {
+                        var key = decodeCbor(bytes, offset)
+                        offset = key.offset
+                        var val = decodeCbor(bytes, offset)
+                        offset = val.offset
+                        map.set(key.value, val.value)
+                    }
+                    return { value: map, offset: offset }
+                }
+                throw new Error(
+                    'decodeCbor: unsupported major type ' + majorType,
+                )
+            }
+
+            // authenticatorData layout (WebAuthn §6.1): rpIdHash(32) ||
+            // flags(1) || signCount(4) || [attestedCredentialData when the
+            // AT flag (0x40) is set: aaguid(16) || credIdLen(2, BE) ||
+            // credentialId || credentialPublicKey (COSE_Key CBOR map)].
+            // Mirrors packages/passkeys/src/authenticator/webauthn-structures.ts.
+            function parseAuthenticatorData(authData) {
+                var flags = authData[32]
+                var attested = (flags & 0x40) !== 0
+                if (!attested) {
+                    return { attested: false }
+                }
+                var offset = 37 + 16 // skip rpIdHash+flags+signCount, then AAGUID
+                var credIdLen = (authData[offset] << 8) | authData[offset + 1]
+                offset += 2
+                var credentialId = authData.slice(offset, offset + credIdLen)
+                offset += credIdLen
+                var cose = decodeCbor(authData, offset).value
+                // COSE EC2 key: 1=kty, 3=alg, -1=crv, -2=x, -3=y (cbor.ts's
+                // coseKeyP256 pair order) — only x/y (the public point) are
+                // needed to rebuild an SPKI key for WebCrypto import.
+                return {
+                    attested: true,
+                    credentialId: credentialId,
+                    x: cose.get(-2),
+                    y: cose.get(-3),
+                }
+            }
+
+            // Fixed P-256 SubjectPublicKeyInfo (X.509) DER prefix up to and
+            // including the BIT STRING header — identical constant to
+            // packages/passkeys/src/authenticator/authenticator.ts's
+            // P256_SPKI_PREFIX. A full SPKI key is this prefix, the 0x04
+            // uncompressed-point indicator, then the 64-byte X||Y point.
+            var P256_SPKI_PREFIX = Uint8Array.from([
+                0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce,
+                0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d,
+                0x03, 0x01, 0x07, 0x03, 0x42, 0x00,
+            ])
+
+            function p256XYToSpkiDer(x, y) {
+                var der = new Uint8Array(P256_SPKI_PREFIX.length + 1 + 64)
+                der.set(P256_SPKI_PREFIX, 0)
+                der[P256_SPKI_PREFIX.length] = 0x04
+                der.set(x, P256_SPKI_PREFIX.length + 1)
+                der.set(y, P256_SPKI_PREFIX.length + 1 + 32)
+                return der
+            }
+
+            // WebAuthn ECDSA assertion signatures are always ASN.1 DER
+            // (ECDSA-Sig-Value ::= SEQUENCE { r INTEGER, s INTEGER }); the
+            // WebCrypto 'ECDSA' algorithm verifies raw IEEE-P1363 (r || s,
+            // 32 bytes each for P-256) signatures instead, so this page has
+            // to do the DER -> raw conversion itself before calling verify —
+            // this conversion, not just the verify() call, is the actual
+            // proof the DER bytes this system produces are well-formed.
+            function derSignatureToRaw(der) {
+                var offset = 0
+                if (der[offset] !== 0x30) {
+                    throw new Error('derSignatureToRaw: expected SEQUENCE')
+                }
+                offset += 2 // tag + one-byte length (P-256 sig DER is always < 128 bytes)
+                function readInt() {
+                    if (der[offset] !== 0x02) {
+                        throw new Error('derSignatureToRaw: expected INTEGER')
+                    }
+                    offset += 1
+                    var len = der[offset]
+                    offset += 1
+                    var bytes = der.slice(offset, offset + len)
+                    offset += len
+                    // Strip a leading 0x00 sign-guard byte down to 32, or
+                    // left-pad a short encoding up to 32.
+                    while (bytes.length > 32 && bytes[0] === 0) {
+                        bytes = bytes.slice(1)
+                    }
+                    if (bytes.length < 32) {
+                        var padded = new Uint8Array(32)
+                        padded.set(bytes, 32 - bytes.length)
+                        bytes = padded
+                    }
+                    return bytes
+                }
+                var r = readInt()
+                var s = readInt()
+                var raw = new Uint8Array(64)
+                raw.set(r, 0)
+                raw.set(s, 32)
+                return raw
+            }
+
+            // In-memory state carried from create() to get() — a real RP
+            // would persist the credential's public key server-side; this
+            // page just needs it to survive until the very next get() call
+            // in the same document (the spec never reloads this page
+            // between its create() and get() calls).
+            var lastUserId = null // Uint8Array, the opaque random user.id create() sent
+            var lastPublicKey = null // CryptoKey, or null if this page couldn't extract one
+            var lastCredentialRawId = null // ArrayBuffer, for get()'s allowCredentials
+
+            window.doCreate = async function () {
+                document.getElementById('create-credential-id').textContent =
+                    ''
+                document.getElementById('create-error').textContent = ''
+                lastPublicKey = null
+
+                var userId = new Uint8Array(16)
+                crypto.getRandomValues(userId)
+                lastUserId = userId
+                var challenge = new Uint8Array(32)
+                crypto.getRandomValues(challenge)
+
+                try {
+                    var credential = await navigator.credentials.create({
+                        publicKey: {
+                            rp: { id: 'localhost', name: 'Pera E2E test RP' },
+                            user: {
+                                id: userId,
+                                name: 'e2e-user',
+                                displayName: 'E2E User',
+                            },
+                            challenge: challenge,
+                            pubKeyCredParams: [
+                                { type: 'public-key', alg: -7 },
+                            ],
+                            attestation: 'none',
+                        },
+                    })
+                    lastCredentialRawId = credential.rawId
+                    document.getElementById(
+                        'create-credential-id',
+                    ).textContent = credential.id
+
+                    // Best-effort: extract the public key so a following
+                    // get() can WebCrypto-verify its assertion. Never lets a
+                    // parse failure (e.g. an attestation shape this page's
+                    // minimal CBOR reader doesn't handle) surface as a page
+                    // error — verify-result simply reports SKIPPED instead.
+                    try {
+                        var attestationBytes = toBytes(
+                            credential.response.attestationObject,
+                        )
+                        var attestationObject = decodeCbor(
+                            attestationBytes,
+                            0,
+                        ).value
+                        var authData = parseAuthenticatorData(
+                            attestationObject.get('authData'),
+                        )
+                        if (authData.attested) {
+                            var der = p256XYToSpkiDer(authData.x, authData.y)
+                            lastPublicKey = await crypto.subtle.importKey(
+                                'spki',
+                                der.buffer,
+                                { name: 'ECDSA', namedCurve: 'P-256' },
+                                true,
+                                ['verify'],
+                            )
+                        }
+                    } catch (parseError) {
+                        lastPublicKey = null
+                    }
+                } catch (error) {
+                    document.getElementById('create-error').textContent =
+                        (error && error.name ? error.name : 'Error') +
+                        ': ' +
+                        (error && error.message ? error.message : String(error))
+                }
+            }
+
+            window.doGet = async function () {
+                document.getElementById('get-credential-id').textContent = ''
+                document.getElementById('get-error').textContent = ''
+                document.getElementById('user-handle-match').textContent = ''
+                document.getElementById('verify-result').textContent = ''
+
+                if (!lastCredentialRawId) {
+                    document.getElementById('get-error').textContent =
+                        'NoCredential: doGet called before a create() succeeded'
+                    return
+                }
+
+                var challenge = new Uint8Array(32)
+                crypto.getRandomValues(challenge)
+
+                try {
+                    var assertion = await navigator.credentials.get({
+                        publicKey: {
+                            challenge: challenge,
+                            rpId: 'localhost',
+                            allowCredentials: [
+                                {
+                                    type: 'public-key',
+                                    id: lastCredentialRawId,
+                                },
+                            ],
+                            userVerification: 'preferred',
+                        },
+                    })
+                    document.getElementById('get-credential-id').textContent =
+                        assertion.id
+
+                    var userHandle = assertion.response.userHandle
+                    if (!userHandle || !lastUserId) {
+                        document.getElementById(
+                            'user-handle-match',
+                        ).textContent = 'NONE'
+                    } else {
+                        var matches =
+                            bytesToB64url(toBytes(userHandle)) ===
+                            bytesToB64url(lastUserId)
+                        document.getElementById(
+                            'user-handle-match',
+                        ).textContent = matches ? 'MATCH' : 'MISMATCH'
+                    }
+
+                    if (!lastPublicKey) {
+                        document.getElementById('verify-result').textContent =
+                            'SKIPPED'
+                    } else {
+                        var clientDataHash = await crypto.subtle.digest(
+                            'SHA-256',
+                            assertion.response.clientDataJSON,
+                        )
+                        var signedData = concatBytes(
+                            toBytes(assertion.response.authenticatorData),
+                            toBytes(clientDataHash),
+                        )
+                        var rawSignature = derSignatureToRaw(
+                            toBytes(assertion.response.signature),
+                        )
+                        var valid = await crypto.subtle.verify(
+                            { name: 'ECDSA', hash: 'SHA-256' },
+                            lastPublicKey,
+                            rawSignature,
+                            signedData,
+                        )
+                        document.getElementById('verify-result').textContent =
+                            valid ? 'PASS' : 'FAIL'
+                    }
+                } catch (error) {
+                    document.getElementById('get-error').textContent =
+                        (error && error.name ? error.name : 'Error') +
+                        ': ' +
+                        (error && error.message ? error.message : String(error))
+                }
+            }
+        </script>
+    </body>
+</html>

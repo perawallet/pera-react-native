@@ -47,7 +47,11 @@ export const LedgerScanScreen = () => {
         shouldOpenSettings,
         isLocationServicesDisabled,
         isScanTimeout,
+        isUsbOnly,
+        needsManualStart,
+        isPopupSurface,
         handleDevicePress,
+        handleStartScan,
         handleRetry,
         handleRequestPermissions,
         handleOpenLocationSettings,
@@ -119,7 +123,9 @@ export const LedgerScanScreen = () => {
         return (
             <EmptyView
                 icon='warning'
-                body={t('ledger.scan.error')}
+                body={t(
+                    isUsbOnly ? 'ledger.scan.usb_error' : 'ledger.scan.error',
+                )}
                 button={
                     <PWButton
                         testID='ledger_scan_retry_button'
@@ -134,55 +140,92 @@ export const LedgerScanScreen = () => {
 
     return (
         <PWScreen scroll='never'>
-            {/* A failed scan (timeout, BLE error) must not keep faking an
-                active search — the looping animation only renders while the
-                scan can still produce devices. */}
-            {!error && (
-                <PWLottie
-                    autoPlay
-                    loop
-                    source={animationSource}
-                    style={styles.headerAnimation}
-                    testID='ledger_scan_animation'
-                />
-            )}
-            <ScreenHeader
-                title={t('ledger.scan.title')}
-                description={t('ledger.scan.description')}
-            />
-
-            {isPermissionDenied ? (
-                <PWView
-                    style={styles.errorContainer}
-                    testID='ledger_scan_permission_denied'
-                >
-                    <PWText
-                        variant='body'
-                        style={styles.errorText}
-                    >
-                        {t('ledger.instructions.permission_required_message')}
-                    </PWText>
-                    <PWButton
-                        testID='ledger_scan_grant_permission_button'
-                        title={t(
-                            shouldOpenSettings
-                                ? 'ledger.scan.open_settings'
-                                : 'ledger.scan.grant_permission',
-                        )}
-                        onPress={handleRequestPermissions}
-                        variant='link'
+            {/* Constrains width on the wide "expanded" browser-tab surface —
+                unconstrained flex:1 content otherwise spreads the
+                fixed-width header animation to the literal edges of a
+                ~1600px viewport. A no-op in the 360px popup (already
+                narrower than the cap). */}
+            <PWView style={styles.content}>
+                {/* A failed scan (timeout, BLE error) must not keep faking an
+                    active search — the looping animation only renders while the
+                    scan can still produce devices. Also withheld on web before
+                    the user has tapped "Search for Ledger" — nothing is
+                    scanning yet. */}
+                {!error && !needsManualStart && (
+                    <PWLottie
+                        autoPlay
+                        loop
+                        source={animationSource}
+                        style={styles.headerAnimation}
+                        testID='ledger_scan_animation'
                     />
-                </PWView>
-            ) : (
-                <PWFlatList
-                    data={devices}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    ListEmptyComponent={renderEmptyState}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
+                )}
+                <ScreenHeader
+                    title={t('ledger.scan.title')}
+                    description={t('ledger.scan.description')}
                 />
-            )}
+
+                {needsManualStart ? (
+                    <EmptyView
+                        icon='ledger'
+                        title={t(
+                            isPopupSurface
+                                ? 'ledger.scan.popup_launch_title'
+                                : 'ledger.scan.web_start_title',
+                        )}
+                        body={t(
+                            isPopupSurface
+                                ? 'ledger.scan.popup_launch_body'
+                                : 'ledger.scan.web_start_body',
+                        )}
+                        button={
+                            <PWButton
+                                testID='ledger_scan_start_button'
+                                title={t(
+                                    isPopupSurface
+                                        ? 'ledger.scan.popup_launch_button'
+                                        : 'ledger.scan.web_start_button',
+                                )}
+                                onPress={handleStartScan}
+                                variant='primary'
+                            />
+                        }
+                    />
+                ) : isPermissionDenied ? (
+                    <PWView
+                        style={styles.errorContainer}
+                        testID='ledger_scan_permission_denied'
+                    >
+                        <PWText
+                            variant='body'
+                            style={styles.errorText}
+                        >
+                            {t(
+                                'ledger.instructions.permission_required_message',
+                            )}
+                        </PWText>
+                        <PWButton
+                            testID='ledger_scan_grant_permission_button'
+                            title={t(
+                                shouldOpenSettings
+                                    ? 'ledger.scan.open_settings'
+                                    : 'ledger.scan.grant_permission',
+                            )}
+                            onPress={handleRequestPermissions}
+                            variant='link'
+                        />
+                    </PWView>
+                ) : (
+                    <PWFlatList
+                        data={devices}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.id}
+                        ListEmptyComponent={renderEmptyState}
+                        contentContainerStyle={styles.listContent}
+                        showsVerticalScrollIndicator={false}
+                    />
+                )}
+            </PWView>
         </PWScreen>
     )
 }

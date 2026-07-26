@@ -14,19 +14,20 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        gap: theme.spacing.md,
         flexDirection: 'row',
         alignItems: 'flex-start',
-        justifyContent: 'center',
+        // Gaps flex to the available width: the four 72px circles are
+        // unshrinkable, and a fixed gap made the row wider than the popup
+        // viewport (clipped ~6px per side).
+        justifyContent: 'space-between',
         marginTop: theme.spacing.xl,
         width: '100%',
-        minWidth: 0,
         overflow: 'hidden',
     },
     button: {
-        flex: 1,
-        minWidth: 0,
-        maxWidth: '25%',
+        // Matches the PWRoundIcon `lg` diameter so labels center under and
+        // truncate at the circle's width.
+        width: theme.spacing['4xl'],
         alignItems: 'center',
     },
 }))

@@ -57,9 +57,18 @@ vi.mock('@hooks/useLanguage', () => ({
     })),
 }))
 
+const isPushSupported = vi.fn(() => true)
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        pushNotification: { isSupported: isPushSupported },
+    }),
+}))
+
 describe('useSettingsNotificationsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        isPushSupported.mockReturnValue(true)
     })
 
     afterEach(() => onlineManager.setOnline(true))
@@ -70,6 +79,14 @@ describe('useSettingsNotificationsScreen', () => {
         expect(result.current.isSystemNotificationEnabled).toBe(true)
         expect(result.current.isSystemNotificationLoading).toBe(false)
         expect(result.current.accounts).toEqual([])
+    })
+
+    it('reflects the platform pushNotification.isSupported() flag', () => {
+        isPushSupported.mockReturnValue(false)
+
+        const { result } = renderHook(() => useSettingsNotificationsScreen())
+
+        expect(result.current.isPushSupported).toBe(false)
     })
 
     it('calls openSettings when handleSystemNotificationToggle is called', () => {

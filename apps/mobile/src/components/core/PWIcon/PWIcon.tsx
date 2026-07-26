@@ -89,13 +89,26 @@ export const PWIcon = ({
         ? disabledColors[variant]
         : variantColors[variant]
 
+    // web react-native-svg only sets width/height as SVG attributes, and a
+    // bare <svg> defaults to flex-shrink: 1 — mirror the size into style so
+    // icons stay rigid in tight flex rows. Native ignores this (Yoga already
+    // treats width/height as fixed). Consumer style stays last so it wins.
+    const { style, ...restProps } = rest
+    const rigidSizeStyle = {
+        width: resolvedSize,
+        height: resolvedSize,
+        flexShrink: 0,
+    }
+    const resolvedStyle = [rigidSizeStyle, style]
+
     return (
         <IconComponent
             width={resolvedSize}
             height={resolvedSize}
             color={resolvedColor}
             onPress={onPress ? handlePress : undefined}
-            {...rest}
+            {...restProps}
+            style={resolvedStyle}
         />
     )
 }

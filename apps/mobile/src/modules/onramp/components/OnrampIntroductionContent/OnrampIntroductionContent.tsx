@@ -48,6 +48,13 @@ export const OnrampIntroductionContent = () => {
             <PWImage
                 source={isDarkMode ? onrampIntroHeroDark : onrampIntroHeroLight}
                 style={styles.heroImage}
+                // 'contain' matches the box's aspectRatio (327/222) to the
+                // image on native, so this is a no-op there — it only
+                // matters on web, where styles.web.ts caps heroImage's
+                // height below that ratio to fit the popup; without this,
+                // the default 'cover' would crop the illustration instead of
+                // letterboxing it.
+                resizeMode='contain'
             />
 
             <PWView style={styles.contentSection}>

@@ -42,6 +42,9 @@ export type ExternalSignTxnTransport = {
     sourceType: SourceType
     transportId: string
     sourceMetadata?: SignRequestSource
+    /** SW/platform-observed origin (trusted, not dApp-asserted) — used for
+     *  trust display and ARC-60 SIWA domain binding. */
+    verifiedOrigin?: string
     // ARC-0001 response: an array of (SignedTxnStr | null), same length and
     // order as the original request. Returning a Promise lets transports
     // surface delivery failures through the signing pipeline (e.g. WC v1
@@ -138,6 +141,7 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 sourceType: transport.sourceType,
                 transportId: transport.transportId,
                 sourceMetadata: transport.sourceMetadata,
+                verifiedOrigin: transport.verifiedOrigin,
                 txs,
                 // Full payload so the pipeline can recompute the group hash;
                 // `txs` is just the signable subset.

@@ -86,6 +86,7 @@ android/
 *.expo/
 web-build/
 dist/
+.expo-web-check/
 
 
 # IDE

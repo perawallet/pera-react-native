@@ -12,7 +12,28 @@
 
 import LottieView from 'lottie-react-native'
 import type { ComponentProps } from 'react'
+import { StyleSheet } from 'react-native'
 
 export type PWLottieProps = ComponentProps<typeof LottieView>
 
-export const PWLottie = (props: PWLottieProps) => <LottieView {...props} />
+// lottie-react-native's web implementation reads a separate `webStyle` prop
+// (CSSProperties) instead of `style` — every call site in this app only ever
+// passes `style`, so on web the animation silently got no size at all and
+// fell back to filling its container. Deriving `webStyle` from `style` here
+// (rather than at every call site) fixes it once; harmless on native, whose
+// codegen'd view doesn't recognize `webStyle` and drops it.
+export const PWLottie = (props: PWLottieProps) => {
+    const { style, webStyle, ...rest } = props
+    return (
+        <LottieView
+            {...rest}
+            style={style}
+            webStyle={
+                webStyle ??
+                (style
+                    ? (StyleSheet.flatten(style) as PWLottieProps['webStyle'])
+                    : undefined)
+            }
+        />
+    )
+}

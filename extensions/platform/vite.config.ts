@@ -20,6 +20,7 @@ export default defineConfig({
             include: ['src'],
             exclude: [
                 '**/__tests__/**',
+                '**/test-utils/key-value-storage-contract.ts',
                 '**/*.test.ts',
                 '**/*.test.tsx',
                 '**/{handlers,*-handlers}.ts',

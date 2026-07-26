@@ -270,6 +270,21 @@ const { mockShowSignRequest, mockIsPeraCardEnabled } = vi.hoisted(() => ({
     mockIsPeraCardEnabled: vi.fn(() => true),
 }))
 
+// Mutable so per-test overrides can exercise the web capability map (vitest
+// has no platform resolution, so the real import always lands on the
+// all-native capabilities.ts).
+const { mockRouteCapabilities } = vi.hoisted(() => ({
+    mockRouteCapabilities: {
+        peraCard: true,
+        giftCards: true,
+        inAppWebView: true,
+    },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockRouteCapabilities,
+}))
+
 vi.mock('@modules/multisig/hooks/usePendingSignaturesSheet', () => ({
     usePendingSignaturesSheet: () => ({
         showSignRequest: mockShowSignRequest,
@@ -325,6 +340,7 @@ vi.mock('react-native', () => ({
     Linking: {
         getInitialURL: vi.fn(),
         addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+        openURL: vi.fn(async () => undefined),
     },
 }))
 
@@ -335,6 +351,9 @@ describe('useDeepLink', () => {
         // layout-mounted instances); reset it so one test's initial-URL
         // handling doesn't suppress the next test's.
         resetDeeplinkListenerStateForTesting()
+        mockRouteCapabilities.peraCard = true
+        mockRouteCapabilities.giftCards = true
+        mockRouteCapabilities.inAppWebView = true
         mockWaitForSessionOutcome.mockResolvedValue({ type: 'session' })
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
         vi.mocked(useMarkMnemonicBackupComplete).mockReturnValue(
@@ -675,6 +694,30 @@ describe('useDeepLink', () => {
         // Success case, pushWebView should have been called
     })
 
+    it('opens INTERNAL_BROWSER deeplink via Linking when inAppWebView is off', async () => {
+        mockRouteCapabilities.inAppWebView = false
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.INTERNAL_BROWSER,
+            url: 'https://example.com',
+        })
+        const onSuccess = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/browser',
+                false,
+                'qr',
+                undefined,
+                onSuccess,
+            )
+        })
+
+        expect(Linking.openURL).toHaveBeenCalledWith('https://example.com')
+        expect(mockPushWebView).not.toHaveBeenCalled()
+        expect(onSuccess).toHaveBeenCalled()
+    })
+
     it('should handle DISCOVER_PATH deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.DISCOVER_PATH,
@@ -1007,6 +1050,8 @@ describe('useDeepLink', () => {
             type: DeeplinkType.CARDS,
             path: '/cards',
         })
+        const onError = vi.fn()
+        const onSuccess = vi.fn()
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
@@ -1014,10 +1059,39 @@ describe('useDeepLink', () => {
                 'perawallet://app/cards',
                 false,
                 'deeplink',
+                onError,
+                onSuccess,
             )
         })
 
         expect(mockNavigate).not.toHaveBeenCalled()
+        // onError must fire so a dispatching QR scanner re-arms instead of
+        // staying locked forever on its handlingRef guard.
+        expect(onError).toHaveBeenCalled()
+        expect(onSuccess).not.toHaveBeenCalled()
+    })
+
+    it('ignores a CARDS deeplink when the peraCard capability is off', async () => {
+        mockIsPeraCardEnabled.mockReturnValue(true)
+        mockRouteCapabilities.peraCard = false
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.CARDS,
+            path: '/cards',
+        })
+        const onError = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/cards',
+                false,
+                'deeplink',
+                onError,
+            )
+        })
+
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(onError).toHaveBeenCalled()
     })
 
     it('opens the pending-signatures sheet for a SIGN_REQUEST deeplink', async () => {
@@ -1062,6 +1136,27 @@ describe('useDeepLink', () => {
             {},
             expect.objectContaining({ size: 'modal' }),
         )
+    })
+
+    it('ignores a SELL deeplink when the giftCards capability is off', async () => {
+        mockRouteCapabilities.giftCards = false
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.SELL,
+        })
+        const onError = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/sell',
+                false,
+                'qr',
+                onError,
+            )
+        })
+
+        expect(mockRequestByType).not.toHaveBeenCalled()
+        expect(onError).toHaveBeenCalled()
     })
 
     it('should handle RECOVER_ADDRESS deeplink and open the pre-filled Import screen (HD) from QR', async () => {

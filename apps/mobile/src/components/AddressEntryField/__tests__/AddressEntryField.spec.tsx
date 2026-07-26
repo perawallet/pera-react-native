@@ -27,6 +27,16 @@ vi.mock('@hooks/deeplink/parser', () => ({
     parseDeeplink: vi.fn(),
 }))
 
+// QRScannerView is now always mounted (isVisible toggles it, it's never
+// conditionally rendered) — vitest resolves the bare specifier to the
+// native module, whose hooks reach into providers (network, etc.) this
+// lightweight render tree doesn't set up. This spec only cares about
+// AddressEntryField's own input/scan-icon behavior, not scanner internals.
+vi.mock('@components/QRScannerView', () => ({
+    QRScannerView: () => null,
+    scannerNotifier: { current: null },
+}))
+
 describe('AddressEntryField', () => {
     it('renders correctly', () => {
         render(<AddressEntryField />)

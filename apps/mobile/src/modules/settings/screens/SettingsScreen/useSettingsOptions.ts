@@ -13,86 +13,150 @@
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
+import { routeCapabilities } from '@routes/capabilities'
 import type { SettingsStackParamsList } from '../../routes'
 
 export const useSettingsOptions = () => {
     const { t } = useLanguage()
 
     const settingsOptions = useMemo(
-        () => [
-            {
-                title: t('settings.main.account_section'),
-                items: [
-                    {
-                        route: 'SecuritySettings' as keyof SettingsStackParamsList,
-                        icon: 'shield-check',
-                        title: t('settings.main.security_title'),
-                    },
-                    {
-                        route: 'NotificationsSettings' as keyof SettingsStackParamsList,
-                        icon: 'bell',
-                        title: t('settings.main.notifications_title'),
-                    },
-                    {
-                        route: 'WalletConnectSettings' as keyof SettingsStackParamsList,
-                        icon: 'wallet-connect',
-                        title: t('settings.main.wallet_connect_title'),
-                    },
-                    {
-                        route: 'PasskeysSettings' as keyof SettingsStackParamsList,
-                        icon: 'person-key',
-                        title: t('settings.main.passkeys_title'),
-                    },
-                    {
-                        // Sweeps every signable key for on-chain accounts
-                        // rekeyed to it — the account-options action scans
-                        // one key; this is the wallet-wide entry (PERA-4619).
-                        action: 'scanRekeyed' as const,
-                        icon: 'magnifying-glass',
-                        title: t('settings.main.scan_rekeyed_title'),
-                    },
-                ],
-            },
-            {
-                title: t('settings.main.app_preferences_section'),
-                items: [
-                    {
-                        route: 'CurrencySettings' as keyof SettingsStackParamsList,
-                        icon: 'dollar',
-                        title: t('settings.main.currency_title'),
-                    },
-                    {
-                        route: 'ThemeSettings' as keyof SettingsStackParamsList,
-                        icon: 'moon',
-                        title: t('settings.main.theme_title'),
-                    },
-                ],
-            },
-            {
-                title: t('settings.main.support_section'),
-                items: [
-                    {
-                        icon: 'star',
-                        title: t('settings.main.rate_title'),
-                    },
-                    {
-                        icon: 'text-document',
-                        title: t('settings.main.terms_title'),
-                        url: config.termsOfServiceUrl,
-                    },
-                    {
-                        icon: 'text-document',
-                        title: t('settings.main.privacy_title'),
-                        url: config.privacyPolicyUrl,
-                    },
-                    {
-                        route: 'DeveloperSettings' as keyof SettingsStackParamsList,
-                        icon: 'code',
-                        title: t('settings.main.developer_title'),
-                    },
-                ],
-            },
-        ],
+        () =>
+            [
+                {
+                    title: t('settings.main.account_section'),
+                    items: [
+                        {
+                            route: (routeCapabilities.vaultSecuritySettings
+                                ? 'VaultSecuritySettings'
+                                : 'SecuritySettings') as keyof SettingsStackParamsList,
+                            icon: 'shield-check',
+                            title: t('settings.main.security_title'),
+                        },
+                        ...(routeCapabilities.pushNotificationSettings
+                            ? [
+                                  {
+                                      route: 'NotificationsSettings' as keyof SettingsStackParamsList,
+                                      icon: 'bell',
+                                      title: t(
+                                          'settings.main.notifications_title',
+                                      ),
+                                  },
+                              ]
+                            : []),
+                        // The unified Connections screen (web only) supersedes
+                        // the two separate WalletConnect/Connected Sites menu
+                        // entries below — when it's on, both are suppressed
+                        // regardless of their own capability flags. The
+                        // underlying routes/screens are untouched for direct
+                        // navigation elsewhere (e.g. a WC pairing flow).
+                        ...(routeCapabilities.connectionsSettings
+                            ? [
+                                  {
+                                      route: 'ConnectionsSettings' as keyof SettingsStackParamsList,
+                                      icon: 'globe',
+                                      title: t(
+                                          'settings.main.connections_title',
+                                      ),
+                                  },
+                              ]
+                            : routeCapabilities.walletConnectSettings
+                              ? [
+                                    {
+                                        route: 'WalletConnectSettings' as keyof SettingsStackParamsList,
+                                        icon: 'wallet-connect',
+                                        title: t(
+                                            'settings.main.wallet_connect_title',
+                                        ),
+                                    },
+                                ]
+                              : []),
+                        ...(routeCapabilities.passkeysAutofillSettings
+                            ? [
+                                  {
+                                      route: 'PasskeysSettings' as keyof SettingsStackParamsList,
+                                      icon: 'person-key',
+                                      title: t('settings.main.passkeys_title'),
+                                  },
+                              ]
+                            : []),
+                        ...(!routeCapabilities.connectionsSettings &&
+                        routeCapabilities.dappConnections
+                            ? [
+                                  {
+                                      route: 'ConnectedSites' as keyof SettingsStackParamsList,
+                                      icon: 'globe',
+                                      title: t(
+                                          'settings.main.connected_sites_title',
+                                      ),
+                                  },
+                              ]
+                            : []),
+                        ...(routeCapabilities.rekeyFlows
+                            ? [
+                                  {
+                                      // Sweeps every signable key for on-chain
+                                      // accounts rekeyed to it — the
+                                      // account-options action scans one key;
+                                      // this is the wallet-wide entry
+                                      // (PERA-4619).
+                                      action: 'scanRekeyed' as const,
+                                      icon: 'magnifying-glass',
+                                      title: t(
+                                          'settings.main.scan_rekeyed_title',
+                                      ),
+                                  },
+                              ]
+                            : []),
+                    ],
+                },
+                {
+                    title: t('settings.main.app_preferences_section'),
+                    items: [
+                        {
+                            route: 'CurrencySettings' as keyof SettingsStackParamsList,
+                            icon: 'dollar',
+                            title: t('settings.main.currency_title'),
+                        },
+                        {
+                            route: 'ThemeSettings' as keyof SettingsStackParamsList,
+                            icon: 'moon',
+                            title: t('settings.main.theme_title'),
+                        },
+                    ],
+                },
+                {
+                    title: t('settings.main.support_section'),
+                    items: [
+                        ...(routeCapabilities.storeRating
+                            ? [
+                                  {
+                                      icon: 'star',
+                                      title: t('settings.main.rate_title'),
+                                  },
+                              ]
+                            : []),
+                        {
+                            icon: 'text-document',
+                            title: t('settings.main.terms_title'),
+                            url: config.termsOfServiceUrl,
+                        },
+                        {
+                            icon: 'text-document',
+                            title: t('settings.main.privacy_title'),
+                            url: config.privacyPolicyUrl,
+                        },
+                        ...(routeCapabilities.developerSettings
+                            ? [
+                                  {
+                                      route: 'DeveloperSettings' as keyof SettingsStackParamsList,
+                                      icon: 'code',
+                                      title: t('settings.main.developer_title'),
+                                  },
+                              ]
+                            : []),
+                    ],
+                },
+            ].filter(section => section.items.length > 0),
         [t],
     )
 

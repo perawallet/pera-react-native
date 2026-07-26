@@ -49,13 +49,13 @@ export const useLedgerInstructionsScreen =
         const handleContinue = useCallback(async () => {
             // USB doesn't require BLE permissions; skip the BLE permission gate.
             if (transportType === 'usb' || hasPermissions) {
-                navigation.navigate('LedgerScan')
+                navigation.navigate('LedgerScan', { transportType })
                 return
             }
 
             const granted = await requestPermissions()
             if (granted) {
-                navigation.navigate('LedgerScan')
+                navigation.navigate('LedgerScan', { transportType })
             } else {
                 errorToast(
                     t('ledger.instructions.permission_required_title'),

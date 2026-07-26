@@ -38,6 +38,7 @@ describe('useBlockHardwareBackWhileSheetOpen', () => {
         vi.clearAllMocks()
         mockAddEventListener.mockReturnValue({ remove: mockRemove })
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it('does not intercept the back press while no sheet is open', () => {

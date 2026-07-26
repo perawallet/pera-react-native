@@ -13,13 +13,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import * as MediaLibrary from 'expo-media-library/legacy'
 import { useCollectibleDetail } from '../useCollectibleDetail'
 import type {
     CollectibleMedia,
     PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { MediaPermissionDeniedError } from '@utils/mediaErrors'
 
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
@@ -29,10 +29,31 @@ const mockOptOut = vi.fn()
 const mockGoBack = vi.fn()
 const mockCanGoBack = vi.fn(() => true)
 const mockRequestBottomSheet = vi.fn()
+const mockGetImageBase64 = vi.fn()
+const mockSaveImageToDevice = vi.fn()
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
     useBottomSheetResult: () => ({ resolve: vi.fn(), dismiss: vi.fn() }),
+}))
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
+vi.mock('@utils/getImageBase64', () => ({
+    getImageBase64: (...args: unknown[]) => mockGetImageBase64(...args),
+}))
+
+vi.mock('@utils/saveImageToDevice', () => ({
+    saveImageToDevice: (...args: unknown[]) => mockSaveImageToDevice(...args),
 }))
 
 vi.mock(
@@ -78,9 +99,15 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+// Mutable platform stub: mutate `mockPlatform` per test to simulate the
+// native (ios) and web builds without re-mocking.
+const { mockPlatform } = vi.hoisted(() => ({
+    mockPlatform: { OS: 'ios' },
+}))
+
 vi.mock('react-native', () => ({
     Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
-    Platform: { OS: 'ios' },
+    Platform: mockPlatform,
 }))
 
 vi.mock('@utils/shareText', () => ({
@@ -89,26 +116,6 @@ vi.mock('@utils/shareText', () => ({
 
 vi.mock('expo-clipboard', () => ({
     setImageAsync: vi.fn(),
-}))
-
-vi.mock('expo-file-system', () => {
-    class File {
-        static downloadFileAsync = vi.fn().mockResolvedValue({
-            uri: 'file://cache/collectible_12345',
-            base64: vi.fn().mockResolvedValue('base64data'),
-        })
-    }
-    return {
-        File,
-        Paths: {
-            cache: { uri: 'file://cache/' },
-        },
-    }
-})
-
-vi.mock('expo-media-library/legacy', () => ({
-    requestPermissionsAsync: vi.fn().mockResolvedValue({ status: 'granted' }),
-    saveToLibraryAsync: vi.fn(),
 }))
 
 vi.mock('expo-haptics', () => ({
@@ -225,6 +232,10 @@ describe('useCollectibleDetail', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        Object.assign(mockCapabilities, { inAppWebView: true })
+        Object.assign(mockPlatform, { OS: 'ios' })
+        mockGetImageBase64.mockResolvedValue('base64data')
+        mockSaveImageToDevice.mockResolvedValue(undefined)
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         mockUseAllAccounts.mockReturnValue([mockAccount])
         mockUseAccountAssetBalanceQuery.mockReturnValue({
@@ -505,14 +516,43 @@ describe('useCollectibleDetail', () => {
         })
     })
 
+    describe('handleCopyImage', () => {
+        it('copies the image bytes to the clipboard when a URL is available', async () => {
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            await result.current.handleCopyImage()
+
+            expect(mockGetImageBase64).toHaveBeenCalledWith(
+                'https://example.com/full.png',
+                'collectible_12345',
+            )
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'success' }),
+            )
+        })
+
+        it('shows an error toast when fetching the image fails', async () => {
+            mockGetImageBase64.mockRejectedValueOnce(new Error('network error'))
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            await result.current.handleCopyImage()
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'error' }),
+            )
+        })
+    })
+
     describe('handleSaveImage', () => {
-        it('saves the saveable media to the library when a URL is available', async () => {
+        it('saves the saveable media to the device when a URL is available', async () => {
             const { result } = renderHook(() => useCollectibleDetail('12345'))
 
             await result.current.handleSaveImage()
 
-            expect(MediaLibrary.saveToLibraryAsync).toHaveBeenCalledWith(
-                'file://cache/collectible_12345',
+            expect(mockSaveImageToDevice).toHaveBeenCalledWith(
+                'https://example.com/full.png',
+                'collectible_12345.png',
             )
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'success' }),
@@ -531,8 +571,39 @@ describe('useCollectibleDetail', () => {
 
             await result.current.handleSaveImage()
 
-            expect(MediaLibrary.requestPermissionsAsync).not.toHaveBeenCalled()
-            expect(MediaLibrary.saveToLibraryAsync).not.toHaveBeenCalled()
+            expect(mockSaveImageToDevice).not.toHaveBeenCalled()
+        })
+
+        it('shows a permission-denied toast when the device denies the save', async () => {
+            mockSaveImageToDevice.mockRejectedValueOnce(
+                new MediaPermissionDeniedError(),
+            )
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            await result.current.handleSaveImage()
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'asset_details.collectible.media_permission_denied',
+                    type: 'error',
+                }),
+            )
+        })
+
+        it('shows a generic failure toast for any other save error', async () => {
+            mockSaveImageToDevice.mockRejectedValueOnce(new Error('disk full'))
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            await result.current.handleSaveImage()
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'asset_details.collectible.media_save_failed',
+                    type: 'error',
+                }),
+            )
         })
     })
 
@@ -575,6 +646,98 @@ describe('useCollectibleDetail', () => {
             expect(result.current.modelViewerModal.isOpen).toBe(false)
             expect(result.current.modelViewerUrl).toBeUndefined()
         })
+
+        describe('capability gating (inAppWebView)', () => {
+            it('keeps the model in `media` when inAppWebView is on (native)', () => {
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                expect(result.current.media.some(m => m.type === 'model')).toBe(
+                    true,
+                )
+            })
+
+            it('drops the model from `media` when inAppWebView is off (web)', () => {
+                Object.assign(mockCapabilities, { inAppWebView: false })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                expect(result.current.media.some(m => m.type === 'model')).toBe(
+                    false,
+                )
+            })
+
+            it('does not open the viewer when inAppWebView is off, even with a valid model URL', () => {
+                Object.assign(mockCapabilities, { inAppWebView: false })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                act(() => {
+                    result.current.handleModelPress()
+                })
+
+                expect(result.current.modelViewerModal.isOpen).toBe(false)
+                expect(result.current.modelViewerUrl).toBeUndefined()
+            })
+
+            it('opens the raw model URL in a new tab when inAppWebView is off', () => {
+                Object.assign(mockCapabilities, { inAppWebView: false })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'model',
+                            downloadUrl: 'https://example.com/m.glb',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                act(() => {
+                    result.current.handleModelPress()
+                })
+
+                expect(mockOpenURL).toHaveBeenCalledWith(
+                    'https://example.com/m.glb',
+                )
+            })
+        })
     })
 
     describe('handleFullScreenPress', () => {
@@ -614,6 +777,33 @@ describe('useCollectibleDetail', () => {
             result.current.handleFullScreenPress(0)
 
             expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+        })
+
+        describe('on web', () => {
+            it('opens the raw media URL in a new tab instead of a bottom sheet', () => {
+                Object.assign(mockPlatform, { OS: 'web' })
+                mockUseSingleAssetDetailsQuery.mockReturnValue({
+                    data: makeAssetWithMedia([
+                        {
+                            type: 'image',
+                            downloadUrl: 'https://example.com/full.png',
+                            extension: 'png',
+                        },
+                    ]),
+                    isPending: false,
+                })
+
+                const { result } = renderHook(() =>
+                    useCollectibleDetail('12345'),
+                )
+
+                result.current.handleFullScreenPress(0)
+
+                expect(mockOpenURL).toHaveBeenCalledWith(
+                    'https://example.com/full.png',
+                )
+                expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+            })
         })
     })
 })

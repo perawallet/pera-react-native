@@ -13,3 +13,4 @@
 export { useBlePermissions } from './useBlePermissions'
 export { useBluetoothState } from './useBluetoothState'
 export { useLedgerConnection } from './useLedgerConnectionProvider'
+export { useLedgerExpandedTabHandoff } from './useLedgerExpandedTabHandoff'

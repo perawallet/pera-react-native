@@ -109,7 +109,10 @@ export const QRViewScreen = () => {
                     />
                 </PWView>
                 <PWView style={styles.addressContainer}>
-                    <CopyableText copyValue={account.address}>
+                    <CopyableText
+                        copyValue={account.address}
+                        style={styles.addressButton}
+                    >
                         <PWText style={styles.address}>
                             {account.address}
                         </PWText>

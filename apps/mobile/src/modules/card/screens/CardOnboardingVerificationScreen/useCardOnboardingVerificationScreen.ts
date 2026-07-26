@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 import { useCardErrorToast, useCardOnboardingLogout } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -116,6 +117,10 @@ export const useCardOnboardingVerificationScreen =
         ])
 
         const handleOpenSupport = useCallback(() => {
+            if (!routeCapabilities.inAppWebView) {
+                void Linking.openURL(config.supportBaseUrl)
+                return
+            }
             pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
         }, [pushWebView])
 

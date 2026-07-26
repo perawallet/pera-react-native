@@ -10,9 +10,12 @@
  limitations under the License
  */
 
+import { Platform } from 'react-native'
 import { render, fireEvent, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { PWInput } from '../PWInput'
+
+const originalOS = Platform.OS
 
 describe('PWInput', () => {
     it('renders correctly', () => {
@@ -84,6 +87,35 @@ describe('PWInput', () => {
             expect(
                 screen.getByPlaceholderText('plain').getAttribute('righticon'),
             ).toBeNull()
+        })
+
+        describe('on web', () => {
+            afterEach(() => {
+                Platform.OS = originalOS
+            })
+
+            it('keeps the visibility toggle mounted regardless of focus', () => {
+                Platform.OS = 'web'
+                render(
+                    <PWInput
+                        placeholder='pw-web'
+                        value='secret'
+                        onChangeText={() => {}}
+                        secureTextEntry
+                        showVisibilityToggle
+                    />,
+                )
+                const input = screen.getByPlaceholderText('pw-web')
+                expect(input.getAttribute('righticon')).toBeTruthy()
+
+                // Unlike the non-web case, blurring must not hide the toggle.
+                fireEvent.blur(input)
+                expect(
+                    screen
+                        .getByPlaceholderText('pw-web')
+                        .getAttribute('righticon'),
+                ).toBeTruthy()
+            })
         })
     })
 

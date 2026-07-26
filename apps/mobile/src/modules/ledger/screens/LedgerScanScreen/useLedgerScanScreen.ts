@@ -12,6 +12,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { Platform } from 'react-native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -24,12 +25,13 @@ import {
     LedgerLocationServicesDisabledError,
     LedgerScanTimeoutError,
 } from '@perawallet/wallet-core-ledger'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 import {
     useBlePermissions,
     useBluetoothState,
     useLedgerConnection,
+    useLedgerExpandedTabHandoff,
 } from '../../hooks'
 import { sanitizeDeviceName } from '../../utils'
 
@@ -78,7 +80,29 @@ type UseLedgerScanScreenResult = {
      * of a perpetual searching animation.
      */
     isScanTimeout: boolean
+    /**
+     * True when the user explicitly chose the USB pairing entry point (route
+     * param `transportType: 'usb'`). Lets the screen show USB-specific
+     * copy for a generic scan failure instead of BLE-flavored text.
+     */
+    isUsbOnly: boolean
+    /**
+     * True on web until the user taps "Search for Ledger" at least once.
+     * WebHID/Web Bluetooth's device-picker prompt (`requestDevice()`) is only
+     * allowed by the browser inside a genuine click — the screen mounting
+     * and auto-starting a scan via effect (as native does) can never satisfy
+     * that, so the first scan attempt on web must be gated behind an
+     * explicit tap. Always false on native.
+     */
+    needsManualStart: boolean
+    /**
+     * True in the 360x600 toolbar popup on web — the CTA copy differs there
+     * (explains a new tab is about to open) from the expanded tab (where
+     * the CTA actually triggers the device picker). Always false on native.
+     */
+    isPopupSurface: boolean
     handleDevicePress: (device: HardwareWalletDevice) => void
+    handleStartScan: () => void
     handleRetry: () => void
     handleRequestPermissions: () => void
     handleOpenLocationSettings: () => void
@@ -88,10 +112,23 @@ type UseLedgerScanScreenResult = {
 
 const USB_ONLY_TRANSPORTS: LedgerTransportType[] = ['usb']
 
+type LedgerScanRouteParams = {
+    LedgerScan: Optional<{ transportType?: LedgerTransportType }>
+}
+
 export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { errorToast } = useToast()
+    const route = useRoute<RouteProp<LedgerScanRouteParams, 'LedgerScan'>>()
+    // A user who explicitly chose the USB pairing entry point doesn't care
+    // about BLE state at all — scanning stays USB-only and the BLE
+    // permission/adapter-state warnings below are suppressed, so e.g.
+    // Bluetooth being off (or unavailable, as on a desktop browser) never
+    // blocks or interrupts a USB-only pairing attempt with an irrelevant
+    // warning. Absent (reached via the general "Pair Ledger" BLE entry
+    // point) this is undefined and behavior is unchanged.
+    const isUsbOnly = route.params?.transportType === 'usb'
     const {
         hasPermissions,
         isChecking: isCheckingPermissions,
@@ -102,13 +139,15 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     } = useBlePermissions()
     const { adapterState, isBluetoothReady, requestEnable } =
         useBluetoothState()
+    const { isPopupSurface, openLedgerExpandedTab } =
+        useLedgerExpandedTabHandoff()
 
     // iOS has no runtime BLE permission request (useBlePermissions reports
     // granted) — a denial surfaces as the adapter's `unauthorized` state and
     // only OS Settings can change it.
     const isIosBluetoothDenied =
         Platform.OS === 'ios' && adapterState === 'unauthorized'
-    const canScanBle = hasPermissions && !isIosBluetoothDenied
+    const canScanBle = !isUsbOnly && hasPermissions && !isIosBluetoothDenied
 
     // USB HID needs no Bluetooth permission, so a denied BLE permission must
     // not block it: fall back to a USB-only scan when the platform supports
@@ -125,6 +164,19 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const lastWarnedStateRef =
         useRef<Nullable<HardwareWalletAdapterState>>(null)
 
+    // Native auto-starts (no gesture requirement); web starts gated behind
+    // an explicit tap (see `needsManualStart`/`handleStartScan` below). Kept
+    // as a ref (not state) so flipping it from the click handler doesn't
+    // itself re-run the scan effect below — `handleStartScan` already calls
+    // `startScan()` directly inside the click, and letting the effect fire
+    // again on the same flip would immediately cancel that in-flight
+    // `requestDevice()` prompt. The effect only needs the ref's current
+    // value for its OTHER triggers (e.g. Bluetooth-recovery restarts).
+    const hasStartedOnWebRef = useRef(Platform.OS !== 'web')
+    const [hasStartedOnWeb, setHasStartedOnWeb] = useState(
+        hasStartedOnWebRef.current,
+    )
+
     // Start scanning whenever a usable transport exists: BLE when permitted,
     // USB-only otherwise. On full denial with no USB fallback, the screen
     // surfaces an actionable state via `isPermissionDenied` instead of
@@ -136,6 +188,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     useEffect(() => {
         if (isCheckingPermissions) return
         if (!canScanBle && !isUsbFallbackScan) return
+        if (!hasStartedOnWebRef.current) return
 
         startScan()
         return () => {
@@ -152,12 +205,20 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
     // Request the Android BLE permission once when missing — independent of
     // the scan effect, so a USB fallback scan doesn't swallow the request.
+    // Skipped entirely for an explicit USB-only choice, which never needs
+    // BLE permission.
     useEffect(() => {
-        if (isCheckingPermissions || hasPermissions || hasRequestedPermissions)
+        if (
+            isUsbOnly ||
+            isCheckingPermissions ||
+            hasPermissions ||
+            hasRequestedPermissions
+        )
             return
         setHasRequestedPermissions(true)
         void requestPermissions()
     }, [
+        isUsbOnly,
         isCheckingPermissions,
         hasPermissions,
         hasRequestedPermissions,
@@ -176,6 +237,9 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     // (not for unauthorized/unsupported, which the prompt can't resolve).
     // Both fire once per state transition.
     useEffect(() => {
+        // An explicit USB-only choice never warns about BLE state — that
+        // state is irrelevant to a USB pairing attempt.
+        if (isUsbOnly) return
         // Permission denial owns its own messaging; don't double up.
         if (isCheckingPermissions || !hasPermissions) return
 
@@ -196,6 +260,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
             void requestEnable()
         }
     }, [
+        isUsbOnly,
         adapterState,
         isBluetoothReady,
         hasPermissions,
@@ -217,9 +282,35 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         [navigation, stopScan],
     )
 
-    const handleRetry = useCallback(() => {
+    // Called directly from a click (the initial "Search for Ledger" CTA on
+    // web). Calls `startScan()` synchronously within that same click so the
+    // browser's device-picker prompt is invoked inside genuine user
+    // activation — see the ref comment above for why this can't go through
+    // the effect instead.
+    //
+    // In the popup surface specifically, the picker dialog isn't reliably
+    // shown at all (Chrome can auto-close the popup or silently resolve the
+    // request empty) — hand off to the full expanded tab instead of
+    // attempting the scan in-place.
+    const handleStartScan = useCallback(() => {
+        if (isPopupSurface) {
+            void openLedgerExpandedTab(isUsbOnly ? 'usb' : 'ble')
+            return
+        }
+        hasStartedOnWebRef.current = true
+        setHasStartedOnWeb(true)
         startScan()
-    }, [startScan])
+    }, [startScan, isPopupSurface, openLedgerExpandedTab, isUsbOnly])
+
+    const handleRetry = useCallback(() => {
+        if (isPopupSurface) {
+            void openLedgerExpandedTab(isUsbOnly ? 'usb' : 'ble')
+            return
+        }
+        hasStartedOnWebRef.current = true
+        setHasStartedOnWeb(true)
+        startScan()
+    }, [startScan, isPopupSurface, openLedgerExpandedTab, isUsbOnly])
 
     const handleRequestPermissions = useCallback(() => {
         // After the OS marks the permission as NEVER_ASK_AGAIN the system
@@ -264,6 +355,12 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
     const isScanTimeout = error instanceof LedgerScanTimeoutError
 
+    const needsManualStart =
+        Platform.OS === 'web' &&
+        !hasStartedOnWeb &&
+        !isCheckingPermissions &&
+        !isPermissionDenied
+
     return {
         devices,
         error,
@@ -273,7 +370,11 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         shouldOpenSettings: isPermissionBlocked || isIosBluetoothDenied,
         isLocationServicesDisabled,
         isScanTimeout,
+        isUsbOnly,
+        needsManualStart,
+        isPopupSurface,
         handleDevicePress,
+        handleStartScan,
         handleRetry,
         handleRequestPermissions,
         handleOpenLocationSettings,

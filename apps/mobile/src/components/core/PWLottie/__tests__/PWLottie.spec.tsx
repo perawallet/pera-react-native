@@ -16,8 +16,20 @@ import { render, screen } from '@test-utils/render'
 import { PWLottie } from '../PWLottie'
 
 vi.mock('lottie-react-native', () => ({
-    default: ({ testID }: { testID?: string }) => (
-        <div data-testid={testID ?? 'lottie-view'} />
+    default: ({
+        testID,
+        style,
+        webStyle,
+    }: {
+        testID?: string
+        style?: unknown
+        webStyle?: unknown
+    }) => (
+        <div
+            data-testid={testID ?? 'lottie-view'}
+            data-style={JSON.stringify(style)}
+            data-web-style={JSON.stringify(webStyle)}
+        />
     ),
 }))
 
@@ -34,6 +46,8 @@ const mockSource = {
     layers: [],
 }
 
+const mockStyle = { width: 160, height: 46 }
+
 describe('PWLottie', () => {
     it('renders and forwards props to LottieView', () => {
         render(
@@ -43,5 +57,28 @@ describe('PWLottie', () => {
             />,
         )
         expect(screen.getByTestId('lottie')).toBeTruthy()
+    })
+
+    it('derives webStyle from style so lottie-react-native sizes correctly on web', () => {
+        render(
+            <PWLottie
+                source={mockSource}
+                testID='lottie'
+                style={mockStyle}
+            />,
+        )
+        const element = screen.getByTestId('lottie')
+        expect(element.dataset.style).toBe(JSON.stringify(mockStyle))
+        expect(element.dataset.webStyle).toBe(JSON.stringify(mockStyle))
+    })
+
+    it('does not set webStyle when no style is passed', () => {
+        render(
+            <PWLottie
+                source={mockSource}
+                testID='lottie'
+            />,
+        )
+        expect(screen.getByTestId('lottie').dataset.webStyle).toBe(undefined)
     })
 })

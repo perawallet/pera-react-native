@@ -19,6 +19,7 @@ import { useBottomSheet } from '../useBottomSheet'
 describe('useBottomSheet', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it('exposes request, requestByType, dismiss, dismissAll', () => {

@@ -12,4 +12,4 @@
 
 export { PWBottomSheet } from './PWBottomSheet'
 export { bottomSheetNotifier } from './PWBottomSheet'
-export type { PWBottomSheetProps } from './PWBottomSheet'
+export type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
