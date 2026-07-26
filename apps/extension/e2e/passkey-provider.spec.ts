@@ -511,9 +511,8 @@ test('interception on: get() asserts against the stored credential and the RP pa
 // navigator.credentials.create() call. On Linux (matching CI's ubuntu-24.04
 // runner — reproduced repeatedly in a from-scratch Linux container, never
 // once on macOS across ~15 local runs) that real ceremony hangs indefinitely
-// — neither resolving nor rejecting — on roughly half of all attempts; an
-// independent retry on a fresh click reliably succeeds instead. This is a
-// Chromium/CDP virtual-authenticator flake specific to this exact call
+// — neither resolving nor rejecting — on roughly half of all attempts. This
+// is a Chromium/CDP virtual-authenticator flake specific to this exact call
 // pattern (create() reached via an async cross-context relay rather than
 // directly from a user gesture), not a bug in this repo's fall-through
 // logic. Clearing the authenticator's existing credential first (test 1
@@ -521,10 +520,22 @@ test('interception on: get() asserts against the stored credential and the RP pa
 // retry loop below is load-bearing, not defensive padding, and 8 attempts
 // (measured ~50% single-attempt failure rate) keeps the overall flake
 // probability well under 1%.
+//
+// CRITICAL: each attempt must start from a fresh document. A hung create()
+// stays pending on the document, and every further create() on that same
+// document rejects immediately with "OperationError: A request is already
+// pending." (verified against this exact fixture by driving it with a
+// non-simulating virtual authenticator) — so a re-click without a reload
+// can never recover, and the loop's 8 attempts collapse into one coin flip.
+// That is precisely how this test's first CI run failed 8/8. The reload
+// tears the pending ceremony down with the document; the CDP virtual
+// authenticator is attached to the CDP session, so it survives the reload.
 const attemptDeclineFallThrough = async (): Promise<{
     resolved: boolean
     approvalErrors: Error[]
 }> => {
+    await dappPage.reload()
+    await dappPage.waitForFunction(() => typeof window.doCreate === 'function')
     await dappPage.click('#create-button')
 
     const { approvalPage, approvalErrors } = await openApprovalPopup()

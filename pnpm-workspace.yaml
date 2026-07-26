@@ -98,6 +98,23 @@ minimumReleaseAgeExclude:
   - expo-*
   - '@expo/*'
   - babel-preset-expo
+  # Security patches for GHSA-mh99-v99m-4gvg / GHSA-pm4m-ph32-ghv5 published
+  # 2026-07-23, inside the 7-day window. Same maintainers as the prior
+  # releases (juliangruber+isaacs / vitaly), no install scripts.
+  - brace-expansion
+  - js-yaml
+
+# GHSA-mh99-v99m-4gvg (brace-expansion OOM DoS) marks every release <=5.0.7
+# vulnerable and 5.0.8 is the only patched version. The 1.x/2.x lines that
+# minimatch@3/@9 consumers (eslint, glob, @expo/cli) default-import have no
+# patched release yet, and 5.0.8 can't be substituted in — it only ships a
+# named `expand` export, so a v1/v2 override breaks minimatch at runtime.
+# The 3.x-5.x resolutions ARE pinned to 5.0.8 via overrides below. Drop this
+# ignore once upstream ships patched 1.x/2.x releases and bump the @1/@2
+# overrides instead.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-mh99-v99m-4gvg
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -132,9 +149,9 @@ overrides:
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.16
   brace-expansion@2: 2.1.2
-  brace-expansion@3: 5.0.7
-  brace-expansion@4: 5.0.7
-  brace-expansion@5: 5.0.7
+  brace-expansion@3: 5.0.8
+  brace-expansion@4: 5.0.8
+  brace-expansion@5: 5.0.8
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
@@ -145,6 +162,7 @@ overrides:
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   js-yaml@<3.14.2: '>=3.14.2'
   js-yaml@>=4.0.0 <4.2.0: '>=4.2.0'
+  js-yaml@>=5.0.0 <5.2.2: '>=5.2.2'
   lodash@4: 4.18.1
   nanoid@<3.3.8: '>=3.3.8'
   node-fetch@<2.6.7: '>=2.6.7'
@@ -152,7 +170,7 @@ overrides:
   picomatch@2: 2.3.2
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
-  postcss@<8.5.10: '>=8.5.10'
+  postcss@<8.5.18: '>=8.5.18'
   protobufjs@7: 7.6.5
   react: 19.2.3
   react-dom: 19.2.3
