@@ -17,8 +17,9 @@ import '../../../i18n'
 import { useNetworkStatusStore } from '@modules/network'
 import { BalanceLineChart } from '../BalanceLineChart'
 
-const { lineChartProps } = vi.hoisted(() => ({
+const { lineChartProps, requestSheet } = vi.hoisted(() => ({
     lineChartProps: { current: null as Record<string, unknown> | null },
+    requestSheet: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('react-native-gifted-charts', () => ({
@@ -26,6 +27,14 @@ vi.mock('react-native-gifted-charts', () => ({
         lineChartProps.current = props
         return <div data-testid='line-chart'>LineChart</div>
     },
+}))
+
+// Same mock as useBalanceLineChart.spec.ts: no BottomSheetManager is mounted
+// in these renders, and the real store's request() fail-loud rejection would
+// escape the offline-retry test as an unhandled rejection (void-ed in the
+// hook) and fail the whole vitest run.
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: requestSheet }),
 }))
 
 const EMPTY_BODY = 'no balance history'
@@ -49,6 +58,7 @@ const renderChart = (
 describe('BalanceLineChart', () => {
     beforeEach(() => {
         lineChartProps.current = null
+        requestSheet.mockClear()
         useNetworkStatusStore.getState().setHasInternet(true)
     })
 
@@ -161,9 +171,8 @@ describe('BalanceLineChart', () => {
     })
 
     it('does not dispatch a doomed request when retry is pressed while offline', () => {
-        // Offline, the press opens an explanatory sheet (asserted in the hook
-        // test) rather than firing onRetry — the manager host is not mounted
-        // here, so we only assert the request is short-circuited.
+        // Offline, the press opens an explanatory sheet rather than firing
+        // onRetry.
         useNetworkStatusStore.getState().setHasInternet(false)
         const onRetry = vi.fn()
         renderChart({ series: undefined, isPaused: true, onRetry })
@@ -171,6 +180,7 @@ describe('BalanceLineChart', () => {
         fireEvent.click(screen.getByTestId('balance-chart-retry'))
 
         expect(onRetry).not.toHaveBeenCalled()
+        expect(requestSheet).toHaveBeenCalledTimes(1)
     })
 
     it('shows the offline state for an errored query while the device is offline', () => {
