@@ -24,6 +24,7 @@ import {
     test,
     chromium,
     type BrowserContext,
+    type Locator,
     type Page,
 } from '@playwright/test'
 import http from 'node:http'
@@ -80,6 +81,27 @@ const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
     if (await notNow.isVisible().catch(() => false)) {
         await notNow.click()
     }
+}
+
+// Same click-through-the-pin-prompt-race guard as feature-tabs.spec.ts /
+// discover.spec.ts / passkey-provider.spec.ts. A single dismiss at test
+// start is not enough: the nudge fires on its own wall-clock delay and can
+// land BETWEEN clicks, where its overlay intercepts pointer events and a
+// bare click() retries against it until the test times out.
+const clickThroughPinPrompt = async (
+    targetPage: Page,
+    locator: Locator,
+): Promise<void> => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+        await dismissPinPromptIfPresent(targetPage)
+        const clicked = await locator
+            .click({ timeout: 3000 })
+            .then(() => true)
+            .catch(() => false)
+        if (clicked) return
+        await dismissPinPromptIfPresent(targetPage)
+    }
+    await locator.click({ timeout: 10_000 })
 }
 
 // M4c: enable now opens the extension's TOOLBAR POPUP via
@@ -345,12 +367,11 @@ test('a second enable from the same page resolves silently with no new approval 
 })
 
 test('Connections settings lists the localhost origin and can revoke it', async () => {
-    await dismissPinPromptIfPresent(page)
-    await page.getByTestId('tab_menu_button').click()
+    await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))
     await expect(page.getByTestId('menu_screen')).toBeVisible({
         timeout: 20_000,
     })
-    await page.getByTestId('menu_settings_button').click()
+    await clickThroughPinPrompt(page, page.getByTestId('menu_settings_button'))
     await expect(page.getByTestId('settings_screen')).toBeVisible({
         timeout: 20_000,
     })
@@ -359,7 +380,10 @@ test('Connections settings lists the localhost origin and can revoke it', async 
     // only) supersedes the old standalone Connected Sites menu entry —
     // settings_item_${title...} (SettingsScreen.tsx) on 'Connections'
     // (settings.main.connections_title) → settings_item_connections.
-    await page.getByTestId('settings_item_connections').click()
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId('settings_item_connections'),
+    )
     await expect(page.getByTestId('connections_settings_screen')).toBeVisible({
         timeout: 20_000,
     })
@@ -368,11 +392,17 @@ test('Connections settings lists the localhost origin and can revoke it', async 
     await expect(row).toBeVisible({ timeout: 20_000 })
     await expect(row).toContainText(dappOrigin)
 
-    await page.getByTestId(`connection_revoke_dapp-${dappOrigin}`).click()
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId(`connection_revoke_dapp-${dappOrigin}`),
+    )
     await expect(
         page.getByTestId('connections_settings_revoke_confirm_bottom_sheet'),
     ).toBeVisible({ timeout: 10_000 })
-    await page.getByTestId('connections_settings_revoke_confirm_button').click()
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId('connections_settings_revoke_confirm_button'),
+    )
 
     await expect(row).toHaveCount(0, { timeout: 10_000 })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])

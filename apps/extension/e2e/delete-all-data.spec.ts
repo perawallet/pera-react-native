@@ -15,6 +15,7 @@ import {
     test,
     chromium,
     type BrowserContext,
+    type Locator,
     type Page,
 } from '@playwright/test'
 import path from 'node:path'
@@ -65,6 +66,33 @@ const trackPageErrors = (page: Page): Error[] => {
     return errors
 }
 
+// PromptContainer's one-time security nudge fires on a wall-clock delay after
+// the account exists and its overlay intercepts pointer events wherever it
+// lands — same click-through guard as feature-tabs.spec.ts /
+// dapp-connect.spec.ts.
+const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
+    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
+    if (await notNow.isVisible().catch(() => false)) {
+        await notNow.click()
+    }
+}
+
+const clickThroughPinPrompt = async (
+    targetPage: Page,
+    locator: Locator,
+): Promise<void> => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+        await dismissPinPromptIfPresent(targetPage)
+        const clicked = await locator
+            .click({ timeout: 3000 })
+            .then(() => true)
+            .catch(() => false)
+        if (clicked) return
+        await dismissPinPromptIfPresent(targetPage)
+    }
+    await locator.click({ timeout: 10_000 })
+}
+
 test('data wipe then relaunch re-enters onboarding on both surfaces (no white screen)', async () => {
     // --- Phase 1: full onboard on the expanded tab ---
     const page = await context.newPage()
@@ -92,19 +120,25 @@ test('data wipe then relaunch re-enters onboarding on both surfaces (no white sc
     expect(pageErrors, 'onboarding threw an uncaught error').toEqual([])
 
     // --- Phase 2: Menu → Settings → Remove All Data → confirm ---
-    await page.getByTestId('tab_menu_button').click()
+    await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))
     await expect(page.getByTestId('menu_screen')).toBeVisible({
         timeout: 10_000,
     })
-    await page.getByTestId('menu_settings_button').click()
+    await clickThroughPinPrompt(page, page.getByTestId('menu_settings_button'))
     await expect(page.getByTestId('settings_screen')).toBeVisible({
         timeout: 10_000,
     })
-    await page.getByTestId('settings_remove_all_accounts_button').click()
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId('settings_remove_all_accounts_button'),
+    )
     await expect(
         page.getByTestId('settings_delete_all_confirm_button'),
     ).toBeVisible({ timeout: 10_000 })
-    await page.getByTestId('settings_delete_all_confirm_button').click()
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId('settings_delete_all_confirm_button'),
+    )
 
     // In-session the wipe routes straight back to onboarding — the welcome
     // screen's "Create wallet" CTA must reappear, proving the tree survived
