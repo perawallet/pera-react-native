@@ -65,6 +65,10 @@ export type UseGlobalSearchResult = {
     hasNextRemotePage: boolean
     isFetchingNextRemotePage: boolean
     fetchNextRemotePage: Nullable<() => void>
+    /** Remote asset search failed (device believed online). */
+    isRemoteError: boolean
+    /** Remote asset search is paused because the device is offline. */
+    isRemotePaused: boolean
 }
 
 export const useGlobalSearch = (
@@ -212,5 +216,7 @@ export const useGlobalSearch = (
         fetchNextRemotePage: shouldRunRemoteAssets
             ? remoteAssetQuery.fetchNextPage
             : null,
+        isRemoteError: remoteAssetQuery.isError,
+        isRemotePaused: remoteAssetQuery.isPaused,
     }
 }

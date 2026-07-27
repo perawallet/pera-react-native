@@ -20,7 +20,10 @@ import {
     pickBestQuote,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isConnectivityError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { ONRAMP_QUOTE_DEBOUNCE_TIME } from '@constants/ui'
 import { getExcludedPaymentMethodIds } from './onrampFormHelpers'
@@ -118,7 +121,11 @@ export const useOnrampQuotes = ({
                 } catch (error) {
                     if (requestId !== requestIdRef.current) return
                     setQuotes([])
-                    setQuotesError(toOnrampUserMessage(error))
+                    setQuotesError(
+                        isConnectivityError(error)
+                            ? t('errors.network.no_connection.body')
+                            : toOnrampUserMessage(error),
+                    )
                     setIsQuoting(false)
                 }
             })()

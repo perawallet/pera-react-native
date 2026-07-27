@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
     fundingAddress: null as string | null,
     selectedFundingType: null as string | null,
     status: 'ACTIVE' as string | null,
+    fetchStatus: 'idle' as string,
+    hasInternet: true,
     cardDetailsMutateAsync: vi.fn(),
     freezeMutateAsync: vi.fn(),
     freezePending: false,
@@ -50,6 +52,7 @@ const mutationResult = (
     isPending,
     isError: false,
     isSuccess: false,
+    isPaused: false,
     error: null,
     data: null,
     reset: vi.fn(),
@@ -75,6 +78,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             mutationResult(mocks.connectAsync),
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
+            fetchStatus: mocks.fetchStatus,
         }),
         useCardDetailsMutation: () =>
             mutationResult(mocks.cardDetailsMutateAsync),
@@ -117,6 +121,10 @@ vi.mock('@modules/security', () => ({
     useRequirePinVerification: () => ({
         requirePinVerification: mocks.requirePinVerification,
     }),
+}))
+
+vi.mock('@modules/network', () => ({
+    useNetworkStatus: () => ({ hasInternet: mocks.hasInternet }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
@@ -181,6 +189,8 @@ describe('usePeraCardDetails', () => {
         mocks.fundingAddress = null
         mocks.selectedFundingType = null
         mocks.status = 'ACTIVE'
+        mocks.fetchStatus = 'idle'
+        mocks.hasInternet = true
         mocks.setPinPending = false
         mocks.requirePinVerification.mockResolvedValue(true)
         mocks.freezePending = false
@@ -721,6 +731,34 @@ describe('usePeraCardDetails', () => {
             })
 
             expect(mocks.connectAsync).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('offline gating', () => {
+        it('is offline when the device has no internet', () => {
+            mocks.hasInternet = false
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.isOffline).toBe(true)
+        })
+
+        it('is offline while the status query is paused', () => {
+            mocks.hasInternet = true
+            mocks.fetchStatus = 'paused'
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.isOffline).toBe(true)
+        })
+
+        it('is not offline when online with a resolved status', () => {
+            mocks.hasInternet = true
+            mocks.fetchStatus = 'idle'
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.isOffline).toBe(false)
         })
     })
 })

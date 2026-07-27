@@ -34,6 +34,8 @@ type UseStakingProjectsQueryResult = {
     data: StakingProject[]
     isLoading: boolean
     isError: boolean
+    /** True when the TVL fetch is paused offline with no cached data — the surface should render an offline state. Paused background refetches with cached data do NOT count. */
+    isPaused: boolean
     error: Nullable<Error>
     refetch: () => void
 }
@@ -114,12 +116,19 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
         void query.refetch()
     }
 
+    // Paused offline with no cached data yet — the surface should render an
+    // offline state instead of a permanent loading skeleton. Paused
+    // background refetches with cached data do NOT count as paused.
+    const isPaused = query.fetchStatus === 'paused' && query.data === undefined
+
     return {
         data: projects,
         // Skip the loading state once a parser error is known synchronously —
         // otherwise the screen would render skeletons before flipping to error.
-        isLoading: query.isPending && !parsedConfig.error,
+        // Also skip it while paused offline — otherwise it stays true forever.
+        isLoading: query.isPending && !isPaused && !parsedConfig.error,
         isError: error !== null,
+        isPaused,
         error,
         refetch,
     }

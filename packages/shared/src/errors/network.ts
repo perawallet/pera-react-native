@@ -12,6 +12,7 @@
 
 import { isHTTPError, isNetworkError, isTimeoutError } from 'ky'
 import { AppError, ErrorCategory, ErrorSeverity } from './base'
+import { NoConnectionError } from './network-validation'
 
 /**
  * Coarse network-failure taxonomy shared across the app so UIs can say *why*
@@ -144,6 +145,18 @@ export class PeraNetworkError extends AppError {
 export const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
     error instanceof PeraNetworkError
 
+/**
+ * True when the failure means the device has no usable connection —
+ * a typed offline PeraNetworkError, the fail-fast NoConnectionError thrown
+ * by the mutation policy, or a raw ky/fetch network error that was never
+ * wrapped (e.g. direct third-party clients).
+ */
+export const isConnectivityError = (error: unknown): boolean => {
+    if (isPeraNetworkError(error)) return error.kind === 'offline'
+    if (error instanceof NoConnectionError) return true
+    return isNetworkError(error)
+}
+
 export type NetworkErrorMessageKeys = { titleKey: string; bodyKey: string }
 
 const keysFor = (base: string): NetworkErrorMessageKeys => ({
@@ -159,6 +172,10 @@ const keysFor = (base: string): NetworkErrorMessageKeys => ({
 export const getNetworkErrorMessageKeys = (
     error: unknown,
 ): NetworkErrorMessageKeys => {
+    if (error instanceof NoConnectionError) {
+        return keysFor('errors.network.no_connection')
+    }
+
     if (!isPeraNetworkError(error)) return keysFor('errors.general')
 
     switch (error.kind) {

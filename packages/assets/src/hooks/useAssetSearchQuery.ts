@@ -28,6 +28,9 @@ type UseAssetSearchQueryResult = {
     results: DisplayableAsset[]
     isLoading: boolean
     isError: boolean
+    /** True when the query is paused because the device is offline
+     *  (`fetchStatus === 'paused'`), instead of actively pending. */
+    isPaused: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
@@ -82,6 +85,7 @@ export const useAssetSearchQuery = (
         results,
         isLoading: infiniteQuery.isLoading,
         isError: infiniteQuery.isError,
+        isPaused: infiniteQuery.fetchStatus === 'paused',
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,
         fetchNextPage: () => void infiniteQuery.fetchNextPage(),

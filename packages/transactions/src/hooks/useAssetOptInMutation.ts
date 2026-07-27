@@ -22,7 +22,7 @@ import {
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
-import { toError } from '@perawallet/wallet-core-shared'
+import { assertOnline, toError } from '@perawallet/wallet-core-shared'
 import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
@@ -63,6 +63,8 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
             setError(null)
 
             try {
+                assertOnline()
+
                 const accountInfo = await algokit.client.algod
                     .accountInformation(sender)
                     .do()

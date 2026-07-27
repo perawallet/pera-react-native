@@ -122,4 +122,9 @@ export const useStyles = makeStyles(theme => ({
     optionLabelDestructive: {
         color: theme.colors.negative,
     },
+    // Dims a row/button that is disabled for a reason other than a pending
+    // spinner (e.g. offline) — mirrors PWRadioButton's disabled idiom.
+    disabled: {
+        opacity: 0.5,
+    },
 }))

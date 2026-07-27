@@ -37,6 +37,7 @@ export const PeraCardDetails = () => {
         onChangeFunding,
         fundingTypeLabel,
         onChangeFundingType,
+        isOffline,
         isFrozen,
         freezeLabel,
         isFreezing,
@@ -72,6 +73,7 @@ export const PeraCardDetails = () => {
                     // "Hide" only once the card is actually open; disabled while
                     // the first reveal loads, so the label is never a mismatch.
                     isRevealed={isCardOpen}
+                    isDisabled={isOffline}
                     onPress={onToggleReveal}
                 />
             </PWView>
@@ -90,6 +92,7 @@ export const PeraCardDetails = () => {
                 canToggleFreeze={canToggleFreeze}
                 walletPlatform={walletPlatform}
                 isSettingPin={isSettingPin}
+                isOffline={isOffline}
                 onAccountsDetails={onAccountsDetails}
                 onAddToWallet={onAddToWallet}
                 onSetPin={onSetPin}
