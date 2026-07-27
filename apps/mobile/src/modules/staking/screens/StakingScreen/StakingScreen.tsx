@@ -23,6 +23,7 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import {
@@ -88,80 +89,73 @@ export const StakingScreen = () => {
                     {t('staking.subtitle')}
                 </PWText>
 
-                {isOffline && (
-                    <EmptyView
-                        icon='globe'
-                        title={t('common.offline_mode')}
-                        body={t('common.offline_refresh_body')}
-                        button={
+                {/* Only the offline arm is delegated — staking keeps its own
+                    branded error container below. */}
+                <OfflineTolerantView
+                    isOffline={isOffline}
+                    onRetry={handleRetry}
+                    retryLabel={t('staking.retry')}
+                    offlineTestID='staking-offline-view'
+                >
+                    {isLoading && (
+                        <LoadingView
+                            variant='skeleton'
+                            count={SKELETON_COUNT}
+                            style={styles.skeletonContainer}
+                            renderSkeleton={index => (
+                                <PWView
+                                    key={index}
+                                    style={styles.skeletonCard}
+                                    testID='staking-skeleton'
+                                >
+                                    <PWSkeleton
+                                        circle
+                                        style={styles.skeletonLogo}
+                                    />
+                                    <PWView style={styles.skeletonContent}>
+                                        <PWSkeleton
+                                            style={styles.skeletonTitle}
+                                        />
+                                        <PWSkeleton
+                                            style={styles.skeletonDescription}
+                                        />
+                                        <PWSkeleton
+                                            style={styles.skeletonTvlRow}
+                                        />
+                                    </PWView>
+                                </PWView>
+                            )}
+                        />
+                    )}
+
+                    {!isLoading && isError && (
+                        <PWView
+                            style={styles.errorContainer}
+                            testID='staking-error-container'
+                        >
+                            <PWText
+                                variant='h4'
+                                style={styles.errorTitle}
+                                testID='staking-error-title'
+                            >
+                                {t('staking.error_title')}
+                            </PWText>
+                            <PWText
+                                style={styles.errorDescription}
+                                testID='staking-error-description'
+                            >
+                                {t('staking.error_description')}
+                            </PWText>
                             <PWButton
-                                variant='link'
+                                variant='primary'
                                 title={t('staking.retry')}
                                 onPress={handleRetry}
+                                testID='staking-retry-button'
                             />
-                        }
-                        testID='staking-offline-view'
-                    />
-                )}
+                        </PWView>
+                    )}
 
-                {!isOffline && isLoading && (
-                    <LoadingView
-                        variant='skeleton'
-                        count={SKELETON_COUNT}
-                        style={styles.skeletonContainer}
-                        renderSkeleton={index => (
-                            <PWView
-                                key={index}
-                                style={styles.skeletonCard}
-                                testID='staking-skeleton'
-                            >
-                                <PWSkeleton
-                                    circle
-                                    style={styles.skeletonLogo}
-                                />
-                                <PWView style={styles.skeletonContent}>
-                                    <PWSkeleton style={styles.skeletonTitle} />
-                                    <PWSkeleton
-                                        style={styles.skeletonDescription}
-                                    />
-                                    <PWSkeleton style={styles.skeletonTvlRow} />
-                                </PWView>
-                            </PWView>
-                        )}
-                    />
-                )}
-
-                {!isOffline && !isLoading && isError && (
-                    <PWView
-                        style={styles.errorContainer}
-                        testID='staking-error-container'
-                    >
-                        <PWText
-                            variant='h4'
-                            style={styles.errorTitle}
-                            testID='staking-error-title'
-                        >
-                            {t('staking.error_title')}
-                        </PWText>
-                        <PWText
-                            style={styles.errorDescription}
-                            testID='staking-error-description'
-                        >
-                            {t('staking.error_description')}
-                        </PWText>
-                        <PWButton
-                            variant='primary'
-                            title={t('staking.retry')}
-                            onPress={handleRetry}
-                            testID='staking-retry-button'
-                        />
-                    </PWView>
-                )}
-
-                {!isOffline &&
-                    !isLoading &&
-                    !isError &&
-                    projects.length === 0 && (
+                    {!isLoading && !isError && projects.length === 0 && (
                         <EmptyView
                             title={t('staking.empty_title')}
                             body={t('staking.empty_body')}
@@ -169,10 +163,7 @@ export const StakingScreen = () => {
                         />
                     )}
 
-                {!isOffline &&
-                    !isLoading &&
-                    !isError &&
-                    projects.length > 0 && (
+                    {!isLoading && !isError && projects.length > 0 && (
                         <PWView
                             testID='staking-projects-list'
                             style={styles.list}
@@ -186,6 +177,7 @@ export const StakingScreen = () => {
                             />
                         </PWView>
                     )}
+                </OfflineTolerantView>
             </StakingErrorBoundary>
         </PWScreen>
     )

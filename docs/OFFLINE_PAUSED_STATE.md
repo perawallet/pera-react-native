@@ -134,6 +134,40 @@ that is `pending` because it is `paused` (offline, no cache) raises `isPaused`,
 **not** `isPending`, so consumers render the offline surface instead of an
 eternal skeleton.
 
+### Rendering the offline surface: `OfflineTolerantView`
+
+Screens do **not** hand-roll the offline fork. `apps/mobile/src/components/OfflineTolerantView`
+renders the shared offline surface — and, optionally, the shared error surface
+— in place of its children:
+
+```tsx
+<OfflineTolerantView
+    isOffline={isOffline}
+    isError={isError}
+    onRetry={handleRetry}
+>
+    {/* whatever the surface renders when it has something to show */}
+</OfflineTolerantView>
+```
+
+It owns the middle of the precedence (`offline → error`); callers keep owning
+`data`, `loading` and `empty`, which stay surface-specific. Notes:
+
+- **`isOffline` is computed by the caller's hook**, not by the component. The
+  honest signal is per-query (`isPaused || (isError && !hasInternet)`), not
+  per-device — a screen with cached data is not "offline" just because the
+  radio is off.
+- **Omit `isError`** on surfaces that render their own branded error UI
+  (`StakingScreen` does); they delegate the offline arm only.
+- **Omit `onRetry`** where retrying isn't meaningful and no button is rendered
+  (`AddAssetView`'s search re-runs on the next keystroke).
+- `retryLabel` and `errorBody` override the default `common.retry.label` /
+  `common.error.body` copy.
+
+`BalanceLineChart` predates the component and keeps its own five-arm
+`renderState` switch (it also drives a `loading`/`empty` fork and an
+offline-aware retry sheet); it renders the identical copy and icons.
+
 ### Why DB-first hooks still expose `isPaused`
 
 A DB-first query with `networkMode: 'always'` never actually pauses, so its

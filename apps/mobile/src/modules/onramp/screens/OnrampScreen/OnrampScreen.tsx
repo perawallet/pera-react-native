@@ -23,8 +23,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import {
     OnrampCountryChip,
@@ -167,39 +168,19 @@ export const OnrampScreen = () => {
                             selectedPair={selectedPair}
                             onNavigateToHistory={handleNavigateToHistory}
                         />
-                    ) : pairsState === 'offline' ? (
-                        <EmptyView
-                            icon='globe'
-                            title={t('common.offline_mode')}
-                            body={t('common.offline_refresh_body')}
-                            button={
-                                <PWButton
-                                    variant='link'
-                                    title={t('common.retry.label')}
-                                    onPress={handleRetryPairs}
-                                />
-                            }
-                        />
-                    ) : pairsState === 'error' ? (
-                        <EmptyView
-                            icon='info'
-                            title={t('common.error.title')}
-                            body={t('common.error.body')}
-                            button={
-                                <PWButton
-                                    variant='link'
-                                    title={t('common.retry.label')}
-                                    onPress={handleRetryPairs}
-                                />
-                            }
-                        />
                     ) : (
-                        <PWView style={styles.loadingWrapper}>
-                            <ActivityIndicator
-                                size='large'
-                                color={theme.colors.textMain}
-                            />
-                        </PWView>
+                        <OfflineTolerantView
+                            isOffline={pairsState === 'offline'}
+                            isError={pairsState === 'error'}
+                            onRetry={handleRetryPairs}
+                        >
+                            <PWView style={styles.loadingWrapper}>
+                                <ActivityIndicator
+                                    size='large'
+                                    color={theme.colors.textMain}
+                                />
+                            </PWView>
+                        </OfflineTolerantView>
                     )}
                 </PWView>
                 <PWView
