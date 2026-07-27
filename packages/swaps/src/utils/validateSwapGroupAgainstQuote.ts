@@ -94,8 +94,17 @@ export const validateSwapGroupAgainstQuote = (
     }
 
     for (const tx of signableTransactions) {
-        // Only the swapper's own transactions move the swapper's funds.
-        if (tx.sender !== swapper) continue
+        // Fail closed: a slot the wallet will sign whose sender is not the
+        // swapper is outside everything the user reviewed. Skipping it (the
+        // previous behaviour) meant its rekey/close/outflow was never
+        // inspected — and a wrong `swapper` turned the whole validator into a
+        // no-op, since `outflow` is only populated inside this branch, so an
+        // arbitrary drain of the account passed. (PERA-4709)
+        if (tx.sender !== swapper) {
+            throw new SwapQuoteMismatchError(
+                'Swap group contains a signable transaction from an unexpected sender',
+            )
+        }
 
         if (tx.rekeyTo) {
             throw new SwapQuoteMismatchError(

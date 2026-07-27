@@ -105,6 +105,25 @@ export const createQuotes = async (
         v != null ? new Decimal(v) : null
 
     const parsed = createQuotesResponseSchema.parse(response.data)
+
+    // `swapperAddress` is the wallet's own trust anchor for
+    // `validateSwapGroupAgainstQuote` (swaps sign headlessly). It must come
+    // from the request we sent, never the response body — a backend that
+    // returns a different swapper would silently disable that validator and
+    // could rekey/drain the account. Hard-fail on divergence so a lying
+    // backend surfaces as an error rather than being silently corrected.
+    // (PERA-4709)
+    for (const quote of parsed.results) {
+        if (
+            quote.swapper_address &&
+            quote.swapper_address !== data.swapper_address
+        ) {
+            throw new Error(
+                'Quote swapper address does not match the requested address',
+            )
+        }
+    }
+
     return parsed.results.map(quote => ({
         id: quote.id,
         quoteIdStr: quote.quote_id_str,
@@ -112,7 +131,7 @@ export const createQuotes = async (
         providerDisplayName: providers.find(p => p.name === quote.provider)
             ?.displayName,
         swapType: quote.swap_type,
-        swapperAddress: quote.swapper_address,
+        swapperAddress: data.swapper_address,
         device: quote.device,
         assetIn: transformDexSwapAsset(quote.asset_in),
         assetOut: transformDexSwapAsset(quote.asset_out),
