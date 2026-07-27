@@ -195,7 +195,18 @@ implementation. Note that it is a _single_ hook shared by both call sites —
 the bug it replaced was a duplicated toggle where one copy had silently
 dropped the network call.
 
-There is deliberately no offline outbox or replay queue (PERA-4573 policy).
+Toggles are also serialised per address: `isTogglePending(address)` reports an
+in-flight request, and a second call for the same address early-returns
+without touching the store. Two overlapping failures would otherwise roll each
+other back to the wrong value, violating property 4. Screens should use the
+pending flag to disable the control (`NotificationSettingsList` does) rather
+than let the tap be silently dropped.
+
+There is deliberately no offline outbox or replay queue for user-initiated
+writes (PERA-4573 policy). The one adjacent-looking exception is
+`packages/messages/src/hooks/useReplayNotificationMutes.ts`, which re-applies
+persisted mutes _after device creation_ — a one-shot reconciliation against a
+new device ID, not a queue of failed offline writes.
 
 ### Why DB-first hooks still expose `isPaused`
 
@@ -204,5 +215,7 @@ A DB-first query with `networkMode: 'always'` never actually pauses, so its
 (`useAccountSummaryQuery`, `useAccountAssetsQuery`, `useAccountBalancesQuery`,
 `useAssetPricesQuery`, `useTransactionHistoryQuery`, …) so that screens can
 consume one uniform, paused-aware shape regardless of whether the underlying
-query is DB-first or pure-network. Surface tickets (PERA-4578..4581, PERA-4584,
-PERA-4585) adopt this contract.
+query is DB-first or pure-network. Surface tickets (PERA-4578..4581, PERA-4584)
+adopt this contract. PERA-4585 is not among them: it covers settings writes and
+a currency-rate notice, and reads connectivity from
+`useNetworkStatus().hasInternet` rather than any query's `isPaused`.

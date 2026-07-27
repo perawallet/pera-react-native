@@ -66,8 +66,12 @@ export const SettingsWalletConnectScreen = () => {
         void deleteAllSessions()
             .catch((error: unknown) => {
                 // Partial failure is possible: sessions that were killed stay
-                // killed. The list re-renders from store state, which is
-                // already accurate — so report, don't roll back.
+                // killed, but the store may be stale afterwards — an
+                // already-killed session can reappear in the list. Cause:
+                // `useWalletConnect.deleteAllSessions` runs `Promise.all` over
+                // `disconnect()` calls that each filter one shared stale
+                // closure, so the last resolver wins. Known follow-up work,
+                // out of scope here — report, don't roll back.
                 showError(error, t('common.error.title'))
             })
             .finally(() => {

@@ -1014,6 +1014,9 @@ describe('useAccountOptions', () => {
                 'ALGO25ADDRESS',
                 false,
             )
+            // The "instead of" half: the store is written by the shared hook,
+            // never directly from here.
+            expect(mockSetAccountEnabled).not.toHaveBeenCalled()
         })
 
         it('confirms with a success toast only once the backend accepted it', async () => {
