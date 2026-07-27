@@ -13,7 +13,7 @@
 import { useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent, ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
-import { Gesture, type PanGesture } from 'react-native-gesture-handler'
+import { Gesture } from 'react-native-gesture-handler'
 import {
     interpolateColor,
     useAnimatedStyle,
@@ -36,7 +36,7 @@ type UsePWSlideToConfirmParams = {
 }
 
 type UsePWSlideToConfirmResult = {
-    panGesture: PanGesture
+    panGesture: ReturnType<typeof Gesture.Pan>
     thumbAnimatedStyle: AnimatedStyle<ViewStyle>
     fillAnimatedStyle: AnimatedStyle<ViewStyle>
     labelOverlayClipStyle: AnimatedStyle<ViewStyle>
