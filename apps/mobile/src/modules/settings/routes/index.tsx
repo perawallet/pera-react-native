@@ -12,11 +12,11 @@
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
-import {
-    createNativeStackNavigator,
-    type NativeStackHeaderProps,
-} from '@react-navigation/native-stack'
+import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { screenListeners } from '@routes/listeners'
+import { routeCapabilities } from '@routes/capabilities'
+import { VaultSecuritySettingsScreen } from './vault-security'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
 import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
@@ -30,6 +30,8 @@ import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/d
 import { type NavigatorScreenParams } from '@react-navigation/native'
 import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
+import { ConnectedSitesScreen } from '@modules/settings/screens/ConnectedSitesScreen'
+import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'
 import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
 import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
@@ -59,7 +61,7 @@ export type DeveloperSettingsStackParamsList = {
 }
 
 const DeveloperSettingsStack =
-    createNativeStackNavigator<DeveloperSettingsStackParamsList>()
+    createAppStackNavigator<DeveloperSettingsStackParamsList>()
 
 const DeveloperSettingsStackNavigator = () => {
     return (
@@ -165,7 +167,7 @@ export type WalletConnectSettingsStackParamsList = {
 }
 
 const WalletConnectSettingsStack =
-    createNativeStackNavigator<WalletConnectSettingsStackParamsList>()
+    createAppStackNavigator<WalletConnectSettingsStackParamsList>()
 
 const WalletConnectSettingsStackNavigator = () => {
     return (
@@ -202,15 +204,18 @@ const WalletConnectSettingsStackNavigator = () => {
 export type SettingsStackParamsList = {
     SettingsHome: undefined
     SecuritySettings: undefined
+    VaultSecuritySettings: undefined
     NotificationsSettings: undefined
     WalletConnectSettings: undefined
     PasskeysSettings: undefined
+    ConnectedSites: undefined
+    ConnectionsSettings: undefined
     CurrencySettings: undefined
     ThemeSettings: undefined
     DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
 }
 
-const SettingsStack = createNativeStackNavigator()
+const SettingsStack = createAppStackNavigator()
 
 export const SettingsStackNavigator = () => {
     return (
@@ -240,6 +245,16 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsSecurityScreen}
             />
+            {routeCapabilities.vaultSecuritySettings &&
+                VaultSecuritySettingsScreen && (
+                    <SettingsStack.Screen
+                        name='VaultSecuritySettings'
+                        options={{
+                            title: 'screens.security',
+                        }}
+                        component={VaultSecuritySettingsScreen}
+                    />
+                )}
             <SettingsStack.Screen
                 name='NotificationsSettings'
                 options={{
@@ -247,21 +262,43 @@ export const SettingsStackNavigator = () => {
                 }}
                 component={SettingsNotificationsScreen}
             />
-            <SettingsStack.Screen
-                name='WalletConnectSettings'
-                options={{
-                    title: 'screens.wallet_connect',
-                    headerShown: false,
-                }}
-                component={WalletConnectSettingsStackNavigator}
-            />
-            <SettingsStack.Screen
-                name='PasskeysSettings'
-                options={{
-                    title: 'screens.passkeys',
-                }}
-                component={SettingsPasskeyScreen}
-            />
+            {routeCapabilities.walletConnectSettings && (
+                <SettingsStack.Screen
+                    name='WalletConnectSettings'
+                    options={{
+                        title: 'screens.wallet_connect',
+                        headerShown: false,
+                    }}
+                    component={WalletConnectSettingsStackNavigator}
+                />
+            )}
+            {routeCapabilities.passkeysAutofillSettings && (
+                <SettingsStack.Screen
+                    name='PasskeysSettings'
+                    options={{
+                        title: 'screens.passkeys',
+                    }}
+                    component={SettingsPasskeyScreen}
+                />
+            )}
+            {routeCapabilities.dappConnections && (
+                <SettingsStack.Screen
+                    name='ConnectedSites'
+                    options={{
+                        title: 'screens.connected_sites',
+                    }}
+                    component={ConnectedSitesScreen}
+                />
+            )}
+            {routeCapabilities.connectionsSettings && (
+                <SettingsStack.Screen
+                    name='ConnectionsSettings'
+                    options={{
+                        title: 'screens.connections',
+                    }}
+                    component={ConnectionsSettingsScreen}
+                />
+            )}
             <SettingsStack.Screen
                 name='CurrencySettings'
                 options={{

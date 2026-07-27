@@ -56,6 +56,7 @@ const mockPlatformServices = {
         },
     },
     pushNotification: {
+        isSupported: () => true,
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },

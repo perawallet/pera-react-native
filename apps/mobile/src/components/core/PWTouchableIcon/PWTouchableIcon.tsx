@@ -18,18 +18,21 @@ export type PWTouchableIconProps = {
     onPress: () => void
     containerStyle?: StyleProp<ViewStyle>
     testID?: string
+    dismissKeyboardOnPress?: boolean
 } & PWIconProps
 
 export const PWTouchableIcon = ({
     onPress,
     containerStyle,
     testID,
+    dismissKeyboardOnPress,
     ...rest
 }: PWTouchableIconProps) => (
     <PWTouchableOpacity
         style={containerStyle}
         onPress={onPress}
         testID={testID}
+        dismissKeyboardOnPress={dismissKeyboardOnPress}
     >
         <PWIcon {...rest} />
     </PWTouchableOpacity>

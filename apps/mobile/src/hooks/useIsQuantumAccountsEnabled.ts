@@ -15,17 +15,23 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
+import { routeCapabilities } from '@routes/capabilities'
 
 /**
  * Quantum Accounts ships dark: fully built but hidden in production until the
  * Algorand node release lands. Defaults visible in dev & staging so the team
- * can keep testing; Firebase Remote Config can override.
+ * can keep testing; Firebase Remote Config can override. Additionally gated
+ * by routeCapabilities.quantum — off on web, where there is no working
+ * signer path yet (see capabilities.web.ts).
  */
 export const useIsQuantumAccountsEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
     const fallback = __DEV__ || config.appEnvironment === 'staging'
-    return remoteConfig.getBooleanValue(
-        RemoteConfigKeys.enable_quantum_accounts,
-        fallback,
+    return (
+        routeCapabilities.quantum &&
+        remoteConfig.getBooleanValue(
+            RemoteConfigKeys.enable_quantum_accounts,
+            fallback,
+        )
     )
 }

@@ -20,6 +20,8 @@ import {
 import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { getNavigationTheme } from '@theme/theme'
 import { SigningRoutes } from '@modules/signing/routes'
 import {
     NavigationContainer,
@@ -75,6 +77,7 @@ const SignRequestErrorFallback = ({
 export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const isDarkMode = useIsDarkMode()
     const { removeSignRequest } = useSigningRequest()
     const { resolved } = useSigningPipeline()
     const failedEvent = useLastSigningEvent(
@@ -170,7 +173,14 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
                 testID='sign-request-view'
             >
                 <NavigationIndependentTree>
-                    <NavigationContainer>
+                    {/* Theme the container so React Navigation's DefaultTheme
+                        grey background (rgb(242,242,242)) doesn't paint the
+                        signing scene — same fix as the send/receive sheets. */}
+                    <NavigationContainer
+                        theme={getNavigationTheme(
+                            isDarkMode ? 'dark' : 'light',
+                        )}
+                    >
                         <SigningRoutes />
                     </NavigationContainer>
                 </NavigationIndependentTree>

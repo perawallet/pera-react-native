@@ -10,27 +10,7 @@
  limitations under the License
  */
 
-/**
- * @format
- * Entry point for Expo-based React Native app
- */
-
-
-
-// Crypto and other polyfills
-import './shim'
-
-// Development tooling
-import './src/wdyr'
-
-// Text encoding polyfill
-import 'fast-text-encoding'
-
-// Expo registration (replaces AppRegistry.registerComponent)
-import { registerRootComponent } from 'expo'
-import { App } from './src/App'
-
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(App)
+// Platform-split entry: Metro resolves ./entry to entry.native.js on
+// ios/android and entry.web.js on web, keeping native-only shims (quick-crypto,
+// wdyr) out of the web bundle.
+import './entry'

@@ -465,6 +465,8 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             layer2: 20,
             overlay1: 1000,
             max: 9999,
+            // must exceed RNW Modal portals at 9999
+            toast: 10_000,
         },
         borderRadius: {
             none: 0,

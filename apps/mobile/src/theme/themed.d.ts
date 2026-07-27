@@ -218,6 +218,7 @@ declare module '@rneui/themed' {
             layer2: number
             overlay1: number
             max: number
+            toast: number
         }
         borderRadius: {
             none: number

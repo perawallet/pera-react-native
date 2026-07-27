@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
     requirePinVerification: vi.fn(),
     connectAsync: vi.fn(),
     pushWebView: vi.fn(),
+    openURL: vi.fn(),
     infoToast: vi.fn(),
     errorToast: vi.fn(),
     request: vi.fn(),
@@ -131,6 +132,25 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useAllAccounts: () => mocks.accounts,
 }))
 
+vi.mock('react-native', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        Linking: { openURL: (...args: unknown[]) => mocks.openURL(...args) },
+    }
+})
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
 // Keep the real toast hooks (they use the mocked useToast); override only the
 // delegation/picker hooks.
 vi.mock('../../../hooks', async () => ({
@@ -164,6 +184,7 @@ const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
 describe('usePeraCardDetails', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        Object.assign(mockCapabilities, { inAppWebView: true })
         mocks.panLast4 = null
         mocks.fundingAddress = null
         mocks.selectedFundingType = null
@@ -520,6 +541,23 @@ describe('usePeraCardDetails', () => {
             url: 'https://hosted/pin',
             id: 'card-set-pin',
         })
+        expect(mocks.openURL).not.toHaveBeenCalled()
+    })
+
+    it('opens the hosted PIN page in a browser tab when inAppWebView is off (web)', async () => {
+        Object.assign(mockCapabilities, { inAppWebView: false })
+        mocks.setPinMutateAsync.mockResolvedValue({
+            token: 'tok',
+            hostedPageUrl: 'https://hosted/pin',
+        })
+
+        const { result } = renderHook(() => usePeraCardDetails())
+        await act(async () => {
+            await result.current.onSetPin()
+        })
+
+        expect(mocks.openURL).toHaveBeenCalledWith('https://hosted/pin')
+        expect(mocks.pushWebView).not.toHaveBeenCalled()
     })
 
     it('does not start the set-PIN request when the PIN gate is not passed', async () => {

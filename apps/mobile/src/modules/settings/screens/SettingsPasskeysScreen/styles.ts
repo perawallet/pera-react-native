@@ -23,4 +23,19 @@ export const useStyles = makeStyles(theme => ({
         margin: theme.spacing.xl,
         marginBottom: 0,
     },
+    toggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.lg,
+    },
+    toggleTextContainer: {
+        flex: 1,
+        marginRight: theme.spacing.lg,
+    },
+    toggleSubtitle: {
+        color: theme.colors.textGray,
+        marginTop: theme.spacing.xxs,
+    },
 }))

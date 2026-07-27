@@ -22,10 +22,10 @@ export const BOTTOM_TAB_LABEL_FONT_SIZE = 11
 export const BOTTOM_TAB_LABEL_LINE_HEIGHT = 14
 
 const SCREEN_ANIMATION_TYPE = 'default'
-const SCREEN_ANIMATION_DURATION = 150
+export const SCREEN_ANIMATION_DURATION_MS = 150
 export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
     animation: SCREEN_ANIMATION_TYPE,
-    animationDuration: SCREEN_ANIMATION_DURATION,
+    animationDuration: SCREEN_ANIMATION_DURATION_MS,
     statusBarAnimation: 'slide',
 }
 
@@ -64,3 +64,11 @@ export const BANNER_REVEAL_DURATION_MS = 500
 // off. Lets the surrounding screen paint first so the animation reads as a
 // distinct beat instead of getting lost in the initial render frames.
 export const BANNER_REVEAL_DELAY_MS = 500
+
+// Web-only: caps the app's content width on the wide "expanded" browser-tab
+// surface (the UI is designed for a 360px popup and looks broken stretched
+// edge-to-edge across a full desktop tab). Shared by AppShell.web.tsx (the
+// app's own root card) and PWBottomSheet.web.tsx (so sheets, which portal to
+// document.body and would otherwise fill the whole viewport, match the same
+// card width). Never binds in the popup, which is already narrower than it.
+export const WEB_EXPANDED_CARD_MAX_WIDTH = 420

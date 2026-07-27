@@ -41,6 +41,30 @@ export const configSchema = z.object({
     appStoreAppID: z.string(),
     playIntegrityCloudProjectNumber: z.string(),
 
+    // Firebase Web SDK config (browser extension Remote Config). Not secret —
+    // a Firebase web apiKey only identifies the project; access is governed
+    // by Firebase Security Rules, not this value. Still build-time-injected
+    // (not hardcoded) to keep infra config out of source-tree churn.
+    firebaseApiKey: z.string(),
+    firebaseAuthDomain: z.string(),
+    firebaseDatabaseUrl: z.string(),
+    firebaseProjectId: z.string(),
+    firebaseStorageBucket: z.string(),
+    firebaseMessagingSenderId: z.string(),
+    firebaseAppId: z.string(),
+    firebaseMeasurementId: z.string(),
+
+    // GA4 Measurement Protocol API secret (GA4 Admin > Data Streams > your
+    // web stream > Measurement Protocol API secrets) — distinct from
+    // firebaseApiKey. Empty until generated; ChromeAnalyticsService no-ops
+    // until both this and firebaseMeasurementId are set.
+    gaMeasurementApiSecret: z.string(),
+
+    // Sentry DSN for the browser extension's crash/error reporting. Empty
+    // until a Sentry project exists; ChromeCrashReportingService no-ops
+    // until set.
+    sentryDsn: z.string(),
+
     notificationRefreshTime: z.number().int(),
     remoteConfigRefreshTime: z.number().int(),
 
@@ -155,6 +179,15 @@ export const configSchema = z.object({
      * falls back to the native store version).
      */
     releaseTag: z.string().default(''),
+
+    /**
+     * Incrementing CI build number baked at build time, mirroring mobile's
+     * `Application.nativeBuildVersion`. Sourced from BITRISE_BUILD_NUMBER;
+     * empty for local builds (getAppBuild then falls back to the manifest
+     * version). Feeds the user-agent so backend/Cloudflare rules can key off
+     * it the same way they do on mobile.
+     */
+    appBuildNumber: z.string().default(''),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -188,6 +221,33 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
 
     appStoreAppID: '',
     playIntegrityCloudProjectNumber: '',
+
+    // Defaults to the "pera-wallet-public" Firebase project — a distinct,
+    // non-sensitive project safe to ship in source (same posture as the
+    // public AlgoNode URLs above). The real production Firebase project
+    // ("algorand-e3fe3") is NOT checked in; it's injected at build time via
+    // the FIREBASE_* env vars below for staging/production builds. A
+    // Firebase web apiKey only identifies the project — it is not a secret —
+    // but it's still overridable, not hardcoded-only, so official builds can
+    // point at the real project without a source change.
+    firebaseApiKey: 'AIzaSyA49zDfujF8SCdxQrfC38bM2TdzSFPtIJA',
+    firebaseAuthDomain: 'pera-wallet-public.firebaseapp.com',
+    // This project has no Realtime Database provisioned; Remote Config
+    // doesn't need one. Left empty — override via FIREBASE_DATABASE_URL only
+    // if a future project requires it.
+    firebaseDatabaseUrl: '',
+    firebaseProjectId: 'pera-wallet-public',
+    firebaseStorageBucket: 'pera-wallet-public.firebasestorage.app',
+    firebaseMessagingSenderId: '537717066676',
+    firebaseAppId: '1:537717066676:web:6bb1d3cbae6b949172c0e1',
+
+    // Analytics identifiers — never bake a default. Injected only for
+    // staging/production via FIREBASE_MEASUREMENT_ID + GA_MEASUREMENT_API_SECRET.
+    // ChromeAnalyticsService no-ops while either is empty, so open-source and
+    // local builds send no analytics.
+    firebaseMeasurementId: '',
+    gaMeasurementApiSecret: '',
+    sentryDsn: '',
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
@@ -296,6 +356,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     defaultNetwork: 'mainnet',
     appEnvironment: 'development',
     releaseTag: '',
+    appBuildNumber: '',
 }
 
 // A map of which environment variable (if any) to read config overrides from
@@ -319,6 +380,18 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     appStoreAppID: 'APP_STORE_APPLE_ID',
     playIntegrityCloudProjectNumber: 'PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER',
+
+    firebaseApiKey: 'FIREBASE_API_KEY',
+    firebaseAuthDomain: 'FIREBASE_AUTH_DOMAIN',
+    firebaseDatabaseUrl: 'FIREBASE_DATABASE_URL',
+    firebaseProjectId: 'FIREBASE_PROJECT_ID',
+    firebaseStorageBucket: 'FIREBASE_STORAGE_BUCKET',
+    firebaseMessagingSenderId: 'FIREBASE_MESSAGING_SENDER_ID',
+    firebaseAppId: 'FIREBASE_APP_ID',
+    firebaseMeasurementId: 'FIREBASE_MEASUREMENT_ID',
+
+    gaMeasurementApiSecret: 'GA_MEASUREMENT_API_SECRET',
+    sentryDsn: 'SENTRY_DSN',
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
@@ -376,6 +449,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     defaultNetwork: 'DEFAULT_NETWORK',
     appEnvironment: 'APP_ENV',
     releaseTag: 'BITRISE_GIT_TAG',
+    appBuildNumber: 'BITRISE_BUILD_NUMBER',
 }
 
 /**

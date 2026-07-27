@@ -107,7 +107,9 @@ export const useQRScannerView = ({
                     false,
                     'qr',
                     () => {
-                        // Dispatcher already toasted the failure. Close the
+                        // Dispatcher toasted the failure where a toast
+                        // applies (capability-gated CARDS/SELL drop silently —
+                        // toast follow-up tracked). Close the
                         // Modal so the toast (rendered behind it via the
                         // root NotifierRoot) becomes visible.
                         handlingRef.current = false

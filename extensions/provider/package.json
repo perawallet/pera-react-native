@@ -29,6 +29,8 @@
     "@perawallet/wallet-extension-platform-driver": "workspace:*",
     "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
     "@perawallet/wallet-extension-ledger-react-native-usb": "workspace:*",
+    "@perawallet/wallet-extension-ledger-web-ble": "workspace:*",
+    "@perawallet/wallet-extension-ledger-web-usb": "workspace:*",
     "@perawallet/wallet-extension-passkey-autofill": "workspace:*",
     "react": "catalog:"
   },

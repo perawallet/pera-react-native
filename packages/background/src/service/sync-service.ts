@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isHTTPError } from 'ky'
 import {
     useAccountsStore,
     getAllHeldAssetIdsForNetwork,
@@ -62,7 +63,11 @@ export class SyncService {
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
     private hasCompletedInitialSync = false
-    private currentInterval = POLL_INTERVAL
+    // Set once should-refresh gets a 401/403: the key is wrong/missing, a
+    // config-level problem retrying every tick can't fix. Reset on
+    // start()/restart() so a rebuilt or reconfigured session recovers.
+    private hasAuthError = false
+    private currentInterval: number
     // Per-network timestamps of the last asset-metadata / price passes, so the
     // expensive whole-portfolio reads only run when holdings changed or the
     // coarse interval elapsed — not on every poll tick.
@@ -83,8 +88,12 @@ export class SyncService {
     // while running so an offline→online transition can trigger an immediate
     // tick. Cleared on stop() so the subscription lifecycle tracks running.
     private onlineUnsubscribe: Nullable<() => void> = null
+    private readonly baseInterval: number
 
-    constructor(private readonly deps: SyncServiceDeps) {}
+    constructor(private readonly deps: SyncServiceDeps) {
+        this.baseInterval = deps.pollIntervalMs ?? POLL_INTERVAL
+        this.currentInterval = this.baseInterval
+    }
 
     private debouncedInvalidate(
         key: string,
@@ -111,6 +120,7 @@ export class SyncService {
         this.onlineUnsubscribe ??= onlineManager.subscribe(isOnline => {
             if (isOnline) this.handleReconnect()
         })
+        this.hasAuthError = false
         void this.tick()
     }
 
@@ -146,7 +156,7 @@ export class SyncService {
     restart(): void {
         this.stop()
         this.hasCompletedInitialSync = false
-        this.currentInterval = POLL_INTERVAL
+        this.currentInterval = this.baseInterval
         this.start()
     }
 
@@ -200,11 +210,11 @@ export class SyncService {
                               BACKOFF_MULTIPLIER,
                               MAX_BACKOFF_INTERVAL,
                           )
-                        : POLL_INTERVAL
+                        : this.baseInterval
             } else {
                 // No networks needed syncing (should-refresh reported no work,
                 // or there are no accounts) — a successful, cheap tick.
-                this.currentInterval = POLL_INTERVAL
+                this.currentInterval = this.baseInterval
             }
         } catch (error) {
             logger.warn('Sync tick failed', { error })
@@ -246,6 +256,19 @@ export class SyncService {
 
         const neverSynced = lastRefreshedRound[activeNetwork] === null
 
+        // A prior tick's should-refresh request got 401/403 (BACKEND_API_KEY
+        // is wrong/missing) — skip re-issuing that request until
+        // start()/restart(). This backs off the should-refresh REQUEST only:
+        // algod/indexer use separate credentials (ALGOD_API_KEY/
+        // INDEXER_API_KEY), so a never-synced network still needs its
+        // force-sync fallback below — including a network the user switches
+        // to after the flag is already set.
+        if (this.hasAuthError) {
+            return neverSynced
+                ? { networks: [activeNetwork], round: null }
+                : { networks: [], round: null }
+        }
+
         try {
             const result = await sendShouldRefreshRequest(
                 activeNetwork,
@@ -260,8 +283,23 @@ export class SyncService {
                 }
             }
         } catch (error) {
+            const status = isHTTPError(error) ? error.response?.status : null
+            const isAuthError = status === 401 || status === 403
+            if (isAuthError) {
+                this.hasAuthError = true
+                logger.warn(
+                    'Should-refresh rejected as unauthorized — check BACKEND_API_KEY is set (see apps/extension/README.md)',
+                    { status },
+                )
+            }
+            // Check neverSynced before the auth branch: a never-synced
+            // network must force-sync regardless of the backend 401 — see
+            // the hasAuthError guard's comment above.
             if (neverSynced) {
                 return { networks: [activeNetwork], round: null }
+            }
+            if (isAuthError) {
+                return { networks: [], round: null }
             }
             // Rethrow so the tick's catch engages backoff — swallowing here
             // kept a persistently failing should-refresh retrying at the base

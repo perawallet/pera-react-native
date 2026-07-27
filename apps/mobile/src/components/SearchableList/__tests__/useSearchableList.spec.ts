@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
-import { describe, expect, it } from 'vitest'
-import { isSeparatorSuppressed } from '../useSearchableList'
+import { describe, expect, it, beforeEach } from 'vitest'
+import { Platform } from 'react-native'
+import { act, renderHook } from '@test-utils/render'
+import { isSeparatorSuppressed, useSearchableList } from '../useSearchableList'
+import type { PWFlatListRef } from '@components/core'
 
 const HEADER_SENTINEL = { __searchableListHeader: true, key: 'h' }
 const SEARCH_SENTINEL = { __searchableListSearch: true, key: 's' }
@@ -36,5 +37,121 @@ describe('isSeparatorSuppressed', () => {
 
     it('keeps the divider between two real rows', () => {
         expect(isSeparatorSuppressed(ROW, { id: '2' })).toBe(false)
+    })
+})
+
+// User-feedback #3: on web, focusing the search input pins it to the top
+// (correct, shared with native), but scrolling afterwards left it glued —
+// floating over the underlying content — instead of unpinning like it does
+// on native. Root cause: react-native-web's ScrollView never emits
+// onScrollBeginDrag/onScrollEndDrag (ScrollViewBase only wires up
+// onScroll/onTouchMove/onWheel), so handleScrollBeginDrag — the handler that
+// unpins on native by exiting search mode the moment a drag starts — never
+// fires on web for any input device (touch, wheel, or trackpad). Confirmed
+// live in Chromium: mouse-wheel scrolling moves the real scroll container's
+// scrollTop, proving onScroll does fire, while the overlay stayed focused and
+// visible throughout.
+describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
+    const HEADER_HEIGHT = 320
+
+    const setup = () => {
+        const forwardedRef = {
+            current: null,
+        } as React.ForwardedRef<PWFlatListRef>
+        return renderHook(() =>
+            useSearchableList({
+                forwardedRef,
+                data: [{ id: '1' }, { id: '2' }],
+                keyExtractor: item => item.id,
+                snapThreshold: 0.25,
+            }),
+        )
+    }
+
+    const layoutHeader = (
+        result: {
+            current: Pick<
+                ReturnType<typeof useSearchableList>,
+                'handleHeaderLayout'
+            >
+        },
+        height: number,
+    ) =>
+        act(() =>
+            result.current.handleHeaderLayout({
+                nativeEvent: { layout: { height } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
+        )
+
+    const scrollTo = (
+        result: {
+            current: Pick<ReturnType<typeof useSearchableList>, 'handleScroll'>
+        },
+        y: number,
+    ) =>
+        act(() =>
+            result.current.handleScroll({
+                nativeEvent: { contentOffset: { y } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
+        )
+
+    beforeEach(() => {
+        Platform.OS = 'ios'
+    })
+
+    it('unpins (hides the overlay) once a real scroll moves away from the settled pin offset on web', () => {
+        Platform.OS = 'web'
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        expect(result.current.showOverlay).toBe(true)
+
+        // Still converging on the pin offset (handleSearchFocus's own
+        // scrollToOffset animation) — must not unpin mid-flight.
+        scrollTo(result, HEADER_HEIGHT / 2)
+        expect(result.current.showOverlay).toBe(true)
+
+        // Settles exactly at the pinned offset — still showing, now armed.
+        scrollTo(result, HEADER_HEIGHT)
+        expect(result.current.showOverlay).toBe(true)
+
+        // A real user scroll away from the settled pin (revealing the
+        // header) — this is the wheel-scroll signal standing in for the
+        // onScrollBeginDrag that never fires on web.
+        scrollTo(result, 20)
+        expect(result.current.showOverlay).toBe(false)
+    })
+
+    it('unpins when scrolling further down past the settled pin offset on web', () => {
+        Platform.OS = 'web'
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        scrollTo(result, HEADER_HEIGHT)
+        expect(result.current.showOverlay).toBe(true)
+
+        scrollTo(result, HEADER_HEIGHT + 200)
+        expect(result.current.showOverlay).toBe(false)
+    })
+
+    it('does not unpin from scroll alone on native — onScrollBeginDrag remains the only trigger', () => {
+        Platform.OS = 'ios'
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        act(() => result.current.handleEnterSearch())
+        expect(result.current.showOverlay).toBe(true)
+
+        scrollTo(result, HEADER_HEIGHT)
+        scrollTo(result, 20)
+        scrollTo(result, HEADER_HEIGHT + 200)
+        expect(result.current.showOverlay).toBe(true)
+
+        act(() => result.current.handleScrollBeginDrag())
+        expect(result.current.showOverlay).toBe(false)
     })
 })

@@ -443,10 +443,21 @@ describe('useArc59SendTransaction', () => {
         expect(populateAppCallResources).not.toHaveBeenCalled()
     })
 
-    test('falls back to simulate population when inbox_address is null', async () => {
+    test('sends to a fresh receiver (inbox_address null) with receiver-only explicit refs and never simulates', async () => {
+        // A first send to someone with no inbox yet: the inbox is created
+        // inside arc59_sendAsset, so it must NOT be pre-referenced. The send
+        // must still build WITHOUT simulate (the prod algod proxy blocks it) —
+        // referencing just the receiver + box + asset. Verified on-chain
+        // against a simulate-blocked node.
         const params = {
             ...baseParams,
-            summary: { ...baseSummary, inbox_address: null },
+            sender: SENDER_ADDRESS,
+            receiver: RECEIVER_ADDRESS,
+            summary: {
+                ...baseSummary,
+                is_arc59_opted_in: true,
+                inbox_address: null,
+            },
         }
 
         const { result } = renderHook(() => useArc59SendTransaction())
@@ -455,6 +466,42 @@ describe('useArc59SendTransaction', () => {
             await result.current.buildSendViaInboxTxs(params)
         })
 
-        expect(populateAppCallResources).toHaveBeenCalledTimes(1)
+        expect(mockParamsSendAsset).toHaveBeenCalledWith(
+            expect.objectContaining({
+                accountReferences: [RECEIVER_ADDRESS],
+                assetReferences: [params.assetId],
+                boxReferences: [
+                    {
+                        appId: ARC59_TESTNET_APP_ID,
+                        name: decodeAddress(RECEIVER_ADDRESS).publicKey,
+                    },
+                ],
+            }),
+        )
+        expect(populateAppCallResources).not.toHaveBeenCalled()
+    })
+
+    test('opts the router in with explicit refs even when inbox_address is null', async () => {
+        const params = {
+            ...baseParams,
+            sender: SENDER_ADDRESS,
+            receiver: RECEIVER_ADDRESS,
+            summary: {
+                ...baseSummary,
+                is_arc59_opted_in: false,
+                inbox_address: null,
+            },
+        }
+
+        const { result } = renderHook(() => useArc59SendTransaction())
+
+        await act(async () => {
+            await result.current.buildSendViaInboxTxs(params)
+        })
+
+        expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
+            expect.objectContaining({ assetReferences: [params.assetId] }),
+        )
+        expect(populateAppCallResources).not.toHaveBeenCalled()
     })
 })

@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import { Linking, Platform } from 'react-native'
 import { shareText } from '@utils/shareText'
+import { getImageBase64 } from '@utils/getImageBase64'
+import { saveImageToDevice } from '@utils/saveImageToDevice'
+import { MediaPermissionDeniedError } from '@utils/mediaErrors'
 import { useNavigation } from '@react-navigation/native'
 import {
     useSingleAssetDetailsQuery,
@@ -35,10 +39,9 @@ import { Decimal } from 'decimal.js'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import * as Clipboard from 'expo-clipboard'
-import { File, Paths } from 'expo-file-system'
-import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
+import { routeCapabilities } from '@routes/capabilities'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
@@ -101,12 +104,26 @@ export const useCollectibleDetail = (
 
     const collectible = asset?.peraMetadata?.collectible
     const traits = collectible?.traits ?? []
-    const media = useMemo(() => collectible?.media ?? [], [collectible?.media])
+    const rawMedia = useMemo(
+        () => collectible?.media ?? [],
+        [collectible?.media],
+    )
+    // The model viewer needs react-native-webview, which is off-capability on
+    // web (inAppWebView is false there). Drop model media from what's exposed
+    // so the carousel never renders the 3D badge instead of wiring up a dead
+    // tap.
+    const media = useMemo(
+        () =>
+            routeCapabilities.inAppWebView
+                ? rawMedia
+                : rawMedia.filter(m => m.type !== 'model'),
+        [rawMedia],
+    )
     const hasImage = useMemo(
         () =>
-            media.some(m => m.type === 'image') ||
+            rawMedia.some(m => m.type === 'image') ||
             collectible?.primaryImage != null,
-        [media, collectible?.primaryImage],
+        [rawMedia, collectible?.primaryImage],
     )
 
     const accountAddress = account?.address ?? ''
@@ -123,24 +140,24 @@ export const useCollectibleDetail = (
     const projectUrl = asset?.peraMetadata?.projectUrl
 
     const getImageUrl = useCallback(() => {
-        const firstImageMedia = media.find(m => m.type === 'image')
+        const firstImageMedia = rawMedia.find(m => m.type === 'image')
         return (
             firstImageMedia?.downloadUrl ??
             firstImageMedia?.previewUrl ??
             collectible?.primaryImage ??
             undefined
         )
-    }, [media, collectible?.primaryImage])
+    }, [rawMedia, collectible?.primaryImage])
 
     // Copy stays image-only since it writes a bitmap to the clipboard.
     const saveableMedia = useMemo(
         () =>
-            media.find(
+            rawMedia.find(
                 m =>
                     (m.type === 'image' || m.type === 'video') &&
                     (m.downloadUrl != null || m.previewUrl != null),
             ),
-        [media],
+        [rawMedia],
     )
     const saveableMediaUrl =
         saveableMedia?.downloadUrl ??
@@ -217,11 +234,10 @@ export const useCollectibleDetail = (
         if (!imageUrl) return
 
         try {
-            const dest = new File(Paths.cache, `collectible_${assetId}`)
-            const file = await File.downloadFileAsync(imageUrl, dest, {
-                idempotent: true,
-            })
-            const base64 = await file.base64()
+            const base64 = await getImageBase64(
+                imageUrl,
+                `collectible_${assetId}`,
+            )
 
             await Clipboard.setImageAsync(base64)
             void Haptics.notificationAsync(
@@ -246,13 +262,23 @@ export const useCollectibleDetail = (
         if (!saveableMediaUrl) return
 
         try {
-            // writeOnly: we only save to the gallery, never read it. On
-            // Android 13+ this needs no runtime permission (scoped MediaStore
-            // write), so the app doesn't request READ_MEDIA_IMAGES — which Play
-            // gates under its Photo & Video Permissions policy.
-            const { status } = await MediaLibrary.requestPermissionsAsync(true)
+            const extension = saveableMedia?.extension ?? 'png'
+            await saveImageToDevice(
+                saveableMediaUrl,
+                `collectible_${assetId}.${extension}`,
+            )
 
-            if (status !== 'granted') {
+            void Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+            )
+            showToast({
+                title: t('asset_details.collectible.media_saved'),
+                body: '',
+                type: 'success',
+            })
+        } catch (err) {
+            if (err instanceof MediaPermissionDeniedError) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible permission-denied error; bespoke localized title preserved
                 showToast({
                     title: t(
                         'asset_details.collectible.media_permission_denied',
@@ -262,26 +288,6 @@ export const useCollectibleDetail = (
                 })
                 return
             }
-
-            const extension = saveableMedia?.extension ?? 'png'
-            const dest = new File(
-                Paths.cache,
-                `collectible_${assetId}.${extension}`,
-            )
-            const file = await File.downloadFileAsync(saveableMediaUrl, dest, {
-                idempotent: true,
-            })
-
-            await MediaLibrary.saveToLibraryAsync(file.uri)
-            void Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-            )
-            showToast({
-                title: t('asset_details.collectible.media_saved'),
-                body: '',
-                type: 'success',
-            })
-        } catch {
             // guardrails-ignore-next-line no-error-toast-in-catch reason: title-only collectible image-save error; bespoke localized title preserved
             showToast({
                 title: t('asset_details.collectible.media_save_failed'),
@@ -307,13 +313,13 @@ export const useCollectibleDetail = (
     // into this list.
     const visualMedia = useMemo(
         () =>
-            media.filter(
+            rawMedia.filter(
                 m =>
                     m.type === 'image' ||
                     m.type === 'video' ||
                     m.type === 'audio',
             ),
-        [media],
+        [rawMedia],
     )
 
     const fullScreenMedia = useMemo<FullScreenMediaItem[]>(() => {
@@ -321,7 +327,7 @@ export const useCollectibleDetail = (
             collectible?.primaryImage ?? asset?.peraMetadata?.logo ?? undefined
 
         const items: FullScreenMediaItem[] = []
-        for (const m of media) {
+        for (const m of rawMedia) {
             if (
                 m.type !== 'image' &&
                 m.type !== 'video' &&
@@ -348,16 +354,28 @@ export const useCollectibleDetail = (
             return [{ uri: posterFallback, type: 'image' }]
         }
         return items
-    }, [media, collectible, asset])
+    }, [rawMedia, collectible, asset])
 
     const handleModelPress = useCallback(() => {
         // Only downloadUrl is the real 3D asset; a preview image can't be opened
         // by the model viewer.
-        const modelUrl = media.find(m => m.type === 'model')?.downloadUrl
+        const modelUrl = rawMedia.find(m => m.type === 'model')?.downloadUrl
         if (!modelUrl) return
+
+        if (!routeCapabilities.inAppWebView) {
+            // The 3D badge is already hidden from `media` on web (no
+            // react-native-webview there for ModelViewerBottomSheet to run
+            // in), and there's no dedicated web model-viewer page yet — this
+            // only guards a caller that ever wires the tap up directly.
+            // Opening the raw .glb in a new tab is a strictly-better
+            // fallback than a silent no-op: the browser will offer to
+            // download/preview it rather than doing nothing at all.
+            void Linking.openURL(modelUrl)
+            return
+        }
         setModelViewerUrl(modelUrl)
         modelViewerModal.open()
-    }, [media, modelViewerModal])
+    }, [rawMedia, modelViewerModal])
 
     const handleFullScreenPress = useCallback(
         (index: number) => {
@@ -365,11 +383,23 @@ export const useCollectibleDetail = (
             const item = visualMedia[index]
             const uri = item?.downloadUrl ?? item?.previewUrl
             const matchIndex = fullScreenMedia.findIndex(m => m.uri === uri)
+            const targetIndex = matchIndex >= 0 ? matchIndex : 0
+
+            // A bottom sheet is a fine stand-in for a full-screen native
+            // modal, but it's not "full screen" in a 360x600 popup (or even
+            // the expanded tab) — open the raw media in a real browser tab
+            // instead, which is what actually fills the screen there.
+            if (Platform.OS === 'web') {
+                const targetUri = fullScreenMedia[targetIndex]?.uri
+                if (targetUri) void Linking.openURL(targetUri)
+                return
+            }
+
             void requestBottomSheet({
                 contents: (
                     <FullScreenMediaViewer
                         media={fullScreenMedia}
-                        initialIndex={matchIndex >= 0 ? matchIndex : 0}
+                        initialIndex={targetIndex}
                     />
                 ),
                 options: {

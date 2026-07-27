@@ -38,6 +38,7 @@ import { useBottomSheetStore } from '../bottomSheetStore'
 describe('bottomSheetStore', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it('starts with an empty stack', () => {
@@ -178,5 +179,47 @@ describe('bottomSheetStore', () => {
                 .getState()
                 .requestByType('not-registered' as never, {} as never),
         ).toThrow(/not registered/i)
+    })
+})
+
+describe('host registration (fail-loud request)', () => {
+    beforeEach(() => {
+        // Undo the outer describe's registerBottomSheetHost() so each of
+        // these tests controls hostCount explicitly.
+        useBottomSheetStore.getState().resetState()
+    })
+
+    it('rejects request() when no BottomSheetManager host is mounted', async () => {
+        await expect(
+            useBottomSheetStore.getState().request({ contents: null }),
+        ).rejects.toThrow(/no BottomSheetManager/)
+    })
+
+    it('resolves normally when a host is registered', async () => {
+        useBottomSheetStore.getState().registerBottomSheetHost()
+        const promise = useBottomSheetStore
+            .getState()
+            .request<string>({ id: 'x', contents: null })
+        useBottomSheetStore.getState().resolve('x', 'value')
+        useBottomSheetStore.getState().remove('x')
+        await expect(promise).resolves.toBe('value')
+    })
+
+    it('rejects again after the last host unregisters', async () => {
+        useBottomSheetStore.getState().registerBottomSheetHost()
+        useBottomSheetStore.getState().unregisterBottomSheetHost()
+        await expect(
+            useBottomSheetStore.getState().request({ contents: null }),
+        ).rejects.toThrow(/no BottomSheetManager/)
+    })
+
+    it('settles a pending request with undefined (dismissal, not rejection) when the last host unmounts', async () => {
+        useBottomSheetStore.getState().registerBottomSheetHost()
+        const promise = useBottomSheetStore
+            .getState()
+            .request<string>({ id: 'x', contents: null })
+        useBottomSheetStore.getState().unregisterBottomSheetHost()
+        await expect(promise).resolves.toBeUndefined()
+        expect(useBottomSheetStore.getState().requests).toEqual([])
     })
 })

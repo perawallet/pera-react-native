@@ -18,6 +18,8 @@ import {
 import { useEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { getNavigationTheme } from '@theme/theme'
 import { trackScreen, AnalyticsScreenName } from '@analytics'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { ReceiveFundsRoutes } from '../../../routes/receive-funds'
@@ -29,6 +31,7 @@ export type ReceiveFundsContentProps = {
 
 export const ReceiveFundsContent = ({ account }: ReceiveFundsContentProps) => {
     const { t } = useLanguage()
+    const isDarkMode = useIsDarkMode()
     useReceiveFundsContent(account)
 
     // Tracked in-screen rather than via the navigator's screenListeners: this
@@ -41,7 +44,14 @@ export const ReceiveFundsContent = ({ account }: ReceiveFundsContentProps) => {
     return (
         <TransactionErrorBoundary t={t}>
             <NavigationIndependentTree>
-                <NavigationContainer>
+                {/* Theme the independent tree explicitly: without it React
+                    Navigation falls back to DefaultTheme, whose grey
+                    `background` (rgb(242,242,242)) paints the full-sheet scene
+                    container and shows through the transparent header as a
+                    grey band. */}
+                <NavigationContainer
+                    theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
+                >
                     <ReceiveFundsRoutes />
                 </NavigationContainer>
             </NavigationIndependentTree>

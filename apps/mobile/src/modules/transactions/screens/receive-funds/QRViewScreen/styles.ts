@@ -29,6 +29,19 @@ export const useStyles = makeStyles(theme => ({
     buttonContainer: {
         gap: theme.spacing.md,
     },
+    // The address is one long unbroken run of characters (no spaces), so it
+    // only wraps if something in its ancestor chain has a definite width to
+    // wrap against. Yoga (native) always resolves that width even under
+    // `addressContainer`'s alignItems: 'center'; CSS flexbox (react-native-web)
+    // instead sizes a centered, unconstrained flex child to its content's
+    // natural (unwrapped) width, so the address renders on one line and
+    // overflows the sheet instead of wrapping. `alignSelf: 'stretch'` gives
+    // the touchable a real width on both platforms — a no-op for native
+    // layout (Yoga already wrapped correctly) beyond a slightly larger,
+    // arguably more tappable copy target, and the fix on web.
+    addressButton: {
+        alignSelf: 'stretch',
+    },
     address: {
         color: theme.colors.textGray,
         textAlign: 'center',

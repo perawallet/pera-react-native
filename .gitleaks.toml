@@ -18,6 +18,12 @@ paths = [
 ]
 
 [[allowlists]]
+description = "packages/config/src/main.ts bakes the public 'pera-wallet-public' Firebase project's Web API key as the OSS/staging default (see the comment above the productionConfig field) — same posture as the google-services.json/GoogleService-Info.plist allowlist above: restricted by Firebase Security Rules, not secrecy. See https://firebase.google.com/docs/projects/api-keys"
+regexes = [
+    '''AIzaSyA49zDfujF8SCdxQrfC38bM2TdzSFPtIJA''',
+]
+
+[[allowlists]]
 description = "Lockfiles are hash digests, not secrets"
 paths = [
     '''.*\.lock$''',

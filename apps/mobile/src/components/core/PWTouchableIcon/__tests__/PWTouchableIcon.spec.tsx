@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
+import { Keyboard } from 'react-native'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { PWIcon } from '@components/core/PWIcon'
 import { PWTouchableIcon } from '../PWTouchableIcon'
@@ -57,6 +58,20 @@ describe('PWTouchableIcon', () => {
             }),
             undefined,
         )
+    })
+
+    it('forwards dismissKeyboardOnPress to PWTouchableOpacity', () => {
+        const onPress = vi.fn()
+        render(
+            <PWTouchableIcon
+                name='eye'
+                onPress={onPress}
+                dismissKeyboardOnPress={false}
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('pw-icon'))
+        expect(Keyboard.dismiss).not.toHaveBeenCalled()
     })
 
     it('does not pass onPress to PWIcon', () => {

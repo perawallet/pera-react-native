@@ -15,7 +15,11 @@ import {
     type PeraAsset,
     type PeraCollectible,
 } from '@perawallet/wallet-core-assets'
-import { type GestureResponderEvent } from 'react-native'
+import {
+    type GestureResponderEvent,
+    type StyleProp,
+    type ViewStyle,
+} from 'react-native'
 
 export type CollectibleDisplayItem = {
     assetId: string
@@ -27,4 +31,7 @@ export type CollectibleDisplayItem = {
 export type CollectibleItemProps = {
     item: CollectibleDisplayItem
     onPress?: (event: GestureResponderEvent) => void
+    /** Row style from the parent list (e.g. shared horizontal padding) so a
+     *  collectible row lines up with the fungible rows beside it. */
+    style?: StyleProp<ViewStyle>
 }

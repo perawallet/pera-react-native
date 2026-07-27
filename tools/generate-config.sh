@@ -82,12 +82,30 @@ append_config "INDEXER_API_KEY" "indexerApiKey" "string"
 append_config "APP_STORE_APPLE_ID" "appStoreAppID" "string"
 append_config "PLAY_INTEGRITY_CLOUD_PROJECT_NUMBER" "playIntegrityCloudProjectNumber" "string"
 
+# Firebase Web SDK config (browser extension Remote Config)
+append_config "FIREBASE_API_KEY" "firebaseApiKey" "string"
+append_config "FIREBASE_AUTH_DOMAIN" "firebaseAuthDomain" "string"
+append_config "FIREBASE_DATABASE_URL" "firebaseDatabaseUrl" "string"
+append_config "FIREBASE_PROJECT_ID" "firebaseProjectId" "string"
+append_config "FIREBASE_STORAGE_BUCKET" "firebaseStorageBucket" "string"
+append_config "FIREBASE_MESSAGING_SENDER_ID" "firebaseMessagingSenderId" "string"
+append_config "FIREBASE_APP_ID" "firebaseAppId" "string"
+append_config "FIREBASE_MEASUREMENT_ID" "firebaseMeasurementId" "string"
+
+# GA4 Measurement Protocol + Sentry (browser extension analytics/crash reporting)
+append_config "GA_MEASUREMENT_API_SECRET" "gaMeasurementApiSecret" "string"
+append_config "SENTRY_DSN" "sentryDsn" "string"
+
 # Build channel (development | staging | production)
 append_config "APP_ENV" "appEnvironment" "string"
 
 # Full git release tag (e.g. v7.0.0-alpha.9) for the in-app QA version display.
 # Set by Bitrise on tag builds; absent locally/off-tag.
 append_config "BITRISE_GIT_TAG" "releaseTag" "string"
+
+# Incrementing CI build number, mirroring mobile's native build version.
+# Set by Bitrise; absent locally.
+append_config "BITRISE_BUILD_NUMBER" "appBuildNumber" "string"
 
 # Explorer URLs
 append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"

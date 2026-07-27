@@ -185,7 +185,7 @@ export const useImportAccountOptionsScreen =
                 },
             ]
 
-            if (Platform.OS === 'android') {
+            if (Platform.OS === 'android' || Platform.OS === 'web') {
                 allOptions.push({
                     testID: 'import_account_options_pair_ledger_usb_button',
                     titleKey:

@@ -46,6 +46,12 @@ export const useStyles = makeStyles(
             },
             body: {
                 flex: 1,
+                // Web: a flex child never shrinks below its content height
+                // without this, so the scroll view inside the popup's fixed
+                // overflow:hidden viewport never gets a bounded height
+                // (same mechanism as the AccountHistory fix, c34d4842c).
+                // Native Yoga already treats the implied min size as 0.
+                minHeight: 0,
             },
             scrollContent: {
                 // Fill the viewport so short bodies can bottom-align or center
@@ -58,6 +64,7 @@ export const useStyles = makeStyles(
             },
             fixedBody: {
                 flex: 1,
+                minHeight: 0,
                 paddingHorizontal,
                 paddingBottom: hasFooter ? theme.spacing.lg : bottomInset,
             },

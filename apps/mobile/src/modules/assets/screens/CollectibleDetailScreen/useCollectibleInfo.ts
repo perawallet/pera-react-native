@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useWebView } from '@modules/webview'
+import { useCallback } from 'react'
+import { Linking } from 'react-native'
 import { type PeraAsset, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { formatWithUnits } from '@perawallet/wallet-core-shared'
-import { useCallback } from 'react'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 
 export const useCollectibleInfo = (asset: PeraAsset) => {
     const { pushWebView } = useWebView()
@@ -24,11 +26,29 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     const config = getNetworkConfig(network)
     const { navigate } = useAppNavigation()
 
+    // Same gate every other external link in the app uses (e.g.
+    // useSettingsScreen's help-center links): the in-app webview bottom
+    // sheet renders an iframe on web, which isn't a real webview and can't
+    // load arbitrary external sites reliably (no bridge, and most sites'
+    // frame-ancestors/X-Frame-Options block being embedded at all). Off ⇒
+    // Linking.openURL, which react-native-web maps to a real window.open in
+    // a new tab.
+    const openExternalLink = useCallback(
+        (url: string) => {
+            if (!routeCapabilities.inAppWebView) {
+                void Linking.openURL(url)
+                return
+            }
+            pushWebView({ url })
+        },
+        [pushWebView],
+    )
+
     const onCreatorPressed = useCallback(() => {
-        pushWebView({
-            url: `${config.explorerUrl}/address/${asset.creator.address}`,
-        })
-    }, [asset.creator.address, pushWebView, config.explorerUrl])
+        openExternalLink(
+            `${config.explorerUrl}/address/${asset.creator.address}`,
+        )
+    }, [asset.creator.address, openExternalLink, config.explorerUrl])
 
     const onAssetIdPressed = useCallback(() => {
         navigate('AssetDetails', {
@@ -38,10 +58,8 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     }, [asset.assetId, navigate])
 
     const onOpenExplorer = useCallback(() => {
-        pushWebView({
-            url: `${config.explorerUrl}/asset/${asset.assetId}`,
-        })
-    }, [asset.assetId, pushWebView, config.explorerUrl])
+        openExternalLink(`${config.explorerUrl}/asset/${asset.assetId}`)
+    }, [asset.assetId, openExternalLink, config.explorerUrl])
 
     const { amount: totalSupplyAmount, unit: totalSupplyUnit } =
         formatWithUnits(toWholeUnits(asset.totalSupply, asset))

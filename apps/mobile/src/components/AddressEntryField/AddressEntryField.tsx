@@ -85,16 +85,14 @@ export const AddressEntryField = ({
                     ) : undefined
                 }
             />
-            {scannerVisible && (
-                <QRScannerView
-                    isVisible={scannerVisible}
-                    onSuccess={addressScanned}
-                    onClose={hideScanner}
-                    animationType='slide'
-                    title={t('address_entry.scan_qr')}
-                    skipDeepLinkHandler
-                />
-            )}
+            <QRScannerView
+                isVisible={scannerVisible}
+                onSuccess={addressScanned}
+                onClose={hideScanner}
+                animationType='slide'
+                title={t('address_entry.scan_qr')}
+                skipDeepLinkHandler
+            />
         </PWView>
     )
 }

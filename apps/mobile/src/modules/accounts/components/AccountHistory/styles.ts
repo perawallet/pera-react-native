@@ -18,7 +18,8 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing.md,
     },
     container: {
-        flexGrow: 1,
+        flex: 1,
+        minHeight: 0,
         backgroundColor: theme.colors.background,
     },
     rootContainer: {

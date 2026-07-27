@@ -11,7 +11,11 @@
     // Guardrail checks are discovered at runtime via fast-glob, not imported.
     "packages/devtools/guardrails/checks/**",
     // Worker entry spawned at runtime via `new Worker(URL)`, not a static import.
-    "packages/devtools/guardrails/worker-entry.mjs"
+    "packages/devtools/guardrails/worker-entry.mjs",
+    // Web-only native-module stubs resolved by metro.config.js via
+    // `path.resolve(webShimsRoot, ...)` string lookups (webStubs/polyfillMap),
+    // not a static import fallow's graph can follow.
+    "apps/extension/web-shims/**"
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.
@@ -37,7 +41,13 @@
     // Public analytics hook for components to consume (see `analytics/track.ts`);
     // no screen wires it yet, so the production import graph doesn't reach it.
     // Intentional API surface, not dead code.
-    "apps/mobile/src/hooks/useAnalytics.ts"
+    "apps/mobile/src/hooks/useAnalytics.ts",
+    // React Native platform-split entry: index.js imports the extensionless
+    // `./entry`, which Metro resolves to this `.native.js` variant on
+    // ios/android (entry.web.js on web). fallow doesn't model Metro's
+    // platform-suffix resolution, so this file (and shim.js, only reachable
+    // through it) reads as unused.
+    "apps/mobile/entry.native.js"
   ],
 
   // Native modules (React Native autolinking) and build/polyfill packages consumed

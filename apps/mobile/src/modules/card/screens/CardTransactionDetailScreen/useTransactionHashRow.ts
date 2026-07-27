@@ -11,12 +11,14 @@
  */
 
 import { useCallback } from 'react'
+import { Linking } from 'react-native'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     generateUniqueId,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview/hooks'
+import { routeCapabilities } from '@routes/capabilities'
 import { useClipboard } from '@hooks/useClipboard'
 
 // "ABCDEF...UVWXYZ" — enough of each end to eyeball-match in the explorer.
@@ -49,10 +51,12 @@ export const useTransactionHashRow = (
     }, [copyToClipboard, txHash])
 
     const openExplorer = useCallback(() => {
-        pushWebView({
-            url: `${networkConfig.explorerUrl}/tx/${txHash}`,
-            id: generateUniqueId(),
-        })
+        const url = `${networkConfig.explorerUrl}/tx/${txHash}`
+        if (!routeCapabilities.inAppWebView) {
+            void Linking.openURL(url)
+            return
+        }
+        pushWebView({ url, id: generateUniqueId() })
     }, [networkConfig.explorerUrl, pushWebView, txHash])
 
     return {

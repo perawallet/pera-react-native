@@ -49,4 +49,21 @@ describe('PWDropdown', () => {
 
         expect(onPressItem).toHaveBeenCalled()
     })
+
+    it('renders a check icon only next to the selected item', () => {
+        const items = [
+            { label: 'Item 1', onPress: vi.fn(), isSelected: true },
+            { label: 'Item 2', onPress: vi.fn() },
+        ]
+
+        render(
+            <PWDropdown items={items}>
+                <PWText>Trigger</PWText>
+            </PWDropdown>,
+        )
+
+        fireEvent.click(screen.getByText('Trigger'))
+
+        expect(screen.getAllByTestId('icon-check')).toHaveLength(1)
+    })
 })

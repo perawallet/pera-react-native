@@ -88,6 +88,7 @@ const buildServices = (): PlatformServices => {
     }
 
     const pushNotification: PushNotificationService = {
+        isSupported: () => true,
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },

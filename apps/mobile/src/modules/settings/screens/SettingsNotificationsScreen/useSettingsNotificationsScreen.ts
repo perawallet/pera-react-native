@@ -19,6 +19,7 @@ import {
     useNotificationPreferences,
     useAccountNotificationEnabledMutation,
 } from '@perawallet/wallet-core-messages'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useSystemNotificationPermission } from '../../hooks/useSystemNotificationPermission'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -27,6 +28,8 @@ import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 type UseSettingsNotificationsScreenResult = {
     isSystemNotificationEnabled: boolean
     isSystemNotificationLoading: boolean
+    /** Whether this platform can deliver push at all (static platform fact). */
+    isPushSupported: boolean
     accounts: WalletAccount[]
     /**
      * The raw list of addresses with notifications disabled. Exposed so the
@@ -84,6 +87,7 @@ export const useSettingsNotificationsScreen =
         return {
             isSystemNotificationEnabled: isEnabled,
             isSystemNotificationLoading: isLoading,
+            isPushSupported: getProvider().pushNotification.isSupported(),
             accounts,
             disabledAccounts,
             handleSystemNotificationToggle,

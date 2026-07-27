@@ -20,6 +20,7 @@ import { useBottomSheetResult } from '../useBottomSheetResult'
 describe('useBottomSheetResult', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it('throws when used outside a host', () => {

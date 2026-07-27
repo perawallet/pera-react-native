@@ -31,6 +31,7 @@ const wrapWithId = (id: string | null) =>
 describe('useBottomSheetPanDownEnabled', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it('returns true when the host sheet enabled pan-down', () => {

@@ -11,7 +11,9 @@
  */
 
 import { useCallback } from 'react'
+import { Linking } from 'react-native'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import { routeCapabilities } from '@routes/capabilities'
 import { isSafeBrowserUrl } from '@modules/webview/hooks/handlers'
 import { useWebView } from '@modules/webview/hooks/useWebViewStore'
 import { useToast } from '@hooks/useToast'
@@ -47,6 +49,13 @@ export const useBrowserDeeplink = (): BrowserDeeplinkHandler => {
                 )
                 onError?.()
                 return false
+            }
+            if (!routeCapabilities.inAppWebView) {
+                // Capability contract (capabilities-types.ts): off ⇒
+                // Linking.openURL. On web nothing mounts the webview stack,
+                // so pushWebView would silently no-op.
+                void Linking.openURL(url)
+                return true
             }
             pushWebView({ id: generateOrderedUniqueId(), url })
             return true
