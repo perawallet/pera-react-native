@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useErrorToast } from '@hooks/useErrorToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useWebView } from '@modules/webview'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -37,6 +39,8 @@ export const useSettingsWalletConnectDetailsScreen = (
     const { pushWebView } = useWebView()
     const navigation = useNavigation()
     const accounts = useAllAccounts()
+    const { showError } = useErrorToast()
+    const { t } = useLanguage()
 
     const connectedAccounts = useMemo(() => {
         return session?.session?.accounts?.map(address =>
@@ -67,11 +71,16 @@ export const useSettingsWalletConnectDetailsScreen = (
         })
         void disconnect(session.clientId, true)
             .then(() => {
-                deleteModalState.close()
+                // Only leave the screen once the session is genuinely gone —
+                // otherwise the user returns to a list that still shows it.
+                navigation.goBack()
+            })
+            .catch((error: unknown) => {
+                showError(error, t('common.error.title'))
             })
             .finally(() => {
                 setIsLoading(false)
-                navigation.goBack()
+                deleteModalState.close()
             })
     }
 
