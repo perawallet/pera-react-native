@@ -40,6 +40,12 @@ type UseSettingsNotificationsScreenResult = {
         enabled: boolean,
     ) => void
     isAccountNotificationEnabled: (address: string) => boolean
+    /**
+     * Whether that account's toggle is still awaiting the backend. Rows use it
+     * to disable the switch, so a second tap is visibly blocked rather than
+     * silently dropped by the hook's per-address guard.
+     */
+    isAccountNotificationPending: (address: string) => boolean
 }
 
 export const useSettingsNotificationsScreen =
@@ -49,7 +55,8 @@ export const useSettingsNotificationsScreen =
         const accounts = useAllAccounts()
         const { isAccountEnabled, disabledAccounts } =
             useNotificationPreferences()
-        const { toggleAccountNotification } = useAccountNotificationToggle()
+        const { toggleAccountNotification, isTogglePending } =
+            useAccountNotificationToggle()
 
         const handleSystemNotificationToggle = useCallback(() => {
             openSettings()
@@ -75,5 +82,6 @@ export const useSettingsNotificationsScreen =
             handleSystemNotificationToggle,
             handleAccountNotificationToggle,
             isAccountNotificationEnabled: isAccountEnabled,
+            isAccountNotificationPending: isTogglePending,
         }
     }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
     useNotificationPreferences,
     useAccountNotificationEnabledMutation,
@@ -32,12 +32,26 @@ export type UseAccountNotificationToggleResult = {
      * no queue or replay: the local store must never hold a value the backend
      * was not told about, because it is persisted and would survive a restart.
      *
+     * Toggles are serialised per address: while one is in flight, a further
+     * call for the same address resolves `false` immediately and touches
+     * neither the store nor the backend. Without that guard two overlapping
+     * failures roll each other back to the wrong value — tap-off then tap-on
+     * with both requests failing would settle the store at `disabled` while
+     * the backend still holds `enabled`, and the persisted store would carry
+     * that divergence across a restart. Use {@link isTogglePending} to disable
+     * the control instead of silently dropping the tap.
+     *
      * @returns `true` only when the backend accepted the change.
      */
     toggleAccountNotification: (
         address: string,
         enabled: boolean,
     ) => Promise<boolean>
+    /**
+     * Whether a toggle for `address` is currently in flight. Re-renders when
+     * it changes, so it can drive a control's `disabled` prop.
+     */
+    isTogglePending: (address: string) => boolean
 }
 
 export const useAccountNotificationToggle =
@@ -47,8 +61,22 @@ export const useAccountNotificationToggle =
         const { showError } = useErrorToast()
         const { t } = useLanguage()
 
+        // The ref is the synchronous source of truth for the guard: two taps
+        // in the same tick must both see the first one. The state mirror only
+        // exists so the UI re-renders while a toggle is in flight.
+        const pendingAddressesRef = useRef<Set<string>>(new Set())
+        const [pendingAddresses, setPendingAddresses] = useState<
+            readonly string[]
+        >([])
+
         const toggleAccountNotification = useCallback(
             async (address: string, enabled: boolean): Promise<boolean> => {
+                if (pendingAddressesRef.current.has(address)) {
+                    return false
+                }
+
+                pendingAddressesRef.current.add(address)
+                setPendingAddresses([...pendingAddressesRef.current])
                 setAccountEnabled(address, enabled)
 
                 try {
@@ -58,10 +86,18 @@ export const useAccountNotificationToggle =
                     setAccountEnabled(address, !enabled)
                     showError(error, t('common.error.title'))
                     return false
+                } finally {
+                    pendingAddressesRef.current.delete(address)
+                    setPendingAddresses([...pendingAddressesRef.current])
                 }
             },
             [setAccountEnabled, mutateAsync, showError, t],
         )
 
-        return { toggleAccountNotification }
+        const isTogglePending = useCallback(
+            (address: string): boolean => pendingAddresses.includes(address),
+            [pendingAddresses],
+        )
+
+        return { toggleAccountNotification, isTogglePending }
     }

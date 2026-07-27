@@ -20,6 +20,7 @@ import { useSystemNotificationPermission } from '../../../hooks/useSystemNotific
 
 const mocks = vi.hoisted(() => ({
     toggleAccountNotification: vi.fn(),
+    isTogglePending: vi.fn(() => false),
     showToast: vi.fn(),
 }))
 
@@ -51,6 +52,7 @@ vi.mock('../../../hooks/useSystemNotificationPermission', () => ({
 vi.mock('@hooks/useAccountNotificationToggle', () => ({
     useAccountNotificationToggle: () => ({
         toggleAccountNotification: mocks.toggleAccountNotification,
+        isTogglePending: mocks.isTogglePending,
     }),
 }))
 

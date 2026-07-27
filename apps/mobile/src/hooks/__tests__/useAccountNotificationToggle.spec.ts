@@ -153,6 +153,146 @@ describe('useAccountNotificationToggle', () => {
         )
     })
 
+    // Concurrency guard: two overlapping toggles for one address used to roll
+    // each other back to the wrong value, and the store is persisted, so the
+    // divergence from the backend survived a restart.
+    it('leaves the store at the ORIGINAL value when a double tap both fail', async () => {
+        let stored = true
+        mocks.setAccountEnabled.mockImplementation(
+            (_address: string, enabled: boolean) => {
+                stored = enabled
+            },
+        )
+
+        // Both requests hang, then fail in flight order. Without the guard the
+        // rollbacks run `!enabled` against each other: #1 restores `true`, #2
+        // then overwrites it with `false`, leaving the store disabled while
+        // the backend still holds enabled.
+        const rejecters: ((reason: Error) => void)[] = []
+        mocks.mutateAsync.mockImplementation(
+            () =>
+                new Promise((_resolve, reject) => {
+                    rejecters.push(reject)
+                }),
+        )
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        const taps: Promise<boolean>[] = []
+        await act(async () => {
+            taps.push(result.current.toggleAccountNotification('ADDR1', false))
+        })
+        await act(async () => {
+            taps.push(result.current.toggleAccountNotification('ADDR1', true))
+        })
+
+        await act(async () => {
+            rejecters.forEach(reject => reject(new Error('boom')))
+            await Promise.all(taps)
+        })
+
+        expect(await taps[1]).toBe(false)
+        expect(stored).toBe(true)
+        expect(mocks.mutateAsync).toHaveBeenCalledTimes(1)
+    })
+
+    it('early-returns a concurrent call for the same address without writing the store', async () => {
+        let resolveFirst: ((value: unknown) => void) | undefined
+        mocks.mutateAsync.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    resolveFirst = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        let firstTap: Promise<boolean> | undefined
+        await act(async () => {
+            firstTap = result.current.toggleAccountNotification('ADDR1', false)
+        })
+
+        expect(mocks.setAccountEnabled).toHaveBeenCalledTimes(1)
+
+        let secondTap: boolean | undefined
+        await act(async () => {
+            secondTap = await result.current.toggleAccountNotification(
+                'ADDR1',
+                true,
+            )
+        })
+
+        expect(secondTap).toBe(false)
+        expect(mocks.setAccountEnabled).toHaveBeenCalledTimes(1)
+        expect(mocks.showToast).not.toHaveBeenCalled()
+
+        await act(async () => {
+            resolveFirst?.({})
+            await firstTap
+        })
+    })
+
+    it('does not block a concurrent toggle for a different address', async () => {
+        let resolveFirst: ((value: unknown) => void) | undefined
+        mocks.mutateAsync.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    resolveFirst = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        let firstTap: Promise<boolean> | undefined
+        await act(async () => {
+            firstTap = result.current.toggleAccountNotification('ADDR1', false)
+        })
+
+        await act(async () => {
+            await result.current.toggleAccountNotification('ADDR2', false)
+        })
+
+        expect(mocks.setAccountEnabled).toHaveBeenNthCalledWith(
+            2,
+            'ADDR2',
+            false,
+        )
+
+        await act(async () => {
+            resolveFirst?.({})
+            await firstTap
+        })
+    })
+
+    it('reports the toggle as pending only while the request is in flight', async () => {
+        let resolveFirst: ((value: unknown) => void) | undefined
+        mocks.mutateAsync.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    resolveFirst = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        expect(result.current.isTogglePending('ADDR1')).toBe(false)
+
+        let firstTap: Promise<boolean> | undefined
+        await act(async () => {
+            firstTap = result.current.toggleAccountNotification('ADDR1', false)
+        })
+
+        expect(result.current.isTogglePending('ADDR1')).toBe(true)
+        expect(result.current.isTogglePending('ADDR2')).toBe(false)
+
+        await act(async () => {
+            resolveFirst?.({})
+            await firstTap
+        })
+
+        expect(result.current.isTogglePending('ADDR1')).toBe(false)
+    })
+
     it('shows generic copy when the failure is not connectivity', async () => {
         mocks.mutateAsync.mockRejectedValue(new Error('boom'))
 
