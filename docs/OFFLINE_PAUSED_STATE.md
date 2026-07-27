@@ -195,12 +195,26 @@ implementation. Note that it is a _single_ hook shared by both call sites —
 the bug it replaced was a duplicated toggle where one copy had silently
 dropped the network call.
 
-Toggles are also serialised per address: `isTogglePending(address)` reports an
-in-flight request, and a second call for the same address early-returns
-without touching the store. Two overlapping failures would otherwise roll each
-other back to the wrong value, violating property 4. Screens should use the
-pending flag to disable the control (`NotificationSettingsList` does) rather
-than let the tap be silently dropped.
+Toggles are also serialised per address, app-wide: the in-flight guard inside
+`useAccountNotificationToggle` is module scope, shared by every hook instance,
+not just the one that started the request — `isTogglePending(address)` reports
+an in-flight request, and a second call for the same address (from any
+instance) early-returns without touching the store. Two overlapping failures
+would otherwise roll each other back to the wrong value, violating property 4.
+Screens should use the pending flag to disable the control rather than let the
+tap be silently dropped — both `NotificationSettingsList` and the
+account-options sheet (`useAccountOptions` → `AccountOptionsContent`) do.
+
+The guard itself is shared app-wide; `isTogglePending`'s _reactivity_ is not.
+Each hook instance only re-renders for toggles it started itself, so a second
+mounted instance of the hook (e.g. a freshly-opened account-options sheet)
+renders its control as enabled until it makes its own call — at which point
+the shared guard still returns `false` immediately with no store write, just
+without the row having visually disabled itself first. See the JSDoc on
+`isTogglePending` in `useAccountNotificationToggle.ts` for the full reasoning;
+this is intentional scope, not a gap the PERA-4585 residual round left open —
+introducing cross-instance reactivity would need a store/subscription, which
+was judged disproportionate for this guard.
 
 There is deliberately no offline outbox or replay queue for user-initiated
 writes (PERA-4573 policy). The one adjacent-looking exception is

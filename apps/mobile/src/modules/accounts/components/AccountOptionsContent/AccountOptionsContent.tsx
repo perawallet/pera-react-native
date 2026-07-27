@@ -46,8 +46,12 @@ const OptionRow = ({
     return (
         <PWTouchableOpacity
             testID={`account_option_${option.id}`}
-            style={styles.optionRow}
+            style={[
+                styles.optionRow,
+                option.disabled && styles.optionRowDisabled,
+            ]}
             onPress={option.onPress}
+            disabled={option.disabled}
         >
             <PWIcon
                 name={option.icon}

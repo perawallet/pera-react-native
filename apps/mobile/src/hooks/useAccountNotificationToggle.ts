@@ -32,14 +32,19 @@ export type UseAccountNotificationToggleResult = {
      * no queue or replay: the local store must never hold a value the backend
      * was not told about, because it is persisted and would survive a restart.
      *
-     * Toggles are serialised per address: while one is in flight, a further
-     * call for the same address resolves `false` immediately and touches
-     * neither the store nor the backend. Without that guard two overlapping
-     * failures roll each other back to the wrong value — tap-off then tap-on
-     * with both requests failing would settle the store at `disabled` while
-     * the backend still holds `enabled`, and the persisted store would carry
-     * that divergence across a restart. Use {@link isTogglePending} to disable
-     * the control instead of silently dropping the tap.
+     * Toggles are serialised per address, app-wide: the in-flight guard is
+     * module scope (shared by every hook instance, not just the one that
+     * started the request), so while one is in flight a further call for the
+     * same address — from this instance or any other — resolves `false`
+     * immediately and touches neither the store nor the backend. Without
+     * that guard two overlapping failures roll each other back to the wrong
+     * value — tap-off then tap-on with both requests failing would settle
+     * the store at `disabled` while the backend still holds `enabled`, and
+     * the persisted store would carry that divergence across a restart.
+     *
+     * Note the guard's reactivity is *not* shared the same way: see
+     * {@link isTogglePending}. Use it to disable the control instead of
+     * silently dropping the tap.
      *
      * @returns `true` only when the backend accepted the change.
      */
@@ -48,10 +53,37 @@ export type UseAccountNotificationToggleResult = {
         enabled: boolean,
     ) => Promise<boolean>
     /**
-     * Whether a toggle for `address` is currently in flight. Re-renders when
-     * it changes, so it can drive a control's `disabled` prop.
+     * Whether a toggle for `address` is currently in flight *as started by
+     * this hook instance*. Re-renders when it changes, so it can drive a
+     * control's `disabled` prop.
+     *
+     * The in-flight guard itself (no duplicate request, no store clobber) is
+     * shared module-wide across every consumer of this hook. This flag is
+     * not: it mirrors only the calls made through this instance, so a toggle
+     * started from a different mounted instance (e.g. a different screen)
+     * will not flip this instance's `isTogglePending` to `true`. A screen
+     * that starts its own toggle for `address` will still see it settle
+     * correctly, and the store can never diverge from the backend either
+     * way — but two instances showing the same address will not visually
+     * agree on "pending" mid-flight.
      */
     isTogglePending: (address: string) => boolean
+}
+
+// Module scope so the in-flight guard is shared by every hook instance —
+// three call sites (useAccountOptions, and NotificationSettingsList mounted
+// from both SettingsNotificationsScreen and NotificationSettingsContent) can
+// otherwise each start their own overlapping request for the same address.
+// See the guard note on `toggleAccountNotification` above.
+const inFlightAddresses = new Set<string>()
+
+/**
+ * Tests only — never call from production code. The guard above is module
+ * state, so without this a leaked entry from one test silently wedges an
+ * unrelated test later in the same file.
+ */
+export const clearAccountNotificationToggleGuardForTests = (): void => {
+    inFlightAddresses.clear()
 }
 
 export const useAccountNotificationToggle =
@@ -61,22 +93,33 @@ export const useAccountNotificationToggle =
         const { showError } = useErrorToast()
         const { t } = useLanguage()
 
-        // The ref is the synchronous source of truth for the guard: two taps
-        // in the same tick must both see the first one. The state mirror only
-        // exists so the UI re-renders while a toggle is in flight.
-        const pendingAddressesRef = useRef<Set<string>>(new Set())
+        // `inFlightAddresses` (module scope, above) is the synchronous source
+        // of truth for the guard, shared app-wide: two taps in the same tick
+        // — from this instance or another — must both see the first one.
+        //
+        // `ownPendingAddressesRef`/`pendingAddresses` below are local to this
+        // instance and deliberately track only the addresses *this instance*
+        // added to the shared set — never the shared set's full contents.
+        // Copying the shared set wholesale would leak: if instance A starts
+        // ADDR1 and instance B separately starts ADDR2, both entries land in
+        // `inFlightAddresses`, and mirroring that whole set into B's local
+        // state would make B report ADDR1 as pending even though B never
+        // touched it — and that stale `true` would never clear, since only A
+        // (not B) will remove ADDR1 from the shared set.
+        const ownPendingAddressesRef = useRef<Set<string>>(new Set())
         const [pendingAddresses, setPendingAddresses] = useState<
             readonly string[]
         >([])
 
         const toggleAccountNotification = useCallback(
             async (address: string, enabled: boolean): Promise<boolean> => {
-                if (pendingAddressesRef.current.has(address)) {
+                if (inFlightAddresses.has(address)) {
                     return false
                 }
 
-                pendingAddressesRef.current.add(address)
-                setPendingAddresses([...pendingAddressesRef.current])
+                inFlightAddresses.add(address)
+                ownPendingAddressesRef.current.add(address)
+                setPendingAddresses([...ownPendingAddressesRef.current])
                 setAccountEnabled(address, enabled)
 
                 try {
@@ -87,8 +130,9 @@ export const useAccountNotificationToggle =
                     showError(error, t('common.error.title'))
                     return false
                 } finally {
-                    pendingAddressesRef.current.delete(address)
-                    setPendingAddresses([...pendingAddressesRef.current])
+                    inFlightAddresses.delete(address)
+                    ownPendingAddressesRef.current.delete(address)
+                    setPendingAddresses([...ownPendingAddressesRef.current])
                 }
             },
             [setAccountEnabled, mutateAsync, showError, t],

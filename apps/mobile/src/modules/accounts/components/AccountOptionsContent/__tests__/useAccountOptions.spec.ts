@@ -47,13 +47,17 @@ const { mockRequestBottomSheet } = vi.hoisted(() => ({
 const { mockOpenViewPassphraseFlow } = vi.hoisted(() => ({
     mockOpenViewPassphraseFlow: vi.fn(),
 }))
-const { mockToggleAccountNotification } = vi.hoisted(() => ({
-    mockToggleAccountNotification: vi.fn(),
-}))
+const { mockToggleAccountNotification, mockIsTogglePending } = vi.hoisted(
+    () => ({
+        mockToggleAccountNotification: vi.fn(),
+        mockIsTogglePending: vi.fn(() => false),
+    }),
+)
 
 vi.mock('@hooks/useAccountNotificationToggle', () => ({
     useAccountNotificationToggle: () => ({
         toggleAccountNotification: mockToggleAccountNotification,
+        isTogglePending: mockIsTogglePending,
     }),
 }))
 
@@ -189,6 +193,7 @@ describe('useAccountOptions', () => {
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
         mockToggleAccountNotification.mockResolvedValue(true)
+        mockIsTogglePending.mockReturnValue(false)
         mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
         mockUseCanSignWith.mockImplementation(account => {
             switch (account?.address) {
@@ -1056,6 +1061,46 @@ describe('useAccountOptions', () => {
             })
 
             expect(mockShowToast).not.toHaveBeenCalled()
+        })
+
+        // R3 (PERA-4585 residual): docs/OFFLINE_PAUSED_STATE.md says screens
+        // should use the pending flag to disable the control rather than let
+        // a tap silently resolve `false`. This row now does.
+        it('disables the toggle-notifications option while a toggle for this address is pending', () => {
+            mockIsTogglePending.mockReturnValue(true)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            expect(mockIsTogglePending).toHaveBeenCalledWith('ALGO25ADDRESS')
+            expect(notifOption?.disabled).toBe(true)
+        })
+
+        it('leaves the toggle-notifications option enabled when nothing is pending', () => {
+            mockIsTogglePending.mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            expect(notifOption?.disabled).toBe(false)
         })
 
         it('closes the sheet immediately, without waiting for the backend', () => {

@@ -48,12 +48,19 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { useAccountNotificationToggle } from '../useAccountNotificationToggle'
+import {
+    useAccountNotificationToggle,
+    clearAccountNotificationToggleGuardForTests,
+} from '../useAccountNotificationToggle'
 
 describe('useAccountNotificationToggle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.mutateAsync.mockResolvedValue({})
+        // The in-flight guard is module scope (R2: shared app-wide across
+        // hook instances), so it survives across tests in this file unless
+        // explicitly cleared — a leaked entry would wedge an unrelated test.
+        clearAccountNotificationToggleGuardForTests()
     })
 
     afterEach(() => onlineManager.setOnline(true))
@@ -194,6 +201,11 @@ describe('useAccountNotificationToggle', () => {
         expect(await taps[1]).toBe(false)
         expect(stored).toBe(true)
         expect(mocks.mutateAsync).toHaveBeenCalledTimes(1)
+        // R1: the guard is released in a `finally`, even on failure. Without
+        // that release this assertion would fail and the address would stay
+        // wedged pending forever — switch stuck disabled, no recovery short
+        // of remounting.
+        expect(result.current.isTogglePending('ADDR1')).toBe(false)
     })
 
     it('early-returns a concurrent call for the same address without writing the store', async () => {
@@ -225,6 +237,55 @@ describe('useAccountNotificationToggle', () => {
         expect(secondTap).toBe(false)
         expect(mocks.setAccountEnabled).toHaveBeenCalledTimes(1)
         expect(mocks.showToast).not.toHaveBeenCalled()
+
+        await act(async () => {
+            resolveFirst?.({})
+            await firstTap
+        })
+    })
+
+    // R2: the in-flight guard is module scope, shared by every hook
+    // instance — not per hook instance. Three real call sites
+    // (useAccountOptions, and NotificationSettingsList mounted from two
+    // separate screens) can each mount their own instance of this hook, so
+    // the guard must hold across instances or the divergence R1/R2 guard
+    // against can reappear via a second screen instead of a second tap.
+    it('early-returns a concurrent call for the same address from a second hook instance', async () => {
+        let resolveFirst: ((value: unknown) => void) | undefined
+        mocks.mutateAsync.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    resolveFirst = resolve
+                }),
+        )
+
+        const instanceA = renderHook(() => useAccountNotificationToggle())
+        const instanceB = renderHook(() => useAccountNotificationToggle())
+
+        let firstTap: Promise<boolean> | undefined
+        await act(async () => {
+            firstTap = instanceA.result.current.toggleAccountNotification(
+                'ADDR1',
+                false,
+            )
+        })
+
+        expect(mocks.setAccountEnabled).toHaveBeenCalledTimes(1)
+
+        let secondTap: boolean | undefined
+        await act(async () => {
+            secondTap =
+                await instanceB.result.current.toggleAccountNotification(
+                    'ADDR1',
+                    true,
+                )
+        })
+
+        // The second instance's request never started: no second PATCH, no
+        // second optimistic write.
+        expect(secondTap).toBe(false)
+        expect(mocks.mutateAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.setAccountEnabled).toHaveBeenCalledTimes(1)
 
         await act(async () => {
             resolveFirst?.({})

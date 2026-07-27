@@ -55,6 +55,7 @@ export type AccountOption = {
     subtitle?: string
     onPress: () => void
     variant?: 'default' | 'destructive'
+    disabled?: boolean
 }
 
 export type UseAccountOptionsParams = {
@@ -88,7 +89,8 @@ export const useAccountOptions = ({
     const { showToast } = useToast()
     const { copyToClipboard } = useClipboard()
     const { isAccountEnabled } = useNotificationPreferences()
-    const { toggleAccountNotification } = useAccountNotificationToggle()
+    const { toggleAccountNotification, isTogglePending } =
+        useAccountNotificationToggle()
     const accounts = useAllAccounts()
     const removeAccount = useRemoveAccountByAddress()
     const updateAccount = useUpdateAccount()
@@ -328,6 +330,12 @@ export const useAccountOptions = ({
     }, [])
 
     const notificationsEnabled = isAccountEnabled(account.address)
+    // Mirrors NotificationSettingsList: disable the row instead of letting a
+    // tap silently resolve `false` while a toggle for this address is
+    // already in flight (docs/OFFLINE_PAUSED_STATE.md). Note this only
+    // reflects toggles started by *this* hook instance — see the caveat on
+    // `isTogglePending` in useAccountNotificationToggle.ts.
+    const isNotificationTogglePending = isTogglePending(account.address)
 
     const options = useMemo(() => {
         const items: AccountOption[] = []
@@ -436,6 +444,7 @@ export const useAccountOptions = ({
                 ? t('account_options.mute_notifications')
                 : t('account_options.unmute_notifications'),
             onPress: handleToggleNotifications,
+            disabled: isNotificationTogglePending,
         })
 
         items.push({
@@ -455,6 +464,7 @@ export const useAccountOptions = ({
         canSign,
         isSharedAccount,
         notificationsEnabled,
+        isNotificationTogglePending,
         handleCopyAddress,
         handleShowAddress,
         handleViewPassphrase,
