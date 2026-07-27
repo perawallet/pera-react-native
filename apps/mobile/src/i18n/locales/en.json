@@ -2060,7 +2060,11 @@
         "currency": {
             "title": "Main Currency",
             "description": "Your main currency is <0>{{preferredCurrency}}</0>, and secondary currency is <0>{{fallbackCurrency}}</0>.",
-            "search_placeholder": "Search"
+            "search_placeholder": "Search",
+            "offline_rate": {
+                "title": "Rate unavailable offline",
+                "body": "{{currency}} amounts can't be shown until you're back online. Your selection has been saved."
+            }
         },
         "main": {
             "account_section": "Account",

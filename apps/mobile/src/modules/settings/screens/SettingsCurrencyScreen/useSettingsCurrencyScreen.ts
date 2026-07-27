@@ -10,19 +10,23 @@
  limitations under the License
  */
 
+import { useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     ALGO_ASSET_NAME,
     isAlgoAssetName,
 } from '@perawallet/wallet-core-shared'
 import {
     USD_CURRENCY_ID,
+    currencyQueryKeys,
     type Currency,
     useCurrenciesQuery,
     useCurrency,
 } from '@perawallet/wallet-core-currencies'
+import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
-import { useEffect, useState } from 'react'
 
 type UseSettingsCurrencyScreenResult = {
     setCurrency: (currency: Currency) => void
@@ -31,6 +35,13 @@ type UseSettingsCurrencyScreenResult = {
     filteredData: Currency[]
     preferredCurrency: string
     fallbackCurrency: string
+    /**
+     * True when the device is offline AND the selected currency needs a fiat
+     * rate we have no cached copy of — i.e. amounts elsewhere in the app
+     * cannot be converted yet. The selection itself still applies: the
+     * preferred currency is a local persisted value.
+     */
+    isRateUnavailableOffline: boolean
 }
 
 export const useSettingsCurrencyScreen =
@@ -46,6 +57,21 @@ export const useSettingsCurrencyScreen =
 
         const { data } = useCurrenciesQuery()
         const { invalidateAssetPrices } = useInvalidateAssetPrices()
+        const { network } = useNetwork()
+        const { hasInternet } = useNetworkStatus()
+        const queryClient = useQueryClient()
+
+        const isRateUnavailableOffline = useMemo(() => {
+            if (hasInternet) return false
+            // USD is the identity path in useCurrency, and ALGO rides the
+            // DB-backed algo-usd query, which works offline.
+            if (preferredCurrency === USD_CURRENCY_ID) return false
+            if (isAlgoAssetName(preferredCurrency)) return false
+
+            return !queryClient.getQueryData(
+                currencyQueryKeys.price(network, preferredCurrency),
+            )
+        }, [hasInternet, preferredCurrency, network, queryClient])
 
         useEffect(() => {
             if (!search?.length) {
@@ -73,7 +99,11 @@ export const useSettingsCurrencyScreen =
                 setPreferredCurrency(currency.id)
                 setFallbackCurrency(ALGO_ASSET_NAME)
             }
-            invalidateAssetPrices()
+            // Read connectivity at press time, not from render state.
+            // Offline this would only queue refetches that cannot run.
+            if (useNetworkStatusStore.getState().hasInternet) {
+                invalidateAssetPrices()
+            }
         }
 
         return {
@@ -83,5 +113,6 @@ export const useSettingsCurrencyScreen =
             filteredData,
             preferredCurrency,
             fallbackCurrency,
+            isRateUnavailableOffline,
         }
     }
