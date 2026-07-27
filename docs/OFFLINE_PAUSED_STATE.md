@@ -168,6 +168,35 @@ It owns the middle of the precedence (`offline → error`); callers keep owning
 `renderState` switch (it also drives a `loading`/`empty` fork and an
 offline-aware retry sheet); it renders the identical copy and icons.
 
+## Offline writes: fail fast, roll back, say why
+
+`OfflineTolerantView` covers offline _reads_. Offline _writes_ are a different
+problem: the request has already been attempted, and something local may have
+been changed optimistically.
+
+Every remotely-synced write must satisfy four properties:
+
+1. The optimistic local write is applied immediately, so the control responds.
+2. The network call is attempted immediately — never queued, never paused.
+   `mutationDefaults` (`networkMode: 'always'`) guarantees this.
+3. On rejection the local write is reverted, and `showError` from
+   `@hooks/useErrorToast` surfaces cause-appropriate copy — connectivity
+   failures get `errors.network.no_connection.*`, everything else the
+   PERA-4574 mapping.
+4. Once the interaction settles, persisted local state equals what the backend
+   was last told.
+
+Property 4 is the one that bites. Persisted Zustand stores survive a restart,
+so an optimistic value the backend never received becomes permanent
+divergence. Never leave one behind.
+
+`apps/mobile/src/hooks/useAccountNotificationToggle.ts` is the reference
+implementation. Note that it is a _single_ hook shared by both call sites —
+the bug it replaced was a duplicated toggle where one copy had silently
+dropped the network call.
+
+There is deliberately no offline outbox or replay queue (PERA-4573 policy).
+
 ### Why DB-first hooks still expose `isPaused`
 
 A DB-first query with `networkMode: 'always'` never actually pauses, so its
@@ -175,5 +204,5 @@ A DB-first query with `networkMode: 'always'` never actually pauses, so its
 (`useAccountSummaryQuery`, `useAccountAssetsQuery`, `useAccountBalancesQuery`,
 `useAssetPricesQuery`, `useTransactionHistoryQuery`, …) so that screens can
 consume one uniform, paused-aware shape regardless of whether the underlying
-query is DB-first or pure-network. Surface tickets (PERA-4578..4581, PERA-4584)
-adopt this contract.
+query is DB-first or pure-network. Surface tickets (PERA-4578..4581, PERA-4584,
+PERA-4585) adopt this contract.
