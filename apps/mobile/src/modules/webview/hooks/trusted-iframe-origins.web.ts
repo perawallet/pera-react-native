@@ -64,8 +64,11 @@ const redirectTwinOrigin = (base: string): string | null => {
 // the two can't drift out of lockstep as future surfaces are added here.
 const knownSurfaceBases = (): string[] => [
     config.discoverBaseUrl,
-    getNetworkConfig(Networks.mainnet).bidaliBaseUrl,
-    getNetworkConfig(Networks.testnet).bidaliBaseUrl,
+    // Every network's Bidali origin; fallback networks resolve to testnet's, so
+    // this de-dupes to the same two entries as before.
+    ...Object.values(Networks).map(
+        network => getNetworkConfig(network).bidaliBaseUrl,
+    ),
 ]
 
 /**

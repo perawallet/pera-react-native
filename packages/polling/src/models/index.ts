@@ -16,7 +16,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
-export type LastRefreshedRounds = Record<Network, Nullable<number>>
+export type LastRefreshedRounds = Partial<Record<Network, Nullable<number>>>
 
 export type PollingState = BaseStoreState & {
     lastRefreshedRound: LastRefreshedRounds

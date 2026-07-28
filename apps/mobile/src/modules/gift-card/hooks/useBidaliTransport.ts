@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getNetworkConfig, isMainnet } from '@perawallet/wallet-core-config'
 import type {
     AccountBalances,
     WalletAccount,
@@ -35,6 +35,7 @@ import {
     logger,
     type Optional,
     type Nullable,
+    type Network,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
@@ -51,7 +52,7 @@ type CurrencyInfo = {
 
 const getCurrencyInfo = (
     protocol: string,
-    network: 'mainnet' | 'testnet',
+    network: Network,
 ): Nullable<CurrencyInfo> => {
     switch (protocol) {
         case 'algorand': {
@@ -77,7 +78,7 @@ const getCurrencyInfo = (
 export const computeBidaliBalances = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
-    network: 'mainnet' | 'testnet',
+    network: Network,
 ): Record<string, string> => {
     const balance = balances.get(account?.address ?? '')
 
@@ -88,10 +89,12 @@ export const computeBidaliBalances = (
         a => a.assetId === getKnownAssetId('USDC', network),
     )?.amount
 
-    const isTestnet = network === 'testnet'
+    // Bidali only has mainnet and testnet catalogues; fallback networks use the
+    // testnet one, matching resolvePeraServiceLane.
+    const isMainnetCatalogue = isMainnet(network)
     return {
         algorand: algoBalance?.toString() ?? '0',
-        [isTestnet ? 'testusdcalgorand' : 'usdcalgorand']:
+        [isMainnetCatalogue ? 'usdcalgorand' : 'testusdcalgorand']:
             usdcBalance?.toString() ?? '0',
     }
 }

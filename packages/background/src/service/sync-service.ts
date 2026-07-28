@@ -254,7 +254,11 @@ export class SyncService {
 
         const { lastRefreshedRound } = usePollingStore.getState()
 
-        const neverSynced = lastRefreshedRound[activeNetwork] === null
+        // `?? null` treats a network absent from the (partial) persisted map
+        // the same as one explicitly recorded as never-synced — both must
+        // force-sync below, rather than an absent key silently reading as
+        // "already synced" (undefined !== null).
+        const neverSynced = (lastRefreshedRound[activeNetwork] ?? null) === null
 
         // A prior tick's should-refresh request got 401/403 (BACKEND_API_KEY
         // is wrong/missing) — skip re-issuing that request until
@@ -273,7 +277,7 @@ export class SyncService {
             const result = await sendShouldRefreshRequest(
                 activeNetwork,
                 addresses,
-                lastRefreshedRound[activeNetwork],
+                lastRefreshedRound[activeNetwork] ?? null,
             )
 
             if (result.refresh || neverSynced) {

@@ -32,12 +32,26 @@ describe('parseActiveNetwork', () => {
         expect(parseActiveNetwork('{not json')).toBe('mainnet')
     })
 
-    it('defaults to mainnet on an unknown network value', () => {
-        const raw = '{"state":{"network":"betanet"},"version":1}'
-        expect(parseActiveNetwork(raw)).toBe('mainnet')
-    })
-
     it('defaults to mainnet when state/network is absent from an otherwise valid envelope', () => {
         expect(parseActiveNetwork('{"version":1}')).toBe('mainnet')
+    })
+
+    it('accepts every supported network', () => {
+        for (const network of [
+            'mainnet',
+            'testnet',
+            'betanet',
+            'fnet',
+            'localnet',
+        ]) {
+            const raw = `{"state":{"network":"${network}"},"version":1}`
+            expect(parseActiveNetwork(raw)).toBe(network)
+        }
+    })
+
+    it('still falls back to mainnet for an unknown value', () => {
+        expect(
+            parseActiveNetwork('{"state":{"network":"nope"},"version":1}'),
+        ).toBe('mainnet')
     })
 })

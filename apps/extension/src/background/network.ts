@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-export type ActiveNetwork = 'mainnet' | 'testnet'
+import { type Network, Networks } from '@perawallet/wallet-core-config'
+
+export type ActiveNetwork = Network
+
+const SUPPORTED = new Set<string>(Object.values(Networks))
 
 // Pure parser for the network zustand store's persisted envelope. The store
 // persists through ChromeKeyValueStorageService, which JSON.stringifies the
@@ -20,14 +24,16 @@ export type ActiveNetwork = 'mainnet' | 'testnet'
 // mainnet-fallback behavior for every malformed/missing/unknown case is
 // covered directly by tests instead of only through the SW's discover flow.
 export const parseActiveNetwork = (raw: string | undefined): ActiveNetwork => {
-    if (raw === undefined) return 'mainnet'
+    if (raw === undefined) return Networks.mainnet
     let envelope: unknown
     try {
         envelope = JSON.parse(raw)
     } catch {
-        return 'mainnet'
+        return Networks.mainnet
     }
     const network = (envelope as { state?: { network?: unknown } } | null)
         ?.state?.network
-    return network === 'mainnet' || network === 'testnet' ? network : 'mainnet'
+    return typeof network === 'string' && SUPPORTED.has(network)
+        ? (network as ActiveNetwork)
+        : Networks.mainnet
 }
