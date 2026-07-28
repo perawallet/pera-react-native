@@ -26,6 +26,19 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+// Fully replaced (no `importActual`): the real `@perawallet/wallet-core-assets`
+// barrel transitively pulls in react-native-mmkv, which cannot resolve under
+// this package's jsdom test environment (same class of issue as the
+// `@perawallet/wallet-core-blockchain` mock in
+// `useRekeyFeePreflight.spec.ts` and the provider stub in `vitest.setup.ts`).
+// `./indexer/endpoints` only imports these two named exports, and the routing
+// tests below that reach the indexer path use empty transaction pages, so
+// neither mock needs a return value configured.
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    fetchIndexerAssetDetails: vi.fn(),
+    transformIndexerAssetResponse: vi.fn(),
+}))
+
 // Import after mocks are set up
 const { fetchTransactionHistory, fetchMoreTransactions } =
     await import('../endpoints')
@@ -342,5 +355,100 @@ describe('fetchMoreTransactions', () => {
         expect(call.url).toContain('after_time=2025-02-01')
         expect(call.url).toContain('before_time=2025-02-13')
         expect(call.url).toContain('cursor=xyz')
+    })
+})
+
+describe('routing by network', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    // Real indexer responses omit `next-token` entirely once pagination is
+    // exhausted (verified against the live fnet indexer) rather than sending
+    // `null` — the indexer envelope schema requires that key be a string or
+    // absent.
+    const indexerPage = {
+        data: { 'current-round': 1, transactions: [] },
+        status: 200,
+        statusText: 'OK',
+    }
+
+    const peraPage = {
+        data: { results: [], next: null, previous: null },
+        status: 200,
+        statusText: 'OK',
+    }
+
+    it('uses the pera backend on testnet', async () => {
+        mockQueryClient.mockResolvedValue(peraPage)
+
+        await fetchTransactionHistory({
+            accountAddress: 'ABC123',
+            network: Networks.testnet,
+        })
+
+        expect(mockQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({ backend: 'pera' }),
+        )
+    })
+
+    it('uses the real chain indexer on a fallback network', async () => {
+        mockQueryClient.mockResolvedValue(indexerPage)
+
+        await fetchTransactionHistory({
+            accountAddress: 'ABC123',
+            network: Networks.fnet,
+        })
+
+        expect(mockQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'indexer',
+                network: Networks.fnet,
+                url: '/v2/accounts/ABC123/transactions',
+            }),
+        )
+    })
+
+    it('does not change fetchMoreTransactions pera-backend behavior on mainnet', async () => {
+        mockQueryClient.mockResolvedValue(peraPage)
+
+        await fetchMoreTransactions({
+            url: 'https://api.perawallet.app/v1/accounts/ABC123/transactions/?cursor=abc',
+            network: Networks.mainnet,
+        })
+
+        expect(mockQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({ backend: 'pera' }),
+        )
+    })
+
+    it('fetchMoreTransactions sends the stored cursor as `next` on a fallback network', async () => {
+        mockQueryClient.mockResolvedValue(indexerPage)
+
+        await fetchMoreTransactions({
+            url: 'CURSOR1',
+            network: Networks.fnet,
+            accountAddress: 'ABC123',
+        })
+
+        expect(mockQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'indexer',
+                network: Networks.fnet,
+                url: '/v2/accounts/ABC123/transactions',
+                params: expect.objectContaining({ next: 'CURSOR1' }),
+            }),
+        )
+    })
+
+    it('fetchMoreTransactions rejects on a fallback network without accountAddress', async () => {
+        await expect(
+            fetchMoreTransactions({
+                url: 'CURSOR1',
+                network: Networks.fnet,
+            }),
+        ).rejects.toThrow(/accountAddress/)
+
+        expect(mockQueryClient).not.toHaveBeenCalled()
     })
 })

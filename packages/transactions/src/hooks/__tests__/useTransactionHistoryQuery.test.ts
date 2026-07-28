@@ -22,8 +22,16 @@ import React from 'react'
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
 import * as endpoints from '../../api/history'
 
-// Mock the endpoints module
-vi.mock('../../api/history')
+// Explicit factory (not a blanket automock): automocking `../../api/history`
+// would first load the real module to introspect its shape, which now
+// transitively imports `@perawallet/wallet-core-assets` (via
+// `./indexer/endpoints`) and, through it, react-native-mmkv — unavailable
+// under this package's jsdom test environment. Listing exactly the two
+// functions this hook uses avoids ever touching that real module graph.
+vi.mock('../../api/history', () => ({
+    fetchTransactionHistory: vi.fn(),
+    fetchMoreTransactions: vi.fn(),
+}))
 
 const mockGetTransactionHistory = vi.hoisted(() => vi.fn())
 const mockPersistTransactions = vi.hoisted(() => vi.fn())
@@ -405,5 +413,74 @@ describe('useTransactionHistoryQuery', () => {
 
         const ids = result.current.transactions.map(tx => tx.id)
         expect(ids).toEqual([...fullPage.map(tx => tx.id), 'TX_OLDER'])
+    })
+
+    test('threads accountAddress through to fetchMoreTransactions on a subsequent api page', async () => {
+        // The indexer-backed path (fallback networks) has no replayable URL —
+        // `fetchMoreTransactions` needs the account address alongside the
+        // cursor. This hook already has it in scope, so it must be threaded
+        // through on every `fetchMoreTransactions` call, not just the first.
+        const fullPage = Array.from({ length: 25 }, (_, i) => ({
+            ...mockTransaction,
+            id: `TX${i}`,
+            confirmedRound: 12345 - i,
+            roundTime: 1704067200 - i,
+        }))
+        mockGetTransactionHistory.mockResolvedValue(fullPage)
+
+        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue({
+            transactions: [],
+            pagination: {
+                hasNextPage: true,
+                hasPreviousPage: true,
+                nextUrl: 'CURSOR1',
+                previousUrl: null,
+                totalFetched: 0,
+            },
+            currentRound: 12350,
+        })
+        ;(endpoints.fetchMoreTransactions as Mock).mockResolvedValue({
+            transactions: [],
+            pagination: {
+                hasNextPage: false,
+                hasPreviousPage: true,
+                nextUrl: null,
+                previousUrl: null,
+                totalFetched: 0,
+            },
+            currentRound: 12350,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        // DB page -> first api page (the `__load_more_from_api__` sentinel)
+        result.current.fetchNextPage()
+        await waitFor(() =>
+            expect(result.current.isFetchingNextPage).toBe(false),
+        )
+        expect(result.current.hasNextPage).toBe(true)
+
+        // First api page -> second api page (a real cursor from `nextUrl`)
+        result.current.fetchNextPage()
+        await waitFor(() =>
+            expect(result.current.isFetchingNextPage).toBe(false),
+        )
+
+        expect(endpoints.fetchMoreTransactions).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: 'CURSOR1',
+                network: 'mainnet',
+                accountAddress: mockAddress,
+            }),
+        )
     })
 })
