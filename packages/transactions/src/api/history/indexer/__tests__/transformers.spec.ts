@@ -249,6 +249,41 @@ describe('transformIndexerTransactions', () => {
         expect(result.results).toHaveLength(1)
         expect(result.results[0]?.id).toBe('TX1')
     })
+
+    test('surfaces a row with an unrecognized tx-type instead of dropping it', () => {
+        // The app has purpose-built generic fallbacks for transaction types
+        // it doesn't specialize for (useTransactionListItem.ts's `default:`
+        // case, mapHistoryItemToDisplayableTransaction.ts's `default:` case).
+        // Dropping an otherwise-well-formed row here — instead of letting it
+        // reach those fallbacks — would silently hide a transaction the UI
+        // could have rendered generically: exactly the "transaction never
+        // appears" failure this task exists to prevent, just moved from
+        // routing into validation. 'stpf' (state-proof) is a real,
+        // currently-active transaction type absent from the 7-member
+        // TransactionTypes enum — a concrete instance of "the next type the
+        // protocol adds before the enum is updated," not a hypothetical.
+        const unrecognized = {
+            'current-round': 1,
+            transactions: [
+                {
+                    id: 'STATEPROOF',
+                    'tx-type': 'stpf',
+                    sender: 'STATEPROOFSINK',
+                    fee: 0,
+                    'confirmed-round': 400,
+                    'round-time': 1700000400,
+                },
+            ],
+        }
+
+        const result = transformIndexerTransactions(unrecognized, ME, new Map())
+
+        expect(result.results).toHaveLength(1)
+        expect(result.results[0]).toMatchObject({
+            id: 'STATEPROOF',
+            tx_type: 'stpf',
+        })
+    })
 })
 
 describe('collectAssetIds', () => {

@@ -31,9 +31,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 // Fully replaced (no `importActual`): the real `@perawallet/wallet-core-assets`
 // barrel re-exports Zustand stores backed by react-native-mmkv, which cannot
 // resolve outside the mobile runtime. These tests only need to verify that
-// `indexer/endpoints.ts` wires the two functions it imports correctly — the
-// assets package's own suite already covers `transformIndexerAssetResponse`'s
-// field mapping.
+// `indexer/endpoints.ts` wires the two functions it imports correctly, kept
+// deliberately decoupled from the assets package's own internals.
+// `transformIndexerAssetResponse`'s field mapping (decimals/unitName/name/
+// totalSupply/creator) is covered separately in
+// `packages/assets/src/api/assets/__tests__/transformers.test.ts` — do not
+// assume coverage exists elsewhere without checking; it did not, for this
+// function specifically, until that file was added.
 vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchIndexerAssetDetails: mockFetchIndexerAssetDetails,
     transformIndexerAssetResponse: mockTransformIndexerAssetResponse,
@@ -74,9 +78,12 @@ const pageWithAsset = {
     statusText: 'OK',
 }
 
-// `fetchIndexerAssetDetails` is mocked opaquely — its own package tests cover
-// the real indexer-response shape. Only `transformIndexerAssetResponse`'s
-// (mocked) output shape matters to `buildAssetLookup`.
+// `fetchIndexerAssetDetails` is mocked opaquely here — its raw indexer-response
+// shape is covered by its own test in
+// `packages/assets/src/api/assets/__tests__/endpoints.test.ts`
+// ('fetchIndexerAssetDetails hits the indexer backend'). Only
+// `transformIndexerAssetResponse`'s (also mocked) output shape matters to
+// `buildAssetLookup`'s own logic, which is what this file tests.
 const mockRawAssetResponse = { asset: { index: '888' }, 'current-round': 10 }
 const mockPeraAsset = {
     assetId: '888',

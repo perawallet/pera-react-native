@@ -75,7 +75,16 @@ const transformRow = (
 
     return {
         id: tx.id,
-        tx_type: tx['tx-type'],
+        // Deliberate cast, not an oversight: `tx-type` is a bare `z.string()`
+        // in the indexer schema on purpose (see schema.ts), so an
+        // unrecognized transaction type still reaches this point instead of
+        // being dropped as an unparseable row. The app's own renderers
+        // (useTransactionListItem.ts, mapHistoryItemToDisplayableTransaction.ts)
+        // both have a `default:` case specifically for values outside the
+        // known enum, so letting an unmodeled type flow through to them is
+        // the intended, safer path — do not "fix" this by validating against
+        // the enum here.
+        tx_type: tx['tx-type'] as TransactionHistoryItemApiResponse['tx_type'],
         sender: tx.sender,
         receiver: receiverOf(tx) ?? null,
         confirmed_round: toNumber(tx['confirmed-round']),

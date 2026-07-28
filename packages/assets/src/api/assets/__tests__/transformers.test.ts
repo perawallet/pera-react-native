@@ -15,9 +15,14 @@ import { Decimal } from 'decimal.js'
 import {
     transformCollectibleResponse,
     transformAssetResponse,
+    transformIndexerAssetResponse,
     resolveMediaType,
 } from '../transformers'
-import type { CollectibleResponse, AssetResponse } from '../schema'
+import type {
+    CollectibleResponse,
+    AssetResponse,
+    IndexerAssetResponse,
+} from '../schema'
 
 const createCollectibleResponse = (
     overrides: Partial<CollectibleResponse> = {},
@@ -363,5 +368,74 @@ describe('transformAssetResponse', () => {
 
         expect(result.totalSupply).toBeInstanceOf(Decimal)
         expect(result.totalSupply.toString()).toBe('10000000000')
+    })
+})
+
+const createIndexerAssetResponse = (
+    paramsOverrides: Partial<IndexerAssetResponse['asset']['params']> = {},
+): IndexerAssetResponse => ({
+    asset: {
+        index: '31566704',
+        params: {
+            creator: 'CREATOR_ADDRESS',
+            decimals: 6,
+            // uint64 above 2^53 — real fnet assets have totals around this
+            // order of magnitude; must round-trip through Decimal unrounded.
+            total: '18446744073709551615',
+            'unit-name': 'USDC',
+            name: 'USD Coin',
+            url: 'https://example.com/usdc.png',
+            ...paramsOverrides,
+        },
+    },
+    'current-round': 40000000,
+})
+
+describe('transformIndexerAssetResponse', () => {
+    test('transforms all fields from the indexer response shape', () => {
+        const result = transformIndexerAssetResponse(
+            createIndexerAssetResponse(),
+        )
+
+        expect(result.assetId).toBe('31566704')
+        expect(result.decimals).toBe(6)
+        expect(result.unitName).toBe('USDC')
+        expect(result.name).toBe('USD Coin')
+        expect(result.totalSupply).toBeInstanceOf(Decimal)
+        expect(result.totalSupply.toString()).toBe('18446744073709551615')
+        expect(result.creator).toEqual({ address: 'CREATOR_ADDRESS' })
+        expect(result.url).toBe('https://example.com/usdc.png')
+    })
+
+    test('preserves 0 decimals rather than silently defaulting it', () => {
+        // decimals is a legitimate, common value for whole-unit assets, and
+        // it is falsy. A `||`-based fallback here (instead of reading it
+        // directly, or `??`) would silently replace 0 with something else
+        // and scale every displayed amount for this asset off by a power of
+        // ten.
+        const result = transformIndexerAssetResponse(
+            createIndexerAssetResponse({ decimals: 0 }),
+        )
+
+        expect(result.decimals).toBe(0)
+    })
+
+    test('builds assetId from the asset index, preserving an id above 2^53', () => {
+        const bigId = '18446744073709551615' // 2^64 - 1
+        const result = transformIndexerAssetResponse({
+            asset: {
+                index: bigId,
+                params: {
+                    creator: 'CREATOR_ADDRESS',
+                    decimals: 2,
+                    total: '1',
+                    'unit-name': 'X',
+                    name: 'X Coin',
+                },
+            },
+            'current-round': 1,
+        })
+
+        expect(result.assetId).toBe(bigId)
     })
 })

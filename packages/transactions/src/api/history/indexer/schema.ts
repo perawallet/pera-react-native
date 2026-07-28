@@ -11,7 +11,6 @@
  */
 
 import { z } from 'zod'
-import { TransactionTypes, type TransactionType } from '../../../models/types'
 
 /**
  * uint64-bearing fields (amounts, asset ids, rounds, timestamps) as they come
@@ -53,14 +52,18 @@ export const indexerTransactionSchema: z.ZodType<IndexerTransaction> = z.lazy(
     () =>
         z.object({
             id: z.string(),
-            // Constrained to the same enum the Pera backend's own schema uses
-            // (see `transactionHistoryItemResponseSchema.tx_type` in
-            // `../schema`) rather than a bare `z.string()`. A transaction type
-            // this app has no rendering for is exactly the "unparseable row"
-            // case this schema is built to tolerate — dropping that one row
-            // is strictly safer than forcing an unrecognized string into a
-            // field downstream code switches on.
-            'tx-type': z.nativeEnum(TransactionTypes),
+            // Deliberately a bare `z.string()`, NOT the Pera backend's
+            // `z.nativeEnum(TransactionTypes)` (see
+            // `transactionHistoryItemResponseSchema.tx_type` in `../schema`).
+            // The app has purpose-built generic fallbacks for transaction
+            // types it doesn't specialize for (see the cast onto
+            // `tx_type` in `./transformers.ts`) — constraining this to the
+            // known enum would make an unrecognized type fail validation and
+            // get silently dropped as an "unparseable row," hiding a
+            // transaction the UI could have rendered generically. That is
+            // exactly the failure this task exists to prevent, just moved
+            // from routing into validation. Do not tighten this again.
+            'tx-type': z.string(),
             sender: z.string(),
             fee: amountish,
             'confirmed-round': amountish.optional(),
@@ -75,7 +78,7 @@ export const indexerTransactionSchema: z.ZodType<IndexerTransaction> = z.lazy(
 
 export type IndexerTransaction = {
     id: string
-    'tx-type': TransactionType
+    'tx-type': string
     sender: string
     fee: number | string | bigint
     'confirmed-round'?: number | string | bigint
