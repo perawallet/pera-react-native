@@ -20,6 +20,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { AssetTitle } from '@modules/assets/components'
@@ -34,6 +35,7 @@ export const ARC59SendSummaryScreen = () => {
         isLoading,
         amount,
         assetId,
+        recipientAddress,
         fee,
         asset,
         HeaderImageComponent,
@@ -107,6 +109,15 @@ export const ARC59SendSummaryScreen = () => {
                             variant='h4'
                             ignorePrivacyMode
                         />
+                    </PWView>
+
+                    <PWView style={styles.divider} />
+
+                    <PWView style={styles.row}>
+                        <PWText style={styles.rowLabel}>
+                            {t('send_funds.arc59_summary.recipient_label')}
+                        </PWText>
+                        <AddressDisplay address={recipientAddress} />
                     </PWView>
 
                     <PWView style={styles.divider} />

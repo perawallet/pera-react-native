@@ -65,13 +65,19 @@ vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
         data: null,
         isLoading: true,
     })),
+    getArc59SignedFundingAmount: (summary: {
+        algo_fund_amount: number
+        minimum_balance_requirement: number
+    }): bigint =>
+        BigInt(summary.algo_fund_amount) +
+        BigInt(summary.minimum_balance_requirement),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { id: '0', decimals: 6 },
-    toWholeUnits: vi.fn((value: number) => value / 1_000_000),
+    toWholeUnits: vi.fn((value: number | bigint) => Number(value) / 1_000_000),
     useSingleAssetDetailsQuery: vi.fn(() => ({
         data: null,
         isLoading: false,
@@ -133,9 +139,13 @@ const mockSummary = {
     is_arc59_opted_in: false,
     minimum_balance_requirement: 100_000,
     inner_tx_count: 4,
-    total_protocol_and_mbr_fee: 300_000,
+    // Decoy: the amount actually signed is algo_fund_amount + MBR = 300_000.
+    // total_protocol_and_mbr_fee is a DIFFERENT field the signature never uses;
+    // display/pre-check must ignore it (PERA-4710), so a fee of 0.3 (not 0.004)
+    // proves the value comes from the signed fields.
+    total_protocol_and_mbr_fee: 4_000,
     inbox_address: 'INBOXADDR',
-    algo_fund_amount: 300_000,
+    algo_fund_amount: 200_000,
     warning_message: null,
 }
 

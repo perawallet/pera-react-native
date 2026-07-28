@@ -18,9 +18,11 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
-import type { Arc59SendSummaryResponse } from '../api'
+import { getArc59SignedFundingAmount } from '../getArc59SignedFundingAmount'
 import { ARC59Client } from '../clients'
 import { buildGroup } from '../utils'
+
+import type { Arc59SendSummaryResponse } from '../api'
 
 type SendViaInboxParams = {
     sender: string
@@ -58,10 +60,10 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
 
             const composer = algokit.newGroup()
 
-            // Payment = algo_fund_amount + minimum_balance_requirement
-            const totalPaymentAmount =
-                BigInt(summary.algo_fund_amount) +
-                BigInt(summary.minimum_balance_requirement)
+            // Payment = algo_fund_amount + minimum_balance_requirement. Shared
+            // with the summary screen's display + balance-check so the amount
+            // shown/checked can never diverge from the amount signed (PERA-4710).
+            const totalPaymentAmount = getArc59SignedFundingAmount(summary)
 
             if (totalPaymentAmount > 0n) {
                 composer.addPayment({
