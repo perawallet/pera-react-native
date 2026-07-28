@@ -39,6 +39,7 @@
     "audit": "pnpm audit --prod --audit-level=high",
     "lint:bundle": "bash tools/check-prod-bundle.sh",
     "check:ssl-pins": "node tools/check-pinned-chains.mjs",
+    "check:single-algosdk": "node tools/check-single-algosdk.mjs",
     "fallow": "fallow --skip health"
   },
   "devDependencies": {
