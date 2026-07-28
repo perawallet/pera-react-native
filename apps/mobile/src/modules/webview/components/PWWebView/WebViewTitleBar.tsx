@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { useLanguage } from '@hooks/useLanguage'
 import { PWIcon } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWView } from '@components/core/PWView'
@@ -34,8 +35,15 @@ export const WebViewTitleBar = ({
 }: WebViewTitleBarProps) => {
     // The title bar uses none of the inset-dependent styles.
     const styles = useStyles({ bottomInset: 0 })
+    const { t } = useLanguage()
 
-    const domain = useMemo(() => getDisplayHost(url), [url])
+    // An opaque origin (about:/data:/blob:) has no host to show. Say so
+    // explicitly — a blank origin line under a page-controlled title reads as
+    // "no claim made" when the page is in fact unattributable (PERA-4665).
+    const domain = useMemo(
+        () => getDisplayHost(url) ?? t('common.webview.unknown_host'),
+        [url, t],
+    )
 
     return (
         <PWView style={styles.titleBar}>

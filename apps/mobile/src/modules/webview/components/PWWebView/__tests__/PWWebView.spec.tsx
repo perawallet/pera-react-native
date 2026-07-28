@@ -73,10 +73,45 @@ describe('PWWebView title bar host', () => {
         act(() => {
             capturedWebViewProps.current?.onNavigationStateChange?.({
                 url: 'https://evil.xyz/phish',
+                loading: false,
             })
         })
 
         expect(screen.getByText('evil.xyz')).toBeTruthy()
+        expect(screen.queryByText('good.xyz')).toBeNull()
+    })
+
+    it('does not move the label to a navigation that has not committed', () => {
+        // A 204 / attachment response leaves the user on the current page. An
+        // eager label would name the target and hand a page the frozen-host
+        // spoof back in mirror image.
+        renderWebView()
+
+        act(() => {
+            capturedWebViewProps.current?.onNavigationStateChange?.({
+                url: 'https://perawallet.app/looks-legit',
+                loading: true,
+            })
+        })
+
+        expect(screen.getByText('good.xyz')).toBeTruthy()
+        expect(screen.queryByText('perawallet.app')).toBeNull()
+    })
+
+    it('labels an opaque origin explicitly instead of rendering a blank host', () => {
+        // `about:blank` + document.write() lets a page pick the title; leaving
+        // the origin line empty reads as "no claim", not "unattributable".
+        renderWebView()
+
+        act(() => {
+            capturedWebViewProps.current?.onNavigationStateChange?.({
+                url: 'about:blank',
+                loading: false,
+            })
+        })
+
+        // `t` returns the key under test setup.
+        expect(screen.getByText('common.webview.unknown_host')).toBeTruthy()
         expect(screen.queryByText('good.xyz')).toBeNull()
     })
 })

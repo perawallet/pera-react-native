@@ -127,9 +127,17 @@ export const PWWebView = (props: PWWebViewProps) => {
     // Re-evaluated on every navigation event below — the bridge must downgrade
     // to untrusted as soon as the WebView leaves the trusted base origin
     // (redirect, link click, JS-driven navigation, opened iframe top-nav).
-    // Also feeds the title bar's host label, so the displayed origin tracks
-    // the live page instead of freezing on the open-time url (PERA-4665).
+    // Updated eagerly (at load START), which is the fail-safe direction for a
+    // trust decision: we distrust a target before we've committed to it.
     const [currentUrl, setCurrentUrl] = useState(url)
+
+    // What the title bar shows. Deliberately NOT the eager value: a navigation
+    // that never commits (204, Content-Disposition: attachment, blocked load)
+    // leaves the user on the previous page, and an eager label would name the
+    // target — the same frozen/wrong-host spoof this ticket fixes, inverted. So
+    // the label follows committed navigations only, like a browser URL bar
+    // (PERA-4665).
+    const [committedUrl, setCommittedUrl] = useState(url)
 
     const isSecure = useMemo(
         () => isTrustedWebviewOrigin(currentUrl, [config.discoverBaseUrl]),
@@ -220,6 +228,11 @@ export const PWWebView = (props: PWWebViewProps) => {
             // immediately downgrades the bridge to untrusted.
             if (navState.url) {
                 setCurrentUrl(navState.url)
+                // `loading: false` marks a committed navigation — including
+                // same-document ones (hash/pushState), which never "load".
+                if (!navState.loading) {
+                    setCommittedUrl(navState.url)
+                }
             }
         },
         [],
@@ -380,7 +393,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                     onCloseRequested={onCloseRequested}
                     onReload={reload}
                     title={title}
-                    url={currentUrl}
+                    url={committedUrl}
                 />
             )}
 
