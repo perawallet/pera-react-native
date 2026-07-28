@@ -12,6 +12,7 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
 
 const mocks = vi.hoisted(() => ({
@@ -25,21 +26,38 @@ const mocks = vi.hoisted(() => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({
-        network: mocks.network,
-        isMainnet: mocks.network === Networks.mainnet,
-        isTestnet: mocks.network === Networks.testnet,
-    }),
-    useNetworkStore: {
-        getState: () => ({ setNetwork: mocks.setNetwork }),
-    },
-}))
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    // Real store (not hand-mocked): setOverride/clearOverride/resetState need
+    // genuine zustand reactivity so this hook's `networks` memo re-renders on
+    // change. Imported by its own module path (not the package barrel) to
+    // avoid evaluating utils/algorandClient's module-level
+    // `useNodeOverrideStore.subscribe(...)` side effect.
+    const { useNodeOverrideStore, getNodeEndpointOverride } =
+        await vi.importActual<
+            typeof import('../../../../../../../../../packages/blockchain/src/store/node-override-store')
+        >(
+            '../../../../../../../../../packages/blockchain/src/store/node-override-store',
+        )
+
+    return {
+        useNetwork: () => ({
+            network: mocks.network,
+            isMainnet: mocks.network === Networks.mainnet,
+            isTestnet: mocks.network === Networks.testnet,
+        }),
+        useNetworkStore: {
+            getState: () => ({ setNetwork: mocks.setNetwork }),
+        },
+        useNodeOverrideStore,
+        getNodeEndpointOverride,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: () => mocks.getSyncService(),
 }))
 
+import { useNodeOverrideStore } from '@perawallet/wallet-core-blockchain'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen.web'
 
 describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
@@ -50,15 +68,104 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
             invalidateQueries: mocks.invalidateQueries,
             restart: mocks.restart,
         }))
+        useNodeOverrideStore.getState().resetState()
     })
 
-    it('switches to testnet: persists the network and nudges the sync service', async () => {
+    it('lists every network exactly once', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        expect(result.current.networks.map(row => row.network)).toEqual(
+            Object.values(Networks),
+        )
+    })
+
+    it('marks the active network as selected and the rest as not', () => {
+        mocks.network = Networks.testnet
+
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        const selected = result.current.networks.filter(row => row.isSelected)
+        expect(selected.map(row => row.network)).toEqual([Networks.testnet])
+    })
+
+    it('shows baked endpoints and no override by default', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+        const fnet = result.current.networks.find(
+            row => row.network === Networks.fnet,
+        )
+
+        expect(fnet?.algodUrl).toBe(getNetworkConfig(Networks.fnet).algodUrl)
+        expect(fnet?.isOverridden).toBe(false)
+    })
+
+    it('saving an endpoint marks the row overridden', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        act(() => {
+            result.current.saveEndpoints(Networks.localnet, {
+                algodUrl: 'http://10.0.0.5:4001',
+            })
+        })
+
+        const localnet = result.current.networks.find(
+            row => row.network === Networks.localnet,
+        )
+        expect(localnet?.algodUrl).toBe('http://10.0.0.5:4001')
+        expect(localnet?.isOverridden).toBe(true)
+    })
+
+    it('rejects a malformed URL rather than persisting it', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        act(() => {
+            result.current.saveEndpoints(Networks.fnet, {
+                algodUrl: 'not-a-url',
+            })
+        })
+
+        expect(
+            useNodeOverrideStore.getState().overrides[Networks.fnet],
+        ).toBeUndefined()
+    })
+
+    it('resetEndpoints restores the baked values', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        act(() => {
+            result.current.saveEndpoints(Networks.fnet, {
+                algodUrl: 'http://a.example',
+            })
+        })
+        act(() => {
+            result.current.resetEndpoints(Networks.fnet)
+        })
+
+        const fnet = result.current.networks.find(
+            row => row.network === Networks.fnet,
+        )
+        expect(fnet?.isOverridden).toBe(false)
+        expect(fnet?.algodUrl).toBe(getNetworkConfig(Networks.fnet).algodUrl)
+    })
+
+    it('selects a different network: persists it, flips isSwitching, and nudges the sync service', async () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
 
         await act(async () => {
-            await result.current.switchTo(Networks.testnet)
+            await result.current.selectNetwork(Networks.testnet)
         })
 
         expect(mocks.setNetwork).toHaveBeenCalledWith(Networks.testnet)
@@ -67,20 +174,20 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         await waitFor(() => expect(result.current.isSwitching).toBe(false))
     })
 
-    it('is a no-op when switching to the current network', async () => {
+    it('is a no-op when selecting the current network', async () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
 
         await act(async () => {
-            await result.current.switchTo(Networks.mainnet)
+            await result.current.selectNetwork(Networks.mainnet)
         })
 
         expect(mocks.setNetwork).not.toHaveBeenCalled()
         expect(mocks.getSyncService).not.toHaveBeenCalled()
     })
 
-    it('swallows a thrown getSyncService (sync not yet initialized) and still switches', async () => {
+    it('swallows a thrown getSyncService (sync not yet initialized) and still selects', async () => {
         mocks.getSyncService.mockImplementation(() => {
             throw new Error('SyncService not yet initialized')
         })
@@ -89,7 +196,7 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         )
 
         await act(async () => {
-            await result.current.switchTo(Networks.testnet)
+            await result.current.selectNetwork(Networks.testnet)
         })
 
         expect(mocks.setNetwork).toHaveBeenCalledWith(Networks.testnet)

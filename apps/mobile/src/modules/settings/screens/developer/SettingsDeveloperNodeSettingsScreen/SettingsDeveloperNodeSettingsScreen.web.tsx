@@ -10,19 +10,22 @@
  limitations under the License
  */
 
-import { Networks } from '@perawallet/wallet-core-shared'
-
 import { PWScreen, PWView } from '@components/core'
-import { PWRadioButton } from '@components/core/PWRadioButton'
 import { useLanguage } from '@hooks/useLanguage'
+import { NodeSettingsRow } from './NodeSettingsRow'
 import { useSettingsDeveloperNodeSettingsScreen } from './useSettingsDeveloperNodeSettingsScreen.web'
 import { useStyles } from './styles'
 
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { isMainnet, isTestnet, isSwitching, switchTo } =
-        useSettingsDeveloperNodeSettingsScreen()
+    const {
+        networks,
+        isSwitching,
+        selectNetwork,
+        saveEndpoints,
+        resetEndpoints,
+    } = useSettingsDeveloperNodeSettingsScreen()
 
     return (
         <PWScreen>
@@ -30,20 +33,19 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                 style={styles.container}
                 testID='node_settings_screen'
             >
-                <PWRadioButton
-                    testID='node_settings_mainnet_radio'
-                    title={t('settings.developer.node_settings.mainnet_label')}
-                    onPress={() => void switchTo(Networks.mainnet)}
-                    isSelected={isMainnet}
-                    isDisabled={isSwitching}
-                />
-                <PWRadioButton
-                    testID='node_settings_testnet_radio'
-                    title={t('settings.developer.node_settings.testnet_label')}
-                    onPress={() => void switchTo(Networks.testnet)}
-                    isSelected={isTestnet}
-                    isDisabled={isSwitching}
-                />
+                {networks.map(row => (
+                    <NodeSettingsRow
+                        key={row.network}
+                        row={row}
+                        label={t(row.labelKey)}
+                        isDisabled={isSwitching}
+                        onSelect={() => void selectNetwork(row.network)}
+                        onSave={endpoints =>
+                            saveEndpoints(row.network, endpoints)
+                        }
+                        onReset={() => resetEndpoints(row.network)}
+                    />
+                ))}
             </PWView>
         </PWScreen>
     )

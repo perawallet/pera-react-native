@@ -18,5 +18,23 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'column',
             gap: theme.spacing.md,
         },
+        rowContainer: {
+            gap: theme.spacing.md,
+            padding: theme.spacing.lg,
+            borderWidth: theme.borders.sm,
+            borderColor: theme.colors.layerGray,
+            borderRadius: theme.borderRadius.lg,
+        },
+        sectionTitle: {
+            color: theme.colors.textGrayLighter,
+        },
+        overriddenHint: {
+            color: theme.colors.positive,
+        },
+        actionsRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
     }
 })

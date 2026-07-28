@@ -502,6 +502,13 @@
         "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
         "back_online": "Back online",
         "testnet_indicator": "TestNet",
+        "network_label": {
+            "mainnet": "MainNet",
+            "testnet": "TestNet",
+            "betanet": "BetaNet",
+            "fnet": "FNet",
+            "localnet": "LocalNet"
+        },
         "yes": "Yes",
         "no": "No",
         "enter_stealth_mode": "Enter Stealth Mode",
@@ -2106,8 +2113,18 @@
             "node_settings": {
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet",
+                "betanet_label": "Algorand BetaNet",
+                "fnet_label": "Algorand FNet",
+                "localnet_label": "Algorand LocalNet",
                 "enable_mainnet": "Enable MainNet",
-                "enable_testnet": "Enable TestNet"
+                "enable_testnet": "Enable TestNet",
+                "algod_url_label": "Algod URL",
+                "indexer_url_label": "Indexer URL",
+                "custom_endpoints_title": "Custom endpoints",
+                "save_endpoints": "Save endpoints",
+                "reset_endpoints": "Reset to default",
+                "invalid_url": "Enter a valid http:// or https:// URL",
+                "overridden_hint": "Using a custom endpoint"
             },
             "debug_dapp": "Test Dapp",
             "manage_cache": "Manage Cache",

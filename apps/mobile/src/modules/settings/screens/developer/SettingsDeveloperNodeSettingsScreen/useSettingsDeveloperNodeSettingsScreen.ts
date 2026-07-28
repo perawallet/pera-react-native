@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import {
     useNetwork,
-    useNetworkStore,
     useNodeOverrideStore,
     type NodeEndpointOverride,
 } from '@perawallet/wallet-core-blockchain'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
 
 export type NetworkRow = {
@@ -30,12 +30,8 @@ export type NetworkRow = {
     isOverridden: boolean
 }
 
-// Duplicated from the native hook on purpose: Metro/webpack resolve a bare
-// `./useSettingsDeveloperNodeSettingsScreen` import to THIS `.web` file
-// regardless of which module does the importing, so the native and web
-// hooks can't safely share this via a direct cross-import between the two
-// platform variants.
-const LABEL_KEYS: Record<Network, string> = {
+// Static keys: pnpm lint:i18n cannot verify an interpolated key.
+export const LABEL_KEYS: Record<Network, string> = {
     [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
     [Networks.testnet]: 'settings.developer.node_settings.testnet_label',
     [Networks.betanet]: 'settings.developer.node_settings.betanet_label',
@@ -43,7 +39,7 @@ const LABEL_KEYS: Record<Network, string> = {
     [Networks.localnet]: 'settings.developer.node_settings.localnet_label',
 }
 
-const isValidEndpoint = (value: string): boolean => {
+export const isValidEndpoint = (value: string): boolean => {
     try {
         const { protocol } = new URL(value)
         return protocol === 'http:' || protocol === 'https:'
@@ -54,21 +50,15 @@ const isValidEndpoint = (value: string): boolean => {
 
 type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
-    isSwitching: boolean
     selectNetwork: (network: Network) => Promise<void>
     saveEndpoints: (network: Network, endpoints: NodeEndpointOverride) => void
     resetEndpoints: (network: Network) => void
 }
 
-// Web/extension variant: no backend device registration (that's native-only
-// push-notification plumbing, irrelevant and failure-prone here). Selecting
-// a network is just persisting the store and nudging the sync service, so
-// this hook tracks its own `isSwitching` flag directly rather than
-// delegating to useSwitchNetwork like the native hook does.
 export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
         const { network: activeNetwork } = useNetwork()
-        const [isSwitching, setIsSwitching] = useState(false)
+        const { switchNetwork } = useSwitchNetwork()
         const overrides = useNodeOverrideStore(state => state.overrides)
         const setOverride = useNodeOverrideStore(state => state.setOverride)
         const clearOverride = useNodeOverrideStore(state => state.clearOverride)
@@ -92,14 +82,10 @@ export const useSettingsDeveloperNodeSettingsScreen =
         )
 
         const selectNetwork = useCallback(
-            async (network: Network): Promise<void> => {
-                if (network === activeNetwork) {
-                    return
-                }
-
-                setIsSwitching(true)
-                useNetworkStore.getState().setNetwork(network)
-
+            async (network: Network) => {
+                // Offline-safe local write; device registration is deferred
+                // (see useSwitchNetwork). Nothing to toast about.
+                await switchNetwork(network)
                 try {
                     const syncService = getSyncService()
                     syncService.invalidateQueries()
@@ -107,10 +93,8 @@ export const useSettingsDeveloperNodeSettingsScreen =
                 } catch {
                     // SyncService not yet initialized
                 }
-
-                setIsSwitching(false)
             },
-            [activeNetwork],
+            [switchNetwork],
         )
 
         const saveEndpoints = useCallback(
@@ -142,11 +126,5 @@ export const useSettingsDeveloperNodeSettingsScreen =
             [clearOverride],
         )
 
-        return {
-            networks,
-            isSwitching,
-            selectNetwork,
-            saveEndpoints,
-            resetEndpoints,
-        }
+        return { networks, selectNetwork, saveEndpoints, resetEndpoints }
     }
