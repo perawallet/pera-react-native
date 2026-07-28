@@ -22,6 +22,10 @@ import { config, configSchema, type Config } from '../main'
 const prodOverrides = {
     mainnetBackendUrl: 'https://mainnet.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.api.perawallet.app',
+    // Spread from the ambient `config`, this carries whatever the local
+    // generated-env resolved to — a staging host unless APP_ENV was production.
+    // getConfig always derives it, so pin it to keep the fixture coherent.
+    discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
 }
 
 const baseProdConfig: Config = {
@@ -68,6 +72,15 @@ describe('production staging-URL guard', () => {
             expect(() => configSchema.parse(candidate)).not.toThrow()
         },
     )
+
+    it('ignores discoverBaseUrl, which getConfig derives instead of reading from env', () => {
+        const candidate: Config = {
+            ...baseProdConfig,
+            discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
+        }
+
+        expect(() => configSchema.parse(candidate)).not.toThrow()
+    })
 
     it('ignores a third-party sandbox host in a production build', () => {
         const candidate: Config = {

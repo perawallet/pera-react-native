@@ -29,6 +29,15 @@ import { generatedEnv } from './generated-env'
  */
 const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
+/**
+ * Only fields with an env override can be *missing* one, which is what the
+ * guard checks. It also keeps `discoverBaseUrl` out: getConfig derives that
+ * from appEnvironment structurally, so a production build always gets the
+ * production URL and there is nothing to override.
+ */
+const hasEnvOverride = (field: string): boolean =>
+    field in overrideEnvironmentMap
+
 export const configSchema = z
     .object({
         mainnetBackendUrl: z.url(),
@@ -208,12 +217,10 @@ export const configSchema = z
         for (const [field, value] of Object.entries(ctx.value)) {
             if (typeof value !== 'string') continue
             if (!value.includes('staging') || !isFirstPartyUrl(value)) continue
-            const envVar =
-                overrideEnvironmentMap[field as keyof Config] ??
-                'its env override'
+            if (!hasEnvOverride(field)) continue
             ctx.issues.push({
                 code: 'custom',
-                message: `${field} points at staging in a production build — set ${envVar}`,
+                message: `${field} points at staging in a production build — set ${overrideEnvironmentMap[field as keyof Config]}`,
                 path: [field],
                 input: value,
             })
