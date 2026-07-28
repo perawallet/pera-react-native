@@ -124,20 +124,28 @@ Quantum accounts now sign locally end-to-end on real Falcon-1024:
   `PeraSignedTxnResult` and `isQuantumSignedTransaction` are deleted; see
   Seam B above for the current `pqSigningDigest`/`assemblePQSignedTransaction`
   surface.
-- **Dedicated strategy** — `createQuantumStrategy` (`canSign → isQuantumAccount`)
-  signs transactions into carriers via `useQuantumTransactionSigner`
-  (`assembleQuantumSignedTxn`, Seam B) and reuses the shared
-  `standardDataSigning` helpers for arbitrary-data + ARC-60.
-- **Machine routing** — `determineSignerType` classifies quantum as its own
-  `'quantum'` `ResolvedSignerType` (checked before `hasSigningKeys`, since
-  quantum accounts also carry a `keyPairId`); `quantumSignerActor` runs the
-  strategy. `createLocalKeyStrategy` no longer accepts quantum (single owner).
-  Rekey works both ways: an Ed25519 account rekeyed to a quantum auth routes to
-  the quantum strategy (the fork sets `sgnr` from `txn.sender` vs the signer's
-  own quantum address); a quantum account rekeyed to Ed25519 routes to local-key.
-- **Submission stays gated** — the algod transport keeps the synthetic
-  `isQuantumMock` txid path; the callback transport refuses to deliver a Falcon
-  carrier (`assertNoQuantumSignedTransactions`). Real broadcast is PQ-019.
+- **One shared strategy (PERA-4653)** — `createQuantumStrategy` and
+  `quantumSignerActor` are deleted. Quantum accounts sign through the same
+  `createLocalKeyStrategy` / `localKeySignerActor` as Algo25/HD: `canSign`
+  is just `hasSigningKeys`, with no separate quantum branch.
+  `useLocalKeyTransactionSigner` calls `useKMS().getPQSigningInfo(keyPairId)`
+  once per call — the single place the scheme is decided — and signs
+  `pqSigningDigest(txn)` (not the raw encoding) when it returns non-null,
+  assembling the result via `assemblePQSignedTransaction`. Arbitrary-data and
+  ARC-60 already used the shared `standardDataSigning` helpers, so those were
+  unaffected.
+- **Machine routing** — `determineSignerType` and `ResolvedSignerType` no
+  longer have a `'quantum'` case; a quantum auth account (its own or via
+  rekey either direction) classifies as `'localKey'` exactly like algo25/HD,
+  since quantum accounts satisfy `hasSigningKeys` (they carry a `keyPairId`
+  too). `assemblePQSignedTransaction` sets `sgnr` itself from `txn.sender` vs.
+  the signer's derived quantum address — the local-key signer does not
+  compute it for the PQ branch.
+- **Submission is quantum-agnostic (PQ-019/PQ-021)** — no gate or mock: a
+  quantum-signed group is a plain `PeraSignedTransaction` with `pqsig` set,
+  so it broadcasts through the ordinary algod/callback transports unchanged.
+  It reaches the chain only on a `pqsig`-capable node (LocalNet today);
+  other nodes reject it at submit.
 
 ## PQ-020 — native on-device Falcon (landed; device verification pending)
 

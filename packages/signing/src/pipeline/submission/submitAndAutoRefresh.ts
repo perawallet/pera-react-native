@@ -61,11 +61,13 @@ export interface SubmitAndAutoRefreshCoreInput {
  * - Confirmation timeouts and other background errors are swallowed and
  *   logged. Periodic sync is the safety net.
  *
- * Quantum (Falcon) groups are not special-cased here: the carrier-aware
- * `encodeSignedTransaction` emits the node-ready `pqsig` bytes, so a
- * quantum-signed group broadcasts through the same path as any other. It
- * therefore reaches the chain only on a `pqsig`-capable node (LocalNet until
- * an official algod ships Falcon support); other nodes reject it at submit.
+ * Quantum (Falcon) groups are not special-cased here: a PQ-signed
+ * transaction is just a `PeraSignedTransaction` with `pqsig` set, so
+ * `encodeSignedTransaction` emits the node-ready bytes the same way it does
+ * for any other transaction, and a quantum-signed group broadcasts through
+ * the same path. It therefore reaches the chain only on a `pqsig`-capable
+ * node (LocalNet until an official algod ships Falcon support); other nodes
+ * reject it at submit.
  *
  * Exposed primarily for unit testing — call sites use {@link submitAndAutoRefresh}.
  */
