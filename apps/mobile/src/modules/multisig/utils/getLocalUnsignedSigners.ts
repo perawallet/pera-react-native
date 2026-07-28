@@ -13,6 +13,7 @@
 import {
     hasSigningKeys,
     isHardwareWalletAccount,
+    isQuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
@@ -60,6 +61,14 @@ export const getLocalUnsignedSigners = (
         if (!account) continue
         if (!hasSigningKeys(account) && !isHardwareWalletAccount(account))
             continue
+        // Quantum participants carry their own keyPairId (hasSigningKeys is
+        // true), but multisig slots verify Ed25519 signatures only, and
+        // algosdk's own PQ signer rejects multisig signing outright — so a
+        // quantum participant can never contribute a usable subsignature.
+        // Mirrors packages/signing/src/pipeline/signing/utils.ts's
+        // getLocalParticipants; keep both in agreement rather than admitting
+        // quantum here instead.
+        if (isQuantumAccount(account)) continue
 
         result.push(account)
     }

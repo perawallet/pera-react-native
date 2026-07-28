@@ -41,6 +41,13 @@ const buildAlgo25Account = (address: string): WalletAccount => ({
     keyPairId: `kp-${address}`,
 })
 
+const buildQuantumAccount = (address: string): WalletAccount => ({
+    id: `quantum-${address}`,
+    type: AccountTypes.quantum,
+    address,
+    keyPairId: `kp-${address}`,
+})
+
 const buildHardwareAccount = (address: string): WalletAccount => ({
     id: `hardware-${address}`,
     type: AccountTypes.hardware,
@@ -220,6 +227,29 @@ describe('getLocalUnsignedSigners', () => {
         const result = getLocalUnsignedSigners(signRequest, [participant, auth])
 
         expect(result.map(x => x.address)).toEqual(['PARTICIPANT'])
+    })
+
+    it('excludes a quantum participant even though it carries its own signing keys', () => {
+        // Multisig slots verify Ed25519 signatures only, and algosdk's own PQ
+        // signer throws "FALCON-1024 does not support multisig signing" —
+        // dispatching a quantum participant here would just fail later at
+        // sign time instead of being filtered out upstream.
+        const quantum = buildQuantumAccount('Q')
+        const signRequest = buildSignRequest(['Q'])
+
+        const result = getLocalUnsignedSigners(signRequest, [quantum])
+
+        expect(result).toEqual([])
+    })
+
+    it('still returns the usable non-quantum participant when a quantum participant is also present', () => {
+        const quantum = buildQuantumAccount('Q')
+        const a = buildAlgo25Account('A')
+        const signRequest = buildSignRequest(['Q', 'A'])
+
+        const result = getLocalUnsignedSigners(signRequest, [quantum, a])
+
+        expect(result.map(x => x.address)).toEqual(['A'])
     })
 
     it('returns empty when transactionLists is empty', () => {

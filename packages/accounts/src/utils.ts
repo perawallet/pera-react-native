@@ -253,9 +253,9 @@ export const canSignWith = (
  * followed: a watch-rekeyed account cannot sign arbitrary data even when its
  * auth chain is locally held.
  *
- * Equivalent to `hasSigningKeys`: only Algo25 / HDWallet accounts carry their
- * own keyPairId. Hardware (no raw-byte opcode), multisig (no signature
- * shape), and watch accounts are naturally excluded.
+ * Equivalent to `hasSigningKeys`: Algo25, HDWallet, and quantum accounts all
+ * carry their own keyPairId. Hardware (no raw-byte opcode), multisig (no
+ * signature shape), and watch accounts are naturally excluded.
  */
 export const canSignArbitraryData = (account: WalletAccount): boolean =>
     hasSigningKeys(account)
