@@ -371,6 +371,13 @@ describe('fetchAssetFromApis merge precedence', () => {
         expect(asset.decimals).toBe(indexerDecimals)
         expect(asset.name).toBe('FnetThing')
         expect(asset.unitName).toBe('FNT')
+        // creator is an object — toEqual, not toBe. The indexer lane's creator
+        // ('FNET_CHAIN_CREATOR') must win over Pera's ('PERA_TESTNET_CREATOR').
+        expect(asset.creator).toEqual({ address: 'FNET_CHAIN_CREATOR' })
+        // totalSupply is a Decimal; compare via toString so a Pera-wins
+        // regression (1000000000000, from the Pera fixture's total) is
+        // distinguishable from the indexer's 5000000.
+        expect(asset.totalSupply.toString()).toBe('5000000')
     })
 
     it('pera still supplies its own metadata on a fallback network', async () => {
