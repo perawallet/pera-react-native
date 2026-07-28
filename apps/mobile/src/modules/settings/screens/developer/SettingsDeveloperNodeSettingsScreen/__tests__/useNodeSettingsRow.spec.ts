@@ -62,7 +62,7 @@ describe('useNodeSettingsRow', () => {
         expect(result.current.algodUrlError).toBe(false)
     })
 
-    test('saving valid endpoints forwards both current drafts and shows no error', () => {
+    test('saving a single edited field forwards only that field', () => {
         const onSave = vi.fn()
         const row = makeRow()
         const { result } = renderHook(() =>
@@ -76,15 +76,18 @@ describe('useNodeSettingsRow', () => {
             result.current.handleSave()
         })
 
+        // algodUrl was never touched — must NOT be forwarded, or it would
+        // get pinned to whatever it happened to read at save time (defeating
+        // per-field overrides: an untouched field should keep tracking the
+        // baked default, or a separately-set override, indefinitely).
         expect(onSave).toHaveBeenCalledWith({
-            algodUrl: row.algodUrl,
             indexerUrl: 'http://10.0.0.5:8980',
         })
         expect(result.current.algodUrlError).toBe(false)
         expect(result.current.indexerUrlError).toBe(false)
     })
 
-    test('saving a malformed algod URL flags only that field, but still forwards to the caller', () => {
+    test('saving a malformed algod URL flags only that field, and forwards only that field', () => {
         const onSave = vi.fn()
         const row = makeRow()
         const { result } = renderHook(() =>
@@ -102,11 +105,49 @@ describe('useNodeSettingsRow', () => {
         expect(result.current.indexerUrlError).toBe(false)
         // The screen-level hook independently re-validates and drops the bad
         // field before it ever reaches the store — this hook only decides
-        // what to show inline, so it forwards the raw draft either way.
-        expect(onSave).toHaveBeenCalledWith({
-            algodUrl: 'not-a-url',
-            indexerUrl: row.indexerUrl,
+        // what to show inline, so it forwards the raw (changed) draft either
+        // way. The untouched indexerUrl must not ride along.
+        expect(onSave).toHaveBeenCalledWith({ algodUrl: 'not-a-url' })
+    })
+
+    test('never validates or forwards an untouched field, even if its current value is invalid', () => {
+        const onSave = vi.fn()
+        // Contrived: a pre-existing "invalid" value the developer never
+        // touches this save. In practice baked/previously-saved values are
+        // always valid by construction, but the contract must hold either
+        // way — an untouched field is not this save's business.
+        const row = makeRow({ algodUrl: 'not-a-url' })
+        const { result } = renderHook(() =>
+            useNodeSettingsRow({ row, onSave, onReset: vi.fn() }),
+        )
+
+        act(() => {
+            result.current.handleIndexerUrlChange('http://10.0.0.5:8980')
         })
+        act(() => {
+            result.current.handleSave()
+        })
+
+        expect(result.current.algodUrlError).toBe(false)
+        expect(onSave).toHaveBeenCalledWith({
+            indexerUrl: 'http://10.0.0.5:8980',
+        })
+    })
+
+    test('does nothing when neither field has changed', () => {
+        const onSave = vi.fn()
+        const row = makeRow()
+        const { result } = renderHook(() =>
+            useNodeSettingsRow({ row, onSave, onReset: vi.fn() }),
+        )
+
+        act(() => {
+            result.current.handleSave()
+        })
+
+        expect(onSave).not.toHaveBeenCalled()
+        expect(result.current.algodUrlError).toBe(false)
+        expect(result.current.indexerUrlError).toBe(false)
     })
 
     test('reset delegates to the caller', () => {

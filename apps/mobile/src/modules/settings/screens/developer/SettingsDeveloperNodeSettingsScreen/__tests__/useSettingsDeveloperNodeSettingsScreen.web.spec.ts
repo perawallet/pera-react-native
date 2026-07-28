@@ -138,6 +138,33 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         ).toBeUndefined()
     })
 
+    it('sequential saves on different fields merge rather than replace', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        act(() => {
+            result.current.saveEndpoints(Networks.fnet, {
+                algodUrl: 'http://10.0.0.5:4001',
+            })
+        })
+        act(() => {
+            result.current.saveEndpoints(Networks.fnet, {
+                indexerUrl: 'http://10.0.0.5:8980',
+            })
+        })
+
+        const fnet = result.current.networks.find(
+            row => row.network === Networks.fnet,
+        )
+        // A replace (instead of merge) would have wiped the first save's
+        // algodUrl back to the baked default when the second save only
+        // touched indexerUrl.
+        expect(fnet?.algodUrl).toBe('http://10.0.0.5:4001')
+        expect(fnet?.indexerUrl).toBe('http://10.0.0.5:8980')
+        expect(fnet?.isOverridden).toBe(true)
+    })
+
     it('resetEndpoints restores the baked values', () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
