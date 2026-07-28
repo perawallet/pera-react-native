@@ -23,9 +23,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     return { ...actual, useNetwork: mockUseNetwork }
 })
 
-const { createCard, approveEscrowCard } = vi.hoisted(() => ({
+const { createCard, approveEscrowCard, fetchUser } = vi.hoisted(() => ({
     createCard: vi.fn(),
     approveEscrowCard: vi.fn(),
+    fetchUser: vi.fn(),
 }))
 vi.mock('../../api/card-creation', async () => ({
     ...(await vi.importActual('../../api/card-creation')),
@@ -34,6 +35,10 @@ vi.mock('../../api/card-creation', async () => ({
 vi.mock('../../api/escrow', async () => ({
     ...(await vi.importActual('../../api/escrow')),
     approveEscrowCard,
+}))
+vi.mock('../../api/user', async () => ({
+    ...(await vi.importActual('../../api/user')),
+    fetchUser,
 }))
 
 const { configFlags } = vi.hoisted(() => ({
@@ -55,13 +60,18 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 import { useCreateAndApproveCardMutation } from '../useCreateAndApproveCardMutation'
 import { useCardStore } from '../../store'
 import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
-import { CardIntegrityAttestationRequiredError } from '../../api/card-creation'
+import {
+    CardAccountLinkedElsewhereError,
+    CardIntegrityAttestationRequiredError,
+    CardUserUnavailableError,
+} from '../../api/card-creation'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children)
 
 const ADDRESS = 'FUNDINGADDR'
+const BAANX_USER_ID = 'baanx-user-1'
 const PROOF = {
     signData: { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' },
     signature: 'c2ln',
@@ -89,6 +99,10 @@ describe('useCreateAndApproveCardMutation', () => {
         configFlags.isStaging = false
         createCard.mockResolvedValue({ cardAddress: 'ESCROW1', txId: 'TX1' })
         approveEscrowCard.mockResolvedValue({ cardAddress: 'ESCROW1' })
+        fetchUser.mockResolvedValue({
+            id: BAANX_USER_ID,
+            verificationState: 'VERIFIED',
+        })
     })
 
     it('creates then approves using the same proof, and persists the store', async () => {
@@ -105,6 +119,7 @@ describe('useCreateAndApproveCardMutation', () => {
             expect.objectContaining({
                 network: 'testnet',
                 address: ADDRESS,
+                baanxUserId: BAANX_USER_ID,
                 currency: 'usdc',
                 signData: PROOF.signData,
                 signature: PROOF.signature,
@@ -125,6 +140,31 @@ describe('useCreateAndApproveCardMutation', () => {
         expect(useCardStore.getState().escrowCardAddress).toBe('ESCROW1')
         expect(useCardStore.getState().escrowCardTxId).toBe('TX1')
         expect(useCardStore.getState().escrowCardApproved).toBe(true)
+    })
+
+    it('linked-elsewhere failure from create: rejects without persisting or approving', async () => {
+        createCard.mockRejectedValue(new CardAccountLinkedElsewhereError())
+        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
+            wrapper,
+        })
+
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).rejects.toThrow(CardAccountLinkedElsewhereError)
+        expect(approveEscrowCard).not.toHaveBeenCalled()
+        expect(useCardStore.getState().escrowCardAddress).toBeNull()
+    })
+
+    it('no Baanx user resolvable: rejects before creating', async () => {
+        fetchUser.mockResolvedValue(null)
+        const { result } = renderHook(() => useCreateAndApproveCardMutation(), {
+            wrapper,
+        })
+
+        await expect(
+            result.current.mutateAsync({ address: ADDRESS, proof: PROOF }),
+        ).rejects.toThrow(CardUserUnavailableError)
+        expect(createCard).not.toHaveBeenCalled()
     })
 
     it('no valid integrity token: rejects before creating anything', async () => {

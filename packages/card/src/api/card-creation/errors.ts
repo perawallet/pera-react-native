@@ -23,3 +23,33 @@ export class CardIntegrityAttestationRequiredError extends Error {
         this.name = 'CardIntegrityAttestationRequiredError'
     }
 }
+
+/**
+ * Thrown when the funding address is already linked to a DIFFERENT Baanx user
+ * (backend 400 on the mapping call). Terminal for this address — no retry can
+ * succeed; the user must connect a different funding account. Callers own the
+ * user-facing wording for their flow.
+ */
+export class CardAccountLinkedElsewhereError extends Error {
+    constructor(
+        message = 'This account is already linked to another Pera Card user.',
+    ) {
+        super(message)
+        this.name = 'CardAccountLinkedElsewhereError'
+    }
+}
+
+/**
+ * Thrown when the Baanx user id needed to link the funding account can't be
+ * resolved (`GET /v1/user` returned no user). Without it the account can't be
+ * linked, and the backend would reject card creation anyway — so the flow
+ * stops here rather than failing later with a less actionable error.
+ */
+export class CardUserUnavailableError extends Error {
+    constructor(
+        message = 'Your Pera Card account could not be loaded. Please sign in again.',
+    ) {
+        super(message)
+        this.name = 'CardUserUnavailableError'
+    }
+}

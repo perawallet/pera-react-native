@@ -111,6 +111,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import {
     mockCreateCard,
+    mockGetUser,
     mockApproveEscrowCard,
     mockPostDelegatorLsig,
 } from '@perawallet/wallet-core-card/test-handlers'
@@ -131,6 +132,7 @@ import {
 } from './__fixtures__/onboarding'
 
 const FUNDING_ADDRESS = ALGO25_TEST_ADDRESS
+const BAANX_USER_ID = 'mock-baanx-user-id'
 
 let FUNDING_ACCOUNT: WalletAccount = {
     id: 'funding-account',
@@ -195,6 +197,15 @@ const confirmArc60Signing = async () => {
     fireEvent.click(await screen.findByTestId('arc60-confirm-slide'))
 }
 
+// Card creation resolves the Baanx user first — the create call carries its
+// id so the backend can link the funding address before creating.
+const mockCardUser = () =>
+    server.use(
+        mockGetUser({
+            response: { id: BAANX_USER_ID, verificationState: 'VERIFIED' },
+        }),
+    )
+
 const mockOnboardingDetails = (verificationState: string) =>
     server.use(
         http.get('*/v1/auth/register', () =>
@@ -218,6 +229,7 @@ describe('Flow: Card onboarding — select funding type', () => {
         store.setConnectedFundingSourceAddress(FUNDING_ADDRESS)
         useAccountsStore.getState().setAccounts([FUNDING_ACCOUNT])
         mockOnboardingDetails('VERIFIED')
+        mockCardUser()
         autoFunding.enabled = true
         useAppIntegrityStore.getState().setRegistration({
             integrityToken: 'TEST_INTEGRITY_TOKEN',
@@ -284,9 +296,12 @@ describe('Flow: Card onboarding — select funding type', () => {
         await confirmArc60Signing()
 
         await waitFor(() => expect(approvalBody).not.toBeNull())
+        // The create call carries the Baanx user id so the backend links the
+        // funding address — without it, creation 404s BAANX_ACCOUNT_NOT_FOUND.
         expect(createBody).toEqual(
             expect.objectContaining({
                 address: FUNDING_ADDRESS,
+                baanx_user_id: BAANX_USER_ID,
                 currency: 'usdc',
             }),
         )
