@@ -43,85 +43,97 @@ type UseToggleAssetFavoriteMutationResult = {
     isSuccess: boolean
 }
 
-export const useToggleAssetFavoriteMutation =
-    (): UseToggleAssetFavoriteMutationResult => {
-        const queryClient = useQueryClient()
+type UseToggleAssetFavoriteMutationOptions = {
+    /**
+     * Fired after the local metadata write, on both the optimistic path and the
+     * rollback. Lets a caller refresh queries this package can't reach — the
+     * account holdings list sorts favorites first, and invalidating it from the
+     * call site would race this write.
+     */
+    onLocalWrite?: () => void
+}
 
-        const mutation = useMutation<
-            ToggleStatusResponse,
-            Error,
-            UseToggleAssetFavoriteMutationParams,
-            ToggleAssetFavoriteMutationContext
-        >({
-            mutationFn: toggleAssetFavorite,
-            throwOnError: false,
-            onMutate: async variables => {
-                const queryKey = getAssetDetailsQueryKey(
-                    variables.assetID,
-                    true,
-                    variables.network,
-                )
-                await queryClient.cancelQueries({ queryKey })
+export const useToggleAssetFavoriteMutation = ({
+    onLocalWrite,
+}: UseToggleAssetFavoriteMutationOptions = {}): UseToggleAssetFavoriteMutationResult => {
+    const queryClient = useQueryClient()
 
-                const previousData =
-                    queryClient.getQueryData<PeraAsset>(queryKey)
-                const previousIsFavorited =
-                    previousData?.peraMetadata?.isFavorited ?? false
+    const mutation = useMutation<
+        ToggleStatusResponse,
+        Error,
+        UseToggleAssetFavoriteMutationParams,
+        ToggleAssetFavoriteMutationContext
+    >({
+        mutationFn: toggleAssetFavorite,
+        throwOnError: false,
+        onMutate: async variables => {
+            const queryKey = getAssetDetailsQueryKey(
+                variables.assetID,
+                true,
+                variables.network,
+            )
+            await queryClient.cancelQueries({ queryKey })
 
+            const previousData = queryClient.getQueryData<PeraAsset>(queryKey)
+            const previousIsFavorited =
+                previousData?.peraMetadata?.isFavorited ?? false
+
+            await updateAssetPeraMetadata({
+                assetId: variables.assetID,
+                network: variables.network,
+                updates: { isFavorited: variables.enabled },
+            })
+
+            if (previousData) {
+                queryClient.setQueryData<PeraAsset>(queryKey, {
+                    ...previousData,
+                    peraMetadata: {
+                        ...DEFAULT_ASSET_METADATA,
+                        ...previousData.peraMetadata,
+                        isFavorited: variables.enabled,
+                    },
+                })
+            }
+
+            invalidateAssetQueries(queryClient)
+            onLocalWrite?.()
+
+            return { previousData, previousIsFavorited }
+        },
+        onError: async (error, variables, context) => {
+            if (context) {
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
                     network: variables.network,
-                    updates: { isFavorited: variables.enabled },
+                    updates: {
+                        isFavorited: context.previousIsFavorited,
+                    },
                 })
-
-                if (previousData) {
-                    queryClient.setQueryData<PeraAsset>(queryKey, {
-                        ...previousData,
-                        peraMetadata: {
-                            ...DEFAULT_ASSET_METADATA,
-                            ...previousData.peraMetadata,
-                            isFavorited: variables.enabled,
-                        },
-                    })
+                if (context.previousData) {
+                    queryClient.setQueryData(
+                        getAssetDetailsQueryKey(
+                            variables.assetID,
+                            true,
+                            variables.network,
+                        ),
+                        context.previousData,
+                    )
                 }
-
                 invalidateAssetQueries(queryClient)
+                onLocalWrite?.()
+            }
+            logger.error('Failed to toggle asset favorite', {
+                source: 'useToggleAssetFavoriteMutation',
+                error,
+            })
+        },
+    })
 
-                return { previousData, previousIsFavorited }
-            },
-            onError: async (error, variables, context) => {
-                if (context) {
-                    await updateAssetPeraMetadata({
-                        assetId: variables.assetID,
-                        network: variables.network,
-                        updates: {
-                            isFavorited: context.previousIsFavorited,
-                        },
-                    })
-                    if (context.previousData) {
-                        queryClient.setQueryData(
-                            getAssetDetailsQueryKey(
-                                variables.assetID,
-                                true,
-                                variables.network,
-                            ),
-                            context.previousData,
-                        )
-                    }
-                    invalidateAssetQueries(queryClient)
-                }
-                logger.error('Failed to toggle asset favorite', {
-                    source: 'useToggleAssetFavoriteMutation',
-                    error,
-                })
-            },
-        })
-
-        return {
-            toggleAssetFavorite: mutation.mutate,
-            isLoading: mutation.isPending,
-            isError: mutation.isError,
-            error: mutation.error,
-            isSuccess: mutation.isSuccess,
-        }
+    return {
+        toggleAssetFavorite: mutation.mutate,
+        isLoading: mutation.isPending,
+        isError: mutation.isError,
+        error: mutation.error,
+        isSuccess: mutation.isSuccess,
     }
+}
