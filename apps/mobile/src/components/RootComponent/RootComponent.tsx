@@ -19,6 +19,7 @@ import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { OfflineBanner } from '@components/OfflineBanner'
+import { NETWORK_LABEL_KEYS } from '@constants/network-labels'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -63,7 +64,7 @@ const handleOverlayError = (error: string | Error) => {
 }
 
 const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
-    const { isTestnet } = useNetwork()
+    const { isMainnet, network } = useNetwork()
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { showError } = useErrorToast()
@@ -89,9 +90,11 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     return (
         <ErrorBoundary onError={handleBoundaryError}>
             <PWView style={styles.container}>
-                {isTestnet && (
+                {!isMainnet && (
                     <PWView style={styles.testnetBar}>
-                        <PWText style={styles.testnetText}>Testnet</PWText>
+                        <PWText style={styles.testnetText}>
+                            {t(NETWORK_LABEL_KEYS[network])}
+                        </PWText>
                     </PWView>
                 )}
 

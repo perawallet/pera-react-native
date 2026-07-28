@@ -14,7 +14,7 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { config } from '@perawallet/wallet-core-config'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 import { PWListItem, PWScreen } from '@components/core'
@@ -27,7 +27,8 @@ export const SettingsDeveloperScreen = () => {
     const { t } = useLanguage()
     const { getPreference } = usePreferences()
     const { pushWebView } = useWebView()
-    const { isTestnet } = useNetwork()
+    const { isMainnet, network } = useNetwork()
+    const { dispenserUrl } = getNetworkConfig(network)
 
     const handleTapEvent = (page: string) => {
         navigation.push(page)
@@ -35,7 +36,7 @@ export const SettingsDeveloperScreen = () => {
 
     const openDispenser = () => {
         pushWebView({
-            url: config.dispenserUrl,
+            url: dispenserUrl,
             id: generateUniqueId(),
             enablePeraConnect: true,
         })
@@ -50,7 +51,7 @@ export const SettingsDeveloperScreen = () => {
                 testID='developer_settings_node_item'
             />
 
-            {isTestnet && (
+            {!isMainnet && dispenserUrl.length > 0 && (
                 <PWListItem
                     onPress={openDispenser}
                     icon='algo'

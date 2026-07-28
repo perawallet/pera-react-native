@@ -12,33 +12,57 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { Networks, type Network } from '@perawallet/wallet-core-shared'
 import { useTestnetIndicator } from '../useTestnetIndicator'
 
-const mockNetworkState = vi.hoisted(() => ({ isTestnet: false }))
+const mockNetworkState = vi.hoisted(() => ({
+    network: 'mainnet' as Network,
+}))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ isTestnet: mockNetworkState.isTestnet }),
+    useNetwork: () => ({
+        network: mockNetworkState.network,
+        isMainnet: mockNetworkState.network === 'mainnet',
+        isTestnet: mockNetworkState.network === 'testnet',
+    }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+const mockNetwork = (network: Network) => {
+    mockNetworkState.network = network
+}
+
 describe('useTestnetIndicator', () => {
     it('is hidden on MainNet', () => {
-        mockNetworkState.isTestnet = false
+        mockNetwork(Networks.mainnet)
 
         const { result } = renderHook(() => useTestnetIndicator())
 
         expect(result.current.isVisible).toBe(false)
     })
 
-    it('is visible with the TestNet label on TestNet', () => {
-        mockNetworkState.isTestnet = true
+    it('is visible with the network label key on every non-mainnet network', () => {
+        // Keys, not display text: every useLanguage mock in this codebase
+        // (including this file's own pre-existing test) stubs `t` as the
+        // identity function, so the resolved "label" a mocked hook test can
+        // observe is the i18n key itself, not the localized string.
+        const expected: Record<string, string> = {
+            [Networks.testnet]: 'common.network_label.testnet',
+            [Networks.betanet]: 'common.network_label.betanet',
+            [Networks.fnet]: 'common.network_label.fnet',
+            [Networks.localnet]: 'common.network_label.localnet',
+        }
 
-        const { result } = renderHook(() => useTestnetIndicator())
+        for (const [network, label] of Object.entries(expected)) {
+            mockNetwork(network as Network)
 
-        expect(result.current.isVisible).toBe(true)
-        expect(result.current.label).toBe('common.testnet_indicator')
+            const { result } = renderHook(() => useTestnetIndicator())
+
+            expect(result.current.isVisible).toBe(true)
+            expect(result.current.label).toBe(label)
+        }
     })
 })
