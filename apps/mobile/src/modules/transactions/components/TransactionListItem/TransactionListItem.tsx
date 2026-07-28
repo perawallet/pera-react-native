@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { memo } from 'react'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
@@ -26,7 +27,7 @@ export type TransactionListItemProps = {
     onPress?: (transaction: TransactionHistoryItem) => void
 }
 
-export const TransactionListItem = ({
+const TransactionListItemView = ({
     transaction,
     onPress,
 }: TransactionListItemProps) => {
@@ -108,3 +109,11 @@ export const TransactionListItem = ({
         </PWListItemLayout>
     )
 }
+
+/**
+ * Rows carry their own query observers (NFD reverse lookup, asset details), so
+ * a parent re-render — pagination, a refetch, a store write — used to re-run
+ * every mounted row's hooks. `transaction` comes straight from the query cache
+ * and `onPress` from a `useCallback`, so the default shallow comparison holds.
+ */
+export const TransactionListItem = memo(TransactionListItemView)
