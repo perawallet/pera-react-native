@@ -74,8 +74,10 @@ export type Arc0001ResolveContext = {
     // Addresses the wallet can sign for. Candidates outside this set are
     // silently skipped (result slot becomes null).
     signableAddresses: Set<string>
-    // Optional gate. A candidate in `signableAddresses` but not here raises
-    // 4100 — used by WalletConnect to bind a session to its approved accounts.
+    // Optional gate. A candidate in `signableAddresses` but not here is
+    // SKIPPED like a third-party sender (never signed for), not named in an
+    // error — used by WalletConnect to bind a session to its approved accounts
+    // without leaking which other accounts the wallet holds (PERA-4716).
     authorizedAddresses?: Set<string>
     // Local multisig addresses. When a transaction's sender is in this set
     // the wallet routes through the multisig propose flow regardless of the
