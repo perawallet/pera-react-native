@@ -11,7 +11,7 @@
  */
 
 import { describe, it, test, expect, vi, beforeEach } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-config'
+import { config, Networks } from '@perawallet/wallet-core-config'
 import { logger } from '../../utils'
 
 // Mock logger. Hoisted (like the ky mocks below) because the top-level
@@ -37,6 +37,8 @@ vi.mock('../../utils', async importOriginal => ({
 // hands back, without duplicating the fixture data in two places.
 const {
     mockNetworks,
+    mockAlgodApiKey,
+    mockLocalnetAlgodToken,
     chainUrlsByNetwork,
     backendUrlByLane,
     peraServiceFallback,
@@ -49,6 +51,21 @@ const {
         fnet: 'fnet',
         localnet: 'localnet',
     }
+
+    // Real production default (packages/config/src/main.ts) is `''` —
+    // AlgoNode's public endpoints need no key, injected via env var only
+    // for keyed deployments. An empty token would make the token-header
+    // assertions below vacuous: createTokenHeaderClient's `if
+    // (token.length)` guard means an empty token never sets a header at
+    // all. Use a non-empty test value instead, and route EVERY non-LocalNet
+    // network's algodToken through this SAME constant (not a separately
+    // typed-out duplicate) so they can never silently drift apart.
+    const mockAlgodApiKey = 'test-algod-key'
+
+    // The literal LocalNet dev token from packages/config/src/main.ts's
+    // productionConfig — not a secret, LocalNet's algod/indexer always
+    // accept this fixed 64-character token.
+    const mockLocalnetAlgodToken = 'a'.repeat(64)
 
     // Mirrors pera-service-fallback.ts's PERA_SERVICE_FALLBACK table.
     const peraServiceFallback: Record<string, string> = {
@@ -72,31 +89,31 @@ const {
         mainnet: {
             algodUrl: 'https://mainnet.algod.algo',
             indexerUrl: 'https://mainnet.indexer.algo',
-            algodToken: 'test-algod-key',
+            algodToken: mockAlgodApiKey,
             indexerToken: 'test-indexer-key',
         },
         testnet: {
             algodUrl: 'https://testnet.algod.algo',
             indexerUrl: 'https://testnet.indexer.algo',
-            algodToken: 'test-algod-key',
+            algodToken: mockAlgodApiKey,
             indexerToken: 'test-indexer-key',
         },
         betanet: {
             algodUrl: 'https://betanet.algod.algo',
             indexerUrl: 'https://betanet.indexer.algo',
-            algodToken: 'test-algod-key',
+            algodToken: mockAlgodApiKey,
             indexerToken: 'test-indexer-key',
         },
         fnet: {
             algodUrl: 'https://fnet.algod.algo',
             indexerUrl: 'https://fnet.indexer.algo',
-            algodToken: 'test-algod-key',
+            algodToken: mockAlgodApiKey,
             indexerToken: 'test-indexer-key',
         },
         localnet: {
             algodUrl: 'https://localnet.algod.algo',
             indexerUrl: 'https://localnet.indexer.algo',
-            algodToken: 'localnet-dev-token',
+            algodToken: mockLocalnetAlgodToken,
             indexerToken: 'localnet-dev-token',
         },
     }
@@ -110,6 +127,8 @@ const {
 
     return {
         mockNetworks,
+        mockAlgodApiKey,
+        mockLocalnetAlgodToken,
         chainUrlsByNetwork,
         backendUrlByLane,
         peraServiceFallback,
@@ -127,6 +146,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         debugEnabled: true,
         backendAPIKey: 'test-api-key',
+        algodApiKey: mockAlgodApiKey,
     },
     Networks: mockNetworks,
     getNetworkConfig: (network: string) => ({
@@ -559,9 +579,23 @@ describe('queryClient', () => {
             ).toBe(indexerToken)
         }
 
-        // A global-token regression would still pass every check above if
-        // every fixture reused one token — they don't: localnet carries its
-        // own dev token, distinct from mainnet's.
+        // Pin the fixture to the real production constants (not just to each
+        // other) so a genuine regression in either value would fail here.
+        // LocalNet's algod/indexer always accept this exact 64-character dev
+        // token (packages/config/src/main.ts's productionConfig) — a
+        // truncated or extended literal fails the length check below even
+        // if it still happened to be all "a"s.
+        expect(chainUrlsByNetwork.localnet.algodToken).toBe(
+            mockLocalnetAlgodToken,
+        )
+        expect(chainUrlsByNetwork.localnet.algodToken).toHaveLength(64)
+        // MainNet (and TestNet/BetaNet/FNet) route their algod token through
+        // config.algodApiKey — a regression that stopped reading it (e.g.
+        // hardcoding a different value) fails here even though nothing else
+        // in this test would notice.
+        expect(chainUrlsByNetwork.mainnet.algodToken).toBe(config.algodApiKey)
+        // Keep the mutual check too: confirms the two are actually distinct
+        // constants, not the same value doing double duty.
         expect(chainUrlsByNetwork.localnet.algodToken).not.toBe(
             chainUrlsByNetwork.mainnet.algodToken,
         )
