@@ -3,11 +3,15 @@
 ## Purpose
 
 Pera's quantum (post-quantum, Falcon-1024) accounts use Joe Polny's interim PQ
-libraries — the `@joe-p/algosdk` beta fork and the WASM `falcon-1024` package —
+libraries — the `algosdk` beta fork and the WASM `falcon-1024` package —
 because official Algorand support for `pqsig` transactions and Falcon signing
-is not yet mainline. These third-party libraries are confined behind two swap
-seams so they can be replaced with official Algorand code later via a
-one-module (or one-import) change, without touching the rest of the codebase.
+is not yet mainline. The Falcon libraries are confined behind one swap seam so
+they can be replaced with official Algorand code later via a one-module
+change. The algosdk fork is installed under the official `algosdk` package
+name via a pnpm catalog alias + global override in `pnpm-workspace.yaml`, so
+application code (including Seam B below) imports plain `algosdk`; its swap
+point is the one-line specifier change described there (see the
+`SWAP-BACK:` comment), not a source-level import.
 
 ## Seam A — PQ crypto provider (`packages/kms/src/crypto/pq/`)
 
@@ -26,7 +30,10 @@ a later ticket (PQ-020); today this seam only ships the WASM provider.
 
 ## Seam B — PQ transaction adapter (`packages/blockchain/src/pq/`)
 
-The **only** module importing `@joe-p/algosdk`:
+Imports the PQ signer surface from plain `algosdk` (resolved to the fork via
+the `pnpm-workspace.yaml` alias described in Purpose above). This module
+names no third-party specifier and is no longer part of the PQ library
+firewall (see Enforcement below):
 
 - `deriveQuantumAddress(publicKey)` — derives the quantum account address.
 - `assembleQuantumSignedTxn({ unsignedTxnBytes, publicKey, falconSignature })`
@@ -44,20 +51,27 @@ Key contracts:
 
 Stock `algosdk` objects never cross into the fork — only bytes go in and out.
 
-**Official swap:** swap the `@joe-p/algosdk` import in this module. If
-`pqsig` becomes part of the mainline `SignedTransaction`, delete the
-byte-threading and route quantum through the normal signed-transaction path.
+**Official swap:** change the `algosdk` catalog entry (and its matching
+`overrides` entry) in `pnpm-workspace.yaml` from the fork alias to the
+official release — no changes to this module are required. If `pqsig`
+becomes part of the mainline `SignedTransaction`, delete the byte-threading
+here and route quantum through the normal signed-transaction path.
 
 ## Swap-back procedure
 
 1. **Official crypto lib** — implement a new `PQSignatureProvider` and change
    the `getPQProvider` factory line (Seam A). One module.
-2. **Official algosdk with `pqsig`** — swap the `@joe-p/algosdk` import in
-   Seam B (`quantumAdapter.ts`). If `pqsig` becomes mainline
-   `SignedTransaction`, delete the adapter's byte-threading and route quantum
-   through the normal signed-transaction path.
+2. **Official algosdk with `pqsig`** — change the `algosdk` catalog entry (and
+   its matching `overrides` entry) in `pnpm-workspace.yaml` from the fork
+   alias to the official release, per the `SWAP-BACK:` comment there. No
+   source file changes are required. If `pqsig` becomes mainline
+   `SignedTransaction`, delete the byte-threading in Seam B
+   (`quantumAdapter.ts`) and route quantum through the normal
+   signed-transaction path.
 
-Both seam source files carry a `// SWAP:` marker pointing back here.
+Seam A's source files carry a `// SWAP:` marker pointing back here; the
+algosdk fork's swap point lives in the `SWAP-BACK:` comment in
+`pnpm-workspace.yaml` instead.
 
 ## Enforcement
 
