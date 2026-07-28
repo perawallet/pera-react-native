@@ -45,6 +45,7 @@ describe('network-config', () => {
             algodUrl: config.mainnetAlgodUrl,
             indexerUrl: config.mainnetIndexerUrl,
             genesisHash: config.mainnetGenesisHash,
+            genesisId: 'mainnet-v1.0',
             explorerUrl: config.mainnetExplorerUrl,
             algodToken: config.algodApiKey,
             indexerToken: config.indexerApiKey,
@@ -73,6 +74,7 @@ describe('network-config', () => {
             algodUrl: config.testnetAlgodUrl,
             indexerUrl: config.testnetIndexerUrl,
             genesisHash: config.testnetGenesisHash,
+            genesisId: 'testnet-v1.0',
             explorerUrl: config.testnetExplorerUrl,
             algodToken: config.algodApiKey,
             indexerToken: config.indexerApiKey,
@@ -98,6 +100,11 @@ describe('network-config', () => {
         expect(fnet.genesisHash).toBe(config.fnetGenesisHash)
         // The invariant that makes cross-network signing impossible.
         expect(fnet.genesisHash).not.toBe(config.testnetGenesisHash)
+        // genesisId is chain identity too — it must never resolve through the
+        // Pera service fallback, or a dApp would pair fnet's real genesisHash
+        // with testnet's genesisId and mis-detect the chain.
+        expect(fnet.genesisId).toBe('fnet-v1')
+        expect(fnet.genesisId).not.toBe('testnet-v1.0')
     })
 
     test('pera services on a fallback network come from the testnet lane', () => {
@@ -133,6 +140,39 @@ describe('getNetworkConfig genesisHash', () => {
     test('returns the canonical testnet genesis hash', () => {
         expect(getNetworkConfig('testnet').genesisHash).toBe(
             'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
+        )
+    })
+})
+
+describe('getNetworkConfig genesisId', () => {
+    test('returns the canonical mainnet genesis id', () => {
+        expect(getNetworkConfig(Networks.mainnet).genesisId).toBe(
+            'mainnet-v1.0',
+        )
+    })
+
+    test('returns the canonical testnet genesis id', () => {
+        expect(getNetworkConfig(Networks.testnet).genesisId).toBe(
+            'testnet-v1.0',
+        )
+    })
+
+    test('returns the canonical betanet genesis id', () => {
+        expect(getNetworkConfig(Networks.betanet).genesisId).toBe(
+            'betanet-v1.0',
+        )
+    })
+
+    test('returns the canonical fnet genesis id, distinct from any testnet value', () => {
+        expect(getNetworkConfig(Networks.fnet).genesisId).toBe('fnet-v1')
+        expect(getNetworkConfig(Networks.fnet).genesisId).not.toBe(
+            'testnet-v1.0',
+        )
+    })
+
+    test('returns the canonical localnet genesis id', () => {
+        expect(getNetworkConfig(Networks.localnet).genesisId).toBe(
+            'dockernet-v1',
         )
     })
 })

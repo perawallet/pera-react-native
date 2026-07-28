@@ -638,6 +638,67 @@ describe('SyncService', () => {
         expect(fetchAndPersistAccount).not.toHaveBeenCalled()
     }, 8000)
 
+    it('force-syncs a network absent from the persisted round map, sending null (not undefined) for its last-refreshed round', async () => {
+        const { useNetworkStore } =
+            await import('@perawallet/wallet-core-blockchain')
+        const { usePollingStore } =
+            await import('@perawallet/wallet-core-polling')
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+
+        // betanet has never been persisted: packages/polling's store only
+        // seeds mainnet/testnet keys (packages/polling/src/store/store.ts:27-30),
+        // so a user switching to betanet for the first time hits a genuinely
+        // absent key, not an explicit null.
+        useNetworkStore.getState = vi.fn(() => ({ network: 'betanet' }))
+        usePollingStore.getState = vi.fn(() => ({
+            lastRefreshedRound: { mainnet: 100, testnet: 50 },
+            setLastRefreshedRound: mockSetLastRefreshedRound,
+        }))
+        // Backend says "no work needed" — if the absent key were wrongly read
+        // as already-synced (undefined !== null), this response alone would
+        // skip the force-sync and reproduce the silent bug.
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+
+        try {
+            service.start()
+            vi.useRealTimers()
+            await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: unconditional force-sync
+            vi.mocked(fetchAndPersistAccount).mockClear()
+            mockSendShouldRefreshRequest.mockClear()
+
+            await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: checkShouldRefresh path
+
+            service.stop()
+            vi.useFakeTimers()
+
+            // Site 1 (neverSynced): the absent key must still force-sync, even
+            // though the backend reported refresh: false.
+            expect(fetchAndPersistAccount).toHaveBeenCalled()
+            // Site 2 (wire payload): the absent key must serialize as null,
+            // not undefined, in the /v1/accounts/should-refresh/ POST body —
+            // a different request payload, not just a type-checker nuance.
+            expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
+                'betanet',
+                ['ADDR1', 'ADDR2'],
+                null,
+            )
+        } finally {
+            // Restore the shared mocks to their module-level defaults so a
+            // failed assertion above can't leak this test's per-test override
+            // (a genuinely different network key from every other test in
+            // this file) into whatever test runs next.
+            useNetworkStore.getState = () => ({ network: 'mainnet' })
+            usePollingStore.getState = () => ({
+                lastRefreshedRound: { mainnet: null, testnet: null },
+                setLastRefreshedRound: mockSetLastRefreshedRound,
+            })
+        }
+    }, 8000)
+
     it('rate-limited failures trigger backoff on the next tick', async () => {
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')

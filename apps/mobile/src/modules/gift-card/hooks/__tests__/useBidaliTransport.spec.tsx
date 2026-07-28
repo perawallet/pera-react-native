@@ -25,6 +25,9 @@ import { useBidaliTransport } from '../useBidaliTransport'
 const mockAddSignRequest = vi.fn()
 const mockAddPayment = vi.fn()
 const mockAddAssetTransfer = vi.fn()
+// Mutable so the "fallback network" providerJS test below can switch away
+// from mainnet without a new vi.mock factory.
+let mockNetwork = 'mainnet'
 const mockBuildTransactions = vi.fn().mockResolvedValue({
     transactions: [{ fake: 'txn' }],
 })
@@ -57,7 +60,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({
         newGroup: () => mockComposer,
     }),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useNetwork: () => ({ network: mockNetwork }),
     displayUnitsToBaseUnits: (amount: string, decimals: number) => ({
         toFixed: () => String(Number(amount) * 10 ** decimals),
     }),
@@ -132,6 +135,7 @@ const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
 describe('useBidaliTransport', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockNetwork = 'mainnet'
     })
 
     // -- providerJS --------------------------------------------------------
@@ -151,6 +155,21 @@ describe('useBidaliTransport', () => {
             )
             expect(result.current.providerJS).toContain('"algorand"')
             expect(result.current.providerJS).toContain('"usdcalgorand"')
+        })
+
+        // computeBidaliBalances's isMainnetCatalogue branch: fnet has no
+        // Bidali catalogue of its own, so it must select the same
+        // testusdcalgorand balance key as testnet (matching
+        // resolvePeraServiceLane), not usdcalgorand.
+        it('selects the testusdcalgorand balance key for a fallback network (fnet)', () => {
+            mockNetwork = 'fnet'
+
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+
+            expect(result.current.providerJS).toContain('"testusdcalgorand":')
+            expect(result.current.providerJS).not.toContain('"usdcalgorand":')
         })
     })
 

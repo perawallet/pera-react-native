@@ -113,7 +113,7 @@ const resolveActiveNetwork = async (): Promise<
     const cfg = getNetworkConfig(network)
     return {
         genesisHash: cfg.genesisHash,
-        genesisId: network === 'mainnet' ? 'mainnet-v1.0' : 'testnet-v1.0',
+        genesisId: cfg.genesisId,
     }
 }
 

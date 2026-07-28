@@ -22,6 +22,7 @@ type ChainConfig = {
     algodUrl: string
     indexerUrl: string
     genesisHash: string
+    genesisId: string
     explorerUrl: string
     algodToken: string
     indexerToken: string
@@ -59,6 +60,7 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         algodUrl: config.mainnetAlgodUrl,
         indexerUrl: config.mainnetIndexerUrl,
         genesisHash: config.mainnetGenesisHash,
+        genesisId: 'mainnet-v1.0',
         explorerUrl: config.mainnetExplorerUrl,
         algodToken: config.algodApiKey,
         indexerToken: config.indexerApiKey,
@@ -68,6 +70,7 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         algodUrl: config.testnetAlgodUrl,
         indexerUrl: config.testnetIndexerUrl,
         genesisHash: config.testnetGenesisHash,
+        genesisId: 'testnet-v1.0',
         explorerUrl: config.testnetExplorerUrl,
         algodToken: config.algodApiKey,
         indexerToken: config.indexerApiKey,
@@ -77,6 +80,7 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         algodUrl: config.betanetAlgodUrl,
         indexerUrl: config.betanetIndexerUrl,
         genesisHash: config.betanetGenesisHash,
+        genesisId: 'betanet-v1.0',
         explorerUrl: config.betanetExplorerUrl,
         algodToken: config.algodApiKey,
         indexerToken: config.indexerApiKey,
@@ -86,6 +90,7 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         algodUrl: config.fnetAlgodUrl,
         indexerUrl: config.fnetIndexerUrl,
         genesisHash: config.fnetGenesisHash,
+        genesisId: 'fnet-v1',
         explorerUrl: config.fnetExplorerUrl,
         algodToken: config.algodApiKey,
         indexerToken: config.indexerApiKey,
@@ -96,6 +101,10 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         indexerUrl: config.localnetIndexerUrl,
         // Regenerated on every container reset — resolved at runtime.
         genesisHash: '',
+        // Container-dependent, like genesisHash above: 'dockernet-v1' is
+        // AlgoKit LocalNet's conventional default, but a later task introduces
+        // runtime resolution — this literal is not authoritative.
+        genesisId: 'dockernet-v1',
         explorerUrl: config.localnetExplorerUrl,
         algodToken: config.localnetAlgodToken,
         indexerToken: config.localnetAlgodToken,
