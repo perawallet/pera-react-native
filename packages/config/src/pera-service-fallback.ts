@@ -26,9 +26,12 @@ import { type Network, Networks } from './models/network'
  * chain.
  *
  * Removal: delete a row to put that network on its own backend. When the table
- * is empty, delete this file and its two importers
- * (`network-config.ts` and `packages/shared/src/api/query-client.ts`). The
- * `restrict-pera-service-fallback-importers` guardrail pins that importer list.
+ * is empty, delete this module and fix the call sites in the guardrail's
+ * allowlist: `network-config.ts`, `packages/shared/src/api/query-client.ts`,
+ * `packages/assets/src/models/assets.ts`,
+ * `packages/assets/src/hooks/useSingleAssetDetailsQuery.ts`, and
+ * `packages/transactions/src/api/history/endpoints.ts`. The
+ * `restrict-pera-service-fallback-importers` guardrail pins that list.
  */
 export const PERA_SERVICE_FALLBACK: Partial<Record<Network, Network>> = {
     [Networks.betanet]: Networks.testnet,
