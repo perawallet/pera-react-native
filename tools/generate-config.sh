@@ -26,6 +26,25 @@ if [ -n "${PERA_ENV_OVERLAY:-}" ] && [ -f "$PERA_ENV_OVERLAY" ]; then
   export $(grep -v '^#' "$PERA_ENV_OVERLAY" | xargs)
 fi
 
+# Fail the BUILD, not the app at launch. The committed defaults in
+# packages/config/src/main.ts point the backend URLs at staging (safe for
+# open-source builds); a production build must override them via env. The
+# schema guard in main.ts also catches this, but only when the config module is
+# first imported — by then the artifact is already built and signed.
+if [ "${APP_ENV:-}" == "production" ]; then
+  for var in MAINNET_BACKEND_URL TESTNET_BACKEND_URL; do
+    value="${!var:-}"
+    if [ -z "$value" ]; then
+      echo "ERROR: $var is unset in a production build — it would fall back to the staging default." >&2
+      exit 1
+    fi
+    if [[ "$value" == *staging* ]]; then
+      echo "ERROR: $var points at staging in a production build: $value" >&2
+      exit 1
+    fi
+  done
+fi
+
 echo "Generating configuration from environment variables..."
 
 # Start the file content

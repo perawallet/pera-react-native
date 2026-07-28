@@ -54,12 +54,38 @@ describe('production staging-URL guard', () => {
     it.each(['development', 'staging'] as const)(
         'leaves %s builds free to use staging URLs',
         environment => {
+            // Pin the staging URLs explicitly: `config` reflects whatever
+            // generate-config.sh baked from the local .env, which on a machine
+            // with the production overrides set contains no staging host at all
+            // — the assertion would then pass without exercising the guard.
             const candidate: Config = {
                 ...config,
+                mainnetBackendUrl: STAGING_FIELDS[0][1],
+                testnetBackendUrl: STAGING_FIELDS[1][1],
                 appEnvironment: environment,
             }
 
             expect(() => configSchema.parse(candidate)).not.toThrow()
         },
     )
+
+    it('ignores a third-party sandbox host in a production build', () => {
+        const candidate: Config = {
+            ...baseProdConfig,
+            testnetBidaliBaseUrl: 'https://commerce.staging.bidali.com/dapp',
+        }
+
+        expect(() => configSchema.parse(candidate)).not.toThrow()
+    })
+
+    it('names the env var to set in the failure message', () => {
+        const candidate = {
+            ...baseProdConfig,
+            mainnetBackendUrl: STAGING_FIELDS[0][1],
+        }
+
+        expect(() => configSchema.parse(candidate)).toThrowError(
+            /MAINNET_BACKEND_URL/,
+        )
+    })
 })

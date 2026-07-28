@@ -22,10 +22,12 @@ import {
 
 import { generatedEnv } from './generated-env'
 
-const PRODUCTION_GUARDED_URLS = [
-    'mainnetBackendUrl',
-    'testnetBackendUrl',
-] as const
+/**
+ * First-party hosts only. Third-party sandboxes legitimately keep a staging
+ * host in a production build — `testnetBidaliBaseUrl` pairs testnet with the
+ * vendor's sandbox — so the production staging guard below ignores them.
+ */
+const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
 export const configSchema = z
     .object({
@@ -196,21 +198,25 @@ export const configSchema = z
         appBuildNumber: z.string().default(''),
     })
     .check(ctx => {
-        // The committed defaults deliberately point the backend URLs at staging
-        // (safe for open-source builds); production builds override them via env
-        // (tools/generate-config.sh). A missing override must fail the build here,
-        // loudly — not ship a production app talking to staging. (discoverBaseUrl
-        // is exempt: getConfig derives it from appEnvironment structurally.)
+        // The committed defaults deliberately point first-party URLs at staging
+        // (safe for open-source builds); production builds override them via env.
+        // tools/generate-config.sh fails the build when an override is missing —
+        // this is the last line of defence, and throws when the config module is
+        // first imported. Matched by value rather than a hand-kept field list so
+        // a future staging default can't slip in unguarded.
         if (ctx.value.appEnvironment !== 'production') return
-        for (const field of PRODUCTION_GUARDED_URLS) {
-            if (ctx.value[field].includes('staging')) {
-                ctx.issues.push({
-                    code: 'custom',
-                    message: `${field} points at staging in a production build — set its env override (see overrideEnvironmentMap)`,
-                    path: [field],
-                    input: ctx.value[field],
-                })
-            }
+        for (const [field, value] of Object.entries(ctx.value)) {
+            if (typeof value !== 'string') continue
+            if (!value.includes('staging') || !isFirstPartyUrl(value)) continue
+            const envVar =
+                overrideEnvironmentMap[field as keyof Config] ??
+                'its env override'
+            ctx.issues.push({
+                code: 'custom',
+                message: `${field} points at staging in a production build — set ${envVar}`,
+                path: [field],
+                input: value,
+            })
         }
     })
 
