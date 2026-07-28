@@ -46,6 +46,7 @@ export default defineConfig({
                 'zustand',
                 '@tanstack/react-query',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-core-analytics',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-provider',

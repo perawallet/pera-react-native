@@ -22,18 +22,37 @@ export const migrateDeviceIdentifiers = (
 ): void => {
     const device = useDeviceStore.getState()
 
-    // This step is idempotent by necessity: a migration step-version bump
-    // replays it for users who already migrated. If the store already holds a
-    // *different* non-null id, the registration recreate-fallback minted a new
-    // one after the first run wrote this migrated id — keep the live id and
-    // just record that the migrated id (and its device-keyed server state,
-    // e.g. Discover favorites) was orphaned. Writing the stale migrated id back
-    // would trigger another 404 → recreate cycle and orphan the id again.
+    // This step is idempotent by necessity: a step-version bump replays it for
+    // users who already migrated.
+    //
+    // Keying the "leave the live id alone" decision on id INEQUALITY would be
+    // wrong, because a different non-null id has two very different causes:
+    //   1. we already wrote the migrated id and registration's recreate-
+    //      fallback replaced it after a 404 — retrying is pointless, and
+    //   2. registration minted an id before this step ever ran, so the
+    //      migrated id was never tried at all.
+    // Case 2 is routine, not exotic: `pera_7_migration` defaults to false, so a
+    // user outside a staged rollout registers first and migrates on a later
+    // launch; dismissing a failed run un-gates the registrar the same way.
+    // Treating case 2 like case 1 would discard a live migrated id — and its
+    // device-keyed server state, e.g. Discover favourites — permanently,
+    // causing the orphaning this ticket exists to measure.
+    //
+    // The origin flag distinguishes them: only skip when we know a migrated id
+    // was already replaced. Otherwise write it and let the next PUT either
+    // resolve (favourites restored) or 404 into recreate — no worse off than
+    // not trying, and the 404 path reports the loss via telemetry.
     const applyMigratedDeviceId = (network: Network, migratedId: string) => {
         const currentId = device.deviceIDs.get(network)
+        const origin = device.deviceIdOrigins[network]
         if (currentId != null && currentId !== migratedId) {
-            device.setDeviceIdOrigin(network, 'recreated')
-            return
+            if (origin === 'recreated') {
+                return
+            }
+            if (origin === 'migrated') {
+                device.setDeviceIdOrigin(network, 'recreated')
+                return
+            }
         }
         device.setDeviceID(network, migratedId)
         device.setDeviceIdOrigin(network, 'migrated')

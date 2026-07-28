@@ -17,6 +17,7 @@ const { deviceStoreMock, settingsStoreMock } = vi.hoisted(() => ({
         setDeviceID: vi.fn(),
         setDeviceIdOrigin: vi.fn(),
         deviceIDs: new Map<string, string | null>(),
+        deviceIdOrigins: {} as Record<string, string | undefined>,
     },
     settingsStoreMock: { setPreference: vi.fn() },
 }))
@@ -51,6 +52,7 @@ beforeEach(() => {
     deviceStoreMock.setDeviceID.mockReset()
     deviceStoreMock.setDeviceIdOrigin.mockReset()
     deviceStoreMock.deviceIDs = new Map()
+    deviceStoreMock.deviceIdOrigins = {}
     settingsStoreMock.setPreference.mockReset()
 })
 
@@ -198,7 +200,10 @@ describe('migrateDeviceIdentifiers', () => {
     })
 
     it('re-flags a superseded id as recreated instead of stomping the live id on re-run', () => {
+        // Case 1: we already wrote the migrated id (origin 'migrated') and
+        // registration's recreate-fallback replaced it — retrying is pointless.
         deviceStoreMock.deviceIDs.set('mainnet', 'RECREATED-1')
+        deviceStoreMock.deviceIdOrigins = { mainnet: 'migrated' }
 
         migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
 
@@ -207,6 +212,36 @@ describe('migrateDeviceIdentifiers', () => {
             'mainnet',
             'recreated',
         )
+    })
+
+    it('writes the migrated id over an id registration minted before this step ever ran', () => {
+        // Case 2: no origin flag, so the migrated id was never tried. Keying
+        // the skip on id inequality alone discarded it permanently — the exact
+        // orphaning this ticket measures. `pera_7_migration` defaults to false,
+        // so registering first and migrating on a later launch is routine.
+        deviceStoreMock.deviceIDs.set('mainnet', 'REGISTERED-FIRST')
+        deviceStoreMock.deviceIdOrigins = {}
+
+        migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
+
+        expect(deviceStoreMock.setDeviceID).toHaveBeenCalledWith(
+            'mainnet',
+            'M1',
+        )
+        expect(deviceStoreMock.setDeviceIdOrigin).toHaveBeenCalledWith(
+            'mainnet',
+            'migrated',
+        )
+    })
+
+    it('leaves an already-recreated id untouched on a further re-run', () => {
+        deviceStoreMock.deviceIDs.set('mainnet', 'RECREATED-1')
+        deviceStoreMock.deviceIdOrigins = { mainnet: 'recreated' }
+
+        migrateDeviceIdentifiers(buildIdentifiers({ mainnetDeviceId: 'M1' }))
+
+        expect(deviceStoreMock.setDeviceID).not.toHaveBeenCalled()
+        expect(deviceStoreMock.setDeviceIdOrigin).not.toHaveBeenCalled()
     })
 
     it('idempotently re-writes the migrated id when it is still the active one', () => {
