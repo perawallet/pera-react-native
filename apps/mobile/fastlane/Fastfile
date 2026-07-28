@@ -210,9 +210,25 @@ platform :ios do
       clean: clean
     )
 
+    # Upload every dSYM the archive produced — not only the app zip gym
+    # exports — so React Native / Hermes-VM crash frames symbolicate too, not
+    # just native ones. RN 0.86's prebuilt hermesvm.xcframework ships no dSYM
+    # in the pod, so Hermes coverage depends entirely on what Xcode emitted
+    # into the archive; the log line records exactly what was uploaded for
+    # this build. Falls back to the app zip if the archive path is
+    # unavailable, preserving the previous behavior.
+    archive = lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+    archive_dsyms =
+      archive && Dir.exist?(File.join(archive, "dSYMs")) ? File.join(archive, "dSYMs") : nil
+    if archive_dsyms
+      UI.message("Uploading dSYMs to Crashlytics: #{Dir.children(archive_dsyms).sort.join(", ")}")
+    else
+      UI.important("Archive dSYMs dir not found — uploading the app dSYM zip only")
+    end
+
     upload_symbols_to_crashlytics(
       gsp_path: "./config/GoogleService-Info.plist",
-      dsym_path: "./build/ios/#{scheme}.app.dSYM.zip",
+      dsym_path: archive_dsyms || "./build/ios/#{scheme}.app.dSYM.zip",
       binary_path: "./ios/Pods/FirebaseCrashlytics/upload-symbols"
     )
 

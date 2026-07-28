@@ -392,9 +392,18 @@ workflows:
               exit 0
             fi
             SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
-            DEST="${BITRISE_DEPLOY_DIR}/pera-ios-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}.ipa"
+            NAME="pera-ios-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}"
+            DEST="${BITRISE_DEPLOY_DIR}/${NAME}.ipa"
             cp "$IPA" "$DEST"
             envman add --key BITRISE_IPA_PATH --value "$DEST"
+            # Retain the dSYM bundle(s) as artifacts too — Bitrise otherwise
+            # discards them with the VM, leaving no way to re-symbolicate a
+            # shipped build. gym names the zip after the app product, not the
+            # scheme, so glob rather than hardcode.
+            for DSYM in apps/mobile/build/ios/*.dSYM.zip; do
+              [ -f "$DSYM" ] || continue
+              cp "$DSYM" "${BITRISE_DEPLOY_DIR}/${NAME}-$(basename "$DSYM")"
+            done
     - deploy-to-bitrise-io@2:
         is_always_run: true
         inputs:
