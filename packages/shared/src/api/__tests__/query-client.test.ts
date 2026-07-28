@@ -38,6 +38,7 @@ vi.mock('../../utils', async importOriginal => ({
 const {
     mockNetworks,
     mockAlgodApiKey,
+    mockIndexerApiKey,
     mockLocalnetAlgodToken,
     chainUrlsByNetwork,
     backendUrlByLane,
@@ -62,9 +63,15 @@ const {
     // typed-out duplicate) so they can never silently drift apart.
     const mockAlgodApiKey = 'test-algod-key'
 
+    // Same reasoning as mockAlgodApiKey above, for the indexer's token.
+    const mockIndexerApiKey = 'test-indexer-key'
+
     // The literal LocalNet dev token from packages/config/src/main.ts's
     // productionConfig — not a secret, LocalNet's algod/indexer always
-    // accept this fixed 64-character token.
+    // accept this fixed 64-character token. Production reads the SAME
+    // config.localnetAlgodToken for both algodToken and indexerToken
+    // (packages/config/src/network-config.ts:100-101) — mirrored below by
+    // using this one constant for both, not two separately-typed literals.
     const mockLocalnetAlgodToken = 'a'.repeat(64)
 
     // Mirrors pera-service-fallback.ts's PERA_SERVICE_FALLBACK table.
@@ -90,31 +97,31 @@ const {
             algodUrl: 'https://mainnet.algod.algo',
             indexerUrl: 'https://mainnet.indexer.algo',
             algodToken: mockAlgodApiKey,
-            indexerToken: 'test-indexer-key',
+            indexerToken: mockIndexerApiKey,
         },
         testnet: {
             algodUrl: 'https://testnet.algod.algo',
             indexerUrl: 'https://testnet.indexer.algo',
             algodToken: mockAlgodApiKey,
-            indexerToken: 'test-indexer-key',
+            indexerToken: mockIndexerApiKey,
         },
         betanet: {
             algodUrl: 'https://betanet.algod.algo',
             indexerUrl: 'https://betanet.indexer.algo',
             algodToken: mockAlgodApiKey,
-            indexerToken: 'test-indexer-key',
+            indexerToken: mockIndexerApiKey,
         },
         fnet: {
             algodUrl: 'https://fnet.algod.algo',
             indexerUrl: 'https://fnet.indexer.algo',
             algodToken: mockAlgodApiKey,
-            indexerToken: 'test-indexer-key',
+            indexerToken: mockIndexerApiKey,
         },
         localnet: {
             algodUrl: 'https://localnet.algod.algo',
             indexerUrl: 'https://localnet.indexer.algo',
             algodToken: mockLocalnetAlgodToken,
-            indexerToken: 'localnet-dev-token',
+            indexerToken: mockLocalnetAlgodToken,
         },
     }
 
@@ -128,6 +135,7 @@ const {
     return {
         mockNetworks,
         mockAlgodApiKey,
+        mockIndexerApiKey,
         mockLocalnetAlgodToken,
         chainUrlsByNetwork,
         backendUrlByLane,
@@ -147,6 +155,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         debugEnabled: true,
         backendAPIKey: 'test-api-key',
         algodApiKey: mockAlgodApiKey,
+        indexerApiKey: mockIndexerApiKey,
     },
     Networks: mockNetworks,
     getNetworkConfig: (network: string) => ({
@@ -598,6 +607,53 @@ describe('queryClient', () => {
         // constants, not the same value doing double duty.
         expect(chainUrlsByNetwork.localnet.algodToken).not.toBe(
             chainUrlsByNetwork.mainnet.algodToken,
+        )
+
+        // Same pins for the indexer token. Unlike algod, LocalNet's indexer
+        // token is NOT distinct from its algod token — production reads both
+        // from the SAME config.localnetAlgodToken
+        // (packages/config/src/network-config.ts:100-101) — so there is no
+        // mutual-inequality check to keep here; asserting equality to the
+        // one real constant is the correct model, not a weakening.
+        expect(chainUrlsByNetwork.localnet.indexerToken).toBe(
+            mockLocalnetAlgodToken,
+        )
+        expect(chainUrlsByNetwork.localnet.indexerToken).toHaveLength(64)
+        expect(chainUrlsByNetwork.mainnet.indexerToken).toBe(
+            config.indexerApiKey,
+        )
+
+        // Now that LocalNet's algod and indexer tokens are equal (mirroring
+        // production), a token-VALUE comparison alone can no longer tell the
+        // two clients apart for that network. Assert the header NAME each
+        // one actually sets instead, which stays distinct regardless of
+        // token equality — this is what would catch the algod and indexer
+        // clients being swapped (wrong URL/role paired with the other's
+        // header name) even when their token values happen to match.
+        const localnetAlgodConfig = findClientConfig(
+            chainUrlsByNetwork.localnet.algodUrl,
+        ) as CapturedClientConfig
+        const localnetAlgodRequest = { headers: new Map<string, string>() }
+        localnetAlgodConfig.hooks.beforeRequest[0]({
+            request: localnetAlgodRequest,
+        })
+        expect(localnetAlgodRequest.headers.has('X-Algo-API-Token')).toBe(true)
+        expect(localnetAlgodRequest.headers.has('X-Indexer-API-Token')).toBe(
+            false,
+        )
+
+        const localnetIndexerConfig = findClientConfig(
+            chainUrlsByNetwork.localnet.indexerUrl,
+        ) as CapturedClientConfig
+        const localnetIndexerRequest = { headers: new Map<string, string>() }
+        localnetIndexerConfig.hooks.beforeRequest[0]({
+            request: localnetIndexerRequest,
+        })
+        expect(localnetIndexerRequest.headers.has('X-Indexer-API-Token')).toBe(
+            true,
+        )
+        expect(localnetIndexerRequest.headers.has('X-Algo-API-Token')).toBe(
+            false,
         )
     })
 
