@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Key } from '@algorandfoundation/keystore'
+import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
 import {
     InvalidKeyError,
     KeyManagementError,
@@ -212,6 +213,29 @@ export const useKMS = () => {
         return new Uint8Array(child.publicKey)
     }
 
+    /**
+     * Describes how to build a signed transaction for `keyPairId`.
+     *
+     * Returns the PQ scheme id and public key for a post-quantum child, or
+     * `null` for an Ed25519 child. Callers use the `null` case to pick the
+     * plain `sig` path — this is the single place the scheme is decided, so
+     * signing callers need no account-type branching.
+     */
+    const getPQSigningInfo = (
+        keyPairId: string,
+    ): { schemeId: PQSchemeId; publicKey: Uint8Array } | null => {
+        const child = getKeystoreStore().state.keys.find(
+            k => k.id === keyPairId,
+        )
+        if (!child || child.type !== FALCON_CHILD_KEY_TYPE) {
+            return null
+        }
+        return {
+            schemeId: 'falcon1024',
+            publicKey: getQuantumPublicKey(keyPairId),
+        }
+    }
+
     const hasSeedWithEntropy = useCallback((seedKeyId: string): boolean => {
         const keys = getKeystoreStore().state.keys
         const seed = keys.find(k => k.id === seedKeyId)
@@ -346,6 +370,7 @@ export const useKMS = () => {
         generateDerivedKey,
         getDerivedPublicKey,
         getQuantumPublicKey,
+        getPQSigningInfo,
         withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { concatBytes } from '@perawallet/wallet-core-shared'
 import type {
     AlgokitClientInterface,
@@ -38,7 +38,7 @@ import type {
 export const submitSignedTransactionGroup = async (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
-    signedTxns: PeraSignedTxnResult[],
+    signedTxns: PeraSignedTransaction[],
 ): Promise<string[]> => {
     const encoded = encodeSignedTransactions(signedTxns)
     const concatenated = concatBytes(...encoded)

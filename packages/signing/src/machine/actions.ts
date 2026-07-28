@@ -15,7 +15,6 @@ import {
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
-    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     SignableGroup,
@@ -59,8 +58,8 @@ import {
  *   self-resolves, a multisig rekeyed to another multisig, and any sender
  *   rekeyed on-chain to a Pera-held multisig)
  * - hardware: the auth account is a hardware wallet
- * - quantum: the auth account is a post-quantum (Falcon) account
- * - localKey: the auth account has local signing keys (Algo25 / HDWallet)
+ * - localKey: the auth account has local signing keys (Algo25 / HDWallet /
+ *   quantum) — the scheme is resolved inside the signing function itself
  *
  * Routing on the auth account also carries the externally-rekeyed-multisig
  * edge (a multisig whose on-chain auth is a standard/Ledger account we hold):
@@ -75,12 +74,6 @@ const determineSignerType = (
     }
     if (isHardwareWalletAccount(authAccount)) {
         return 'hardware'
-    }
-    // Quantum accounts carry a keyPairId, so this MUST run before the
-    // hasSigningKeys check below — otherwise a Falcon account is swallowed
-    // into the localKey path and mis-signed as a plain Ed25519 transaction.
-    if (isQuantumAccount(authAccount)) {
-        return 'quantum'
     }
     if (hasSigningKeys(authAccount)) {
         return 'localKey'
@@ -152,13 +145,12 @@ export const buildGroupSignerTypeMap = (
  * the runtime presence of an `approve` callback — so the selector stays
  * predictable as new caller shapes are added.
  *
- * Callback delivery is carrier-aware: a quantum-signed group's `signed`
- * array may contain `QuantumSignedTransaction` (pqsig byte carrier) entries
- * alongside plain `PeraSignedTransaction`s, and both flow through to the
- * request's `approve` callback unchanged. The dApp receives node-ready pqsig
- * bytes verbatim (via the carrier-aware `encodeSignedTransaction`); whether
- * its own node accepts a Falcon signature is network-gated, not a wallet
- * concern (cf. PQ-019/PQ-021).
+ * A quantum-signed group's `signed` array is `PeraSignedTransaction[]` just
+ * like any other — a PQ signature is a `pqsig` field on the same type, not a
+ * separate carrier — so it flows through to the request's `approve` callback
+ * unchanged via the ordinary `encodeSignedTransaction`. Whether the dApp's
+ * own node accepts a Falcon signature is network-gated, not a wallet concern
+ * (cf. PQ-019/PQ-021).
  */
 const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
@@ -389,7 +381,6 @@ const buildSignableGroups = (
  */
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
-    signQuantumTransactions: input.signQuantumTransactions,
     signArbitraryData: input.signArbitraryData,
     signArc60: input.signArc60,
     createTransport: input.createTransport,

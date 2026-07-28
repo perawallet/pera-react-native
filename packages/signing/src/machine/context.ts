@@ -26,7 +26,6 @@ import type {
     LocalArbitrarySigningFunction,
     LocalArc60SigningFunction,
 } from '../pipeline/signing/createLocalKeyStrategy'
-import type { QuantumSigningFunction } from '../pipeline/signing/createQuantumStrategy'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
 
@@ -36,17 +35,13 @@ import type { SignRequest } from '../models'
 
 /**
  * The type of signing actor to invoke for a given signer address.
- * - localKey: HD wallet or Algo25 account (signing keys available on device)
+ * - localKey: HD wallet, Algo25, or quantum (post-quantum, Falcon-1024)
+ *   account (signing keys available on device) — the scheme (plain
+ *   signature vs. pqsig) is resolved inside the injected signing function
  * - hardware: Hardware wallet requiring device connection and physical confirmation
  * - multisig: Multi-signature account requiring partial signature collection
- * - quantum: Post-quantum (Falcon-1024) account — produces a pqsig byte carrier
- *   via the dedicated quantum strategy rather than a plain Ed25519 signature
  */
-export type ResolvedSignerType =
-    | 'localKey'
-    | 'hardware'
-    | 'multisig'
-    | 'quantum'
+export type ResolvedSignerType = 'localKey' | 'hardware' | 'multisig'
 
 /**
  * Maps each unique signer address in the request to its resolved signing type.
@@ -78,8 +73,6 @@ export type TransportFactory = (
 export type SigningMachineDeps = {
     /** KMS signing function from useLocalKeyTransactionSigner */
     signTransactions: LocalSigningFunction
-    /** KMS Falcon signing function from useQuantumTransactionSigner */
-    signQuantumTransactions: QuantumSigningFunction
     /** KMS arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
     /** KMS ARC-60 signing function from useLocalKeyArc60Signer */

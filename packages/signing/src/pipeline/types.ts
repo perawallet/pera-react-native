@@ -17,7 +17,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import type {
     PeraTransaction,
-    PeraSignedTxnResult,
+    PeraSignedTransaction,
     PeraTransactionType,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraArbitraryDataMessage } from '../models'
@@ -462,8 +462,7 @@ export interface SignerInfo {
     /**
      * Account type of the signer, when the signing strategy knows it. Lets the
      * submission boundary detect quantum signers without parsing signature
-     * bytes. Populated by createLocalKeyStrategy (and, once it lands, the
-     * dedicated quantum strategy — PQ-006).
+     * bytes. Populated by createLocalKeyStrategy.
      */
     accountType?: AccountType
 }
@@ -471,15 +470,14 @@ export interface SignerInfo {
 /**
  * Signed transaction data.
  *
- * `signed` is `PeraSignedTxnResult[]` (plain `PeraSignedTransaction` OR the
- * `QuantumSignedTransaction` pqsig byte carrier) rather than
- * `PeraSignedTransaction[]` because `createQuantumStrategy` produces the
- * carrier for quantum accounts. Use `isQuantumSignedTransaction` to
- * distinguish the two at consumption sites.
+ * `signed` is `PeraSignedTransaction[]` — a quantum (post-quantum) signature
+ * is just a `SignedTransaction` with `pqsig` set instead of `sig`, produced
+ * by the same `createLocalKeyStrategy` as Algo25/HD accounts (PERA-4653).
+ * There is no separate carrier type to distinguish at consumption sites.
  */
 export interface SignedTransactionData {
     type: 'transactions'
-    signed: PeraSignedTxnResult[]
+    signed: PeraSignedTransaction[]
 }
 
 /**

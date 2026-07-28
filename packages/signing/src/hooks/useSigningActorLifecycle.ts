@@ -21,7 +21,6 @@ import {
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
-import { useQuantumTransactionSigner } from './useQuantumTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useLocalKeyArc60Signer } from './useLocalKeyArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
@@ -188,7 +187,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     )
 
     const { signTransactions } = useLocalKeyTransactionSigner()
-    const { signQuantumTransactions } = useQuantumTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
     const { signArc60 } = useLocalKeyArc60Signer()
     const { encodeTransactionRaw, encodeSignedTransactions } =
@@ -212,7 +210,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         (_request: SignRequest): SigningMachineDeps => {
             return {
                 signTransactions,
-                signQuantumTransactions,
                 signArbitraryData,
                 signArc60,
                 createTransport: createTransportSelector({
@@ -234,7 +231,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         },
         [
             signTransactions,
-            signQuantumTransactions,
             signArbitraryData,
             signArc60,
             encodeTransactionRaw,
@@ -315,7 +311,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                         : undefined
                 if (
                     signingChild === 'localKey' ||
-                    signingChild === 'quantum' ||
                     signingChild === 'hardware' ||
                     signingChild === 'multisig'
                 ) {

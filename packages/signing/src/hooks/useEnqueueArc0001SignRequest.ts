@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import {
     type Arc0001ResolveResult,
-    type PeraSignedTxnResult,
+    type PeraSignedTransaction,
     type PeraTransaction,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
@@ -154,7 +154,7 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 signerOverrides:
                     signerOverrides.size > 0 ? signerOverrides : undefined,
                 feeAdjustments,
-                approve: async (signed: Nullable<PeraSignedTxnResult>[]) => {
+                approve: async (signed: Nullable<PeraSignedTransaction>[]) => {
                     const result: Nullable<string>[] = new Array(
                         totalLength,
                     ).fill(null)

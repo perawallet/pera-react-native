@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import type { SigningResult } from '../pipeline/types'
 
 /**
@@ -31,7 +31,7 @@ export const mergeSigningResults = (
 
     const allIndices = results.flatMap(r => r.originalIndices ?? [])
     const totalCount = allIndices.length > 0 ? Math.max(...allIndices) + 1 : 0
-    const reordered = new Array<PeraSignedTxnResult>(totalCount)
+    const reordered = new Array<PeraSignedTransaction>(totalCount)
 
     for (const result of results) {
         if (result.signedData.type !== 'transactions') continue

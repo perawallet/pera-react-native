@@ -12,7 +12,7 @@
 
 import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
-import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
@@ -48,7 +48,7 @@ export interface SubmitAndAutoRefreshCoreInput {
         affectedAddresses: string[],
         network: Network,
     ) => void | Promise<void>
-    signedTxns: readonly PeraSignedTxnResult[]
+    signedTxns: readonly PeraSignedTransaction[]
 }
 
 /**
@@ -134,7 +134,7 @@ const backgroundConfirmAndRefresh = async (
 export const submitAndAutoRefresh = async (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
-    signedTxns: PeraSignedTxnResult[],
+    signedTxns: PeraSignedTransaction[],
 ): Promise<string[]> => {
     const network = useNetworkStore.getState().network
     const accounts = useAccountsStore.getState().accounts

@@ -35,7 +35,7 @@ import { signArbitraryDataCase, signArc60Case } from './standardDataSigning'
 
 // Re-exported for backward compatibility with the many call sites that
 // import these from `./createLocalKeyStrategy` — the types now live in
-// `./standardDataSigning`, shared with `createQuantumStrategy`.
+// `./standardDataSigning`.
 export type {
     LocalArbitrarySigningFunction,
     LocalArc60SigningFunction,
@@ -61,12 +61,12 @@ export type LocalKeyStrategyOptions = {
 }
 
 /**
- * Creates a signing strategy for accounts with local Ed25519 keys (Algo25,
- * HDWallet). These accounts have immediate access to private keys via KMS.
+ * Creates a signing strategy for accounts whose signing key lives on this
+ * device: Algo25, HD wallet, and quantum (post-quantum) accounts.
  *
- * Quantum (Falcon) accounts are deliberately NOT handled here — they route
- * through the dedicated {@link createQuantumStrategy}, which produces the
- * pqsig byte carrier rather than a plain algosdk `SignedTransaction`.
+ * All three share one path. The signature scheme is resolved inside
+ * `useLocalKeyTransactionSigner` from the key itself, so this strategy does
+ * not branch on account type beyond validating that the key is local.
  */
 export const createLocalKeyStrategy = (
     options: LocalKeyStrategyOptions,
@@ -74,9 +74,7 @@ export const createLocalKeyStrategy = (
     const { signTransactions, signArbitraryData, signArc60 } = options
 
     return {
-        canSign: (account: WalletAccount): boolean => {
-            return hasSigningKeys(account) && !isQuantumAccount(account)
-        },
+        canSign: (account: WalletAccount): boolean => hasSigningKeys(account),
 
         sign: async (
             group: AnalyzedSignableGroup,
@@ -90,7 +88,11 @@ export const createLocalKeyStrategy = (
                 )
             }
 
-            if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
+            if (
+                !isAlgo25Account(account) &&
+                !isHDWalletAccount(account) &&
+                !isQuantumAccount(account)
+            ) {
                 throw new CannotSignError(
                     account.address,
                     `Unsupported account type: ${account.type}`,
@@ -117,8 +119,13 @@ export const createLocalKeyStrategy = (
                         callbacks?.onSigningComplete?.()
 
                         // Surface per-transaction base64 signatures on the
-                        // signer so the transport can post
-                        // them to the backend if needed
+                        // signer so the transport can post them to the
+                        // backend if needed. A PQ-signed transaction has no
+                        // `sig` (its signature lives in `pqsig` instead), so
+                        // this yields `null` for those slots with no
+                        // quantum-specific code — quantum accounts are not
+                        // multisig participants, so nothing reads it in that
+                        // case anyway.
                         const signerInfo: SignerInfo = {
                             address: account.address,
                             accountType: account.type,

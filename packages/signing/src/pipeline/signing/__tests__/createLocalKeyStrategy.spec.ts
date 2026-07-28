@@ -160,8 +160,8 @@ describe('createLocalKeyStrategy', () => {
             expect(makeStrategy().canSign(unsupportedAccount)).toBe(false)
         })
 
-        test('returns false for quantum accounts even though they carry a keyPairId (they route through createQuantumStrategy instead)', () => {
-            expect(makeStrategy().canSign(quantumAccount)).toBe(false)
+        test('canSign is true for a quantum account (routes through the shared local-key path)', () => {
+            expect(makeStrategy().canSign(quantumAccount)).toBe(true)
         })
 
         test('returns true for algo25 accounts', () => {
@@ -215,29 +215,47 @@ describe('createLocalKeyStrategy', () => {
             )
         })
 
-        test('rejects quantum accounts with CannotSignError (quantum now routes through the dedicated quantum strategy)', async () => {
-            // PQ-006 / PERA-4488: quantum accounts are no longer swept into the
-            // local-key strategy. A dedicated quantumSignerActor +
-            // createQuantumStrategy produce the pqsig byte carrier, so the
-            // local-key guard must REJECT quantum rather than mis-signing it as
-            // a plain Ed25519 signed transaction.
-            await expect(
-                makeStrategy().sign(makeTransactionGroup(), quantumAccount),
-            ).rejects.toThrow('Unsupported account type')
-            expect(signTransactions).not.toHaveBeenCalled()
+        test('signs a quantum account through the shared local-key path (PQ-023 / PERA-4653)', async () => {
+            // Quantum accounts are no longer swept into a separate strategy —
+            // createQuantumStrategy/quantumSignerActor are deleted. The
+            // signature scheme (plain sig vs. pqsig) is resolved inside the
+            // injected signTransactions function, so this strategy only
+            // validates that the key is local.
+            const group = makeTransactionGroup()
+
+            const result = await makeStrategy().sign(group, quantumAccount)
+
+            expect(result.signedData.type).toBe('transactions')
+            expect(signTransactions).toHaveBeenCalledWith(
+                group.data.type === 'transactions'
+                    ? group.data.transactions
+                    : undefined,
+                group.data.type === 'transactions'
+                    ? group.data.indicesToSign
+                    : undefined,
+                quantumAccount,
+            )
         })
 
         test('tags the signer with the account type for transactions groups', async () => {
             // PQ-014 Task 1: the submission boundary needs to detect the
             // signing account's type without parsing signature bytes, so
-            // SignerInfo carries it. (Quantum's own accountType is covered in
-            // createQuantumStrategy.spec.ts now that quantum has its own path.)
+            // SignerInfo carries it.
             const result = await makeStrategy().sign(
                 makeTransactionGroup(),
                 algo25Account,
             )
 
             expect(result.signers[0]!.accountType).toBe('algo25')
+        })
+
+        test('tags the signer with accountType "quantum" for a quantum account (re-homed from createQuantumStrategy.spec.ts)', async () => {
+            const result = await makeStrategy().sign(
+                makeTransactionGroup(),
+                quantumAccount,
+            )
+
+            expect(result.signers[0]!.accountType).toBe('quantum')
         })
 
         test('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {

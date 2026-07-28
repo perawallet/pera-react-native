@@ -38,12 +38,6 @@ vi.mock('../useLocalKeyTransactionSigner', () => ({
     })),
 }))
 
-vi.mock('../useQuantumTransactionSigner', () => ({
-    useQuantumTransactionSigner: vi.fn(() => ({
-        signQuantumTransactions: vi.fn(),
-    })),
-}))
-
 vi.mock('../useArbitraryDataSigner', () => ({
     useArbitraryDataSigner: vi.fn(() => ({
         signArbitraryData: vi.fn(),

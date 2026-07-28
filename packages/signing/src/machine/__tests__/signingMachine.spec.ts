@@ -69,7 +69,6 @@ const mockTransportResult: TransportResult = {
 
 const mockDeps = {
     signTransactions: vi.fn(),
-    signQuantumTransactions: vi.fn(),
     signArbitraryData: vi.fn(),
     signArc60: vi.fn(),
     encodeSignedTransactions: vi

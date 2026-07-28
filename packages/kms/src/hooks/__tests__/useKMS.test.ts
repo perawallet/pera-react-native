@@ -747,6 +747,46 @@ describe('useKMS', () => {
         })
     })
 
+    describe('getPQSigningInfo', () => {
+        it('returns the scheme id and public key for a quantum child', async () => {
+            const { seedFromMnemonic } = await import('algosdk')
+            const seed = seedFromMnemonic(TEST_MNEMONIC)
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+
+            seedQuantumRoot('quantum-1')
+            mockKeystoreKeys.push({
+                id: 'quantum-1-quantum',
+                type: FALCON_CHILD_KEY_TYPE,
+                algorithm: 'raw',
+                extractable: false,
+                publicKey,
+                metadata: { parentKeyId: 'quantum-1' },
+            })
+
+            const { result } = renderHook(() => useKMS())
+            const info = result.current.getPQSigningInfo('quantum-1-quantum')
+
+            expect(info?.schemeId).toBe('falcon1024')
+            expect(info?.publicKey).toBeInstanceOf(Uint8Array)
+            expect(info?.publicKey.length).toBeGreaterThan(1000)
+        })
+
+        it('returns null for a non-quantum child so callers take the Ed25519 path', () => {
+            seedAlgo25Root('algo-1')
+            const child = childOf('algo-1-ed25519', 'algo-1', 'ed25519')
+
+            const { result } = renderHook(() => useKMS())
+
+            expect(result.current.getPQSigningInfo(child.id)).toBeNull()
+        })
+
+        it('returns null for an unknown keyPairId', () => {
+            const { result } = renderHook(() => useKMS())
+
+            expect(result.current.getPQSigningInfo('missing-id')).toBeNull()
+        })
+    })
+
     it('hasSeedWithEntropy returns true when the seed has an entropy secret-key child', () => {
         seedBip39Root('hd-1')
         entropyChildOf('hd-1')

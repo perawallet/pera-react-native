@@ -29,7 +29,6 @@ import type {
     LocalArbitrarySigningFunction,
     LocalArc60SigningFunction,
 } from '../../../pipeline/signing/createLocalKeyStrategy'
-import type { QuantumSigningFunction } from '../../../pipeline/signing/createQuantumStrategy'
 import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
 import { signGroupsBySignerAccount } from './signGroupsBySignerAccount'
 
@@ -37,7 +36,6 @@ export type MultisigSignerActorInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
     signTransactions: LocalSigningFunction
-    signQuantumTransactions: QuantumSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signArc60: LocalArc60SigningFunction
     encodeTransaction: EncodeTransactionFunction
@@ -81,7 +79,6 @@ export const multisigSignerActor = fromPromise<
         groups,
         allAccounts,
         signTransactions,
-        signQuantumTransactions,
         signArbitraryData,
         signArc60,
         encodeTransaction,
@@ -91,7 +88,6 @@ export const multisigSignerActor = fromPromise<
 
     const selectStrategy = createSigningStrategySelector({
         signTransactions,
-        signQuantumTransactions,
         signArbitraryData,
         signArc60,
         encodeTransaction,

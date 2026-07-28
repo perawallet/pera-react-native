@@ -35,7 +35,6 @@ import { analyzerActor } from './actors/analyzerActor'
 // Local-key and multisig are simple fromPromise actors. Hardware needs a
 // child machine instead (own retry/error lifecycle, parent-forwarded events).
 import { localKeySignerActor } from './actors/signers/localKeySignerActor'
-import { quantumSignerActor } from './actors/signers/quantumSignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { hardwareSigningMachine } from './children/hardwareSigningMachine'
@@ -97,7 +96,6 @@ export const signingMachine = setup({
     actors: {
         analyzerActor,
         localKeySignerActor,
-        quantumSignerActor,
         hardwareSigningMachine,
         multisigSignerActor,
         transportActor,
@@ -117,8 +115,6 @@ export const signingMachine = setup({
             context.groupSignerTypes !== null,
         isNextSignerLocalKey: ({ context }) =>
             getNextPendingSignerType(context) === 'localKey',
-        isNextSignerQuantum: ({ context }) =>
-            getNextPendingSignerType(context) === 'quantum',
         isNextSignerHardware: ({ context }) =>
             getNextPendingSignerType(context) === 'hardware' &&
             context.deps.hardwareWalletRegistry !== undefined,
@@ -163,17 +159,6 @@ export const signingMachine = setup({
             completedSignerTypes: ({ context }) => [
                 ...context.completedSignerTypes,
                 'localKey' as const,
-            ],
-        }),
-        appendQuantumResults: assign({
-            // event.output is the resolved value of the quantumSignerActor Promise
-            signingResults: ({ context, event }) => [
-                ...(context.signingResults ?? []),
-                ...(event as unknown as { output: SigningResult[] }).output,
-            ],
-            completedSignerTypes: ({ context }) => [
-                ...context.completedSignerTypes,
-                'quantum' as const,
             ],
         }),
         appendHardwareChildResults: assign({
@@ -372,7 +357,6 @@ export const signingMachine = setup({
                             target: '#signingMachine.transporting',
                         },
                         { guard: 'isNextSignerLocalKey', target: 'localKey' },
-                        { guard: 'isNextSignerQuantum', target: 'quantum' },
                         { guard: 'isNextSignerHardware', target: 'hardware' },
                         { guard: 'isNextSignerMultisig', target: 'multisig' },
                         // No pending signer type — should not happen
@@ -399,31 +383,6 @@ export const signingMachine = setup({
                         onDone: {
                             target: 'dispatching',
                             actions: 'appendLocalKeyResults',
-                        },
-                        onError: {
-                            target: '#signingMachine.failed',
-                            actions: 'setSigningError',
-                        },
-                    },
-                },
-
-                quantum: {
-                    invoke: {
-                        src: 'quantumSignerActor',
-                        input: ({ context }) => ({
-                            groups: getAnalyzedGroupsForSignerType(
-                                context,
-                                'quantum',
-                            ),
-                            allAccounts: context.allAccounts,
-                            signQuantumTransactions:
-                                context.deps.signQuantumTransactions,
-                            signArbitraryData: context.deps.signArbitraryData,
-                            signArc60: context.deps.signArc60,
-                        }),
-                        onDone: {
-                            target: 'dispatching',
-                            actions: 'appendQuantumResults',
                         },
                         onError: {
                             target: '#signingMachine.failed',
@@ -529,8 +488,6 @@ export const signingMachine = setup({
                             ),
                             allAccounts: context.allAccounts,
                             signTransactions: context.deps.signTransactions,
-                            signQuantumTransactions:
-                                context.deps.signQuantumTransactions,
                             signArbitraryData: context.deps.signArbitraryData,
                             signArc60: context.deps.signArc60,
                             encodeTransaction: context.deps.encodeTransaction,
