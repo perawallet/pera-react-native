@@ -101,9 +101,9 @@ describe('useBiometrics', () => {
         kmsMocks.pinBytes = null
         kmsMocks.biometricBytes = null
         wireBlobMocks()
-        mockCheckBiometricsAvailable.mockResolvedValue(false)
-        // Default to a strong (class-3) enrolled biometric; tests that need a
-        // weak device override this.
+        // Default to a device with a strong (class-3) biometric enrolled; tests
+        // covering unavailable / weak / revoked devices override these.
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockGetSecurityLevel.mockResolvedValue('strong')
     })
 
@@ -117,6 +117,39 @@ describe('useBiometrics', () => {
         await waitFor(() => {
             expect(result.current.isEnabled).toBe(true)
         })
+    })
+
+    test('clears the biometric blob when the OS reports no enrolled biometric', async () => {
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+        mockCheckBiometricsAvailable.mockResolvedValue(false)
+
+        const { result } = await renderAndSettle()
+
+        let isEnabled: boolean = true
+        await act(async () => {
+            isEnabled = await result.current.checkBiometricsEnabled()
+        })
+
+        expect(isEnabled).toBe(false)
+        expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
+            BIOMETRIC_BLOB_KEY_ID,
+        )
+        expect(kmsMocks.biometricBytes).toBeNull()
+        expect(result.current.isEnabled).toBe(false)
+    })
+
+    test('refreshBiometricsBinding does not re-arm a blob whose enrollment is gone', async () => {
+        kmsMocks.pinBytes = new Uint8Array([10, 20, 30, 40])
+        kmsMocks.biometricBytes = new Uint8Array([99])
+        mockCheckBiometricsAvailable.mockResolvedValue(false)
+
+        const { result } = await renderAndSettle()
+
+        await act(async () => {
+            await result.current.refreshBiometricsBinding()
+        })
+
+        expect(kmsMocks.commitSecret).not.toHaveBeenCalled()
     })
 
     test('initializes isAvailable from biometrics service on mount', async () => {

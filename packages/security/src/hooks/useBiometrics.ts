@@ -68,8 +68,21 @@ export const useBiometrics = (): UseBiometricsResult => {
     const [isAvailable, setIsAvailable] = useState(false)
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
-        return hasSecret(BIOMETRIC_BLOB_KEY_ID)
-    }, [hasSecret])
+        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) return false
+
+        // Fail closed on OS-level revocation. The blob is the app's only record
+        // that biometric unlock was opted into, so one that outlives its
+        // enrollment would silently re-arm unlock the moment the user enrolls a
+        // new biometric — a fingerprint added after the fact could open the
+        // wallet without the in-app toggle ever being touched. Drop the blob
+        // instead and require an explicit re-enable. The PIN record is a
+        // separate secret, so this never costs the user access.
+        if (await biometricsService.checkBiometricsAvailable()) return true
+
+        await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+        setIsEnabled(false)
+        return false
+    }, [hasSecret, removeSecret, biometricsService])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()
@@ -147,11 +160,13 @@ export const useBiometrics = (): UseBiometricsResult => {
     // already enabled; never re-prompts the OS biometric sheet (we already
     // have the user authenticated via PIN at the call site).
     const refreshBiometricsBinding = useCallback(async (): Promise<void> => {
-        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) return
+        // Goes through the reconciling check, not a bare `hasSecret`, so a PIN
+        // change cannot re-write a blob whose OS enrollment is already gone.
+        if (!(await checkBiometricsEnabled())) return
         await withSecret(PIN_RECORD_KEY_ID, async pinData => {
             await writeBiometricBlob(pinData)
         })
-    }, [hasSecret, withSecret, writeBiometricBlob])
+    }, [checkBiometricsEnabled, withSecret, writeBiometricBlob])
 
     const disableBiometrics = useCallback(async () => {
         await removeSecret(BIOMETRIC_BLOB_KEY_ID)
