@@ -77,9 +77,12 @@ algosdk fork's swap point lives in the `SWAP-BACK:` comment in
 
 `packages/blockchain/src/pq/__tests__/pqLibraryFirewall.spec.ts` scans every
 `.ts`/`.tsx` file under `packages/` and `apps/` (excluding `__tests__`) and
-fails CI if any `@joe-p/*` or `falcon-1024` import appears outside the two
-seam directories. It also asserts the seam files still import their
-respective libraries, so a silent rename can't make the guard vacuous.
+fails CI if `@joe-p/react-native-falcon` or `falcon-1024` (including a deep
+import like `falcon-1024/wasm`) appears outside the one remaining seam
+directory, `packages/kms/src/crypto/pq` (Seam A). `algosdk`/`@joe-p/algosdk`
+is not part of this forbidden pattern. It also asserts that seam's
+`wasmFalconProvider.ts` still imports `falcon-1024`, so a silent rename can't
+make the guard vacuous.
 
 ## Scope note
 
