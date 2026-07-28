@@ -10,19 +10,21 @@
  limitations under the License
  */
 
-// PQ-006 / PERA-4488: quantum accounts now route end-to-end through the signing
-// state machine via the dedicated `quantumSignerActor` + `createQuantumStrategy`,
-// producing a `QuantumSignedTransaction` carrier. The second test below drives a
-// real quantum payment through the machine and proves the carrier is produced.
+// PQ-006/PERA-4653: quantum accounts no longer route through a dedicated
+// signing path. `useLocalKeyTransactionSigner` signs them like any other
+// local key — `getPQSigningInfo` resolves the account's key scheme and picks
+// which bytes to sign, and the result is an ordinary algosdk
+// `SignedTransaction` with its `pqsig` field populated instead of `sig`
+// (see `assemblePQSignedTransaction`). There is no separate carrier type to
+// gate on anymore.
 //
-// PERA-4490 (PQ-017 task 3): the callback transport used to throw
-// (`assertNoQuantumSignedTransactions`) rather than deliver a Falcon pqsig
-// carrier to a peer. That gate is gone — the carrier-aware `encodeSignedTransaction`
-// means callback delivery hands the pqsig bytes straight through. The local send
-// still self-submits via the callback transport (not algod), so this test asserts
-// the carrier reaches the request's `approve` callback and that NO algod
-// `/v2/transactions` broadcast ever happens (submission itself stays
-// GATED/synthetic — out of scope here, see PQ-019).
+// The second test below drives a real quantum payment through the machine
+// over the callback transport (the same transport the send-funds flow uses)
+// and proves the pqsig-bearing `SignedTransaction` reaches the request's
+// `approve()` callback, and that NO algod `/v2/transactions` broadcast ever
+// happens — the local send self-submits via the callback transport, not
+// algod. Submission over the algod transport is covered separately by
+// `submit-quantum-broadcast.test.tsx` (PQ-019).
 
 import {
     afterAll,
@@ -211,7 +213,7 @@ describe('send from quantum account (PQ-015)', () => {
     )
 
     it(
-        'Given a real quantum sender, when a local payment is signed, then the machine routes it through the quantum strategy to a QuantumSignedTransaction carrier and delivers it via the callback transport with no algod broadcast',
+        'Given a real quantum sender, when a local payment is signed, then the machine signs it via the ordinary local-key path into a pqsig-bearing SignedTransaction and delivers it via the callback transport with no algod broadcast',
         async () => {
             await enableQuantumFlag()
             await seedQuantumSender()
@@ -250,11 +252,12 @@ describe('send from quantum account (PQ-015)', () => {
 
             renderSignReview(request)
 
-            // The machine dispatches the group to quantumSignerActor, the
-            // dedicated strategy produces a QuantumSignedTransaction carrier,
-            // and the callback delivery step now hands it straight to the
-            // request's approve() (PERA-4490 removed the gate that used to
-            // throw here).
+            // The machine signs the group through the ordinary local-key
+            // strategy (`useLocalKeyTransactionSigner` resolves the account's
+            // key scheme via `getPQSigningInfo`), and the callback delivery
+            // step hands the resulting pqsig-bearing `SignedTransaction`
+            // straight to the request's approve() — no dedicated quantum
+            // strategy or carrier gate in the path anymore.
             await waitFor(
                 () => {
                     expect(approveSpy).toHaveBeenCalled()
@@ -264,15 +267,15 @@ describe('send from quantum account (PQ-015)', () => {
 
             expect(errorSpy).not.toHaveBeenCalled()
 
-            // The pqsig carrier's presence in the delivered array is the
+            // The `pqsig` field's presence in the delivered signed txn is the
             // load-bearing proof that the quantum account signed the payment
             // end-to-end through the machine — not just that some result was
             // delivered.
             const delivered = approveSpy.mock.calls[0]?.[0] as {
-                pqSignedBytes?: Uint8Array
+                pqsig?: { sig?: Uint8Array }
             }[]
             expect(
-                delivered.some(tx => tx?.pqSignedBytes instanceof Uint8Array),
+                delivered.some(tx => tx?.pqsig?.sig instanceof Uint8Array),
             ).toBe(true)
 
             // No node ever saw the Falcon-signed group: callback delivery,
