@@ -20,11 +20,14 @@ module.exports = function (api) {
       'module-resolver',
       {
         root: ["./src"],
+        // Node-core polyfills (crypto/stream/buffer/base64-js) are NOT aliased
+        // here — metro.config.js `polyfillMap` maps them to the mobile app's
+        // node_modules instead. Aliasing them at the Babel layer resolves
+        // relative to the importing file, which fails for workspace packages
+        // (packages/security, packages/kms, …) that have no copy of the
+        // polyfill, producing 'Could not resolve "react-native-quick-crypto"'
+        // warnings on every cache miss.
         alias: {
-          'crypto': 'react-native-quick-crypto',
-          'stream': 'readable-stream',
-          'buffer': '@craftzdog/react-native-buffer',
-          'base64-js': 'react-native-quick-base64',
           "@components": "./src/components",
           "@providers": "./src/providers",
           "@layouts": "./src/layouts",

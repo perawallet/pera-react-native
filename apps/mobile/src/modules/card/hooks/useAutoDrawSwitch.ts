@@ -15,6 +15,7 @@ import {
     DEFAULT_CARD_CURRENCY,
     compileAutoDrawProgram,
     postDelegatorLsig,
+    resolveEscrowChainConfig,
     useKillswitchAutoDraw,
     isKillswitchConfigured,
 } from '@perawallet/wallet-core-card'
@@ -24,6 +25,7 @@ import {
     useProgramSigner,
     useSignAndSubmitGroup,
 } from '@perawallet/wallet-core-signing'
+import { useFeeDelegation } from '@perawallet/wallet-core-fee-delegation'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64, logger } from '@perawallet/wallet-core-shared'
 import { canAutoFund } from './useCardFundingSourcePicker'
@@ -31,8 +33,11 @@ import { canAutoFund } from './useCardFundingSourcePicker'
 export type UseAutoDrawSwitchResult = {
     /**
      * Turns auto-funding ON for an already-created card: registers the signed
-     * AutoDraw LSig with AB, then submits the on-chain Killswitch `enable(card)`
-     * (skipped when the Killswitch app isn't configured yet, e.g. dev builds).
+     * AutoDraw LSig with AB, then submits the on-chain Killswitch
+     * `enable(card, asset)` via the Pera backend's fee-delegation endpoint —
+     * the sponsor covers the accounts-box MBR and the group's fees, so the
+     * funding account needs no ALGO of its own (skipped when the Killswitch
+     * app isn't configured yet, e.g. dev builds).
      */
     enableAutoDraw: (
         account: WalletAccount,
@@ -58,6 +63,7 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
     const { buildEnable, buildKill, isAutoDrawEnabled } =
         useKillswitchAutoDraw()
     const { submit } = useSignAndSubmitGroup()
+    const { submitWithFeeDelegation } = useFeeDelegation()
     const [isPending, setIsPending] = useState(false)
 
     const canSwitchToAuto = useCallback(
@@ -102,16 +108,27 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 // fact. Already enabled == the retry/recovery case — done.
                 // (A concurrent enable between check and submit still reverts;
                 // that surfaces as a retryable error and the retry no-ops.)
-                if (await isAutoDrawEnabled({ sender: account.address })) {
+                const { assetId } = resolveEscrowChainConfig(network)
+                if (
+                    await isAutoDrawEnabled({
+                        sender: account.address,
+                        asset: assetId,
+                    })
+                ) {
                     return
                 }
                 const txns = await buildEnable({
                     sender: account.address,
                     cardAddress,
+                    asset: assetId,
                 })
-                await submit({
-                    unsignedTxs: txns,
-                    source: {
+                // Fee-delegated: the sponsor covers the accounts-box MBR and
+                // the group's fees, so the funding account needs no ALGO.
+                await submitWithFeeDelegation({
+                    account: account.address,
+                    transactions: txns,
+                    includeMbr: true,
+                    sourceMetadata: {
                         name: 'card-autodraw-enable',
                         description: 'Enable auto funding',
                     },
@@ -120,7 +137,13 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 setIsPending(false)
             }
         },
-        [network, signProgram, isAutoDrawEnabled, buildEnable, submit],
+        [
+            network,
+            signProgram,
+            isAutoDrawEnabled,
+            buildEnable,
+            submitWithFeeDelegation,
+        ],
     )
 
     const disableAutoDraw = useCallback(
@@ -139,10 +162,19 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                 // on-chain enable never happened (e.g. Auto chosen during
                 // onboarding, which only registers the LSig) — switching to
                 // Manual must succeed there, not dead-end on a revert.
-                if (!(await isAutoDrawEnabled({ sender: account.address }))) {
+                const { assetId } = resolveEscrowChainConfig(network)
+                if (
+                    !(await isAutoDrawEnabled({
+                        sender: account.address,
+                        asset: assetId,
+                    }))
+                ) {
                     return
                 }
-                const txns = await buildKill({ sender: account.address })
+                const txns = await buildKill({
+                    sender: account.address,
+                    asset: assetId,
+                })
                 await submit({
                     unsignedTxs: txns,
                     source: {

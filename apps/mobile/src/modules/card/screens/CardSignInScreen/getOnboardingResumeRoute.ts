@@ -17,10 +17,20 @@ import {
     VerificationState,
 } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { CardOnboardingStackParamList } from '../../routes/card-onboarding/types'
 
 export type OnboardingResumeRoute = {
-    screen: keyof CardOnboardingStackParamList
+    // Deliberately a narrower literal union than `keyof
+    // CardOnboardingStackParamList` — every screen listed here takes no
+    // required params, matching how the caller navigates (`{ screen }` with
+    // no `params`). A screen that requires params (e.g.
+    // `CardOnboardingSigning`) can never be a valid resume target from here.
+    screen:
+        | 'CardOnboardingEmail'
+        | 'CardOnboardingPhone'
+        | 'CardOnboardingPersonalDetails'
+        | 'CardOnboardingVerification'
+        | 'CardOnboardingAddress'
+        | 'CardOnboardingStatus'
     /** Step to persist to the card store; null leaves the stored step as is. */
     step: Nullable<OnboardingStep>
 }

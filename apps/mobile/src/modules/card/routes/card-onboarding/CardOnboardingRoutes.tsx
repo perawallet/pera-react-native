@@ -16,6 +16,7 @@ import {
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
+import { PWIcon } from '@components/core'
 import { CardOnboardingEmailScreen } from '../../screens/CardOnboardingEmailScreen'
 import { CardOnboardingEmailVerifyScreen } from '../../screens/CardOnboardingEmailVerifyScreen'
 import { CardOnboardingPasswordScreen } from '../../screens/CardOnboardingPasswordScreen'
@@ -25,6 +26,8 @@ import { CardOnboardingPersonalDetailsScreen } from '../../screens/CardOnboardin
 import { CardOnboardingAddressScreen } from '../../screens/CardOnboardingAddressScreen'
 import { CardOnboardingVerificationScreen } from '../../screens/CardOnboardingVerificationScreen'
 import { CardOnboardingStatusScreen } from '../../screens/CardOnboardingStatusScreen'
+import { CardCreateSigningScreen } from '../../screens/CardCreateSigningScreen'
+import { CardAutoFundingSigningScreen } from '../../screens/CardAutoFundingSigningScreen'
 import { type CardOnboardingStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<CardOnboardingStackParamList>()
@@ -89,6 +92,33 @@ export const CardOnboardingStackNavigator = () => {
                 name='CardOnboardingAddress'
                 component={CardOnboardingAddressScreen}
                 options={{ title: 'peraCard.address.navigation_title' }}
+            />
+            <Stack.Screen
+                name='CardOnboardingSigning'
+                component={CardCreateSigningScreen}
+                // Card creation is in flight — swipe/back-chevron disabled;
+                // only the explicit close button can leave this screen.
+                options={({ navigation }) => ({
+                    headerShown: true,
+                    gestureEnabled: false,
+                    title: '',
+                    headerLeft: () => null,
+                    headerRight: () => (
+                        <PWIcon
+                            name='cross'
+                            onPress={() => navigation.goBack()}
+                            testID='card-create-signing-close'
+                        />
+                    ),
+                })}
+            />
+            <Stack.Screen
+                name='CardOnboardingAutoFundingSigning'
+                component={CardAutoFundingSigningScreen}
+                // Same in-flight treatment as CardOnboardingSigning — the
+                // card already exists at this point; only Cancel (which
+                // degrades to Manual) can leave, not a swipe/back-chevron.
+                options={{ headerShown: false, gestureEnabled: false }}
             />
         </Stack.Navigator>
     )

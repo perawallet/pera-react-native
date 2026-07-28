@@ -12,16 +12,18 @@
 
 // SWAP POINT: AppliedBlockchain (AB) AutoDraw delegated LogicSig template.
 //
-// Vendored VERBATIM from AB's demo (`src/teal/AutoDraw.teal`, #pragma version
-// 11). The four `TMPL_` placeholders are string-substituted with the escrow
-// chain config (asset id, killswitch app id, W3Card app id, genesis hash) and
-// compiled by algod before the user signs it. KEEP THIS BYTE-IDENTICAL to AB's
-// template — the compiled program is what the delegation authorizes, and any
-// drift changes the LogicSig address AB's contract expects. When AB updates the
-// contract, replace this constant wholesale.
+// Vendored VERBATIM from AB's contract (`smart_contracts/auto_draw/contract.algo.ts`,
+// compiled to `smart_contracts/artifacts/auto_draw/AutoDraw.teal`, #pragma version 11).
+// The three `TMPL_` placeholders are string-substituted with the escrow chain config
+// (killswitch app id, W3Card app id, genesis hash) and compiled by algod before the
+// user signs it. Unlike the prior revision, the settlement asset is NO LONGER baked
+// into the LSig at compile time (`TMPL_ASSET` is gone) — the same LSig now authorizes
+// a draw of ANY asset, and per-asset gating happens entirely via the Killswitch's
+// `authorize(account, asset)` check (see ASSET_MISMATCH_KILLSWITCH below). KEEP THIS
+// BYTE-IDENTICAL to AB's template — the compiled program is what the delegation
+// authorizes, and any drift changes the LogicSig address AB's contract expects. When
+// AB updates the contract, replace this constant wholesale.
 
-/** Placeholder for the settlement asset id (`TMPL_ASSET`). */
-export const TMPL_ASSET = 'TMPL_ASSET'
 /** Placeholder for the Killswitch application id (`TMPL_KILLSWITCH_APP`). */
 export const TMPL_KILLSWITCH_APP = 'TMPL_KILLSWITCH_APP'
 /** Placeholder for the W3Card (main) application id (`TMPL_MAIN_APP`). */
@@ -32,160 +34,157 @@ export const TMPL_GENESIS_HASH = 'TMPL_GENESIS_HASH'
 export const AUTODRAW_TEAL_TEMPLATE = `#pragma version 11
 #pragma typetrack false
 
-// contracts/AutoDraw.algo.ts::program() -> uint64:
+// smart_contracts/auto_draw/contract.algo.ts::program() -> uint64:
 main:
-    intcblock 1 4 6 0 TMPL_ASSET TMPL_KILLSWITCH_APP TMPL_MAIN_APP
+    intcblock 1 6 TMPL_KILLSWITCH_APP TMPL_MAIN_APP
     bytecblock TMPL_GENESIS_HASH
-    // contracts/AutoDraw.algo.ts:12
+    // smart_contracts/auto_draw/contract.algo.ts:48
     // const txnAutoDraw = gtxn.AssetTransferTxn(Txn.groupIndex)
     txn GroupIndex
     dup
     gtxns TypeEnum
-    intc_1 // axfer
+    pushint 4 // axfer
     ==
     assert // transaction type is axfer
-    // contracts/AutoDraw.algo.ts:25
+    // smart_contracts/auto_draw/contract.algo.ts:61
     // assert(txnAutoDraw.rekeyTo === Global.zeroAddress, 'REKEY_NOT_ALLOWED')
     dup
     gtxns RekeyTo
     global ZeroAddress
     ==
     assert // REKEY_NOT_ALLOWED
-    // contracts/AutoDraw.algo.ts:29
+    // smart_contracts/auto_draw/contract.algo.ts:65
     // assert(txnAutoDraw.assetCloseTo === Global.zeroAddress, 'ASSET_CLOSE_NOT_ALLOWED')
     dup
     gtxns AssetCloseTo
     global ZeroAddress
     ==
     assert // ASSET_CLOSE_NOT_ALLOWED
-    // contracts/AutoDraw.algo.ts:33
+    // smart_contracts/auto_draw/contract.algo.ts:69
     // assert(Global.genesisHash === TemplateVar<bytes>('GENESIS_HASH'), 'BAD_NETWORK')
     global GenesisHash
     bytec_0 // TMPL_GENESIS_HASH
     ==
     assert // BAD_NETWORK
-    // contracts/AutoDraw.algo.ts:37
-    // assert(txnAutoDraw.xferAsset === TemplateVar<Asset>('ASSET'), 'BAD_ASSET')
-    dup
-    gtxns XferAsset
-    dup
-    intc 4 // TMPL_ASSET
-    ==
-    assert // BAD_ASSET
-    // contracts/AutoDraw.algo.ts:41
+    // smart_contracts/auto_draw/contract.algo.ts:73
     // assert(txnAutoDraw.fee === 0, 'NON-ZERO_FEE')
-    dig 1
+    dup
     gtxns Fee
     !
     assert // NON-ZERO_FEE
-    // contracts/AutoDraw.algo.ts:52
+    // smart_contracts/auto_draw/contract.algo.ts:84
     // const txnKillswitch = gtxn.ApplicationCallTxn(Txn.groupIndex + 1)
     txn GroupIndex
     intc_0 // 1
     +
     dup
     gtxns TypeEnum
-    intc_2 // appl
+    intc_1 // appl
     ==
     assert // transaction type is appl
-    // contracts/AutoDraw.algo.ts:57
+    // smart_contracts/auto_draw/contract.algo.ts:89
     // assert(txnKillswitch.appId === TemplateVar<Application>('KILLSWITCH_APP'), 'BAD_KILLSWITCH_APP')
     dup
     gtxns ApplicationID
-    intc 5 // TMPL_KILLSWITCH_APP
+    intc_2 // TMPL_KILLSWITCH_APP
     ==
     assert // BAD_KILLSWITCH_APP
-    // contracts/AutoDraw.algo.ts:61
+    // smart_contracts/auto_draw/contract.algo.ts:93
     // assert(txnKillswitch.onCompletion === OnCompleteAction.NoOp, 'BAD_KILLSWITCH_OC')
     dup
     gtxns OnCompletion
     !
     assert // BAD_KILLSWITCH_OC
-    // contracts/AutoDraw.algo.ts:65
+    // smart_contracts/auto_draw/contract.algo.ts:97
     // assert(txnKillswitch.appArgs(0) === killswitchMethod, 'BAD_KILLSWITCH_METHOD')
     dup
-    intc_3 // 0
-    gtxnsas ApplicationArgs
-    pushbytes 0x73bc6501 // method "authorize(address)void"
+    gtxnsa ApplicationArgs 0
+    pushbytes 0xa9312ef1 // method "authorize(address,uint64)void"
     ==
     assert // BAD_KILLSWITCH_METHOD
-    // contracts/AutoDraw.algo.ts:70
+    // smart_contracts/auto_draw/contract.algo.ts:102
     // assert(txnKillswitch.appArgs(1) === txnAutoDraw.sender.bytes, 'AUTH_MISMATCH')
-    intc_0 // 1
-    gtxnsas ApplicationArgs
+    dup
+    gtxnsa ApplicationArgs 1
     dig 2
     gtxns Sender
     swap
     dig 1
     ==
     assert // AUTH_MISMATCH
-    // contracts/AutoDraw.algo.ts:80
+    // smart_contracts/auto_draw/contract.algo.ts:108
+    // assert(btoi(txnKillswitch.appArgs(2)) === txnAutoDraw.xferAsset.id, 'ASSET_MISMATCH_KILLSWITCH')
+    swap
+    gtxnsa ApplicationArgs 2
+    btoi
+    dig 2
+    gtxns XferAsset
+    swap
+    dig 1
+    ==
+    assert // ASSET_MISMATCH_KILLSWITCH
+    // smart_contracts/auto_draw/contract.algo.ts:118
     // const txnMainDebit = gtxn.ApplicationCallTxn(Txn.groupIndex + 2)
     txn GroupIndex
-    pushint 2 // 2
+    pushint 2
     +
     dup
     gtxns TypeEnum
-    intc_2 // appl
+    intc_1 // appl
     ==
     assert // transaction type is appl
-    // contracts/AutoDraw.algo.ts:85
+    // smart_contracts/auto_draw/contract.algo.ts:123
     // assert(txnMainDebit.appId === TemplateVar<Application>('MAIN_APP'), 'BAD_MAIN_APP')
     dup
     gtxns ApplicationID
-    intc 6 // TMPL_MAIN_APP
+    intc_3 // TMPL_MAIN_APP
     ==
     assert // BAD_MAIN_APP
-    // contracts/AutoDraw.algo.ts:88
+    // smart_contracts/auto_draw/contract.algo.ts:126
     // assert(txnMainDebit.onCompletion === OnCompleteAction.NoOp, 'BAD_MAIN_OC')
     dup
     gtxns OnCompletion
     !
     assert // BAD_MAIN_OC
-    // contracts/AutoDraw.algo.ts:91
+    // smart_contracts/auto_draw/contract.algo.ts:129
     // assert(txnMainDebit.appArgs(0) === mainMethod, 'BAD_MAIN_METHOD')
     dup
-    intc_3 // 0
-    gtxnsas ApplicationArgs
+    gtxnsa ApplicationArgs 0
     pushbytes 0xad162624 // method "cardDebit(address,address,uint64,uint64,uint64,string)void"
     ==
     assert // BAD_MAIN_METHOD
-    // contracts/AutoDraw.algo.ts:95
+    // smart_contracts/auto_draw/contract.algo.ts:133
     // assert(txnMainDebit.appArgs(1) === txnAutoDraw.sender.bytes, 'SENDER_MISMATCH')
     dup
-    intc_0 // 1
-    gtxnsas ApplicationArgs
-    uncover 2
+    gtxnsa ApplicationArgs 1
+    uncover 3
     ==
     assert // SENDER_MISMATCH
-    // contracts/AutoDraw.algo.ts:99
+    // smart_contracts/auto_draw/contract.algo.ts:137
     // assert(txnMainDebit.appArgs(2) === txnAutoDraw.assetReceiver.bytes, 'RECEIVER_MISMATCH')
     dup
-    pushint 2 // 2
-    gtxnsas ApplicationArgs
+    gtxnsa ApplicationArgs 2
     dig 3
     gtxns AssetReceiver
     ==
     assert // RECEIVER_MISMATCH
-    // contracts/AutoDraw.algo.ts:103
-    // assert(op.btoi(txnMainDebit.appArgs(3)) === txnAutoDraw.xferAsset.id, 'ASSET_MISMATCH')
+    // smart_contracts/auto_draw/contract.algo.ts:141
+    // assert(btoi(txnMainDebit.appArgs(3)) === txnAutoDraw.xferAsset.id, 'ASSET_MISMATCH_MAIN')
     dup
-    pushint 3 // 3
-    gtxnsas ApplicationArgs
+    gtxnsa ApplicationArgs 3
     btoi
     uncover 2
     ==
-    assert // ASSET_MISMATCH
-    // contracts/AutoDraw.algo.ts:107
-    // assert(op.btoi(txnMainDebit.appArgs(4)) >= txnAutoDraw.assetAmount, 'BAD_AMOUNT')
-    intc_1 // 4
-    gtxnsas ApplicationArgs
+    assert // ASSET_MISMATCH_MAIN
+    // smart_contracts/auto_draw/contract.algo.ts:145
+    // assert(btoi(txnMainDebit.appArgs(4)) >= txnAutoDraw.assetAmount, 'BAD_AMOUNT')
+    gtxnsa ApplicationArgs 4
     btoi
     swap
     gtxns AssetAmount
     >=
     assert // BAD_AMOUNT
-    // contracts/AutoDraw.algo.ts:16
+    // smart_contracts/auto_draw/contract.algo.ts:52
     // return true
     intc_0 // 1
     return

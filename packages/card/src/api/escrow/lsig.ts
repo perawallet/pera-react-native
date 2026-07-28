@@ -20,7 +20,6 @@ import {
 import { CardEscrowNotConfiguredError } from '../transport'
 import {
     AUTODRAW_TEAL_TEMPLATE,
-    TMPL_ASSET,
     TMPL_GENESIS_HASH,
     TMPL_KILLSWITCH_APP,
     TMPL_MAIN_APP,
@@ -77,19 +76,24 @@ export type RenderAutoDrawTealArgs = EscrowChainConfig & {
 }
 
 /**
- * Substitutes the four `TMPL_` placeholders in the AutoDraw template. The
+ * Substitutes the three `TMPL_` placeholders in the AutoDraw template. The
  * genesis hash becomes a `0x`-prefixed hex byte literal (TEAL bytecblock form),
- * matching AB's demo substitution.
+ * matching AB's demo substitution. `assetId` is accepted (via
+ * {@link EscrowChainConfig}) but not used here — the LSig no longer pins a
+ * single asset at compile time; asset gating happens entirely through the
+ * Killswitch's per-(account, asset) authorization instead. Callers still need
+ * it to build the Killswitch `enable`/`kill` app calls.
  */
 export const renderAutoDrawTeal = ({
-    assetId,
     killswitchAppId,
     mainAppId,
     genesisHashBase64,
 }: RenderAutoDrawTealArgs): string => {
     const genesisHashHex = `0x${bytesToHex(decodeFromBase64(genesisHashBase64))}`
-    return AUTODRAW_TEAL_TEMPLATE.replaceAll(TMPL_ASSET, assetId)
-        .replaceAll(TMPL_KILLSWITCH_APP, killswitchAppId)
+    return AUTODRAW_TEAL_TEMPLATE.replaceAll(
+        TMPL_KILLSWITCH_APP,
+        killswitchAppId,
+    )
         .replaceAll(TMPL_MAIN_APP, mainAppId)
         .replaceAll(TMPL_GENESIS_HASH, genesisHashHex)
 }

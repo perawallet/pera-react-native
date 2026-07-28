@@ -12,45 +12,39 @@
 
 import type { Network } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
+import type { CardSiwaSignData } from '../card-creation'
 import {
     delegatorLsigResponseSchema,
-    escrowCardCreationResponseSchema,
+    escrowCardApprovalResponseSchema,
 } from './schema'
-import type { EscrowSiwaSignData } from './siwa'
 
-// ─── SWAP POINT: AppliedBlockchain (AB) escrow card service ─────────────────
-// Both calls go to AB's server (route: 'escrow') until Baanx wraps them. The
-// `blockchain: 'algorand'` discriminator and the request shapes mirror AB's
-// demo client; only this block, schema.ts, and the dev mock change when the
-// production contract is finalized.
-
-export type CreateEscrowCardParams = {
+export type ApproveEscrowCardParams = {
     network: Network
-    /** Funding-source (delegator) address the escrow card is created for. */
+    /** Funding-source (delegator) address the card was created for. */
     address: string
     /** Settlement currency as AB expects it, e.g. "usdc". */
     currency: string
-    /** ARC-60 SIWA sign data (base64 payload + domain hash). */
-    signData: EscrowSiwaSignData
-    /** Base64 ed25519 signature over `"MX" || (sha256(data) || authData)`. */
+    /** ARC-60 SIWA sign data — the SAME proof sent to the backend create-card call. */
+    signData: CardSiwaSignData
+    /** Base64 ed25519 signature over `sha256(data) || sha256(authData)`. */
     signature: string
+    /** Transaction id of the on-chain `cardCreate` call, from the backend create-card response. */
+    txId: string
     signal?: AbortSignal
 }
 
 /**
- * Records the card-creation approval with AB, which performs the on-chain
- * `cardCreate` and returns the created escrow card address.
- *
- * The demo additionally sends `transaction: { hash }` from its client-side
- * on-chain create (deployer-signed, demo-only). Production clients cannot sign
- * `cardCreate` (it is owner-only), so we send the user address and omit
- * `transaction` — the server owns the on-chain leg. `amount` is "0": card
- * creation funds nothing.
+ * Records the card-creation approval with AB. The on-chain `cardCreate` has
+ * already happened via the Pera backend (`api/card-creation`) by the time
+ * this is called — this call carries that transaction's `txId` so AB can
+ * register/confirm the card in its own systems. `amount` is "0": this call
+ * funds nothing.
  */
-export const createEscrowCard = async (
-    params: CreateEscrowCardParams,
+export const approveEscrowCard = async (
+    params: ApproveEscrowCardParams,
 ): Promise<{ cardAddress: string }> => {
-    const { network, address, currency, signData, signature, signal } = params
+    const { network, address, currency, signData, signature, txId, signal } =
+        params
 
     const response = await getCardTransport().request({
         network,
@@ -63,12 +57,13 @@ export const createEscrowCard = async (
             amount: '0',
             signData,
             signature,
+            txId,
             blockchain: 'algorand',
         },
         signal,
     })
 
-    return escrowCardCreationResponseSchema.parse(response.data)
+    return escrowCardApprovalResponseSchema.parse(response.data)
 }
 
 export type PostDelegatorLsigParams = {
@@ -79,7 +74,7 @@ export type PostDelegatorLsigParams = {
     delegatorAddress: string
     /** Base64 msgpack-encoded signed delegated LogicSigAccount. */
     lsigBytes: string
-    /** Escrow card address returned by {@link createEscrowCard}. */
+    /** Escrow card address returned by the backend create-card call. */
     cardAddress: string
     signal?: AbortSignal
 }
@@ -112,4 +107,3 @@ export const postDelegatorLsig = async (
 
     return delegatorLsigResponseSchema.parse(response.data)
 }
-// ─── END SWAP POINT ──────────────────────────────────────────────────────────

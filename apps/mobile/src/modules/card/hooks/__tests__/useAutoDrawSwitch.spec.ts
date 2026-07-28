@@ -17,12 +17,17 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-const { compileAutoDrawProgram, postDelegatorLsig, isKillswitchConfigured } =
-    vi.hoisted(() => ({
-        compileAutoDrawProgram: vi.fn(),
-        postDelegatorLsig: vi.fn(),
-        isKillswitchConfigured: vi.fn(),
-    }))
+const {
+    compileAutoDrawProgram,
+    postDelegatorLsig,
+    isKillswitchConfigured,
+    resolveEscrowChainConfig,
+} = vi.hoisted(() => ({
+    compileAutoDrawProgram: vi.fn(),
+    postDelegatorLsig: vi.fn(),
+    isKillswitchConfigured: vi.fn(),
+    resolveEscrowChainConfig: vi.fn(),
+}))
 const mockBuildEnable = vi.fn()
 const mockBuildKill = vi.fn()
 const mockIsAutoDrawEnabled = vi.fn()
@@ -31,6 +36,7 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
     compileAutoDrawProgram,
     postDelegatorLsig,
     isKillswitchConfigured,
+    resolveEscrowChainConfig,
     useKillswitchAutoDraw: () => ({
         buildEnable: mockBuildEnable,
         buildKill: mockBuildKill,
@@ -45,6 +51,13 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
     useProgramSigner: () => ({ signProgram: mockSignProgram }),
     encodeDelegatedLsigAccount: () => new Uint8Array([9, 9, 9]),
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
+}))
+
+const mockSubmitWithFeeDelegation = vi.fn()
+vi.mock('@perawallet/wallet-core-fee-delegation', () => ({
+    useFeeDelegation: () => ({
+        submitWithFeeDelegation: mockSubmitWithFeeDelegation,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => ({
@@ -72,10 +85,16 @@ beforeEach(() => {
     compileAutoDrawProgram.mockResolvedValue(new Uint8Array([7, 7, 7]))
     postDelegatorLsig.mockResolvedValue({ delegatorAddress: 'FUNDINGADDR' })
     isKillswitchConfigured.mockReturnValue(true)
+    resolveEscrowChainConfig.mockReturnValue({
+        assetId: '10458941',
+        killswitchAppId: '222',
+        mainAppId: '111',
+    })
     mockSignProgram.mockResolvedValue(new Uint8Array([1, 2, 3]))
     mockBuildEnable.mockResolvedValue([{ txn: 'enable' }])
     mockBuildKill.mockResolvedValue([{ txn: 'kill' }])
     mockSubmit.mockResolvedValue({ txIds: ['TX1'] })
+    mockSubmitWithFeeDelegation.mockResolvedValue(undefined)
     // Default chain state: not enabled (enable proceeds, kill would no-op —
     // individual tests flip this to exercise the pre-check branches).
     mockIsAutoDrawEnabled.mockResolvedValue(false)
@@ -88,7 +107,7 @@ describe('useAutoDrawSwitch', () => {
         expect(result.current.canSwitchToAuto(ledgerAccount)).toBe(false)
     })
 
-    it('enableAutoDraw posts the LSig then submits the on-chain enable, in order', async () => {
+    it('enableAutoDraw posts the LSig then submits the fee-delegated on-chain enable, in order', async () => {
         const { result } = renderHook(() => useAutoDrawSwitch())
 
         await result.current.enableAutoDraw(localAccount, 'CARD')
@@ -105,12 +124,18 @@ describe('useAutoDrawSwitch', () => {
         expect(mockBuildEnable).toHaveBeenCalledWith({
             sender: 'FUNDINGADDR',
             cardAddress: 'CARD',
+            asset: '10458941',
         })
-        expect(mockSubmit).toHaveBeenCalledWith(
-            expect.objectContaining({ unsignedTxs: [{ txn: 'enable' }] }),
+        // Fee-delegated: the sponsor covers the accounts-box MBR + fees.
+        expect(mockSubmitWithFeeDelegation).toHaveBeenCalledWith(
+            expect.objectContaining({
+                account: 'FUNDINGADDR',
+                transactions: [{ txn: 'enable' }],
+                includeMbr: true,
+            }),
         )
         expect(postDelegatorLsig.mock.invocationCallOrder[0]).toBeLessThan(
-            mockSubmit.mock.invocationCallOrder[0],
+            mockSubmitWithFeeDelegation.mock.invocationCallOrder[0],
         )
     })
 
@@ -122,7 +147,7 @@ describe('useAutoDrawSwitch', () => {
 
         expect(postDelegatorLsig).toHaveBeenCalledTimes(1)
         expect(mockBuildEnable).not.toHaveBeenCalled()
-        expect(mockSubmit).not.toHaveBeenCalled()
+        expect(mockSubmitWithFeeDelegation).not.toHaveBeenCalled()
     })
 
     it('enableAutoDraw skips the on-chain enable when already enabled (idempotent retry)', async () => {
@@ -137,11 +162,13 @@ describe('useAutoDrawSwitch', () => {
         // would revert ALREADY_ENABLED, so it must not be built or submitted.
         expect(postDelegatorLsig).toHaveBeenCalledTimes(1)
         expect(mockBuildEnable).not.toHaveBeenCalled()
-        expect(mockSubmit).not.toHaveBeenCalled()
+        expect(mockSubmitWithFeeDelegation).not.toHaveBeenCalled()
     })
 
     it('enableAutoDraw rethrows on-chain failures', async () => {
-        mockSubmit.mockRejectedValue(new Error('NOT_CARD_OWNER'))
+        mockSubmitWithFeeDelegation.mockRejectedValue(
+            new Error('NOT_CARD_OWNER'),
+        )
         const { result } = renderHook(() => useAutoDrawSwitch())
 
         await expect(
@@ -156,7 +183,7 @@ describe('useAutoDrawSwitch', () => {
         await expect(
             result.current.enableAutoDraw(localAccount, 'CARD'),
         ).rejects.toThrow('network down')
-        expect(mockSubmit).not.toHaveBeenCalled()
+        expect(mockSubmitWithFeeDelegation).not.toHaveBeenCalled()
     })
 
     it('disableAutoDraw submits kill() when auto-draw is enabled on-chain', async () => {
@@ -165,16 +192,19 @@ describe('useAutoDrawSwitch', () => {
 
         await result.current.disableAutoDraw(localAccount)
 
-        expect(mockBuildKill).toHaveBeenCalledWith({ sender: 'FUNDINGADDR' })
+        expect(mockBuildKill).toHaveBeenCalledWith({
+            sender: 'FUNDINGADDR',
+            asset: '10458941',
+        })
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({ unsignedTxs: [{ txn: 'kill' }] }),
         )
     })
 
     it('disableAutoDraw no-ops when there is no on-chain enable to kill', async () => {
-        // Covers the retry case AND a persisted-Auto whose enable never ran
-        // (onboarding Auto only registers the LSig) — switching to Manual must
-        // succeed instead of dead-ending on an ALREADY_DISABLED revert.
+        // Covers the retry case AND any legacy persisted-Auto state whose
+        // enable never actually ran — switching to Manual must succeed
+        // instead of dead-ending on an ALREADY_DISABLED revert.
         mockIsAutoDrawEnabled.mockResolvedValue(false)
         const { result } = renderHook(() => useAutoDrawSwitch())
 

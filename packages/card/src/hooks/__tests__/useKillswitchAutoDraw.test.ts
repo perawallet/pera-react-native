@@ -95,50 +95,59 @@ describe('isKillswitchConfigured', () => {
 })
 
 describe('useKillswitchAutoDraw', () => {
-    it('buildEnable funds the app account then calls enable(card) with an inner-fee', async () => {
+    it('buildEnable calls enable(card, asset) fee-delegation-ready (zero static fee, no self-funding)', async () => {
         const { result } = renderHook(() => useKillswitchAutoDraw())
 
         const txns = await result.current.buildEnable({
             sender: 'SENDER',
             cardAddress: 'CARD',
+            asset: '10458941',
         })
 
-        // MBR-funding payment to the app account.
-        expect(addPayment).toHaveBeenCalledTimes(1)
-        expect(addPayment).toHaveBeenCalledWith(
+        // No self-funded MBR payment — the fee-delegation sponsor covers it.
+        expect(addPayment).not.toHaveBeenCalled()
+        // enable(card, asset) with a zeroed static fee (sponsor tops up the
+        // group's fee pool instead).
+        expect(paramsCall).toHaveBeenCalledWith(
             expect.objectContaining({
-                sender: 'SENDER',
-                receiver: APP_ADDRESS,
+                method: 'enable',
+                args: ['CARD', 10458941n],
             }),
         )
-        // enable(card) with a cover-inner-fee extraFee.
-        expect(paramsCall).toHaveBeenCalledWith(
-            expect.objectContaining({ method: 'enable', args: ['CARD'] }),
-        )
-        expect(paramsCall.mock.calls[0][0].extraFee).toBeDefined()
+        expect(paramsCall.mock.calls[0][0].staticFee.microAlgo).toBe(0n)
         expect(addAppCallMethodCall).toHaveBeenCalledWith(ENABLE_CALL)
         expect(txns).toEqual([{ id: 'txn-1' }])
     })
 
-    it('buildKill calls kill() with no funding and no extra fee', async () => {
+    it('buildKill calls kill(asset) with no funding and no extra fee', async () => {
         const { result } = renderHook(() => useKillswitchAutoDraw())
 
-        const txns = await result.current.buildKill({ sender: 'SENDER' })
+        const txns = await result.current.buildKill({
+            sender: 'SENDER',
+            asset: '10458941',
+        })
 
         expect(addPayment).not.toHaveBeenCalled()
-        expect(paramsCall).toHaveBeenCalledWith({ method: 'kill', args: [] })
+        expect(paramsCall).toHaveBeenCalledWith({
+            method: 'kill',
+            args: [10458941n],
+        })
         expect(addAppCallMethodCall).toHaveBeenCalledWith(KILL_CALL)
         expect(txns).toEqual([{ id: 'txn-1' }])
     })
 
     describe('isAutoDrawEnabled', () => {
-        // decodeAddress needs a real address; the box name is its raw pubkey.
+        // decodeAddress needs a real address; the box name is its raw pubkey
+        // followed by the 8-byte big-endian asset id.
         const SENDER = generateAccount().addr.toString()
 
-        it('is true when the sender has an accounts box', async () => {
+        it('is true when the sender has an accounts box for that asset', async () => {
             const { result } = renderHook(() => useKillswitchAutoDraw())
             await expect(
-                result.current.isAutoDrawEnabled({ sender: SENDER }),
+                result.current.isAutoDrawEnabled({
+                    sender: SENDER,
+                    asset: '10458941',
+                }),
             ).resolves.toBe(true)
         })
 
@@ -150,7 +159,10 @@ describe('useKillswitchAutoDraw', () => {
             )
             const { result } = renderHook(() => useKillswitchAutoDraw())
             await expect(
-                result.current.isAutoDrawEnabled({ sender: SENDER }),
+                result.current.isAutoDrawEnabled({
+                    sender: SENDER,
+                    asset: '10458941',
+                }),
             ).resolves.toBe(false)
         })
 
@@ -158,7 +170,10 @@ describe('useKillswitchAutoDraw', () => {
             boxDo.mockRejectedValue(new Error('network down'))
             const { result } = renderHook(() => useKillswitchAutoDraw())
             await expect(
-                result.current.isAutoDrawEnabled({ sender: SENDER }),
+                result.current.isAutoDrawEnabled({
+                    sender: SENDER,
+                    asset: '10458941',
+                }),
             ).rejects.toThrow('network down')
         })
     })

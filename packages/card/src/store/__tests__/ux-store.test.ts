@@ -211,26 +211,31 @@ describe('useCardStore', () => {
         expect(persisted?.selectedFundingType).toBe(FundingType.Manual)
     })
 
-    test('setEscrowCard records owner, persists, and survives resetOnboardingProgress', async () => {
+    test('setEscrowCard records owner + txId, persists, and survives resetOnboardingProgress', async () => {
         const { useCardStore } = await import('../ux-store')
         const { result } = renderHook(() => useCardStore())
 
         expect(result.current.escrowCardAddress).toBeNull()
         expect(result.current.escrowCardOwner).toBeNull()
+        expect(result.current.escrowCardTxId).toBeNull()
+        expect(result.current.escrowCardApproved).toBe(false)
 
         act(() =>
             result.current.setEscrowCard({
                 cardAddress: 'ESCROWCARDADDR',
                 ownerAddress: 'OWNERADDR',
                 network: 'testnet',
+                txId: 'TX1',
             }),
         )
         expect(result.current.escrowCardAddress).toBe('ESCROWCARDADDR')
         expect(result.current.escrowCardOwner).toBe('OWNERADDR')
         expect(result.current.escrowCardNetwork).toBe('testnet')
+        expect(result.current.escrowCardTxId).toBe('TX1')
+        expect(result.current.escrowCardApproved).toBe(false)
 
-        // Persisted (with owner + network) so a same-account, same-network
-        // retry reuses the created card.
+        // Persisted (with owner + network + txId) so a same-account,
+        // same-network retry reuses the created card.
         const persisted = (
             useCardStore as unknown as {
                 persist: {
@@ -245,18 +250,27 @@ describe('useCardStore', () => {
         expect(persisted?.escrowCardAddress).toBe('ESCROWCARDADDR')
         expect(persisted?.escrowCardOwner).toBe('OWNERADDR')
         expect(persisted?.escrowCardNetwork).toBe('testnet')
+        expect(persisted?.escrowCardTxId).toBe('TX1')
+        expect(persisted?.escrowCardApproved).toBe(false)
+
+        act(() => result.current.markEscrowCardApproved())
+        expect(result.current.escrowCardApproved).toBe(true)
 
         // A created artifact, not onboarding progress — must survive a reset.
         act(() => result.current.resetOnboardingProgress())
         expect(result.current.escrowCardAddress).toBe('ESCROWCARDADDR')
         expect(result.current.escrowCardOwner).toBe('OWNERADDR')
         expect(result.current.escrowCardNetwork).toBe('testnet')
+        expect(result.current.escrowCardTxId).toBe('TX1')
+        expect(result.current.escrowCardApproved).toBe(true)
 
-        // Clearing with null drops all three.
+        // Clearing with null drops everything, including the approval flag.
         act(() => result.current.setEscrowCard(null))
         expect(result.current.escrowCardAddress).toBeNull()
         expect(result.current.escrowCardOwner).toBeNull()
         expect(result.current.escrowCardNetwork).toBeNull()
+        expect(result.current.escrowCardTxId).toBeNull()
+        expect(result.current.escrowCardApproved).toBe(false)
 
         // Full reset also clears it.
         act(() =>
@@ -264,11 +278,39 @@ describe('useCardStore', () => {
                 cardAddress: 'X',
                 ownerAddress: 'Y',
                 network: 'mainnet',
+                txId: 'TX2',
             }),
         )
         act(() => result.current.resetState())
         expect(result.current.escrowCardAddress).toBeNull()
         expect(result.current.escrowCardOwner).toBeNull()
+        expect(result.current.escrowCardTxId).toBeNull()
+    })
+
+    test('setEscrowCard resets escrowCardApproved to false when replacing an approved card', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setEscrowCard({
+                cardAddress: 'CARD1',
+                ownerAddress: 'OWNER1',
+                network: 'testnet',
+                txId: 'TX1',
+            })
+            result.current.markEscrowCardApproved()
+        })
+        expect(result.current.escrowCardApproved).toBe(true)
+
+        act(() =>
+            result.current.setEscrowCard({
+                cardAddress: 'CARD2',
+                ownerAddress: 'OWNER2',
+                network: 'testnet',
+                txId: 'TX2',
+            }),
+        )
+        expect(result.current.escrowCardApproved).toBe(false)
     })
 
     test('setCardSnapshot stores the non-sensitive card hint', async () => {

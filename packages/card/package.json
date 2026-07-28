@@ -27,6 +27,7 @@
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "decimal.js": "catalog:",
     "ky": "catalog:",

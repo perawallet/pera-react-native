@@ -12,7 +12,6 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { FundingType } from '@perawallet/wallet-core-card'
 import {
     AccountTypes,
     type WalletAccount,
@@ -24,12 +23,23 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-shared')),
 }))
 
-const mockCreateEscrowCardAsync = vi.fn()
+const mockSignOwnershipAsync = vi.fn()
+const mockCreateAndApproveAsync = vi.fn()
 vi.mock('@perawallet/wallet-core-card', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
-    useCreateEscrowCardMutation: () => ({
+    useSignCardOwnershipMutation: () => ({
         mutate: vi.fn(),
-        mutateAsync: mockCreateEscrowCardAsync,
+        mutateAsync: mockSignOwnershipAsync,
+        isPending: false,
+        isError: false,
+        isSuccess: false,
+        error: null,
+        data: null,
+        reset: vi.fn(),
+    }),
+    useCreateAndApproveCardMutation: () => ({
+        mutate: vi.fn(),
+        mutateAsync: mockCreateAndApproveAsync,
         isPending: false,
         isError: false,
         isSuccess: false,
@@ -40,19 +50,10 @@ vi.mock('@perawallet/wallet-core-card', async () => ({
     }),
 }))
 
-const mockSignArbitraryData = vi.fn()
-const mockSignProgram = vi.fn()
+const mockAddSignRequest = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
-    useArbitraryDataSigner: () => ({
-        signArbitraryData: mockSignArbitraryData,
-    }),
-    useProgramSigner: () => ({ signProgram: mockSignProgram }),
-    encodeDelegatedLsigAccount: (
-        _program: Uint8Array,
-        _sig: Uint8Array,
-        _addr: string,
-    ) => new Uint8Array([9, 9, 9]),
+    useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))
 
 import { useEscrowCardCreation } from '../useEscrowCardCreation'
@@ -72,13 +73,17 @@ const ledgerAccount: WalletAccount = {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    mockSignArbitraryData.mockResolvedValue([new Uint8Array([1, 2, 3])])
-    mockSignProgram.mockResolvedValue(new Uint8Array([4, 5, 6]))
-    mockCreateEscrowCardAsync.mockResolvedValue({
-        cardAddress: 'CARD1',
-        fundingType: FundingType.Manual,
-        autoFundingDegraded: false,
+    mockSignOwnershipAsync.mockImplementation(async ({ signArc60 }) => {
+        const signature = await signArc60('data', {
+            scope: 1,
+            encoding: 'base64',
+        })
+        return {
+            signData: { data: 'd', authenticatorData: 'a' },
+            signature: [...signature].join(','),
+        }
     })
+    mockCreateAndApproveAsync.mockResolvedValue({ cardAddress: 'CARD1' })
 })
 
 describe('useEscrowCardCreation', () => {
@@ -89,45 +94,69 @@ describe('useEscrowCardCreation', () => {
         expect(result.current.canCreateCard(ledgerAccount)).toBe(false)
     })
 
-    it('injects a SIWA signer and a LSig signer into the mutation', async () => {
+    it('signOwnership enqueues an interactive arc60 request and resolves with the signature', async () => {
+        mockAddSignRequest.mockImplementation(request => {
+            request.approve([
+                { signature: new Uint8Array([1, 2, 3]), signer: 'FUNDINGADDR' },
+            ])
+        })
         const { result } = renderHook(() => useEscrowCardCreation())
 
-        await result.current.createCard(localKeyAccount, FundingType.Auto)
+        const proof = await result.current.signOwnership(localKeyAccount)
 
-        expect(mockCreateEscrowCardAsync).toHaveBeenCalledWith(
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
             expect.objectContaining({
-                address: 'FUNDINGADDR',
-                fundingType: FundingType.Auto,
-                signSiwaMessage: expect.any(Function),
-                signLsigProgram: expect.any(Function),
+                type: 'arc60',
+                transport: 'callback',
+                sourceType: 'arc60',
+                stdSigData: 'data',
+                metadata: { scope: 1, encoding: 'base64' },
             }),
         )
-
-        // The injected SIWA signer signs the message via arbitrary-data signing.
-        const { signSiwaMessage, signLsigProgram } =
-            mockCreateEscrowCardAsync.mock.calls[0][0]
-        const siwaSig = await signSiwaMessage(new Uint8Array(64))
-        expect(mockSignArbitraryData).toHaveBeenCalledWith(
-            localKeyAccount,
-            expect.any(String),
-        )
-        expect([...siwaSig]).toEqual([1, 2, 3])
-
-        // The injected LSig signer signs the program and encodes the account.
-        const lsigBytes = await signLsigProgram(new Uint8Array([6, 6, 6]))
-        expect(mockSignProgram).toHaveBeenCalledWith(
-            localKeyAccount,
-            expect.any(Uint8Array),
-        )
-        expect([...lsigBytes]).toEqual([9, 9, 9])
+        expect(proof.signature).toBe('1,2,3')
     })
 
-    it('throws before any network call for a non-signing account', () => {
+    it('signOwnership rejects when the user declines the approval screen', async () => {
+        mockAddSignRequest.mockImplementation(request => {
+            request.reject()
+        })
         const { result } = renderHook(() => useEscrowCardCreation())
 
-        expect(() =>
-            result.current.createCard(ledgerAccount, FundingType.Manual),
-        ).toThrow()
-        expect(mockCreateEscrowCardAsync).not.toHaveBeenCalled()
+        await expect(
+            result.current.signOwnership(localKeyAccount),
+        ).rejects.toThrow()
+    })
+
+    it('signOwnership rejects on a signing error from the approval screen', async () => {
+        mockAddSignRequest.mockImplementation(request => {
+            request.error(new Error('boom'))
+        })
+        const { result } = renderHook(() => useEscrowCardCreation())
+
+        await expect(
+            result.current.signOwnership(localKeyAccount),
+        ).rejects.toThrow('boom')
+    })
+
+    it('throws before enqueuing any request for a non-signing account', async () => {
+        const { result } = renderHook(() => useEscrowCardCreation())
+
+        expect(() => result.current.signOwnership(ledgerAccount)).toThrow()
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+    })
+
+    it('createAndApprove forwards the address and proof', async () => {
+        const { result } = renderHook(() => useEscrowCardCreation())
+        const proof = {
+            signData: { data: 'd', authenticatorData: 'a' },
+            signature: 's',
+        }
+
+        await result.current.createAndApprove(localKeyAccount, proof)
+
+        expect(mockCreateAndApproveAsync).toHaveBeenCalledWith({
+            address: 'FUNDINGADDR',
+            proof,
+        })
     })
 })

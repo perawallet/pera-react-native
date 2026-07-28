@@ -15,7 +15,7 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { hasCardSession } from '@perawallet/wallet-core-card'
+import { hasCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import { useStyles } from './styles'
 import {
     AccountMenuContent,
@@ -119,9 +119,23 @@ export const AccountSelection = ({
             case 'pera-card-open': {
                 // The connected row shows off the persisted auth flag, which can
                 // outlive the real session — require a live token, else log in.
-                navigation.navigate('PeraCard', {
-                    screen: hasCardSession() ? 'PeraCardAccount' : 'CardSignIn',
-                })
+                if (!hasCardSession()) {
+                    navigation.navigate('PeraCard', { screen: 'CardSignIn' })
+                    return
+                }
+                // Baanx auth finishing doesn't mean the escrow card itself was
+                // ever created/approved — send an authenticated-but-incomplete
+                // user back into the setup checklist rather than the dashboard.
+                const { escrowCardAddress, escrowCardApproved } =
+                    useCardStore.getState()
+                if (!escrowCardAddress || !escrowCardApproved) {
+                    navigation.navigate('PeraCard', {
+                        screen: 'CardOnboarding',
+                        params: { screen: 'CardOnboardingStatus', params: {} },
+                    })
+                    return
+                }
+                navigation.navigate('PeraCard', { screen: 'PeraCardAccount' })
                 return
             }
             case 'sort': {

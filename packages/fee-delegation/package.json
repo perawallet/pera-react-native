@@ -21,6 +21,7 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-app-integrity": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "react": "catalog:",
