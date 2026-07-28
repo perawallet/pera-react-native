@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
+import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
 import {
     decodeFromBase64,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
+
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
 type BuildMultisigCosignRequestParams = {
@@ -46,6 +48,42 @@ export const buildMultisigCosignRequest = ({
     const txs = rawTransactionsBase64.map(base64 =>
         decodeTransaction(decodeFromBase64(base64)),
     )
+
+    // A cosignature is only ever a subsig of the joint (multisig) account, and
+    // the backend is a relay — not a trust anchor — for what we sign. Two hard
+    // checks close the standalone-single-sig drain (PERA-4711):
+    const { address, version, threshold, participantAddresses } =
+        signRequest.multisigAccount
+
+    // 1. The joint account must actually derive from its own participant set.
+    //    This pins `address` to a genuine multisig hash, so a fabricated
+    //    request can't pass off a participant's *personal* address as the
+    //    "joint account" (which would make check 2 vacuous).
+    if (
+        generateMultisigAddress(version, threshold, participantAddresses) !==
+        address
+    ) {
+        throw new Error(
+            `Sign request ${signRequest.id}: joint account address does not derive from its participant set`,
+        )
+    }
+
+    // 2. No transaction may be sent by the co-signer themselves. That is the
+    //    exact condition under which the local signer omits `sgnr`
+    //    (`account.address === senderPublicKey` in useLocalKeyTransactionSigner),
+    //    producing a plain Ed25519 signature that verifies standalone and
+    //    drains the co-signer's own account — the multisig threshold provides
+    //    no protection. Any other sender (the joint account, or an account
+    //    rekeyed to it — see the sign-multisig-rekeyed integration test) still
+    //    yields a subsig bound to `sgnr`, which is useless on its own.
+    const offenderIndex = txs.findIndex(
+        tx => tx.sender.toString() === signerAddress,
+    )
+    if (offenderIndex !== -1) {
+        throw new Error(
+            `Sign request ${signRequest.id}: transaction ${offenderIndex} is sent by the co-signer, not the joint account ${address}`,
+        )
+    }
 
     return {
         // A real id is required so the actor map, queue dedup, and inline-
