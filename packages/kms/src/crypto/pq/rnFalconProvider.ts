@@ -55,12 +55,20 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
 /**
  * Native on-device Falcon-1024 signature provider backed by the nitro module.
  *
- * Loaded lazily via `require` (not a top-level `import`) so that merely
- * importing this file — e.g. through `getPQProvider`'s static import graph in
- * node/test environments, which never take the React Native branch — does not
- * pull in the native module (whose entry point instantiates the HybridObject
- * at load time and throws off-device). The `require` only executes on-device,
- * when `getPQProvider` selects this provider.
+ * Provider selection is a build-time choice, not a runtime branch: Metro
+ * resolves `getPQProvider.native.ts` (which calls this factory) in place of
+ * the base `getPQProvider.ts` (WASM) for the `ios`/`android` platforms, via
+ * its standard `.native.*` platform-extension resolution — there is no
+ * runtime check deciding between them.
+ *
+ * That selection does not make this file's `require` safe to make eager,
+ * though: the pq barrel (`index.ts`) re-exports `createRNFalconProvider`
+ * directly, independent of which `getPQProvider` variant the bundler picked.
+ * So merely importing the barrel — e.g. in node/test environments, off-device
+ * — still imports this file. Loaded lazily via `require` (not a top-level
+ * `import`), the native module's entry point (which instantiates the
+ * HybridObject at load time and throws off-device) is only evaluated when
+ * `createRNFalconProvider` is actually called, not on import.
  */
 export const createRNFalconProvider = (): PQSignatureProvider => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports

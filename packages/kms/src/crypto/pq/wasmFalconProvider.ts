@@ -17,14 +17,23 @@ import type { PQSignatureProvider } from './types'
 /**
  * WASM Falcon-1024 signature provider for node/test environments.
  *
- * Loaded lazily via `require` (not a top-level `import`), mirroring
- * `createRNFalconProvider`: merely importing this file — e.g. through
- * `getPQProvider`'s static import graph in the React Native bundle, which
- * never takes the WASM branch — must not evaluate falcon-1024. Its CJS entry
- * is Emscripten glue that reads `__filename` at module scope, which
- * Hermes/Metro never define, so eager evaluation crashes the app at startup.
- * The `require` only executes off-device, when `getPQProvider` selects this
- * provider. (`import type` above is erased at compile time and is safe.)
+ * Provider selection is a build-time choice, not a runtime branch: Metro
+ * resolves `getPQProvider.native.ts` (Nitro/on-device) in place of the base
+ * `getPQProvider.ts` (this file's consumer) for the `ios`/`android`
+ * platforms — there is no runtime check deciding between them, and on
+ * device this file is no longer reachable through `getPQProvider.native.ts`'s
+ * import graph at all.
+ *
+ * It is still reachable on-device, though: the pq barrel (`index.ts`)
+ * re-exports `createWasmFalconProvider` directly, regardless of which
+ * `getPQProvider` variant the bundler picked. So merely importing the barrel
+ * pulls this file in on every platform, including on-device. Loaded lazily
+ * via `require` (not a top-level `import`), mirroring
+ * `createRNFalconProvider`: falcon-1024's CJS entry is Emscripten glue that
+ * reads `__filename` at module scope, which Hermes/Metro never define, so
+ * eager evaluation crashes the app at startup. The `require` only executes
+ * when `createWasmFalconProvider` is actually called, not on import.
+ * (`import type` above is erased at compile time and is safe.)
  */
 export const createWasmFalconProvider = (): PQSignatureProvider => {
     const { generateKey, signCompressed, FALCON_DET1024_PUBKEY_SIZE } =
