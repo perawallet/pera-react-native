@@ -12,14 +12,25 @@
 
 import { type Network, Networks } from './models/network'
 import { config } from './main'
+import {
+    type PeraServiceLane,
+    resolvePeraServiceLane,
+} from './pera-service-fallback'
 
-export type NetworkConfig = {
-    network: Network
-    backendUrl: string
+/** Chain-intrinsic endpoints. Always the real active network — never falls back. */
+type ChainConfig = {
     algodUrl: string
     indexerUrl: string
     genesisHash: string
     explorerUrl: string
+    algodToken: string
+    indexerToken: string
+    dispenserUrl: string
+}
+
+/** Pera-ecosystem services. Resolved via the lane, so may be borrowed. */
+type PeraServices = {
+    backendUrl: string
     bidaliBaseUrl: string
     bidaliApiKey: string
     baanxBaseUrl: string
@@ -31,62 +42,109 @@ export type NetworkConfig = {
     cardW3CardAppId: string
     cardKillswitchAppId: string
     cardUsdcAssetId: string
-    isTestnet: boolean
-    isMainnet: boolean
 }
+
+export type NetworkConfig = ChainConfig &
+    PeraServices & {
+        network: Network
+        isTestnet: boolean
+        isMainnet: boolean
+    }
 
 export const isTestnet = (network: Network) => network === Networks.testnet
 export const isMainnet = (network: Network) => network === Networks.mainnet
 
-export const getNetworkConfig = (network: Network): NetworkConfig => {
-    const isMain = isMainnet(network)
-
-    return {
-        network,
-        isMainnet: isMain,
-        isTestnet: !isMain,
-        backendUrl: isMain
-            ? config.mainnetBackendUrl
-            : config.testnetBackendUrl,
-        algodUrl: isMain ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
-        indexerUrl: isMain
-            ? config.mainnetIndexerUrl
-            : config.testnetIndexerUrl,
-        genesisHash: isMain
-            ? config.mainnetGenesisHash
-            : config.testnetGenesisHash,
-        explorerUrl: isMain
-            ? config.mainnetExplorerUrl
-            : config.testnetExplorerUrl,
-        bidaliBaseUrl: isMain
-            ? config.mainnetBidaliBaseUrl
-            : config.testnetBidaliBaseUrl,
-        bidaliApiKey: isMain
-            ? config.mainnetBidaliApiKey
-            : config.testnetBidaliApiKey,
-        baanxBaseUrl: isMain
-            ? config.mainnetBaanxBaseUrl
-            : config.testnetBaanxBaseUrl,
-        baanxClientKey: isMain
-            ? config.mainnetBaanxClientKey
-            : config.testnetBaanxClientKey,
-        baanxTenantId: isMain
-            ? config.mainnetBaanxTenantId
-            : config.testnetBaanxTenantId,
-        cardEscrowBaseUrl: isMain
-            ? config.mainnetCardEscrowBaseUrl
-            : config.testnetCardEscrowBaseUrl,
-        cardEscrowAuthToken: isMain
-            ? config.mainnetCardEscrowAuthToken
-            : config.testnetCardEscrowAuthToken,
-        cardW3CardAppId: isMain
-            ? config.mainnetCardW3CardAppId
-            : config.testnetCardW3CardAppId,
-        cardKillswitchAppId: isMain
-            ? config.mainnetCardKillswitchAppId
-            : config.testnetCardKillswitchAppId,
-        cardUsdcAssetId: isMain
-            ? config.mainnetCardUsdcAssetId
-            : config.testnetCardUsdcAssetId,
-    }
+const chainConfigByNetwork: Record<Network, ChainConfig> = {
+    [Networks.mainnet]: {
+        algodUrl: config.mainnetAlgodUrl,
+        indexerUrl: config.mainnetIndexerUrl,
+        genesisHash: config.mainnetGenesisHash,
+        explorerUrl: config.mainnetExplorerUrl,
+        algodToken: config.algodApiKey,
+        indexerToken: config.indexerApiKey,
+        dispenserUrl: config.mainnetDispenserUrl,
+    },
+    [Networks.testnet]: {
+        algodUrl: config.testnetAlgodUrl,
+        indexerUrl: config.testnetIndexerUrl,
+        genesisHash: config.testnetGenesisHash,
+        explorerUrl: config.testnetExplorerUrl,
+        algodToken: config.algodApiKey,
+        indexerToken: config.indexerApiKey,
+        dispenserUrl: config.dispenserUrl,
+    },
+    [Networks.betanet]: {
+        algodUrl: config.betanetAlgodUrl,
+        indexerUrl: config.betanetIndexerUrl,
+        genesisHash: config.betanetGenesisHash,
+        explorerUrl: config.betanetExplorerUrl,
+        algodToken: config.algodApiKey,
+        indexerToken: config.indexerApiKey,
+        dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
+    },
+    [Networks.fnet]: {
+        algodUrl: config.fnetAlgodUrl,
+        indexerUrl: config.fnetIndexerUrl,
+        genesisHash: config.fnetGenesisHash,
+        explorerUrl: config.fnetExplorerUrl,
+        algodToken: config.algodApiKey,
+        indexerToken: config.indexerApiKey,
+        dispenserUrl: 'https://lora.algokit.io/fnet/fund/',
+    },
+    [Networks.localnet]: {
+        algodUrl: config.localnetAlgodUrl,
+        indexerUrl: config.localnetIndexerUrl,
+        // Regenerated on every container reset — resolved at runtime.
+        genesisHash: '',
+        explorerUrl: config.localnetExplorerUrl,
+        algodToken: config.localnetAlgodToken,
+        indexerToken: config.localnetAlgodToken,
+        dispenserUrl: 'https://lora.algokit.io/localnet/fund/',
+    },
 }
+
+const peraServicesByLane: Record<PeraServiceLane, PeraServices> = {
+    [Networks.mainnet]: {
+        backendUrl: config.mainnetBackendUrl,
+        bidaliBaseUrl: config.mainnetBidaliBaseUrl,
+        bidaliApiKey: config.mainnetBidaliApiKey,
+        baanxBaseUrl: config.mainnetBaanxBaseUrl,
+        baanxClientKey: config.mainnetBaanxClientKey,
+        baanxTenantId: config.mainnetBaanxTenantId,
+        cardEscrowBaseUrl: config.mainnetCardEscrowBaseUrl,
+        cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
+        cardW3CardAppId: config.mainnetCardW3CardAppId,
+        cardKillswitchAppId: config.mainnetCardKillswitchAppId,
+        cardUsdcAssetId: config.mainnetCardUsdcAssetId,
+    },
+    [Networks.testnet]: {
+        backendUrl: config.testnetBackendUrl,
+        bidaliBaseUrl: config.testnetBidaliBaseUrl,
+        bidaliApiKey: config.testnetBidaliApiKey,
+        baanxBaseUrl: config.testnetBaanxBaseUrl,
+        baanxClientKey: config.testnetBaanxClientKey,
+        baanxTenantId: config.testnetBaanxTenantId,
+        cardEscrowBaseUrl: config.testnetCardEscrowBaseUrl,
+        cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
+        cardW3CardAppId: config.testnetCardW3CardAppId,
+        cardKillswitchAppId: config.testnetCardKillswitchAppId,
+        cardUsdcAssetId: config.testnetCardUsdcAssetId,
+    },
+}
+
+export const getNetworkConfig = (network: Network): NetworkConfig => ({
+    network,
+    isMainnet: isMainnet(network),
+    isTestnet: isTestnet(network),
+    ...chainConfigByNetwork[network],
+    ...peraServicesByLane[resolvePeraServiceLane(network)],
+})
+
+/**
+ * ARC-59 inbox app id/address for the network's Pera service lane. The inbox
+ * app is only deployed on the two Pera-backed networks.
+ */
+export const getArc59Config = (network: Network) =>
+    resolvePeraServiceLane(network) === Networks.mainnet
+        ? config.arc59.mainnet
+        : config.arc59.testnet

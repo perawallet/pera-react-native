@@ -13,7 +13,12 @@
 import { describe, test, expect } from 'vitest'
 import { Networks } from '../models/network'
 import { config } from '../main'
-import { getNetworkConfig, isMainnet, isTestnet } from '../network-config'
+import {
+    getArc59Config,
+    getNetworkConfig,
+    isMainnet,
+    isTestnet,
+} from '../network-config'
 
 describe('network-config', () => {
     test('isMainnet returns correct boolean', () => {
@@ -21,9 +26,12 @@ describe('network-config', () => {
         expect(isMainnet(Networks.testnet)).toBe(false)
     })
 
-    test('isTestnet returns correct boolean', () => {
+    test('isTestnet is a real testnet check, not the mainnet inverse', () => {
         expect(isTestnet(Networks.testnet)).toBe(true)
         expect(isTestnet(Networks.mainnet)).toBe(false)
+        expect(isTestnet(Networks.betanet)).toBe(false)
+        expect(isTestnet(Networks.fnet)).toBe(false)
+        expect(isTestnet(Networks.localnet)).toBe(false)
     })
 
     test('getNetworkConfig returns correct mainnet config', () => {
@@ -38,6 +46,9 @@ describe('network-config', () => {
             indexerUrl: config.mainnetIndexerUrl,
             genesisHash: config.mainnetGenesisHash,
             explorerUrl: config.mainnetExplorerUrl,
+            algodToken: config.algodApiKey,
+            indexerToken: config.indexerApiKey,
+            dispenserUrl: config.mainnetDispenserUrl,
             bidaliBaseUrl: config.mainnetBidaliBaseUrl,
             bidaliApiKey: config.mainnetBidaliApiKey,
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
@@ -63,6 +74,9 @@ describe('network-config', () => {
             indexerUrl: config.testnetIndexerUrl,
             genesisHash: config.testnetGenesisHash,
             explorerUrl: config.testnetExplorerUrl,
+            algodToken: config.algodApiKey,
+            indexerToken: config.indexerApiKey,
+            dispenserUrl: config.dispenserUrl,
             bidaliBaseUrl: config.testnetBidaliBaseUrl,
             bidaliApiKey: config.testnetBidaliApiKey,
             baanxBaseUrl: config.testnetBaanxBaseUrl,
@@ -74,6 +88,38 @@ describe('network-config', () => {
             cardKillswitchAppId: config.testnetCardKillswitchAppId,
             cardUsdcAssetId: config.testnetCardUsdcAssetId,
         })
+    })
+
+    test('chain identity comes from the real network, never the fallback', () => {
+        const fnet = getNetworkConfig(Networks.fnet)
+
+        expect(fnet.algodUrl).toBe(config.fnetAlgodUrl)
+        expect(fnet.indexerUrl).toBe(config.fnetIndexerUrl)
+        expect(fnet.genesisHash).toBe(config.fnetGenesisHash)
+        // The invariant that makes cross-network signing impossible.
+        expect(fnet.genesisHash).not.toBe(config.testnetGenesisHash)
+    })
+
+    test('pera services on a fallback network come from the testnet lane', () => {
+        const fnet = getNetworkConfig(Networks.fnet)
+
+        expect(fnet.backendUrl).toBe(config.testnetBackendUrl)
+        expect(fnet.baanxBaseUrl).toBe(config.testnetBaanxBaseUrl)
+        expect(fnet.cardUsdcAssetId).toBe(config.testnetCardUsdcAssetId)
+    })
+
+    test('localnet carries its own algod token', () => {
+        expect(getNetworkConfig(Networks.localnet).algodToken).toBe(
+            config.localnetAlgodToken,
+        )
+        expect(getNetworkConfig(Networks.mainnet).algodToken).toBe(
+            config.algodApiKey,
+        )
+    })
+
+    test('getArc59Config falls back to testnet app ids', () => {
+        expect(getArc59Config(Networks.mainnet)).toEqual(config.arc59.mainnet)
+        expect(getArc59Config(Networks.fnet)).toEqual(config.arc59.testnet)
     })
 })
 

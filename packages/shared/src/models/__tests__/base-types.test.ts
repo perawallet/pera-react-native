@@ -22,11 +22,26 @@ describe('Networks', () => {
         expect(Networks.mainnet).toBe('mainnet')
     })
 
-    test('has only two networks', () => {
+    test('has betanet network', () => {
+        expect(Networks.betanet).toBe('betanet')
+    })
+
+    test('has fnet network', () => {
+        expect(Networks.fnet).toBe('fnet')
+    })
+
+    test('has localnet network', () => {
+        expect(Networks.localnet).toBe('localnet')
+    })
+
+    test('has exactly five networks', () => {
         const keys = Object.keys(Networks)
-        expect(keys).toHaveLength(2)
+        expect(keys).toHaveLength(5)
         expect(keys).toContain('testnet')
         expect(keys).toContain('mainnet')
+        expect(keys).toContain('betanet')
+        expect(keys).toContain('fnet')
+        expect(keys).toContain('localnet')
     })
 })
 
@@ -41,6 +56,21 @@ describe('Network type', () => {
         expect(network).toBe('mainnet')
     })
 
+    test('accepts betanet value', () => {
+        const network: Network = 'betanet'
+        expect(network).toBe('betanet')
+    })
+
+    test('accepts fnet value', () => {
+        const network: Network = 'fnet'
+        expect(network).toBe('fnet')
+    })
+
+    test('accepts localnet value', () => {
+        const network: Network = 'localnet'
+        expect(network).toBe('localnet')
+    })
+
     test('can use Networks.testnet constant', () => {
         const network: Network = Networks.testnet
         expect(network).toBe(Networks.testnet)
@@ -49,6 +79,21 @@ describe('Network type', () => {
     test('can use Networks.mainnet constant', () => {
         const network: Network = Networks.mainnet
         expect(network).toBe(Networks.mainnet)
+    })
+
+    test('can use Networks.betanet constant', () => {
+        const network: Network = Networks.betanet
+        expect(network).toBe(Networks.betanet)
+    })
+
+    test('can use Networks.fnet constant', () => {
+        const network: Network = Networks.fnet
+        expect(network).toBe(Networks.fnet)
+    })
+
+    test('can use Networks.localnet constant', () => {
+        const network: Network = Networks.localnet
+        expect(network).toBe(Networks.localnet)
     })
 })
 

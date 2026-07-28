@@ -29,8 +29,8 @@ vi.mock('@algorandfoundation/algokit-utils', () => ({
     // composer.build(), so buildGroup() resolves to the stub transactions.
     populateAppCallResources: vi.fn(async (atc: unknown) => atc),
 }))
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
+vi.mock('@perawallet/wallet-core-config', () => {
+    const config = {
         arc59: {
             testnet: {
                 appId: 643020148n,
@@ -41,8 +41,13 @@ vi.mock('@perawallet/wallet-core-config', () => ({
                 appAddress: 'MAINNET_APP_ADDRESS',
             },
         },
-    },
-}))
+    }
+    return {
+        config,
+        getArc59Config: (network: string) =>
+            network === 'mainnet' ? config.arc59.mainnet : config.arc59.testnet,
+    }
+})
 
 // Track ARC59Client constructor calls and allow per-test instance configuration
 let arc59ClientConstructorArgs: unknown[] = []
@@ -139,7 +144,7 @@ describe('useArc59SendTransaction', () => {
             client: { algod: {} },
         }
         ;(useAlgorandClient as Mock).mockReturnValue(mockAlgokit)
-        ;(useNetwork as Mock).mockReturnValue({ isMainnet: false })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
     })
 
     test('returns buildSendViaInboxTxs function', () => {
@@ -149,7 +154,7 @@ describe('useArc59SendTransaction', () => {
     })
 
     test('uses testnet config when not on mainnet', async () => {
-        ;(useNetwork as Mock).mockReturnValue({ isMainnet: false })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
 
         const { result } = renderHook(() => useArc59SendTransaction())
 
@@ -165,7 +170,7 @@ describe('useArc59SendTransaction', () => {
     })
 
     test('uses mainnet config when on mainnet', async () => {
-        ;(useNetwork as Mock).mockReturnValue({ isMainnet: true })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
 
         const { result } = renderHook(() => useArc59SendTransaction())
 

@@ -11,7 +11,11 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { type Network } from '@perawallet/wallet-core-config'
+import {
+    type Network,
+    type PeraServiceLane,
+    resolvePeraServiceLane,
+} from '@perawallet/wallet-core-config'
 
 import { type PeraCollectible } from './collectibles'
 import {
@@ -116,12 +120,17 @@ export type PeraAssetMetadata = {
 
 export const KNOWN_ASSET_IDS = {
     USDC: { mainnet: '31566704', testnet: '10458941' },
-} as const satisfies Record<string, Record<'mainnet' | 'testnet', string>>
+} as const satisfies Record<string, Record<PeraServiceLane, string>>
 
 export type KnownAssetKey = keyof typeof KNOWN_ASSET_IDS
 
+/**
+ * Networks without a Pera backend resolve to the TestNet lane, so this returns
+ * TestNet's id there. That asset almost certainly does not exist on those
+ * chains — transactions built from it fail at submit, loudly.
+ */
 export const getKnownAssetId = (key: KnownAssetKey, network: Network): string =>
-    KNOWN_ASSET_IDS[key][network]
+    KNOWN_ASSET_IDS[key][resolvePeraServiceLane(network)]
 
 export const ALGO_ASSET: PeraAsset = {
     assetId: ALGO_ASSET_ID,

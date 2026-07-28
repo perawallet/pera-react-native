@@ -28,8 +28,8 @@ vi.mock('@algorandfoundation/algokit-utils', () => ({
     // returns, so buildGroup() resolves to the stub transactions.
     populateAppCallResources: vi.fn(async (atc: unknown) => atc),
 }))
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
+vi.mock('@perawallet/wallet-core-config', () => {
+    const config = {
         arc59: {
             testnet: {
                 appId: 643020148n,
@@ -40,8 +40,13 @@ vi.mock('@perawallet/wallet-core-config', () => ({
                 appAddress: 'MAINNET_APP_ADDRESS',
             },
         },
-    },
-}))
+    }
+    return {
+        config,
+        getArc59Config: (network: string) =>
+            network === 'mainnet' ? config.arc59.mainnet : config.arc59.testnet,
+    }
+})
 
 let mockParamsClaimAlgo: Mock
 let mockParamsClaim: Mock
@@ -134,7 +139,7 @@ describe('useArc59ClaimTransaction', () => {
             client: { algod: { accountInformation: mockAccountInformation } },
         }
         ;(useAlgorandClient as Mock).mockReturnValue(mockAlgokit)
-        ;(useNetwork as Mock).mockReturnValue({ isMainnet: false })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
     })
 
     test('returns buildClaimAssetTxs and buildRejectAssetTxs functions', () => {
@@ -314,8 +319,8 @@ describe('useArc59ClaimTransaction', () => {
             expect(mockComposer.addAssetOptIn).toHaveBeenCalled()
         })
 
-        test('uses mainnet config when isMainnet is true', async () => {
-            ;(useNetwork as Mock).mockReturnValue({ isMainnet: true })
+        test('uses mainnet config when network is mainnet', async () => {
+            ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 
@@ -486,8 +491,8 @@ describe('useArc59ClaimTransaction', () => {
             expect(mockComposer.build).toHaveBeenCalledTimes(1)
         })
 
-        test('uses mainnet config when isMainnet is true', async () => {
-            ;(useNetwork as Mock).mockReturnValue({ isMainnet: true })
+        test('uses mainnet config when network is mainnet', async () => {
+            ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
 
             const { result } = renderHook(() => useArc59ClaimTransaction())
 

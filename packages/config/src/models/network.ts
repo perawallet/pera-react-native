@@ -13,6 +13,9 @@
 export const Networks = {
     testnet: 'testnet',
     mainnet: 'mainnet',
+    betanet: 'betanet',
+    fnet: 'fnet',
+    localnet: 'localnet',
 } as const
 
 export type Network = (typeof Networks)[keyof typeof Networks]

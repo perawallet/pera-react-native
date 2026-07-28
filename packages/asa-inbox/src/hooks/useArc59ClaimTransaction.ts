@@ -17,7 +17,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
+import { getArc59Config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ARC59Client } from '../clients'
 import { buildGroup, buildPopulatedGroup } from '../utils'
@@ -59,7 +59,7 @@ type UseArc59ClaimTransactionResult = {
 }
 
 export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
-    const { isMainnet } = useNetwork()
+    const { network } = useNetwork()
     const algokit = useAlgorandClient()
 
     const isOptedInToAsset = useCallback(
@@ -81,9 +81,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
     const buildClaimAssetTxs = useCallback(
         async (params: ClaimParams): Promise<PeraTransaction[]> => {
             const { sender, assetId, shouldClaimAlgo, inboxAddress } = params
-            const arc59Config = isMainnet
-                ? config.arc59.mainnet
-                : config.arc59.testnet
+            const arc59Config = getArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
 
@@ -155,7 +153,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 ? buildGroup(composer)
                 : buildPopulatedGroup(composer, algokit)
         },
-        [algokit, isMainnet, isOptedInToAsset],
+        [algokit, network, isOptedInToAsset],
     )
 
     const buildRejectAssetTxs = useCallback(
@@ -167,9 +165,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 inboxAddress,
                 assetCreator,
             } = params
-            const arc59Config = isMainnet
-                ? config.arc59.mainnet
-                : config.arc59.testnet
+            const arc59Config = getArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
 
@@ -237,7 +233,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 ? buildGroup(composer)
                 : buildPopulatedGroup(composer, algokit)
         },
-        [algokit, isMainnet],
+        [algokit, network],
     )
 
     return { buildClaimAssetTxs, buildRejectAssetTxs }
