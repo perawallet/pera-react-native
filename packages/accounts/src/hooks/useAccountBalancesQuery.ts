@@ -159,6 +159,10 @@ export const useAccountBalancesQuery = (
                 new Decimal(0)
 
             let algoValue = new Decimal(0)
+            // Accumulated in the same pass as `algoValue`: `usePortfolioTotals`
+            // used to re-walk every account's holdings to derive this, doubling
+            // the accounts×holdings Decimal work on every price poll.
+            let usdValue = new Decimal(0)
             const assetBalances: AssetWithAccountBalance[] = holdings.map(
                 holding => {
                     const isAlgo = isAlgoAssetId(holding.assetId)
@@ -189,6 +193,7 @@ export const useAccountBalancesQuery = (
                           ? new Decimal(0)
                           : assetAmount.times(usdAssetPrice).div(usdAlgoPrice)
                     algoValue = algoValue.plus(algoAssetValue)
+                    usdValue = usdValue.plus(assetAmount.times(usdAssetPrice))
                     return {
                         assetId: holding.assetId,
                         asset,
@@ -202,6 +207,7 @@ export const useAccountBalancesQuery = (
             return {
                 assetBalances,
                 algoValue,
+                usdValue,
                 isPending: r.isPending,
                 isFetched: r.isFetched,
                 isRefetching: r.isRefetching,

@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { AccountBalances } from '../models'
 
 type PortfolioTotals = {
@@ -21,27 +20,24 @@ type PortfolioTotals = {
     isPending: boolean
 }
 
+/**
+ * Rolls the per-account USD totals up into a portfolio total.
+ *
+ * The per-asset arithmetic happens once, in the same holdings pass
+ * `useAccountBalancesQuery` already runs to derive `algoValue`. This hook only
+ * adds up the results, so a price poll no longer re-walks every account's
+ * holdings.
+ */
 export const usePortfolioTotals = (
     accountBalances: AccountBalances,
 ): PortfolioTotals => {
-    const { usdToPreferred } = useCurrency()
-
     return useMemo(() => {
         const accountUsdValues = new Map<string, Decimal>()
         let portfolioUsdValue = new Decimal(0)
 
-        // Each asset balance already carries its joined USD price from the DB
-        // read, so there's no separate `WHERE assetId IN (…)` price query here.
         accountBalances.forEach((balance, address) => {
-            let accountUsdTotal = new Decimal(0)
-            balance.assetBalances.forEach(assetBalance => {
-                const usdPrice = assetBalance.usdPrice ?? new Decimal(0)
-                accountUsdTotal = accountUsdTotal.plus(
-                    assetBalance.amount.times(usdPrice),
-                )
-            })
-            accountUsdValues.set(address, accountUsdTotal)
-            portfolioUsdValue = portfolioUsdValue.plus(accountUsdTotal)
+            accountUsdValues.set(address, balance.usdValue)
+            portfolioUsdValue = portfolioUsdValue.plus(balance.usdValue)
         })
 
         return {
@@ -49,5 +45,5 @@ export const usePortfolioTotals = (
             accountUsdValues,
             isPending: false,
         }
-    }, [accountBalances, usdToPreferred])
+    }, [accountBalances])
 }
