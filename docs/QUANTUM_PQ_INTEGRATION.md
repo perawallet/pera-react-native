@@ -35,19 +35,36 @@ the `pnpm-workspace.yaml` alias described in Purpose above). This module
 names no third-party specifier and is no longer part of the PQ library
 firewall (see Enforcement below):
 
-- `deriveQuantumAddress(publicKey)` — derives the quantum account address.
-- `assembleQuantumSignedTxn({ unsignedTxnBytes, publicKey, falconSignature })`
-  (async) — decodes the unsigned txn with the fork, attaches the Falcon
-  signature, and returns node-ready signed bytes carrying the `pqsig` field.
+- `deriveQuantumAddress(publicKey, schemeId?)` — derives the quantum account
+  address for a PQ scheme (defaults to Falcon-1024; scheme-agnostic — see
+  `pq/schemes.ts`'s `PQ_SCHEMES`/`PQSchemeId`).
+- `pqSigningDigest(txn)` — the exact bytes a PQ signer must sign for `txn`.
+  See "Key contracts" below; get this wrong and the signature is worthless.
+- `assemblePQSignedTransaction({ txn, signature })` (sync) — takes a
+  `PQSignature { schemeId, publicKey, signature }` (the `signature` field
+  must already be computed over `pqSigningDigest(txn)`, not `txn` itself) and
+  returns a plain algosdk `SignedTransaction` with its `pqsig` field
+  populated. `sgnr` is set automatically whenever `txn`'s sender differs from
+  the address the PQ key authorizes.
 
 Key contracts:
 
-- The Falcon signature must be computed over
-  `SHA-512/256("TX" || msgpack(unsignedTxn))` — the fork hashes this
-  internally, so callers pass the raw signature, not a pre-hashed digest.
-- Rekey (`sgnr`) is derived automatically by the fork whenever the
-  transaction's sender differs from the derived quantum address; no explicit
-  sender override is threaded through today.
+- **The signer must sign the digest, not the raw encoding.** `pqSigningDigest(txn)`
+  = `sha512_256(txn.bytesToSign())` — SHA-512/256 over the "TX"-prefixed
+  msgpack encoding. This is exactly what algosdk's own
+  `addressWithSignersFromRawPQSigner` hands to a raw signer callback (see the
+  fork's `pq-signer.ts`), and a differential test in `quantumAdapter.spec.ts`
+  pins it by asserting our assembled bytes are byte-identical to the fork's
+  own signer output for the same key. **Whatever signs on the other side of
+  this seam (KMS, hardware, etc.) must sign `pqSigningDigest(txn)`, never
+  `txn.bytesToSign()` directly** — the deleted `assembleQuantumSignedTxn`
+  threaded a pre-computed signature through verbatim without pinning what it
+  was a signature over, which is exactly how a wrong preimage would have
+  shipped silently: no node verifies `pqsig` today, so nothing would have
+  caught it.
+- Rekey (`sgnr`) is derived automatically by `assemblePQSignedTransaction`
+  whenever the transaction's sender differs from the address the PQ key
+  authorizes; no explicit sender override is threaded through today.
 
 Stock `algosdk` objects never cross into the fork — only bytes go in and out.
 
@@ -99,10 +116,14 @@ Quantum accounts now sign locally end-to-end on real Falcon-1024:
   produces real Falcon signatures (secret key zeroed in `finally`);
   `getQuantumPublicKey(keyPairId)` exposes the committed public key (guarded by
   `FALCON_CHILD_KEY_TYPE`). The three keygen/sign mocks were retired.
-- **Byte carrier** — `QuantumSignedTransaction { txn, pqSignedBytes }` +
-  `PeraSignedTxnResult` + `isQuantumSignedTransaction`; `encodeSignedTransaction`
-  returns the node-ready `pqSignedBytes` verbatim for the carrier. A `pqsig`
-  transaction cannot be a stock algosdk `SignedTransaction`, hence the carrier.
+- **No more byte carrier (PERA-4653)** — the resolved `algosdk` fork's
+  `SignedTransaction` accepts `pqsig` directly, so a PQ-signed transaction is
+  now a plain `SignedTransaction`, encoded through the ordinary
+  `encodeSignedTransaction` path like any other. The former
+  `QuantumSignedTransaction { txn, pqSignedBytes }` carrier,
+  `PeraSignedTxnResult` and `isQuantumSignedTransaction` are deleted; see
+  Seam B above for the current `pqSigningDigest`/`assemblePQSignedTransaction`
+  surface.
 - **Dedicated strategy** — `createQuantumStrategy` (`canSign → isQuantumAccount`)
   signs transactions into carriers via `useQuantumTransactionSigner`
   (`assembleQuantumSignedTxn`, Seam B) and reuses the shared
@@ -136,5 +157,6 @@ Seam A directory** like every other `@joe-p/*` import.
 3. In a dev build with `enable_quantum_accounts` on: create a quantum account,
    confirm the address matches `deriveQuantumAddress` (native pubkey = 1793 B).
 4. Sign a payment; confirm the native module produces a Falcon signature
-   (≤ 1232 B compressed) and a `QuantumSignedTransaction` carrier is produced.
+   (≤ 1232 B compressed) over `pqSigningDigest(txn)` and that
+   `assemblePQSignedTransaction` yields a `pqsig` `SignedTransaction`.
    **No on-chain confirmation is expected** — submission is gated (PQ-019).

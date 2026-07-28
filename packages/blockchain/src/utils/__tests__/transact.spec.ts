@@ -18,12 +18,40 @@ import {
     decodeSignedTransaction,
 } from 'algosdk'
 import { generateKey, signCompressed } from 'falcon-1024'
-import { encodeSignedTransaction } from '..'
+import { compactSignedResults, encodeSignedTransaction } from '..'
+import type { PeraSignedTransaction } from '..'
 import {
     assemblePQSignedTransaction,
     deriveQuantumAddress,
     pqSigningDigest,
 } from '../../pq/quantumAdapter'
+
+describe('utils/transact — compactSignedResults', () => {
+    it('drops null padding slots and preserves the order and identity of the rest', () => {
+        const first = {
+            sig: new Uint8Array([1]),
+        } as unknown as PeraSignedTransaction
+        const second = {
+            sig: new Uint8Array([2]),
+        } as unknown as PeraSignedTransaction
+
+        const compacted = compactSignedResults([
+            null,
+            first,
+            null,
+            second,
+            null,
+        ])
+
+        expect(compacted).toEqual([first, second])
+        expect(compacted[0]).toBe(first)
+        expect(compacted[1]).toBe(second)
+    })
+
+    it('returns an empty array for all-null input', () => {
+        expect(compactSignedResults([null, null])).toEqual([])
+    })
+})
 
 describe('utils/transact — pqsig transactions use the ordinary encoding path', () => {
     it('msgpack-encodes a pqsig SignedTransaction like any other', () => {
