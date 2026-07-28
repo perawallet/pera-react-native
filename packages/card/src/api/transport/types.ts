@@ -15,9 +15,11 @@ import type { Network } from '@perawallet/wallet-core-shared'
 /**
  * `direct` (default) → the package-local Baanx client (always x-client-key; the
  * per-user Bearer is added only when the request sets `authenticated: true`).
- * `proxy` → Pera's backend, which attaches the server-only x-secret-key and
- * forwards to Baanx. Use `proxy` only for calls that require the secret key
- * (e.g. OAuth token exchange / refresh).
+ * `proxy` → Pera's backend (`/api/v3/baanx/*`), which pins client_id /
+ * redirect_uri server-side and injects the server-only x-secret-key where
+ * Baanx requires it. Use `proxy` only for the OAuth initiate and
+ * authorization-code token exchange; everything else (including the
+ * refresh-token grant) goes direct.
  * `escrow` → the AppliedBlockchain (AB) card service (card creation + delegated
  * LSig `/lsig`), on its own base URL with a static raw `Authorization` token
  * from config. No per-user Bearer, no 401 refresh. SWAP POINT — AB-hosted on

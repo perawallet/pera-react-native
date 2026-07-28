@@ -14,10 +14,23 @@
 // them into the production entry (src/index.ts). Consumed only via the test
 // alias `@perawallet/wallet-core-card/test-handlers`.
 
-export { mockLogin, mockRefreshToken } from './api/auth/msw-handlers'
+export {
+    mockLogin,
+    mockOauthAuthorize,
+    mockOauthChain,
+    mockOauthInitiate,
+    mockOauthToken,
+    mockRefreshToken,
+    mockSendLoginOtp,
+} from './api/auth/msw-handlers'
 export type {
     MockLoginParams,
+    MockOauthAuthorizeParams,
+    MockOauthChainParams,
+    MockOauthInitiateParams,
+    MockOauthTokenParams,
     MockRefreshTokenParams,
+    MockSendLoginOtpParams,
 } from './api/auth/msw-handlers'
 
 export {

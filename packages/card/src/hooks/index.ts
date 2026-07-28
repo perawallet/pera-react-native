@@ -13,6 +13,7 @@
 // Session / auth
 export * from './useCardSession'
 export * from './useCardLoginMutation'
+export * from './useSendLoginOtpMutation'
 export * from './useCardLogout'
 
 // Card lifecycle + status

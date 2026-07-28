@@ -22,15 +22,33 @@ export type CardSession = {
 }
 
 /**
- * Transit-only token bundle. The full access+refresh pair comes from the OAuth
- * token endpoint (`POST /v1/auth/oauth/token`); direct login yields only an
- * access token (no refresh). Written straight to the KMS keystore; never held
+ * Transit-only token bundle from the OAuth token endpoint
+ * (`POST /v1/auth/oauth/token`): a 6h access token plus a 7-day refresh token
+ * (both rotate on refresh). Written straight to the KMS keystore; never held
  * in app memory or persisted to a Zustand store.
  */
 export type CardSessionTokens = {
     accessToken: string
-    /** Empty string for direct-login sessions (no refresh token issued). */
+    /** 7-day OAuth refresh token, exchanged on 401 to keep the user signed in. */
     refreshToken: string
+}
+
+/**
+ * OAuth step 1 (`GET /api/v3/baanx/oauth/initiate`, proxied): a 10-minute
+ * session JWT that the authorize step trades for an authorization code.
+ */
+export type OauthInitiation = {
+    sessionToken: string
+}
+
+/**
+ * OAuth step 3 (`POST /v1/auth/oauth/authorize`): single-use authorization
+ * code plus the echoed CSRF `state`, which callers MUST compare against the
+ * value they sent to initiate.
+ */
+export type OauthAuthorization = {
+    code: string
+    state: string
 }
 
 export const OnboardingPhase = {
@@ -44,9 +62,11 @@ export type OnboardingPhase =
     (typeof OnboardingPhase)[keyof typeof OnboardingPhase]
 
 /**
- * Outcome of POST /v1/auth/login. Returns only an access token (6h, no refresh
- * token — those come from the OAuth flow). `accessToken` is null when OTP is
- * still required; `phase` is set only mid-onboarding.
+ * Outcome of POST /v1/auth/login (OAuth step 2). `accessToken` is the
+ * ephemeral 6h token used ONLY to complete the OAuth authorize step — it is
+ * never persisted; the durable session pair comes from the token exchange.
+ * `accessToken` is null when OTP is still required; `phase` is set only
+ * mid-onboarding.
  */
 export type LoginResult = {
     accessToken: Nullable<string>

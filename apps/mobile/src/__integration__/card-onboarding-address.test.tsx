@@ -24,6 +24,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 import { OnboardingStep, useCardStore } from '@perawallet/wallet-core-card'
+import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -145,6 +146,9 @@ describe('Flow: Card onboarding — residential address', () => {
                     { status: 200 },
                 ),
             ),
+            // The registration-issued token is traded for the durable OAuth
+            // pair (initiate → authorize → token), same chain as sign-in.
+            ...mockOauthChain(),
         )
     })
     afterEach(() => server.resetHandlers())

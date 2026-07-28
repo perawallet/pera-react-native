@@ -16,8 +16,15 @@ import {
     VerificationState,
     type CardSessionTokens,
     type LoginResult,
+    type OauthAuthorization,
+    type OauthInitiation,
 } from '../../models'
-import type { LoginApiResponse, TokenApiResponse } from './schema'
+import type {
+    LoginApiResponse,
+    OauthAuthorizeApiResponse,
+    OauthInitiateApiResponse,
+    TokenApiResponse,
+} from './schema'
 
 export const transformLoginResponse = (
     response: LoginApiResponse,
@@ -38,4 +45,17 @@ export const transformTokenResponse = (
 ): CardSessionTokens => ({
     accessToken: response.access_token,
     refreshToken: response.refresh_token,
+})
+
+export const transformOauthInitiateResponse = (
+    response: OauthInitiateApiResponse,
+): OauthInitiation => ({
+    sessionToken: response.token,
+})
+
+export const transformOauthAuthorizeResponse = (
+    response: OauthAuthorizeApiResponse,
+): OauthAuthorization => ({
+    code: response.code,
+    state: response.state,
 })
