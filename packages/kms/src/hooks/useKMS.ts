@@ -259,8 +259,12 @@ export const useKMS = () => {
             return null
         }
 
+        // Report the PROVIDER's own scheme rather than a literal of our own:
+        // `getPQProvider()` is the build-time-selected implementation and is
+        // the authority on which scheme it produces signatures for, so a
+        // second PQ provider needs no edit here.
         return {
-            schemeId: 'falcon1024',
+            schemeId: getPQProvider().scheme,
             publicKey: getQuantumPublicKey(keyPairId),
         }
     }

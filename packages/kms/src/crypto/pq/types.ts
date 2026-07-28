@@ -10,6 +10,13 @@
  limitations under the License
  */
 
+// Type-only import: erased at compile time, so this does NOT pull algosdk (or
+// anything else) into the pure-crypto seam at runtime. It exists so the
+// provider contract names the same scheme-id vocabulary the rest of the app
+// uses, rather than a hardcoded literal that a second PQ scheme would have to
+// widen by hand.
+import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+
 /**
  * Pure post-quantum signature provider contract.
  *
@@ -18,7 +25,12 @@
  * Digest contracts belong to the signer / Seam B, out of scope here.
  */
 export interface PQSignatureProvider {
-    readonly scheme: 'falcon1024'
+    /**
+     * Which PQ scheme this provider implements. `useKMS.getPQSigningInfo`
+     * reports THIS value rather than a literal of its own, so a provider for a
+     * second scheme is self-describing all the way to the wire format.
+     */
+    readonly scheme: PQSchemeId
     readonly publicKeyLength: number
     generateKeypairFromSeed(seed: Uint8Array): {
         publicKey: Uint8Array

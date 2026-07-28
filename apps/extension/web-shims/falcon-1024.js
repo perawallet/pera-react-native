@@ -30,6 +30,15 @@ export const signCompressed = unavailable
 // A real Falcon-1024 public key is 1793 bytes. Exporting 0 here would let a
 // caller that slipped past the `quantum: false` web capability gate build a
 // zero-length key silently; throwing matches the other exports in this shim.
+//
+// The bare `exports` reference below is legitimate and deliberate, even in a
+// file that otherwise uses ESM `export`: Metro wraps every module in a factory
+// whose parameters always include a positional `exports` object, so `exports`
+// is in scope here regardless of the module's own syntax. Do NOT "fix" this
+// into `export const FALCON_DET1024_PUBKEY_SIZE = ...` — a plain export
+// evaluates its initializer eagerly, which would either throw at import time
+// or (if softened to a value) hand callers a silently wrong size. A throwing
+// getter is the only shape that stays inert until someone actually reads it.
 Object.defineProperty(exports, 'FALCON_DET1024_PUBKEY_SIZE', {
     get: unavailable,
     enumerable: true,

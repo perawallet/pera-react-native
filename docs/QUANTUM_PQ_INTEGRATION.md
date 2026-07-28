@@ -106,13 +106,27 @@ algosdk fork's swap point lives in the `SWAP-BACK:` comment in
 ## Enforcement
 
 `packages/blockchain/src/pq/__tests__/pqLibraryFirewall.spec.ts` scans every
-`.ts`/`.tsx` file under `packages/` and `apps/` (excluding `__tests__`) and
-fails CI if `@joe-p/react-native-falcon` or `falcon-1024` (including a deep
-import like `falcon-1024/wasm`) appears outside the one remaining seam
-directory, `packages/kms/src/crypto/pq` (Seam A). `algosdk`/`@joe-p/algosdk`
-is not part of this forbidden pattern. It also asserts that seam's
-`wasmFalconProvider.ts` still imports `falcon-1024`, so a silent rename can't
-make the guard vacuous.
+`.ts`/`.tsx` file under `packages/` and `apps/` and fails CI if
+`@joe-p/react-native-falcon` or `falcon-1024` (including a deep import like
+`falcon-1024/wasm`) appears outside the one remaining seam directory,
+`packages/kms/src/crypto/pq` (Seam A). `algosdk`/`@joe-p/algosdk` is not part
+of this forbidden pattern. It also asserts that seam's `wasmFalconProvider.ts`
+still imports `falcon-1024`, so a silent rename can't make the guard vacuous.
+
+It is a **grep over shipped source, not a proof**, and it has three
+deliberate, accepted blind spots — all documented in the spec itself, none of
+them shipped code:
+
+- `__tests__` directories tree-wide (tests legitimately import the PQ libs).
+- `*.config.ts` / `*.config.tsx` (a bundler `external:` entry names the
+  package as a build directive, not a runtime import).
+- `tools/` is not a scanned root at all;
+  `tools/localnet-quantum-check.ts` imports `falcon-1024` directly on purpose.
+
+The pqImportSideEffects spec is the complementary guard for the thing a grep
+cannot see: it asserts that importing the PQ barrel **and**
+`getPQProvider.native.ts` does not _evaluate_ either Falcon library, which is
+what actually crashes the app at startup.
 
 ## Scope note
 
@@ -202,9 +216,30 @@ submission:
   `determineSignerType`/`ResolvedSignerType` (see PQ-006 above).
 - **`PQSignature`** (`packages/blockchain/src/models/index.ts`) — the generic,
   scheme-agnostic shape carried across this boundary: `{ schemeId, publicKey,
-signature }`. `schemeId` selects the wire scheme (`PQSchemeId`), so a second
-  PQ scheme needs no new type; the address salt is derived from `(scheme,
-publicKey)` and is therefore not carried on the type.
+signature }`. `schemeId` selects the wire scheme (`PQSchemeId`); the address
+  salt is derived from `(scheme, publicKey)` and is therefore not carried on
+  the type.
+- **How far scheme-genericity actually goes.** The **transaction assembly and
+  signing path** is scheme-agnostic end to end: `PQSignature`,
+  `pqSigningDigest`, `assemblePQSignedTransaction`, `deriveQuantumAddress`,
+  `PQSignatureProvider.scheme` (which `getPQSigningInfo` now reports rather
+  than hardcoding a literal) and `useLocalKeyTransactionSigner` all thread
+  `PQSchemeId` through generically — a second scheme needs no new types there
+  and no new signing branch. Two things outside that path are still
+  single-scheme and a second scheme must fix them first (both documented at
+  `packages/blockchain/src/pq/schemes.ts`, both out of scope for PQ-023):
+    - **Fee shape** — `fees/feeCalculator.ts`'s `CalculateMinTxnFeeParams`
+      carries one `pqMultiplier` and a boolean `isPQSigner`. One multiplier
+      cannot express two schemes with very different signature sizes
+      (Falcon-1024 ≈ 1.2 KB, ML-DSA-65 ≈ 3.3 KB), and `isPQSigner` is derived
+      from `isQuantumAccount(authAccount)` in the fee path, where the account
+      carries no scheme — so the scheme is not retrievable there at all. A
+      second scheme means a scheme-keyed multiplier and threading the scheme,
+      not a boolean, into fee calculation.
+    - **Key ids** — `quantumSignKeyId(seedId)`
+      (`packages/kms/src/models/keys.ts`) yields exactly one child id per seed
+      (`${seedId}-quantum`), so one seed cannot host two schemes without an id
+      collision. Per-seed multi-scheme support means keying that id by scheme.
 - **`pqSigningDigest(txn)` preimage contract** — `sha512_256(txn.bytesToSign())`.
   This is the one fact in this document with the highest cost if it drifts:
   an earlier revision of this seam threaded a pre-computed signature through

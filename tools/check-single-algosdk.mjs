@@ -11,10 +11,19 @@
  */
 
 /**
- * Asserts that exactly one `algosdk` package is resolved across the whole
- * workspace, by inspecting `pnpm-lock.yaml` directly (no `pnpm list`
- * shell-out — parsing the lockfile is faster and doesn't require a fresh
- * dependency-graph walk).
+ * Asserts that exactly one `algosdk` package is resolved across the
+ * workspace's own importers, by inspecting `pnpm-lock.yaml` directly (no
+ * `pnpm list` shell-out — parsing the lockfile is faster and doesn't require a
+ * fresh dependency-graph walk).
+ *
+ * **Scope, precisely:** only the lockfile's `importers:` section — i.e. the
+ * `algosdk` identities that workspace packages resolve to, including via
+ * peer-dependency auto-install. It does NOT walk the `snapshots:`/`packages:`
+ * sections, so a second `algosdk` reachable only transitively (nested inside
+ * some third-party dependency's own tree, with no workspace importer resolving
+ * to it) would not be reported here. That is deliberate: the failure mode this
+ * guard exists for is a workspace package drifting off the override, which is
+ * exactly an `importers:` fact.
  *
  * Why this exists: the workspace pins `algosdk` to Joe Polny's PQ-capable
  * fork via a bare-name `overrides: algosdk: 'npm:@joe-p/algosdk@...'` entry
@@ -140,10 +149,7 @@ function splitImportersSection(lockfileYaml) {
 
 function main() {
     const lockfileYaml = readFileOrFail(LOCKFILE_PATH, 'pnpm-lock.yaml')
-    const workspaceYaml = readFileOrFail(
-        WORKSPACE_PATH,
-        'pnpm-workspace.yaml',
-    )
+    const workspaceYaml = readFileOrFail(WORKSPACE_PATH, 'pnpm-workspace.yaml')
     const expectedIdentity = findConfiguredAlgosdkAlias(workspaceYaml)
 
     const importers = splitImportersSection(lockfileYaml)
@@ -173,7 +179,7 @@ function main() {
 
     if (identityToImporters.size > 1) {
         console.error(
-            `FAIL: found ${identityToImporters.size} distinct resolved 'algosdk' packages in pnpm-lock.yaml — this breaks cross-boundary 'instanceof Transaction'/'instanceof Address' checks and msgpack schema identity between @algorandfoundation/algokit-utils and app code.\n`,
+            `FAIL: found ${identityToImporters.size} distinct resolved 'algosdk' packages across pnpm-lock.yaml's importers — this breaks cross-boundary 'instanceof Transaction'/'instanceof Address' checks and msgpack schema identity between @algorandfoundation/algokit-utils and app code.\n`,
         )
         for (const [identity, importerNames] of identityToImporters) {
             const flag =

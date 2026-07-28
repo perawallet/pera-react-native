@@ -44,6 +44,15 @@ const FORBIDDEN_SPECIFIER_PATTERN =
 // Seam B (packages/blockchain/src/pq) no longer needs an allowlist entry.
 const ALLOWLISTED_SEAM_DIRS = ['packages/kms/src/crypto/pq']
 
+// Scanned roots. `tools/` is deliberately NOT scanned and is an accepted blind
+// spot of this guard: dev-only scripts there are never bundled into the app and
+// legitimately need the PQ libs directly. Concretely,
+// `tools/localnet-quantum-check.ts` imports `falcon-1024` on purpose — it drives
+// a real keypair through derive → sign → assemble → submit against LocalNet,
+// which cannot be done through the seam (the seam's provider intentionally
+// exposes no raw key material for a script to reuse). Do NOT extend the scan to
+// `tools/` to "close" this: it would only force an allowlist entry for a
+// non-shipping script and buy no safety.
 const SCAN_ROOT_DIRS = ['packages', 'apps']
 
 // `__tests__` is excluded tree-wide (not just in the seam dirs): tests
