@@ -50,6 +50,8 @@ const ListSeparator = () => {
     return <PWView style={styles.listSeparator} />
 }
 
+const keyExtractor = (item: CollectibleDisplayItem) => item.assetId
+
 type GridCellProps = {
     item: CollectibleDisplayItem
     index: number
@@ -87,14 +89,12 @@ export const AccountNfts = () => {
         canOptIn,
         galleryLayout,
         searchFilter,
-        debouncedSearchFilter,
         setSearchFilter,
         setGalleryLayout,
         handlePress,
         openManageSheet,
         openAddNftSheet,
         flatListRef,
-        sortMode,
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
@@ -115,6 +115,8 @@ export const AccountNfts = () => {
             ),
         [isGrid, handlePress],
     )
+
+    const getItemType = useCallback(() => galleryLayout, [galleryLayout])
 
     if (!hasAccount) {
         return null
@@ -211,12 +213,20 @@ export const AccountNfts = () => {
                     </PWView>
                     <PWFlatList
                         ref={flatListRef}
-                        key={`${galleryLayout}:${sortMode}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}
+                        // Sorting and searching only reorder/narrow `data`,
+                        // which FlashList handles — keying on them threw away
+                        // the whole list and its recycle pool on every toggle
+                        // and every debounced keystroke. `extraData` covers the
+                        // one render input outside `data` (the layout), and
+                        // `getItemType` keeps the grid and list recycle pools
+                        // apart so a grid cell is never reused as a list row.
+                        extraData={galleryLayout}
+                        getItemType={getItemType}
                         ItemSeparatorComponent={isGrid ? null : ListSeparator}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
-                        keyExtractor={item => item.assetId}
+                        keyExtractor={keyExtractor}
                         automaticallyAdjustKeyboardInsets
                         contentContainerStyle={styles.contentContainer}
                         ListEmptyComponent={
