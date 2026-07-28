@@ -24,7 +24,7 @@ import {
     assetFromHoldingLiteRow,
     type AccountHoldingsLiteRow,
 } from '@perawallet/wallet-core-accounts'
-import { pow10 } from '@perawallet/wallet-core-shared'
+import { isAlgoAssetId, pow10 } from '@perawallet/wallet-core-shared'
 import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
 import { CollectibleListItem } from '@modules/assets/components/CollectibleListItem'
 import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
@@ -95,11 +95,14 @@ const AssetListItemViewBase = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
+            {/* No unit next to the figure: the row already carries it under the
+                asset name, and a long one squeezed the amount out (PERA-4733).
+                ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
                 asset={asset}
                 value={amount}
                 density='compact'
-                showSymbol
+                showSymbol={isAlgoAssetId(holding.assetId)}
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
