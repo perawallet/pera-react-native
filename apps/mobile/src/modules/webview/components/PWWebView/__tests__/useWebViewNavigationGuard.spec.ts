@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { Linking } from 'react-native'
 import { useWebViewNavigationGuard } from '../useWebViewNavigationGuard'
 
 const handleDeepLink = vi.fn()
@@ -21,15 +22,20 @@ vi.mock('@hooks/useDeepLink', () => ({
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const request = (url: string): any => ({ url, navigationType: 'click' })
+const request = (url: string, isTopFrame = true): any => ({
+    url,
+    navigationType: 'click',
+    isTopFrame,
+})
 
 describe('useWebViewNavigationGuard', () => {
     beforeEach(() => {
         handleDeepLink.mockReset()
+        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
     })
 
     it('allows http/https navigation to load inside the WebView', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard())
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
 
         expect(
             result.current.onShouldStartLoadWithRequest(
@@ -40,7 +46,7 @@ describe('useWebViewNavigationGuard', () => {
     })
 
     it('routes a Pera universal link (applink) in-app', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard())
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
 
         const url =
             'https://perawallet.app/qr/perawallet/app/add-contact/?address=5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA&label=HELLO'
@@ -51,7 +57,7 @@ describe('useWebViewNavigationGuard', () => {
     })
 
     it('loads a non-Pera https /app/ route instead of hijacking it as a deeplink', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard())
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
 
         // The applink parser keys off a permissive `/app/` match; a foreign
         // host must still load as a page, never route to Pera's swap screen.
@@ -63,19 +69,39 @@ describe('useWebViewNavigationGuard', () => {
         expect(handleDeepLink).not.toHaveBeenCalled()
     })
 
-    it('lets non-deeplink custom schemes keep their default OS behaviour', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard())
+    it('opens mailto/tel/sms through the OS and refuses the navigation (PERA-4717)', () => {
+        // `originWhitelist={['*']}` means react-native-webview no longer
+        // Linking.openURL's these itself, and the WebView cannot load a foreign
+        // scheme — returning true stranded the page on an error view.
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+
+        for (const url of [
+            'mailto:support@example.com',
+            'tel:+15551234567',
+            'sms:+15551234567',
+        ]) {
+            expect(
+                result.current.onShouldStartLoadWithRequest(request(url)),
+            ).toBe(false)
+            expect(Linking.openURL).toHaveBeenCalledWith(url)
+        }
+        expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('refuses an unrecognised custom scheme without handing it to the OS', () => {
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
 
         expect(
             result.current.onShouldStartLoadWithRequest(
-                request('mailto:support@example.com'),
+                request('fb-messenger://user/123'),
             ),
-        ).toBe(true)
+        ).toBe(false)
+        expect(Linking.openURL).not.toHaveBeenCalled()
         expect(handleDeepLink).not.toHaveBeenCalled()
     })
 
     it('blocks and routes a recognised Pera deeplink in-app', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard())
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
 
         const uri = 'wc:topic@1?bridge=https%3A%2F%2Fbridge.example&key=abc'
         expect(result.current.onShouldStartLoadWithRequest(request(uri))).toBe(
@@ -85,13 +111,45 @@ describe('useWebViewNavigationGuard', () => {
     })
 
     it('blocks a WalletConnect wake link without routing it', () => {
-        const { result } = renderHook(() => useWebViewNavigationGuard())
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
 
         // No bridge param → not an actionable deeplink, just a focus hint.
         expect(
             result.current.onShouldStartLoadWithRequest(
                 request('perawallet-wc://?browser=pera'),
             ),
+        ).toBe(false)
+        expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('never dispatches a Pera universal link from an untrusted origin (PERA-4717)', () => {
+        const { result } = renderHook(() => useWebViewNavigationGuard(false))
+
+        const url =
+            'https://perawallet.app/qr/perawallet/app/add-contact/?address=5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA&label=HELLO'
+        expect(result.current.onShouldStartLoadWithRequest(request(url))).toBe(
+            false,
+        )
+        expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('never dispatches a custom-scheme deeplink from an untrusted origin (PERA-4717)', () => {
+        const { result } = renderHook(() => useWebViewNavigationGuard(false))
+
+        const uri = 'wc:topic@1?bridge=https%3A%2F%2Fbridge.example&key=abc'
+        expect(result.current.onShouldStartLoadWithRequest(request(uri))).toBe(
+            false,
+        )
+        expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('does not dispatch a subframe navigation even from a trusted origin (iOS iframe, PERA-4717)', () => {
+        const { result } = renderHook(() => useWebViewNavigationGuard(true))
+
+        const url =
+            'https://perawallet.app/qr/perawallet/app/add-contact/?address=5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA&label=HELLO'
+        expect(
+            result.current.onShouldStartLoadWithRequest(request(url, false)),
         ).toBe(false)
         expect(handleDeepLink).not.toHaveBeenCalled()
     })
