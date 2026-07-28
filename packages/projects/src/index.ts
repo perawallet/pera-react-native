@@ -33,3 +33,5 @@ export { projectQueryKeys } from './hooks/querykeys'
 
 export { fetchProjectByUrl } from './api/projects'
 export { fetchApplication } from './api/applications'
+
+export { resolveDisplayableVerificationTier } from './utils/verification'

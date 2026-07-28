@@ -18,13 +18,18 @@ import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVer
 
 export type SourceMetadataViewProps = {
     metadata: SignRequestSource
+    /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
+    verifiedOrigin?: string
 }
 
-export const SourceMetadataView = ({ metadata }: SourceMetadataViewProps) => {
+export const SourceMetadataView = ({
+    metadata,
+    verifiedOrigin,
+}: SourceMetadataViewProps) => {
     const styles = useStyles()
 
-    const { displayIcon, displayName, project, handlePressUrl } =
-        useSourceMetadataView(metadata)
+    const { displayIcon, displayName, verificationTier, handlePressUrl } =
+        useSourceMetadataView(metadata, verifiedOrigin)
 
     return (
         <PWView style={styles.container}>
@@ -50,9 +55,9 @@ export const SourceMetadataView = ({ metadata }: SourceMetadataViewProps) => {
                     >
                         {displayName}
                     </PWText>
-                    {!!project?.verificationTier && (
+                    {!!verificationTier && (
                         <ProjectVerificationIcon
-                            tier={project.verificationTier}
+                            tier={verificationTier}
                             size='sm'
                         />
                     )}

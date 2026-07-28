@@ -522,6 +522,10 @@ export const usePeraWebviewInterface = (
                             sourceType: 'webview',
                             transportId: message.id,
                             sourceMetadata: metadata,
+                            // Platform-observed origin — unlike sourceMetadata
+                            // the page can't assert it, so it's what gates the
+                            // verification badge (PERA-4715).
+                            verifiedOrigin: sourceUrl ?? undefined,
                             respondWithResult: result =>
                                 sendMessageToWebview(
                                     message.id,
@@ -722,6 +726,9 @@ export const usePeraWebviewInterface = (
                             sourceType: 'webview',
                             transportId: message.id,
                             sourceMetadata: metadata,
+                            // Platform-observed origin, not page-asserted —
+                            // gates the verification badge (PERA-4715).
+                            verifiedOrigin: sourceUrl ?? undefined,
                             data: [data],
                             approve: async (
                                 signed: PeraArbitraryDataSignResult[],

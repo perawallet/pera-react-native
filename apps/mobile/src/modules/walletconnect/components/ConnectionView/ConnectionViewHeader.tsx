@@ -28,7 +28,10 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
+import {
+    resolveDisplayableVerificationTier,
+    useProjectByUrlQuery,
+} from '@perawallet/wallet-core-projects'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
 import { PermissionItem } from '../PermissionItem'
@@ -44,13 +47,22 @@ export const ConnectionViewHeader = ({
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
 
-    // Same registry lookup the signing views use (SourceMetadataView): the
-    // peer-asserted URL resolves to a Pera-curated verification tier so a
-    // spoofed name/icon at least can't claim the verified checkmark.
+    // The registry is looked up by the peer-asserted URL. That key is
+    // spoofable, so it can never mint the `verified` checkmark: a WalletConnect
+    // request has no platform-observed origin, so `resolveDisplayableVerificationTier`
+    // suppresses the positive tier here. A `suspicious` hit is still surfaced —
+    // fail-loud — so a known-scam URL can't hide (PERA-4715).
     const { data: project } = useProjectByUrlQuery({
         url: request.peerMeta.url,
         isEnabled: !!request.peerMeta.url,
     })
+
+    // WalletConnect never carries a verifiedOrigin, so this only ever resolves
+    // to a `suspicious` warning or nothing — never a spoofed checkmark.
+    const verificationTier = resolveDisplayableVerificationTier(
+        project,
+        undefined,
+    )
 
     const preferredIcon =
         request.peerMeta.icons?.find(
@@ -119,9 +131,9 @@ export const ConnectionViewHeader = ({
                             name: request.peerMeta.name,
                         })}
                     </PWText>
-                    {!!project?.verificationTier && (
+                    {!!verificationTier && (
                         <ProjectVerificationIcon
-                            tier={project.verificationTier}
+                            tier={verificationTier}
                             size='sm'
                         />
                     )}
