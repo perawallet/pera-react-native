@@ -32,8 +32,10 @@ vi.mock(import('@perawallet/wallet-core-multisig'), async importOriginal => {
     return { ...actual }
 })
 
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    generateMultisigAddress,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import { buildMultisigCosignRequest } from '../buildMultisigCosignRequest'
 

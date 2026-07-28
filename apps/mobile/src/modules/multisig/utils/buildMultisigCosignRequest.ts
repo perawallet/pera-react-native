@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    generateMultisigAddress,
+    type PeraTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import {
     decodeFromBase64,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 
