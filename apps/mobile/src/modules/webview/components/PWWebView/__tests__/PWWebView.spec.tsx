@@ -15,8 +15,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, act, screen } from '@test-utils/render'
 import { PWWebView } from '../PWWebView'
 
+import type { WebViewNativeEvent } from 'react-native-webview/lib/WebViewTypes'
+
+// Narrowed to the fields the handler actually reads, but taken from the real
+// event type so the stub can't drift from it.
+type CapturedNavState = Pick<WebViewNativeEvent, 'url' | 'loading'>
+
 type CapturedWebViewProps = {
-    onNavigationStateChange?: (navState: { url: string }) => void
+    onNavigationStateChange?: (navState: CapturedNavState) => void
 }
 
 const { capturedWebViewProps } = vi.hoisted(() => ({
