@@ -191,6 +191,8 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             throw new Error('URL is required')
         }
 
+        ensureClientsBuilt()
+
         const backends = clients.get(requestConfig.network)
 
         if (!backends) {
@@ -380,11 +382,36 @@ const buildClientsFor = (network: Network): BackendInstances => ({
     pera: createPeraClient(network),
 })
 
-for (const network of Object.values(Networks)) {
-    clients.set(network, buildClientsFor(network))
+let clientsInitialized = false
+
+// Builds every network's clients on first use — NEVER at module import
+// time. Importing this module must not require getNetworkConfig() to
+// resolve to a real object: several consuming packages' tests mock it as a
+// bare `vi.fn()` with no default return, and an eager build at import time
+// crashed those suites during collection (packages/card's lsig.spec.ts
+// imports bytesToHex/decodeFromBase64 from this package and got no
+// further).
+//
+// Shared by every call site that touches `clients` — the request path in
+// createFetchClient above and updateBackendHeaders below (and, from a later
+// change, updateNodeEndpoints) — so a lazily-populated map can never be
+// silently incomplete: whichever call site runs first builds ALL 5
+// networks, never just the one it needed. Do not replace this with a
+// per-network build-on-miss — that would silently skip networks nothing
+// has requested yet when updateBackendHeaders (or updateNodeEndpoints) runs
+// before any request has.
+const ensureClientsBuilt = (): void => {
+    if (clientsInitialized) return
+    clientsInitialized = true
+
+    for (const network of Object.values(Networks)) {
+        clients.set(network, buildClientsFor(network))
+    }
 }
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
+    ensureClientsBuilt()
+
     const applyHeaders = (instance: KyInstance): KyInstance =>
         instance.extend({
             hooks: {

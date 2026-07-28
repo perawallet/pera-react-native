@@ -29,14 +29,20 @@ vi.mock('../../utils', async importOriginal => ({
     logger: mockLogger,
 }))
 
-// Mock config. `getNetworkConfig` stands in for the real per-network chain
-// table (packages/config/src/network-config.ts): the fixtures below cover
-// all 5 networks, and `backendUrl` for betanet/fnet/localnet mirrors the
-// real fallback-to-testnet resolution `getNetworkConfig` already performs,
-// so query-client.ts (which trusts that resolution) needs no changes to
-// exercise it here.
-vi.mock('@perawallet/wallet-core-config', () => {
-    const Networks = {
+// Shared fixtures for the @perawallet/wallet-core-config mock below AND for
+// test bodies that assert on per-network values directly (e.g. "this
+// network's algod client used exactly this URL/token"). Hoisted because a
+// vi.mock factory can't reference a later plain `const` (see the mockLogger
+// comment above) and because test bodies need the same values the mock
+// hands back, without duplicating the fixture data in two places.
+const {
+    mockNetworks,
+    chainUrlsByNetwork,
+    backendUrlByLane,
+    peraServiceFallback,
+    resolveFallbackNetwork,
+} = vi.hoisted(() => {
+    const mockNetworks = {
         testnet: 'testnet',
         mainnet: 'mainnet',
         betanet: 'betanet',
@@ -51,7 +57,7 @@ vi.mock('@perawallet/wallet-core-config', () => {
         localnet: 'testnet',
     }
 
-    const resolvePeraServiceNetwork = (network: string): string =>
+    const resolveFallbackNetwork = (network: string): string =>
         peraServiceFallback[network] ?? network
 
     const chainUrlsByNetwork: Record<
@@ -103,20 +109,34 @@ vi.mock('@perawallet/wallet-core-config', () => {
     }
 
     return {
-        config: {
-            debugEnabled: true,
-            backendAPIKey: 'test-api-key',
-        },
-        Networks,
-        getNetworkConfig: (network: string) => ({
-            ...chainUrlsByNetwork[network],
-            backendUrl: backendUrlByLane[resolvePeraServiceNetwork(network)],
-        }),
-        hasPeraServiceFallback: (network: string) =>
-            peraServiceFallback[network] !== undefined,
-        resolvePeraServiceNetwork,
+        mockNetworks,
+        chainUrlsByNetwork,
+        backendUrlByLane,
+        peraServiceFallback,
+        resolveFallbackNetwork,
     }
 })
+
+// Mock config. `getNetworkConfig` stands in for the real per-network chain
+// table (packages/config/src/network-config.ts): the fixtures above cover
+// all 5 networks, and `backendUrl` for betanet/fnet/localnet mirrors the
+// real fallback-to-testnet resolution `getNetworkConfig` already performs,
+// so query-client.ts (which trusts that resolution) needs no changes to
+// exercise it here.
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        debugEnabled: true,
+        backendAPIKey: 'test-api-key',
+    },
+    Networks: mockNetworks,
+    getNetworkConfig: (network: string) => ({
+        ...chainUrlsByNetwork[network],
+        backendUrl: backendUrlByLane[resolveFallbackNetwork(network)],
+    }),
+    hasPeraServiceFallback: (network: string) =>
+        peraServiceFallback[network] !== undefined,
+    resolvePeraServiceNetwork: resolveFallbackNetwork,
+}))
 
 // Mock ky with hooks support
 const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
@@ -446,17 +466,138 @@ describe('queryClient', () => {
         expect(options).not.toHaveProperty('timeout')
     })
 
-    it('creates every client with an explicit capped retry config', async () => {
+    it('lazily builds all 15 clients on first use, never at import time', async () => {
         vi.resetModules()
         mockKy.create.mockClear()
 
-        await import('../query-client')
+        const { queryClient } = await import('../query-client')
 
-        // 5 networks × (pera + algod + indexer)
+        // Importing this module must not call getNetworkConfig(): several
+        // consuming packages' tests mock it as a bare vi.fn() with no
+        // default return, and building eagerly at import time crashes those
+        // suites during collection (see packages/card's lsig.spec.ts).
+        expect(mockKy.create).not.toHaveBeenCalled()
+
+        mockJson.mockResolvedValue({ status: 'ok' })
+        await queryClient({
+            backend: 'algod',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v2/status',
+        })
+
+        // One request for one network builds ALL 5 networks ×
+        // (pera + algod + indexer) — the gate is shared, not a per-network
+        // build-on-miss.
         expect(mockKy.create).toHaveBeenCalledTimes(15)
         for (const [clientConfig] of mockKy.create.mock.calls) {
             expect(clientConfig.retry).toMatchObject({ limit: 1 })
         }
+    })
+
+    it('does not cross-wire algod/indexer URLs or tokens between networks', async () => {
+        vi.resetModules()
+        mockKy.create.mockClear()
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ status: 'ok' })
+
+        await queryClient({
+            backend: 'algod',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v2/status',
+        })
+
+        type CapturedClientConfig = {
+            prefix: string
+            hooks: {
+                beforeRequest: Array<
+                    (state: {
+                        request: { headers: Map<string, string> }
+                    }) => void
+                >
+            }
+        }
+
+        const findClientConfig = (
+            prefix: string,
+        ): CapturedClientConfig | undefined =>
+            mockKy.create.mock.calls.find(
+                ([clientConfig]: [CapturedClientConfig]) =>
+                    clientConfig.prefix === prefix,
+            )?.[0]
+
+        const readHeader = (
+            clientConfig: CapturedClientConfig,
+            headerName: string,
+        ): string | undefined => {
+            const request = { headers: new Map<string, string>() }
+            clientConfig.hooks.beforeRequest[0]({ request })
+            return request.headers.get(headerName)
+        }
+
+        for (const network of Object.values(Networks)) {
+            const { algodUrl, indexerUrl, algodToken, indexerToken } =
+                chainUrlsByNetwork[network]
+
+            const algodConfig = findClientConfig(algodUrl)
+            expect(algodConfig).toBeDefined()
+            expect(
+                readHeader(
+                    algodConfig as CapturedClientConfig,
+                    'X-Algo-API-Token',
+                ),
+            ).toBe(algodToken)
+
+            const indexerConfig = findClientConfig(indexerUrl)
+            expect(indexerConfig).toBeDefined()
+            expect(
+                readHeader(
+                    indexerConfig as CapturedClientConfig,
+                    'X-Indexer-API-Token',
+                ),
+            ).toBe(indexerToken)
+        }
+
+        // A global-token regression would still pass every check above if
+        // every fixture reused one token — they don't: localnet carries its
+        // own dev token, distinct from mainnet's.
+        expect(chainUrlsByNetwork.localnet.algodToken).not.toBe(
+            chainUrlsByNetwork.mainnet.algodToken,
+        )
+    })
+
+    it('resolves pera clients for betanet, fnet and localnet to the testnet backend, not mainnet', async () => {
+        vi.resetModules()
+        mockKy.create.mockClear()
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ success: true })
+
+        await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v1/currencies/',
+        })
+
+        const prefixes = mockKy.create.mock.calls.map(
+            ([clientConfig]: [{ prefix: string }]) => clientConfig.prefix,
+        )
+
+        // MainNet keeps its own Pera backend.
+        expect(
+            prefixes.filter(
+                (prefix: string) => prefix === backendUrlByLane.mainnet,
+            ),
+        ).toHaveLength(1)
+        // TestNet, BetaNet, FNet and LocalNet all collapse onto TestNet's —
+        // none of the 3 borrower networks gets a URL of its own (there isn't
+        // one — Pera services aren't deployed there).
+        expect(
+            prefixes.filter(
+                (prefix: string) => prefix === backendUrlByLane.testnet,
+            ),
+        ).toHaveLength(4)
     })
 
     test('resolves algod for every network, including the new ones', async () => {
@@ -475,28 +616,93 @@ describe('queryClient', () => {
         }
     })
 
-    test('warns once per endpoint when pera traffic borrows testnet', async () => {
-        const { queryClient } = await import('../query-client')
-        mockJson.mockResolvedValue({ success: true })
-        const warn = vi.spyOn(logger, 'warn')
+    describe('pera service fallback warning', () => {
+        test('warns once per endpoint when pera traffic borrows testnet', async () => {
+            const { queryClient } = await import('../query-client')
+            mockJson.mockResolvedValue({ success: true })
+            const warn = vi.spyOn(logger, 'warn')
 
-        await queryClient({
-            backend: 'pera',
-            network: Networks.fnet,
-            method: 'GET',
-            url: '/v1/currencies/',
-        })
-        await queryClient({
-            backend: 'pera',
-            network: Networks.fnet,
-            method: 'GET',
-            url: '/v1/currencies/',
+            await queryClient({
+                backend: 'pera',
+                network: Networks.fnet,
+                method: 'GET',
+                url: '/v1/currencies/',
+            })
+            await queryClient({
+                backend: 'pera',
+                network: Networks.fnet,
+                method: 'GET',
+                url: '/v1/currencies/',
+            })
+
+            const fallbackWarns = warn.mock.calls.filter(([message]) =>
+                String(message).includes('Pera services'),
+            )
+            expect(fallbackWarns).toHaveLength(1)
         })
 
-        const fallbackWarns = warn.mock.calls.filter(([message]) =>
-            String(message).includes('Pera services'),
-        )
-        expect(fallbackWarns).toHaveLength(1)
+        test('records a separate warning for a different endpoint on the same fallback network', async () => {
+            const { queryClient } = await import('../query-client')
+            mockJson.mockResolvedValue({ success: true })
+            const warn = vi.spyOn(logger, 'warn')
+
+            await queryClient({
+                backend: 'pera',
+                network: Networks.betanet,
+                method: 'GET',
+                url: '/v1/currencies/',
+            })
+            await queryClient({
+                backend: 'pera',
+                network: Networks.betanet,
+                method: 'GET',
+                url: '/v1/notifications/',
+            })
+
+            const fallbackWarns = warn.mock.calls.filter(([message]) =>
+                String(message).includes('Pera services'),
+            )
+            // Dedup is keyed per network:method:path — a different path on
+            // the same network is a separate endpoint and warns again.
+            expect(fallbackWarns).toHaveLength(2)
+        })
+
+        test('does not warn for mainnet or testnet pera traffic', async () => {
+            const { queryClient } = await import('../query-client')
+            mockJson.mockResolvedValue({ success: true })
+            const warn = vi.spyOn(logger, 'warn')
+
+            await queryClient({
+                backend: 'pera',
+                network: Networks.mainnet,
+                method: 'GET',
+                url: '/v1/currencies/',
+            })
+            await queryClient({
+                backend: 'pera',
+                network: Networks.testnet,
+                method: 'GET',
+                url: '/v1/currencies/',
+            })
+
+            const fallbackWarns = warn.mock.calls.filter(([message]) =>
+                String(message).includes('Pera services'),
+            )
+            expect(fallbackWarns).toHaveLength(0)
+        })
+    })
+
+    it('updateBackendHeaders reaches every network even when called before any request', async () => {
+        vi.resetModules()
+        mockKy.extend.mockClear()
+        const { updateBackendHeaders } = await import('../query-client')
+
+        updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
+
+        // 5 networks × (algod + indexer + pera) — updateBackendHeaders must
+        // build before extending, not silently skip networks nothing has
+        // requested yet.
+        expect(mockKy.extend).toHaveBeenCalledTimes(15)
     })
 
     it('does not re-append the request logger when extending clients', async () => {
