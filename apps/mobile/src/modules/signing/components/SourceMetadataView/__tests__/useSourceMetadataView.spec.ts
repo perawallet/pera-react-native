@@ -12,7 +12,11 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
+import {
+    useProjectByUrlQuery,
+    type PeraProject,
+    type UseProjectByUrlQueryResult,
+} from '@perawallet/wallet-core-projects'
 import { useSourceMetadataView } from '../useSourceMetadataView'
 
 // Keep the real `resolveDisplayableVerificationTier` so the trust logic runs;
@@ -28,17 +32,22 @@ vi.mock('@modules/webview/hooks', () => ({
     useWebView: () => ({ pushWebView: vi.fn() }),
 }))
 
-const verifiedTinyman = {
+const verifiedTinyman: PeraProject = {
     name: 'Tinyman',
     url: 'https://tinyman.org',
-    verificationTier: 'verified' as const,
+    verificationTier: 'verified',
 }
+
+// Only `data` is read by the hook; the rest of TanStack's UseQueryResult union
+// isn't worth constructing.
+const stubProjectQuery = (project: PeraProject) =>
+    vi.mocked(useProjectByUrlQuery).mockReturnValue({
+        data: project,
+    } as unknown as UseProjectByUrlQueryResult)
 
 describe('useSourceMetadataView — verified-badge gating (PERA-4715)', () => {
     it('suppresses the verified badge without a verifiedOrigin (WalletConnect)', () => {
-        ;(useProjectByUrlQuery as any).mockReturnValue({
-            data: verifiedTinyman,
-        })
+        stubProjectQuery(verifiedTinyman)
 
         const { result } = renderHook(() =>
             useSourceMetadataView({
@@ -51,9 +60,7 @@ describe('useSourceMetadataView — verified-badge gating (PERA-4715)', () => {
     })
 
     it('shows the verified badge when a webview verifiedOrigin host-matches', () => {
-        ;(useProjectByUrlQuery as any).mockReturnValue({
-            data: verifiedTinyman,
-        })
+        stubProjectQuery(verifiedTinyman)
 
         const { result } = renderHook(() =>
             useSourceMetadataView(
@@ -66,9 +73,7 @@ describe('useSourceMetadataView — verified-badge gating (PERA-4715)', () => {
     })
 
     it('always surfaces a suspicious badge', () => {
-        ;(useProjectByUrlQuery as any).mockReturnValue({
-            data: { ...verifiedTinyman, verificationTier: 'suspicious' },
-        })
+        stubProjectQuery({ ...verifiedTinyman, verificationTier: 'suspicious' })
 
         const { result } = renderHook(() =>
             useSourceMetadataView({ url: 'https://tinyman.org' }),
