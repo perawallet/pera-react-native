@@ -55,12 +55,22 @@ const QUANTUM_SWAP_FEE_BLOCKED_MESSAGE =
 const QUANTUM_SWAP_PROPOSE_BLOCKED_MESSAGE =
     'Quantum accounts cannot propose shared-account swaps: quantum keys cannot participate in multisig signing.'
 
-/** Rejects with the given message when `account` is a quantum account. */
+/**
+ * Rejects with the given message when `signer` is a quantum account.
+ *
+ * Callers MUST pass the resolved EFFECTIVE signer (e.g. via `useSignerFor`),
+ * not the raw selected/sender account: a standard or multisig account rekeyed
+ * to a quantum auth account still has its own nominal `type` (e.g. `algo25`),
+ * but Falcon-signs via the resolved auth account. Checking the raw account's
+ * `type` alone would let a rekeyed-to-quantum sender sail past this guard —
+ * see `useTransactionConfirmationScreen`'s `isQuantumFee` for the same
+ * resolve-then-check pattern.
+ */
 const rejectIfQuantumAccount = (
-    account: Nullable<WalletAccount>,
+    signer: Nullable<WalletAccount>,
     message: string,
 ): Optional<Promise<never>> => {
-    if (account && isQuantumAccount(account)) {
+    if (signer && isQuantumAccount(signer)) {
         return Promise.reject(new Error(message))
     }
     return undefined
@@ -111,13 +121,15 @@ type AddSignRequestFn = (request: TransactionSignRequest) => void
 
 export const requestSwapSignatures = (
     addSignRequest: AddSignRequestFn,
-    account: Nullable<WalletAccount>,
+    // Resolved effective signer (`useSignerFor`), not the raw selected
+    // account — see {@link rejectIfQuantumAccount}.
+    signer: Nullable<WalletAccount>,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
     groupContext: PeraTransaction[],
 ): Promise<PeraSignedTransaction[]> => {
     const blocked = rejectIfQuantumAccount(
-        account,
+        signer,
         QUANTUM_SWAP_FEE_BLOCKED_MESSAGE,
     )
     if (blocked) return blocked
@@ -171,20 +183,24 @@ export type SwapProposedInfo = {
  * error if the propose itself fails.
  *
  * Quantum accounts are excluded from multisig participation entirely
- * elsewhere in the app, so `account` here should never be quantum in
+ * elsewhere in the app, so `signer` here should never be quantum in
  * practice — the guard below is defence in depth against that assumption
  * ever breaking silently (see {@link QUANTUM_SWAP_PROPOSE_BLOCKED_MESSAGE}).
+ * A multisig account can itself be rekeyed to a quantum auth account, so
+ * this still must receive the resolved signer, not the raw multisig account.
  */
 export const requestSwapProposal = (
     addSignRequest: AddSignRequestFn,
-    account: Nullable<WalletAccount>,
+    // Resolved effective signer (`useSignerFor`), not the raw selected
+    // account — see {@link rejectIfQuantumAccount}.
+    signer: Nullable<WalletAccount>,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
     groupContext: PeraTransaction[],
     onProposed: (info: SwapProposedInfo) => void,
 ): Promise<void> => {
     const blocked = rejectIfQuantumAccount(
-        account,
+        signer,
         QUANTUM_SWAP_PROPOSE_BLOCKED_MESSAGE,
     )
     if (blocked) return blocked

@@ -41,6 +41,7 @@ const mockPrepareTransactions = vi.fn()
 const mockUpdateSwapStatus = vi.fn()
 const mockRegisterHandoff = vi.fn()
 const mockUseSelectedAccount = vi.fn()
+const mockUseSignerFor = vi.fn()
 const mockIsMultisigAccount = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
 // runs during the package import.
@@ -159,6 +160,12 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => mockUseSelectedAccount(),
+    // Default (set in beforeEach) mirrors the "not rekeyed" case: the
+    // resolved signer IS the selected account. Tests exercising a
+    // rekeyed-to-quantum sender override this independently of
+    // `mockUseSelectedAccount`, matching the real `useSignerFor` contract
+    // where the resolved signer can differ from the address's own account.
+    useSignerFor: () => mockUseSignerFor(),
     isMultisigAccount: (account: unknown) => mockIsMultisigAccount(account),
     // Real predicate is `account.type === 'quantum'` — mirrored narrowly here
     // rather than mocked with a spy since every test that needs it exercises
@@ -239,6 +246,18 @@ const quantumAccount: WalletAccount = {
     keyPairId: 'quantum-keypair-1',
 }
 
+// A standard (non-quantum) account rekeyed to a quantum auth account:
+// `type` stays 'algo25' (its own nominal kind), but the wallet's resolved
+// signer for it is the quantum account above — the exact case
+// `isQuantumAccount(account)` alone would miss.
+const standardAccountRekeyedToQuantum: WalletAccount = {
+    id: 'standard-account-1',
+    address: 'STANDARD_ADDR',
+    type: 'algo25',
+    keyPairId: 'standard-keypair-1',
+    rekeyAddress: quantumAccount.address,
+}
+
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
     ({
         txn: { txID: () => id },
@@ -306,6 +325,9 @@ describe('useSwapExecution', () => {
         // flow. The shared-account branch only triggers for multisig senders.
         mockUseSelectedAccount.mockReturnValue(undefined)
         mockIsMultisigAccount.mockReturnValue(false)
+        // Default: resolved signer mirrors the selected account (the "not
+        // rekeyed" case). Rekey tests override this independently.
+        mockUseSignerFor.mockImplementation(() => mockUseSelectedAccount())
     })
 
     it('starts with idle status', () => {
@@ -694,6 +716,63 @@ describe('useSwapExecution', () => {
         })
     })
 
+    it('rejects a swap for a standard account rekeyed to a quantum auth account', async () => {
+        // Regression: `isQuantumAccount` is a raw `type === 'quantum'` tag
+        // check. The selected account here is nominally 'algo25' — checking
+        // ITS type would let this sail past both guards. The guard must key
+        // off the resolved EFFECTIVE signer (`useSignerFor`, one rekey hop),
+        // which for this account resolves to the quantum auth account.
+        mockUseSelectedAccount.mockReturnValue(standardAccountRekeyedToQuantum)
+        mockUseSignerFor.mockReturnValue(quantumAccount)
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-rekeyed-quantum'),
+            )
+        })
+
+        // Same fee message as the direct-quantum case: the backend fee is
+        // the actual blocker either way, regardless of how the quantum-ness
+        // arrives.
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'signing',
+            message: expect.stringMatching(/fee/i),
+        })
+        expect(result.current.status).toBe('error')
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+    })
+
+    it('swaps successfully for a standard account that is NOT rekeyed', async () => {
+        // Companion to the regression test above: resolving the effective
+        // signer must not start rejecting ordinary, non-rekeyed swaps. The
+        // resolved signer here is the account itself (no rekey hop).
+        const standardAccount: WalletAccount = {
+            id: 'standard-account-2',
+            address: 'STANDARD_ADDR_2',
+            type: 'algo25',
+            keyPairId: 'standard-keypair-2',
+        }
+        mockUseSelectedAccount.mockReturnValue(standardAccount)
+        mockUseSignerFor.mockReturnValue(standardAccount)
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-standard-not-rekeyed'),
+            )
+        })
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(result.current.status).toBe('success')
+        expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+    })
+
     it('guards the shared-account propose path for quantum proposers', async () => {
         // `requestSwapProposal` feeds `createMultisigStrategy`'s
         // `extractSignatures`, which returns `null` for a quantum result —
@@ -936,6 +1015,33 @@ describe('useSwapExecution', () => {
             expect(outcome).toEqual({ kind: 'success' })
             expect(mockRegisterHandoff).not.toHaveBeenCalled()
             expect(mockSendRawTransaction).toHaveBeenCalled()
+        })
+
+        it('guards the propose path when the multisig account is itself rekeyed to a quantum auth account', async () => {
+            // A multisig account can carry its own `rekeyAddress` like any
+            // other account. If it were rekeyed to a quantum auth account,
+            // the resolved signer for it would be quantum even though
+            // `multisigAccount.type` says nothing of the sort — the propose
+            // guard must key off that resolved signer, not the raw account.
+            mockUseSignerFor.mockReturnValue(quantumAccount)
+
+            const { result } = renderHook(() => useSwapExecution())
+
+            let outcome: Optional<SwapExecutionOutcome>
+            await act(async () => {
+                outcome = await result.current.execute(
+                    makeQuote('quote-msig-rekeyed-quantum'),
+                )
+            })
+
+            expect(outcome).toEqual({
+                kind: 'error',
+                phase: 'signing',
+                message: expect.stringMatching(/quantum/i),
+            })
+            expect(result.current.status).toBe('error')
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockRegisterHandoff).not.toHaveBeenCalled()
         })
     })
 })
