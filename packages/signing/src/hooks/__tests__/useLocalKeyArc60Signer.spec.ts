@@ -81,6 +81,12 @@ const hardwareAccount = {
     },
 } as unknown as WalletAccount
 
+const quantumAccount = {
+    address: 'QUANTUM_ADDR',
+    keyPairId: 'key-quantum-falcon',
+    type: 'quantum',
+} as unknown as WalletAccount
+
 const domain = 'arc60.io'
 const rpIdHash = sha256(new TextEncoder().encode(domain))
 const validAuthData = new Uint8Array([...rpIdHash, 0x05])
@@ -360,6 +366,52 @@ describe('useLocalKeyArc60Signer', () => {
                 )
             }),
         ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+    })
+
+    test('signs ARC-60 data for a quantum account, on the same arm as Algo25', async () => {
+        mockSignDataWithKey.mockResolvedValue([new Uint8Array([9])])
+        const quantumSiwa = new TextEncoder().encode(
+            buildSiwa({ account_address: 'QUANTUM_ADDR' }),
+        )
+
+        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        let signature: Optional<Uint8Array>
+        await act(async () => {
+            signature = await result.current.signArc60(
+                quantumAccount,
+                {
+                    ...validStdSigData,
+                    data: encodeToBase64(quantumSiwa),
+                    signer: 'QUANTUM_ADDR',
+                },
+                validMetadata,
+            )
+        })
+
+        expect(signature).toBeInstanceOf(Uint8Array)
+        const [childId] = mockSignDataWithKey.mock.calls[0]
+        expect(childId).toBe('key-quantum-falcon')
+    })
+
+    test('rejects an hdPath for a quantum account, as it does for algo25', async () => {
+        const quantumSiwa = new TextEncoder().encode(
+            buildSiwa({ account_address: 'QUANTUM_ADDR' }),
+        )
+        const { result } = renderHook(() => useLocalKeyArc60Signer())
+        await expect(
+            act(async () => {
+                await result.current.signArc60(
+                    quantumAccount,
+                    {
+                        ...validStdSigData,
+                        data: encodeToBase64(quantumSiwa),
+                        signer: 'QUANTUM_ADDR',
+                        hdPath: "m/44'/283'/0'/0/0",
+                    },
+                    validMetadata,
+                )
+            }),
+        ).rejects.toBeInstanceOf(Arc60FailedHdPathError)
     })
 
     test('rejects a Ledger account (raw-byte signing unsupported on device)', async () => {
