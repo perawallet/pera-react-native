@@ -44,6 +44,10 @@ export {
     compileAutoDrawProgram,
     postDelegatorLsig,
     resolveEscrowChainConfig,
+    // Thrown when algod's compiled program doesn't match the pinned bytes.
+    // Exported so the funding-type flows can degrade to Manual with honest
+    // copy instead of a generic "please try again" (PERA-4712).
+    AutoDrawProgramUnverifiedError,
     type EscrowChainConfig,
     type PostDelegatorLsigParams,
 } from './api/escrow'

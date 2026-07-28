@@ -15,6 +15,7 @@ import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     bytesToHex,
     decodeFromBase64,
+    encodeToBase64,
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { CardEscrowNotConfiguredError } from '../transport'
@@ -99,11 +100,51 @@ export const renderAutoDrawTeal = ({
 }
 
 /**
- * Renders the AutoDraw template for the network and compiles it via algod,
- * returning the raw program bytes. This is the program the user delegates by
- * signing — compiled from a vendored template we control, so there is no
- * blind-signing of a server-supplied program (unlike the old delegation flow's
- * `verifyDelegationProgram`).
+ * Base64 of the compiled AutoDraw program pinned per network. The compile
+ * output is deterministic (fixed template + app IDs + genesis hash), so the
+ * bytes algod returns MUST equal the value pinned here.
+ *
+ * EMPTY until the compiled artifacts are generated per network and committed:
+ * render the template for the network, compile once, base64 the result, and
+ * drop the string in here. Until a network is pinned, {@link verifyAutoDrawProgram}
+ * fails closed for it — the wallet refuses to sign rather than trust an
+ * unverified algod-returned program. (PERA-4712, PROVIDE BEFORE LAUNCH)
+ */
+export const EXPECTED_AUTODRAW_PROGRAMS: Partial<Record<Network, string>> = {}
+
+/** Thrown when algod's compiled AutoDraw program doesn't match the pinned bytes. */
+export class AutoDrawProgramUnverifiedError extends Error {
+    constructor(network: Network) {
+        super(
+            `AutoDraw program for ${network} does not match the pinned program`,
+        )
+        this.name = 'AutoDrawProgramUnverifiedError'
+    }
+}
+
+/**
+ * Fails closed unless the compiled program exactly matches the pinned bytes for
+ * the network. Runs in EVERY environment — staging/testnet builds sign real
+ * user keys too, so there is no production-only escape hatch (unlike
+ * `verifyDelegationProgram`). An unpinned network has no expected value, so
+ * this always rejects until a program is pinned above. (PERA-4712)
+ */
+export const verifyAutoDrawProgram = (
+    program: Uint8Array,
+    network: Network,
+    expected: Partial<Record<Network, string>> = EXPECTED_AUTODRAW_PROGRAMS,
+): void => {
+    if (encodeToBase64(program) !== expected[network]) {
+        throw new AutoDrawProgramUnverifiedError(network)
+    }
+}
+
+/**
+ * Renders the AutoDraw template for the network, compiles it via algod, and
+ * returns the raw program bytes — after verifying them against the pinned
+ * program. The *compiled bytes* (not the trusted template source) are what the
+ * user delegates by signing, and algod is a third-party node, so its output is
+ * checked before it can be signed. (PERA-4712)
  */
 export const compileAutoDrawProgram = async ({
     network,
@@ -123,5 +164,7 @@ export const compileAutoDrawProgram = async ({
     const { result } = await getAlgorandClient(network)
         .client.algod.compile(teal)
         .do()
-    return decodeFromBase64(result)
+    const program = decodeFromBase64(result)
+    verifyAutoDrawProgram(program, network)
+    return program
 }
