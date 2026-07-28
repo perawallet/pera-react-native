@@ -348,6 +348,79 @@ describe('useLocalKeyTransactionSigner', () => {
             expect(signed).toHaveLength(1)
             expect(signed[0].pqsig).toBeDefined()
             expect(signed[0].sig).toBeUndefined()
+
+            // Pin the full PQSignature handed to the adapter, not just that
+            // `pqsig` exists. `assemblePQSignedTransaction` derives BOTH the
+            // authorizing address and the `sgnr` decision from `publicKey`
+            // (see quantumAdapter.ts), so a wrong or stale public key yields
+            // a wrong or spurious `sgnr` with no other visible symptom — and
+            // the mock echoes the signature back, so it cannot catch that on
+            // its own.
+            expect(assemblePQSignedTransactionMock).toHaveBeenCalledTimes(1)
+            expect(assemblePQSignedTransactionMock).toHaveBeenCalledWith({
+                txn,
+                signature: {
+                    schemeId: 'falcon1024',
+                    publicKey: new Uint8Array([5]),
+                    signature: new Uint8Array([1, 2, 3]),
+                },
+            })
+        })
+
+        test('pairs each signature with its own transaction across a multi-transaction group', async () => {
+            // Three transactions, three distinct signatures: an off-by-one or
+            // a reused index in the `pqInfo` branch's `signatures[idx]`
+            // pairing would put the wrong signature on the wrong txn, which a
+            // single-transaction group can never reveal.
+            const txns = [
+                makeTxn('QUANTUM_ADDR'),
+                makeTxn('QUANTUM_ADDR'),
+                makeTxn('QUANTUM_ADDR'),
+            ]
+            const signatures = [
+                new Uint8Array([10]),
+                new Uint8Array([20]),
+                new Uint8Array([30]),
+            ]
+            mockSignTransactionsWithKey.mockResolvedValue(signatures)
+            // Distinct digest per txn so the payload ordering is pinned too.
+            pqSigningDigestMock.mockImplementation(
+                (txn: unknown) =>
+                    new Uint8Array([txns.indexOf(txn as never) + 1]),
+            )
+
+            const { result } = renderHook(() => useLocalKeyTransactionSigner())
+            const signed = await result.current.signTransactions(
+                txns,
+                [0, 1, 2],
+                quantumAccount,
+            )
+
+            expect(mockSignTransactionsWithKey).toHaveBeenCalledWith(
+                quantumAccount.keyPairId,
+                SIGNING_KEY_DOMAIN,
+                [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])],
+            )
+
+            expect(assemblePQSignedTransactionMock).toHaveBeenCalledTimes(3)
+            txns.forEach((txn, idx) => {
+                expect(assemblePQSignedTransactionMock).toHaveBeenNthCalledWith(
+                    idx + 1,
+                    {
+                        txn,
+                        signature: {
+                            schemeId: 'falcon1024',
+                            publicKey: new Uint8Array([5]),
+                            signature: signatures[idx],
+                        },
+                    },
+                )
+            })
+
+            expect(signed).toHaveLength(3)
+            signed.forEach((signedTxn, idx) => {
+                expect(signedTxn.pqsig?.sig).toEqual(signatures[idx])
+            })
         })
 
         test('signs the SHA-512/256 digest, not the raw encoding, for quantum accounts', async () => {

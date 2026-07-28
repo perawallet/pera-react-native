@@ -95,6 +95,7 @@ type WebviewAccountType =
     | 'HDWallet'
     | 'Hardware'
     | 'Multisig'
+    | 'Quantum'
     | 'Unsignable'
     | 'RekeyedSignable'
     | 'RekeyedUnsignable'
@@ -108,7 +109,14 @@ const BASE_WEBVIEW_TYPE: Record<
     [AccountTypes.hardware]: 'Hardware',
     [AccountTypes.multisig]: 'Multisig',
     [AccountTypes.watch]: 'Unsignable',
-    [AccountTypes.quantum]: 'Algo25',
+    // Quantum gets its own name rather than being aliased to `Algo25`:
+    // "Algo25" would state something untrue about the key type. A dApp told
+    // `Algo25` expects a 64-byte Ed25519 signature it can verify against a
+    // recoverable public key; a quantum account hands back a ~1.2 KB Falcon
+    // signature and yields no Ed25519 public key at all. The webapp is being
+    // updated to these names in lockstep (see the block comment above), so
+    // adding a name is the correct move here.
+    [AccountTypes.quantum]: 'Quantum',
 }
 
 /**

@@ -119,7 +119,7 @@ describe('pq adapter', () => {
         expect(decoded.sgnr).toBeUndefined()
     })
 
-    it('sets sgnr when the transaction sender is rekeyed to the quantum address', () => {
+    it('sets sgnr when the transaction sender is rekeyed to the quantum address', async () => {
         const { publicKey, privateKey } = buildKeypair()
         const quantumAddress = deriveQuantumAddress(publicKey)
         const txn = makePaymentTxnWithSuggestedParamsFromObject({
@@ -130,19 +130,32 @@ describe('pq adapter', () => {
         })
         const signature = signCompressed(privateKey, pqSigningDigest(txn))
 
-        const decoded = decodeSignedTransaction(
-            encodeMsgpack(
-                assemblePQSignedTransaction({
-                    txn,
-                    signature: {
-                        schemeId: 'falcon1024',
-                        publicKey,
-                        signature,
-                    },
-                }),
-            ),
+        const ours = encodeMsgpack(
+            assemblePQSignedTransaction({
+                txn,
+                signature: {
+                    schemeId: 'falcon1024',
+                    publicKey,
+                    signature,
+                },
+            }),
         )
 
+        const decoded = decodeSignedTransaction(ours)
         expect(decoded.sgnr?.toString()).toBe(quantumAddress)
+
+        // Byte-equality against the fork's own signer for the REKEYED case
+        // too, not just `sgnr`: `sgnr` alone would still pass if the rekeyed
+        // encoding diverged in any other field, and the rekey path is exactly
+        // where an extra/missing `sgnr` changes the bytes a node verifies.
+        const { txnSigner } = addressWithSignersFromRawPQSigner({
+            pqScheme: FALCON_1024_SCHEME,
+            pqPublicKey: publicKey,
+            pqSigner: bytesToSign =>
+                Promise.resolve(signCompressed(privateKey, bytesToSign)),
+        })
+        const [reference] = await txnSigner([txn], [0])
+
+        expect(ours).toEqual(reference)
     })
 })

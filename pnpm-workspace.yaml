@@ -51,7 +51,13 @@ catalog:
   # algosdk (3.6.0) does not yet ship. Application code imports `algosdk`
   # only; this line is the single place the fork is named.
   # SWAP-BACK: when official algosdk 3.7.0 ships with pqsig, change this to
-  # `^3.7.0`. No source file changes are required.
+  # `^3.7.0`. No SOURCE file changes are required, but two workspace-config
+  # edits are: drop the now-dead `@joe-p/algosdk` entry from
+  # `minimumReleaseAgeExclude` below, and drop the matching `algosdk` entry
+  # from `overrides`. Note that a brand-new official 3.7.0 will itself be
+  # inside the `minimumReleaseAge` window for its first 7 days, so resolution
+  # will fail until the window passes — wait it out rather than adding a
+  # permanent carveout for a package that no longer needs one.
   algosdk: 'npm:@joe-p/algosdk@3.7.0-beta.1'
   before-after-hook: ^4.0.0
   buffer: ^6.0.3
@@ -96,8 +102,10 @@ minimumReleaseAgeExclude:
   - '@algorandfoundation/keystore'
   - '@algorandfoundation/react-native-keystore'
   - '@algorandfoundation/react-native-passkey-autofill'
+  # Matched by RESOLVED package name, so this one entry covers the `algosdk`
+  # catalog alias too. Remove it at algosdk swap-back time (see the
+  # `SWAP-BACK:` comment on the `algosdk` catalog entry above).
   - '@joe-p/algosdk'
-  - algosdk
   - '@joe-p/react-native-falcon'
   - falcon-1024
   - fast-uri

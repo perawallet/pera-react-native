@@ -10,8 +10,8 @@ they can be replaced with official Algorand code later via a one-module
 change. The algosdk fork is installed under the official `algosdk` package
 name via a pnpm catalog alias + global override in `pnpm-workspace.yaml`, so
 application code (including Seam B below) imports plain `algosdk`; its swap
-point is the one-line specifier change described there (see the
-`SWAP-BACK:` comment), not a source-level import.
+point is a workspace-config change described there (see the `SWAP-BACK:`
+comment and "Swap-back procedure" below), not a source-level import.
 
 ## Seam A — PQ crypto provider (`packages/kms/src/crypto/pq/`)
 
@@ -88,9 +88,16 @@ becomes mainline.
 2. **Official algosdk with `pqsig`** — change the `algosdk` catalog entry (and
    its matching `overrides` entry) in `pnpm-workspace.yaml` from the fork
    alias to the official release, per the `SWAP-BACK:` comment there. No
-   source file changes are required — quantum transactions already assemble
+   **source** file changes are required — quantum transactions already assemble
    as plain `SignedTransaction`s with `pqsig` set (Seam B, PQ-023 below), so
-   there is no byte-threading to remove.
+   there is no byte-threading to remove. Two further **workspace-config** edits
+   are: remove the now-dead `@joe-p/algosdk` entry from
+   `minimumReleaseAgeExclude` (that entry matches by resolved package name, so
+   it covers the `algosdk` alias too — there is no separate `algosdk` entry),
+   and remove the matching `algosdk` `overrides` entry. Expect a brand-new
+   official 3.7.0 to sit inside the 7-day `minimumReleaseAge` window for its
+   first week; wait the window out rather than adding a carveout for a package
+   that no longer needs one.
 
 Seam A's source files carry a `// SWAP:` marker pointing back here; the
 algosdk fork's swap point lives in the `SWAP-BACK:` comment in
@@ -113,8 +120,8 @@ PQ-018 (the seam integration) established the seams. Submission is no longer
 gated (PQ-019/PQ-021 — see the "Submission is quantum-agnostic" bullet under
 PQ-006 above): a quantum-signed group broadcasts through the ordinary
 algod/callback transports unchanged. Whether it lands on-chain depends
-entirely on the node, not on any app-side check — LocalNet accepts `pqsig`
-today; no public network does (see PQ-023 below).
+entirely on the node, not on any app-side check — and **no algod available
+today accepts `pqsig`**, LocalNet included (see PQ-023 below).
 
 ## PQ-006 / PERA-4488 — local signing (landed)
 
@@ -153,8 +160,9 @@ Quantum accounts now sign locally end-to-end on real Falcon-1024:
 - **Submission is quantum-agnostic (PQ-019/PQ-021)** — no gate or mock: a
   quantum-signed group is a plain `PeraSignedTransaction` with `pqsig` set,
   so it broadcasts through the ordinary algod/callback transports unchanged.
-  It reaches the chain only on a `pqsig`-capable node (LocalNet today);
-  other nodes reject it at submit.
+  It reaches the chain only on a `pqsig`-capable node, and **no such algod
+  exists yet** — every node available today (LocalNet included) rejects it at
+  submit.
 
 ## PQ-020 — native on-device Falcon (landed; device verification pending)
 
@@ -204,12 +212,24 @@ publicKey)` and is therefore not carried on the type.
   preimage would have shipped silently, since no node verifies `pqsig` today.
   Whatever signs on the other side of Seam B (KMS, hardware, etc.) must sign
   `pqSigningDigest(txn)`, never `txn.bytesToSign()` directly.
-- **LocalNet verification** — end-to-end exercise of derive → sign → assemble
-  → submit against a real node is separate follow-up tooling
-  (`pnpm localnet:quantum-check`); today, manual verification is limited to
-  the on-device checklist above plus the differential test in
-  `quantumAdapter.spec.ts`.
-- **No public algod accepts `pqsig` yet** — verified as of 2026-07-28: both
-  `algod` 4.7.4-stable and `rel/nightly` build 2680 reject transactions
-  carrying a `pqsig` field. LocalNet (built from the fork) is the only place
-  a quantum-signed transaction is currently confirmed on-chain.
+- **LocalNet verification** — `pnpm localnet:quantum-check` (shipped on this
+  branch; documented in `README.md`) exercises derive → fund → sign →
+  assemble → submit against a real node. It asserts everything that can be
+  asserted today, including that our assembled bytes are byte-identical to
+  algosdk's own PQ signer output, and then attempts broadcast. Because no
+  available algod accepts `pqsig` (next bullet), the expected outcome today is
+  **PENDING at exit 0** — that is the designed result, not a failure, and the
+  narrow `PQSIG_UNSUPPORTED` match is what keeps it meaningful: any _other_
+  submission failure, and any accepted-but-unconfirmed transaction, is a
+  loud FAIL. **Do not "fix" the tier logic to make PENDING go away.** The
+  script converts to a true PASS, unchanged, the day a `pqsig`-capable algod
+  ships. Alongside it, manual verification comprises the on-device checklist
+  above plus the differential test in `quantumAdapter.spec.ts`.
+- **No available algod accepts `pqsig` yet** — verified as of 2026-07-28: both
+  `algod` 4.7.4-stable (the version this repo's `algokit localnet start`
+  runs) and `algorand/algod:nightly` build 2680 reject transactions carrying a
+  `pqsig` field, with `no matching struct field found ... key pqsig`. There is
+  no fork-built algod anywhere in this repo, LocalNet included. Consequently a
+  quantum-signed transaction **cannot be confirmed on any network today** —
+  not mainnet, not testnet, not LocalNet. Everything up to submission is
+  verified; broadcast is not.

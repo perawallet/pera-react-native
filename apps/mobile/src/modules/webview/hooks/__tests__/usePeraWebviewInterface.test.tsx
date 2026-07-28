@@ -873,9 +873,11 @@ describe('usePeraWebviewInterface', () => {
             ])
         })
 
-        it('reports quantum accounts as signable, not Unsignable', async () => {
-            // PQ-006 shipped quantum signing routing; the webview bridge must
-            // no longer tell dApps a quantum account is unsignable.
+        it('reports quantum accounts as their own Quantum type', async () => {
+            // PQ-006 shipped quantum signing routing, so the bridge must no
+            // longer tell dApps a quantum account is unsignable — but it must
+            // not claim `Algo25` either: a quantum account produces a ~1.2 KB
+            // Falcon signature with no recoverable Ed25519 public key.
             await setupAccountsMock({
                 accounts: [
                     {
@@ -902,7 +904,7 @@ describe('usePeraWebviewInterface', () => {
 
             const payload = getPayload()
             expect(payload).toHaveLength(1)
-            expect(payload[0].type).not.toBe('Unsignable')
+            expect(payload[0].type).toBe('Quantum')
         })
 
         it('sends empty name string when account has no name', async () => {

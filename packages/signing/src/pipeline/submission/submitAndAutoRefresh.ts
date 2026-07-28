@@ -66,8 +66,9 @@ export interface SubmitAndAutoRefreshCoreInput {
  * `encodeSignedTransaction` emits the node-ready bytes the same way it does
  * for any other transaction, and a quantum-signed group broadcasts through
  * the same path. It therefore reaches the chain only on a `pqsig`-capable
- * node (LocalNet until an official algod ships Falcon support); other nodes
- * reject it at submit.
+ * node, and no algod available today is one — mainnet, testnet and LocalNet
+ * alike reject `pqsig` at submit, so a quantum-signed group cannot currently
+ * be confirmed anywhere. See `docs/QUANTUM_PQ_INTEGRATION.md`.
  *
  * Exposed primarily for unit testing — call sites use {@link submitAndAutoRefresh}.
  */
