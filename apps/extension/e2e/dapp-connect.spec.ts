@@ -65,6 +65,21 @@ let dappOrigin: string
 let grantedAddress: string
 const PASSWORD = 'e2e-dapp-connect-password-1'
 
+// The approval handler calls window.close(), so the popup can vanish while
+// Playwright is still finishing the click — surfacing as "Target page, context
+// or browser has been closed". That rejection means the click landed, not that
+// it failed, so it's swallowed; every caller asserts the approval's effect on
+// the dapp page immediately after, which is what actually proves the click.
+const clickAcceptingPopupClose = async (locator: Locator): Promise<void> => {
+    try {
+        await locator.click()
+    } catch (error) {
+        if (!/has been closed/i.test(String(error))) {
+            throw error
+        }
+    }
+}
+
 // Module-eval crashes in the extension bundle otherwise surface as bare
 // selector timeouts with no indication of the real cause (see onboarding.spec.ts).
 const trackPageErrors = (targetPage: Page): Error[] => {
@@ -314,7 +329,7 @@ test('enable opens the approval popup; approving one account returns it', async 
     }
     await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
 
-    await connectButton.click()
+    await clickAcceptingPopupClose(connectButton)
 
     await expect
         .poll(() => dappPage.locator('#enable-accounts').textContent(), {
@@ -422,7 +437,7 @@ test('enable prompts again after the permission was revoked in Settings', async 
     if (!alreadySelected) {
         await approvalPage.getByRole('checkbox').first().click()
     }
-    await connectButton.click()
+    await clickAcceptingPopupClose(connectButton)
 
     await expect
         .poll(() => dappPage.locator('#enable-accounts').textContent(), {
