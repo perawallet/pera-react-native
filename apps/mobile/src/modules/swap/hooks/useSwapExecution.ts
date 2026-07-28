@@ -53,6 +53,7 @@ import {
 } from './swapGroupPlan'
 import {
     isUserRejectionError,
+    QuantumSwapBlockedError,
     requestSwapSignatures,
     requestSwapProposal,
     reportSwapFailure,
@@ -289,9 +290,13 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     const isRejection = isUserRejectionError(e)
                     const message = isRejection
                         ? t('swap.execution.user_rejected')
-                        : e instanceof Error
-                          ? e.message
-                          : 'Failed to propose transactions'
+                        : // Guard rejections carry an i18n key, not English
+                          // prose — this branch is the display site.
+                          e instanceof QuantumSwapBlockedError
+                          ? t(e.translationKey)
+                          : e instanceof Error
+                            ? e.message
+                            : 'Failed to propose transactions'
                     setError({ phase: 'signing', message })
                     setStatus('error')
                     if (isRejection) {
@@ -330,9 +335,13 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 const isRejection = isUserRejectionError(e)
                 const message = isRejection
                     ? t('swap.execution.user_rejected')
-                    : e instanceof Error
-                      ? e.message
-                      : 'Failed to sign transactions'
+                    : // Guard rejections carry an i18n key, not English prose
+                      // — this branch is the display site.
+                      e instanceof QuantumSwapBlockedError
+                      ? t(e.translationKey)
+                      : e instanceof Error
+                        ? e.message
+                        : 'Failed to sign transactions'
                 setError({ phase: 'signing', message })
                 setStatus('error')
                 if (isRejection) {

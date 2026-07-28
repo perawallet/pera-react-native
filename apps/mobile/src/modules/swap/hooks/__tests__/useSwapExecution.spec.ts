@@ -690,16 +690,15 @@ describe('useSwapExecution', () => {
             outcome = await result.current.execute(makeQuote('quote-quantum'))
         })
 
+        // `t` is mocked to echo its key, so this pins the exact i18n key the
+        // user-facing message resolves through — the guard must NOT surface a
+        // hardcoded English sentence (`useSwapExecution` displays `e.message`
+        // verbatim for non-rejection failures).
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
-            message: expect.stringMatching(/fee/i),
+            message: 'swap.execution.quantum_fee_unsupported',
         })
-        if (outcome?.kind === 'error') {
-            expect(outcome.message).not.toMatch(
-                /not supported in swap flows yet/,
-            )
-        }
         expect(result.current.status).toBe('error')
 
         // The signing pipeline must never be invoked — the block happens
@@ -740,7 +739,7 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
-            message: expect.stringMatching(/fee/i),
+            message: 'swap.execution.quantum_fee_unsupported',
         })
         expect(result.current.status).toBe('error')
         expect(mockAddSignRequest).not.toHaveBeenCalled()
@@ -789,7 +788,12 @@ describe('useSwapExecution', () => {
                 [],
                 vi.fn(),
             ),
-        ).rejects.toThrow(/quantum/i)
+        ).rejects.toMatchObject({
+            name: 'QuantumSwapBlockedError',
+            // The i18n key, not English prose — the display site renders it
+            // through `t()`.
+            translationKey: 'swap.execution.quantum_multisig_unsupported',
+        })
 
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })

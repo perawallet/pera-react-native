@@ -41,8 +41,8 @@ import { SwapUserRejectedError } from './swapGroupPlan'
  * user-signable transaction with the PQ fee (or isolate it in its own
  * partition). Tracked as PQ-024 / PERA-4705.
  */
-const QUANTUM_SWAP_FEE_BLOCKED_MESSAGE =
-    'Quantum accounts cannot swap yet: the swap fee is set by the backend and does not include the post-quantum minimum.'
+export const QUANTUM_SWAP_FEE_BLOCKED_KEY =
+    'swap.execution.quantum_fee_unsupported'
 
 /**
  * Quantum accounts don't participate in multisig at all (established
@@ -52,11 +52,36 @@ const QUANTUM_SWAP_FEE_BLOCKED_MESSAGE =
  * to `null` for every slot, and the proposer would POST an empty signature
  * to the backend instead of failing loudly.
  */
-const QUANTUM_SWAP_PROPOSE_BLOCKED_MESSAGE =
-    'Quantum accounts cannot propose shared-account swaps: quantum keys cannot participate in multisig signing.'
+export const QUANTUM_SWAP_PROPOSE_BLOCKED_KEY =
+    'swap.execution.quantum_multisig_unsupported'
 
 /**
- * Rejects with the given message when `signer` is a quantum account.
+ * A quantum signer was blocked before signing. Carries the i18n key rather
+ * than an English sentence: the swap error path displays `error.message`
+ * verbatim to the user (see `useSwapExecution`), so a hardcoded English
+ * string there would reach non-English users untranslated — defeating the
+ * whole point of these guards, which is that the failure is loud AND
+ * correctly attributed. `message` stays English for logs/crash reports.
+ */
+export class QuantumSwapBlockedError extends Error {
+    /**
+     * Pinned as a string literal so the name survives minification, matching
+     * the convention in {@link USER_REJECTION_ERROR_NAMES}.
+     */
+    override readonly name = 'QuantumSwapBlockedError'
+
+    /** Key to render with `t()` at the display site. */
+    readonly translationKey: string
+
+    constructor(translationKey: string) {
+        super(`Quantum accounts are not supported here (${translationKey})`)
+        this.translationKey = translationKey
+    }
+}
+
+/**
+ * Rejects with a {@link QuantumSwapBlockedError} for `translationKey` when
+ * `signer` is a quantum account.
  *
  * Callers MUST pass the resolved EFFECTIVE signer (e.g. via `useSignerFor`),
  * not the raw selected/sender account: a standard or multisig account rekeyed
@@ -68,10 +93,10 @@ const QUANTUM_SWAP_PROPOSE_BLOCKED_MESSAGE =
  */
 const rejectIfQuantumAccount = (
     signer: Nullable<WalletAccount>,
-    message: string,
+    translationKey: string,
 ): Optional<Promise<never>> => {
     if (signer && isQuantumAccount(signer)) {
-        return Promise.reject(new Error(message))
+        return Promise.reject(new QuantumSwapBlockedError(translationKey))
     }
     return undefined
 }
@@ -128,10 +153,7 @@ export const requestSwapSignatures = (
     unsignedTxs: PeraTransaction[],
     groupContext: PeraTransaction[],
 ): Promise<PeraSignedTransaction[]> => {
-    const blocked = rejectIfQuantumAccount(
-        signer,
-        QUANTUM_SWAP_FEE_BLOCKED_MESSAGE,
-    )
+    const blocked = rejectIfQuantumAccount(signer, QUANTUM_SWAP_FEE_BLOCKED_KEY)
     if (blocked) return blocked
 
     return new Promise((resolve, reject) => {
@@ -185,7 +207,7 @@ export type SwapProposedInfo = {
  * Quantum accounts are excluded from multisig participation entirely
  * elsewhere in the app, so `signer` here should never be quantum in
  * practice — the guard below is defence in depth against that assumption
- * ever breaking silently (see {@link QUANTUM_SWAP_PROPOSE_BLOCKED_MESSAGE}).
+ * ever breaking silently (see {@link QUANTUM_SWAP_PROPOSE_BLOCKED_KEY}).
  * A multisig account can itself be rekeyed to a quantum auth account, so
  * this still must receive the resolved signer, not the raw multisig account.
  */
@@ -201,7 +223,7 @@ export const requestSwapProposal = (
 ): Promise<void> => {
     const blocked = rejectIfQuantumAccount(
         signer,
-        QUANTUM_SWAP_PROPOSE_BLOCKED_MESSAGE,
+        QUANTUM_SWAP_PROPOSE_BLOCKED_KEY,
     )
     if (blocked) return blocked
 

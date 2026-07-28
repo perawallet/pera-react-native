@@ -2638,7 +2638,9 @@
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",
             "pending_cosign_title": "Swap request sent",
-            "pending_cosign_body": "Your swap needs another signature. It will complete once the other signer approves it from their inbox."
+            "pending_cosign_body": "Your swap needs another signature. It will complete once the other signer approves it from their inbox.",
+            "quantum_fee_unsupported": "Quantum accounts can't swap yet. The swap fee is set by our servers and doesn't cover the higher fee a quantum signature needs.",
+            "quantum_multisig_unsupported": "Quantum accounts can't swap from a shared account. Quantum keys can't take part in multisignature signing."
         },
         "signing": {
             "source_name": "Swap",
