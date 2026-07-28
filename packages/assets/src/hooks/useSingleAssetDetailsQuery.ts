@@ -31,13 +31,38 @@ import {
     stripNulls,
     type Network,
 } from '@perawallet/wallet-core-shared'
+import { hasPeraServiceFallback } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetById } from '../db'
 
-async function fetchAssetFromApis(
+/**
+ * Re-asserts the real chain's values for fields that are facts about the chain
+ * rather than Pera's opinion about the asset.
+ *
+ * On a network whose Pera services are borrowed, `peraData` describes the SAME
+ * asset id on a DIFFERENT chain. Letting it win on `decimals` would make
+ * `displayUnitsToBaseUnits` build a wrong-amount transaction that then SUCCEEDS
+ * on chain — the one silent-wrong path the fallback would otherwise introduce.
+ *
+ * MainNet/TestNet merge order is untouched. Delete this helper and its call site
+ * alongside pera-service-fallback.ts.
+ */
+const withChainIntrinsics = (
+    merged: PeraAsset,
+    indexerData: Partial<PeraAsset>,
+): PeraAsset => ({
+    ...merged,
+    name: indexerData.name ?? merged.name,
+    unitName: indexerData.unitName ?? merged.unitName,
+    decimals: indexerData.decimals ?? merged.decimals,
+    totalSupply: indexerData.totalSupply ?? merged.totalSupply,
+    creator: indexerData.creator ?? merged.creator,
+})
+
+export const fetchAssetFromApis = async (
     assetId: string,
     network: Network,
-): Promise<PeraAsset> {
+): Promise<PeraAsset> => {
     const [peraResult, indexerResult, publicResult] = await Promise.allSettled([
         fetchAssetDetails(assetId, network).then(transformAssetResponse),
         fetchIndexerAssetDetails(assetId, network).then(
@@ -55,7 +80,7 @@ async function fetchAssetFromApis(
     const publicData =
         publicResult.status === 'fulfilled' ? publicResult.value : undefined
 
-    return {
+    const merged: PeraAsset = {
         ...DEFAULT_ASSET_VALUES,
         assetId,
         ...indexerData,
@@ -66,6 +91,10 @@ async function fetchAssetFromApis(
             ...(peraData?.peraMetadata ?? {}),
         },
     }
+
+    return indexerData && hasPeraServiceFallback(network)
+        ? withChainIntrinsics(merged, indexerData)
+        : merged
 }
 
 export const useSingleAssetDetailsQuery = (

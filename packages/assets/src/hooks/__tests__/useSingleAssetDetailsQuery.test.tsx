@@ -12,8 +12,13 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { Networks } from '@perawallet/wallet-core-config'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { useSingleAssetDetailsQuery } from '../useSingleAssetDetailsQuery'
+import {
+    useSingleAssetDetailsQuery,
+    fetchAssetFromApis,
+} from '../useSingleAssetDetailsQuery'
+import { PeraAssetVerificationTier } from '../../models'
 
 import { createWrapper } from './test-utils'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
@@ -306,5 +311,73 @@ describe('useSingleAssetDetailsQuery', () => {
             expect(result.current.data).toBeDefined()
             expect(result.current.data?.assetId).toBe('123')
         })
+    })
+})
+
+describe('fetchAssetFromApis merge precedence', () => {
+    // Same asset id, two different chains: the Pera lane (borrowed from
+    // TestNet on fallback networks) reports 6 decimals — real TestNet USDC —
+    // while the real chain's own indexer reports 0. If Pera's value won here,
+    // displayUnitsToBaseUnits would build a transaction for the wrong amount,
+    // and that transaction would succeed on chain.
+    const peraDecimals = 6
+    const indexerDecimals = 0
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+
+        mocks.fetchAssetDetails.mockResolvedValue({
+            asset_id: 10458941,
+            name: 'USDC',
+            unit_name: 'USDC',
+            fraction_decimals: peraDecimals,
+            total: '1000000000000',
+            is_deleted: false,
+            verification_tier: 'verified',
+            creator: { address: 'PERA_TESTNET_CREATOR' },
+            category: null,
+        })
+
+        mocks.fetchIndexerAssetDetails.mockResolvedValue({
+            asset: {
+                index: 10458941,
+                params: {
+                    decimals: indexerDecimals,
+                    'unit-name': 'FNT',
+                    name: 'FnetThing',
+                    total: 5_000_000,
+                    creator: 'FNET_CHAIN_CREATOR',
+                },
+            },
+        })
+
+        // The public lane isn't relevant to chain-intrinsic precedence; reject
+        // it so Promise.allSettled simply omits it from the merge.
+        mocks.fetchPublicAssetDetails.mockRejectedValue(
+            new Error('public API not relevant to this test'),
+        )
+    })
+
+    it('pera metadata wins on testnet, preserving current behaviour', async () => {
+        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+
+        expect(asset.decimals).toBe(peraDecimals)
+        expect(asset.name).toBe('USDC')
+    })
+
+    it('indexer wins on chain-intrinsics for a fallback network', async () => {
+        const asset = await fetchAssetFromApis('10458941', Networks.fnet)
+
+        expect(asset.decimals).toBe(indexerDecimals)
+        expect(asset.name).toBe('FnetThing')
+        expect(asset.unitName).toBe('FNT')
+    })
+
+    it('pera still supplies its own metadata on a fallback network', async () => {
+        const asset = await fetchAssetFromApis('10458941', Networks.fnet)
+
+        expect(asset.peraMetadata?.verificationTier).toBe(
+            PeraAssetVerificationTier.verified,
+        )
     })
 })
