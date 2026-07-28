@@ -10,40 +10,113 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, test, expect, vi, beforeEach } from 'vitest'
+import { Networks } from '@perawallet/wallet-core-config'
+import { logger } from '../../utils'
 
-// Mock logger
-const mockLogger = {
+// Mock logger. Hoisted (like the ky mocks below) because the top-level
+// `import { logger }` forces this module's mock factory to be evaluated
+// during import hoisting, before a plain `const` here would have run.
+const mockLogger = vi.hoisted(() => ({
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     critical: vi.fn(),
-}
+}))
 vi.mock('../../utils', async importOriginal => ({
     ...(await importOriginal<typeof import('../../utils')>()),
     logger: mockLogger,
 }))
 
-// Mock config
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
-        mainnetBackendUrl: 'https://mainnet.pera.algo',
-        testnetBackendUrl: 'https://testnet.pera.algo',
-        mainnetAlgodUrl: 'https://mainnet.algod.algo',
-        testnetAlgodUrl: 'https://testnet.algod.algo',
-        mainnetIndexerUrl: 'https://mainnet.indexer.algo',
-        testnetIndexerUrl: 'https://testnet.indexer.algo',
-        debugEnabled: true,
-        backendAPIKey: 'test-api-key',
-        algodApiKey: 'test-algod-key',
-        indexerApiKey: 'test-indexer-key',
-    },
-    Networks: {
+// Mock config. `getNetworkConfig` stands in for the real per-network chain
+// table (packages/config/src/network-config.ts): the fixtures below cover
+// all 5 networks, and `backendUrl` for betanet/fnet/localnet mirrors the
+// real fallback-to-testnet resolution `getNetworkConfig` already performs,
+// so query-client.ts (which trusts that resolution) needs no changes to
+// exercise it here.
+vi.mock('@perawallet/wallet-core-config', () => {
+    const Networks = {
         testnet: 'testnet',
         mainnet: 'mainnet',
-    },
-}))
+        betanet: 'betanet',
+        fnet: 'fnet',
+        localnet: 'localnet',
+    }
+
+    // Mirrors pera-service-fallback.ts's PERA_SERVICE_FALLBACK table.
+    const peraServiceFallback: Record<string, string> = {
+        betanet: 'testnet',
+        fnet: 'testnet',
+        localnet: 'testnet',
+    }
+
+    const resolvePeraServiceNetwork = (network: string): string =>
+        peraServiceFallback[network] ?? network
+
+    const chainUrlsByNetwork: Record<
+        string,
+        {
+            algodUrl: string
+            indexerUrl: string
+            algodToken: string
+            indexerToken: string
+        }
+    > = {
+        mainnet: {
+            algodUrl: 'https://mainnet.algod.algo',
+            indexerUrl: 'https://mainnet.indexer.algo',
+            algodToken: 'test-algod-key',
+            indexerToken: 'test-indexer-key',
+        },
+        testnet: {
+            algodUrl: 'https://testnet.algod.algo',
+            indexerUrl: 'https://testnet.indexer.algo',
+            algodToken: 'test-algod-key',
+            indexerToken: 'test-indexer-key',
+        },
+        betanet: {
+            algodUrl: 'https://betanet.algod.algo',
+            indexerUrl: 'https://betanet.indexer.algo',
+            algodToken: 'test-algod-key',
+            indexerToken: 'test-indexer-key',
+        },
+        fnet: {
+            algodUrl: 'https://fnet.algod.algo',
+            indexerUrl: 'https://fnet.indexer.algo',
+            algodToken: 'test-algod-key',
+            indexerToken: 'test-indexer-key',
+        },
+        localnet: {
+            algodUrl: 'https://localnet.algod.algo',
+            indexerUrl: 'https://localnet.indexer.algo',
+            algodToken: 'localnet-dev-token',
+            indexerToken: 'localnet-dev-token',
+        },
+    }
+
+    // Only MainNet and TestNet have real Pera backend deployments — every
+    // other network's `backendUrl` resolves to TestNet's.
+    const backendUrlByLane: Record<string, string> = {
+        mainnet: 'https://mainnet.pera.algo',
+        testnet: 'https://testnet.pera.algo',
+    }
+
+    return {
+        config: {
+            debugEnabled: true,
+            backendAPIKey: 'test-api-key',
+        },
+        Networks,
+        getNetworkConfig: (network: string) => ({
+            ...chainUrlsByNetwork[network],
+            backendUrl: backendUrlByLane[resolvePeraServiceNetwork(network)],
+        }),
+        hasPeraServiceFallback: (network: string) =>
+            peraServiceFallback[network] !== undefined,
+        resolvePeraServiceNetwork,
+    }
+})
 
 // Mock ky with hooks support
 const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
@@ -379,11 +452,51 @@ describe('queryClient', () => {
 
         await import('../query-client')
 
-        // 2 networks × (pera + algod + indexer)
-        expect(mockKy.create).toHaveBeenCalledTimes(6)
+        // 5 networks × (pera + algod + indexer)
+        expect(mockKy.create).toHaveBeenCalledTimes(15)
         for (const [clientConfig] of mockKy.create.mock.calls) {
             expect(clientConfig.retry).toMatchObject({ limit: 1 })
         }
+    })
+
+    test('resolves algod for every network, including the new ones', async () => {
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ version: '1.0' })
+
+        for (const network of Object.values(Networks)) {
+            await expect(
+                queryClient({
+                    backend: 'algod',
+                    network,
+                    method: 'GET',
+                    url: '/v2/status',
+                }),
+            ).resolves.toBeDefined()
+        }
+    })
+
+    test('warns once per endpoint when pera traffic borrows testnet', async () => {
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ success: true })
+        const warn = vi.spyOn(logger, 'warn')
+
+        await queryClient({
+            backend: 'pera',
+            network: Networks.fnet,
+            method: 'GET',
+            url: '/v1/currencies/',
+        })
+        await queryClient({
+            backend: 'pera',
+            network: Networks.fnet,
+            method: 'GET',
+            url: '/v1/currencies/',
+        })
+
+        const fallbackWarns = warn.mock.calls.filter(([message]) =>
+            String(message).includes('Pera services'),
+        )
+        expect(fallbackWarns).toHaveLength(1)
     })
 
     it('does not re-append the request logger when extending clients', async () => {
