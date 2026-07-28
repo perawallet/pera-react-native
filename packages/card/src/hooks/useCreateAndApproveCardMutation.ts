@@ -17,9 +17,11 @@ import { isDev, isStaging } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CardIntegrityAttestationRequiredError,
+    CardUserUnavailableError,
     createCard,
 } from '../api/card-creation'
 import { approveEscrowCard } from '../api/escrow'
+import { fetchUser } from '../api/user'
 import { DEFAULT_CARD_CURRENCY } from '../models'
 import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
@@ -101,9 +103,18 @@ export const useCreateAndApproveCardMutation =
                         throw new CardIntegrityAttestationRequiredError()
                     }
 
+                    // The backend links the funding address to this Baanx
+                    // user as part of the create call, so every attempt
+                    // self-heals a missing link instead of being stuck.
+                    const user = await fetchUser({ network })
+                    if (!user) {
+                        throw new CardUserUnavailableError()
+                    }
+
                     const created = await createCard({
                         network,
                         address,
+                        baanxUserId: user.id,
                         currency,
                         signData: proof.signData,
                         signature: proof.signature,

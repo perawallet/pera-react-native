@@ -17,4 +17,8 @@ export {
     type CardSiwaSignData,
 } from './endpoints'
 export { createCardResponseSchema } from './schema'
-export { CardIntegrityAttestationRequiredError } from './errors'
+export {
+    CardAccountLinkedElsewhereError,
+    CardIntegrityAttestationRequiredError,
+    CardUserUnavailableError,
+} from './errors'

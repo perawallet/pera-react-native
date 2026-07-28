@@ -13,7 +13,10 @@
 import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { FundingType } from '@perawallet/wallet-core-card'
+import {
+    CardAccountLinkedElsewhereError,
+    FundingType,
+} from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const PROOF = {
@@ -67,7 +70,12 @@ vi.mock('@modules/card/hooks', () => ({
         createAndApprove: mockCreateAndApprove,
     }),
     useFinishCardCreation: () => ({ finish: mockFinish }),
-    useCardErrorToast: () => mockShowCardError,
+    // Records the per-instance keys so tests can tell the generic handler
+    // (no options) apart from the linked-elsewhere one.
+    useCardErrorToast:
+        (options?: unknown) =>
+        (error: unknown): Promise<void> =>
+            mockShowCardError(error, options) as Promise<void>,
 }))
 
 vi.mock('@modules/security', () => ({
@@ -210,6 +218,25 @@ describe('useCardCreateSigningScreen', () => {
         await proceed(result)
         expect(stepStatus(result.current.steps, 'sign')).toBe('done')
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, false)
+    })
+
+    it('linked-elsewhere failure uses the specific copy, not the generic error toast', async () => {
+        mockCreateAndApprove.mockRejectedValueOnce(
+            new CardAccountLinkedElsewhereError(),
+        )
+        const { result } = renderHook(() => useCardCreateSigningScreen())
+
+        await proceed(result)
+
+        expect(mockShowCardError).toHaveBeenCalledWith(
+            expect.any(CardAccountLinkedElsewhereError),
+            {
+                titleKey: 'peraCard.setup_status.linked_elsewhere_error_title',
+                bodyKey: 'peraCard.setup_status.linked_elsewhere_error_body',
+            },
+        )
+        expect(stepStatus(result.current.steps, 'create')).toBe('active')
+        expect(mockFinish).not.toHaveBeenCalled()
     })
 
     it('Auto: retrying after the create step fails does not fake-advance to authorize', async () => {

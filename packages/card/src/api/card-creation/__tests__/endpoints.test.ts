@@ -32,6 +32,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 })
 
 import { createCard } from '../endpoints'
+import { CardAccountLinkedElsewhereError } from '../errors'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
@@ -50,6 +51,7 @@ describe('createCard', () => {
         const result = await createCard({
             network: 'testnet',
             address: 'FUNDING_ADDR',
+            baanxUserId: 'baanx-user-1',
             currency: 'usdc',
             signData,
             signature: 'c2ln',
@@ -63,6 +65,7 @@ describe('createCard', () => {
                 path: '/api/v3/baanx/escrow-card',
                 data: {
                     address: 'FUNDING_ADDR',
+                    baanx_user_id: 'baanx-user-1',
                     currency: 'usdc',
                     signData,
                     signature: 'c2ln',
@@ -82,6 +85,7 @@ describe('createCard', () => {
         await createCard({
             network: 'testnet',
             address: 'FUNDING_ADDR',
+            baanxUserId: 'baanx-user-1',
             currency: 'usdc',
             signData,
             signature: 'c2ln',
@@ -107,6 +111,7 @@ describe('createCard', () => {
         await createCard({
             network: 'testnet',
             address: 'FUNDING_ADDR',
+            baanxUserId: 'baanx-user-1',
             currency: 'usdc',
             signData,
             signature: 'c2ln',
@@ -136,5 +141,49 @@ describe('createCard', () => {
                 integrityToken: 'INTEGRITY_TOKEN',
             }),
         ).rejects.toThrow()
+    })
+})
+
+describe('createCard error mapping', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        configFlags.isDev = false
+        configFlags.isStaging = false
+    })
+
+    const params = {
+        network: 'testnet',
+        address: 'FUNDING_ADDR',
+        baanxUserId: 'baanx-user-1',
+        currency: 'usdc',
+        signData,
+        signature: 'c2ln',
+        integrityToken: 'INTEGRITY_TOKEN',
+    } as const
+
+    it('maps the backend 400 (address linked to a different Baanx user) to CardAccountLinkedElsewhereError', async () => {
+        request.mockRejectedValue(
+            Object.assign(new Error('Bad Request'), {
+                response: { status: 400 },
+                data: {
+                    status: 400,
+                    error: 'Account address is already linked to another Baanx user',
+                },
+            }),
+        )
+
+        await expect(createCard(params)).rejects.toThrow(
+            CardAccountLinkedElsewhereError,
+        )
+    })
+
+    it('propagates non-400 rejections unchanged', async () => {
+        request.mockRejectedValue(
+            Object.assign(new Error('server exploded'), {
+                response: { status: 503 },
+            }),
+        )
+
+        await expect(createCard(params)).rejects.toThrow('server exploded')
     })
 })
