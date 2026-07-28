@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { Address, Transaction } from 'algosdk'
+import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
 import { GenesisHashMismatchError } from '../../errors'
 import {
     makeTestAddress,
@@ -181,6 +182,26 @@ describe('createStandardAnalyzer', () => {
         expect(result.warnings[0].message).toContain('trusted-exchange.com')
         expect(result.warnings[0].message).toContain('evil.example')
         expect(result.riskLevel).toBe('high')
+    })
+
+    test('passes the transactions, the network, and the resolved genesis hash to assertTransactionsMatchNetwork', async () => {
+        // A refactor that reintroduces getNetworkConfig(context.network)
+        // .genesisHash at the call site (the exact localnet-blocked bug this
+        // task fixed) would ship green everywhere else in this file — every
+        // other test only cares whether assertTransactionsMatchNetworkMock
+        // throws, not what it was called with. This is the one test that
+        // locks the third argument down.
+        const analyzer = createStandardAnalyzer()
+        const tx = makeTx({ sender: ACCOUNT_A, fee: 1000n })
+        const group = makeGroup([tx])
+
+        await analyzer.analyze(group, makeContext([ACCOUNT_A]))
+
+        expect(assertTransactionsMatchNetworkMock).toHaveBeenCalledWith(
+            [tx],
+            'mainnet',
+            getNetworkConfig(Networks.mainnet).genesisHash,
+        )
     })
 
     test('sums fees only for transactions from user accounts', async () => {

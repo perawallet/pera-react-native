@@ -100,4 +100,15 @@ describe('assertTransactionsMatchNetwork', () => {
             ),
         ).toThrow(GenesisHashMismatchError)
     })
+
+    test('rejects an empty expectedGenesisHash outright, even when a transaction genesisHash is also empty', () => {
+        // Without the guard, a transaction with no genesisHash of its own
+        // computes actual === '', which would trivially satisfy '' === ''
+        // and let an unverified-chain transaction through.
+        const txWithoutGenesis = {} as unknown as PeraTransaction
+
+        expect(() =>
+            assertTransactionsMatchNetwork([txWithoutGenesis], 'mainnet', ''),
+        ).toThrow(GenesisHashMismatchError)
+    })
 })

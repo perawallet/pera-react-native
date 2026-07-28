@@ -27,12 +27,25 @@ import { GenesisHashMismatchError } from '../pipeline/errors'
  * so that networks whose genesis is not build-time-pinned (betanet, fnet,
  * localnet) can pass their runtime-resolved identity in. See
  * `resolveExpectedGenesisHash`.
+ *
+ * Rejects an empty `expectedGenesisHash` outright, before comparing any
+ * transaction. An empty hash is never a valid chain identity — without this
+ * guard, a transaction whose own `genesisHash` is missing or empty computes
+ * `actual === ''` too, so `'' === ''` would satisfy the comparison and let an
+ * unverified-chain transaction through. `resolveExpectedGenesisHash` is
+ * expected to never produce `''` either, but this function is public API in
+ * its own right, so it defends independently rather than trusting the
+ * caller's convention.
  */
 export const assertTransactionsMatchNetwork = (
     transactions: PeraTransaction[],
     network: Network,
     expectedGenesisHash: string,
 ): void => {
+    if (!expectedGenesisHash) {
+        throw new GenesisHashMismatchError(network, -1, expectedGenesisHash, '')
+    }
+
     for (let i = 0; i < transactions.length; i++) {
         const genesisHash = transactions[i].genesisHash
         const actual = genesisHash ? encodeToBase64(genesisHash) : ''
