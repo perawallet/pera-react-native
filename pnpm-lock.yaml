@@ -304,6 +304,9 @@ importers:
       eslint-plugin-unused-imports:
         specifier: 'catalog:'
         version: 4.4.1(eslint@9.39.5)
+      falcon-1024:
+        specifier: 'catalog:'
+        version: 0.2.0
       fallow:
         specifier: 3.3.0
         version: 3.3.0

@@ -206,9 +206,9 @@ publicKey)` and is therefore not carried on the type.
   `pqSigningDigest(txn)`, never `txn.bytesToSign()` directly.
 - **LocalNet verification** — end-to-end exercise of derive → sign → assemble
   → submit against a real node is separate follow-up tooling
-  (`pnpm localnet:quantum-check`, not yet landed as of this writing); today,
-  manual verification is limited to the on-device checklist above plus the
-  differential test in `quantumAdapter.spec.ts`.
+  (`pnpm localnet:quantum-check`); today, manual verification is limited to
+  the on-device checklist above plus the differential test in
+  `quantumAdapter.spec.ts`.
 - **No public algod accepts `pqsig` yet** — verified as of 2026-07-28: both
   `algod` 4.7.4-stable and `rel/nightly` build 2680 reject transactions
   carrying a `pqsig` field. LocalNet (built from the fork) is the only place

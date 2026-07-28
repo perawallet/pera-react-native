@@ -94,6 +94,7 @@ Prerequisites: Docker (running) and the AlgoKit CLI
 pnpm localnet             # start the LocalNet (algod :4001, indexer :8980, kmd :4002)
 pnpm localnet:use         # point the app's testnet slot at LocalNet
 pnpm localnet:fund --new 100   # create + fund a throwaway account (prints mnemonic)
+pnpm localnet:fund --new-quantum 100  # create + fund a throwaway quantum (post-quantum) account (prints seed hex)
 pnpm ios                  # or: pnpm android — app now talks to LocalNet as "testnet"
 pnpm localnet:unset       # restore live endpoints
 pnpm localnet:stop        # stop the LocalNet
@@ -102,6 +103,22 @@ pnpm localnet:stop        # stop the LocalNet
 LocalNet reuses the **testnet** slot; **mainnet stays on live infrastructure**.
 `localnet:use` fetches the node's genesis hash live, so re-run it after any
 `pnpm localnet:reset`.
+
+### Quantum (post-quantum) verification
+
+```sh
+pnpm localnet:quantum-check
+```
+
+Runs an end-to-end check of a quantum-signed transaction against LocalNet:
+derives a Falcon-1024 address, funds it, builds a payment with a PQ-raised
+fee, and asserts the assembled signed-transaction bytes match algosdk's own
+PQ signer byte-for-byte, before attempting to broadcast it. As of this
+writing **no public algod accepts the `pqsig` field** — LocalNet's 4.7.4-stable
+included — so the script reports **PENDING** (exit 0) rather than PASS once
+broadcast is rejected for that reason specifically; any other failure reports
+FAIL (non-zero exit). It converts to a true PASS, unchanged, the day a
+pqsig-capable algod ships.
 
 ## Workspace layout
 
