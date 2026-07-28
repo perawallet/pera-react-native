@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
@@ -26,6 +27,7 @@ export type UseConnectedSitesScreenResult = {
 
 export const useConnectedSitesScreen = (): UseConnectedSitesScreenResult => {
     const { t } = useLanguage()
+    const { showError } = useErrorToast()
     const { sites, isLoading, revoke } = useDappConnectionsStore()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -55,9 +57,13 @@ export const useConnectedSitesScreen = (): UseConnectedSitesScreenResult => {
                 options: { size: 'auto', enablePanDownToClose: true },
             })
             if (!confirmed) return
-            await revoke(origin)
+            try {
+                await revoke(origin)
+            } catch (error) {
+                showError(error, t('common.error.title'))
+            }
         },
-        [requestBottomSheet, revoke, t],
+        [requestBottomSheet, revoke, showError, t],
     )
 
     const handleRevoke = useCallback(

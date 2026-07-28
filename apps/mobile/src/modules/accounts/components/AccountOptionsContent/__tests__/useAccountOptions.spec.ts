@@ -47,6 +47,19 @@ const { mockRequestBottomSheet } = vi.hoisted(() => ({
 const { mockOpenViewPassphraseFlow } = vi.hoisted(() => ({
     mockOpenViewPassphraseFlow: vi.fn(),
 }))
+const { mockToggleAccountNotification, mockIsTogglePending } = vi.hoisted(
+    () => ({
+        mockToggleAccountNotification: vi.fn(),
+        mockIsTogglePending: vi.fn(() => false),
+    }),
+)
+
+vi.mock('@hooks/useAccountNotificationToggle', () => ({
+    useAccountNotificationToggle: () => ({
+        toggleAccountNotification: mockToggleAccountNotification,
+        isTogglePending: mockIsTogglePending,
+    }),
+}))
 
 vi.mock('@modules/view-passphrase', () => ({
     useViewPassphraseFlow: () => ({
@@ -179,6 +192,8 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
+        mockToggleAccountNotification.mockResolvedValue(true)
+        mockIsTogglePending.mockReturnValue(false)
         mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
         mockUseCanSignWith.mockImplementation(account => {
             switch (account?.address) {
@@ -392,7 +407,7 @@ describe('useAccountOptions', () => {
             expect(copyOption?.subtitle).toBe('ALGO25ADDRESS')
         })
 
-        it('toggles notifications from enabled to disabled', () => {
+        it('toggles notifications from enabled to disabled', async () => {
             mockIsAccountEnabled.mockReturnValue(true)
 
             const { result } = renderHook(() =>
@@ -407,11 +422,11 @@ describe('useAccountOptions', () => {
                 o => o.id === 'toggle-notifications',
             )
 
-            act(() => {
-                notifOption?.onPress()
+            await act(async () => {
+                await notifOption?.onPress()
             })
 
-            expect(mockSetAccountEnabled).toHaveBeenCalledWith(
+            expect(mockToggleAccountNotification).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
                 false,
             )
@@ -423,7 +438,7 @@ describe('useAccountOptions', () => {
             expect(mockOnClose).toHaveBeenCalled()
         })
 
-        it('toggles notifications from disabled to enabled', () => {
+        it('toggles notifications from disabled to enabled', async () => {
             mockIsAccountEnabled.mockReturnValue(false)
 
             const { result } = renderHook(() =>
@@ -438,11 +453,11 @@ describe('useAccountOptions', () => {
                 o => o.id === 'toggle-notifications',
             )
 
-            act(() => {
-                notifOption?.onPress()
+            await act(async () => {
+                await notifOption?.onPress()
             })
 
-            expect(mockSetAccountEnabled).toHaveBeenCalledWith(
+            expect(mockToggleAccountNotification).toHaveBeenCalledWith(
                 'ALGO25ADDRESS',
                 true,
             )
@@ -978,6 +993,134 @@ describe('useAccountOptions', () => {
             expect(mockRemoveAccountByAddress).toHaveBeenCalledWith(
                 'LEDGERADDRESS',
             )
+        })
+    })
+
+    describe('notification toggle', () => {
+        beforeEach(() => {
+            mockToggleAccountNotification.mockResolvedValue(true)
+            mockIsAccountEnabled.mockReturnValue(true)
+        })
+
+        it('sends the change to the backend instead of only writing the store', async () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await act(async () => {
+                result.current.handleToggleNotifications()
+            })
+
+            expect(mockToggleAccountNotification).toHaveBeenCalledWith(
+                'ALGO25ADDRESS',
+                false,
+            )
+            // The "instead of" half: the store is written by the shared hook,
+            // never directly from here.
+            expect(mockSetAccountEnabled).not.toHaveBeenCalled()
+        })
+
+        it('confirms with a success toast only once the backend accepted it', async () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await act(async () => {
+                result.current.handleToggleNotifications()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'account_options.notifications_muted',
+                    type: 'success',
+                }),
+            )
+        })
+
+        it('shows no success toast when the backend rejected the change', async () => {
+            mockToggleAccountNotification.mockResolvedValue(false)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            await act(async () => {
+                result.current.handleToggleNotifications()
+            })
+
+            expect(mockShowToast).not.toHaveBeenCalled()
+        })
+
+        // R3 (PERA-4585 residual): docs/OFFLINE_PAUSED_STATE.md says screens
+        // should use the pending flag to disable the control rather than let
+        // a tap silently resolve `false`. This row now does.
+        it('disables the toggle-notifications option while a toggle for this address is pending', () => {
+            mockIsTogglePending.mockReturnValue(true)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            expect(mockIsTogglePending).toHaveBeenCalledWith('ALGO25ADDRESS')
+            expect(notifOption?.disabled).toBe(true)
+        })
+
+        it('leaves the toggle-notifications option enabled when nothing is pending', () => {
+            mockIsTogglePending.mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const notifOption = result.current.options.find(
+                o => o.id === 'toggle-notifications',
+            )
+
+            expect(notifOption?.disabled).toBe(false)
+        })
+
+        it('closes the sheet immediately, without waiting for the backend', () => {
+            mockToggleAccountNotification.mockReturnValue(
+                new Promise(() => undefined),
+            )
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            act(() => {
+                result.current.handleToggleNotifications()
+            })
+
+            expect(mockOnClose).toHaveBeenCalledTimes(1)
         })
     })
 })

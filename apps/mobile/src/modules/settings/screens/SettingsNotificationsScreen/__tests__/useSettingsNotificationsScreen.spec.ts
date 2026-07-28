@@ -16,12 +16,13 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
-import {
-    useNotificationPreferences,
-    useAccountNotificationEnabledMutation,
-} from '@perawallet/wallet-core-messages'
 import { useSystemNotificationPermission } from '../../../hooks/useSystemNotificationPermission'
-import { useToast } from '@hooks/useToast'
+
+const mocks = vi.hoisted(() => ({
+    toggleAccountNotification: vi.fn(),
+    isTogglePending: vi.fn(() => false),
+    showToast: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
@@ -31,6 +32,7 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationPreferences: vi.fn(() => ({
         setAccountEnabled: vi.fn(),
         isAccountEnabled: vi.fn(() => true),
+        disabledAccounts: [],
     })),
     useAccountNotificationEnabledMutation: vi.fn(() => ({
         mutateAsync: vi.fn().mockResolvedValue({}),
@@ -45,16 +47,17 @@ vi.mock('../../../hooks/useSystemNotificationPermission', () => ({
     })),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: vi.fn(() => ({
-        showToast: vi.fn(),
-    })),
+// The real useAccountNotificationToggle is exercised by its own spec; here we
+// only assert this screen delegates to it with the right arguments.
+vi.mock('@hooks/useAccountNotificationToggle', () => ({
+    useAccountNotificationToggle: () => ({
+        toggleAccountNotification: mocks.toggleAccountNotification,
+        isTogglePending: mocks.isTogglePending,
+    }),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: vi.fn(() => ({
-        t: vi.fn(key => key),
-    })),
+vi.mock('@hooks/useToast', () => ({
+    useToast: vi.fn(() => ({ showToast: mocks.showToast })),
 }))
 
 const isPushSupported = vi.fn(() => true)
@@ -106,18 +109,9 @@ describe('useSettingsNotificationsScreen', () => {
         expect(openSettings).toHaveBeenCalled()
     })
 
-    it('calls setAccountEnabled and mutateAsync when handleAccountNotificationToggle is called', async () => {
-        const setAccountEnabled = vi.fn()
-        const mutateAsync = vi.fn().mockResolvedValue({})
+    it('delegates the toggle to useAccountNotificationToggle', async () => {
+        mocks.toggleAccountNotification.mockResolvedValue(true)
         const mockAccount = { id: '1', address: 'ADDR1' }
-
-        vi.mocked(useNotificationPreferences).mockReturnValueOnce({
-            setAccountEnabled,
-            isAccountEnabled: vi.fn(),
-        } as any)
-        vi.mocked(useAccountNotificationEnabledMutation).mockReturnValueOnce({
-            mutateAsync,
-        } as any)
 
         const { result } = renderHook(() => useSettingsNotificationsScreen())
 
@@ -128,94 +122,35 @@ describe('useSettingsNotificationsScreen', () => {
             )
         })
 
-        expect(setAccountEnabled).toHaveBeenCalledWith('ADDR1', true)
-        expect(mutateAsync).toHaveBeenCalledWith({
-            accountID: 'ADDR1',
-            status: true,
-        })
-    })
-
-    it('shows error toast and reverts state if mutateAsync fails', async () => {
-        const setAccountEnabled = vi.fn()
-        const mutateAsync = vi.fn().mockRejectedValue(new Error('Failed'))
-        const showToast = vi.fn()
-        const mockAccount = { id: '1', address: 'ADDR1' }
-
-        vi.mocked(useNotificationPreferences).mockReturnValueOnce({
-            setAccountEnabled,
-            isAccountEnabled: vi.fn(),
-        } as any)
-        vi.mocked(useAccountNotificationEnabledMutation).mockReturnValueOnce({
-            mutateAsync,
-        } as any)
-        vi.mocked(useToast).mockReturnValueOnce({
-            showToast,
-        } as any)
-
-        const { result } = renderHook(() => useSettingsNotificationsScreen())
-
-        await act(async () => {
-            result.current.handleAccountNotificationToggle(
-                mockAccount as any,
-                true,
-            )
-        })
-
-        expect(setAccountEnabled).toHaveBeenCalledWith('ADDR1', true)
-        expect(setAccountEnabled).toHaveBeenCalledWith('ADDR1', false)
-        expect(showToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-            }),
+        expect(mocks.toggleAccountNotification).toHaveBeenCalledWith(
+            'ADDR1',
+            true,
         )
     })
 
-    // OFF-004: when offline, the notification mutation must fail fast rather
-    // than pause/auto-resume. The optimistic toggle is applied, then the
-    // rejection rolls it back and surfaces an error toast.
-    it('applies then rolls back the optimistic toggle when offline', async () => {
+    // Paused-silent regime is impossible post-PERA-4573; the fire-and-fail
+    // regime must reach the shared hook, which owns rollback + offline copy.
+    it('still delegates while offline rather than swallowing the toggle', async () => {
         onlineManager.setOnline(false)
-
-        const setAccountEnabled = vi.fn()
-        // Simulates the offline transport throw: with networkMode 'always' the
-        // mutationFn runs and rejects instead of the mutation being paused.
-        const mutateAsync = vi
-            .fn()
-            .mockRejectedValue(new TypeError('Network request failed'))
-        const showToast = vi.fn()
+        mocks.toggleAccountNotification.mockResolvedValue(false)
         const mockAccount = { id: '1', address: 'ADDR1' }
-
-        vi.mocked(useNotificationPreferences).mockReturnValueOnce({
-            setAccountEnabled,
-            isAccountEnabled: vi.fn(),
-        } as any)
-        vi.mocked(useAccountNotificationEnabledMutation).mockReturnValueOnce({
-            mutateAsync,
-        } as any)
-        vi.mocked(useToast).mockReturnValueOnce({
-            showToast,
-        } as any)
 
         const { result } = renderHook(() => useSettingsNotificationsScreen())
 
         await act(async () => {
             result.current.handleAccountNotificationToggle(
                 mockAccount as any,
-                true,
+                false,
             )
         })
 
-        // Optimistic update applied with the new value before the request.
-        expect(setAccountEnabled).toHaveBeenNthCalledWith(1, 'ADDR1', true)
-        // The mutation actually ran (did not pause) while offline.
-        expect(mutateAsync).toHaveBeenCalledWith({
-            accountID: 'ADDR1',
-            status: true,
-        })
-        // Rollback restores the prior value after the rejection.
-        expect(setAccountEnabled).toHaveBeenNthCalledWith(2, 'ADDR1', false)
-        expect(showToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mocks.toggleAccountNotification).toHaveBeenCalledTimes(1)
+        expect(mocks.toggleAccountNotification).toHaveBeenCalledWith(
+            'ADDR1',
+            false,
         )
+        // The screen must not add its own generic toast on top of the shared
+        // hook's cause-appropriate one.
+        expect(mocks.showToast).not.toHaveBeenCalled()
     })
 })

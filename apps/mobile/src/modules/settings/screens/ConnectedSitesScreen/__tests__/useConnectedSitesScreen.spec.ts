@@ -18,6 +18,8 @@ import type { DappPermission } from '@perawallet/wallet-extension-platform-chrom
 
 const mockRequestBottomSheet = vi.fn()
 
+const { mockShowError } = vi.hoisted(() => ({ mockShowError: vi.fn() }))
+
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
 }))
@@ -28,6 +30,10 @@ vi.mock('@components/ConfirmActionContent', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
+}))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@modules/settings/hooks/useDappConnectionsStore', () => ({
@@ -84,5 +90,36 @@ describe('useConnectedSitesScreen', () => {
             expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1),
         )
         expect(mockRevoke).not.toHaveBeenCalled()
+    })
+
+    it('reports a failed revoke instead of swallowing it', async () => {
+        const error = new Error('storage failure')
+        mockRequestBottomSheet.mockResolvedValueOnce(true)
+        mockRevoke.mockRejectedValue(error)
+
+        const { result } = renderHook(() => useConnectedSitesScreen())
+
+        result.current.handleRevoke('https://example.com')
+
+        await waitFor(() =>
+            expect(mockShowError).toHaveBeenCalledWith(
+                error,
+                'common.error.title',
+            ),
+        )
+    })
+
+    it('shows no error when the revoke succeeds', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce(true)
+        mockRevoke.mockResolvedValue(undefined)
+
+        const { result } = renderHook(() => useConnectedSitesScreen())
+
+        result.current.handleRevoke('https://example.com')
+
+        await waitFor(() =>
+            expect(mockRevoke).toHaveBeenCalledWith('https://example.com'),
+        )
+        expect(mockShowError).not.toHaveBeenCalled()
     })
 })

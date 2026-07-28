@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -56,6 +57,7 @@ export type UseConnectionsSettingsScreenResult = {
 const toUnifiedWalletConnectConnection = (
     connection: WalletConnectConnection,
     disconnect: (clientId: string, triggerDisconnect: boolean) => Promise<void>,
+    onError: (error: unknown) => void,
 ): UnifiedConnection => {
     const peerMeta = connection.session?.peerMeta
     const clientId = connection.clientId ?? ''
@@ -68,7 +70,7 @@ const toUnifiedWalletConnectConnection = (
         iconUrl: peerMeta?.icons?.[0],
         connectedAt: connection.createdAt,
         onRevoke: () => {
-            void disconnect(clientId, true)
+            void disconnect(clientId, true).catch(onError)
         },
     }
 }
@@ -76,6 +78,7 @@ const toUnifiedWalletConnectConnection = (
 const toUnifiedDappPermission = (
     site: DappPermission,
     revoke: (origin: string) => Promise<void>,
+    onError: (error: unknown) => void,
 ): UnifiedConnection => ({
     id: `dapp-${site.origin}`,
     kind: 'dapp',
@@ -84,7 +87,7 @@ const toUnifiedDappPermission = (
     iconUrl: site.iconUrl,
     connectedAt: new Date(site.grantedAt),
     onRevoke: () => {
-        void revoke(site.origin)
+        void revoke(site.origin).catch(onError)
     },
 })
 
@@ -97,20 +100,40 @@ export const useConnectionsSettingsScreen =
         const { sites, isLoading, revoke } = useDappConnectionsStore()
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
+        const { showError } = useErrorToast()
+
+        const handleRevokeError = useCallback(
+            (error: unknown) => {
+                showError(error, t('common.error.title'))
+            },
+            [showError, t],
+        )
 
         const connections = useMemo(() => {
             const unified: UnifiedConnection[] = [
                 ...walletConnectConnections.map(connection =>
-                    toUnifiedWalletConnectConnection(connection, disconnect),
+                    toUnifiedWalletConnectConnection(
+                        connection,
+                        disconnect,
+                        handleRevokeError,
+                    ),
                 ),
-                ...sites.map(site => toUnifiedDappPermission(site, revoke)),
+                ...sites.map(site =>
+                    toUnifiedDappPermission(site, revoke, handleRevokeError),
+                ),
             ]
             return unified.sort(
                 (a, b) =>
                     (b.connectedAt?.getTime() ?? 0) -
                     (a.connectedAt?.getTime() ?? 0),
             )
-        }, [walletConnectConnections, disconnect, sites, revoke])
+        }, [
+            walletConnectConnections,
+            disconnect,
+            sites,
+            revoke,
+            handleRevokeError,
+        ])
 
         const confirmRevoke = useCallback(
             async (connection: UnifiedConnection) => {

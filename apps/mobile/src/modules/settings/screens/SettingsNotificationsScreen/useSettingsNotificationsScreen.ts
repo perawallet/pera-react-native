@@ -15,14 +15,10 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    useNotificationPreferences,
-    useAccountNotificationEnabledMutation,
-} from '@perawallet/wallet-core-messages'
+import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useSystemNotificationPermission } from '../../hooks/useSystemNotificationPermission'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 
 type UseSettingsNotificationsScreenResult = {
@@ -44,18 +40,23 @@ type UseSettingsNotificationsScreenResult = {
         enabled: boolean,
     ) => void
     isAccountNotificationEnabled: (address: string) => boolean
+    /**
+     * Whether that account's toggle is still awaiting the backend. Rows use it
+     * to disable the switch, so a second tap is visibly blocked rather than
+     * silently dropped by the hook's per-address guard.
+     */
+    isAccountNotificationPending: (address: string) => boolean
 }
 
 export const useSettingsNotificationsScreen =
     (): UseSettingsNotificationsScreenResult => {
-        const { showToast } = useToast()
         const { isEnabled, isLoading, openSettings } =
             useSystemNotificationPermission()
         const accounts = useAllAccounts()
-        const { setAccountEnabled, isAccountEnabled, disabledAccounts } =
+        const { isAccountEnabled, disabledAccounts } =
             useNotificationPreferences()
-        const { mutateAsync } = useAccountNotificationEnabledMutation()
-        const { t } = useLanguage()
+        const { toggleAccountNotification, isTogglePending } =
+            useAccountNotificationToggle()
 
         const handleSystemNotificationToggle = useCallback(() => {
             openSettings()
@@ -67,21 +68,9 @@ export const useSettingsNotificationsScreen =
                     [AnalyticsMetadataKey.AccountAddress]: account.address,
                     [AnalyticsMetadataKey.AllowNotifications]: enabled,
                 })
-                setAccountEnabled(account.address, enabled)
-                mutateAsync({
-                    accountID: account.address,
-                    status: enabled,
-                }).catch(() => {
-                    setAccountEnabled(account.address, !enabled)
-                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized common.error copy preserved; no exception detail surfaced
-                    showToast({
-                        title: t('common.error.title'),
-                        body: t('common.error.body'),
-                        type: 'error',
-                    })
-                })
+                void toggleAccountNotification(account.address, enabled)
             },
-            [setAccountEnabled, mutateAsync, showToast, t],
+            [toggleAccountNotification],
         )
 
         return {
@@ -93,5 +82,6 @@ export const useSettingsNotificationsScreen =
             handleSystemNotificationToggle,
             handleAccountNotificationToggle,
             isAccountNotificationEnabled: isAccountEnabled,
+            isAccountNotificationPending: isTogglePending,
         }
     }

@@ -21,9 +21,14 @@ import {
 import type { DappPermission } from '@perawallet/wallet-extension-platform-chrome'
 
 const mockRequestBottomSheet = vi.fn()
+const { mockShowError } = vi.hoisted(() => ({ mockShowError: vi.fn() }))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+}))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@components/ConfirmActionContent', () => ({
@@ -204,5 +209,49 @@ describe('useConnectionsSettingsScreen', () => {
         })
 
         expect(result.current.scannerState.isOpen).toBe(true)
+    })
+
+    it('reports a failed WalletConnect revoke instead of swallowing it', async () => {
+        const error = new Error('relay down')
+        mockDisconnect.mockRejectedValue(error)
+
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+
+        const walletConnectEntry = result.current.connections.find(
+            connection => connection.kind === 'walletconnect',
+        )
+
+        await act(async () => {
+            walletConnectEntry?.onRevoke()
+        })
+
+        await waitFor(() =>
+            expect(mockShowError).toHaveBeenCalledWith(
+                error,
+                'common.error.title',
+            ),
+        )
+    })
+
+    it('reports a failed dapp revoke instead of swallowing it', async () => {
+        const error = new Error('storage failure')
+        mockRevoke.mockRejectedValue(error)
+
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+
+        const dappEntry = result.current.connections.find(
+            connection => connection.kind === 'dapp',
+        )
+
+        await act(async () => {
+            dappEntry?.onRevoke()
+        })
+
+        await waitFor(() =>
+            expect(mockShowError).toHaveBeenCalledWith(
+                error,
+                'common.error.title',
+            ),
+        )
     })
 })
