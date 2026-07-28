@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Dialog, Image, Text, useTheme } from '@rneui/themed'
+import { Dialog, Image, useTheme } from '@rneui/themed'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 
@@ -19,6 +19,7 @@ import {
     PWButton,
     PWIcon,
     PWScreen,
+    PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
@@ -46,14 +47,14 @@ const ConnectedNetworks = ({ chainId }: { chainId: number }) => {
     return (
         <PWView style={styles.networkContainer}>
             {(chainId === 4160 || chainId === 416_001) && (
-                <Text style={styles.mainnetText}>
+                <PWText style={styles.mainnetText}>
                     {t('walletconnect.request.networks_mainnet')}
-                </Text>
+                </PWText>
             )}
             {(chainId === 4160 || chainId === 416_002) && (
-                <Text style={styles.testnetText}>
+                <PWText style={styles.testnetText}>
                     {t('walletconnect.request.networks_testnet')}
-                </Text>
+                </PWText>
             )}
         </PWView>
     )
@@ -92,30 +93,32 @@ export const SettingsWalletConnectDetailsScreen = ({
                         size='xl'
                     />
                 )}
-                <Text h4>{peerMeta?.name ?? 'Unknown'}</Text>
+                <PWText variant='h4'>
+                    {peerMeta?.name ?? t('walletconnect.settings.unknown_peer')}
+                </PWText>
                 {peerMeta?.url && (
                     <PWTouchableOpacity
                         onPress={handleOpenLink}
                         testID='wallet_connect_details_url_link'
                     >
-                        <Text style={styles.link}>{peerMeta?.url}</Text>
+                        <PWText style={styles.link}>{peerMeta?.url}</PWText>
                     </PWTouchableOpacity>
                 )}
                 {peerMeta?.description && (
-                    <Text style={styles.description}>
+                    <PWText style={styles.description}>
                         {peerMeta?.description}
-                    </Text>
+                    </PWText>
                 )}
                 <PWView style={styles.versionContainer}>
                     <PWBadge
                         variant='secondary'
                         value={`WCV${session?.version}`}
                     />
-                    <Text style={styles.version}>
+                    <PWText style={styles.version}>
                         {t('walletconnect.settings.version', {
                             version: session?.version,
                         })}
-                    </Text>
+                    </PWText>
                 </PWView>
                 <PWView style={styles.connectionContainer}>
                     <KeyValueRow
@@ -123,20 +126,20 @@ export const SettingsWalletConnectDetailsScreen = ({
                             date: '',
                         })}
                     >
-                        <Text style={styles.createdAt}>
+                        <PWText style={styles.createdAt}>
                             {formatDatetime(
                                 session?.createdAt ?? new Date(),
                                 undefined,
                                 'medium',
                             )}
-                        </Text>
+                        </PWText>
                     </KeyValueRow>
                 </PWView>
                 {!!connectedAccounts?.length && (
                     <PWView style={styles.accountContainer}>
-                        <Text>
+                        <PWText>
                             {t('walletconnect.settings.connected_accounts')}
-                        </Text>
+                        </PWText>
                         {connectedAccounts.map(account => (
                             <PWView
                                 style={styles.accountRow}
@@ -157,20 +160,20 @@ export const SettingsWalletConnectDetailsScreen = ({
                 <TitledExpandablePanel
                     title={
                         <PWView style={styles.permissionsTitle}>
-                            <Text>
+                            <PWText>
                                 {t('walletconnect.settings.permissions')}
-                            </Text>
+                            </PWText>
                             <InfoButton
                                 size='sm'
                                 title={t(
                                     'walletconnect.settings.permissions_info_title',
                                 )}
                             >
-                                <Text>
+                                <PWText>
                                     {t(
                                         'walletconnect.settings.permissions_info_body',
                                     )}
-                                </Text>
+                                </PWText>
                             </InfoButton>
                         </PWView>
                     }
@@ -200,7 +203,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                     <Dialog.Title
                         title={t('walletconnect.settings.delete_title')}
                     />
-                    <Text>{t('walletconnect.settings.delete_body')}</Text>
+                    <PWText>{t('walletconnect.settings.delete_body')}</PWText>
                     <Dialog.Actions>
                         <Dialog.Button
                             title={t('common.delete.label')}
