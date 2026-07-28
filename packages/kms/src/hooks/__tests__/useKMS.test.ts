@@ -22,9 +22,13 @@ import {
 } from '../../errors'
 import { SeedScheme } from '../../constants'
 import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
-import { FALCON_SIGNATURE_LENGTH } from '../../crypto/falcon-utils'
 import { getPQProvider } from '../../crypto/pq'
 import { FALCON_CHILD_KEY_TYPE } from '../../models'
+
+// Documented compressed Falcon-1024 signature upper bound (see "Key
+// contracts" in docs/QUANTUM_PQ_INTEGRATION.md) — not exported by the
+// package because production never needs to check it, only tests do.
+const FALCON_SIGNATURE_MAX_LENGTH = 1232
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -500,7 +504,9 @@ describe('useKMS', () => {
             expect(mockKeyStoreSign).not.toHaveBeenCalled()
             expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
             expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
+            expect(sigs![0].length).toBeLessThanOrEqual(
+                FALCON_SIGNATURE_MAX_LENGTH,
+            )
         })
 
         it('signTransactionsWithKey produces a real Falcon signature for the seed keypair', async () => {
@@ -528,7 +534,9 @@ describe('useKMS', () => {
             const expected = provider.sign(secretKey, payload)
 
             expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
+            expect(sigs![0].length).toBeLessThanOrEqual(
+                FALCON_SIGNATURE_MAX_LENGTH,
+            )
             expect(Array.from(sigs![0])).toEqual(Array.from(expected))
         })
 
@@ -572,7 +580,9 @@ describe('useKMS', () => {
 
             expect(mockKeyStoreSign).not.toHaveBeenCalled()
             expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
+            expect(sigs![0].length).toBeLessThanOrEqual(
+                FALCON_SIGNATURE_MAX_LENGTH,
+            )
         })
 
         it('rejects and never exports the seed when the ACL denies the domain', async () => {

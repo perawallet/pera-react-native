@@ -19,11 +19,13 @@
 //      `QuantumDowngradeWarningSheet` via `requestBottomSheet` BEFORE any
 //      signing happens.
 //
-// KNOWN GAP (PQ-006 / PERA-4488): `useLocalKeyTransactionSigner.ts` rejects
-// quantum accounts, so a rekey-out can never actually be signed/submitted
-// today. That gap sits AFTER the downgrade warning sheet in the confirm flow,
-// so it does not block this coverage — this suite intentionally stops at
-// asserting the sheet appears and does not confirm past it.
+// `useLocalKeyTransactionSigner` now signs quantum accounts like any other
+// local key (PQ-006/PERA-4653), so a rekey-out CAN be signed and submitted.
+// This suite still deliberately stops at the downgrade warning sheet: its
+// job is to prove the warning gates the flow BEFORE any signing happens, not
+// to re-cover full quantum sign/submit (see `send-from-quantum.test.tsx` for
+// that, currently tracked separately) — confirming past the sheet is out of
+// scope here regardless of signer support.
 
 import {
     afterAll,
@@ -347,8 +349,9 @@ describe('rekey quantum account (PQ-015)', () => {
             expect(submitSpy).not.toHaveBeenCalled()
 
             // The suite stops here on purpose (see the file-level comment):
-            // confirming past the sheet would drive real signing, which
-            // `useLocalKeyTransactionSigner` rejects for quantum accounts.
+            // this test's job is the warning sheet gate, not full
+            // sign/submit coverage — confirming past it is out of scope
+            // here even though signing quantum accounts now works.
             expect(
                 screen.queryByTestId('rekey-to-standard-success-screen'),
             ).toBeNull()

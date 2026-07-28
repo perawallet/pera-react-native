@@ -13,18 +13,21 @@
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { FALCON_CHILD_KEY_TYPE } from '../models'
 
-// MOCK(quantum): replace with real Falcon-1024 implementation when keystore support lands. See EPIC phase 2.
 /**
  * Persists the quantum signing child as a keystore entry with
- * `type: 'falcon1024'` (the concrete algorithm lives on the entry — the id
- * is the scheme-agnostic `quantumSignKeyId`).
+ * `type: 'falcon1024'` (the concrete algorithm lives on the entry — the id is
+ * the scheme-agnostic `quantumSignKeyId`).
  *
- * The keystore's public `generate`/`import` dispatchers reject unknown key
- * types, so during the mock phase the entry goes through the keystore's
- * low-level `commit`: same encrypted MMKV namespace and reactive-store
- * update, and `hydrateKeystore` restores it on cold start like any other
- * entry. Once the keystore gains native falcon1024 support this becomes a
- * `keyStore.generate` call.
+ * This uses the keystore's low-level `commit` rather than `keyStore.generate`
+ * because `@algorandfoundation/keystore` ships generators for seed, ed25519,
+ * XHD-root and secret-key only — there is no Falcon generator to call. The
+ * entry itself is not a stand-in: it holds a real Falcon public key, in the
+ * same encrypted namespace as every other entry, and `hydrateKeystore`
+ * restores it on cold start like any other. The child carries no private
+ * material; signing re-derives the keypair from the parent seed.
+ *
+ * When the keystore gains a Falcon key type, this becomes a
+ * `keyStore.generate` call and this note goes away.
  *
  * `@algorandfoundation/react-native-keystore` is imported lazily on purpose:
  * its module scope instantiates MMKV, which breaks sibling-package vitest

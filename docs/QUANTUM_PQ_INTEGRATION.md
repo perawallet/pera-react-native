@@ -19,14 +19,17 @@ Pure crypto, with no SDK or address coupling:
 
 - `PQSignatureProvider` — the interface (`scheme`, `publicKeyLength`,
   `generateKeypairFromSeed`, `sign`).
-- `wasmFalconProvider.ts` — wraps WASM `falcon-1024`; used in node/vitest.
-- `getPQProvider()` — the factory that selects the concrete provider.
+- `wasmFalconProvider.ts` — wraps WASM `falcon-1024`; used in node, vitest and
+  the web/extension build.
+- `rnFalconProvider.ts` — wraps the native `@joe-p/react-native-falcon` Nitro
+  module; used on iOS/Android (PQ-020, landed — see below).
+- `getPQProvider()` / `getPQProvider.native.ts` — both providers ship today.
+  Selection is a build-time choice, not a runtime check: Metro's standard
+  `.native.*` platform-extension resolution swaps in the native file for iOS
+  and Android, so no consumer branches on platform.
 
-The React Native on-device provider (wrapping `@joe-p/react-native-falcon`) is
-a later ticket (PQ-020); today this seam only ships the WASM provider.
-
-**Official swap:** implement a new `PQSignatureProvider` and change the
-`getPQProvider` factory line. One module.
+**Official swap:** implement a new `PQSignatureProvider` and change both
+`getPQProvider` factory files (node/web and native). Two modules.
 
 ## Seam B — PQ transaction adapter (`packages/blockchain/src/pq/`)
 
@@ -66,13 +69,17 @@ Key contracts:
   whenever the transaction's sender differs from the address the PQ key
   authorizes; no explicit sender override is threaded through today.
 
-Stock `algosdk` objects never cross into the fork — only bytes go in and out.
+Real algosdk objects cross this seam in both directions — `pqSigningDigest`
+takes a `Transaction` and `assemblePQSignedTransaction` returns a
+`SignedTransaction` — only the signature itself (the `PQSignature.signature`
+field) is raw bytes.
 
 **Official swap:** change the `algosdk` catalog entry (and its matching
 `overrides` entry) in `pnpm-workspace.yaml` from the fork alias to the
-official release — no changes to this module are required. If `pqsig`
-becomes part of the mainline `SignedTransaction`, delete the byte-threading
-here and route quantum through the normal signed-transaction path.
+official release — no changes to this module are required. Quantum
+transactions already assemble as plain `SignedTransaction`s with `pqsig` set
+(see PQ-023 below), so there is no byte-threading left to delete when `pqsig`
+becomes mainline.
 
 ## Swap-back procedure
 
@@ -81,10 +88,9 @@ here and route quantum through the normal signed-transaction path.
 2. **Official algosdk with `pqsig`** — change the `algosdk` catalog entry (and
    its matching `overrides` entry) in `pnpm-workspace.yaml` from the fork
    alias to the official release, per the `SWAP-BACK:` comment there. No
-   source file changes are required. If `pqsig` becomes mainline
-   `SignedTransaction`, delete the byte-threading in Seam B
-   (`quantumAdapter.ts`) and route quantum through the normal
-   signed-transaction path.
+   source file changes are required — quantum transactions already assemble
+   as plain `SignedTransaction`s with `pqsig` set (Seam B, PQ-023 below), so
+   there is no byte-threading to remove.
 
 Seam A's source files carry a `// SWAP:` marker pointing back here; the
 algosdk fork's swap point lives in the `SWAP-BACK:` comment in
@@ -103,9 +109,12 @@ make the guard vacuous.
 
 ## Scope note
 
-PQ-018 (the seam integration) establishes the seams only. Broadcast is
-LocalNet-only until an official algod with `pqsig` support ships; submission
-gating is tracked separately as PQ-019.
+PQ-018 (the seam integration) established the seams. Submission is no longer
+gated (PQ-019/PQ-021 — see the "Submission is quantum-agnostic" bullet under
+PQ-006 above): a quantum-signed group broadcasts through the ordinary
+algod/callback transports unchanged. Whether it lands on-chain depends
+entirely on the node, not on any app-side check — LocalNet accepts `pqsig`
+today; no public network does (see PQ-023 below).
 
 ## PQ-006 / PERA-4488 — local signing (landed)
 
@@ -167,4 +176,40 @@ Seam A directory** like every other `@joe-p/*` import.
 4. Sign a payment; confirm the native module produces a Falcon signature
    (≤ 1232 B compressed) over `pqSigningDigest(txn)` and that
    `assemblePQSignedTransaction` yields a `pqsig` `SignedTransaction`.
-   **No on-chain confirmation is expected** — submission is gated (PQ-019).
+   **No on-chain confirmation is expected** — submission is not gated, but no
+   public algod accepts `pqsig` yet (see PQ-023 below).
+
+## PQ-023 — unified signing path, generic `PQSignature` (landed)
+
+Quantum accounts no longer have a parallel code path anywhere in signing or
+submission:
+
+- **Signing** — `useLocalKeyTransactionSigner` is the only signer for
+  key-backed accounts (Algo25, HD wallet, quantum alike). It asks
+  `useKMS().getPQSigningInfo(keyPairId)` once per call; when that returns
+  non-null it signs `pqSigningDigest(txn)` (never the raw encoding — see "Key
+  contracts" above) and assembles the result with
+  `assemblePQSignedTransaction`. `createQuantumStrategy` and
+  `quantumSignerActor` are deleted; there is no `'quantum'` case in
+  `determineSignerType`/`ResolvedSignerType` (see PQ-006 above).
+- **`PQSignature`** (`packages/blockchain/src/models/index.ts`) — the generic,
+  scheme-agnostic shape carried across this boundary: `{ schemeId, publicKey,
+signature }`. `schemeId` selects the wire scheme (`PQSchemeId`), so a second
+  PQ scheme needs no new type; the address salt is derived from `(scheme,
+publicKey)` and is therefore not carried on the type.
+- **`pqSigningDigest(txn)` preimage contract** — `sha512_256(txn.bytesToSign())`.
+  This is the one fact in this document with the highest cost if it drifts:
+  an earlier revision of this seam threaded a pre-computed signature through
+  without pinning what it was a signature over, which is exactly how a wrong
+  preimage would have shipped silently, since no node verifies `pqsig` today.
+  Whatever signs on the other side of Seam B (KMS, hardware, etc.) must sign
+  `pqSigningDigest(txn)`, never `txn.bytesToSign()` directly.
+- **LocalNet verification** — end-to-end exercise of derive → sign → assemble
+  → submit against a real node is separate follow-up tooling
+  (`pnpm localnet:quantum-check`, not yet landed as of this writing); today,
+  manual verification is limited to the on-device checklist above plus the
+  differential test in `quantumAdapter.spec.ts`.
+- **No public algod accepts `pqsig` yet** — verified as of 2026-07-28: both
+  `algod` 4.7.4-stable and `rel/nightly` build 2680 reject transactions
+  carrying a `pqsig` field. LocalNet (built from the fork) is the only place
+  a quantum-signed transaction is currently confirmed on-chain.

@@ -49,7 +49,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
 import { useQuantum, type QuantumKeyResult } from '../useQuantum'
 import { quantumSignKeyId, FALCON_CHILD_KEY_TYPE } from '../../models'
-import { FALCON_PUBLIC_KEY_LENGTH } from '../../crypto/falcon-utils'
 import { SeedScheme } from '../../constants'
 import { getPQProvider } from '../../crypto/pq'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
@@ -126,7 +125,7 @@ describe('useQuantum', () => {
             expect(arg.metadata.pera.createdAt).toBeDefined()
         })
 
-        test('commits the quantum child with the quantum id, parentKeyId and 1,793-byte public key', async () => {
+        test('commits the quantum child with the quantum id, parentKeyId and the provider public-key length', async () => {
             const { result } = renderHook(() => useQuantum())
             await act(async () => {
                 await result.current.createQuantumKey({
@@ -139,7 +138,7 @@ describe('useQuantum', () => {
             const arg = mockCommitQuantumChildKey.mock.calls[0][0]
             expect(arg.id).toBe(quantumSignKeyId('my-key'))
             expect(arg.parentKeyId).toBe('my-key')
-            expect(arg.publicKey).toHaveLength(FALCON_PUBLIC_KEY_LENGTH)
+            expect(arg.publicKey).toHaveLength(getPQProvider().publicKeyLength)
         })
 
         test('generates a random 32-byte seed and a uuid id when no params given', async () => {

@@ -348,10 +348,12 @@ type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
  * not the source itself, not the source's current auth, hold its own
  * signing keys, and not already be rekeyed away.
  *
- * Quantum targets are additionally gated on `isQuantumTargetEnabled` (the
- * quantum-accounts feature flag): until quantum signing ships (PQ-006),
- * rekeying to a quantum account is a one-way door — undo/re-rekey would
- * resolve a quantum auth that no signer supports yet.
+ * Quantum targets are additionally gated on `isQuantumTargetEnabled`, which
+ * mirrors the app's quantum-accounts feature flag
+ * (`useIsQuantumAccountsEnabled`): quantum signing itself is fully
+ * implemented (PQ-006), so this gate is rollout control, not a functional
+ * limitation — rekeying to a quantum account only needs to be hidden while
+ * the feature flag is off.
  */
 export const isEligibleRekeyTarget = (
     target: WalletAccount,

@@ -26,4 +26,11 @@ const unavailable = () => {
 
 export const generateKey = unavailable
 export const signCompressed = unavailable
-export const FALCON_DET1024_PUBKEY_SIZE = 0
+
+// A real Falcon-1024 public key is 1793 bytes. Exporting 0 here would let a
+// caller that slipped past the `quantum: false` web capability gate build a
+// zero-length key silently; throwing matches the other exports in this shim.
+Object.defineProperty(exports, 'FALCON_DET1024_PUBKEY_SIZE', {
+    get: unavailable,
+    enumerable: true,
+})
