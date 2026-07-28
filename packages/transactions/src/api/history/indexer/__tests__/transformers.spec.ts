@@ -129,6 +129,97 @@ describe('transformIndexerTransactions', () => {
         ])
     })
 
+    test('attributes a clawback debit to the account actually drained, not the clawback authority', () => {
+        // Regression coverage for a real bug caught earlier in this feature:
+        // the effective sender during a clawback is the NESTED `sender` on
+        // `asset-transfer-transaction` (asnd) — there is no top-level
+        // `asset-sender` field. If the schema ever stopped accepting/passing
+        // through that nested field, this row would wrongly attribute the
+        // debit to CLAWBACK_ADMIN (the enclosing transaction's own top-level
+        // sender) instead of DRAINED.
+        const clawback = {
+            'current-round': 1,
+            transactions: [
+                {
+                    id: 'CLAWTX',
+                    'tx-type': 'axfer',
+                    sender: 'CLAWBACK_ADMIN',
+                    fee: 1000,
+                    'confirmed-round': 200,
+                    'round-time': 1700000200,
+                    'asset-transfer-transaction': {
+                        'asset-id': 7,
+                        amount: 500,
+                        receiver: 'RECEIVER',
+                        sender: 'DRAINED',
+                    },
+                },
+            ],
+        }
+
+        const [row] = transformIndexerTransactions(
+            clawback,
+            'DRAINED',
+            new Map(),
+        ).results
+
+        expect(row.balance_impacts).toEqual([
+            {
+                asset_id: '7',
+                unit_name: '',
+                fraction_decimals: 0,
+                amount: '-500',
+            },
+        ])
+    })
+
+    test('preserves precision for an amount above 2^53 arriving as a string', () => {
+        // parsePrecisionSafeJson surfaces uint64 values above 2^53-1 as
+        // decimal strings rather than rounding them — real fnet assets have
+        // a total supply around 1e16. Routing this through Number() would
+        // silently corrupt it. This value (2^64-1, odd) is not just "large" —
+        // it is specifically NOT exactly representable as a float64 (unlike
+        // some large-but-round values, which can survive Number() by
+        // coincidence and would not discriminate this test).
+        const LARGE_AMOUNT = '18446744073709551615'
+        const bigTx = {
+            'current-round': 1,
+            transactions: [
+                {
+                    id: 'BIGTX',
+                    'tx-type': 'axfer',
+                    sender: ME,
+                    fee: 1000,
+                    'confirmed-round': 300,
+                    'round-time': 1700000300,
+                    'asset-transfer-transaction': {
+                        'asset-id': 123,
+                        amount: LARGE_AMOUNT,
+                        receiver: 'BBBB',
+                    },
+                },
+            ],
+        }
+
+        const [row] = transformIndexerTransactions(bigTx, ME, new Map()).results
+
+        expect(row.amount).toBe(LARGE_AMOUNT)
+        expect(row.balance_impacts).toEqual([
+            {
+                asset_id: '0',
+                unit_name: 'ALGO',
+                fraction_decimals: 6,
+                amount: '-1000',
+            },
+            {
+                asset_id: '123',
+                unit_name: '',
+                fraction_decimals: 0,
+                amount: `-${LARGE_AMOUNT}`,
+            },
+        ])
+    })
+
     test('omits pera-only interpretive fields', () => {
         const [first] = transformIndexerTransactions(
             response,
