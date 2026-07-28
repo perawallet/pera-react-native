@@ -43,6 +43,11 @@ export type BalanceImpactItem = {
      * row must present it as the full balance rather than the partial figure.
      */
     isFullBalance: boolean
+    /**
+     * The asset is minted by this group, so it has no id, price or metadata yet
+     * — the row labels it as new instead of converting it.
+     */
+    isNewAsset: boolean
     /** USD unit price, when known — lets the fiat row convert without a lookup. */
     usdPrice?: Decimal
     /** Collectible only. */
@@ -144,12 +149,37 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 direction: amount > 0n ? 'receive' : 'spend',
                 amount: displayAbs,
                 isFullBalance: closedAssetIds.has(assetId),
+                isNewAsset: false,
                 usdPrice,
                 collectibleTitle: isCollectible
                     ? (collectible?.title ?? asset?.name ?? `#${assetId}`)
                     : undefined,
                 collectibleSubtitle,
                 sortValue,
+            }
+        })
+
+        // A mint has no asset id yet, so it never reaches `movements` — build its
+        // row straight from the acfg params.
+        const mintedItems = impact.createdAssets.map<SortableItem>(created => {
+            const amount = baseUnitsToDisplayUnits(
+                created.total,
+                created.decimals,
+            )
+            return {
+                assetId: created.key,
+                asset: {
+                    assetId: created.key,
+                    name: created.name,
+                    unitName: created.unitName,
+                    decimals: created.decimals,
+                },
+                isCollectible: false,
+                direction: 'receive',
+                amount,
+                isFullBalance: false,
+                isNewAsset: true,
+                sortValue: amount,
             }
         })
 
@@ -163,9 +193,10 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 })
                 .map(({ sortValue: _sortValue, ...item }) => item)
 
-        const receive = order(
-            items.filter(item => item.direction === 'receive'),
-        )
+        const receive = order([
+            ...items.filter(item => item.direction === 'receive'),
+            ...mintedItems,
+        ])
         const spend = order(items.filter(item => item.direction === 'spend'))
 
         return {

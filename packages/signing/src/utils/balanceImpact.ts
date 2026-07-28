@@ -22,6 +22,20 @@ export type BalanceImpactDelta = {
     amount: bigint
 }
 
+export type BalanceImpactCreatedAsset = {
+    /**
+     * Row key. A minted asset has no id until the group is confirmed (`acfg`
+     * carries `assetId: 0`, which is ALGO's id here), so it can't be netted
+     * into {@link BalanceImpact.deltas} and is keyed by group position.
+     */
+    key: string
+    name?: string
+    unitName?: string
+    /** Total supply credited to the creator, in base units. */
+    total: bigint
+    decimals: number
+}
+
 export type BalanceImpact = {
     /**
      * Net per-asset movement across the whole group for the user's accounts.
@@ -44,6 +58,12 @@ export type BalanceImpact = {
      * them as the full balance rather than the partial figure.
      */
     closedAssetIds: string[]
+    /**
+     * Assets minted by one of the user's accounts in this group. A mint moves no
+     * existing asset, so it produces no delta — without this a mint group (e.g.
+     * a multi-mint) has no impact to show at all.
+     */
+    createdAssets: BalanceImpactCreatedAsset[]
 }
 
 const toBig = (value: bigint | number | undefined): bigint => {
@@ -73,13 +93,14 @@ export const computeBalanceImpact = (
     const net = new Map<string, bigint>()
     let totalFeeMicroAlgos = 0n
     const closedAssets = new Set<string>()
+    const createdAssets: BalanceImpactCreatedAsset[] = []
 
     const move = (assetId: string, amount: bigint): void => {
         if (amount === 0n) return
         net.set(assetId, (net.get(assetId) ?? 0n) + amount)
     }
 
-    for (const tx of transactions) {
+    for (const [index, tx] of transactions.entries()) {
         const sender = tx.sender
         const senderIsUser = !!sender && userAddresses.has(sender)
 
@@ -115,6 +136,19 @@ export const computeBalanceImpact = (
                 closedAssets.add(assetId)
             }
         }
+
+        // A mint credits the creator with the whole supply. `assetId: 0` marks
+        // a create (an update/destroy names the existing asset).
+        const acfg = tx.assetConfigTransaction
+        if (acfg && senderIsUser && toBig(acfg.assetId) === 0n) {
+            createdAssets.push({
+                key: `created-${index}`,
+                name: acfg.params?.name,
+                unitName: acfg.params?.unitName,
+                total: toBig(acfg.params?.total),
+                decimals: Number(acfg.params?.decimals ?? 0),
+            })
+        }
     }
 
     const deltas: BalanceImpactDelta[] = [...net.entries()]
@@ -126,5 +160,6 @@ export const computeBalanceImpact = (
         totalFeeMicroAlgos,
         hasCloseRemainder: closedAssets.size > 0,
         closedAssetIds: [...closedAssets],
+        createdAssets,
     }
 }

@@ -2278,7 +2278,8 @@
             "analyzing": "Analyzing transaction…",
             "unavailable": "Unable to preview balance impact — review the transaction details carefully before signing.",
             "entire_balance": "Entire {{unit}} balance",
-            "closes_balance": "Your full remaining balance is sent"
+            "closes_balance": "Your full remaining balance is sent",
+            "new_asset": "New asset created by this transaction"
         },
         "arbitrary_data_view": {
             "body": "Data Signing Request",
