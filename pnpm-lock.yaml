@@ -1924,7 +1924,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.1)
+        version: 9.2.0(algosdk@3.6.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2126,6 +2126,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@noble/hashes':
+        specifier: 'catalog:'
+        version: 1.8.0
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -2195,7 +2198,7 @@ importers:
         version: 5.0.3(esbuild@0.28.1)(rolldown@1.1.3)(typescript@5.9.3)(vite@8.1.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.1)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.1.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.1)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.1.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.1)(yaml@2.8.3))
 
   packages/card:
     dependencies:
@@ -3090,7 +3093,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.1)
+        version: 9.2.0(algosdk@3.6.0)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3542,7 +3545,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.1)
+        version: 9.2.0(algosdk@3.6.0)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -3904,7 +3907,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.1)
+        version: 9.2.0(algosdk@3.6.0)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -7030,6 +7033,10 @@ packages:
   algorand-msgpack@1.1.0:
     resolution: {integrity: sha512-08k7pBQnkaUB5p+jL7f1TRaUIlTSDE0cesFu1mD7llLao+1cAhtvvZmGE3OnisTd0xOn118QMw74SRqddqaYvw==}
     engines: {node: '>= 14'}
+
+  algosdk@3.6.0:
+    resolution: {integrity: sha512-pdM0neCgR3DasvpSPfgQKc5/hlhkSYmXjcUChePLGegA0kqA0AoLmcfMDyeREcsvHcu7rrv3Wa+RZnGa5kINwQ==}
+    engines: {node: '>=18.0.0'}
 
   anser@1.4.10:
     resolution: {integrity: sha512-hCv9AqTQ8ycjpSd3upOJd7vFwW1JaoYQ7tpham03GJ1ca8/65rqn0RpaWpItOAd6ylW9wAw6luXYPJIyPFVOww==}
@@ -10582,6 +10589,11 @@ snapshots:
       algosdk: '@joe-p/algosdk@3.7.0-beta.1'
       buffer: 6.0.3
 
+  '@algorandfoundation/algokit-utils@9.2.0(algosdk@3.6.0)':
+    dependencies:
+      algosdk: 3.6.0
+      buffer: 6.0.3
+
   '@algorandfoundation/dp256@1.1.0':
     dependencies:
       '@noble/curves': 1.9.6
@@ -13489,7 +13501,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
@@ -14147,6 +14161,17 @@ snapshots:
   algo-msgpack-with-bigint@2.1.1: {}
 
   algorand-msgpack@1.1.0: {}
+
+  algosdk@3.6.0:
+    dependencies:
+      algorand-msgpack: 1.1.0
+      hi-base32: 0.5.1
+      js-sha256: 0.9.0
+      js-sha3: 0.8.0
+      js-sha512: 0.8.0
+      json-bigint: 1.0.0
+      tweetnacl: 1.0.3
+      vlq: 2.0.4
 
   anser@1.4.10: {}
 
