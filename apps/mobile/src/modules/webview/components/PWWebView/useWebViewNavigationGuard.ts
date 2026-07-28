@@ -11,42 +11,36 @@
  */
 
 import { useCallback } from 'react'
+import { Linking } from 'react-native'
 
 import { logger } from '@perawallet/wallet-core-shared'
-import {
-    PERAWALLET_UNIVERSAL_LINK_HOST,
-    PERAWALLET_WC_SCHEME,
-    WC_SCHEME,
-} from '@hooks/deeplink/constants'
+import { PERAWALLET_UNIVERSAL_LINK_HOST } from '@hooks/deeplink/constants'
+import { isOriginGatedDeeplinkType } from '@hooks/deeplink/page-initiated-policy'
 import { parseDeeplink } from '@hooks/deeplink/parser'
-import { DeeplinkType } from '@hooks/deeplink/types'
 import { useDeepLink } from '@hooks/useDeepLink'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
+import { getDisplayHost } from './getDisplayHost'
 
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
 
 type UseWebViewNavigationGuardOptions = {
     isTrustedOrigin: boolean
+    /** Live page URL — logged (host only) when a dispatch is refused. */
+    pageUrl: string
 }
 
 type UseWebViewNavigationGuardResult = {
     onShouldStartLoadWithRequest: (request: ShouldStartLoadRequest) => boolean
 }
 
-// Value-bearing deeplink types: they pre-fill Send, submit keyreg, import an
-// account, or start WC pairing. A page may only fire these when it is the
-// trusted Discover origin — from anywhere else they are swallowed so they
-// can't reach the router in-app or re-enter via the OS (PERA-4666).
-const ORIGIN_GATED_DEEPLINK_TYPES = new Set<DeeplinkType>([
-    DeeplinkType.ALGO_TRANSFER,
-    DeeplinkType.ASSET_TRANSFER,
-    DeeplinkType.KEYREG,
-    DeeplinkType.RECOVER_ADDRESS,
-    DeeplinkType.WALLET_CONNECT,
-])
+// Everyday schemes only the OS can service. WalletConnect wake links are
+// deliberately absent — we ARE the wallet, so they're swallowed rather than
+// bounced through the app chooser.
+const OS_HANDLED_SCHEMES = ['mailto:', 'tel:', 'sms:'] as const
 
-const isWalletConnectScheme = (url: string): boolean =>
-    url.startsWith(`${WC_SCHEME}:`) ||
-    url.startsWith(`${PERAWALLET_WC_SCHEME}:`)
+const isOsHandledScheme = (url: string): boolean =>
+    OS_HANDLED_SCHEMES.some(scheme => url.toLowerCase().startsWith(scheme))
 
 // Trailing slash is load-bearing: it pins the match to the perawallet.app
 // origin so a look-alike host (`perawallet.app.evil.com`) can't spoof it.
@@ -77,12 +71,19 @@ const isPeraUniversalLink = (url: string): boolean =>
  *   different path and are unaffected.
  * - WalletConnect wake/focus links carry no actionable URI (no bridge param) so
  *   they don't parse as a deeplink — they're swallowed to keep them off the OS
- *   chooser. Other unrecognised schemes keep their default OS behaviour.
+ *   chooser.
+ * - Everything else non-http(s) is refused rather than handed to the WebView,
+ *   which can't load a foreign scheme. `mailto:`/`tel:`/`sms:` are opened via
+ *   `Linking` first, because PWWebView sets `originWhitelist={['*']}` so
+ *   react-native-webview's own openURL fallback no longer runs.
  */
 export const useWebViewNavigationGuard = ({
     isTrustedOrigin,
+    pageUrl,
 }: UseWebViewNavigationGuardOptions): UseWebViewNavigationGuardResult => {
     const { handleDeepLink } = useDeepLink()
+    const { t } = useLanguage()
+    const { errorToast } = useToast()
 
     const onShouldStartLoadWithRequest = useCallback(
         (request: ShouldStartLoadRequest): boolean => {
@@ -93,17 +94,29 @@ export const useWebViewNavigationGuard = ({
                 return true
             }
 
+            // iOS reports subframe navigations here; Android hardcodes
+            // isTopFrame true (it discards the WebResourceRequest), so this can
+            // only ever tighten the gate. `isTrustedOrigin` is derived from the
+            // TOP frame, so without this a cross-origin iframe on Discover
+            // inherits Discover's trust — the same forgery the bridge already
+            // defends against with its per-mount token.
+            const isTopFrameNavigation = request.isTopFrame !== false
+            const isTrusted = isTrustedOrigin && isTopFrameNavigation
+
             const parsed = parseDeeplink(url)
             if (parsed) {
-                if (
-                    !isTrustedOrigin &&
-                    ORIGIN_GATED_DEEPLINK_TYPES.has(parsed.type)
-                ) {
+                if (!isTrusted && isOriginGatedDeeplinkType(parsed.type)) {
                     // Don't log the url: a RECOVER_ADDRESS link carries a
                     // mnemonic.
                     logger.warn(
                         'Blocked page-initiated deeplink from untrusted origin',
-                        { type: parsed.type },
+                        { type: parsed.type, host: getDisplayHost(pageUrl) },
+                    )
+                    // Silence would read as a broken app on a tap the user
+                    // actually made, so say the page was refused.
+                    errorToast(
+                        t('errors.deeplink.blocked_origin_title'),
+                        t('errors.deeplink.blocked_origin_body'),
                     )
                     return false
                 }
@@ -115,9 +128,21 @@ export const useWebViewNavigationGuard = ({
                 return true
             }
 
-            return !isWalletConnectScheme(url)
+            // `originWhitelist={['*']}` means react-native-webview no longer
+            // Linking.openURL's these itself, and the WebView cannot load a
+            // foreign scheme (Android raises ERR_UNKNOWN_URL_SCHEME and swaps
+            // the page for the error view). Hand the everyday OS schemes over
+            // explicitly, then refuse the navigation either way. WC wake links
+            // are deliberately absent — we ARE the wallet.
+            if (isOsHandledScheme(url)) {
+                void Linking.openURL(url).catch(() => {
+                    logger.warn('No OS handler for webview navigation', { url })
+                })
+            }
+
+            return false
         },
-        [handleDeepLink, isTrustedOrigin],
+        [handleDeepLink, isTrustedOrigin, pageUrl, errorToast, t],
     )
 
     return { onShouldStartLoadWithRequest }

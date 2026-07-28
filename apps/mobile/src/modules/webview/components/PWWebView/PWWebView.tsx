@@ -178,6 +178,7 @@ export const PWWebView = (props: PWWebViewProps) => {
 
     const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard({
         isTrustedOrigin: isSecure,
+        pageUrl: currentUrl,
     })
 
     const handleEvent = useCallback(

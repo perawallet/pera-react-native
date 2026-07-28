@@ -672,7 +672,9 @@
         },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
-            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
+            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
+            "blocked_origin_title": "Action blocked",
+            "blocked_origin_body": "This website tried to start an action in your wallet. Pera only allows that from trusted sites."
         },
         "general": {
             "title": "An error occurred",

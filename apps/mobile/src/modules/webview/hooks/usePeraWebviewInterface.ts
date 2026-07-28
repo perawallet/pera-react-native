@@ -53,6 +53,7 @@ import {
     isSafeBrowserUrl,
     JsonRpcErrorCode,
     requireSecure,
+    safeOrigin,
     sendActionToWebview,
     sendErrorToWebview,
     sendMessageToWebview,
@@ -101,11 +102,15 @@ type WebviewAccountType =
     | 'RekeyedSignable'
     | 'RekeyedUnsignable'
 
-// Mirrors the peraConnectJS dedup window (injected-scripts.ts): at most one
-// page-initiated WC connect per window, so a hostile page can't storm the
-// approval sheet with fresh pairing URIs (PERA-4666). The sheet itself is
-// always shown for accepted connects.
-const WC_CONNECT_DEDUP_WINDOW_MS = 2000
+// At most one page-initiated WC connect per origin per window, so a hostile
+// page can't storm the approval sheet with fresh pairing URIs (PERA-4666). The
+// sheet itself is always shown for accepted connects.
+//
+// Same duration as the peraConnectJS window (injected-scripts.ts) but not the
+// same mechanism: that one de-dups an identical URI, this one rate-limits the
+// origin regardless of URI — a WC pairing URI is single-use, so spam arrives as
+// a stream of *fresh* URIs that a pure de-dup would wave through.
+const WC_CONNECT_THROTTLE_WINDOW_MS = 2000
 
 const BASE_WEBVIEW_TYPE: Record<
     WalletAccount['type'],
@@ -841,7 +846,9 @@ export const usePeraWebviewInterface = (
         [preferredCurrency, theme, network, webview],
     )
 
-    const lastWcConnectAtRef = useRef(0)
+    // Keyed by origin: an in-place navigation must not let one site's connect
+    // throttle the next site's, and each origin gets its own budget.
+    const lastWcConnectByOriginRef = useRef(new Map<string, number>())
 
     const openWalletConnect = useCallback(
         (message: WebviewMessage) => {
@@ -874,8 +881,11 @@ export const usePeraWebviewInterface = (
             }
 
             const now = Date.now()
-            if (now - lastWcConnectAtRef.current < WC_CONNECT_DEDUP_WINDOW_MS) {
-                logger.warn('[webview/wc] connect throttled', { sourceUrl })
+            const throttleKey = safeOrigin(sourceUrl ?? '') ?? sourceUrl ?? ''
+            const lastConnectAt =
+                lastWcConnectByOriginRef.current.get(throttleKey) ?? 0
+            if (now - lastConnectAt < WC_CONNECT_THROTTLE_WINDOW_MS) {
+                logger.warn('[webview/wc] connect throttled', { throttleKey })
                 sendErrorToWebview(
                     message.id,
                     JsonRpcErrorCode.InvalidRequest,
@@ -884,7 +894,7 @@ export const usePeraWebviewInterface = (
                 )
                 return
             }
-            lastWcConnectAtRef.current = now
+            lastWcConnectByOriginRef.current.set(throttleKey, now)
 
             // Always surface the connection approval sheet — as if the user
             // had scanned the QR themselves. The bridge never auto-approves a

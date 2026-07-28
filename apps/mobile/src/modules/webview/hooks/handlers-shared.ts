@@ -172,7 +172,7 @@ export const isSafeRelativePath = (path: string): boolean => {
     }
 }
 
-const safeOrigin = (url: string): string | null => {
+export const safeOrigin = (url: string): string | null => {
     try {
         const origin = new URL(url).origin
         return origin === 'null' ? null : origin
