@@ -20,6 +20,7 @@ import {
 } from './transact'
 
 export * from './algorandClient'
+export * from './resolveGenesisHash'
 export * from './createAlgorandClient'
 export * from './TimeoutHttpClient'
 export * from './addresses'

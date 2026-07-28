@@ -27,6 +27,7 @@ import {
     type PeraTransaction,
     encodeAlgorandAddress,
     classifyPeraTransaction,
+    resolveExpectedGenesisHash,
 } from '@perawallet/wallet-core-blockchain'
 import { validateTransactionRoundTrip } from '../../utils/validateTransactionRoundTrip'
 import { assertTransactionsMatchNetwork } from '../../utils/assertTransactionsMatchNetwork'
@@ -60,7 +61,11 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                     )
                 }
 
-                assertTransactionsMatchNetwork(transactions, context.network)
+                assertTransactionsMatchNetwork(
+                    transactions,
+                    context.network,
+                    await resolveExpectedGenesisHash(context.network),
+                )
 
                 const accountAddresses = new Set(
                     context.accounts.map(a => a.address),

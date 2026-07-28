@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { encodeToBase64, type Network } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 
@@ -23,17 +22,27 @@ import { GenesisHashMismatchError } from '../pipeline/errors'
  * legs it doesn't own, so checking this subset is sufficient to guarantee no
  * cross-network signature is produced. `genesisHash` is the canonical,
  * signature-bound chain identifier; `genesisId` is intentionally not checked.
+ *
+ * `expectedGenesisHash` is supplied by the caller rather than read from config
+ * so that networks whose genesis is not build-time-pinned (betanet, fnet,
+ * localnet) can pass their runtime-resolved identity in. See
+ * `resolveExpectedGenesisHash`.
  */
 export const assertTransactionsMatchNetwork = (
     transactions: PeraTransaction[],
     network: Network,
+    expectedGenesisHash: string,
 ): void => {
-    const expected = getNetworkConfig(network).genesisHash
     for (let i = 0; i < transactions.length; i++) {
         const genesisHash = transactions[i].genesisHash
         const actual = genesisHash ? encodeToBase64(genesisHash) : ''
-        if (actual !== expected) {
-            throw new GenesisHashMismatchError(network, i, expected, actual)
+        if (actual !== expectedGenesisHash) {
+            throw new GenesisHashMismatchError(
+                network,
+                i,
+                expectedGenesisHash,
+                actual,
+            )
         }
     }
 }

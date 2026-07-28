@@ -11,11 +11,16 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { Networks } from '@perawallet/wallet-core-config'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 
 import { assertTransactionsMatchNetwork } from '../assertTransactionsMatchNetwork'
 import { GenesisHashMismatchError } from '../../pipeline/errors'
+import {
+    makeTestAddress,
+    makeTestPaymentTx,
+} from '../../test-utils/transactions'
 
 const MAINNET_HASH = 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8='
 const TESTNET_HASH = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
@@ -31,6 +36,7 @@ describe('assertTransactionsMatchNetwork', () => {
             assertTransactionsMatchNetwork(
                 [txWithGenesis(MAINNET_HASH), txWithGenesis(MAINNET_HASH)],
                 'mainnet',
+                MAINNET_HASH,
             ),
         ).not.toThrow()
     })
@@ -40,6 +46,7 @@ describe('assertTransactionsMatchNetwork', () => {
             assertTransactionsMatchNetwork(
                 [txWithGenesis(MAINNET_HASH)],
                 'testnet',
+                TESTNET_HASH,
             ),
         ).toThrow(GenesisHashMismatchError)
     })
@@ -49,6 +56,7 @@ describe('assertTransactionsMatchNetwork', () => {
             assertTransactionsMatchNetwork(
                 [txWithGenesis(MAINNET_HASH), txWithGenesis(TESTNET_HASH)],
                 'mainnet',
+                MAINNET_HASH,
             ),
         ).toThrow(GenesisHashMismatchError)
     })
@@ -59,7 +67,37 @@ describe('assertTransactionsMatchNetwork', () => {
 
         // Act & Assert
         expect(() =>
-            assertTransactionsMatchNetwork([txWithoutGenesis], 'mainnet'),
+            assertTransactionsMatchNetwork(
+                [txWithoutGenesis],
+                'mainnet',
+                MAINNET_HASH,
+            ),
+        ).toThrow(GenesisHashMismatchError)
+    })
+
+    test('compares against the hash it is given, not the baked config', () => {
+        const runtimeHash = 'kUt08LxeVAAGHnh4JoAoAMM9ql/hBwSoiFtlnKNeOxA='
+        const transactions = [
+            makeTestPaymentTx(makeTestAddress(1), {
+                receiver: makeTestAddress(2),
+                genesisHash: decodeFromBase64(runtimeHash),
+            }),
+        ]
+
+        expect(() =>
+            assertTransactionsMatchNetwork(
+                transactions,
+                Networks.fnet,
+                runtimeHash,
+            ),
+        ).not.toThrow()
+
+        expect(() =>
+            assertTransactionsMatchNetwork(
+                transactions,
+                Networks.fnet,
+                'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0=',
+            ),
         ).toThrow(GenesisHashMismatchError)
     })
 })
