@@ -11,8 +11,31 @@
  */
 
 import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
-import { useNetworkStore } from '../store'
+import { updateNodeEndpoints } from '@perawallet/wallet-core-shared'
+import {
+    getNodeEndpointOverride,
+    useNetworkStore,
+    useNodeOverrideStore,
+} from '../store'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
+
+/**
+ * The endpoints to actually talk to: baked chain config with any persisted
+ * developer override layered on top. Tokens are never overridden — LocalNet's
+ * differs from the hosted providers', and that comes from the chain config.
+ */
+export const resolveChainEndpoints = (network: Network) => {
+    const { algodUrl, indexerUrl, algodToken, indexerToken } =
+        getNetworkConfig(network)
+    const override = getNodeEndpointOverride(network)
+
+    return {
+        algodUrl: override?.algodUrl ?? algodUrl,
+        indexerUrl: override?.indexerUrl ?? indexerUrl,
+        algodToken,
+        indexerToken,
+    }
+}
 
 /**
  * Returns an instance of AlgorandClient for a specific network.
@@ -25,5 +48,13 @@ import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
  */
 export const getAlgorandClient = (networkOverride?: Network) => {
     const network = networkOverride ?? useNetworkStore.getState().network
-    return createTimeoutBoundedAlgorandClient(getNetworkConfig(network))
+    return createTimeoutBoundedAlgorandClient(resolveChainEndpoints(network))
 }
+
+// Keep the shared ky algod/indexer instances in step with overrides. `shared`
+// cannot import `blockchain`, so the write direction is blockchain -> shared.
+useNodeOverrideStore.subscribe(state => {
+    for (const network of Object.keys(state.overrides) as Network[]) {
+        updateNodeEndpoints(network, resolveChainEndpoints(network))
+    }
+})

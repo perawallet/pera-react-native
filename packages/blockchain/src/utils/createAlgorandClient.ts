@@ -19,6 +19,8 @@ import { TimeoutHttpClient } from './TimeoutHttpClient'
 type AlgorandClientNetworkConfig = {
     algodUrl: string
     indexerUrl: string
+    algodToken: string
+    indexerToken: string
 }
 
 /**
@@ -36,7 +38,7 @@ export const createTimeoutBoundedAlgorandClient = (
 ): AlgorandClient => {
     const algod = new Algodv2(
         new TimeoutHttpClient(
-            { 'X-Algo-API-Token': config.algodApiKey },
+            { 'X-Algo-API-Token': networkConfig.algodToken },
             networkConfig.algodUrl,
             undefined,
             config.algodReadTimeout,
@@ -47,7 +49,7 @@ export const createTimeoutBoundedAlgorandClient = (
 
     const indexer = new Indexer(
         new TimeoutHttpClient(
-            { 'X-Indexer-API-Token': config.indexerApiKey },
+            { 'X-Indexer-API-Token': networkConfig.indexerToken },
             networkConfig.indexerUrl,
             undefined,
             config.algodReadTimeout,

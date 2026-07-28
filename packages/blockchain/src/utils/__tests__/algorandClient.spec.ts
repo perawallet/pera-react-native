@@ -17,6 +17,9 @@ const mocks = vi.hoisted(() => ({
     registerErrorTransformer: vi.fn(),
     getNetworkConfig: vi.fn(),
     getNetwork: vi.fn(),
+    getNodeEndpointOverride: vi.fn(),
+    subscribe: vi.fn(),
+    updateNodeEndpoints: vi.fn(),
     toAlgodError: vi.fn((e: unknown) => e),
     Algodv2: vi.fn(),
     Indexer: vi.fn(),
@@ -38,6 +41,12 @@ vi.mock('../TimeoutHttpClient', () => ({
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
+        // Legacy global fields. No production code reads these anymore
+        // (see createAlgorandClient.ts) — kept here, deliberately DIFFERENT
+        // from the getNetworkConfig-sourced tokens below, as a trap: if a
+        // regression reverted createTimeoutBoundedAlgorandClient to read
+        // these globals instead of the per-network config it was given, the
+        // header assertions below would observe THESE values and fail.
         algodApiKey: 'ALGOD_KEY',
         indexerApiKey: 'INDEXER_KEY',
         algodReadTimeout: 10_000,
@@ -46,13 +55,32 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     getNetworkConfig: mocks.getNetworkConfig,
 }))
 
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    updateNodeEndpoints: mocks.updateNodeEndpoints,
+}))
+
 vi.mock('../../store', () => ({
     useNetworkStore: { getState: () => ({ network: mocks.getNetwork() }) },
+    getNodeEndpointOverride: mocks.getNodeEndpointOverride,
+    useNodeOverrideStore: { subscribe: mocks.subscribe },
 }))
 
 vi.mock('../../errors', () => ({ toAlgodError: mocks.toAlgodError }))
 
 import { getAlgorandClient } from '../algorandClient'
+
+type NodeOverrideState = {
+    overrides: Record<string, { algodUrl?: string; indexerUrl?: string }>
+}
+
+// algorandClient.ts subscribes to the override store as a module-level side
+// effect, once, during the `import` above. `beforeEach` below calls
+// `vi.clearAllMocks()`, which wipes `mocks.subscribe.mock.calls` before any
+// test body runs — so the registered callback has to be captured here, right
+// after import, or it is unreachable from every test.
+const nodeOverrideSubscriber = mocks.subscribe.mock.calls[0]?.[0] as (
+    state: NodeOverrideState,
+) => void
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -62,8 +90,11 @@ beforeEach(() => {
     mocks.getNetworkConfig.mockImplementation((network: string) => ({
         algodUrl: `https://algod.${network}`,
         indexerUrl: `https://indexer.${network}`,
+        algodToken: `algod-token-${network}`,
+        indexerToken: `indexer-token-${network}`,
     }))
     mocks.getNetwork.mockReturnValue('mainnet')
+    mocks.getNodeEndpointOverride.mockReturnValue(undefined)
     mocks.Algodv2.mockImplementation(function Algodv2() {})
     mocks.Indexer.mockImplementation(function Indexer() {})
     mocks.TimeoutHttpClient.mockImplementation(function TimeoutHttpClient() {})
@@ -75,9 +106,10 @@ describe('getAlgorandClient', () => {
 
         expect(mocks.getNetworkConfig).toHaveBeenCalledWith('mainnet')
 
-        // algod transport: read + submit ceilings from config.
+        // algod transport: read + submit ceilings from config, token from
+        // the per-network chain config (not the legacy config.algodApiKey).
         expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
-            { 'X-Algo-API-Token': 'ALGOD_KEY' },
+            { 'X-Algo-API-Token': 'algod-token-mainnet' },
             'https://algod.mainnet',
             undefined,
             10_000,
@@ -85,7 +117,7 @@ describe('getAlgorandClient', () => {
         )
         // indexer transport.
         expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
-            { 'X-Indexer-API-Token': 'INDEXER_KEY' },
+            { 'X-Indexer-API-Token': 'indexer-token-mainnet' },
             'https://indexer.mainnet',
             undefined,
             10_000,
@@ -119,8 +151,33 @@ describe('getAlgorandClient', () => {
 
         expect(mocks.getNetworkConfig).toHaveBeenCalledWith('testnet')
         expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
-            { 'X-Algo-API-Token': 'ALGOD_KEY' },
+            { 'X-Algo-API-Token': 'algod-token-testnet' },
             'https://algod.testnet',
+            undefined,
+            10_000,
+            30_000,
+        )
+    })
+
+    it('applies a node-override URL while keeping the chain config token', () => {
+        mocks.getNodeEndpointOverride.mockReturnValue({
+            algodUrl: 'http://10.0.0.5:4001',
+        })
+
+        getAlgorandClient()
+
+        expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
+            { 'X-Algo-API-Token': 'algod-token-mainnet' },
+            'http://10.0.0.5:4001',
+            undefined,
+            10_000,
+            30_000,
+        )
+        // indexer has no override entry set above, so it still falls back
+        // to the baked chain config's URL.
+        expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
+            { 'X-Indexer-API-Token': 'indexer-token-mainnet' },
+            'https://indexer.mainnet',
             undefined,
             10_000,
             30_000,
@@ -145,5 +202,30 @@ describe('getAlgorandClient', () => {
 
         expect(mocks.toAlgodError).toHaveBeenCalledWith(error)
         expect(result).toBe(error)
+    })
+})
+
+describe('node-override store subscription', () => {
+    it('pushes resolved endpoints to the shared ky layer for every currently-overridden network', () => {
+        mocks.getNodeEndpointOverride.mockReturnValue({
+            algodUrl: 'http://overridden-algod',
+        })
+
+        nodeOverrideSubscriber({
+            overrides: { localnet: { algodUrl: 'http://overridden-algod' } },
+        })
+
+        expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith('localnet', {
+            algodUrl: 'http://overridden-algod',
+            indexerUrl: 'https://indexer.localnet',
+            algodToken: 'algod-token-localnet',
+            indexerToken: 'indexer-token-localnet',
+        })
+    })
+
+    it('does not push updates for networks with no override key present', () => {
+        nodeOverrideSubscriber({ overrides: {} })
+
+        expect(mocks.updateNodeEndpoints).not.toHaveBeenCalled()
     })
 })

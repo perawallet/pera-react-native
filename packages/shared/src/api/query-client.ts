@@ -409,6 +409,40 @@ const ensureClientsBuilt = (): void => {
     }
 }
 
+/**
+ * Rebuilds a single network's algod/indexer ky instances against new endpoints.
+ * Called from a `blockchain` subscription to the node-override store, because
+ * `shared` cannot import `blockchain`. The `pera` instance is left untouched —
+ * overrides are chain endpoints only.
+ */
+export const updateNodeEndpoints = (
+    network: Network,
+    endpoints: { algodUrl: string; indexerUrl: string },
+): void => {
+    // Must go through the gate, not `clients.get(network)` with an early
+    // return: the map is lazily populated (Task 2), so a bail-on-miss would
+    // silently discard an override written before that network's first request.
+    ensureClientsBuilt()
+    const existing = clients.get(network)
+    if (!existing) return
+
+    const { algodToken, indexerToken } = getNetworkConfig(network)
+
+    clients.set(network, {
+        ...existing,
+        algod: createTokenHeaderClient(
+            endpoints.algodUrl,
+            'X-Algo-API-Token',
+            algodToken,
+        ),
+        indexer: createTokenHeaderClient(
+            endpoints.indexerUrl,
+            'X-Indexer-API-Token',
+            indexerToken,
+        ),
+    })
+}
+
 export const updateBackendHeaders = (headers: Map<string, string>) => {
     ensureClientsBuilt()
 

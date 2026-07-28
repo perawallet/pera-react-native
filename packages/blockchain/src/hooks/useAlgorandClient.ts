@@ -19,6 +19,8 @@ import {
 } from '../models'
 import { encodeSignedTransactions } from '../utils/transact'
 import { createTimeoutBoundedAlgorandClient } from '../utils/createAlgorandClient'
+import { resolveChainEndpoints } from '../utils/algorandClient'
+import { useNodeOverrideStore } from '../store'
 import { logger } from '@perawallet/wallet-core-shared'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
@@ -28,10 +30,13 @@ const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
 }
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
-    const { networkConfig, network } = useNetwork()
+    const { network } = useNetwork()
+    const overrides = useNodeOverrideStore(state => state.overrides[network])
 
     return useMemo(() => {
-        const client = createTimeoutBoundedAlgorandClient(networkConfig)
+        const client = createTimeoutBoundedAlgorandClient(
+            resolveChainEndpoints(network),
+        )
         // algokit-utils defaults this to 10 rounds (~30s) on non-localnet,
         // which expires before a hardware-wallet user can confirm on-device.
         // 1000 rounds (~50min) matches the standard Algorand SDK default.
@@ -56,5 +61,5 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
             client.setDefaultSigner(pipelineRoutedSigner)
         }
         return client
-    }, [network, signer])
+    }, [network, overrides, signer])
 }

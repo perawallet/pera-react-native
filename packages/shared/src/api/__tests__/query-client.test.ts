@@ -828,6 +828,116 @@ describe('queryClient', () => {
         expect(mockKy.extend).toHaveBeenCalled()
     })
 
+    describe('updateNodeEndpoints', () => {
+        type CapturedClientConfig = {
+            prefix: string
+            hooks: {
+                beforeRequest: Array<
+                    (state: {
+                        request: { headers: Map<string, string> }
+                    }) => void
+                >
+            }
+        }
+
+        const findClientConfig = (
+            prefix: string,
+        ): CapturedClientConfig | undefined =>
+            mockKy.create.mock.calls.find(
+                ([clientConfig]: [CapturedClientConfig]) =>
+                    clientConfig.prefix === prefix,
+            )?.[0]
+
+        const readHeader = (
+            clientConfig: CapturedClientConfig,
+            headerName: string,
+        ): string | undefined => {
+            const request = { headers: new Map<string, string>() }
+            clientConfig.hooks.beforeRequest[0]({ request })
+            return request.headers.get(headerName)
+        }
+
+        it('rebuilds algod/indexer for the given network against the new endpoints and the chain config token, even when called before any request', async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { updateNodeEndpoints } = await import('../query-client')
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://overridden.algod.algo',
+                indexerUrl: 'https://overridden.indexer.algo',
+            })
+
+            // 15 from ensureClientsBuilt (5 networks x algod+indexer+pera)
+            // + 2 for the rebuilt algod/indexer of the overridden network.
+            // 18 would mean pera got needlessly rebuilt too; fewer than 17
+            // would mean the override was silently dropped because the
+            // ensureClientsBuilt gate never ran (clients.get would have
+            // returned undefined on an empty, never-built map).
+            expect(mockKy.create).toHaveBeenCalledTimes(17)
+
+            const algodConfig = findClientConfig(
+                'https://overridden.algod.algo',
+            )
+            expect(algodConfig).toBeDefined()
+            expect(
+                readHeader(
+                    algodConfig as CapturedClientConfig,
+                    'X-Algo-API-Token',
+                ),
+            ).toBe(mockAlgodApiKey)
+
+            const indexerConfig = findClientConfig(
+                'https://overridden.indexer.algo',
+            )
+            expect(indexerConfig).toBeDefined()
+            expect(
+                readHeader(
+                    indexerConfig as CapturedClientConfig,
+                    'X-Indexer-API-Token',
+                ),
+            ).toBe(mockIndexerApiKey)
+        })
+
+        it('does not rebuild other networks', async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { updateNodeEndpoints } = await import('../query-client')
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://overridden.algod.algo',
+                indexerUrl: 'https://overridden.indexer.algo',
+            })
+
+            // TestNet's algod client was only ever built once, by
+            // ensureClientsBuilt — overriding MainNet must not rebuild it.
+            const testnetAlgodCalls = mockKy.create.mock.calls.filter(
+                ([clientConfig]: [CapturedClientConfig]) =>
+                    clientConfig.prefix === chainUrlsByNetwork.testnet.algodUrl,
+            )
+            expect(testnetAlgodCalls).toHaveLength(1)
+        })
+
+        it('leaves the request path working for the overridden network afterwards', async () => {
+            const { updateNodeEndpoints, queryClient } =
+                await import('../query-client')
+            mockJson.mockResolvedValue({ version: '1.0' })
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://overridden.algod.algo',
+                indexerUrl: 'https://overridden.indexer.algo',
+            })
+
+            await expect(
+                queryClient({
+                    backend: 'algod',
+                    network: Networks.mainnet,
+                    method: 'GET',
+                    url: '/v2/status',
+                }),
+            ).resolves.toBeDefined()
+        })
+    })
+
     it('should set Content-Type and API key headers via setStandardHeaders', async () => {
         const { queryClient } = await import('../query-client')
         mockJson.mockResolvedValue({ success: true })
