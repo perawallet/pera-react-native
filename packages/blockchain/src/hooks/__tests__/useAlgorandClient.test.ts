@@ -11,11 +11,14 @@
  */
 
 import { describe, test, expect, beforeEach, vi, Mock } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
+import { Networks } from '@perawallet/wallet-core-config'
 
 import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useNetwork } from '../useNetwork'
+import { useNodeOverrideStore } from '../../store'
+import { createTimeoutBoundedAlgorandClient } from '../../utils/createAlgorandClient'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
 vi.mock('@algorandfoundation/algokit-utils', () => {
@@ -36,13 +39,7 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
 
 // Mock useNetwork
 vi.mock('../useNetwork', () => ({
-    useNetwork: vi.fn(() => ({
-        network: 'mainnet',
-        networkConfig: {
-            algodUrl: 'https://mainnet.algod.node',
-            indexerUrl: 'https://mainnet.indexer.node',
-        },
-    })),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 // Mock encodeSignedTransactions
@@ -50,26 +47,33 @@ vi.mock('../../utils/transact', () => ({
     encodeSignedTransactions: vi.fn(txs => txs),
 }))
 
+// Spy on createTimeoutBoundedAlgorandClient while still delegating to the
+// real implementation — every other test in this file relies on the REAL
+// chain running through to the (mocked) AlgorandClient.fromClients, so this
+// must not become a stub. Wrapping it is what lets the reactivity test below
+// inspect exactly which endpoints each render's client was built from.
+vi.mock('../../utils/createAlgorandClient', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('../../utils/createAlgorandClient')
+        >()
+    return {
+        ...actual,
+        createTimeoutBoundedAlgorandClient: vi.fn(
+            actual.createTimeoutBoundedAlgorandClient,
+        ),
+    }
+})
+
 describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'mainnet',
-            networkConfig: {
-                algodUrl: 'https://mainnet.algod.node',
-                indexerUrl: 'https://mainnet.indexer.node',
-            },
-        })
+        useNodeOverrideStore.getState().resetState()
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
     })
 
     test('returns fromClients client for mainnet', () => {
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'mainnet',
-            networkConfig: {
-                algodUrl: 'https://mainnet.algod.node',
-                indexerUrl: 'https://mainnet.indexer.node',
-            },
-        })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
@@ -77,13 +81,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromClients client for testnet', () => {
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'testnet',
-            networkConfig: {
-                algodUrl: 'https://testnet.algod.node',
-                indexerUrl: 'https://testnet.indexer.node',
-            },
-        })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
@@ -113,13 +111,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('configures signer when provided', async () => {
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'mainnet',
-            networkConfig: {
-                algodUrl: 'https://mainnet.algod.node',
-                indexerUrl: 'https://mainnet.indexer.node',
-            },
-        })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const mockSigner = vi.fn().mockResolvedValue(['signed-tx'])
         const { result } = renderHook(() => useAlgorandClient(mockSigner))
 
@@ -132,5 +124,27 @@ describe('services/blockchain/hooks', () => {
 
         expect(mockSigner).toHaveBeenCalled()
         expect(resultTx).toEqual(['signed-tx'])
+    })
+
+    test('rebuilds the client against the new endpoint when the active network gets a node override', () => {
+        renderHook(() => useAlgorandClient())
+
+        const callsBeforeOverride = (createTimeoutBoundedAlgorandClient as Mock)
+            .mock.calls.length
+
+        act(() => {
+            useNodeOverrideStore.getState().setOverride(Networks.mainnet, {
+                algodUrl: 'http://10.0.0.5:4001',
+            })
+        })
+
+        const callsAfterOverride = (createTimeoutBoundedAlgorandClient as Mock)
+            .mock.calls
+        // A mounted screen must rebuild its client, not keep transacting
+        // against the stale endpoint until it unmounts.
+        expect(callsAfterOverride.length).toBeGreaterThan(callsBeforeOverride)
+        expect(callsAfterOverride.at(-1)?.[0]).toMatchObject({
+            algodUrl: 'http://10.0.0.5:4001',
+        })
     })
 })

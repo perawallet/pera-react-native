@@ -917,7 +917,16 @@ describe('queryClient', () => {
             expect(testnetAlgodCalls).toHaveLength(1)
         })
 
-        it('leaves the request path working for the overridden network afterwards', async () => {
+        it('smoke check: the replaced client map entry does not break a subsequent request', async () => {
+            // Only proves updateNodeEndpoints leaves `clients` in a shape
+            // queryClient can still look up (right backend keys present,
+            // nothing set to undefined) — NOT that the request actually used
+            // the new prefix/token. `mockKy.create` always returns the same
+            // `mockKy` singleton regardless of the `prefix` it was configured
+            // with, and the request function it returns never reads `prefix`
+            // either, so this call can't observe which endpoint was actually
+            // targeted. The two tests above cover the real endpoint/token
+            // values, via the captured `mockKy.create` config instead.
             const { updateNodeEndpoints, queryClient } =
                 await import('../query-client')
             mockJson.mockResolvedValue({ version: '1.0' })

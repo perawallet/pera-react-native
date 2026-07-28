@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
+import {
+    getNetworkConfig,
+    Networks,
+    type Network,
+} from '@perawallet/wallet-core-config'
 import { updateNodeEndpoints } from '@perawallet/wallet-core-shared'
 import {
     getNodeEndpointOverride,
@@ -53,8 +57,15 @@ export const getAlgorandClient = (networkOverride?: Network) => {
 
 // Keep the shared ky algod/indexer instances in step with overrides. `shared`
 // cannot import `blockchain`, so the write direction is blockchain -> shared.
-useNodeOverrideStore.subscribe(state => {
-    for (const network of Object.keys(state.overrides) as Network[]) {
+//
+// Iterate ALL networks, not just the currently-overridden keys: clearOverride
+// and resetState DELETE the key, so a keys-only loop would never re-sync a
+// cleared network and its ky clients would keep serving the stale overridden URL
+// until app restart. resolveChainEndpoints falls back to baked config when no
+// override exists, so this restores cleared networks for free and is correct for
+// every transition (set / merge / clear / reset).
+useNodeOverrideStore.subscribe(() => {
+    for (const network of Object.values(Networks)) {
         updateNodeEndpoints(network, resolveChainEndpoints(network))
     }
 })
