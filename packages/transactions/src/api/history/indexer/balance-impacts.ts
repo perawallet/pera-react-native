@@ -13,15 +13,15 @@
 const ALGO_ASSET_KEY = '0'
 
 type PaymentLeg = {
-    amount: number | bigint
+    amount: number | string | bigint
     receiver: string
     'close-remainder-to'?: string
-    'close-amount'?: number | bigint
+    'close-amount'?: number | string | bigint
 }
 
 type AssetTransferLeg = {
-    'asset-id': number | bigint
-    amount: number | bigint
+    'asset-id': number | string | bigint
+    amount: number | string | bigint
     receiver: string
     /**
      * (asnd) The effective sender during a clawback: the address actually
@@ -34,14 +34,14 @@ type AssetTransferLeg = {
      */
     sender?: string
     'close-to'?: string
-    'close-amount'?: number | bigint
+    'close-amount'?: number | string | bigint
 }
 
 /** The recursive subset of an indexer transaction this math reads. */
 export type IndexerTransactionLike = {
     'tx-type': string
     sender: string
-    fee: number | bigint
+    fee: number | string | bigint
     'payment-transaction'?: PaymentLeg
     'asset-transfer-transaction'?: AssetTransferLeg
     'inner-txns'?: IndexerTransactionLike[]
@@ -53,7 +53,16 @@ export type BalanceImpact = {
     amount: bigint
 }
 
-const toBigInt = (value: number | bigint | undefined): bigint =>
+// The client's JSON parsing (parsePrecisionSafeJson) deliberately surfaces
+// uint64 values above 2^53-1 as decimal *strings* rather than rounding them
+// — real fnet assets have totals around 1e16, well into that range. `string`
+// must stay in this union: narrowing it back to `number | bigint` would
+// silently zero out exactly the values precision-safe parsing exists to
+// protect (BigInt(undefined) is a TypeError, so the `typeof value ===
+// 'number'` shortcut a future edit might reach for would need its own
+// `undefined` guard — easy to get wrong twice over). BigInt(value) handles
+// all three input forms losslessly.
+const toBigInt = (value: number | string | bigint | undefined): bigint =>
     value === undefined ? 0n : BigInt(value)
 
 const add = (deltas: Map<string, bigint>, assetId: string, amount: bigint) => {
@@ -72,25 +81,40 @@ const accumulate = (
     // Verified against live mainnet/fnet data: inner transactions frequently
     // report a nonzero fee (an app often pays its own inner-transaction fee
     // from its own account rather than relying on fee pooling from the outer
-    // call — observed values up to 20000 microAlgos on mainnet). That never
-    // double-charges a single address: an inner transaction's sender can
-    // only be the app's own account (or an account rekeyed to it), which in
-    // every sampled case differed from every ancestor's sender.
+    // call — observed values up to 20000 microAlgos on mainnet).
+    //
+    // This reproduces the ledger unconditionally, even if an inner
+    // transaction's sender happens to equal an ancestor's sender (possible
+    // when an account is rekeyed to the app that fans out) — NOT merely
+    // because senders differed in every transaction sampled while verifying
+    // this (that would be a defeatable sampling argument). The real
+    // invariant is structural: fee pooling is already resolved by the time
+    // the indexer reports a transaction, so each node's `fee` field IS that
+    // node's own actual deduction. Per-node attribution therefore has
+    // nothing left to double-count regardless of who the senders are.
     if (transaction.sender === address) {
         add(deltas, ALGO_ASSET_KEY, -toBigInt(transaction.fee))
     }
 
     // Real indexer transactions also carry `sender-rewards`,
     // `receiver-rewards` and `close-rewards`. They are deliberately not
-    // modeled here and not part of `IndexerTransactionLike`. Algorand's
-    // participation-rewards pool was drained years ago, so these fields are
-    // 0 on current-era data — confirmed against thousands of live betanet,
-    // fnet, and near-tip mainnet indexer transactions. This is NOT true of
-    // mainnet's older history (nonzero rewards observed as far back as
-    // round ~5M-30M) — irrelevant here because mainnet and testnet keep
-    // using the Pera backend (which computes balance_impacts itself); this
-    // function is only ever reached for betanet/fnet/localnet history, none
-    // of which has an old reward-bearing era to replay.
+    // modeled here and not part of `IndexerTransactionLike`.
+    //
+    // These are NOT always 0 — betanet's early history (rounds ~357-2.68M)
+    // has real nonzero rewards (148/1000 sampled transactions nonzero;
+    // sender-rewards up to ~1,588,752,226,856 microAlgo observed at round
+    // 602775). Omitting them is safe for a narrower, UI-GATING reason, not a
+    // protocol one: `balanceImpacts` has exactly one non-test read site
+    // today (apps/mobile's useTransactionAmounts.ts), and it only reads this
+    // field when `transaction.txType === 'appl'`. On every network checked
+    // (betanet, fnet, near-tip mainnet), participation rewards were already
+    // 0 by the time `appl` transactions exist at all — on betanet
+    // specifically, the first `appl` appears around round 8.1M, long after
+    // the reward-bearing era ended (confirmed 0 nonzero across 1000+
+    // transactions sampled at that round). This argument breaks if a future
+    // consumer ever reads `balanceImpacts` for a non-`appl` transaction (or
+    // for a network/round where rewards were still active) — re-check this
+    // reasoning before relying on it in that case.
     const payment = transaction['payment-transaction']
     if (payment) {
         const closeTo = payment['close-remainder-to']

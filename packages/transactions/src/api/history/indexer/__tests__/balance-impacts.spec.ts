@@ -101,6 +101,31 @@ describe('computeBalanceImpacts', () => {
         ])
     })
 
+    it('preserves precision for a base-unit amount above 2^53 when it arrives as a string', () => {
+        // The client's JSON parsing (parsePrecisionSafeJson) deliberately
+        // surfaces uint64 values above 2^53-1 as decimal strings rather than
+        // rounding them — this magnitude is real, not hypothetical: a live
+        // fnet asset has a total supply around 1e16.
+        const LARGE_AMOUNT = '9948999701400000'
+        const tx: IndexerTransactionLike = {
+            'tx-type': 'axfer',
+            sender: ME,
+            fee: 1000,
+            'asset-transfer-transaction': {
+                'asset-id': 123,
+                amount: LARGE_AMOUNT,
+                receiver: THEM,
+            },
+        }
+
+        const result = computeBalanceImpacts(tx, ME)
+
+        expect(result).toEqual([
+            { assetId: '0', amount: -1000n },
+            { assetId: '123', amount: -9948999701400000n },
+        ])
+    })
+
     it('clawback debits the effective asset-transfer sender, not the transaction sender', () => {
         // The indexer's own OpenAPI schema and algosdk's wire-encoding map both
         // name this nested field `sender` (description: "[asnd] The effective
