@@ -196,7 +196,6 @@ describe('createLocalKeyStrategy', () => {
             expect(result.signers).toEqual([
                 {
                     address: 'ADDR',
-                    accountType: 'algo25',
                     signatures: [null, null],
                 },
             ])
@@ -235,27 +234,6 @@ describe('createLocalKeyStrategy', () => {
                     : undefined,
                 quantumAccount,
             )
-        })
-
-        test('tags the signer with the account type for transactions groups', async () => {
-            // PQ-014 Task 1: the submission boundary needs to detect the
-            // signing account's type without parsing signature bytes, so
-            // SignerInfo carries it.
-            const result = await makeStrategy().sign(
-                makeTransactionGroup(),
-                algo25Account,
-            )
-
-            expect(result.signers[0]!.accountType).toBe('algo25')
-        })
-
-        test('tags the signer with accountType "quantum" for a quantum account (re-homed from createQuantumStrategy.spec.ts)', async () => {
-            const result = await makeStrategy().sign(
-                makeTransactionGroup(),
-                quantumAccount,
-            )
-
-            expect(result.signers[0]!.accountType).toBe('quantum')
         })
 
         test('populates signers[].signatures with base64-encoded sig bytes (multisig cosign feeds the backend from this)', async () => {

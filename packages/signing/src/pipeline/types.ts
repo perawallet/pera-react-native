@@ -11,10 +11,7 @@
  */
 
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
-import type {
-    AccountType,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     PeraTransaction,
     PeraSignedTransaction,
@@ -459,12 +456,6 @@ export interface SignerInfo {
     address: string
     /** For multisig: base64 signatures per item */
     signatures?: Nullable<string>[]
-    /**
-     * Account type of the signer, when the signing strategy knows it. Lets the
-     * submission boundary detect quantum signers without parsing signature
-     * bytes. Populated by createLocalKeyStrategy.
-     */
-    accountType?: AccountType
 }
 
 /**

@@ -319,7 +319,7 @@ describe('useLocalKeyTransactionSigner', () => {
         ).rejects.toContain('Unsupported account type')
     })
 
-    describe('useLocalKeyTransactionSigner — quantum accounts', () => {
+    describe('quantum accounts', () => {
         beforeEach(() => {
             mockIsQuantumAccount.mockImplementation(
                 acc => acc.type === 'quantum',

@@ -128,7 +128,6 @@ export const createLocalKeyStrategy = (
                         // case anyway.
                         const signerInfo: SignerInfo = {
                             address: account.address,
-                            accountType: account.type,
                             signatures: signed.map(stx =>
                                 stx.sig ? encodeToBase64(stx.sig) : null,
                             ),

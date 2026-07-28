@@ -220,16 +220,45 @@ export const useKMS = () => {
      * `null` for an Ed25519 child. Callers use the `null` case to pick the
      * plain `sig` path — this is the single place the scheme is decided, so
      * signing callers need no account-type branching.
+     *
+     * Standardised on the SAME oracle {@link signTransactionsWithKey} uses
+     * to pick its signer — the seed's committed `scheme`, via
+     * `resolveSeedKey` + `seedSchemeOf` — rather than the child's own
+     * `type`. Payload selection (here) and signer selection
+     * (`signTransactionsWithKey`) must never be able to disagree: if they
+     * did, this would return `null`, the caller would sign the un-digested
+     * `encodeTransaction(txn)` bytes, and `signTransactionsWithKey` would
+     * still route to the real Falcon signer — silently re-creating the
+     * exact un-digested-signing bug PERA-4653 closed.
+     *
+     * The child's `type` is still cross-checked as a consistency guard
+     * (e.g. `account.keyPairId` resolving to the quantum *seed* id itself,
+     * which `resolveSeedKey` accepts as a legacy-caller convenience,
+     * disagrees with the seed's own scheme here). A mismatch THROWS rather
+     * than falling back to the ed25519 path — silent fallthrough is exactly
+     * the failure mode this function exists to prevent.
      */
     const getPQSigningInfo = (
         keyPairId: string,
     ): { schemeId: PQSchemeId; publicKey: Uint8Array } | null => {
+        const seedKey = resolveSeedKey(keyPairId)
+        const isQuantumSeed = seedSchemeOf(seedKey) === SeedScheme.Quantum
+
         const child = getKeystoreStore().state.keys.find(
             k => k.id === keyPairId,
         )
-        if (!child || child.type !== FALCON_CHILD_KEY_TYPE) {
+        const isFalconChild = child?.type === FALCON_CHILD_KEY_TYPE
+
+        if (isQuantumSeed !== isFalconChild) {
+            throw new KeyManagementError(
+                `PQ scheme mismatch for keyPairId ${keyPairId}: seed scheme reports quantum=${isQuantumSeed}, child type reports falcon1024=${isFalconChild}`,
+            )
+        }
+
+        if (!isQuantumSeed) {
             return null
         }
+
         return {
             schemeId: 'falcon1024',
             publicKey: getQuantumPublicKey(keyPairId),

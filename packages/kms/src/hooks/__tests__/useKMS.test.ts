@@ -780,10 +780,55 @@ describe('useKMS', () => {
             expect(result.current.getPQSigningInfo(child.id)).toBeNull()
         })
 
-        it('returns null for an unknown keyPairId', () => {
+        it('throws when the keyPairId is not in the keystore at all', () => {
             const { result } = renderHook(() => useKMS())
 
-            expect(result.current.getPQSigningInfo('missing-id')).toBeNull()
+            expect(() => result.current.getPQSigningInfo('missing-id')).toThrow(
+                KeyNotFoundError,
+            )
+        })
+
+        it('throws when keyPairId resolves to the quantum seed itself rather than its Falcon child, instead of silently returning null', () => {
+            // `resolveSeedKey` accepts a seed id directly as a legacy-caller
+            // convenience (see its own comment). If a caller ever passed the
+            // quantum SEED's id as `account.keyPairId` instead of the child's,
+            // the seed-scheme oracle here would say "quantum" while the
+            // child-type lookup (finding the seed entry itself, type `seed`,
+            // not `falcon1024`) would say "not quantum" — the two oracles
+            // this function reconciles disagreeing. That must throw, not
+            // return null: returning null here would make the caller sign
+            // the un-digested `encodeTransaction(txn)` bytes while
+            // `signTransactionsWithKey` (driven by the seed-scheme oracle
+            // alone) still Falcon-signs them — silently re-creating the
+            // exact un-digested-signing bug PERA-4653 closed.
+            seedQuantumRoot('quantum-1')
+            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+
+            const { result } = renderHook(() => useKMS())
+
+            expect(() => result.current.getPQSigningInfo('quantum-1')).toThrow(
+                KeyManagementError,
+            )
+        })
+
+        it('throws when a child claims falcon1024 under a non-quantum seed (oracle disagreement)', () => {
+            // Inverse mismatch: the child's own type says Falcon, but the
+            // seed it hangs off does not carry the quantum scheme metadata.
+            seedAlgo25Root('algo-mismatch')
+            mockKeystoreKeys.push({
+                id: 'algo-mismatch-falcon',
+                type: FALCON_CHILD_KEY_TYPE,
+                algorithm: 'raw',
+                extractable: false,
+                publicKey: new Uint8Array([1, 2, 3]),
+                metadata: { parentKeyId: 'algo-mismatch' },
+            })
+
+            const { result } = renderHook(() => useKMS())
+
+            expect(() =>
+                result.current.getPQSigningInfo('algo-mismatch-falcon'),
+            ).toThrow(KeyManagementError)
         })
     })
 
