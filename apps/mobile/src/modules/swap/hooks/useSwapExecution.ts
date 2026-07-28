@@ -250,6 +250,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                     await requestSwapProposal(
                         addSignRequest,
+                        account,
                         {
                             name: t('swap.signing.source_name'),
                             description: t('swap.signing.source_description'),
@@ -303,6 +304,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     unsignedTxs.length > 0
                         ? await requestSwapSignatures(
                               addSignRequest,
+                              account,
                               {
                                   name: t('swap.signing.source_name'),
                                   description: t(

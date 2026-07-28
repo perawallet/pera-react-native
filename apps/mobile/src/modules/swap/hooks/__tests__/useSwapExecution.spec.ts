@@ -16,6 +16,7 @@ import {
     useSwapExecution,
     type SwapExecutionOutcome,
 } from '../useSwapExecution'
+import { requestSwapProposal } from '../swapExecutionHelpers'
 import type {
     PrepareTransactionsResult,
     SwapQuote,
@@ -25,6 +26,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     NoConnectionError,
     type Optional,
@@ -119,15 +121,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
         mapToDisplayableTransaction: (tx: {
             sender?: { toString?: () => string }
         }) => ({ sender: tx?.sender?.toString?.() ?? 'SENDER' }),
-        // Quantum accounts are only feature-flag-gated out of swap today —
-        // there's no structural guard in this module. `swapExecutionHelpers`'
-        // approve callback fails loudly if one ever shows up here (see the
-        // dedicated quantum test below); the real predicate checks for
-        // `pqSignedBytes`, which none of this spec's plain signed-txn
-        // fixtures carry.
-        isQuantumSignedTransaction: (tx: unknown) =>
-            (tx as { pqSignedBytes?: unknown })?.pqSignedBytes instanceof
-            Uint8Array,
         compactSignedResults: (signed: unknown[]) =>
             signed.filter(tx => tx !== null),
     }
@@ -167,6 +160,11 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => mockUseSelectedAccount(),
     isMultisigAccount: (account: unknown) => mockIsMultisigAccount(account),
+    // Real predicate is `account.type === 'quantum'` — mirrored narrowly here
+    // rather than mocked with a spy since every test that needs it exercises
+    // the guard against a fixed `quantumAccount` fixture below.
+    isQuantumAccount: (account: unknown) =>
+        (account as { type?: string } | undefined)?.type === 'quantum',
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -233,6 +231,13 @@ const makeQuote = (quoteIdStr: string): SwapQuote =>
         // unstamped or expired quotes before prepare (PERA-4589).
         fetchedAt: Date.now(),
     }) as unknown as SwapQuote
+
+const quantumAccount: WalletAccount = {
+    id: 'quantum-account-1',
+    address: 'QUANTUM_ADDR',
+    type: 'quantum',
+    keyPairId: 'quantum-keypair-1',
+}
 
 const makeSignedTxn = (id: string): PeraSignedTransaction =>
     ({
@@ -645,19 +650,16 @@ describe('useSwapExecution', () => {
         })
     })
 
-    it('fails loudly instead of silently dropping a quantum-signed transaction', async () => {
-        // Quantum accounts are only feature-flag-gated out of swap today —
-        // there is no structural guard in this module preventing one from
-        // routing into this flow. If a quantum-signed carrier ever comes
-        // back from the pipeline, the approve callback must reject instead
-        // of silently filtering it out, which would vanish signed slots and
-        // corrupt the group downstream into an opaque submission crash.
-        const quantumSigned = {
-            txn: { txID: () => 'quantum-1' },
-            pqSignedBytes: new Uint8Array([9, 9]),
-        } as unknown as PeraSignedTransaction
-
-        autoApproveWith([quantumSigned])
+    it('rejects a quantum swap on the backend fee contract, not on the signing layer', async () => {
+        // Quantum swap is blocked for a server-side reason, not a signing-layer
+        // one: a swap group interleaves backend PRE-SIGNED transactions with
+        // the user's own, quantum accounts require a raised PQ minimum fee, and
+        // raising the fee forces a `grp` recompute that would invalidate
+        // signatures the backend already produced and the device can't
+        // recreate. The guard must therefore fire on the account BEFORE the
+        // signing pipeline is ever invoked (PQ-024 / PERA-4705 tracks the
+        // backend-side fix).
+        mockUseSelectedAccount.mockReturnValue(quantumAccount)
 
         const { result } = renderHook(() => useSwapExecution())
 
@@ -669,12 +671,18 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
-            message: 'Quantum accounts are not supported in swap flows yet',
+            message: expect.stringMatching(/fee/i),
         })
+        if (outcome?.kind === 'error') {
+            expect(outcome.message).not.toMatch(
+                /not supported in swap flows yet/,
+            )
+        }
         expect(result.current.status).toBe('error')
-        expect(result.current.error?.message).toBe(
-            'Quantum accounts are not supported in swap flows yet',
-        )
+
+        // The signing pipeline must never be invoked — the block happens
+        // before the request is ever built, not inside its approve callback.
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
 
         // Not a user cancellation, so the backend must still be told.
         expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
@@ -686,9 +694,30 @@ describe('useSwapExecution', () => {
         })
     })
 
-    it('drops null slots before resolving without treating them as quantum', async () => {
+    it('guards the shared-account propose path for quantum proposers', async () => {
+        // `requestSwapProposal` feeds `createMultisigStrategy`'s
+        // `extractSignatures`, which returns `null` for a quantum result —
+        // without this guard a quantum proposer would silently POST an empty
+        // signature to the backend. Quantum accounts are excluded from
+        // multisig participation entirely elsewhere in the app, so this is
+        // defence in depth, not the primary gate.
+        await expect(
+            requestSwapProposal(
+                mockAddSignRequest,
+                quantumAccount,
+                { name: 'swap', description: 'swap' },
+                [],
+                [],
+                vi.fn(),
+            ),
+        ).rejects.toThrow(/quantum/i)
+
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+    })
+
+    it('drops null slots before resolving', async () => {
         // Defensive narrowing: a null slot mixed in with real signed txns
-        // must still be filtered out and must not trip the quantum guard.
+        // must still be filtered out before resolving.
         autoApproveWith([
             makeSignedTxn('tx-id-1'),
             null,
