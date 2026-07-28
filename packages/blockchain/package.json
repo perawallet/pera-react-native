@@ -21,7 +21,6 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "algosdk": "catalog:",
     "@babel/runtime": "catalog:",
-    "@joe-p/algosdk": "catalog:",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-remote-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",

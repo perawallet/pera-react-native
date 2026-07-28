@@ -10,16 +10,12 @@
  limitations under the License
  */
 
-// SWAP: joe-p @joe-p/algosdk PQ surface — the ONLY module importing it.
-// Replace with the official algosdk once pqsig lands; if pqsig becomes mainline,
-// delete this module and use the normal SignedTransaction path. See Seam B in
-// docs/QUANTUM_PQ_INTEGRATION.md.
 import {
     addressFromPQKey,
     FALCON_1024_SCHEME,
     addressWithSignersFromRawFalcon1024Signer,
     decodeUnsignedTransaction,
-} from '@joe-p/algosdk'
+} from 'algosdk'
 
 export const deriveQuantumAddress = (publicKey: Uint8Array): string =>
     addressFromPQKey(FALCON_1024_SCHEME, publicKey).address.toString()

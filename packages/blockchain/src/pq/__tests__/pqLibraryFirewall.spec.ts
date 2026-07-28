@@ -23,23 +23,26 @@ import { tmpdir } from 'node:os'
 import { describe, it, expect } from 'vitest'
 
 // Pera's quantum (post-quantum, Falcon-1024) accounts integrate Joe Polny's
-// interim PQ libraries (`@joe-p/algosdk`, WASM `falcon-1024`) behind two swap
-// seams so they can later be replaced with official Algorand code via a
-// one-module change. See docs/QUANTUM_PQ_INTEGRATION.md. This guard pins that
-// boundary: neither library may be imported anywhere else in the tree.
-// The quote class includes backticks so template-literal dynamic imports
-// (e.g. `import(\`@joe-p/algosdk\`)`) are caught too. The falcon-1024
-// alternative also allows an optional subpath (e.g. `falcon-1024/wasm`) so a
-// deep import can't slip past a bare-specifier-only check.
+// interim PQ libraries behind a swap seam so they can later be replaced with
+// official Algorand code via a one-module change. See
+// docs/QUANTUM_PQ_INTEGRATION.md. `@joe-p/algosdk` is no longer one of the
+// forbidden specifiers: it is now installed under the official `algosdk`
+// package name (see pnpm-workspace.yaml), so application code imports
+// `algosdk` everywhere, including in the former Seam B. Only the Falcon
+// libraries (`@joe-p/react-native-falcon`, WASM `falcon-1024`), which still
+// have no official counterpart, remain confined to Seam A. The quote class
+// includes backticks so template-literal dynamic imports (e.g.
+// `import(\`falcon-1024\`)`) are caught too. The falcon-1024 alternative also
+// allows an optional subpath (e.g. `falcon-1024/wasm`) so a deep import can't
+// slip past a bare-specifier-only check.
 const FORBIDDEN_SPECIFIER_PATTERN =
-    /[`'"](@joe-p\/[^'"`]*|falcon-1024(\/[^'"`]*)?)[`'"]/
+    /[`'"](@joe-p\/react-native-falcon|falcon-1024(\/[^'"`]*)?)[`'"]/
 
-// Seam A (pure crypto) and Seam B (the only `@joe-p/algosdk` importer) are
-// the sole sanctioned homes for these imports.
-const ALLOWLISTED_SEAM_DIRS = [
-    join('packages', 'kms', 'src', 'crypto', 'pq'),
-    join('packages', 'blockchain', 'src', 'pq'),
-]
+// Seam A (pure crypto) is the sole remaining sanctioned home for these
+// imports. `@joe-p/algosdk` is no longer forbidden anywhere — it is now
+// installed under the official `algosdk` name (see pnpm-workspace.yaml), so
+// Seam B (packages/blockchain/src/pq) no longer needs an allowlist entry.
+const ALLOWLISTED_SEAM_DIRS = ['packages/kms/src/crypto/pq']
 
 const SCAN_ROOT_DIRS = ['packages', 'apps']
 
@@ -121,7 +124,7 @@ const findViolations = (files: string[]): string[] =>
 describe('PQ library import firewall', () => {
     const root = findMonorepoRoot(__dirname)
 
-    it('confines @joe-p/* and falcon-1024 imports to the two swap seams', () => {
+    it('confines @joe-p/react-native-falcon and falcon-1024 imports to the one remaining swap seam', () => {
         const files = SCAN_ROOT_DIRS.flatMap(dir =>
             listSourceFilesRecursively(root, join(root, dir)),
         )
@@ -131,17 +134,19 @@ describe('PQ library import firewall', () => {
         expect(findViolations(files)).toEqual([])
     })
 
-    it('positive control: quantumAdapter.ts still imports @joe-p/algosdk (Seam B)', () => {
-        const file = join(
-            root,
-            'packages',
-            'blockchain',
-            'src',
-            'pq',
-            'quantumAdapter.ts',
+    it('no longer forbids algosdk, which is now the official name for the fork', () => {
+        expect(FORBIDDEN_SPECIFIER_PATTERN.test("from 'algosdk'")).toBe(false)
+        expect(FORBIDDEN_SPECIFIER_PATTERN.test("from '@joe-p/algosdk'")).toBe(
+            false,
         )
-        const content = readFileSync(file, 'utf-8')
-        expect(content).toMatch(/['"]@joe-p\/algosdk['"]/)
+        expect(FORBIDDEN_SPECIFIER_PATTERN.test("from 'falcon-1024'")).toBe(
+            true,
+        )
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test(
+                "from '@joe-p/react-native-falcon'",
+            ),
+        ).toBe(true)
     })
 
     it('positive control: wasmFalconProvider.ts still imports falcon-1024 (Seam A)', () => {
@@ -160,14 +165,15 @@ describe('PQ library import firewall', () => {
 
     it('regression: a sibling dir merely prefixed by a seam name (e.g. pq-legacy) is NOT treated as inside the seam', () => {
         // Under the old raw `path.startsWith(join(root, seamDir))` check,
-        // `.../src/pq-legacy` would satisfy `startsWith('.../src/pq')` and be
-        // silently skipped from scanning, making the guard vacuous for any
-        // file placed under such a sibling. This pins the fix.
+        // `.../crypto/pq-legacy` would satisfy `startsWith('.../crypto/pq')`
+        // and be silently skipped from scanning, making the guard vacuous for
+        // any file placed under such a sibling. This pins the fix.
         const seamSiblingFile = join(
             root,
             'packages',
-            'blockchain',
+            'kms',
             'src',
+            'crypto',
             'pq-legacy',
             'x.ts',
         )
@@ -178,10 +184,11 @@ describe('PQ library import firewall', () => {
         const genuineSeamFile = join(
             root,
             'packages',
-            'blockchain',
+            'kms',
             'src',
+            'crypto',
             'pq',
-            'quantumAdapter.ts',
+            'wasmFalconProvider.ts',
         )
         expect(isInsideSeam(root, genuineSeamFile)).toBe(true)
     })
@@ -207,18 +214,21 @@ describe('PQ library import firewall', () => {
         expect(scanned).not.toContain(viteConfig)
     })
 
-    it('regression: a real @joe-p import in a non-config, non-seam source file IS still flagged (exemption cannot widen)', () => {
+    it('regression: a real @joe-p/react-native-falcon import in a non-config, non-seam source file IS still flagged (exemption cannot widen)', () => {
         // The build-config exemption is scoped to the `*.config.ts` filename
         // suffix. A plain source file with the same import must still trip the
         // guard, so the blind spot can never be widened to arbitrary files.
         const tmpDir = mkdtempSync(join(tmpdir(), 'pq-firewall-'))
         try {
             const leakFile = join(tmpDir, 'leak.ts')
-            writeFileSync(leakFile, "import { x } from '@joe-p/algosdk'\n")
+            writeFileSync(
+                leakFile,
+                "import { x } from '@joe-p/react-native-falcon'\n",
+            )
 
             expect(isBuildConfigFile('leak.ts')).toBe(false)
             expect(findViolations([leakFile])).toEqual([
-                `${leakFile} → @joe-p/algosdk`,
+                `${leakFile} → @joe-p/react-native-falcon`,
             ])
         } finally {
             rmSync(tmpDir, { recursive: true, force: true })

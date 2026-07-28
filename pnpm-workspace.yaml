@@ -15,7 +15,6 @@ catalog:
   "@lottiefiles/dotlottie-react": 0.19.7
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
-  "@joe-p/algosdk": 3.7.0-beta.1
   "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
@@ -46,7 +45,14 @@ catalog:
   "@vitejs/plugin-react": 6.0.3
   "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
-  algosdk: ^3.5.2
+  # Joe Polny's algosdk fork, installed UNDER the official name. It is
+  # version 3.7.0-beta.1 — i.e. a future official release — and adds the
+  # `pqsig` field plus the scheme-agnostic PQ signer surface that official
+  # algosdk (3.6.0) does not yet ship. Application code imports `algosdk`
+  # only; this line is the single place the fork is named.
+  # SWAP-BACK: when official algosdk 3.7.0 ships with pqsig, change this to
+  # `^3.7.0`. No source file changes are required.
+  algosdk: 'npm:@joe-p/algosdk@3.7.0-beta.1'
   before-after-hook: ^4.0.0
   buffer: ^6.0.3
   decimal.js: ^10.6.0
@@ -91,6 +97,7 @@ minimumReleaseAgeExclude:
   - '@algorandfoundation/react-native-keystore'
   - '@algorandfoundation/react-native-passkey-autofill'
   - '@joe-p/algosdk'
+  - algosdk
   - '@joe-p/react-native-falcon'
   - falcon-1024
   - fast-uri
@@ -139,6 +146,11 @@ patchedDependencies:
   "expo-modules-jsi@57.0.3": patches/expo-modules-jsi@57.0.3.patch
 
 overrides:
+  # Force ONE algosdk across the whole tree, including inside
+  # @algorandfoundation/algokit-utils. Two copies would break cross-boundary
+  # `instanceof Transaction` / `instanceof Address` checks and msgpack schema
+  # identity between algokit-utils and our own code.
+  algosdk: 'npm:@joe-p/algosdk@3.7.0-beta.1'
   '@algorandfoundation/keystore': 1.0.0-canary.17
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.13
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'

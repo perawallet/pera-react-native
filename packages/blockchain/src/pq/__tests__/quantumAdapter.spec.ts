@@ -16,7 +16,7 @@ import algosdk, {
     addressWithSignersFromRawFalcon1024Signer,
     decodeSignedTransaction,
     encodeUnsignedTransaction,
-} from '@joe-p/algosdk'
+} from 'algosdk'
 import { generateKey, signCompressed } from 'falcon-1024'
 import {
     deriveQuantumAddress,
