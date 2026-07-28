@@ -642,6 +642,13 @@ export default defineConfig({
                         './vitest.integration-setup.ts',
                     ],
                     include: ['src/__integration__/**/*.{test,spec}.{ts,tsx}'],
+                    // Flow tests mount real screens whose queries can still be
+                    // in flight when the file ends. Routing their console output
+                    // through the worker RPC makes a late log race teardown
+                    // ("EnvironmentTeardownError: Closing rpc while
+                    // onUserConsoleLog was pending"), failing a run in which
+                    // every test passed. Logs still print, just not via RPC.
+                    disableConsoleIntercept: true,
                 },
             },
         ],
