@@ -25,8 +25,38 @@ export const loginResponseSchema = z.object({
 })
 export type LoginApiResponse = z.infer<typeof loginResponseSchema>
 
-// POST /v1/auth/oauth/token (grant_type=refresh_token). Proxied via Pera's
-// backend because it requires the server-only x-secret-key.
+// POST /v1/auth/login/otp — asks Baanx to send the 2FA code for a user whose
+// login came back `isOtpRequired`.
+export const sendLoginOtpResponseSchema = z.object({
+    success: z.boolean().optional().nullable(),
+})
+export type SendLoginOtpApiResponse = z.infer<typeof sendLoginOtpResponseSchema>
+
+// GET /api/v3/baanx/oauth/initiate (Pera proxy for Baanx's
+// /v1/auth/oauth/authorize/initiate, mode=api). `token` is a 10-minute session
+// JWT consumed by the authorize step. The response also carries a hosted-UI
+// `url` that API mode never uses, so it is not modeled here.
+export const oauthInitiateResponseSchema = z.object({
+    token: z.string(),
+})
+export type OauthInitiateApiResponse = z.infer<
+    typeof oauthInitiateResponseSchema
+>
+
+// POST /v1/auth/oauth/authorize — trades the session JWT + login Bearer for a
+// single-use authorization code. `state` echoes the CSRF value from initiate.
+// (The response's redirect `url` is unused in API mode and not modeled.)
+export const oauthAuthorizeResponseSchema = z.object({
+    code: z.string(),
+    state: z.string(),
+})
+export type OauthAuthorizeApiResponse = z.infer<
+    typeof oauthAuthorizeResponseSchema
+>
+
+// POST /v1/auth/oauth/token — both grants return the same shape: a 6h access
+// token and a 7-day refresh token (the code grant is proxied via Pera's
+// backend, the refresh grant goes direct with x-client-key).
 export const tokenResponseSchema = z.object({
     access_token: z.string(),
     expires_in: z.number(),

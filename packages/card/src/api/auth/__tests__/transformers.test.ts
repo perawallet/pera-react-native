@@ -11,7 +11,12 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { transformLoginResponse, transformTokenResponse } from '../transformers'
+import {
+    transformLoginResponse,
+    transformOauthAuthorizeResponse,
+    transformOauthInitiateResponse,
+    transformTokenResponse,
+} from '../transformers'
 
 describe('auth transformers', () => {
     it('maps a login response (access token only, no refresh)', () => {
@@ -62,5 +67,23 @@ describe('auth transformers', () => {
 
         expect(tokens.accessToken).toBe('x')
         expect(tokens.refreshToken).toBe('y')
+    })
+
+    it('maps the initiate response token to the OAuth session token', () => {
+        const initiation = transformOauthInitiateResponse({
+            token: 'jwt-session',
+        })
+
+        expect(initiation.sessionToken).toBe('jwt-session')
+    })
+
+    it('maps the authorize response to code + echoed state', () => {
+        const authorization = transformOauthAuthorizeResponse({
+            code: 'auth-code',
+            state: 'csrf-state',
+        })
+
+        expect(authorization.code).toBe('auth-code')
+        expect(authorization.state).toBe('csrf-state')
     })
 })

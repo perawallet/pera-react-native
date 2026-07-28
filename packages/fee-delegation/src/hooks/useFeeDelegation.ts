@@ -27,12 +27,11 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
+import { getValidIntegrityToken } from '@perawallet/wallet-core-app-integrity'
 import {
     decodeFromBase64,
     encodeToBase64,
     generateOrderedUniqueId,
-    type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 import { requestFeeDelegation } from '../api'
@@ -71,22 +70,6 @@ export type UseFeeDelegationResult = {
 type GroupSlot =
     | { kind: 'preSigned'; signed: PeraSignedTransaction }
     | { kind: 'toSign'; flatIndex: number }
-
-/**
- * The current non-expired device attestation token, or null when absent or
- * expired. Read synchronously from the store snapshot so the decision is made
- * at call time, not at render time.
- */
-const getValidIntegrityToken = (): Nullable<string> => {
-    const { integrityToken, expiresAt } = useAppIntegrityStore.getState()
-    if (!integrityToken || !expiresAt) {
-        return null
-    }
-    const expiry = Date.parse(expiresAt)
-    return Number.isFinite(expiry) && expiry > Date.now()
-        ? integrityToken
-        : null
-}
 
 /**
  * Hand the wallet-signable slot(s) to the signing pipeline as a headless

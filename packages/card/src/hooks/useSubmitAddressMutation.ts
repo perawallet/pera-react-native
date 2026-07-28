@@ -13,6 +13,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
+import { acquireCardSessionTokens } from '../api/auth'
 import { submitAddress, type SubmitAddressResult } from '../api/onboarding'
 import { getCardApiError } from '../api/errors'
 import { OnboardingStep, type AddressInput } from '../models'
@@ -30,9 +31,10 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
 
     const mutation = useMutation<SubmitAddressResult, Error, AddressInput>({
         mutationFn: address => submitAddress({ address, network }),
-        // The address step finalizes registration and issues the bearer token;
-        // commit it (no refresh token at registration, like direct login) so
-        // the post-onboarding user endpoints work, then mark onboarding done.
+        // The address step finalizes registration and issues the same class of
+        // 6h user access token as login. Trade it for the durable OAuth pair
+        // (6h access + 7-day refresh) so the brand-new session can be silently
+        // refreshed, then mark onboarding done.
         onSuccess: async result => {
             // accessToken is null only on the US separate-mailing path, which we
             // don't yet collect (the address screen always sends
@@ -40,10 +42,14 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
             // TODO(card): the US mailing-address step will issue the token; until
             // then accessToken is always present here.
             if (result.accessToken) {
-                await setCardSession({
+                // Falls back to a refresh-less 6h session if the OAuth
+                // exchange fails — registration already succeeded and must
+                // not be stranded on an exchange outage.
+                const tokens = await acquireCardSessionTokens({
                     accessToken: result.accessToken,
-                    refreshToken: '',
+                    network,
                 })
+                await setCardSession(tokens)
             }
             useCardStore.getState().setOnboardingStep(OnboardingStep.Completed)
         },

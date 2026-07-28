@@ -23,6 +23,18 @@ export const decodeFromBase64 = (base64: string): Uint8Array => {
     return toByteArray(base64)
 }
 
+/**
+ * Converts a standard base64 string to url-safe base64 (RFC 4648 §5, no
+ * padding): `+` → `-`, `/` → `_`, trailing `=` removed.
+ */
+export const toUrlSafeBase64 = (b64: string): string => {
+    // Strip trailing '=' padding with a linear scan rather than a regex:
+    // /=+$/ backtracks polynomially on long runs of '=' (ReDoS).
+    let end = b64.length
+    while (end > 0 && b64.charCodeAt(end - 1) === 0x3d /* '=' */) end--
+    return b64.slice(0, end).replace(/\+/g, '-').replace(/\//g, '_')
+}
+
 export const hexToBytes = (hex: string): Uint8Array => {
     const bytes = new Uint8Array(hex.length / 2)
     for (let i = 0; i < hex.length; i += 2) {

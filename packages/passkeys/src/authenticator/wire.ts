@@ -13,8 +13,8 @@
 import {
     decodeFromBase64,
     encodeToBase64,
+    toUrlSafeBase64,
 } from '@perawallet/wallet-core-shared'
-import { toUrlSafeBase64 } from '../models/passkey'
 
 /**
  * Base64url (no padding, `-_` alphabet) codec for every ArrayBuffer-bearing

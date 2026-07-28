@@ -25,12 +25,12 @@ import {
 const {
     addSignRequestMock,
     submitAndAutoRefreshMock,
-    getAppIntegrityStateMock,
+    getValidIntegrityTokenMock,
     requestFeeDelegationMock,
 } = vi.hoisted(() => ({
     addSignRequestMock: vi.fn(),
     submitAndAutoRefreshMock: vi.fn(),
-    getAppIntegrityStateMock: vi.fn(),
+    getValidIntegrityTokenMock: vi.fn(),
     requestFeeDelegationMock: vi.fn(),
 }))
 
@@ -68,8 +68,11 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     submitAndAutoRefresh: submitAndAutoRefreshMock,
 }))
 
+// The hook only branches on token-present vs null; expiry semantics belong to
+// getValidIntegrityToken itself (unit-tested in the app-integrity package),
+// so the mock stubs its return value directly.
 vi.mock('@perawallet/wallet-core-app-integrity', () => ({
-    useAppIntegrityStore: { getState: () => getAppIntegrityStateMock() },
+    getValidIntegrityToken: getValidIntegrityTokenMock,
 }))
 
 vi.mock('../../api', () => ({
@@ -89,10 +92,7 @@ const ASSET_ID = 31566704n
 // Inputs are ASCII, so btoa is byte-exact and needs no Node Buffer global.
 const toBase64 = (text: string) => btoa(text)
 
-const validAttestation = () => ({
-    integrityToken: 'valid-token',
-    expiresAt: new Date(Date.now() + 60_000).toISOString(),
-})
+const VALID_TOKEN = 'valid-token'
 
 const baseParams = {
     account: ACCOUNT,
@@ -112,29 +112,14 @@ function renderDelegation() {
 
 beforeEach(() => {
     vi.clearAllMocks()
-    getAppIntegrityStateMock.mockReturnValue(validAttestation())
+    getValidIntegrityTokenMock.mockReturnValue(VALID_TOKEN)
 })
 
 describe('fee-delegation/useFeeDelegation', () => {
-    test('rejects with FeeDelegationAttestationRequiredError when no token is stored', async () => {
-        getAppIntegrityStateMock.mockReturnValue({
-            integrityToken: null,
-            expiresAt: null,
-        })
-
-        const result = renderDelegation()
-
-        await expect(
-            result.current.submitWithFeeDelegation(baseParams),
-        ).rejects.toBeInstanceOf(FeeDelegationAttestationRequiredError)
-        expect(requestFeeDelegationMock).not.toHaveBeenCalled()
-    })
-
-    test('rejects when the stored token has expired', async () => {
-        getAppIntegrityStateMock.mockReturnValue({
-            integrityToken: 'stale-token',
-            expiresAt: new Date(Date.now() - 1_000).toISOString(),
-        })
+    // Expiry semantics live in getValidIntegrityToken's own unit tests
+    // (app-integrity package); the hook only branches on token vs null.
+    test('rejects with FeeDelegationAttestationRequiredError when no usable token exists', async () => {
+        getValidIntegrityTokenMock.mockReturnValue(null)
 
         const result = renderDelegation()
 
