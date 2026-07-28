@@ -20,6 +20,7 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",

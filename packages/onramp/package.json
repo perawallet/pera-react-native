@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-fee-delegation": "workspace:*",
