@@ -28,14 +28,18 @@ describe('node-override-store', () => {
     })
 
     test('stores an override per network without touching the others', () => {
-        useNodeOverrideStore.getState().setOverride(Networks.localnet, {
+        const store = useNodeOverrideStore.getState()
+        store.setOverride(Networks.localnet, {
             algodUrl: 'http://192.168.1.20:4001',
         })
+        store.setOverride(Networks.fnet, { algodUrl: 'http://a' })
 
         expect(getNodeEndpointOverride(Networks.localnet)).toEqual({
             algodUrl: 'http://192.168.1.20:4001',
         })
-        expect(getNodeEndpointOverride(Networks.fnet)).toBeUndefined()
+        expect(getNodeEndpointOverride(Networks.fnet)).toEqual({
+            algodUrl: 'http://a',
+        })
     })
 
     test('merges partial updates into an existing override', () => {
